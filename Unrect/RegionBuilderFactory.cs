@@ -152,6 +152,116 @@ namespace Unrect
       where T1 : IRegion<TSpace>
       where T2 : IRegion<TSpace>
       => Vertical(new ExplicitOffsetStrategy(leftOffset, topOffset), new ExplicitSizeStrategy(width, height), subregionBuilder1, subregionBuilder2);
+
+    public static StackRegionBuilder3<TSpace, T1, T2, T3> Horizontal<T1, T2, T3>(
+      IOffsetStrategy offsetStrategy,
+      ISizeStrategy sizeStrategy,
+      IRegionBuilder<TSpace, T1> subregionBuilder1,
+      IRegionBuilder<TSpace, T2> subregionBuilder2,
+      IRegionBuilder<TSpace, T3> subregionBuilder3)
+      where T1 : IRegion<TSpace>
+      where T2 : IRegion<TSpace>
+      where T3 : IRegion<TSpace>
+    {
+      return new StackRegionBuilder3<TSpace, T1, T2, T3>(subregionBuilder1, subregionBuilder2, subregionBuilder3)
+      {
+        OffsetStrategy = offsetStrategy,
+        SizeStrategy = sizeStrategy
+      };
+    }
+    public static StackRegionBuilder3<TSpace, T1, T2, T3> Horizontal<T1, T2, T3>(
+      IOffsetStrategy offsetStrategy,
+      IRegionBuilder<TSpace, T1> subregionBuilder1,
+      IRegionBuilder<TSpace, T2> subregionBuilder2,
+      IRegionBuilder<TSpace, T3> subregionBuilder3)
+      where T1 : IRegion<TSpace>
+      where T2 : IRegion<TSpace>
+      where T3 : IRegion<TSpace>
+      => Horizontal(offsetStrategy, Max(), subregionBuilder1, subregionBuilder2, subregionBuilder3);
+    public static StackRegionBuilder3<TSpace, T1, T2, T3> Horizontal<T1, T2, T3>(
+      ISizeStrategy sizeStrategy,
+      IRegionBuilder<TSpace, T1> subregionBuilder1,
+      IRegionBuilder<TSpace, T2> subregionBuilder2,
+      IRegionBuilder<TSpace, T3> subregionBuilder3)
+      where T1 : IRegion<TSpace>
+      where T2 : IRegion<TSpace>
+      where T3 : IRegion<TSpace>
+      => Horizontal(None(), sizeStrategy, subregionBuilder1, subregionBuilder2, subregionBuilder3);
+    public static StackRegionBuilder3<TSpace, T1, T2, T3> Horizontal<T1, T2, T3>(
+      IRegionBuilder<TSpace, T1> subregionBuilder1,
+      IRegionBuilder<TSpace, T2> subregionBuilder2,
+      IRegionBuilder<TSpace, T3> subregionBuilder3)
+      where T1 : IRegion<TSpace>
+      where T2 : IRegion<TSpace>
+      where T3 : IRegion<TSpace>
+      => Horizontal(None(), Max(), subregionBuilder1, subregionBuilder2, subregionBuilder3);
+    public static StackRegionBuilder3<TSpace, T1, T2, T3> Horizontal<T1, T2, T3>(
+      uint leftOffset,
+      uint topOffset,
+      uint width,
+      uint height,
+      IRegionBuilder<TSpace, T1> subregionBuilder1,
+      IRegionBuilder<TSpace, T2> subregionBuilder2,
+      IRegionBuilder<TSpace, T3> subregionBuilder3)
+      where T1 : IRegion<TSpace>
+      where T2 : IRegion<TSpace>
+      where T3 : IRegion<TSpace>
+      => Horizontal(new ExplicitOffsetStrategy(leftOffset, topOffset), new ExplicitSizeStrategy(width, height), subregionBuilder1, subregionBuilder2, subregionBuilder3);
+
+    public static StackRegionBuilder3<TSpace, T1, T2, T3> Vertical<T1, T2, T3>(
+      IOffsetStrategy offsetStrategy,
+      ISizeStrategy sizeStrategy,
+      IRegionBuilder<TSpace, T1> subregionBuilder1,
+      IRegionBuilder<TSpace, T2> subregionBuilder2,
+      IRegionBuilder<TSpace, T3> subregionBuilder3)
+      where T1 : IRegion<TSpace>
+      where T2 : IRegion<TSpace>
+      where T3 : IRegion<TSpace>
+    {
+      return new StackRegionBuilder3<TSpace, T1, T2, T3>(subregionBuilder1, subregionBuilder2, subregionBuilder3)
+      {
+        OffsetStrategy = offsetStrategy,
+        SizeStrategy = sizeStrategy
+      };
+    }
+    public static StackRegionBuilder3<TSpace, T1, T2, T3> Vertical<T1, T2, T3>(
+      IOffsetStrategy offsetStrategy,
+      IRegionBuilder<TSpace, T1> subregionBuilder1,
+      IRegionBuilder<TSpace, T2> subregionBuilder2,
+      IRegionBuilder<TSpace, T3> subregionBuilder3)
+      where T1 : IRegion<TSpace>
+      where T2 : IRegion<TSpace>
+      where T3 : IRegion<TSpace>
+      => Vertical(offsetStrategy, Max(), subregionBuilder1, subregionBuilder2, subregionBuilder3);
+    public static StackRegionBuilder3<TSpace, T1, T2, T3> Vertical<T1, T2, T3>(
+      ISizeStrategy sizeStrategy,
+      IRegionBuilder<TSpace, T1> subregionBuilder1,
+      IRegionBuilder<TSpace, T2> subregionBuilder2,
+      IRegionBuilder<TSpace, T3> subregionBuilder3)
+      where T1 : IRegion<TSpace>
+      where T2 : IRegion<TSpace>
+      where T3 : IRegion<TSpace>
+      => Vertical(None(), sizeStrategy, subregionBuilder1, subregionBuilder2, subregionBuilder3);
+    public static StackRegionBuilder3<TSpace, T1, T2, T3> Vertical<T1, T2, T3>(
+      IRegionBuilder<TSpace, T1> subregionBuilder1,
+      IRegionBuilder<TSpace, T2> subregionBuilder2,
+      IRegionBuilder<TSpace, T3> subregionBuilder3)
+      where T1 : IRegion<TSpace>
+      where T2 : IRegion<TSpace>
+      where T3 : IRegion<TSpace>
+      => Vertical(None(), Max(), subregionBuilder1, subregionBuilder2, subregionBuilder3);
+    public static StackRegionBuilder3<TSpace, T1, T2, T3> Vertical<T1, T2, T3>(
+      uint leftOffset,
+      uint topOffset,
+      uint width,
+      uint height,
+      IRegionBuilder<TSpace, T1> subregionBuilder1,
+      IRegionBuilder<TSpace, T2> subregionBuilder2,
+      IRegionBuilder<TSpace, T3> subregionBuilder3)
+      where T1 : IRegion<TSpace>
+      where T2 : IRegion<TSpace>
+      where T3 : IRegion<TSpace>
+      => Vertical(new ExplicitOffsetStrategy(leftOffset, topOffset), new ExplicitSizeStrategy(width, height), subregionBuilder1, subregionBuilder2, subregionBuilder3);
   }
 }
 

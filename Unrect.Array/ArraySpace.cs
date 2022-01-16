@@ -5,7 +5,7 @@ namespace Unrect.Array
 {
   public class ArraySpace<T> : ISpace<T>
   {
-    public ArraySpace(T[,] array) : this(array, default, new Size((uint)array.GetLength(0), (uint)array.GetLength(1)))
+    public ArraySpace(T[,] array) : this(array, default, new Size((uint)array.GetLength(1), (uint)array.GetLength(0)))
     {
     }
 
@@ -16,7 +16,7 @@ namespace Unrect.Array
     {
       Array = array;
 
-      if (offset.LeftOffset + size.Width > array.GetLength(0) || offset.TopOffset + size.Height > array.GetLength(1))
+      if (offset.LeftOffset + size.Width > array.GetLength(1) || offset.TopOffset + size.Height > array.GetLength(0))
       {
         throw new OutOfBoundsException();
       }
@@ -40,6 +40,6 @@ namespace Unrect.Array
       }
     }
 
-    public ISpace<T> GetSubspace(Offset offset, Size size) => new ArraySpace<T>(Array, offset, size);
+    public ISpace<T> GetSubspace(Offset offset, Size size) => new ArraySpace<T>(Array, offset + Offset, size);
   }
 }

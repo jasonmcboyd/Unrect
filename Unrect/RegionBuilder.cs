@@ -15,11 +15,12 @@ namespace Unrect
       SubregionBuilder = subregionBuilder;
     }
 
-    private IRegionBuilder<TSpace, TRegion> SubregionBuilder { get; init; }
+    private IRegionBuilder<TSpace, TRegion> SubregionBuilder { get; }
 
     public override Region1<TSpace, TRegion> Build(ISpace<TSpace> space)
     {
       var offset = SubregionBuilder.OffsetStrategy.GetOffset();
+      space = space.GetSubspace(offset);
       var size = SubregionBuilder.SizeStrategy.GetSize(space.Size);
 
       if (offset.LeftOffset + size.Width > space.Size.Width)

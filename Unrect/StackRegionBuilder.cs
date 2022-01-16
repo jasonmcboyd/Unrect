@@ -1,4 +1,5 @@
-﻿using Unrect.Core;
+﻿using System.Collections.Generic;
+using Unrect.Core;
 
 namespace Unrect
 {
@@ -14,46 +15,61 @@ namespace Unrect
       SubregionBuilder2 = subregionBuilder2;
     }
 
-    private IRegionBuilder<TSpace, T1> SubregionBuilder1 { get; init; }
-    private IRegionBuilder<TSpace, T2> SubregionBuilder2 { get; init; }
+    private IRegionBuilder<TSpace, T1> SubregionBuilder1 { get; }
+    private IRegionBuilder<TSpace, T2> SubregionBuilder2 { get; }
+
+    public override IEnumerable<IRegionBuilder> GetSubregionBuilders()
+    {
+      yield return SubregionBuilder1;
+      yield return SubregionBuilder2;
+    }
 
     public override Region2<TSpace, T1, T2> Build(ISpace<TSpace> space)
     {
-      var subregionBuilders = new IRegionBuilder[] { SubregionBuilder1, SubregionBuilder2 };
+      var subspaces = GetSubregionSpaces(space);
 
-      uint cumulativeOrientedOffsetLength = 0;
+      return new Region2<TSpace, T1, T2>(
+        space,
+        SubregionBuilder1.Build(subspaces[0]),
+        SubregionBuilder2.Build(subspaces[1]));
+    }
+  }
 
-      var subspaces = new ISpace<TSpace>[2];
+  public class StackRegionBuilder3<TSpace, T1, T2, T3> : StackRegionBuilderBase<TSpace, Region3<TSpace, T1, T2, T3>>
+    where T1 : IRegion<TSpace>
+    where T2 : IRegion<TSpace>
+    where T3 : IRegion<TSpace>
+  {
+    public StackRegionBuilder3(
+      IRegionBuilder<TSpace, T1> subregionBuilder1,
+      IRegionBuilder<TSpace, T2> subregionBuilder2,
+      IRegionBuilder<TSpace, T3> subregionBuilder3)
+    {
+      SubregionBuilder1 = subregionBuilder1;
+      SubregionBuilder2 = subregionBuilder2;
+      SubregionBuilder3 = subregionBuilder3;
+    }
 
-      for (int i = 0; i < subregionBuilders.Length; i++)
-      {
-        var subregionBuilder = subregionBuilders[i];
+    private IRegionBuilder<TSpace, T1> SubregionBuilder1 { get; }
+    private IRegionBuilder<TSpace, T2> SubregionBuilder2 { get; }
+    private IRegionBuilder<TSpace, T3> SubregionBuilder3 { get; }
 
-        var orientedOffset = GetOrientedOffset(subregionBuilder.OffsetStrategy.GetOffset());
-        var orientedSize = GetOrientedSize(subregionBuilder.SizeStrategy.GetSize(space.Size));
-        var spaceOrientedSize = GetOrientedSize(space.Size);
+    public override IEnumerable<IRegionBuilder> GetSubregionBuilders()
+    {
+      yield return SubregionBuilder1;
+      yield return SubregionBuilder2;
+      yield return SubregionBuilder3;
+    }
 
-        if (cumulativeOrientedOffsetLength + orientedOffset.OrientedLength + orientedSize.OrientedLength > spaceOrientedSize.OrientedLength)
-        {
-          throw new OutOfBoundsException();
-        }
+    public override Region3<TSpace, T1, T2, T3> Build(ISpace<TSpace> space)
+    {
+      var subspaces = GetSubregionSpaces(space);
 
-        if (orientedOffset.UnorientedLength + orientedSize.UnorientedLength > spaceOrientedSize.UnorientedLength)
-        {
-          throw new OutOfBoundsException();
-        }
-
-        var cumulativeOrientedOffset =
-          Orientation == Orientation.Horizontal
-          ? new Offset(cumulativeOrientedOffsetLength, 0)
-          : new Offset(0, cumulativeOrientedOffsetLength);
-
-        subspaces[i] = space.GetSubspace(subregionBuilder.OffsetStrategy.GetOffset() + cumulativeOrientedOffset, subregionBuilder.SizeStrategy.GetSize(space.Size));
-
-        cumulativeOrientedOffsetLength += orientedOffset.OrientedLength + orientedSize.OrientedLength;
-      }
-
-      return new Region2<TSpace, T1, T2>(space, SubregionBuilder1.Build(subspaces[0]), SubregionBuilder2.Build(subspaces[1]));
+      return new Region3<TSpace, T1, T2, T3>(
+        space,
+        SubregionBuilder1.Build(subspaces[0]),
+        SubregionBuilder2.Build(subspaces[1]),
+        SubregionBuilder3.Build(subspaces[2]));
     }
   }
 }
