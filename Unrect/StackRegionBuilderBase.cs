@@ -6,7 +6,8 @@ namespace Unrect
   public abstract class StackRegionBuilderBase<TSpace, T1> : RegionBuilderBase<TSpace, T1>
     where T1 : IRegion<TSpace>
   {
-    public Orientation Orientation { get; } = Orientation.Vertical;
+    public Orientation Orientation { get; init; } = Orientation.Vertical;
+
     private (uint OrientedLength, uint UnorientedLength) GetOrientedOffset(Offset offset) =>
       Orientation == Orientation.Horizontal
       ? (offset.LeftOffset, offset.TopOffset)
@@ -16,8 +17,6 @@ namespace Unrect
       Orientation == Orientation.Horizontal
       ? (size.Width, size.Height)
       : (size.Height, size.Width);
-
-    public abstract IEnumerable<IRegionBuilder> GetSubregionBuilders();
 
     protected List<ISpace<TSpace>> GetSubregionSpaces(ISpace<TSpace> space)
     {
@@ -40,7 +39,7 @@ namespace Unrect
         }
 
         result.Add(availableSpace.GetSubspace(subregionSize));
-
+        
         space =
           Orientation == Orientation.Horizontal
           ? space.GetSubspace(new Offset(subregionOffset.LeftOffset + subregionSize.Width, 0))

@@ -1,4 +1,5 @@
-﻿using Unrect.Core;
+﻿using System.Collections.Generic;
+using Unrect.Core;
 using static Unrect.OffsetStrategy;
 using static Unrect.SizeStrategy;
 
@@ -11,5 +12,7 @@ namespace Unrect
     public ISizeStrategy SizeStrategy { get; init; } = Max();
 
     public abstract T1 Build(ISpace<TSpace> space);
+
+    public abstract IEnumerable<IRegionBuilder<TSpace>> GetSubregionBuilders();
   }
 }

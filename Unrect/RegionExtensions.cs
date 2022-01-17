@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Unrect.Core;
 
 namespace Unrect
@@ -30,5 +31,51 @@ namespace Unrect
         yield return result;
       }
     }
+
+    public static IEnumerable<T> RowOrderEnumerable<T>(this IRegion<T> region)
+    {
+      for (uint i = 0; i < region.Space.Size.Height; i++)
+        for (uint j = 0; j < region.Space.Size.Width; j++)
+          yield return region.Space[(int)j, (int)i];
+    }
+
+    public static IEnumerable<T> ColumnOrderEnumerable<T> (this IRegion<T> region)
+    {
+      for (uint i = 0; i < region.Space.Size.Width; i++)
+        for (uint j = 0; j < region.Space.Size.Height; j++)
+          yield return region.Space[(int)i, (int)j];
+    }
+
+    public static T[,] ToArray<T>(this IRegion<T> region)
+    {
+      var result = new T[region.Space.Size.Height, region.Space.Size.Width];
+
+      for (uint i = 0; i < region.Space.Size.Height; i++)
+        for (uint j = 0; j < region.Space.Size.Width; j++)
+          result[i, j] = region.Space[(int)j, (int)i];
+
+      return result;
+    }
+
+    public static TResult Map<TSpace, T1, TResult>(
+      this Region1<TSpace, T1> region,
+      Func<T1, Region1<TSpace, T1>, TResult> map)
+      where T1 : IRegion<TSpace>
+      => map(region.Subregion1, region);
+
+    public static TResult Map<TSpace, T1, T2, TResult>(
+      this Region2<TSpace, T1, T2> region,
+      Func<T1, T2, Region2<TSpace, T1, T2>, TResult> map)
+      where T1 : IRegion<TSpace>
+      where T2 : IRegion<TSpace>
+      => map(region.Subregion1, region.Subregion2, region);
+
+    public static TResult Map<TSpace, T1, T2, T3, TResult>(
+      this Region3<TSpace, T1, T2, T3> region,
+      Func<T1, T2, T3, Region3<TSpace, T1, T2, T3>, TResult> map)
+      where T1 : IRegion<TSpace>
+      where T2 : IRegion<TSpace>
+      where T3 : IRegion<TSpace>
+      => map(region.Subregion1, region.Subregion2, region.Subregion3, region);
   }
 }

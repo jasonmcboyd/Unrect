@@ -74,7 +74,8 @@ namespace Unrect
       return new StackRegionBuilder2<TSpace, T1, T2>(subregionBuilder1, subregionBuilder2)
       {
         OffsetStrategy = offsetStrategy,
-        SizeStrategy = sizeStrategy
+        SizeStrategy = sizeStrategy,
+        Orientation = Orientation.Horizontal
       };
     }
     public static StackRegionBuilder2<TSpace, T1, T2> Horizontal<T1, T2>(
@@ -166,7 +167,8 @@ namespace Unrect
       return new StackRegionBuilder3<TSpace, T1, T2, T3>(subregionBuilder1, subregionBuilder2, subregionBuilder3)
       {
         OffsetStrategy = offsetStrategy,
-        SizeStrategy = sizeStrategy
+        SizeStrategy = sizeStrategy,
+        Orientation = Orientation.Horizontal
       };
     }
     public static StackRegionBuilder3<TSpace, T1, T2, T3> Horizontal<T1, T2, T3>(

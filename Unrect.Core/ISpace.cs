@@ -3,7 +3,7 @@
   public interface ISpace<out T>
   {
     Size Size { get; }
-    T this[int x, int y]
+    T this[int column, int row]
     {
         get;
     }

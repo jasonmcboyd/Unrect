@@ -3,14 +3,14 @@ using Unrect.Core;
 
 namespace Unrect.Array
 {
-  public class ArraySpace<T> : ISpace<T>
+  public class ArraySpace<TSpace> : ISpace<TSpace>
   {
-    public ArraySpace(T[,] array) : this(array, default, new Size((uint)array.GetLength(1), (uint)array.GetLength(0)))
+    public ArraySpace(TSpace[,] array) : this(array, default, new Size((uint)array.GetLength(1), (uint)array.GetLength(0)))
     {
     }
 
     public ArraySpace(
-      T[,] array,
+      TSpace[,] array,
       Offset offset,
       Size size)
     {
@@ -25,21 +25,21 @@ namespace Unrect.Array
       Size = size;
     }
 
-    private T[,] Array { get; }
+    private TSpace[,] Array { get; }
     private Offset Offset { get; }
     public Size Size { get; }
 
-    public T this[int x, int y]
+    public TSpace this[int column, int row]
     {
       get
       {
-        if (x < 0 || x >= Size.Width) throw new IndexOutOfRangeException();
-        if (y < 0 || y >= Size.Height) throw new IndexOutOfRangeException();
+        if (column < 0 || column >= Size.Width) throw new IndexOutOfRangeException();
+        if (row < 0 || row >= Size.Height) throw new IndexOutOfRangeException();
 
-        return Array[Offset.TopOffset + y, Offset.LeftOffset + x];
+        return Array[Offset.TopOffset + row, Offset.LeftOffset + column];
       }
     }
 
-    public ISpace<T> GetSubspace(Offset offset, Size size) => new ArraySpace<T>(Array, offset + Offset, size);
+    public ISpace<TSpace> GetSubspace(Offset offset, Size size) => new ArraySpace<TSpace>(Array, offset + Offset, size);
   }
 }

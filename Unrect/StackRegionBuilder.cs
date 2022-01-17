@@ -18,7 +18,7 @@ namespace Unrect
     private IRegionBuilder<TSpace, T1> SubregionBuilder1 { get; }
     private IRegionBuilder<TSpace, T2> SubregionBuilder2 { get; }
 
-    public override IEnumerable<IRegionBuilder> GetSubregionBuilders()
+    public override IEnumerable<IRegionBuilder<TSpace>> GetSubregionBuilders()
     {
       yield return SubregionBuilder1;
       yield return SubregionBuilder2;
@@ -54,7 +54,7 @@ namespace Unrect
     private IRegionBuilder<TSpace, T2> SubregionBuilder2 { get; }
     private IRegionBuilder<TSpace, T3> SubregionBuilder3 { get; }
 
-    public override IEnumerable<IRegionBuilder> GetSubregionBuilders()
+    public override IEnumerable<IRegionBuilder<TSpace>> GetSubregionBuilders()
     {
       yield return SubregionBuilder1;
       yield return SubregionBuilder2;
