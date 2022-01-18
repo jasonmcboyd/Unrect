@@ -2,59 +2,69 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Text;
 using Unrect.Array;
 using Unrect.Core;
 
 namespace Unrect.Excel
 {
-  public class SpreadsheetSpace : ISpace<object>
+  public class SpreadsheetSpace : ISpace<ISpreadsheetValue>
   {
-    private SpreadsheetSpace(ISpace<object> innerSpace)
+    private SpreadsheetSpace(ISpace<ISpreadsheetValue> innerSpace)
     {
       InnerSpace = innerSpace;
     }
 
-    private ISpace<Object> InnerSpace { get; }
-    public object this[int column, int row] => InnerSpace[column, row];
+    private ISpace<ISpreadsheetValue> InnerSpace { get; }
+    public ISpreadsheetValue this[int column, int row] => InnerSpace[column, row];
     public Size Size => InnerSpace.Size;
-    public ISpace<object> GetSubspace(Offset offset, Size size) => new SpreadsheetSpace(InnerSpace.GetSubspace(offset, size));
+    public ISpace<ISpreadsheetValue> GetSubspace(Offset offset, Size size) => new SpreadsheetSpace(InnerSpace.GetSubspace(offset, size));
 
-    public IEnumerable<SpreadsheetSpace> Create(string path, Func<SpreadsheetContext, bool> predicate)
+    private static void RegisterEncoding()
     {
-      using (var stream = File.Open(path, FileMode.Open, FileAccess.Read))
+      Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+    }
+
+    public static SpreadsheetSpace Create(string path, string sheetName, bool caseSensitive = false) =>
+      Create(path, c => caseSensitive ? sheetName == c.Name : sheetName.Equals(c.Name, StringComparison.OrdinalIgnoreCase)).First();
+
+    public static IEnumerable<SpreadsheetSpace> Create(string path, Func<SpreadsheetContext, bool> predicate)
+    {
+      RegisterEncoding();
+
+      using var stream = File.Open(path, FileMode.Open, FileAccess.Read);
+      // Auto-detect format, supports:
+      //  - Binary Excel files (2.0-2003 format; *.xls)
+      //  - OpenXml Excel files (2007 format; *.xlsx, *.xlsb)
+      using var reader = ExcelReaderFactory.CreateReader(stream);
+
+      var sheetIndex = -1;
+      do
       {
-        // Auto-detect format, supports:
-        //  - Binary Excel files (2.0-2003 format; *.xls)
-        //  - OpenXml Excel files (2007 format; *.xlsx, *.xlsb)
-        using (var reader = ExcelReaderFactory.CreateReader(stream))
-        {
-          var sheetIndex = -1;
-          do
-          {
-            sheetIndex++;
-            var context = new SpreadsheetContext(sheetIndex, reader.Name);
+        sheetIndex++;
+        var context = new SpreadsheetContext(sheetIndex, reader.Name);
             
-            if (!predicate(context))
-              continue;
+        if (!predicate(context))
+          continue;
 
-            var array = new object[reader.FieldCount, reader.RowCount];
-            var space = new ArraySpace<object>(array);
+        var array = new ISpreadsheetValue[reader.RowCount, reader.FieldCount];
+        var space = new ArraySpace<ISpreadsheetValue>(array);
 
-            var row = 0;
-            while (reader.Read())
-            {
-              for (int i = 0; i < reader.FieldCount; i++)
-              {
-                array[i, row] = reader.GetValue(i);
-                row++;
-              }
-            }
+        var row = 0;
+        while (reader.Read())
+        {
+          for (int i = 0; i < reader.FieldCount; i++)
+          {
+            array[row, i] = reader.GetSpreadsheetValue(i);
+          }
 
-            yield return new SpreadsheetSpace(space);
-
-          } while (reader.NextResult());
+          row++;
         }
-      }
+
+        yield return new SpreadsheetSpace(space);
+
+      } while (reader.NextResult());
     }
   }
 }

@@ -1,4 +1,14 @@
 ﻿namespace Unrect.Excel
 {
-  public record SpreadsheetContext(int Index, string Name);
+  public readonly struct SpreadsheetContext
+  {
+    public SpreadsheetContext(int index, string name)
+    {
+      Index = index;
+      Name = name;
+    }
+
+    public int Index { get; }
+    public string Name { get; }
+  }
 }
