@@ -18,8 +18,8 @@ namespace Unrect.Excel
 
     private ISpace<ISpreadsheetValue> InnerSpace { get; }
     public ISpreadsheetValue this[int column, int row] => InnerSpace[column, row];
-    public Size Size => InnerSpace.Size;
-    public ISpace<ISpreadsheetValue> GetSubspace(Offset offset, Size size) => new SpreadsheetSpace(InnerSpace.GetSubspace(offset, size));
+    public Area Area => InnerSpace.Area;
+    public ISpace<ISpreadsheetValue> GetSubspace(Offset offset, Area size) => new SpreadsheetSpace(InnerSpace.GetSubspace(offset, size));
 
     private static void RegisterEncoding()
     {

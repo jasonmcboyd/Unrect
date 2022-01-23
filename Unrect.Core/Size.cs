@@ -9,6 +9,9 @@
     }
 
     public uint Width { get; }
-    public uint Height { get; }
+    public uint Height{ get; }
+
+    public static Size operator +(Size first, Size second)
+      => new Size(first.Width + second.Width, first.Height + second.Height);
   }
 }

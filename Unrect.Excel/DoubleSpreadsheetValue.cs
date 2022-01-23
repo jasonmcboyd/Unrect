@@ -21,5 +21,6 @@ namespace Unrect.Excel
     public double GetDouble() => TypedValue;
     public int GetInt() => throw new InvalidOperationException("Incorrect type.");
     public string GetString() => throw new InvalidOperationException("Incorrect type.");
+    public string? TryGetString() => null;
   }
 }

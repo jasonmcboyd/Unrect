@@ -2,11 +2,11 @@
 {
   public interface ISpace<out T>
   {
-    Size Size { get; }
+    Area Area { get; }
     T this[int column, int row]
     {
         get;
     }
-    ISpace<T> GetSubspace(Offset offset, Size size);
+    ISpace<T> GetSubspace(Offset offset, Area area);
   }
 }

@@ -13,5 +13,6 @@ namespace Unrect.Excel
     double GetDouble();
     int GetInt();
     string GetString();
+    string? TryGetString();
   }
 }

@@ -1,13 +1,13 @@
 ﻿namespace Unrect.Core
 {
-  public struct Offset
+  public struct Area
   {
-    public Offset(uint width, uint height)
+    public Area(uint width, uint height)
     {
       Size = new Size(width, height);
     }
 
-    public Offset(Size size)
+    public Area(Size size)
     {
       Size = size;
     }

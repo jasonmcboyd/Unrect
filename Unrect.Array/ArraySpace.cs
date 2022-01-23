@@ -5,41 +5,41 @@ namespace Unrect.Array
 {
   public class ArraySpace<TSpace> : ISpace<TSpace>
   {
-    public ArraySpace(TSpace[,] array) : this(array, default, new Size((uint)array.GetLength(1), (uint)array.GetLength(0)))
+    public ArraySpace(TSpace[,] array) : this(array, default, new Area((uint)array.GetLength(1), (uint)array.GetLength(0)))
     {
     }
 
     public ArraySpace(
       TSpace[,] array,
       Offset offset,
-      Size size)
+      Area area)
     {
       Array = array;
 
-      if (offset.LeftOffset + size.Width > array.GetLength(1) || offset.TopOffset + size.Height > array.GetLength(0))
+      if (offset.Width + area.Width > array.GetLength(1) || offset.Height + area.Height > array.GetLength(0))
       {
         throw new OutOfBoundsException();
       }
 
       Offset = offset;
-      Size = size;
+      Area = area;
     }
 
     private TSpace[,] Array { get; }
     private Offset Offset { get; }
-    public Size Size { get; }
+    public Area Area { get; }
 
     public TSpace this[int column, int row]
     {
       get
       {
-        if (column < 0 || column >= Size.Width) throw new IndexOutOfRangeException();
-        if (row < 0 || row >= Size.Height) throw new IndexOutOfRangeException();
+        if (column < 0 || column >= Area.Width) throw new IndexOutOfRangeException();
+        if (row < 0 || row >= Area.Height) throw new IndexOutOfRangeException();
 
-        return Array[Offset.TopOffset + row, Offset.LeftOffset + column];
+        return Array[Offset.Height + row, Offset.Width + column];
       }
     }
 
-    public ISpace<TSpace> GetSubspace(Offset offset, Size size) => new ArraySpace<TSpace>(Array, offset + Offset, size);
+    public ISpace<TSpace> GetSubspace(Offset offset, Area area) => new ArraySpace<TSpace>(Array, offset + Offset, area);
   }
 }

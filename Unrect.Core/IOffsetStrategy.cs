@@ -1,7 +1,6 @@
 ﻿namespace Unrect.Core
 {
-  public interface IOffsetStrategy
+  public interface IOffsetStrategy<in TSpace> : ISizeStrategy<TSpace, Offset>
   {
-    Offset GetOffset();
   }
 }

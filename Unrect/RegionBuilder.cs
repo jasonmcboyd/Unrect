@@ -27,14 +27,14 @@ namespace Unrect
     {
       var offset = SubregionBuilder.OffsetStrategy.GetOffset();
       space = space.GetSubspace(offset);
-      var size = SubregionBuilder.SizeStrategy.GetSize(space.Size);
+      var size = SubregionBuilder.SizeStrategy.GetArea(space);
 
-      if (offset.LeftOffset + size.Width > space.Size.Width)
+      if (offset.Width + size.Width > space.Area.Width)
       {
         throw new OutOfBoundsException();
       }
 
-      if (offset.TopOffset + size.Height > space.Size.Height)
+      if (offset.Height + size.Height > space.Area.Height)
       {
         throw new OutOfBoundsException();
       }

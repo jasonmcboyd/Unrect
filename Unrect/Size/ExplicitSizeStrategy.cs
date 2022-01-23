@@ -1,8 +1,8 @@
 ﻿using Unrect.Core;
 
-namespace Unrect.SizeStrategies
+namespace Unrect.Size
 {
-  public class ExplicitSizeStrategy : ISizeStrategy
+  public class ExplicitSizeStrategy<TSpace> : ISizeStrategy<TSpace, Core.Size>
   {
     public ExplicitSizeStrategy(uint width, uint height)
     {
@@ -13,6 +13,6 @@ namespace Unrect.SizeStrategies
     private uint Width { get; }
     private uint Height { get; }
 
-    public Size GetSize(Size size) => new Size(Width, Height);
+    public Core.Size GetSize(ISpace<TSpace> availableSpace) => new Core.Area(Width, Height);
   }
 }
