@@ -16,7 +16,7 @@ namespace Unrect.RowSelectionStrategies
     {
       uint count = 0;
 
-      while (count < space.Area.Height && Predicate(space, count))
+      while (count < space.Area.Size.Height && Predicate(space, count))
         count++;
 
       return count;

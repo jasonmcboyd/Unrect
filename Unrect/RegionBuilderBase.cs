@@ -9,7 +9,7 @@ namespace Unrect
     where T1 : IRegion<TSpace>
   {
     public IOffsetStrategy<TSpace> OffsetStrategy { get; init; } = MinSize<TSpace>().ToOffsetStrategy();
-    public IAreaStrategy<TSpace> SizeStrategy { get; init; } = MaxSize<TSpace>().ToAreaStrategy();
+    public IAreaStrategy<TSpace> AreaStrategy { get; init; } = MaxSize<TSpace>().ToAreaStrategy();
 
     public abstract T1 Build(ISpace<TSpace> space);
 

@@ -16,7 +16,7 @@ namespace Unrect.Array
     {
       Array = array;
 
-      if (offset.Width + area.Width > array.GetLength(1) || offset.Height + area.Height > array.GetLength(0))
+      if (offset.Size.Width + area.Size.Width > array.GetLength(1) || offset.Size.Height + area.Size.Height > array.GetLength(0))
       {
         throw new OutOfBoundsException();
       }
@@ -33,10 +33,10 @@ namespace Unrect.Array
     {
       get
       {
-        if (column < 0 || column >= Area.Width) throw new IndexOutOfRangeException();
-        if (row < 0 || row >= Area.Height) throw new IndexOutOfRangeException();
+        if (column < 0 || column >= Area.Size.Width) throw new IndexOutOfRangeException();
+        if (row < 0 || row >= Area.Size.Height) throw new IndexOutOfRangeException();
 
-        return Array[Offset.Height + row, Offset.Width + column];
+        return Array[Offset.Size.Height + row, Offset.Size.Width + column];
       }
     }
 

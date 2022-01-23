@@ -3,7 +3,7 @@ using Unrect.Core;
 
 namespace Unrect.Size
 {
-  public class SelectorSizeStrategy<TSpace> : ISizeStrategy<TSpace, Core.Size>
+  public class SelectorSizeStrategy<TSpace> : ISizeStrategy<TSpace>
   {
     public SelectorSizeStrategy(Func<ISpace<TSpace>, Core.Size> areaSelector)
     {

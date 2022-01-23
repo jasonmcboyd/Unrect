@@ -25,21 +25,21 @@ namespace Unrect
 
     public override Region1<TSpace, TRegion> Build(ISpace<TSpace> space)
     {
-      var offset = SubregionBuilder.OffsetStrategy.GetOffset();
+      var offset = SubregionBuilder.OffsetStrategy.GetOffset(space);
       space = space.GetSubspace(offset);
-      var size = SubregionBuilder.SizeStrategy.GetArea(space);
+      var size = SubregionBuilder.AreaStrategy.GetArea(space).Size;
 
-      if (offset.Width + size.Width > space.Area.Width)
+      if (offset.Size.Width + size.Width > space.Area.Size.Width)
       {
         throw new OutOfBoundsException();
       }
 
-      if (offset.Height + size.Height > space.Area.Height)
+      if (offset.Size.Height + size.Height > space.Area.Size.Height)
       {
         throw new OutOfBoundsException();
       }
 
-      var subspace = space.GetSubspace(offset, size);
+      var subspace = space.GetSubspace(offset, new Core.Area(size));
       var subregion = SubregionBuilder.Build(subspace);
       return new Region1<TSpace, TRegion>(space, subregion);
     }

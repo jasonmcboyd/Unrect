@@ -2,7 +2,7 @@
 
 namespace Unrect.Size
 {
-  public class RowAndColumnSizeStrategy<TSpace> : ISizeStrategy<TSpace, Core.Size>
+  public class RowAndColumnSizeStrategy<TSpace> : ISizeStrategy<TSpace>
   {
     public RowAndColumnSizeStrategy(
       IRowSelectionStrategy<TSpace> rowSelectionStrategy,
@@ -31,14 +31,14 @@ namespace Unrect.Size
       if (RowFirst)
       {
         var rowCount = RowSelectionStrategy.SelectRows(availableSpace);
-        availableSpace = availableSpace.GetSubspace(new Core.Area(availableSpace.Area.Width, rowCount));
+        availableSpace = availableSpace.GetSubspace(new Core.Area(availableSpace.Area.Size.Width, rowCount));
         var columnCount = ColumnSelectionStrategy.SelectColumns(availableSpace);
         return new Core.Size(columnCount, rowCount);
       }
       else
       {
         var columnCount = ColumnSelectionStrategy.SelectColumns(availableSpace);
-        availableSpace = availableSpace.GetSubspace(new Core.Area(columnCount, availableSpace.Area.Height));
+        availableSpace = availableSpace.GetSubspace(new Core.Area(columnCount, availableSpace.Area.Size.Height));
         var rowCount = RowSelectionStrategy.SelectRows(availableSpace);
         return new Core.Size(columnCount, rowCount);
       }

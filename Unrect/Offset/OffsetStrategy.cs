@@ -1,12 +1,16 @@
 ﻿using Unrect.Core;
-using Unrect.Size;
 
 namespace Unrect.Offset
 {
-  internal class OffsetStrategy<TSpace> : SizeStrategyBase<TSpace, Core.Offset>, IOffsetStrategy<TSpace>
+  internal class OffsetStrategy<TSpace> : IOffsetStrategy<TSpace>
   {
-    public OffsetStrategy(ISizeStrategy<TSpace, Core.Size> strategy) : base(strategy, size => size.ToOffset())
+    public OffsetStrategy(ISizeStrategy<TSpace> strategy)
     {
+      Strategy = strategy;
     }
+
+    private ISizeStrategy<TSpace> Strategy { get; }
+
+    public Core.Offset GetOffset(ISpace<TSpace> availableSpace) => new Core.Offset(Strategy.GetSize(availableSpace));
   }
 }

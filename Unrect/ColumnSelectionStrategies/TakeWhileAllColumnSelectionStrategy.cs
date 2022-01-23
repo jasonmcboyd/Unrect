@@ -16,9 +16,9 @@ namespace Unrect.ColumnSelectionStrategies
     {
       uint count = 0;
 
-      while (count < space.Area.Width)
+      while (count < space.Area.Size.Width)
       {
-        for (int i = 0; i < space.Area.Height; i++)
+        for (int i = 0; i < space.Area.Size.Height; i++)
         {
           if (!Predicate(space[i, (int)count]))
             return count;

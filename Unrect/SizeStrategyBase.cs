@@ -1,22 +1,16 @@
-﻿using System;
-using Unrect.Core;
+﻿using Unrect.Core;
 
 namespace Unrect
 {
-  internal abstract class SizeStrategyBase<TSpace, TSize> : ISizeStrategy<TSpace, TSize>
-    where TSize : Core.Size
+  internal abstract class SizeStrategyBase<TSpace> : ISizeStrategy<TSpace>
   {
-    protected SizeStrategyBase(
-      ISizeStrategy<TSpace, Core.Size> strategy,
-      Func<Core.Size, TSize> selector)
+    public SizeStrategyBase(ISizeStrategy<TSpace> strategy)
     {
       Strategy = strategy;
-      Selector = selector;
     }
 
-    private ISizeStrategy<TSpace, Core.Size> Strategy { get; }
-    private Func<Core.Size, TSize> Selector { get; }
+    private ISizeStrategy<TSpace> Strategy { get; }
 
-    public TSize GetSize(ISpace<TSpace> availableSpace) => Selector(Strategy.GetSize(availableSpace));
+    public Core.Size GetSize(ISpace<TSpace> availableSpace) => Strategy.GetSize(availableSpace);
   }
 }

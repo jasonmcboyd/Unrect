@@ -13,7 +13,7 @@ namespace Unrect
     public static IAreaStrategy<TSpace> TakeRowsWhile<TSpace>(
       this IColumnSelectionStrategy<TSpace> strategy,
       Func<ISpace<TSpace>, uint, bool> predicate)
-      => new RowAndColumnSizeStrategy<TSpace>(strategy, TakeRowsWhile(predicate));
+      => new RowAndColumnSizeStrategy<TSpace>(strategy, TakeRowsWhile(predicate)).ToAreaStrategy();
 
     public static IRowSelectionStrategy<TSpace> TakeRowsWhileAll<TSpace>(Func<TSpace, bool> predicate) 
       => new TakeWhileAllRowSelectionStrategy<TSpace>(predicate);
@@ -21,7 +21,7 @@ namespace Unrect
     public static IAreaStrategy<TSpace> TakeRowsWhileAll<TSpace>(
       this IColumnSelectionStrategy<TSpace> strategy,
       Func<TSpace, bool> predicate)
-      => new RowAndColumnSizeStrategy<TSpace>(strategy, TakeRowsWhileAll(predicate));
+      => new RowAndColumnSizeStrategy<TSpace>(strategy, TakeRowsWhileAll(predicate)).ToAreaStrategy();
 
     public static IRowSelectionStrategy<TSpace> TakeRowsWhileAny<TSpace>(Func<TSpace, bool> predicate) 
       => new TakeWhileAllRowSelectionStrategy<TSpace>(value => !predicate(value));
@@ -29,6 +29,6 @@ namespace Unrect
     public static IAreaStrategy<TSpace> TakeRowsWhileAny<TSpace>(
       this IColumnSelectionStrategy<TSpace> strategy,
       Func<TSpace, bool> predicate)
-      => new RowAndColumnSizeStrategy<TSpace>(strategy, TakeRowsWhileAny(predicate));
+      => new RowAndColumnSizeStrategy<TSpace>(strategy, TakeRowsWhileAny(predicate)).ToAreaStrategy();
   }
 }

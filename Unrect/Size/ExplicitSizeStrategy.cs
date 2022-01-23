@@ -2,7 +2,7 @@
 
 namespace Unrect.Size
 {
-  public class ExplicitSizeStrategy<TSpace> : ISizeStrategy<TSpace, Core.Size>
+  public class ExplicitSizeStrategy<TSpace> : ISizeStrategy<TSpace>
   {
     public ExplicitSizeStrategy(uint width, uint height)
     {
@@ -13,6 +13,6 @@ namespace Unrect.Size
     private uint Width { get; }
     private uint Height { get; }
 
-    public Core.Size GetSize(ISpace<TSpace> availableSpace) => new Core.Area(Width, Height);
+    public Core.Size GetSize(ISpace<TSpace> availableSpace) => new Core.Size(Width, Height);
   }
 }

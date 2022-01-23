@@ -2,8 +2,8 @@
 
 namespace Unrect.Size
 {
-  public class MaxSizeStrategy<TSpace> : ISizeStrategy<TSpace, Core.Size>
+  public class MaxSizeStrategy<TSpace> : ISizeStrategy<TSpace>
   {
-    public Core.Size GetSize(ISpace<TSpace> availableSpace) => availableSpace.Area;
+    public Core.Size GetSize(ISpace<TSpace> availableSpace) => availableSpace.Area.Size;
   }
 }

@@ -13,5 +13,8 @@
     }
 
     public Size Size { get; }
+
+    public static Offset operator +(Offset first, Offset second)
+      => new Offset(first.Size + second.Size);
   }
 }
