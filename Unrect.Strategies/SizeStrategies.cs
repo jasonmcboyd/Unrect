@@ -1,7 +1,7 @@
 ﻿using System;
 using Unrect.Core;
 
-namespace Unrect.Size
+namespace Unrect.Strategies
 {
   public static class SizeStrategies
   {
@@ -14,7 +14,7 @@ namespace Unrect.Size
     public static ISizeStrategy<TSpace> ExplicitSize<TSpace>(uint width, uint height)
       => new ExplicitSizeStrategy<TSpace>(width, height);
 
-    public static ISizeStrategy<TSpace> SelectSize<TSpace>(Func<ISpace<TSpace>, Core.Size> selector)
-      => new SelectorSizeStrategy<TSpace>(selector);
+    public static ISizeStrategy<TSpace> SelectSize<TSpace>(Func<ISpace<TSpace>, Size> selector)
+      => new SelectSizeStrategy<TSpace>(selector);
   }
 }

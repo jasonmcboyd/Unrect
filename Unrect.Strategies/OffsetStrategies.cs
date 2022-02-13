@@ -1,9 +1,8 @@
 ﻿using System;
 using Unrect.Core;
-using Unrect.Size;
-using static Unrect.Size.SizeStrategies;
+using static Unrect.Strategies.SizeStrategies;
 
-namespace Unrect.Offset
+namespace Unrect.Strategies
 {
   public static class OffsetStrategies<TSpace>
   {
@@ -16,11 +15,11 @@ namespace Unrect.Offset
     public static IOffsetStrategy<TSpace> ExplicitOffset(uint width, uint height)
       => ExplicitSize<TSpace>(width, height).ToOffsetStrategy();
 
-    public static IOffsetStrategy<TSpace> SelectOffset(Func<ISpace<TSpace>, Core.Size> selector)
+    public static IOffsetStrategy<TSpace> SelectOffset(Func<ISpace<TSpace>, Size> selector)
       => SelectSize(selector).ToOffsetStrategy();
   }
 
-  internal static class OffsetStrategies
+  public static class OffsetStrategies
   {
     public static IOffsetStrategy<TSpace> MaxOffset<TSpace>() => OffsetStrategies<TSpace>.MaxOffset();
 
@@ -29,7 +28,7 @@ namespace Unrect.Offset
     public static IOffsetStrategy<TSpace> ExplicitOffset<TSpace>(uint width, uint height)
       => OffsetStrategies<TSpace>.ExplicitOffset(width, height);
 
-    public static IOffsetStrategy<TSpace> SelectOffset<TSpace>(Func<ISpace<TSpace>, Core.Size> selector)
+    public static IOffsetStrategy<TSpace> SelectOffset<TSpace>(Func<ISpace<TSpace>, Size> selector)
       => OffsetStrategies<TSpace>.SelectOffset(selector);
   }
 }

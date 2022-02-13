@@ -1,11 +1,11 @@
 ﻿using System;
 using Unrect.Core;
 
-namespace Unrect.ColumnSelectionStrategies
+namespace Unrect.Strategies
 {
-  public class TakeWhileColumnSelectionStrategy<TSpace> : IColumnSelectionStrategy<TSpace>
+  internal class TakeWhileColumnStrategy<TSpace> : IColumnStrategy<TSpace>
   {
-    public TakeWhileColumnSelectionStrategy(Func<ISpace<TSpace>, uint, bool> predicate)
+    public TakeWhileColumnStrategy(Func<ISpace<TSpace>, uint, bool> predicate)
     {
       Predicate = predicate;
     }

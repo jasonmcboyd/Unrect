@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <Nullable>enable</Nullable>
@@ -8,7 +8,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Unrect.Core\Unrect.Core.csproj" />
-    <ProjectReference Include="..\Unrect.Strategies\Unrect.Strategies.csproj" />
   </ItemGroup>
 
 </Project>

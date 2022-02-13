@@ -8,17 +8,9 @@ namespace Unrect
   {
     public Orientation Orientation { get; init; } = Orientation.Vertical;
 
-    private (uint OrientedLength, uint UnorientedLength) GetOrientedOffset(Core.Offset offset) =>
-      Orientation == Orientation.Horizontal
-      ? (offset.Size.Width, offset.Size.Height)
-      : (offset.Size.Height, offset.Size.Width);
+    protected abstract IEnumerable<IRegionBuilder<TSpace>> GetSubregionBuilders();
 
-    private (uint OrientedLength, uint UnorientedLength) GetOrientedSize(Core.Offset offset) =>
-      Orientation == Orientation.Horizontal
-      ? (offset.Size.Width, offset.Size.Height)
-      : (offset.Size.Height, offset.Size.Width);
-
-    protected List<ISpace<TSpace>> GetSubregionSpaces(ISpace<TSpace> space)
+    protected List<ISpace<TSpace>> GetSubregionSpaces(ISpace<TSpace> space, bool throwWhenOutOfBounds)
     {
       var result = new List<ISpace<TSpace>>();
 
@@ -27,7 +19,10 @@ namespace Unrect
         var subregionOffset = subregionBuilder.OffsetStrategy.GetOffset(space);
         if (subregionOffset.Size.Width > space.Area.Size.Width || subregionOffset.Size.Height > space.Area.Size.Height)
         {
-          throw new OutOfBoundsException();
+          if (throwWhenOutOfBounds)
+            throw new OutOfBoundsException();
+          else
+            break;
         }
 
         var availableSpace = space.GetSubspace(subregionOffset);
@@ -35,15 +30,18 @@ namespace Unrect
         var subregionSize = subregionBuilder.AreaStrategy.GetArea(availableSpace);
         if (subregionSize.Size.Width > availableSpace.Area.Size.Width || subregionSize.Size.Height > availableSpace.Area.Size.Height)
         {
-          throw new OutOfBoundsException();
+          if (throwWhenOutOfBounds)
+            throw new OutOfBoundsException();
+          else
+            break;
         }
 
         result.Add(availableSpace.GetSubspace(subregionSize));
         
         space =
           Orientation == Orientation.Horizontal
-          ? space.GetSubspace(new Core.Offset(subregionOffset.Size.Width + subregionSize.Size.Width, 0))
-          : space.GetSubspace(new Core.Offset(0, subregionOffset.Size.Height + subregionSize.Size.Height));
+          ? space.GetSubspace(new Offset(subregionOffset.Size.Width + subregionSize.Size.Width, 0))
+          : space.GetSubspace(new Offset(0, subregionOffset.Size.Height + subregionSize.Size.Height));
       }
 
       return result;

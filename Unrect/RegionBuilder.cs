@@ -6,11 +6,6 @@ namespace Unrect
   public class RegionBuilder<TSpace> : RegionBuilderBase<TSpace, Region<TSpace>>
   {
     public override Region<TSpace> Build(ISpace<TSpace> space) => new Region<TSpace>(space);
-
-    public override IEnumerable<IRegionBuilder<TSpace>> GetSubregionBuilders()
-    {
-      yield break;
-    }
   }
 
   public class RegionBuilder1<TSpace, TRegion> : RegionBuilderBase<TSpace, Region1<TSpace, TRegion>>
@@ -39,14 +34,9 @@ namespace Unrect
         throw new OutOfBoundsException();
       }
 
-      var subspace = space.GetSubspace(offset, new Core.Area(size));
+      var subspace = space.GetSubspace(offset, new Area(size));
       var subregion = SubregionBuilder.Build(subspace);
       return new Region1<TSpace, TRegion>(space, subregion);
-    }
-
-    public override IEnumerable<IRegionBuilder<TSpace>> GetSubregionBuilders()
-    {
-      yield return SubregionBuilder;
     }
   }
 }

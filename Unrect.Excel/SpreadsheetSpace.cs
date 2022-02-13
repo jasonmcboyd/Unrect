@@ -9,17 +9,17 @@ using Unrect.Core;
 
 namespace Unrect.Excel
 {
-  public class SpreadsheetSpace : ISpace<ISpreadsheetValue>
+  public class SpreadsheetSpace : ISpace<SpreadsheetValueBase>
   {
-    private SpreadsheetSpace(ISpace<ISpreadsheetValue> innerSpace)
+    private SpreadsheetSpace(ISpace<SpreadsheetValueBase> innerSpace)
     {
       InnerSpace = innerSpace;
     }
 
-    private ISpace<ISpreadsheetValue> InnerSpace { get; }
-    public ISpreadsheetValue this[int column, int row] => InnerSpace[column, row];
+    private ISpace<SpreadsheetValueBase> InnerSpace { get; }
+    public SpreadsheetValueBase this[uint column, uint row] => InnerSpace[column, row];
     public Area Area => InnerSpace.Area;
-    public ISpace<ISpreadsheetValue> GetSubspace(Offset offset, Area size) => new SpreadsheetSpace(InnerSpace.GetSubspace(offset, size));
+    public ISpace<SpreadsheetValueBase> GetSubspace(Offset offset, Area size) => new SpreadsheetSpace(InnerSpace.GetSubspace(offset, size));
 
     private static void RegisterEncoding()
     {
@@ -48,8 +48,8 @@ namespace Unrect.Excel
         if (!predicate(context))
           continue;
 
-        var array = new ISpreadsheetValue[reader.RowCount, reader.FieldCount];
-        var space = new ArraySpace<ISpreadsheetValue>(array);
+        var array = new SpreadsheetValueBase[reader.RowCount, reader.FieldCount];
+        var space = new ArraySpace<SpreadsheetValueBase>(array);
 
         var row = 0;
         while (reader.Read())

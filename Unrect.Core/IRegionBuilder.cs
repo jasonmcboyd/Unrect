@@ -6,7 +6,6 @@ namespace Unrect.Core
   {
     IOffsetStrategy<TSpace> OffsetStrategy { get; }
     IAreaStrategy<TSpace> AreaStrategy { get; }
-    IEnumerable<IRegionBuilder<TSpace>> GetSubregionBuilders();
   }
 
   public interface IRegionBuilder<in TSpace, out TRegion> : IRegionBuilder<TSpace>

@@ -6,15 +6,15 @@ namespace Unrect.Excel
 {
   internal static class ExcelDataReaderExtensions
   {
-    internal static ISpreadsheetValue GetSpreadsheetValue(this IExcelDataReader dataReader, int index)
+    internal static SpreadsheetValueBase GetSpreadsheetValue(this IExcelDataReader dataReader, int index)
     {
       return dataReader.GetValue(index) switch
       {
-        DateTime => new DateTimeSpreadsheetValue(dataReader.GetDateTime(index)),
-        double => new DoubleSpreadsheetValue(dataReader.GetDouble(index)),
-        int => new IntSpreadsheetValue(dataReader.GetInt32(index)),
-        string => new StringSpreadsheetValue(dataReader.GetString(index)),
-        null => new NullSpreadsheetValue(),
+        DateTime => new SpreadsheetValue<DateTime>(dataReader.GetDateTime(index)),
+        double => new SpreadsheetValue<double>(dataReader.GetDouble(index)),
+        int => new SpreadsheetValue<int>(dataReader.GetInt32(index)),
+        string => new SpreadsheetValue<string>(dataReader.GetString(index)),
+        null => NullSpreadsheetValue.Instance,
         _ => throw new InvalidOperationException($"{dataReader.GetFieldType(index).Name} is not a supported type.")
       };
     }

@@ -2,7 +2,7 @@
 
 namespace Unrect.Excel
 {
-  public readonly struct IntSpreadsheetValue : ISpreadsheetValue
+  public readonly struct IntSpreadsheetValue : SpreadsheetValue
   {
     public IntSpreadsheetValue(int value)
     {

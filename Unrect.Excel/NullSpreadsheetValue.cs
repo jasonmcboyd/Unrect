@@ -2,18 +2,21 @@
 
 namespace Unrect.Excel
 {
-  public readonly struct NullSpreadsheetValue : ISpreadsheetValue
+  public class NullSpreadsheetValue : SpreadsheetValueBase
   {
+    private NullSpreadsheetValue()
+    {
+    }
 
-    public object? Value => null;
-    public bool HasValue => false;
+    public static NullSpreadsheetValue Instance { get; } = new NullSpreadsheetValue();
 
-    public Type GetValueType() => throw new InvalidOperationException("Not value");
+    public override bool HasValue => false;
 
-    public DateTime GetDateTime() => throw new InvalidOperationException("Incorrect type.");
-    public double GetDouble() => throw new InvalidOperationException("Incorrect type.");
-    public int GetInt() => throw new InvalidOperationException("Incorrect type.");
-    public string GetString() => throw new InvalidOperationException("Incorrect type.");
-    public string? TryGetString() => null;
+    public override Type? GetValueType() => null;
+
+    public override DateTime? TryGetDateTime() => null;
+    public override double? TryGetDouble() => null;
+    public override int? TryGetInt() => null;
+    public override string? TryGetString() => null;
   }
 }

@@ -1,6 +1,6 @@
 ﻿using Unrect.Core;
 
-namespace Unrect.Area
+namespace Unrect.Strategies
 {
   internal class AreaStrategy<TSpace> : IAreaStrategy<TSpace>
   {
@@ -11,6 +11,6 @@ namespace Unrect.Area
 
     private ISizeStrategy<TSpace> Strategy { get; }
 
-    public Core.Area GetArea(ISpace<TSpace> availableSpace) => new Core.Area(Strategy.GetSize(availableSpace));
+    public Area GetArea(ISpace<TSpace> availableSpace) => new Area(Strategy.GetSize(availableSpace));
   }
 }

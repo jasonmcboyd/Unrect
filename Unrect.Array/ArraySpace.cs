@@ -29,7 +29,7 @@ namespace Unrect.Array
     private Offset Offset { get; }
     public Area Area { get; }
 
-    public TSpace this[int column, int row]
+    public TSpace this[uint column, uint row]
     {
       get
       {

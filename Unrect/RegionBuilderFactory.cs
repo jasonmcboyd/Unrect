@@ -1,8 +1,7 @@
-﻿using Unrect.Area;
-using Unrect.Core;
-using Unrect.Offset;
-using static Unrect.Area.AreaStrategies;
-using static Unrect.Offset.OffsetStrategies;
+﻿using Unrect.Core;
+using Unrect.Strategies;
+using static Unrect.Strategies.AreaStrategies;
+using static Unrect.Strategies.OffsetStrategies;
 
 namespace Unrect
 {

@@ -1,16 +1,18 @@
 ﻿using System;
 using Unrect.Core;
 
-namespace Unrect.RowSelectionStrategies
+namespace Unrect.Strategies
 {
-  public class TakeWhileAllRowSelectionStrategy<TSpace> : IRowSelectionStrategy<TSpace>
+  internal class TakeToAllRowStrategy<TSpace> : IRowStrategy<TSpace>
   {
-    public TakeWhileAllRowSelectionStrategy(Func<TSpace, bool> predicate)
+    public TakeToAllRowStrategy(Func<TSpace, bool> predicate, bool keepMatchingRow)
     {
       Predicate = predicate;
+      KeepMatchingRow = keepMatchingRow;
     }
 
     private Func<TSpace, bool> Predicate { get; }
+    private bool KeepMatchingRow { get; }
 
     public uint SelectRows(ISpace<TSpace> space)
     {
@@ -26,7 +28,7 @@ namespace Unrect.RowSelectionStrategies
         count++;
       }
 
-      return count;
+      return KeepMatchingRow && count < space.Area.Size.Height ? count + 1 : count;
     }
   }
 }

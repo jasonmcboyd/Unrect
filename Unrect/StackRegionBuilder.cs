@@ -18,7 +18,7 @@ namespace Unrect
     private IRegionBuilder<TSpace, T1> SubregionBuilder1 { get; }
     private IRegionBuilder<TSpace, T2> SubregionBuilder2 { get; }
 
-    public override IEnumerable<IRegionBuilder<TSpace>> GetSubregionBuilders()
+    protected override IEnumerable<IRegionBuilder<TSpace>> GetSubregionBuilders()
     {
       yield return SubregionBuilder1;
       yield return SubregionBuilder2;
@@ -26,7 +26,7 @@ namespace Unrect
 
     public override Region2<TSpace, T1, T2> Build(ISpace<TSpace> space)
     {
-      var subspaces = GetSubregionSpaces(space);
+      var subspaces = GetSubregionSpaces(space, true);
 
       return new Region2<TSpace, T1, T2>(
         space,
@@ -54,7 +54,7 @@ namespace Unrect
     private IRegionBuilder<TSpace, T2> SubregionBuilder2 { get; }
     private IRegionBuilder<TSpace, T3> SubregionBuilder3 { get; }
 
-    public override IEnumerable<IRegionBuilder<TSpace>> GetSubregionBuilders()
+    protected override IEnumerable<IRegionBuilder<TSpace>> GetSubregionBuilders()
     {
       yield return SubregionBuilder1;
       yield return SubregionBuilder2;
@@ -63,7 +63,7 @@ namespace Unrect
 
     public override Region3<TSpace, T1, T2, T3> Build(ISpace<TSpace> space)
     {
-      var subspaces = GetSubregionSpaces(space);
+      var subspaces = GetSubregionSpaces(space, true);
 
       return new Region3<TSpace, T1, T2, T3>(
         space,

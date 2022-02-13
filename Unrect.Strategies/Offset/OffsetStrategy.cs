@@ -1,6 +1,6 @@
 ﻿using Unrect.Core;
 
-namespace Unrect.Offset
+namespace Unrect.Strategies
 {
   internal class OffsetStrategy<TSpace> : IOffsetStrategy<TSpace>
   {
@@ -11,6 +11,6 @@ namespace Unrect.Offset
 
     private ISizeStrategy<TSpace> Strategy { get; }
 
-    public Core.Offset GetOffset(ISpace<TSpace> availableSpace) => new Core.Offset(Strategy.GetSize(availableSpace));
+    public Offset GetOffset(ISpace<TSpace> availableSpace) => new Offset(Strategy.GetSize(availableSpace));
   }
 }

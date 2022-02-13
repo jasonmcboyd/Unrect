@@ -1,9 +1,8 @@
 ﻿using System;
 using Unrect.Core;
-using Unrect.Size;
-using static Unrect.Size.SizeStrategies;
+using static Unrect.Strategies.SizeStrategies;
 
-namespace Unrect.Area
+namespace Unrect.Strategies
 {
   public static class AreaStrategies<TSpace>
   {
@@ -16,11 +15,11 @@ namespace Unrect.Area
     public static IAreaStrategy<TSpace> ExplicitArea(uint width, uint height)
       => ExplicitSize<TSpace>(width, height).ToAreaStrategy();
 
-    public static IAreaStrategy<TSpace> SelectArea(Func<ISpace<TSpace>, Core.Size> selector)
+    public static IAreaStrategy<TSpace> SelectArea(Func<ISpace<TSpace>, Size> selector)
       => SelectSize(selector).ToAreaStrategy();
   }
 
-  internal static class AreaStrategies
+  public static class AreaStrategies
   {
     public static IAreaStrategy<TSpace> MaxArea<TSpace>() => AreaStrategies<TSpace>.MaxArea();
 
@@ -29,7 +28,7 @@ namespace Unrect.Area
     public static IAreaStrategy<TSpace> ExplicitArea<TSpace>(uint width, uint height)
       => AreaStrategies<TSpace>.ExplicitArea(width, height);
 
-    public static IAreaStrategy<TSpace> SelectArea<TSpace>(Func<ISpace<TSpace>, Core.Size> selector)
+    public static IAreaStrategy<TSpace> SelectArea<TSpace>(Func<ISpace<TSpace>, Size> selector)
       => AreaStrategies<TSpace>.SelectArea(selector);
   }
 }
