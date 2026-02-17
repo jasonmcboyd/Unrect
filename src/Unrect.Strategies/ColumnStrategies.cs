@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Unrect.Core;
 
 namespace Unrect.Strategies
@@ -6,21 +6,21 @@ namespace Unrect.Strategies
   public static class ColumnStrategies<TSpace>
   {
     public static IColumnStrategy<TSpace> TakeColumnsWhile(
-      Func<ISpace<TSpace>, uint, bool> predicate)
+      Func<ISpace<TSpace>, int, bool> predicate)
       => new TakeWhileColumnStrategy<TSpace>(predicate);
 
     public static IColumnStrategy<TSpace> TakeColumnsWhileAll(Func<TSpace, bool> predicate)
       => new TakeWhileAllColumnStrategy<TSpace>(predicate);
 
     public static IColumnStrategy<TSpace> TakeColumnsWhileAny(Func<TSpace, bool> predicate)
-      => new TakeWhileAllColumnStrategy<TSpace>(value => !predicate(value));
+      => new TakeWhileAnyColumnStrategy<TSpace>(predicate);
   }
 
   public static class ColumnStrategies
   {
     public static IAreaStrategy<TSpace> TakeColumnsWhile<TSpace>(
       this IRowStrategy<TSpace> strategy,
-      Func<ISpace<TSpace>, uint, bool> predicate)
+      Func<ISpace<TSpace>, int, bool> predicate)
       => new RowAndColumnSizeStrategy<TSpace>(strategy, ColumnStrategies<TSpace>.TakeColumnsWhile(predicate)).ToAreaStrategy();
 
     public static IAreaStrategy<TSpace> TakeColumnsWhileAll<TSpace>(

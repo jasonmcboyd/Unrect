@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Unrect.Core;
 using static Unrect.Strategies.SizeStrategies;
 
@@ -12,7 +12,7 @@ namespace Unrect.Strategies
     public static IAreaStrategy<TSpace> MinArea()
       => MinSize<TSpace>().ToAreaStrategy();
 
-    public static IAreaStrategy<TSpace> ExplicitArea(uint width, uint height)
+    public static IAreaStrategy<TSpace> ExplicitArea(int width, int height)
       => Size<TSpace>(width, height).ToAreaStrategy();
 
     public static IAreaStrategy<TSpace> SelectArea(Func<ISpace<TSpace>, Size> selector)
@@ -25,7 +25,7 @@ namespace Unrect.Strategies
 
     public static IAreaStrategy<TSpace> MinArea<TSpace>() => AreaStrategies<TSpace>.MinArea();
 
-    public static IAreaStrategy<TSpace> ExplicitArea<TSpace>(uint width, uint height)
+    public static IAreaStrategy<TSpace> ExplicitArea<TSpace>(int width, int height)
       => AreaStrategies<TSpace>.ExplicitArea(width, height);
 
     public static IAreaStrategy<TSpace> SelectArea<TSpace>(Func<ISpace<TSpace>, Size> selector)

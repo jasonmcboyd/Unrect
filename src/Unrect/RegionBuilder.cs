@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Unrect.Core;
 
 namespace Unrect
@@ -21,20 +21,15 @@ namespace Unrect
     public override Region1<TSpace, TRegion> Build(ISpace<TSpace> space)
     {
       var offset = SubregionBuilder.OffsetStrategy.GetOffset(space);
-      space = space.GetSubspace(offset);
-      var size = SubregionBuilder.AreaStrategy.GetArea(space).Size;
+      var availableSpace = space.GetSubspace(offset);
+      var area = SubregionBuilder.AreaStrategy.GetArea(availableSpace);
 
-      if (offset.Size.Width + size.Width > space.Area.Size.Width)
-      {
+      if (area.Size.Width > availableSpace.Area.Size.Width)
         throw new OutOfBoundsException();
-      }
-
-      if (offset.Size.Height + size.Height > space.Area.Size.Height)
-      {
+      if (area.Size.Height > availableSpace.Area.Size.Height)
         throw new OutOfBoundsException();
-      }
 
-      var subspace = space.GetSubspace(offset, new Area(size));
+      var subspace = availableSpace.GetSubspace(area);
       var subregion = SubregionBuilder.Build(subspace);
       return new Region1<TSpace, TRegion>(space, subregion);
     }

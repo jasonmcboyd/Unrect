@@ -1,20 +1,20 @@
-﻿using System;
+using System;
 using Unrect.Core;
 
 namespace Unrect.Strategies
 {
   internal class TakeWhileColumnStrategy<TSpace> : IColumnStrategy<TSpace>
   {
-    public TakeWhileColumnStrategy(Func<ISpace<TSpace>, uint, bool> predicate)
+    public TakeWhileColumnStrategy(Func<ISpace<TSpace>, int, bool> predicate)
     {
       Predicate = predicate;
     }
 
-    private Func<ISpace<TSpace>, uint, bool> Predicate { get; }
+    private Func<ISpace<TSpace>, int, bool> Predicate { get; }
 
-    public uint SelectColumns(ISpace<TSpace> space)
+    public int SelectColumns(ISpace<TSpace> space)
     {
-      uint count = 0;
+      int count = 0;
 
       while (count < space.Area.Size.Width && Predicate(space, count))
         count++;

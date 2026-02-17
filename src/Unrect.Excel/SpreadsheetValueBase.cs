@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 
 namespace Unrect.Excel
 {
-  public abstract class SpreadsheetValueBase // : IEquatable<SpreadsheetValue>, IEquatable<DateTime>, IEquatable<double>, IEquatable<int>, IEquatable<string>
+  public abstract class SpreadsheetValueBase
   {
     public abstract bool HasValue { get; }
 
@@ -26,12 +26,22 @@ namespace Unrect.Excel
         SpreadsheetValueBase value when value.GetValueType() == typeof(double) => value.GetDouble() == TryGetDouble(),
         SpreadsheetValueBase value when value.GetValueType() == typeof(int) => value.GetInt() == TryGetInt(),
         SpreadsheetValueBase value when value.GetValueType() == typeof(string) => value.GetString() == TryGetString(),
-        DateTime value => value == TryGetDateTime().Value,
-        double value => value == TryGetDouble().Value,
-        int value => value == TryGetInt().Value,
+        DateTime value => TryGetDateTime() is DateTime dt && value == dt,
+        double value => TryGetDouble() is double d && value == d,
+        int value => TryGetInt() is int i && value == i,
         string value => value == TryGetString(),
         _ => base.Equals(obj)
       };
+    }
+
+    public override int GetHashCode()
+    {
+      var valueType = GetValueType();
+      if (valueType == typeof(DateTime)) return TryGetDateTime().GetHashCode();
+      if (valueType == typeof(double)) return TryGetDouble().GetHashCode();
+      if (valueType == typeof(int)) return TryGetInt().GetHashCode();
+      if (valueType == typeof(string)) return TryGetString()?.GetHashCode() ?? 0;
+      return 0;
     }
   }
 }

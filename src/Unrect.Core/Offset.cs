@@ -1,8 +1,8 @@
-﻿namespace Unrect.Core
+namespace Unrect.Core
 {
   public struct Offset
   {
-    public Offset(uint width, uint height)
+    public Offset(int width, int height)
     {
       Size = new Size(width, height);
     }

@@ -1,4 +1,4 @@
-﻿using Unrect.Core;
+using Unrect.Core;
 using Unrect.Strategies;
 using static Unrect.Strategies.AreaStrategies;
 using static Unrect.Strategies.OffsetStrategies;
@@ -20,11 +20,11 @@ namespace Unrect
     public static RegionBuilder<TSpace> Builder(IOffsetStrategy<TSpace> offsetStrategy) => Builder(offsetStrategy, MaxArea<TSpace>());
     public static RegionBuilder<TSpace> Builder(IAreaStrategy<TSpace> areaStrategy) => Builder(OffsetStrategies<TSpace>.MinOffset(), areaStrategy);
     public static RegionBuilder<TSpace> Builder() => Builder(OffsetStrategies<TSpace>.MinOffset(), AreaStrategies<TSpace>.MaxArea());
-    public static RegionBuilder<TSpace> Builder(uint leftOffset, uint topOffset, uint width, uint height)
+    public static RegionBuilder<TSpace> Builder(int leftOffset, int topOffset, int width, int height)
       => Builder(OffsetStrategies<TSpace>.Offset(leftOffset, topOffset), AreaStrategies<TSpace>.ExplicitArea(width, height));
-    public static RegionBuilder<TSpace> Builder(uint leftOffset, uint topOffset, IAreaStrategy<TSpace> areaStrategy)
+    public static RegionBuilder<TSpace> Builder(int leftOffset, int topOffset, IAreaStrategy<TSpace> areaStrategy)
       => Builder(OffsetStrategies<TSpace>.Offset(leftOffset, topOffset), areaStrategy);
-    public static RegionBuilder<TSpace> Builder(uint width, uint height, IOffsetStrategy<TSpace> offsetStrategy)
+    public static RegionBuilder<TSpace> Builder(int width, int height, IOffsetStrategy<TSpace> offsetStrategy)
       => Builder(offsetStrategy, AreaStrategies<TSpace>.ExplicitArea(width, height));
 
     public static RegionBuilder1<TSpace, T1> Builder<T1>(
@@ -54,10 +54,10 @@ namespace Unrect
       where T1 : IRegion<TSpace>
       => Builder(OffsetStrategies<TSpace>.MinOffset(), AreaStrategies<TSpace>.MaxArea(), subregionBuilder1);
     public static RegionBuilder1<TSpace, T1> Builder<T1>(
-      uint leftOffset,
-      uint topOffset,
-      uint width,
-      uint height,
+      int leftOffset,
+      int topOffset,
+      int width,
+      int height,
       IRegionBuilder<TSpace, T1> subregionBuilder1)
       where T1 : IRegion<TSpace>
       => Builder(ExplicitOffset<TSpace>(leftOffset, topOffset), ExplicitArea<TSpace>(width, height), subregionBuilder1);
@@ -98,10 +98,10 @@ namespace Unrect
       where T2 : IRegion<TSpace>
       => Horizontal(MinOffset<TSpace>(), MaxArea<TSpace>(), subregionBuilder1, subregionBuilder2);
     public static StackRegionBuilder2<TSpace, T1, T2> Horizontal<T1, T2>(
-      uint leftOffset,
-      uint topOffset,
-      uint width,
-      uint height,
+      int leftOffset,
+      int topOffset,
+      int width,
+      int height,
       IRegionBuilder<TSpace, T1> subregionBuilder1,
       IRegionBuilder<TSpace, T2> subregionBuilder2)
       where T1 : IRegion<TSpace>
@@ -143,10 +143,10 @@ namespace Unrect
       where T2 : IRegion<TSpace>
       => Vertical(MinOffset<TSpace>(), MaxArea<TSpace>(), subregionBuilder1, subregionBuilder2);
     public static StackRegionBuilder2<TSpace, T1, T2> Vertical<T1, T2>(
-      uint leftOffset,
-      uint topOffset,
-      uint width,
-      uint height,
+      int leftOffset,
+      int topOffset,
+      int width,
+      int height,
       IRegionBuilder<TSpace, T1> subregionBuilder1,
       IRegionBuilder<TSpace, T2> subregionBuilder2)
       where T1 : IRegion<TSpace>
@@ -197,10 +197,10 @@ namespace Unrect
       where T3 : IRegion<TSpace>
       => Horizontal(MinOffset<TSpace>(), MaxArea<TSpace>(), subregionBuilder1, subregionBuilder2, subregionBuilder3);
     public static StackRegionBuilder3<TSpace, T1, T2, T3> Horizontal<T1, T2, T3>(
-      uint leftOffset,
-      uint topOffset,
-      uint width,
-      uint height,
+      int leftOffset,
+      int topOffset,
+      int width,
+      int height,
       IRegionBuilder<TSpace, T1> subregionBuilder1,
       IRegionBuilder<TSpace, T2> subregionBuilder2,
       IRegionBuilder<TSpace, T3> subregionBuilder3)
@@ -252,10 +252,10 @@ namespace Unrect
       where T3 : IRegion<TSpace>
       => Vertical(MinOffset<TSpace>(), MaxArea<TSpace>(), subregionBuilder1, subregionBuilder2, subregionBuilder3);
     public static StackRegionBuilder3<TSpace, T1, T2, T3> Vertical<T1, T2, T3>(
-      uint leftOffset,
-      uint topOffset,
-      uint width,
-      uint height,
+      int leftOffset,
+      int topOffset,
+      int width,
+      int height,
       IRegionBuilder<TSpace, T1> subregionBuilder1,
       IRegionBuilder<TSpace, T2> subregionBuilder2,
       IRegionBuilder<TSpace, T3> subregionBuilder3)
@@ -265,4 +265,3 @@ namespace Unrect
       => Vertical(ExplicitOffset<TSpace>(leftOffset, topOffset), ExplicitArea<TSpace>(width, height), subregionBuilder1, subregionBuilder2, subregionBuilder3);
   }
 }
-

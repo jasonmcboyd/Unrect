@@ -3,9 +3,9 @@ using Unrect.Core;
 
 namespace Unrect.Strategies
 {
-  internal class TakeWhileAllColumnStrategy<TSpace> : IColumnStrategy<TSpace>
+  internal class TakeWhileAnyColumnStrategy<TSpace> : IColumnStrategy<TSpace>
   {
-    public TakeWhileAllColumnStrategy(Func<TSpace, bool> predicate)
+    public TakeWhileAnyColumnStrategy(Func<TSpace, bool> predicate)
     {
       Predicate = predicate;
     }
@@ -18,11 +18,17 @@ namespace Unrect.Strategies
 
       while (count < space.Area.Size.Width)
       {
+        bool anyMatch = false;
         for (int i = 0; i < space.Area.Size.Height; i++)
         {
-          if (!Predicate(space[count, i]))
-            return count;
+          if (Predicate(space[count, i]))
+          {
+            anyMatch = true;
+            break;
+          }
         }
+        if (!anyMatch)
+          return count;
         count++;
       }
 

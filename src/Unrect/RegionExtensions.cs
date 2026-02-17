@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Unrect.Core;
 
@@ -8,12 +8,12 @@ namespace Unrect
   {
     public static IEnumerable<IList<T>> Rows<T> (this IRegion<T> region)
     {
-      for (uint i = 0; i < region.Space.Area.Size.Height; i++)
+      for (int i = 0; i < region.Space.Area.Size.Height; i++)
       {
-        var result = new List<T>((int)region.Space.Area.Size.Width);
+        var result = new List<T>(region.Space.Area.Size.Width);
 
-        for (uint j = 0; j < region.Space.Area.Size.Width; j++)
-          result.Add(region.Space[(int)j, (int)i]);
+        for (int j = 0; j < region.Space.Area.Size.Width; j++)
+          result.Add(region.Space[j, i]);
 
         yield return result;
       }
@@ -21,12 +21,12 @@ namespace Unrect
 
     public static IEnumerable<IList<T>> Columns<T> (this IRegion<T> region)
     {
-      for (uint i = 0; i < region.Space.Area.Size.Width; i++)
+      for (int i = 0; i < region.Space.Area.Size.Width; i++)
       {
-        var result = new List<T>((int)region.Space.Area.Size.Height);
+        var result = new List<T>(region.Space.Area.Size.Height);
 
-        for (uint j = 0; j < region.Space.Area.Size.Height; j++)
-          result.Add(region.Space[(int)i, (int)j]);
+        for (int j = 0; j < region.Space.Area.Size.Height; j++)
+          result.Add(region.Space[i, j]);
 
         yield return result;
       }
@@ -34,25 +34,25 @@ namespace Unrect
 
     public static IEnumerable<T> RowOrderEnumerable<T>(this IRegion<T> region)
     {
-      for (uint i = 0; i < region.Space.Area.Size.Height; i++)
-        for (uint j = 0; j < region.Space.Area.Size.Width; j++)
-          yield return region.Space[(int)j, (int)i];
+      for (int i = 0; i < region.Space.Area.Size.Height; i++)
+        for (int j = 0; j < region.Space.Area.Size.Width; j++)
+          yield return region.Space[j, i];
     }
 
     public static IEnumerable<T> ColumnOrderEnumerable<T> (this IRegion<T> region)
     {
-      for (uint i = 0; i < region.Space.Area.Size.Width; i++)
-        for (uint j = 0; j < region.Space.Area.Size.Height; j++)
-          yield return region.Space[(int)i, (int)j];
+      for (int i = 0; i < region.Space.Area.Size.Width; i++)
+        for (int j = 0; j < region.Space.Area.Size.Height; j++)
+          yield return region.Space[i, j];
     }
 
     public static T[,] ToArray<T>(this IRegion<T> region)
     {
       var result = new T[region.Space.Area.Size.Height, region.Space.Area.Size.Width];
 
-      for (uint i = 0; i < region.Space.Area.Size.Height; i++)
-        for (uint j = 0; j < region.Space.Area.Size.Width; j++)
-          result[i, j] = region.Space[(int)j, (int)i];
+      for (int i = 0; i < region.Space.Area.Size.Height; i++)
+        for (int j = 0; j < region.Space.Area.Size.Width; j++)
+          result[i, j] = region.Space[j, i];
 
       return result;
     }

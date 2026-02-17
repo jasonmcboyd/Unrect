@@ -1,11 +1,11 @@
-﻿using System;
+using System;
 using Unrect.Core;
 
 namespace Unrect.Array
 {
   public class ArraySpace<TSpace> : ISpace<TSpace>
   {
-    public ArraySpace(TSpace[,] array) : this(array, default, new Area((uint)array.GetLength(1), (uint)array.GetLength(0)))
+    public ArraySpace(TSpace[,] array) : this(array, default, new Area(array.GetLength(1), array.GetLength(0)))
     {
     }
 
@@ -29,7 +29,7 @@ namespace Unrect.Array
     private Offset Offset { get; }
     public Area Area { get; }
 
-    public TSpace this[uint column, uint row]
+    public TSpace this[int column, int row]
     {
       get
       {

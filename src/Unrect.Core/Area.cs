@@ -1,8 +1,8 @@
-﻿namespace Unrect.Core
+namespace Unrect.Core
 {
   public struct Area
   {
-    public Area(uint width, uint height)
+    public Area(int width, int height)
     {
       Size = new Size(width, height);
     }

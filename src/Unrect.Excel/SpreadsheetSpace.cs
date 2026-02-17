@@ -17,7 +17,7 @@ namespace Unrect.Excel
     }
 
     private ISpace<SpreadsheetValueBase> InnerSpace { get; }
-    public SpreadsheetValueBase this[uint column, uint row] => InnerSpace[column, row];
+    public SpreadsheetValueBase this[int column, int row] => InnerSpace[column, row];
     public Area Area => InnerSpace.Area;
     public ISpace<SpreadsheetValueBase> GetSubspace(Offset offset, Area size) => new SpreadsheetSpace(InnerSpace.GetSubspace(offset, size));
 

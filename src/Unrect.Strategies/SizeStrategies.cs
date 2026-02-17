@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Unrect.Core;
 
 namespace Unrect.Strategies
@@ -11,10 +11,11 @@ namespace Unrect.Strategies
     public static ISizeStrategy<TSpace> MinSize<TSpace>()
       => new ExplicitSizeStrategy<TSpace>(0, 0);
 
-    public static ISizeStrategy<TSpace> Size<TSpace>(uint width, uint height)
+    public static ISizeStrategy<TSpace> Size<TSpace>(int width, int height)
       => new ExplicitSizeStrategy<TSpace>(width, height);
 
-    public static ISizeStrategy<TSpace> AllValuesWhile
+    public static ISizeStrategy<TSpace> WhileAny<TSpace>(Func<TSpace, bool> predicate)
+      => new WhileAnySizeStrategy<TSpace>(predicate);
 
     public static ISizeStrategy<TSpace> SelectSize<TSpace>(Func<ISpace<TSpace>, Size> selector)
       => new SelectSizeStrategy<TSpace>(selector);

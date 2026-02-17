@@ -3,9 +3,9 @@ using Unrect.Core;
 
 namespace Unrect.Strategies
 {
-  internal class TakeToAllRowStrategy<TSpace> : IRowStrategy<TSpace>
+  internal class TakeToAnyRowStrategy<TSpace> : IRowStrategy<TSpace>
   {
-    public TakeToAllRowStrategy(Func<TSpace, bool> predicate, bool keepMatchingRow)
+    public TakeToAnyRowStrategy(Func<TSpace, bool> predicate, bool keepMatchingRow)
     {
       Predicate = predicate;
       KeepMatchingRow = keepMatchingRow;
@@ -20,11 +20,17 @@ namespace Unrect.Strategies
 
       while (count < space.Area.Size.Height)
       {
+        bool anyMatch = false;
         for (int i = 0; i < space.Area.Size.Width; i++)
         {
-          if (!Predicate(space[i, count]))
-            return count;
+          if (Predicate(space[i, count]))
+          {
+            anyMatch = true;
+            break;
+          }
         }
+        if (!anyMatch)
+          return count;
         count++;
       }
 
