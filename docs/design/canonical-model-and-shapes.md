@@ -207,6 +207,77 @@ over imperative parsers. Roadmap:
    arity question — solving it likely dissolves arity from the user's view),
    name-based and inferred table mapping, `Choice`, capability seams as demanded.
 
+### Map fusion — target shape (captured 2026-08-31, drives the wave-2 design talk)
+
+The current two-call flow (`builder.Build(space)` → region tree → `region.Map(...)`)
+is wrong-way-round: it builds a region *of a specific spreadsheet* and then maps it.
+The projection should compose with the shape **once, independent of any space**,
+yielding a reusable definition; per-file application is then a single call:
+
+```csharp
+var map = builder.Map(...);                       // shape + projection, no space involved
+var reports = spaces.Select(s => map.Map(s));     // decompose + project per space
+```
+
+Notes:
+- The original sketch was `builder.Map<SpreadsheetSpace>(...)`, but wave 1 already
+  removed the need for the type argument: all spaces speak `CellValue`, so a fused
+  map applies to *any* `ISpace`. (If a shape needs backend capabilities — §3 — that
+  is declared on the shape, not via a generic.)
+- This is the 50-similar-reports economics made concrete: the fused shape+projection
+  is *the report definition*; files are instances.
+- The embryo already exists in the codebase: `RegionMapper`/`RegionMapperFactory`
+  (currently the untested parallel mapping API) is exactly "a map built from a
+  builder, applied later." The fusion design should redesign/promote that lineage —
+  and whichever mapping API loses gets deleted.
+- Fusing projection into the declaration also resolves "declared but unprojected"
+  regions cleanly (no map attached → not in the result) and hides the
+  `Region1/2/3` arity types from users entirely.
+
+### DECIDED: applicative fusion, not monadic (2026-08-31)
+
+A monadic surface was considered — `Vertical(v => new { X = Column(v, 4, c => ...),
+Y = Table(v, ...) })`, where the lambda runs per space against a framework-owned
+decomposition context. Rejected as the primary API because:
+
+1. **The shape must stay a value.** Capability declarations, pre-run validation, and
+   shape introspection/diffing all require enumerating the shape without a file. A
+   monadic shape is opaque executable code.
+2. **Geometry empirically suffices.** Surveying the real vendor reports: no case where
+   a later section's *shape* depends on earlier parsed *values*. The hardest real
+   example — header, blank gap, summary section (one row per investor), then a
+   details section per investor (blank-separated tables) — is fully geometric: the
+   summary/details *counts correlate*, but each is independently discoverable.
+   Cross-region correlations are a post-parse **validation** concern ("summary row
+   count == details table count"), not a decomposition dependency.
+3. Property-initializer order silently becoming parse order is an unacceptable
+   refactoring footgun; and the context threading (`v` into every inner combinator)
+   is inherent noise the applicative style simply doesn't have.
+
+The target surface: combinators carry their own projections; stacks combine
+child results with a plain lambda (arity = cheap `Func` overloads, no
+`Region1/2/3` in sight):
+
+```csharp
+var map = Vertical(
+    Column(4, c => new { Title = c[0].GetString(), Subtitle = c[1].GetString(),
+                         ReportDate = c[2].GetDateTime(), ReportId = c[3].GetString() }),
+    Table(t => mapTable(t)))                    // Table defaults: skip gap, header row, rows-with-values
+  .Select((header, txns) => new { ReportHeader = header, Transactions = txns });
+
+var reports = spaces.Select(map.Map);
+```
+
+This resolves the open question on `Table()`'s return: combinators yield *mapped
+results* via their projection parameter (with sensible default projections where
+useful), not composite regions. A monadic sugar layer remains possible later if a
+genuine value-dependent format ever appears; it would be an escape hatch, not the
+core.
+
+The nested example above (summary + per-investor detail tables) is the reference
+target for wave 2: it needs `Repeat` *inside* a fused shape and blank-separated
+tables, and should become a third example workbook when wave 2 starts.
+
 ## Open questions
 
 - ~~Name for the canonical value type~~ — resolved: `CellValue`, with `CellKind`.
@@ -225,5 +296,10 @@ over imperative parsers. Roadmap:
   revisit before million-row workloads (the `Blank` singleton already covers the
   dominant sparse case).
 - Exact shape of the capability-declaration API on shapes.
-- Whether `Table()` yields a composite region (headers + body) or a mapped result
-  directly — interacts with map fusion.
+- ~~Whether `Table()` yields a composite region or a mapped result~~ — resolved by
+  the applicative-fusion decision: combinators carry projections and yield mapped
+  results (defaults provided where useful).
+- Which existing mapping API survives as the substrate for fusion —
+  `RegionExtensions.Map` vs the `RegionMapper` lineage — and what happens to the
+  region tree as a public concept once fusion lands (internal representation only,
+  or still exposed for diagnostics/dry-run?).

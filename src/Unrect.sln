@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Unrect.Excel", "Unrect.Exce
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unrect.Strategies", "Unrect.Strategies\Unrect.Strategies.csproj", "{02A45609-18A6-47C2-87A1-BA528F491309}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unrect.Tests", "Unrect.Tests\Unrect.Tests.csproj", "{5099C204-C665-461F-B49F-A1563449D1EE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{02A45609-18A6-47C2-87A1-BA528F491309}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{02A45609-18A6-47C2-87A1-BA528F491309}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{02A45609-18A6-47C2-87A1-BA528F491309}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5099C204-C665-461F-B49F-A1563449D1EE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5099C204-C665-461F-B49F-A1563449D1EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5099C204-C665-461F-B49F-A1563449D1EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5099C204-C665-461F-B49F-A1563449D1EE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

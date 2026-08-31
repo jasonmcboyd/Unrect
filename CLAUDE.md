@@ -2,7 +2,7 @@
 
 ## Status
 
-This project is experimental. The design is still fluid and no architectural decisions are set in stone. There are no unit tests yet — intentionally, since the abstractions are still being explored.
+This project is experimental. The design is still fluid above the canonical model, but the bottom layer (CellValue, spaces, strategies, builders) has deliberate, review-hardened semantics pinned by `src/Unrect.Tests` (xUnit, 182 tests). Run `dotnet test src/Unrect.sln`; keep it green. Layers still being explored (shape vocabulary, mapping) intentionally have no tests yet.
 
 ## Problem Domain
 
@@ -82,7 +82,7 @@ None currently known. (The historical list — `RegionBuilder1` double-offset, i
 
 `SuperStackRegionBuilder` is implemented and hardened: reached via `RegionBuilderFactory.Repeat(blockBuilder)` (and `RepeatHorizontal`), it takes the block builder directly (builders are immutable descriptions — no factory `Func<>` needed), applies each block's own offset/area strategies, and terminates safely on trailing blank bands, zero-area blocks, and zero-advance shapes. The canonical test case is `examples/investors-by-deal.xlsx` (repeating deal blocks — deal code row, column-header row, N transaction rows — separated by a blank row, block lengths varying per deal), parsed by `linqpad/investors-by-deal.linq`: block offset = `SkipBlankRows()`, block area = `RowsWhileAnyValue()`.
 
-`WhileAnySizeStrategy.GetSize()` is now implemented: width = full available width, height = leading rows in which at least one cell satisfies the predicate (delegates to `TakeToAnyRowStrategy`). Exposed via `SizeStrategies.WhileAny(predicate)` + `.ToAreaStrategy()`. This is the preferred way to size a data region ("rows while any cell has a value") instead of explicit bounds or `MaxArea`.
+`RowsWhileAnySizeStrategy` (width = full available width, height = leading rows in which at least one cell satisfies the predicate) is exposed via `SizeStrategies.RowsWhileAny(predicate)` / `RowsWhileAnyValue()` + `.ToAreaStrategy()`. This is the preferred way to size a data region ("rows while any cell has a value") instead of explicit bounds or `MaxArea`.
 
 `OffsetStrategies.SkipRowsWhileAll(predicate)` / `SkipRowsWhileAny(predicate)` are also implemented (via internal `RowOffsetSizeStrategy`, width always 0): they declare a vertical offset such as "skip however many leading rows are entirely blank" — the declarative replacement for hard-coding gap heights. `SkipBlankRows()` is the zero-argument form. See `linqpad/simple-report.linq` for the canonical usage of all of these against `examples/simple-report.xlsx`.
 
@@ -106,7 +106,10 @@ Waves 2+ (shape vocabulary, observability, map fusion) are not started.
 
 - **Arity explosion** — `Region1`, `Region2`, `Region3` each require dedicated builder, mapper, and factory overloads. This doesn't scale well. Real-world reports may need more than 3 fixed subregions. A compositional approach (e.g., binary nesting or a different encoding) could eliminate this, but the right answer isn't clear yet.
 - **Strategy layering** — `IAreaStrategy` and `IOffsetStrategy` are thin wrappers around `ISizeStrategy`. Whether this indirection earns its keep or should be collapsed is an open question.
-- **Leaf builders ignore their own strategies at the top level** — `RegionBuilder.Build(space)` just wraps the space; a builder's offset/area strategies are applied by its *parent* (`StackRegionBuilderBase.GetSubregionSpaces` / `RegionBuilder1`). Calling `Build` directly on a leaf builder with strategies silently produces the whole space. Should the top-level `Build` apply the builder's own strategies, or should this be an error?
+- **Leaf builders ignore their own strategies at the top level** — `RegionBuilder.Build(space)` just wraps the space; a builder's offset/area strategies are applied by its *parent* (`StackRegionBuilderBase.GetSubregionSpaces` / `RegionBuilder1`). Calling `Build` directly on a leaf builder with strategies silently produces the whole space. The QA pass sharpened this: `Builder(offset, area, subregionBuilder)` reads as "position the subregion here" but the strategies belong to the outer builder, so a top-level `Builder(1, 1, 2, 2, Builder()).Build(space)` silently hands the subregion the entire space (correct spelling: `Builder(Builder(1, 1, 2, 2))`). Should the top-level `Build` apply the builder's own strategies, or throw when called directly with non-default strategies? Two tests pin the current behavior (`Builder1_AppliesItsSubregionOffsetAndAreaExactlyOnce`, `Builder1_OwnStrategiesPositionItWithinItsParent`) and must be updated when this is decided.
+- **`SpaceExtensions.GetSubspace(space, offset)` throws `ArgumentOutOfRangeException`** (from `Size`'s negative-length check) for an oversized offset, while the two-argument form correctly throws `OutOfBoundsException`. Unreachable through builders (`SubspaceResolver` pre-checks) but publicly reachable and inconsistent; deliberately not pinned by tests.
+- **`OutOfBoundsException` carries no diagnostics** — no requested-vs-available extents, no location. Cheap win to fold into the wave-3 named-regions/error-message work.
+- **Two parallel mapping APIs** — `RegionExtensions.Map` (tested, used by all examples) and the `IRegionMapper`-returning `RegionMapperFactory` overloads (untested, unused). Decide which survives as part of the map-fusion design; the loser should be deleted.
 
 (Resolved this session: `uint` vs `int` — codebase is all-`int`; the `SupterStackRegionBuilder.cs` filename typo; row/column composition asymmetry — both halves public since the wave-1 mirror collapse; `TakeRows(n)`/`TakeColumns(n)` factories added.)
 

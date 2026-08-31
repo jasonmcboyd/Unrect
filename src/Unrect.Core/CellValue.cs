@@ -102,7 +102,9 @@ namespace Unrect.Core
     /// <summary>
     /// Two cell values are equal when they share a kind and an equal payload. Numbers compare on
     /// their double representation, so <c>Of(1m)</c> equals <c>Of(1.0)</c> even though
-    /// <see cref="GetDecimal"/> may report a different precision for each. Equality is for matching
+    /// <see cref="GetDecimal"/> may report a different precision for each. Number comparison uses
+    /// <see cref="double.Equals(double)"/>, so NaN equals NaN — equality is reflexive and
+    /// hash-consistent, deviating from IEEE <c>==</c> on purpose. Equality is for matching
     /// cells; <see cref="GetDecimal"/> is for extracting values.
     /// </summary>
     public bool Equals(CellValue? other)

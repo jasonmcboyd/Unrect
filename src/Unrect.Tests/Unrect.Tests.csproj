@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <LangVersion>Latest</LangVersion>
+    <TargetFramework>net8.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Unrect\Unrect.csproj" />
+    <ProjectReference Include="..\Unrect.Core\Unrect.Core.csproj" />
+    <ProjectReference Include="..\Unrect.Strategies\Unrect.Strategies.csproj" />
+    <ProjectReference Include="..\Unrect.Array\Unrect.Array.csproj" />
+    <ProjectReference Include="..\Unrect.Excel\Unrect.Excel.csproj" />
+  </ItemGroup>
+
+  <!--
+    The example workbooks are copied into the test project rather than referenced out of
+    ..\..\examples so the tests are path-independent: they resolve their inputs relative to
+    the test assembly's own output directory.
+  -->
+  <ItemGroup>
+    <Content Include="TestData\simple-report.xlsx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="TestData\investors-by-deal.xlsx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>
