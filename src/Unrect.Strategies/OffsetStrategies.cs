@@ -17,6 +17,12 @@ namespace Unrect.Strategies
 
     public static IOffsetStrategy<TSpace> SelectOffset(Func<ISpace<TSpace>, Size> selector)
       => SelectSize(selector).ToOffsetStrategy();
+
+    public static IOffsetStrategy<TSpace> SkipRowsWhileAll(Func<TSpace, bool> predicate)
+      => new RowOffsetSizeStrategy<TSpace>(RowStrategies<TSpace>.TakeRowsWhileAll(predicate)).ToOffsetStrategy();
+
+    public static IOffsetStrategy<TSpace> SkipRowsWhileAny(Func<TSpace, bool> predicate)
+      => new RowOffsetSizeStrategy<TSpace>(RowStrategies<TSpace>.TakeRowsWhileAny(predicate)).ToOffsetStrategy();
   }
 
   public static class OffsetStrategies
@@ -30,5 +36,11 @@ namespace Unrect.Strategies
 
     public static IOffsetStrategy<TSpace> SelectOffset<TSpace>(Func<ISpace<TSpace>, Size> selector)
       => OffsetStrategies<TSpace>.SelectOffset(selector);
+
+    public static IOffsetStrategy<TSpace> SkipRowsWhileAll<TSpace>(Func<TSpace, bool> predicate)
+      => OffsetStrategies<TSpace>.SkipRowsWhileAll(predicate);
+
+    public static IOffsetStrategy<TSpace> SkipRowsWhileAny<TSpace>(Func<TSpace, bool> predicate)
+      => OffsetStrategies<TSpace>.SkipRowsWhileAny(predicate);
   }
 }
