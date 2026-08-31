@@ -3,18 +3,18 @@ using Unrect.Core;
 
 namespace Unrect.Strategies
 {
-  internal class TakeToRowStrategy<TSpace> : IRowStrategy<TSpace>
+  internal class TakeToRowStrategy : IRowStrategy
   {
-    public TakeToRowStrategy(Func<ISpace<TSpace>, int, bool> predicate, bool keepMatchingRow)
+    public TakeToRowStrategy(Func<ISpace, int, bool> predicate, bool keepMatchingRow)
     {
       Predicate = predicate;
       KeepMatchingRow = keepMatchingRow;
     }
 
-    private Func<ISpace<TSpace>, int, bool> Predicate { get; }
+    private Func<ISpace, int, bool> Predicate { get; }
     private bool KeepMatchingRow { get; }
 
-    public int SelectRows(ISpace<TSpace> space)
+    public int SelectRows(ISpace space)
     {
       int count = 0;
 

@@ -4,43 +4,36 @@ using static Unrect.Strategies.SizeStrategies;
 
 namespace Unrect.Strategies
 {
-  public static class OffsetStrategies<TSpace>
-  {
-    public static IOffsetStrategy<TSpace> MaxOffset()
-      => MaxSize<TSpace>().ToOffsetStrategy();
-
-    public static IOffsetStrategy<TSpace> MinOffset()
-      => MinSize<TSpace>().ToOffsetStrategy();
-
-    public static IOffsetStrategy<TSpace> Offset(int width, int height)
-      => Size<TSpace>(width, height).ToOffsetStrategy();
-
-    public static IOffsetStrategy<TSpace> SelectOffset(Func<ISpace<TSpace>, Size> selector)
-      => SelectSize(selector).ToOffsetStrategy();
-
-    public static IOffsetStrategy<TSpace> SkipRowsWhileAll(Func<TSpace, bool> predicate)
-      => new RowOffsetSizeStrategy<TSpace>(RowStrategies<TSpace>.TakeRowsWhileAll(predicate)).ToOffsetStrategy();
-
-    public static IOffsetStrategy<TSpace> SkipRowsWhileAny(Func<TSpace, bool> predicate)
-      => new RowOffsetSizeStrategy<TSpace>(RowStrategies<TSpace>.TakeRowsWhileAny(predicate)).ToOffsetStrategy();
-  }
-
   public static class OffsetStrategies
   {
-    public static IOffsetStrategy<TSpace> MaxOffset<TSpace>() => OffsetStrategies<TSpace>.MaxOffset();
+    public static IOffsetStrategy MaxOffset()
+      => MaxSize().ToOffsetStrategy();
 
-    public static IOffsetStrategy<TSpace> MinOffset<TSpace>() => OffsetStrategies<TSpace>.MinOffset();
+    public static IOffsetStrategy MinOffset()
+      => MinSize().ToOffsetStrategy();
 
-    public static IOffsetStrategy<TSpace> ExplicitOffset<TSpace>(int width, int height)
-      => OffsetStrategies<TSpace>.Offset(width, height);
+    public static IOffsetStrategy ExplicitOffset(int width, int height)
+      => ExplicitSize(width, height).ToOffsetStrategy();
 
-    public static IOffsetStrategy<TSpace> SelectOffset<TSpace>(Func<ISpace<TSpace>, Size> selector)
-      => OffsetStrategies<TSpace>.SelectOffset(selector);
+    public static IOffsetStrategy SelectOffset(Func<ISpace, Size> selector)
+      => SelectSize(selector).ToOffsetStrategy();
 
-    public static IOffsetStrategy<TSpace> SkipRowsWhileAll<TSpace>(Func<TSpace, bool> predicate)
-      => OffsetStrategies<TSpace>.SkipRowsWhileAll(predicate);
+    public static IOffsetStrategy SkipRowsWhileAll(Func<CellValue, bool> predicate)
+      => new RowOffsetSizeStrategy(RowStrategies.TakeRowsWhileAll(predicate)).ToOffsetStrategy();
 
-    public static IOffsetStrategy<TSpace> SkipRowsWhileAny<TSpace>(Func<TSpace, bool> predicate)
-      => OffsetStrategies<TSpace>.SkipRowsWhileAny(predicate);
+    public static IOffsetStrategy SkipRowsWhileAny(Func<CellValue, bool> predicate)
+      => new RowOffsetSizeStrategy(RowStrategies.TakeRowsWhileAny(predicate)).ToOffsetStrategy();
+
+    public static IOffsetStrategy SkipBlankRows()
+      => SkipRowsWhileAll(v => v.IsBlank);
+
+    public static IOffsetStrategy SkipColumnsWhileAll(Func<CellValue, bool> predicate)
+      => new ColumnOffsetSizeStrategy(ColumnStrategies.TakeColumnsWhileAll(predicate)).ToOffsetStrategy();
+
+    public static IOffsetStrategy SkipColumnsWhileAny(Func<CellValue, bool> predicate)
+      => new ColumnOffsetSizeStrategy(ColumnStrategies.TakeColumnsWhileAny(predicate)).ToOffsetStrategy();
+
+    public static IOffsetStrategy SkipBlankColumns()
+      => SkipColumnsWhileAll(v => v.IsBlank);
   }
 }

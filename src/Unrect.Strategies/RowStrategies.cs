@@ -4,42 +4,48 @@ using Unrect.Core;
 
 namespace Unrect.Strategies
 {
-  public static class RowStrategies<TSpace>
+  public static class RowStrategies
   {
-    public static IRowStrategy<TSpace> TakeRowsWhile(Func<ISpace<TSpace>, int, bool> predicate)
-      => new TakeToRowStrategy<TSpace>(predicate.Not(), false);
+    public static IRowStrategy TakeRowsWhile(Func<ISpace, int, bool> predicate)
+      => new TakeToRowStrategy(predicate.Not(), false);
 
-    public static IRowStrategy<TSpace> TakeRowsWhile(int column, Func<TSpace, int, bool> predicate)
+    public static IRowStrategy TakeRowsWhile(int column, Func<CellValue, int, bool> predicate)
       => TakeRowsWhile((space, row) => predicate(space[column, row], row));
 
-    public static IRowStrategy<TSpace> TakeRowsTo(Func<ISpace<TSpace>, int, bool> predicate)
-      => new TakeToRowStrategy<TSpace>(predicate, true);
+    public static IRowStrategy TakeRows(int count)
+      => new ExplicitRowCountStrategy(count);
 
-    public static IRowStrategy<TSpace> TakeRowsToValue<TValue>(int column, TValue value)
+    public static IRowStrategy TakeRowsTo(Func<ISpace, int, bool> predicate)
+      => new TakeToRowStrategy(predicate, true);
+
+    public static IRowStrategy TakeRowsToValue(int column, CellValue value)
       => TakeRowsTo((space, row) => space[column, row].Equals(value));
 
-    public static IRowStrategy<TSpace> TakeRowsWhileAll(Func<TSpace, bool> predicate)
-      => new TakeToAllRowStrategy<TSpace>(predicate, false);
+    public static IRowStrategy TakeRowsWhileAll(Func<CellValue, bool> predicate)
+      => new TakeToAllRowStrategy(predicate, false);
 
-    public static IRowStrategy<TSpace> TakeRowsWhileAny(Func<TSpace, bool> predicate)
-      => new TakeToAnyRowStrategy<TSpace>(predicate, false);
-  }
+    public static IRowStrategy TakeRowsWhileAny(Func<CellValue, bool> predicate)
+      => new TakeToAnyRowStrategy(predicate, false);
 
-  internal static class RowStrategies
-  {
-    public static IAreaStrategy<TSpace> TakeRowsWhile<TSpace>(
-      this IColumnStrategy<TSpace> strategy,
-      Func<ISpace<TSpace>, int, bool> predicate)
-      => new RowAndColumnSizeStrategy<TSpace>(strategy, RowStrategies<TSpace>.TakeRowsWhile(predicate)).ToAreaStrategy();
+    public static IRowStrategy TakeRowsWhileAnyValue()
+      => TakeRowsWhileAny(v => v.HasValue);
 
-    public static IAreaStrategy<TSpace> TakeRowsWhileAll<TSpace>(
-      this IColumnStrategy<TSpace> strategy,
-      Func<TSpace, bool> predicate)
-      => new RowAndColumnSizeStrategy<TSpace>(strategy, RowStrategies<TSpace>.TakeRowsWhileAll(predicate)).ToAreaStrategy();
+    public static IAreaStrategy TakeRowsWhile(
+      this IColumnStrategy strategy,
+      Func<ISpace, int, bool> predicate)
+      => new RowAndColumnSizeStrategy(strategy, TakeRowsWhile(predicate)).ToAreaStrategy();
 
-    public static IAreaStrategy<TSpace> TakeRowsWhileAny<TSpace>(
-      this IColumnStrategy<TSpace> strategy,
-      Func<TSpace, bool> predicate)
-      => new RowAndColumnSizeStrategy<TSpace>(strategy, RowStrategies<TSpace>.TakeRowsWhileAny(predicate)).ToAreaStrategy();
+    public static IAreaStrategy TakeRowsWhileAll(
+      this IColumnStrategy strategy,
+      Func<CellValue, bool> predicate)
+      => new RowAndColumnSizeStrategy(strategy, TakeRowsWhileAll(predicate)).ToAreaStrategy();
+
+    public static IAreaStrategy TakeRowsWhileAny(
+      this IColumnStrategy strategy,
+      Func<CellValue, bool> predicate)
+      => new RowAndColumnSizeStrategy(strategy, TakeRowsWhileAny(predicate)).ToAreaStrategy();
+
+    public static IAreaStrategy TakeRowsWhileAnyValue(this IColumnStrategy strategy)
+      => strategy.TakeRowsWhileAny(v => v.HasValue);
   }
 }

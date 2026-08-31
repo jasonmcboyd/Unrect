@@ -1,9 +1,9 @@
-﻿using Unrect.Core;
+using Unrect.Core;
 
 namespace Unrect.Strategies
 {
-  internal class MaxSizeStrategy<TSpace> : ISizeStrategy<TSpace>
+  internal class MaxSizeStrategy : ISizeStrategy
   {
-    public Size GetSize(ISpace<TSpace> availableSpace) => availableSpace.Area.Size;
+    public Size GetSize(ISpace availableSpace) => availableSpace.Area.Size;
   }
 }

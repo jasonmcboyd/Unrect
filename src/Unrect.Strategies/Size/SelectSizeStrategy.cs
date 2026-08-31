@@ -1,17 +1,17 @@
-﻿using System;
+using System;
 using Unrect.Core;
 
 namespace Unrect.Strategies
 {
-  internal class SelectSizeStrategy<TSpace> : ISizeStrategy<TSpace>
+  internal class SelectSizeStrategy : ISizeStrategy
   {
-    public SelectSizeStrategy(Func<ISpace<TSpace>, Size> areaSelector)
+    public SelectSizeStrategy(Func<ISpace, Size> areaSelector)
     {
       AreaSelector = areaSelector;
     }
 
-    public Func<ISpace<TSpace>, Size> AreaSelector { get; set; }
+    private Func<ISpace, Size> AreaSelector { get; }
 
-    public Size GetSize(ISpace<TSpace> availableSpace) => AreaSelector(availableSpace);
+    public Size GetSize(ISpace availableSpace) => AreaSelector(availableSpace);
   }
 }

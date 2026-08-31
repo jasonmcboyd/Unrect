@@ -1,16 +1,16 @@
-﻿using Unrect.Core;
+using Unrect.Core;
 using Unrect.Strategies;
 
 using static Unrect.Strategies.SizeStrategies;
 
 namespace Unrect
 {
-  public abstract class RegionBuilderBase<TSpace, T1> : IRegionBuilder<TSpace, T1>
-    where T1 : IRegion<TSpace>
+  public abstract class RegionBuilderBase<T1> : IRegionBuilder<T1>
+    where T1 : IRegion
   {
-    public IOffsetStrategy<TSpace> OffsetStrategy { get; init; } = MinSize<TSpace>().ToOffsetStrategy();
-    public IAreaStrategy<TSpace> AreaStrategy { get; init; } = MaxSize<TSpace>().ToAreaStrategy();
+    public IOffsetStrategy OffsetStrategy { get; init; } = MinSize().ToOffsetStrategy();
+    public IAreaStrategy AreaStrategy { get; init; } = MaxSize().ToAreaStrategy();
 
-    public abstract T1 Build(ISpace<TSpace> space);
+    public abstract T1 Build(ISpace space);
   }
 }

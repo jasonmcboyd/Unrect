@@ -1,10 +1,10 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace Unrect.Core
 {
-  public interface IRegion<out TSpace>
+  public interface IRegion
   {
-    ISpace<TSpace> Space { get; }
-    IEnumerable<IRegion<TSpace>> GetSubregions();
+    ISpace Space { get; }
+    IEnumerable<IRegion> GetSubregions();
   }
 }

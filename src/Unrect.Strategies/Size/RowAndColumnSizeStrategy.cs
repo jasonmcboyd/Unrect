@@ -1,12 +1,12 @@
-﻿using Unrect.Core;
+using Unrect.Core;
 
 namespace Unrect.Strategies
 {
-  internal class RowAndColumnSizeStrategy<TSpace> : ISizeStrategy<TSpace>
+  internal class RowAndColumnSizeStrategy : ISizeStrategy
   {
     public RowAndColumnSizeStrategy(
-      IRowStrategy<TSpace> rowSelectionStrategy,
-      IColumnStrategy<TSpace> columnSelectionStrategy)
+      IRowStrategy rowSelectionStrategy,
+      IColumnStrategy columnSelectionStrategy)
     {
       RowSelectionStrategy = rowSelectionStrategy;
       ColumnSelectionStrategy = columnSelectionStrategy;
@@ -14,19 +14,19 @@ namespace Unrect.Strategies
     }
 
     public RowAndColumnSizeStrategy(
-      IColumnStrategy<TSpace> columnSelectionStrategy,
-      IRowStrategy<TSpace> rowSelectionStrategy)
+      IColumnStrategy columnSelectionStrategy,
+      IRowStrategy rowSelectionStrategy)
     {
       RowSelectionStrategy = rowSelectionStrategy;
       ColumnSelectionStrategy = columnSelectionStrategy;
       RowFirst = false;
     }
 
-    private IRowStrategy<TSpace> RowSelectionStrategy { get; }
-    private IColumnStrategy<TSpace> ColumnSelectionStrategy { get; }
+    private IRowStrategy RowSelectionStrategy { get; }
+    private IColumnStrategy ColumnSelectionStrategy { get; }
     private bool RowFirst { get; }
 
-    public Size GetSize(ISpace<TSpace> availableSpace)
+    public Size GetSize(ISpace availableSpace)
     {
       if (RowFirst)
       {

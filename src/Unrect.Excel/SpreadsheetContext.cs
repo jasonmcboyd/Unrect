@@ -1,4 +1,4 @@
-﻿namespace Unrect.Excel
+namespace Unrect.Excel
 {
   public readonly struct SpreadsheetContext
   {

@@ -1,4 +1,4 @@
-﻿using ExcelDataReader;
+using ExcelDataReader;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,17 +9,17 @@ using Unrect.Core;
 
 namespace Unrect.Excel
 {
-  public class SpreadsheetSpace : ISpace<SpreadsheetValueBase>
+  public class SpreadsheetSpace : ISpace
   {
-    private SpreadsheetSpace(ISpace<SpreadsheetValueBase> innerSpace)
+    private SpreadsheetSpace(ISpace innerSpace)
     {
       InnerSpace = innerSpace;
     }
 
-    private ISpace<SpreadsheetValueBase> InnerSpace { get; }
-    public SpreadsheetValueBase this[int column, int row] => InnerSpace[column, row];
+    private ISpace InnerSpace { get; }
+    public CellValue this[int column, int row] => InnerSpace[column, row];
     public Area Area => InnerSpace.Area;
-    public ISpace<SpreadsheetValueBase> GetSubspace(Offset offset, Area size) => new SpreadsheetSpace(InnerSpace.GetSubspace(offset, size));
+    public ISpace GetSubspace(Offset offset, Area size) => new SpreadsheetSpace(InnerSpace.GetSubspace(offset, size));
 
     private static void RegisterEncoding()
     {
@@ -44,25 +44,31 @@ namespace Unrect.Excel
       {
         sheetIndex++;
         var context = new SpreadsheetContext(sheetIndex, reader.Name);
-            
+
         if (!predicate(context))
           continue;
 
-        var array = new SpreadsheetValueBase[reader.RowCount, reader.FieldCount];
-        var space = new ArraySpace<SpreadsheetValueBase>(array);
+        var rowCount = reader.RowCount;
+        var fieldCount = reader.FieldCount;
+
+        var cells = new CellValue[rowCount, fieldCount];
+        for (int i = 0; i < rowCount; i++)
+          for (int j = 0; j < fieldCount; j++)
+            cells[i, j] = CellValue.Blank;
 
         var row = 0;
-        while (reader.Read())
+        while (row < rowCount && reader.Read())
         {
-          for (int i = 0; i < reader.FieldCount; i++)
+          var columnCount = Math.Min(fieldCount, reader.FieldCount);
+          for (int i = 0; i < columnCount; i++)
           {
-            array[row, i] = reader.GetSpreadsheetValue(i);
+            cells[row, i] = reader.GetCellValue(i);
           }
 
           row++;
         }
 
-        yield return new SpreadsheetSpace(space);
+        yield return new SpreadsheetSpace(new ArraySpace(cells));
 
       } while (reader.NextResult());
     }

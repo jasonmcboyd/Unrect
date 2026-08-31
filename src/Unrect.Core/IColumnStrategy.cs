@@ -1,7 +1,7 @@
 namespace Unrect.Core
 {
-  public interface IColumnStrategy<in TSpace>
+  public interface IColumnStrategy
   {
-    int SelectColumns(ISpace<TSpace> space);
+    int SelectColumns(ISpace space);
   }
 }

@@ -2,16 +2,16 @@ using Unrect.Core;
 
 namespace Unrect.Strategies
 {
-  internal class RowOffsetSizeStrategy<TSpace> : ISizeStrategy<TSpace>
+  internal class RowOffsetSizeStrategy : ISizeStrategy
   {
-    public RowOffsetSizeStrategy(IRowStrategy<TSpace> rowSelectionStrategy)
+    public RowOffsetSizeStrategy(IRowStrategy rowSelectionStrategy)
     {
       RowSelectionStrategy = rowSelectionStrategy;
     }
 
-    private IRowStrategy<TSpace> RowSelectionStrategy { get; }
+    private IRowStrategy RowSelectionStrategy { get; }
 
-    public Size GetSize(ISpace<TSpace> availableSpace)
+    public Size GetSize(ISpace availableSpace)
       => new Size(0, RowSelectionStrategy.SelectRows(availableSpace));
   }
 }

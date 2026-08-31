@@ -1,7 +1,7 @@
-﻿namespace Unrect.Core
+namespace Unrect.Core
 {
-  public interface ISizeStrategy<in TSpace>
+  public interface ISizeStrategy
   {
-    Size GetSize(ISpace<TSpace> availableSpace);
+    Size GetSize(ISpace availableSpace);
   }
 }

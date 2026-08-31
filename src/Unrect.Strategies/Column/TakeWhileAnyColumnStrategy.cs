@@ -3,16 +3,16 @@ using Unrect.Core;
 
 namespace Unrect.Strategies
 {
-  internal class TakeWhileAnyColumnStrategy<TSpace> : IColumnStrategy<TSpace>
+  internal class TakeWhileAnyColumnStrategy : IColumnStrategy
   {
-    public TakeWhileAnyColumnStrategy(Func<TSpace, bool> predicate)
+    public TakeWhileAnyColumnStrategy(Func<CellValue, bool> predicate)
     {
       Predicate = predicate;
     }
 
-    private Func<TSpace, bool> Predicate { get; }
+    private Func<CellValue, bool> Predicate { get; }
 
-    public int SelectColumns(ISpace<TSpace> space)
+    public int SelectColumns(ISpace space)
     {
       int count = 0;
 

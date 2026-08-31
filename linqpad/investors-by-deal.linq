@@ -8,9 +8,8 @@
   <Namespace>Unrect.Core</Namespace>
   <Namespace>Unrect.Excel</Namespace>
   <Namespace>Unrect.Strategies</Namespace>
+  <Namespace>static Unrect.RegionBuilderFactory</Namespace>
   <Namespace>static Unrect.Strategies.SizeStrategies</Namespace>
-  <Namespace>static Unrect.RegionBuilderFactory&lt;Unrect.Excel.SpreadsheetValueBase&gt;</Namespace>
-  <Namespace>SV = Unrect.Excel.SpreadsheetValueBase</Namespace>
 </Query>
 
 var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\examples\investors-by-deal.xlsx");
@@ -18,7 +17,7 @@ var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\exam
 var space = SpreadsheetSpace.Create(path, "Investors");
 
 // One deal block, declared once:
-//   offset — skip however many leading blank rows (the separator between blocks)
+//   offset — skip the blank separator row(s) between blocks
 //   area   — rows while any cell has a value (the whole block, whatever its length)
 // Inside the block, a vertical stack:
 //   1. deal code — the single cell in column A (structural, explicit)
@@ -26,17 +25,14 @@ var space = SpreadsheetSpace.Create(path, "Investors");
 //   3. data      — rows while any cell has a value (the rest of the block)
 var blockBuilder =
 	Vertical(
-		OffsetStrategies<SV>.SkipRowsWhileAll(v => !v.HasValue),
-		WhileAny<SV>(v => v.HasValue).ToAreaStrategy(),
+		OffsetStrategies.SkipBlankRows(),
+		RowsWhileAnyValue().ToAreaStrategy(),
 		Builder(0, 0, 1, 1),
-		Builder(RowStrategies<SV>.TakeRowsWhile((s, r) => r < 1).TakeColumnsWhileAny(v => v.HasValue)),
-		Builder(WhileAny<SV>(v => v.HasValue).ToAreaStrategy()));
+		Builder(RowStrategies.TakeRows(1).TakeColumnsWhileAnyValue()),
+		Builder(RowsWhileAnyValue().ToAreaStrategy()));
 
 // The report: that block, repeated until the space is exhausted.
-var reportBuilder =
-	new SuperStackRegionBuilder<SV, Region3<SV, Region<SV>, Region<SV>, Region<SV>>>(() => blockBuilder);
-
-var deals = reportBuilder.Build(space).Subregions
+var deals = Repeat(blockBuilder).Build(space).Subregions
 	.Select(block => block.Map((dealCode, headers, txns, _) => new
 	{
 		DealCode = dealCode.Space[0, 0].GetString(),
@@ -47,7 +43,7 @@ var deals = reportBuilder.Build(space).Subregions
 				FundCode = r[1].GetString(),
 				Name = r[2].GetString(),
 				Type = r[3].GetString(),
-				Amount = r[4].GetDouble(),
+				Amount = r[4].GetDecimal(),
 				TransferDate = r[5].GetDateTime(),
 			})
 			.ToArray(),

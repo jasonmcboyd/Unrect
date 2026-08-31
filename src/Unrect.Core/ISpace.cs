@@ -1,9 +1,9 @@
 namespace Unrect.Core
 {
-  public interface ISpace<out T>
+  public interface ISpace
   {
     Area Area { get; }
-    T this[int column, int row] { get; }
-    ISpace<T> GetSubspace(Offset offset, Area area);
+    CellValue this[int column, int row] { get; }
+    ISpace GetSubspace(Offset offset, Area area);
   }
 }

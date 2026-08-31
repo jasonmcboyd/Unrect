@@ -41,11 +41,11 @@ A "space" is a 2D rectangular grid of values. Spaces can be subdivided into subs
 
 | Project | Purpose |
 |---|---|
-| **Unrect.Core** | Core abstractions: `ISpace<T>`, `IRegion<T>`, strategy interfaces, primitives (`Size`, `Offset`, `Area`) |
+| **Unrect.Core** | Canonical value model (`CellValue`, `CellKind`), core abstractions (`ISpace`, `IRegion`, strategy interfaces), primitives (`Size`, `Offset`, `Area`) |
 | **Unrect** | Region implementations (`Region`, `Region1/2/3`, `SuperRegion`), builders, mappers, and factory methods |
 | **Unrect.Strategies** | Strategy implementations for computing sizes, offsets, rows, and columns |
-| **Unrect.Array** | `ArraySpace<T>` — adapts a 2D array as `ISpace<T>` |
-| **Unrect.Excel** | `SpreadsheetSpace` — reads Excel files via ExcelDataReader, exposes as `ISpace<SpreadsheetValueBase>` |
+| **Unrect.Array** | `ArraySpace` — adapts 2D arrays as `ISpace` via `Create<T>(values, map)` and primitive overloads with blank predicates |
+| **Unrect.Excel** | `SpreadsheetSpace` — reads Excel files via ExcelDataReader, adapts cells to `CellValue` |
 
 All projects target .NET Standard 2.1.
 
@@ -53,64 +53,62 @@ All projects target .NET Standard 2.1.
 
 ```
 Excel file / 2D array
-    -> ISpace<T>               (uniform grid abstraction)
-    -> RegionBuilder + Strategies  (declarative shape description)
-    -> Region tree              (hierarchical decomposition)
-    -> Map functions            (extract to typed objects)
+    -> adapter normalizes to CellValue   ("lexing": backend values -> canonical vocabulary)
+    -> ISpace                            (uniform grid of CellValue)
+    -> RegionBuilder + Strategies        (declarative shape description)
+    -> Region tree                       (hierarchical decomposition)
+    -> Map functions                     (extract to typed objects)
 ```
 
 ### Key Abstractions
 
-- **`ISpace<T>`** — A 2D rectangular grid of `T` values with subspace slicing.
-- **`IRegion<T>`** — A node in the region tree. Holds an `ISpace<T>` and can yield subregions.
+- **`CellValue` / `CellKind`** — The canonical cell vocabulary (Blank, Text, Number, Temporal, Boolean). One `Number` kind with granular checked accessors (`GetDouble`/`GetDecimal`/`GetInt`); numbers created from `decimal`/`int`/`long` retain an exact decimal alongside the double. Blankness is decided at adaptation time (e.g., `ArraySpace.Create(nums, isBlank: v => v == 0)`); `Blank` is a singleton kind, so strategies just test `IsBlank`/`HasValue`.
+- **`ISpace`** — A 2D rectangular grid of `CellValue` with subspace slicing. Non-generic since the wave-1 canonical-model refactor (see `docs/design/canonical-model-and-shapes.md`).
+- **`IRegion`** — A node in the region tree. Holds an `ISpace` and can yield subregions.
 - **Strategies** — Pluggable functions that determine spatial boundaries:
-  - `ISizeStrategy<T>` — computes a `Size` from available space
-  - `IOffsetStrategy<T>` / `IAreaStrategy<T>` — adapted from `ISizeStrategy`
-  - `IRowStrategy<T>` / `IColumnStrategy<T>` — predicate-based row/column selection
+  - `ISizeStrategy` — computes a `Size` from available space
+  - `IOffsetStrategy` / `IAreaStrategy` — adapted from `ISizeStrategy`
+  - `IRowStrategy` / `IColumnStrategy` — predicate-based row/column selection
+  - Blankness conveniences: `OffsetStrategies.SkipBlankRows()`/`SkipBlankColumns()`, `SizeStrategies.RowsWhileAnyValue()`, `RowStrategies.TakeRowsWhileAnyValue()`, `ColumnStrategies.TakeColumnsWhileAnyValue()`
+  - Explicit counts: `RowStrategies.TakeRows(n)` / `ColumnStrategies.TakeColumns(n)` — these throw `OutOfBoundsException` rather than clamp, consistent with `ExplicitArea`
 - **Builders** — Compose strategies to construct region trees (`RegionBuilder`, `StackRegionBuilder2/3`, `SuperStackRegionBuilder`)
 - **Mappers** — Transform region trees into result objects
 
-### Generic Parameter Convention
-
-The generic parameter `TSpace` (used throughout the codebase) represents the **element type** of the space, not the space itself. `ISpace<int>` is "a space of ints." This follows the mental model of "what the space is composed of." There is an open question about whether this naming creates confusion given standard C# conventions where `TFoo` means "this type is a Foo."
-
 ## Known Bugs
 
-- **`RegionBuilder1.Build()` applies offset twice** — After `space = space.GetSubspace(offset)`, the offset is consumed, but it's applied again in the subsequent `space.GetSubspace(offset, area)` call. The bounds check also uses the offset against the already-adjusted space. (`RegionBuilder.cs`)
-- **`SpreadsheetValueBase` overrides `Equals` without `GetHashCode`** — Violates the .NET contract; will cause incorrect behavior in hash-based collections.
-- **`StringSpreadsheetValue.GetValueType()` returns `typeof(double)`** — Copy-paste bug; the `_ValueType` field is correctly `typeof(string)` but the method ignores it. (Note: this file may be excluded from compilation in favor of the generic `SpreadsheetValue<T>`.)
+None currently known. (The historical list — `RegionBuilder1` double-offset, inverted `TakeColumnsWhileAny`, `SpreadsheetValueBase` equality contract — was fully resolved by the 2026-08-31 session: the wave-1 refactor, its code review, and the review-fix pass. Subspace resolution and bounds checking are now centralized in `SubspaceResolver`.)
 
 ## Known Incomplete Work
 
-`SuperStackRegionBuilder.Build()` is implemented and verified end-to-end (contrary to earlier notes here): it repeatedly invokes a block-builder factory, applying each block's own offset/area strategies and advancing past each built block until the space is exhausted, yielding a `SuperRegion` with an `ImmutableArray<TSubregion>`. The canonical test case is `examples/investors-by-deal.xlsx` (repeating deal blocks — deal code row, column-header row, N transaction rows — separated by a blank row, block lengths varying per deal), parsed by `linqpad/investors-by-deal.linq`: block offset = `SkipRowsWhileAll(blank)`, block area = `WhileAny(has value)`. Caveats: there is no `RegionBuilderFactory` convenience method for it yet (users `new` it with an explicit `Region3<...>` type argument, which is verbose), and trailing all-blank rows after the last block would build a degenerate empty block and throw from the inner stack builder's bounds check — not reachable via `SpreadsheetSpace` (ExcelDataReader trims trailing blanks) but untested for other spaces.
+`SuperStackRegionBuilder` is implemented and hardened: reached via `RegionBuilderFactory.Repeat(blockBuilder)` (and `RepeatHorizontal`), it takes the block builder directly (builders are immutable descriptions — no factory `Func<>` needed), applies each block's own offset/area strategies, and terminates safely on trailing blank bands, zero-area blocks, and zero-advance shapes. The canonical test case is `examples/investors-by-deal.xlsx` (repeating deal blocks — deal code row, column-header row, N transaction rows — separated by a blank row, block lengths varying per deal), parsed by `linqpad/investors-by-deal.linq`: block offset = `SkipBlankRows()`, block area = `RowsWhileAnyValue()`.
 
 `WhileAnySizeStrategy.GetSize()` is now implemented: width = full available width, height = leading rows in which at least one cell satisfies the predicate (delegates to `TakeToAnyRowStrategy`). Exposed via `SizeStrategies.WhileAny(predicate)` + `.ToAreaStrategy()`. This is the preferred way to size a data region ("rows while any cell has a value") instead of explicit bounds or `MaxArea`.
 
-`OffsetStrategies.SkipRowsWhileAll(predicate)` / `SkipRowsWhileAny(predicate)` are also implemented (via internal `RowOffsetSizeStrategy`, width always 0): they declare a vertical offset such as "skip however many leading rows are entirely blank" — the declarative replacement for hard-coding gap heights. See `linqpad/simple-report.linq` for the canonical usage of all of these against `examples/simple-report.xlsx`.
+`OffsetStrategies.SkipRowsWhileAll(predicate)` / `SkipRowsWhileAny(predicate)` are also implemented (via internal `RowOffsetSizeStrategy`, width always 0): they declare a vertical offset such as "skip however many leading rows are entirely blank" — the declarative replacement for hard-coding gap heights. `SkipBlankRows()` is the zero-argument form. See `linqpad/simple-report.linq` for the canonical usage of all of these against `examples/simple-report.xlsx`.
 
-## Dead Code
-
-The old `SpreadsheetValue` interface and its per-type struct implementations (`DateTimeSpreadsheetValue`, `DoubleSpreadsheetValue`, `IntSpreadsheetValue`, `StringSpreadsheetValue`) are still in the source tree but excluded from compilation. They were superseded by the `SpreadsheetValueBase` / `SpreadsheetValue<T>` class hierarchy.
-
-## Design Direction (proposed, not yet implemented)
+## Design Direction
 
 See `docs/design/canonical-model-and-shapes.md` for the agreed forward design: a
 canonical cell value model that de-generifies the core (spaces as "lexers" adapting
-backends into one value vocabulary, blankness on the `ISpace` contract), a
+backends into one value vocabulary, blankness decided at adaptation time), a
 document-level shape vocabulary (`Table`, `Repeat`/separator, `Choice`) built on the
 strategy calculus, capability seams for backend extras (formatting, native types)
 under the rule that nothing in Core may require a capability, and an observability
 roadmap (named regions, decomposition trace, dry-run renderer, unconsumed-space
 warnings). New API work should be checked against that document.
 
+**Wave 1 (canonical model) is implemented**: `CellValue`/`CellKind` live in Core, the
+`TSpace` generic is gone from the entire surface, `ArraySpace` is a mapping adapter,
+and `Unrect.Excel` is a thin adapter (`SpreadsheetValueBase` and friends are deleted).
+Waves 2+ (shape vocabulary, observability, map fusion) are not started.
+
 ## Open Design Questions
 
 - **Arity explosion** — `Region1`, `Region2`, `Region3` each require dedicated builder, mapper, and factory overloads. This doesn't scale well. Real-world reports may need more than 3 fixed subregions. A compositional approach (e.g., binary nesting or a different encoding) could eliminate this, but the right answer isn't clear yet.
 - **Strategy layering** — `IAreaStrategy` and `IOffsetStrategy` are thin wrappers around `ISizeStrategy`. Whether this indirection earns its keep or should be collapsed is an open question.
-- **`uint` vs `int` for dimensions** — `uint` is used throughout for sizes and indices, which causes constant casting friction. Decision: switch to `int`. The unsigned guarantee isn't worth the ergonomic cost, especially given that Excel's upper bound is ~1M rows, well within `int` range.
-- **Filename typo** — `SupterStackRegionBuilder.cs` should be `SuperStackRegionBuilder.cs`.
-- **Leaf builders ignore their own strategies at the top level** — `RegionBuilder<TSpace>.Build(space)` just wraps the space; a builder's offset/area strategies are applied by its *parent* (`StackRegionBuilderBase.GetSubregionSpaces` / `RegionBuilder1`). Calling `Build` directly on a leaf builder with strategies silently produces the whole space. Should the top-level `Build` apply the builder's own strategies, or should this be an error?
-- **Row/column composition is asymmetrically public** — rows-then-columns is public (`ColumnStrategies.TakeColumnsWhile*` extension methods on `IRowStrategy` return `IAreaStrategy`), but columns-then-rows is `internal` (the `TakeRowsWhile*` extensions on `IColumnStrategy` in `RowStrategies.cs`). The internal half should probably become public for symmetry. A `TakeRows(int count)` / `TakeColumns(int count)` factory would also help: "exactly 1 row" currently requires the awkward `TakeRowsWhile((s, r) => r < 1)`.
+- **Leaf builders ignore their own strategies at the top level** — `RegionBuilder.Build(space)` just wraps the space; a builder's offset/area strategies are applied by its *parent* (`StackRegionBuilderBase.GetSubregionSpaces` / `RegionBuilder1`). Calling `Build` directly on a leaf builder with strategies silently produces the whole space. Should the top-level `Build` apply the builder's own strategies, or should this be an error?
+
+(Resolved this session: `uint` vs `int` — codebase is all-`int`; the `SupterStackRegionBuilder.cs` filename typo; row/column composition asymmetry — both halves public since the wave-1 mirror collapse; `TakeRows(n)`/`TakeColumns(n)` factories added.)
 
 ## Where Work Left Off
 
@@ -118,7 +116,7 @@ The most recent commits added Excel file parsing support:
 - `e485815` — "First pass at creating a Space for Excel spreadsheets"
 - `f129f48` — "Successfully parsing spreadsheet"
 
-The Excel data source works, and the core use case is now proven end-to-end: `linqpad/investors-by-deal.linq` parses a repeating-block report (N deal blocks of varying length) with no explicit bounds except the structural deal-code cell. Likely next steps are ergonomics-driven: a `RegionBuilderFactory` convenience for `SuperStackRegionBuilder`, `TakeRows(int)`/`TakeColumns(int)` factories, and the open questions around arity explosion and fusing mapping into the declaration.
+The 2026-08-31 session completed wave 1 of the design doc end-to-end: canonical `CellValue` model, full de-generification, adapter-owned blankness, `Repeat` factory, a code-review pass whose 21 findings were all fixed (including two latent `SuperStackRegionBuilder` termination bugs and null-hole hardening in `SpreadsheetSpace`), and a root `.editorconfig`. All three LINQPad scripts use the current API. Next up per the design doc: wave 2 (document-level shape vocabulary — `Table`, separator-aware repeat, `Choice`, named regions) and wave 3 (observability), with map fusion and the arity question after that.
 
 ## Example Usage
 

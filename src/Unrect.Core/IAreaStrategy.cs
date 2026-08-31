@@ -1,7 +1,7 @@
-﻿namespace Unrect.Core
+namespace Unrect.Core
 {
-  public interface IAreaStrategy<in TSpace>
+  public interface IAreaStrategy
   {
-    Area GetArea(ISpace<TSpace> availableSpace);
+    Area GetArea(ISpace availableSpace);
   }
 }

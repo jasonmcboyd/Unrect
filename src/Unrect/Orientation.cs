@@ -1,4 +1,4 @@
-﻿namespace Unrect
+namespace Unrect
 {
   public enum Orientation
   {

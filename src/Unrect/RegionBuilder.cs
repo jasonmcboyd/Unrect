@@ -1,37 +1,28 @@
-using System.Collections.Generic;
 using Unrect.Core;
 
 namespace Unrect
 {
-  public class RegionBuilder<TSpace> : RegionBuilderBase<TSpace, Region<TSpace>>
+  public class RegionBuilder : RegionBuilderBase<Region>
   {
-    public override Region<TSpace> Build(ISpace<TSpace> space) => new Region<TSpace>(space);
+    public override Region Build(ISpace space) => new Region(space);
   }
 
-  public class RegionBuilder1<TSpace, TRegion> : RegionBuilderBase<TSpace, Region1<TSpace, TRegion>>
-    where TRegion : IRegion<TSpace>
+  public class RegionBuilder1<T1> : RegionBuilderBase<Region1<T1>>
+    where T1 : IRegion
   {
-    public RegionBuilder1(IRegionBuilder<TSpace, TRegion> subregionBuilder)
+    public RegionBuilder1(IRegionBuilder<T1> subregionBuilder)
     {
       SubregionBuilder = subregionBuilder;
     }
 
-    private IRegionBuilder<TSpace, TRegion> SubregionBuilder { get; }
+    private IRegionBuilder<T1> SubregionBuilder { get; }
 
-    public override Region1<TSpace, TRegion> Build(ISpace<TSpace> space)
+    public override Region1<T1> Build(ISpace space)
     {
-      var offset = SubregionBuilder.OffsetStrategy.GetOffset(space);
-      var availableSpace = space.GetSubspace(offset);
-      var area = SubregionBuilder.AreaStrategy.GetArea(availableSpace);
-
-      if (area.Size.Width > availableSpace.Area.Size.Width)
-        throw new OutOfBoundsException();
-      if (area.Size.Height > availableSpace.Area.Size.Height)
+      if (!SubspaceResolver.TryResolveSubspace(SubregionBuilder, space, out var subspace, out _, out _))
         throw new OutOfBoundsException();
 
-      var subspace = availableSpace.GetSubspace(area);
-      var subregion = SubregionBuilder.Build(subspace);
-      return new Region1<TSpace, TRegion>(space, subregion);
+      return new Region1<T1>(space, SubregionBuilder.Build(subspace));
     }
   }
 }

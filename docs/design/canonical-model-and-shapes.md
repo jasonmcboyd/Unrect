@@ -1,6 +1,10 @@
 # Design: Canonical Value Model, Shape Vocabulary, and Observability
 
-**Status:** Proposed (design session 2026-08-31; not yet implemented)
+**Status:** Wave 1 implemented and review-hardened (2026-08-31): `CellValue`/`CellKind`
+in Core, full de-generification, `ArraySpace` mapping adapter, Excel adapter slimmed,
+`Repeat`/`RepeatHorizontal` factories (an early piece of §4's vocabulary), centralized
+subspace resolution with safe termination. Waves 2+ remain proposed.
+(Original design session 2026-08-31.)
 **Drives:** the developer-ergonomics overhaul and the de-generification of the core
 
 This document captures a connected set of design decisions arrived at while reviewing
@@ -84,7 +88,7 @@ lexer makes when deciding what counts as whitespace:
 - Adapters decide what maps to Blank and may accept overrides at construction:
   the Excel adapter defaults sanely (null; possibly empty string / `"N/A"` as
   configurable); an array adapter takes it explicitly, e.g.
-  `ArraySpace.Create(nums, blank: v => v == 0)` ("in this grid, zero means empty").
+  `ArraySpace.Create(nums, isBlank: v => v == 0)` ("in this grid, zero means empty").
 - Strategies then need no blankness predicates at all: `SkipBlankRows()` takes zero
   arguments. The `v => !v.HasValue` lambda currently repeated at every call site
   disappears.
@@ -205,9 +209,21 @@ over imperative parsers. Roadmap:
 
 ## Open questions
 
-- Name for the canonical value type (it is no longer "spreadsheet" anything).
+- ~~Name for the canonical value type~~ — resolved: `CellValue`, with `CellKind`.
+- ~~`Number` internal representation~~ — resolved: always stores the double; retains
+  the exact `decimal` when constructed from `decimal`/`int`/`long`; `GetDecimal()`
+  prefers the exact value. Equality compares on the double representation.
 - Does `Error` join the kind set? (Decide when the Excel adapter meets `#DIV/0!`.)
-- `Number` internal representation (decimal-when-possible dual storage) — deferred.
+- Does a `Duration` kind join the kind set? ExcelDataReader yields `TimeSpan` for
+  `[h]:mm`-formatted cells; the Excel adapter currently throws for them rather than
+  guessing (per §2's principle). Decide when a real file needs durations.
+- `CellValue` equality is double-based by design (`Of(1m) == Of(1.0)`), while
+  `GetDecimal()` may return different exact values for equal cells — documented on
+  `Equals`. Revisit if exact-decimal matching is ever needed.
+- `CellValue` memory layout: each instance carries all payload slots (~72 bytes/cell)
+  and `SpreadsheetSpace` materializes whole sheets eagerly. Fine at example scale;
+  revisit before million-row workloads (the `Blank` singleton already covers the
+  dominant sparse case).
 - Exact shape of the capability-declaration API on shapes.
 - Whether `Table()` yields a composite region (headers + body) or a mapped result
   directly — interacts with map fusion.

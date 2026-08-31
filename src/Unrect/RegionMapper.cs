@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using Unrect.Core;
 
 namespace Unrect
 {
-  public class RegionMapper<TSpace, TRegion, TResult> : IRegionMapper<TSpace, TRegion, TResult>
-    where TRegion : IRegion<TSpace>
+  public class RegionMapper<TRegion, TResult> : IRegionMapper<TRegion, TResult>
+    where TRegion : IRegion
   {
     public RegionMapper(Func<TRegion, TResult> regionMap)
     {

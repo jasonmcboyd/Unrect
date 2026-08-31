@@ -1,16 +1,14 @@
-﻿using System.Collections.Generic;
-
 namespace Unrect.Core
 {
-  public interface IRegionBuilder<in TSpace>
+  public interface IRegionBuilder
   {
-    IOffsetStrategy<TSpace> OffsetStrategy { get; }
-    IAreaStrategy<TSpace> AreaStrategy { get; }
+    IOffsetStrategy OffsetStrategy { get; }
+    IAreaStrategy AreaStrategy { get; }
   }
 
-  public interface IRegionBuilder<in TSpace, out TRegion> : IRegionBuilder<TSpace>
-    where TRegion : IRegion<TSpace>
+  public interface IRegionBuilder<out TRegion> : IRegionBuilder
+    where TRegion : IRegion
   {
-    TRegion Build(ISpace<TSpace> space);
+    TRegion Build(ISpace space);
   }
 }

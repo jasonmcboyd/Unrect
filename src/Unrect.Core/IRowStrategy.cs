@@ -1,7 +1,7 @@
 namespace Unrect.Core
 {
-  public interface IRowStrategy<in TSpace>
+  public interface IRowStrategy
   {
-    int SelectRows(ISpace<TSpace> space);
+    int SelectRows(ISpace space);
   }
 }

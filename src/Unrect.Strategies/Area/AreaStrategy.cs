@@ -1,16 +1,16 @@
-﻿using Unrect.Core;
+using Unrect.Core;
 
 namespace Unrect.Strategies
 {
-  internal class AreaStrategy<TSpace> : IAreaStrategy<TSpace>
+  internal class AreaStrategy : IAreaStrategy
   {
-    public AreaStrategy(ISizeStrategy<TSpace> strategy)
+    public AreaStrategy(ISizeStrategy strategy)
     {
       Strategy = strategy;
     }
 
-    private ISizeStrategy<TSpace> Strategy { get; }
+    private ISizeStrategy Strategy { get; }
 
-    public Area GetArea(ISpace<TSpace> availableSpace) => new Area(Strategy.GetSize(availableSpace));
+    public Area GetArea(ISpace availableSpace) => new Area(Strategy.GetSize(availableSpace));
   }
 }

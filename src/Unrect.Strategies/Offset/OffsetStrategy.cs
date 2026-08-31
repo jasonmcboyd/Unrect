@@ -1,16 +1,16 @@
-﻿using Unrect.Core;
+using Unrect.Core;
 
 namespace Unrect.Strategies
 {
-  internal class OffsetStrategy<TSpace> : IOffsetStrategy<TSpace>
+  internal class OffsetStrategy : IOffsetStrategy
   {
-    public OffsetStrategy(ISizeStrategy<TSpace> strategy)
+    public OffsetStrategy(ISizeStrategy strategy)
     {
       Strategy = strategy;
     }
 
-    private ISizeStrategy<TSpace> Strategy { get; }
+    private ISizeStrategy Strategy { get; }
 
-    public Offset GetOffset(ISpace<TSpace> availableSpace) => new Offset(Strategy.GetSize(availableSpace));
+    public Offset GetOffset(ISpace availableSpace) => new Offset(Strategy.GetSize(availableSpace));
   }
 }
