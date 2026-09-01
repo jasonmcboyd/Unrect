@@ -34,6 +34,12 @@ namespace Unrect.Core
       Boolean = boolean;
     }
 
+    private CellValue(CellError error)
+    {
+      Kind = CellKind.Error;
+      Error = error;
+    }
+
     public static CellValue Blank { get; } = new CellValue();
 
     public static CellValue Of(string? value) => value is null ? Blank : new CellValue(value);
@@ -44,6 +50,12 @@ namespace Unrect.Core
     public static CellValue Of(DateTime value) => new CellValue(value);
     public static CellValue Of(bool value) => new CellValue(value);
 
+    /// <summary>
+    /// A cell holding a spreadsheet error. An error is something the cell says, so an error cell
+    /// has a value and is never blank — it must not be skippable as empty space.
+    /// </summary>
+    public static CellValue OfError(CellError error) => new CellValue(error);
+
     public CellKind Kind { get; }
     public bool IsBlank => Kind == CellKind.Blank;
     public bool HasValue => !IsBlank;
@@ -53,6 +65,7 @@ namespace Unrect.Core
     private decimal? ExactNumber { get; }
     private DateTime Temporal { get; }
     private bool Boolean { get; }
+    private CellError Error { get; }
 
     public string? TryGetString() => Kind == CellKind.Text ? Text : null;
     public string GetString() => TryGetString() ?? throw WrongKind(CellKind.Text);
@@ -99,6 +112,9 @@ namespace Unrect.Core
     public bool? TryGetBoolean() => Kind == CellKind.Boolean ? Boolean : null;
     public bool GetBoolean() => TryGetBoolean() ?? throw WrongKind(CellKind.Boolean);
 
+    public CellError? TryGetError() => Kind == CellKind.Error ? Error : null;
+    public CellError GetError() => TryGetError() ?? throw WrongKind(CellKind.Error);
+
     /// <summary>
     /// Two cell values are equal when they share a kind and an equal payload. Numbers compare on
     /// their double representation, so <c>Of(1m)</c> equals <c>Of(1.0)</c> even though
@@ -122,6 +138,7 @@ namespace Unrect.Core
         CellKind.Number => Number.Equals(other.Number),
         CellKind.Temporal => Temporal == other.Temporal,
         CellKind.Boolean => Boolean == other.Boolean,
+        CellKind.Error => Error == other.Error,
         _ => true
       };
     }
@@ -136,6 +153,7 @@ namespace Unrect.Core
         CellKind.Number => Number.GetHashCode(),
         CellKind.Temporal => Temporal.GetHashCode(),
         CellKind.Boolean => Boolean.GetHashCode(),
+        CellKind.Error => Error.GetHashCode(),
         _ => 0
       };
 
@@ -156,7 +174,23 @@ namespace Unrect.Core
         CellKind.Number => $"Number({Number})",
         CellKind.Temporal => $"Temporal({Temporal})",
         CellKind.Boolean => $"Boolean({Boolean})",
+        CellKind.Error => $"Error({Display(Error)})",
         _ => "Blank"
+      };
+
+    /// <summary>The canonical spreadsheet spelling of an error, as Excel shows it in the cell.</summary>
+    private static string Display(CellError error) =>
+      error switch
+      {
+        CellError.Null => "#NULL!",
+        CellError.DivisionByZero => "#DIV/0!",
+        CellError.Value => "#VALUE!",
+        CellError.Reference => "#REF!",
+        CellError.Name => "#NAME?",
+        CellError.Number => "#NUM!",
+        CellError.NotAvailable => "#N/A",
+        CellError.GettingData => "#GETTING_DATA",
+        _ => error.ToString()
       };
 
     // Doubles at or beyond decimal's bounds (and NaN / infinity) have no decimal representation.
@@ -166,6 +200,10 @@ namespace Unrect.Core
 
     private InvalidOperationException WrongKind(CellKind expected) => new InvalidOperationException(WrongKindMessage(expected));
 
-    private string WrongKindMessage(CellKind expected) => $"Cell value is {Kind}; expected {expected}.";
+    // An error cell says why it has no usable value, so the message says which error it is.
+    private string WrongKindMessage(CellKind expected) =>
+      Kind == CellKind.Error
+      ? $"Cell value is Error ({Display(Error)}); expected {expected}."
+      : $"Cell value is {Kind}; expected {expected}.";
   }
 }

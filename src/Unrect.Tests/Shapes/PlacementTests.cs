@@ -173,20 +173,61 @@ namespace Unrect.Tests.Shapes
       Assert.Equal("bumped", shape.Name);
     }
 
-    // --- Modifiers replace rather than accumulate --------------------------------------------------
+    // --- Movements compose; After and Sized replace --------------------------------------------------
 
     [Fact]
-    public void RepeatedOffsetModifiers_KeepOnlyTheLast()
+    public void RepeatedOffsetModifiers_Compose()
     {
-      // Down(1).Down(2) is a two-row offset, not a three-row one: modifiers replace.
-      Assert.Equal(21, IntCell().Down(1).Down(2).Map(CoordinateGrid(width: 1)));
+      // Down(1).Down(2) is a three-row offset: each movement carries on from where the shape
+      // already sits, so the modifiers read as a sequence of steps rather than a last-one-wins.
+      Assert.Equal(31, IntCell().Down(1).Down(2).Map(CoordinateGrid(width: 1)));
     }
 
     [Fact]
-    public void ADifferentAxisModifier_ReplacesTheOffsetEntirely()
+    public void CrossAxisModifiers_ComposeIntoADiagonalAnchor()
     {
-      // Right(1) after Down(1) does not mean "down one and right one" — it means "right one".
-      Assert.Equal(2, IntCell().Down(1).Right(1).Map(CoordinateGrid()));
+      // "Down one and right one", in either spelling — not "right one".
+      Assert.Equal(12, IntCell().Down(1).Right(1).Map(CoordinateGrid()));
+      Assert.Equal(12, IntCell().Right(1).Down(1).Map(CoordinateGrid()));
+    }
+
+    [Fact]
+    public void After_ReplacesAnyMovementsAlreadyApplied()
+    {
+      // After is the "put it exactly here" spelling: it discards what came before rather than
+      // adding to it, which is also how a shape is told to ignore an offset it defaults to.
+      Assert.Equal(21, IntCell().Down(1).After(SkipRows(2)).Map(CoordinateGrid(width: 1)));
+      Assert.Equal(1, IntCell().Down(3).After(SkipRows(0)).Map(CoordinateGrid(width: 1)));
+    }
+
+    [Fact]
+    public void AMovementComposesWithAShapesDefaultOffset()
+    {
+      // A Table already skips the blank rows in front of it; Down(1) carries on one row further.
+      // Were the modifier to replace, it would land on the blank row's successor instead.
+      var space = Mixed(new object?[,]
+      {
+        { null, null },
+        { "Investor", "Amount" },
+        { "Acme", "10" },
+        { "Beta", "20" },
+      });
+
+      Assert.Equal(new[] { "Investor", "Amount" }, Table(t => t.ColumnNames).Map(space));
+      Assert.Equal(new[] { "Acme", "10" }, Table(t => t.ColumnNames).Down(1).Map(space));
+
+      // ...and After discards the default outright, landing exactly one row down.
+      Assert.Equal(new[] { "Investor", "Amount" }, Table(t => t.ColumnNames).After(SkipRows(1)).Map(space));
+    }
+
+    [Fact]
+    public void AMovementOnAnUnplacedShape_SimplyTakesTheOffset()
+    {
+      // Nothing to carry on from, so the first movement is not composed with a phantom no-op.
+      var applied = IntCell().Down(2).Apply(CoordinateGrid(width: 1));
+
+      Assert.Equal(2, applied.Offset.Size.Height);
+      Assert.Equal(21, applied.Value);
     }
 
     [Fact]

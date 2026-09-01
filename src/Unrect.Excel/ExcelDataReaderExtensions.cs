@@ -4,6 +4,10 @@ using System;
 
 using Unrect.Core;
 
+// Both namespaces spell this type; the aliases keep which is which unmistakable.
+using CellError = Unrect.Core.CellError;
+using ExcelError = ExcelDataReader.CellError;
+
 namespace Unrect.Excel
 {
   internal static class ExcelDataReaderExtensions
@@ -11,6 +15,11 @@ namespace Unrect.Excel
     // This adapter's blankness default: a null or empty cell is an empty cell.
     internal static CellValue GetCellValue(this IExcelDataReader dataReader, int index)
     {
+      // Errors first: an error cell has no value to read, so GetValue reports it as null and it
+      // would otherwise be adapted into a Blank — a missing cell, which is not what it is.
+      if (dataReader.GetCellError(index) is ExcelError error)
+        return CellValue.OfError(Adapt(error));
+
       return dataReader.GetValue(index) switch
       {
         null => CellValue.Blank,
@@ -25,5 +34,19 @@ namespace Unrect.Excel
         var value => throw new InvalidOperationException($"Unsupported cell type {value.GetType()}.")
       };
     }
+
+    private static CellError Adapt(ExcelError error) =>
+      error switch
+      {
+        ExcelError.NULL => CellError.Null,
+        ExcelError.DIV0 => CellError.DivisionByZero,
+        ExcelError.VALUE => CellError.Value,
+        ExcelError.REF => CellError.Reference,
+        ExcelError.NAME => CellError.Name,
+        ExcelError.NUM => CellError.Number,
+        ExcelError.NA => CellError.NotAvailable,
+        ExcelError.GETTING_DATA => CellError.GettingData,
+        _ => throw new InvalidOperationException($"Unsupported cell error {error}.")
+      };
   }
 }

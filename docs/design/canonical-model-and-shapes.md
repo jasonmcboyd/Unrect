@@ -285,7 +285,24 @@ tables, and should become a third example workbook when wave 2 starts.
 - ~~`Number` internal representation~~ — resolved: always stores the double; retains
   the exact `decimal` when constructed from `decimal`/`int`/`long`; `GetDecimal()`
   prefers the exact value. Equality compares on the double representation.
-- Does `Error` join the kind set? (Decide when the Excel adapter meets `#DIV/0!`.)
+- ~~Does `Error` join the kind set?~~ — **resolved (2026-09-01)**: `CellKind.Error` with a
+  Core `CellError` enum (Excel's full taxonomy + `GettingData`), populated via
+  ExcelDataReader 3.7's `GetCellError` (package upgraded 3.6→3.7 for this). Error cells
+  are never blank (`HasValue == true`); typed accessors mismatch with a message naming
+  the error. The Maybe-completeness concern is answered by the existing `Try*` layer —
+  no `Maybe<>` infection needed.
+- ~~Whitespace-only cells defeat blankness~~ — **resolved (2026-09-01)**:
+  `SpreadsheetSpace.Create` takes `isBlank: Func<CellValue, bool>?`; the default treats
+  whitespace-only Text as Blank (what the K-1's questionnaire rows need); `_ => false`
+  opts into strict fidelity. Adapter-owned blankness, exactly per the contract.
+  Note for fixture authors: whitespace-significant cells in hand-built xlsx need
+  `xml:space="preserve"` on their `<t>` elements or readers legally strip them
+  (openpyxl does not add it; `examples/edge-cases.xlsx` is post-processed).
+- ~~Diagonal anchoring ergonomics~~ — **resolved (2026-09-01)**: movement modifiers
+  (`Down`/`Right`/`AfterBlankRows`/`AfterBlankColumns`) compose sequentially via `Then`,
+  so `.Right(9).Down(1)` anchors at (9,1) and `Table(...).Down(2)` means "skip blanks,
+  then 2 more"; `.After(strategy)` and `WithPlacement` are the replace-entirely
+  spellings; `.Sized` replaces (areas don't stack).
 - Does a `Duration` kind join the kind set? ExcelDataReader yields `TimeSpan` for
   `[h]:mm`-formatted cells; the Excel adapter currently throws for them rather than
   guessing (per §2's principle). Decide when a real file needs durations.

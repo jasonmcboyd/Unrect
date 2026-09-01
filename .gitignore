@@ -396,3 +396,8 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# Local-only acceptance fixtures (real scrubbed files; never commit)
+examples/scrubbed-k1.xlsx
+big-spreadsheet.png
+linqpad/import-k1.cs

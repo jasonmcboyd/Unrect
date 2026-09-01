@@ -6,6 +6,7 @@ namespace Unrect.Core
     Text,
     Number,
     Temporal,
-    Boolean
+    Boolean,
+    Error
   }
 }

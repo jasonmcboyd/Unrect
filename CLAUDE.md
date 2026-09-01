@@ -126,9 +126,20 @@ The most recent commits added Excel file parsing support:
 
 The 2026-08-31 session completed waves 1 AND 2 of the design doc: wave 1 (canonical `CellValue` model, full de-generification, adapter-owned blankness, review-hardened, 182-test suite) and wave 2 (the fused shape layer in `Unrect.Shapes` per `docs/design/wave2-shapes-spec.md` — applicative shape+projection fusion, `Table` with by-name access, `Repeat` with `sepBy` separators, named shapes, `ShapeException` diagnostics with paths and A1 locations). All four LINQPad scripts use the appropriate API and all three example workbooks parse end-to-end. Next per the design doc: wave 3 observability (`Choice`, decomposition trace, dry-run renderer, unconsumed-space warnings) — the shape layer was designed to accept all of it (see spec §7).
 
+## Test Fixture Policy
+
+`examples/scrubbed-k1.xlsx` is a scrubbed real fund K-1 workbook (74x2771, 169 sections)
+used as a LOCAL-ONLY acceptance target — it is gitignored and must never be committed,
+nor copied into `src/Unrect.Tests/TestData/`. The working practice: when the K-1 file
+exposes a corner case (error cells, whitespace-only cells, repeating numbered groups,
+multi-row headers...), distill it into a small synthetic workbook that IS committed and
+tested. Automated tests must never depend on the scrubbed file's presence.
+
 ## Example Usage
 
 - `linqpad/simple-report.linq` — parses `examples/simple-report.xlsx` via the fused shape API: `Vertical(Column(4, ...), TableRows(...))` with by-name column access; table defaults absorb the blank gap and header row.
 - `linqpad/investors-by-deal.linq` — parses `examples/investors-by-deal.xlsx`: one named deal-block shape (`Cell` over `TableRows`), applied with `Repeat(deal, separatedBy: BlankRows())`.
 - `linqpad/investor-summary.linq` — the wave-2 reference report (`examples/investor-summary.xlsx`): discovered header height, summary table, and a nested `Repeat` of per-investor blocks (`atLeast: 1`), plus the post-parse correlation check (summary rows == detail blocks).
 - `linqpad/array.linq` — the substrate (builder/region) API over a 2D integer array with `ArraySpace.Create(nums, isBlank: v => v == 0)`; kept as the substrate's usage example.
+- `linqpad/edge-cases.linq` — `examples/edge-cases.xlsx` (the first distilled corner-case fixture): the `Error` kind end-to-end, whitespace-vs-empty-vs-absent blankness under default and strict `isBlank`, and how blankness changes discovered extents.
+- `linqpad/scrubbed-k1.linq` — parses the LOCAL-ONLY `examples/scrubbed-k1.xlsx` (gitignored; script fails without it): entity block, 14-fund header band, taxable-income allocation with post-parse validation (allocations sum exactly to federal), and the first cross-tab section's 43 hierarchical coded line items.

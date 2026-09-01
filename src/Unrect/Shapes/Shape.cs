@@ -144,6 +144,45 @@ namespace Unrect.Shapes
     /// </summary>
     public static IOffsetStrategy Then(params IOffsetStrategy[] offsets) => OffsetStrategies.Then(offsets);
 
+    // --- Anchoring vocabulary -------------------------------------------------------------------
+    //
+    // Seeks land the region ON the row or column they find, so "the row after the label" reads
+    // Then(SeekRowContaining("Total"), SkipRows(1)). Finding nothing is a placement failure: a
+    // strict shape reports which anchor was missing, and a Repeat stops looking for more sections.
+
+    /// <summary>Down to the first row satisfying <paramref name="predicate"/>.</summary>
+    public static IOffsetStrategy SeekRow(Func<ISpace, int, bool> predicate) => OffsetStrategies.SeekRow(predicate);
+
+    /// <summary>Down to the first row with any cell satisfying <paramref name="anyCell"/>.</summary>
+    public static IOffsetStrategy SeekRowWhere(Func<CellValue, bool> anyCell) => OffsetStrategies.SeekRowWhere(anyCell);
+
+    /// <summary>
+    /// Down to the first row holding <paramref name="text"/> as a whole cell value, trimmed and
+    /// case-insensitively.
+    /// </summary>
+    public static IOffsetStrategy SeekRowContaining(string text) => OffsetStrategies.SeekRowContaining(text);
+
+    /// <summary>Right to the first column satisfying <paramref name="predicate"/>.</summary>
+    public static IOffsetStrategy SeekColumn(Func<ISpace, int, bool> predicate) => OffsetStrategies.SeekColumn(predicate);
+
+    /// <summary>Right to the first column with any cell satisfying <paramref name="anyCell"/>.</summary>
+    public static IOffsetStrategy SeekColumnWhere(Func<CellValue, bool> anyCell) => OffsetStrategies.SeekColumnWhere(anyCell);
+
+    /// <summary>
+    /// Right to the first column holding <paramref name="text"/> as a whole cell value, trimmed and
+    /// case-insensitively.
+    /// </summary>
+    public static IOffsetStrategy SeekColumnContaining(string text) => OffsetStrategies.SeekColumnContaining(text);
+
+    /// <summary>
+    /// The rightmost <paramref name="width"/> columns. Normally spelled with <c>After</c>, which
+    /// replaces: an anchor measured from the far edge discards wherever a movement left off.
+    /// </summary>
+    public static IOffsetStrategy FromRight(int width) => OffsetStrategies.FromRight(width);
+
+    /// <summary>The bottom <paramref name="height"/> rows; see <see cref="FromRight"/>.</summary>
+    public static IOffsetStrategy FromBottom(int height) => OffsetStrategies.FromBottom(height);
+
     // --- Shared construction ------------------------------------------------------------------
 
     private static IShape<T> Strip<T>(Orientation orientation, Func<CellStrip, T> project, IAreaStrategy area, string description)
@@ -151,6 +190,9 @@ namespace Unrect.Shapes
 
     private static IShape<T> Stack<T>(Orientation orientation, IShape[] children, Func<object?[], T> combine)
       => new StackShape<T>(orientation, children, combine, Placement.Default);
+
+    private static IShape<T> Overlay<T>(IShape[] children, Func<object?[], T> combine)
+      => new OverlayShape<T>(children, combine, Placement.Default);
 
     private static IShape<IReadOnlyList<T>> Repeat<T>(Orientation orientation, IShape<T> item, IOffsetStrategy? separatedBy, int atLeast)
     {

@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 
 using Unrect.Core;
 
@@ -413,6 +414,152 @@ namespace Unrect.Tests
       Assert.False(some == none);
       Assert.True(none != some);
       Assert.True(some != none);
+    }
+
+    // --- Errors ---------------------------------------------------------------------------------
+    //
+    // An error is a value a cell genuinely holds — a formula that could not produce a result — and
+    // not a missing cell. It therefore has a value, is never blank, and must never be skippable as
+    // empty space by a strategy looking for the end of a region.
+
+    [Theory]
+    [InlineData(CellError.Null)]
+    [InlineData(CellError.DivisionByZero)]
+    [InlineData(CellError.Value)]
+    [InlineData(CellError.Reference)]
+    [InlineData(CellError.Name)]
+    [InlineData(CellError.Number)]
+    [InlineData(CellError.NotAvailable)]
+    [InlineData(CellError.GettingData)]
+    public void OfError_IsAnErrorCellThatCarriesAValue(CellError error)
+    {
+      var value = CellValue.OfError(error);
+
+      Assert.Equal(CellKind.Error, value.Kind);
+      Assert.True(value.HasValue);
+      Assert.False(value.IsBlank);
+      Assert.Equal(error, value.GetError());
+      Assert.Equal(error, value.TryGetError());
+    }
+
+    [Theory]
+    [InlineData(CellError.Null, "Error(#NULL!)")]
+    [InlineData(CellError.DivisionByZero, "Error(#DIV/0!)")]
+    [InlineData(CellError.Value, "Error(#VALUE!)")]
+    [InlineData(CellError.Reference, "Error(#REF!)")]
+    [InlineData(CellError.Name, "Error(#NAME?)")]
+    [InlineData(CellError.Number, "Error(#NUM!)")]
+    [InlineData(CellError.NotAvailable, "Error(#N/A)")]
+    [InlineData(CellError.GettingData, "Error(#GETTING_DATA)")]
+    public void ToString_SpellsAnErrorTheWayASheetShowsIt(CellError error, string expected)
+    {
+      Assert.Equal(expected, CellValue.OfError(error).ToString());
+    }
+
+    [Fact]
+    public void EveryDeclaredErrorHasItsOwnSpelling()
+    {
+      // Guards the spelling table against a copy-paste: eight errors, eight distinct renderings.
+      var spellings = Enum.GetValues(typeof(CellError))
+        .Cast<CellError>()
+        .Select(error => CellValue.OfError(error).ToString())
+        .ToArray();
+
+      Assert.Equal(8, spellings.Length);
+      Assert.Equal(spellings.Length, spellings.Distinct().Count());
+      Assert.All(spellings, spelling => Assert.StartsWith("Error(#", spelling));
+    }
+
+    [Fact]
+    public void GettingData_IsRepresentedRatherThanRejected()
+    {
+      // The transient state of an asynchronous formula, occasionally found cached in a saved
+      // workbook: carrying it faithfully is what keeps such a file parseable at all.
+      var value = CellValue.OfError(CellError.GettingData);
+
+      Assert.Equal(CellError.GettingData, value.GetError());
+      Assert.Equal("Error(#GETTING_DATA)", value.ToString());
+    }
+
+    [Fact]
+    public void TryGetError_OnANonErrorCell_ReturnsNull()
+    {
+      Assert.Null(CellValue.Of(1).TryGetError());
+      Assert.Null(CellValue.Of("#VALUE!").TryGetError());
+      Assert.Null(CellValue.Blank.TryGetError());
+    }
+
+    [Fact]
+    public void GetError_OnANonErrorCell_Throws()
+    {
+      Assert.Throws<InvalidOperationException>(() => CellValue.Of(1).GetError());
+      Assert.Throws<InvalidOperationException>(() => CellValue.Blank.GetError());
+    }
+
+    [Fact]
+    public void TryAccessorsOnAnErrorCell_ReturnNull()
+    {
+      var value = CellValue.OfError(CellError.Reference);
+
+      Assert.Null(value.TryGetString());
+      Assert.Null(value.TryGetDouble());
+      Assert.Null(value.TryGetDecimal());
+      Assert.Null(value.TryGetInt());
+      Assert.Null(value.TryGetDateTime());
+      Assert.Null(value.TryGetBoolean());
+    }
+
+    [Fact]
+    public void TypedAccessorsOnAnErrorCell_ThrowAndNameTheError()
+    {
+      // "expected Number" alone would send the reader looking for a type mismatch; naming the
+      // error says the sheet is broken, not the declaration.
+      var value = CellValue.OfError(CellError.Value);
+
+      Assert.Equal(
+        "Cell value is Error (#VALUE!); expected Number.",
+        Assert.Throws<InvalidOperationException>(() => value.GetDouble()).Message);
+      Assert.Equal(
+        "Cell value is Error (#VALUE!); expected Text.",
+        Assert.Throws<InvalidOperationException>(() => value.GetString()).Message);
+      Assert.Equal(
+        "Cell value is Error (#VALUE!); expected Number.",
+        Assert.Throws<InvalidOperationException>(() => value.GetDecimal()).Message);
+      Assert.Equal(
+        "Cell value is Error (#VALUE!); expected Number.",
+        Assert.Throws<InvalidOperationException>(() => value.GetInt()).Message);
+      Assert.Equal(
+        "Cell value is Error (#VALUE!); expected Temporal.",
+        Assert.Throws<InvalidOperationException>(() => value.GetDateTime()).Message);
+      Assert.Equal(
+        "Cell value is Error (#VALUE!); expected Boolean.",
+        Assert.Throws<InvalidOperationException>(() => value.GetBoolean()).Message);
+    }
+
+    [Fact]
+    public void Errors_AreEqualWhenTheyAreTheSameError()
+    {
+      Assert.Equal(CellValue.OfError(CellError.Value), CellValue.OfError(CellError.Value));
+      Assert.NotEqual(CellValue.OfError(CellError.Value), CellValue.OfError(CellError.Name));
+      Assert.True(CellValue.OfError(CellError.Value) == CellValue.OfError(CellError.Value));
+      Assert.True(CellValue.OfError(CellError.Value) != CellValue.OfError(CellError.Name));
+    }
+
+    [Fact]
+    public void AnErrorIsNotItsOwnSpelling()
+    {
+      // #VALUE! the error and "#VALUE!" the text are different kinds of cell, and neither is empty.
+      Assert.NotEqual(CellValue.OfError(CellError.Value), CellValue.Of("#VALUE!"));
+      Assert.NotEqual(CellValue.OfError(CellError.Value), CellValue.Blank);
+      Assert.NotEqual(CellValue.OfError(CellError.Number), CellValue.Of(0));
+    }
+
+    [Fact]
+    public void GetHashCode_IsEqualForEqualErrors()
+    {
+      Assert.Equal(
+        CellValue.OfError(CellError.NotAvailable).GetHashCode(),
+        CellValue.OfError(CellError.NotAvailable).GetHashCode());
     }
   }
 }

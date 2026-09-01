@@ -6,8 +6,17 @@ using Unrect.Strategies;
 namespace Unrect.Shapes
 {
   /// <summary>
-  /// Application, naming, and placement modifiers. Modifiers replace rather than accumulate — the
-  /// last one wins; compose offsets explicitly with <see cref="Shape.Then"/>.
+  /// Application, naming, and placement modifiers.
+  /// <para>
+  /// The movement modifiers — <c>Down</c>, <c>Right</c>, <c>AfterBlankRows</c>,
+  /// <c>AfterBlankColumns</c> — <em>compose</em>: each one starts from where the shape already sits,
+  /// so <c>.Right(9).Down(1)</c> anchors at column 9, row 1, and <c>Table(...).Down(2)</c> means
+  /// "past the blank rows, then two more".
+  /// </para>
+  /// <para>
+  /// <c>After</c> <em>replaces</em> the offset outright — the "put it exactly here" spelling, and
+  /// the way to discard a default. <c>Sized</c> replaces too, since extents do not stack.
+  /// </para>
   /// </summary>
   public static partial class ShapeExtensions
   {
@@ -38,28 +47,28 @@ namespace Unrect.Shapes
     /// <summary>Labels the shape, so failures and diagnostics say <paramref name="name"/>.</summary>
     public static IShape<T> Named<T>(this IShape<T> shape, string name) => NotNull(shape).WithName(name);
 
-    /// <summary>Positions the shape at <paramref name="offset"/>, replacing any offset it had.</summary>
+    /// <summary>
+    /// Positions the shape at <paramref name="offset"/>, <em>replacing</em> any offset it had —
+    /// including a default, which is how a <c>Table</c> is told not to skip its blank rows.
+    /// </summary>
     public static IShape<T> After<T>(this IShape<T> shape, IOffsetStrategy offset)
       => NotNull(shape).WithPlacement(shape.Placement.WithOffset(offset));
 
-    /// <summary>Positions the shape past the leading blank rows, replacing any offset it had.</summary>
-    public static IShape<T> AfterBlankRows<T>(this IShape<T> shape) => shape.After(OffsetStrategies.SkipBlankRows());
+    /// <summary>Moves the shape on past the blank rows in front of it.</summary>
+    public static IShape<T> AfterBlankRows<T>(this IShape<T> shape) => Move(shape, OffsetStrategies.SkipBlankRows());
 
-    /// <summary>Positions the shape past the leading blank columns, replacing any offset it had.</summary>
-    public static IShape<T> AfterBlankColumns<T>(this IShape<T> shape) => shape.After(OffsetStrategies.SkipBlankColumns());
+    /// <summary>Moves the shape on past the blank columns in front of it.</summary>
+    public static IShape<T> AfterBlankColumns<T>(this IShape<T> shape) => Move(shape, OffsetStrategies.SkipBlankColumns());
 
-    /// <summary>
-    /// Positions the shape <paramref name="rows"/> rows down, replacing any offset it had — to move
-    /// past a discovered offset as well, spell both out with <see cref="Shape.Then"/>.
-    /// </summary>
+    /// <summary>Moves the shape on <paramref name="rows"/> rows down from where it sits.</summary>
     public static IShape<T> Down<T>(this IShape<T> shape, int rows)
-      => shape.After(OffsetStrategies.ExplicitOffset(0, NotNegative(rows, nameof(rows))));
+      => Move(shape, OffsetStrategies.ExplicitOffset(0, NotNegative(rows, nameof(rows))));
 
     /// <summary>
-    /// Positions the shape <paramref name="columns"/> columns right, replacing any offset it had.
+    /// Moves the shape on <paramref name="columns"/> columns right from where it sits.
     /// </summary>
     public static IShape<T> Right<T>(this IShape<T> shape, int columns)
-      => shape.After(OffsetStrategies.ExplicitOffset(NotNegative(columns, nameof(columns)), 0));
+      => Move(shape, OffsetStrategies.ExplicitOffset(NotNegative(columns, nameof(columns)), 0));
 
     /// <summary>
     /// Declares the shape's extent, replacing whatever it had — including a derived one, after
@@ -69,15 +78,70 @@ namespace Unrect.Shapes
       => NotNull(shape).WithPlacement(shape.Placement.WithArea(area));
 
     /// <summary>
+    /// Insets the shape's extent by <paramref name="all"/> cells on every side.
+    /// </summary>
+    public static IShape<T> Padded<T>(this IShape<T> shape, int all)
+    {
+      NotNegative(all, nameof(all));
+
+      return Pad(shape, all, all, all, all);
+    }
+
+    /// <summary>
+    /// Insets the shape's extent by <paramref name="horizontal"/> cells left and right and
+    /// <paramref name="vertical"/> cells top and bottom.
+    /// </summary>
+    public static IShape<T> Padded<T>(this IShape<T> shape, int horizontal, int vertical)
+    {
+      NotNegative(horizontal, nameof(horizontal));
+      NotNegative(vertical, nameof(vertical));
+
+      return Pad(shape, horizontal, vertical, horizontal, vertical);
+    }
+
+    /// <summary>
+    /// Insets the shape's extent by the given amounts, so the shape reads the inside of its region
+    /// and still consumes the whole of it — a border of labels around a block of numbers, say.
+    /// <para>
+    /// Padding shrinks the inside, where an offset shifts the outside; that is the difference
+    /// between this and the movement modifiers, and the two compose freely.
+    /// </para>
+    /// </summary>
+    public static IShape<T> Padded<T>(this IShape<T> shape, int left, int top, int right, int bottom)
+    {
+      NotNegative(left, nameof(left));
+      NotNegative(top, nameof(top));
+      NotNegative(right, nameof(right));
+      NotNegative(bottom, nameof(bottom));
+
+      return Pad(shape, left, top, right, bottom);
+    }
+
+    /// <summary>
     /// Projects the shape's result through <paramref name="selector"/>. The wrapper is a shape like
     /// any other, so <c>Named</c> and the placement modifiers work on either side of it.
     /// </summary>
     public static IShape<TResult> Select<T, TResult>(this IShape<T> shape, Func<T, TResult> selector)
       => new MapShape<T, TResult>(NotNull(shape), selector, Placement.Default);
 
+    /// <summary>
+    /// Carries the shape on from wherever it already sits, so movements read cumulatively. A shape
+    /// that has not been placed yet has nothing to carry on from and simply takes the new offset.
+    /// </summary>
+    private static IShape<T> Move<T>(IShape<T> shape, IOffsetStrategy offset)
+    {
+      var placement = NotNull(shape).Placement;
+
+      return shape.WithPlacement(placement.WithOffset(
+        placement.HasDeclaredOffset ? OffsetStrategies.Then(placement.Offset, offset) : offset));
+    }
+
+    private static IShape<T> Pad<T>(IShape<T> shape, int left, int top, int right, int bottom)
+      => new PadShape<T>(NotNull(shape), left, top, right, bottom, Placement.Default);
+
     private static IShape<T> NotNull<T>(IShape<T> shape) => shape ?? throw new ArgumentNullException(nameof(shape));
 
     private static int NotNegative(int distance, string parameter)
-      => distance >= 0 ? distance : throw new ArgumentOutOfRangeException(parameter, distance, "A shape cannot be moved a negative distance.");
+      => distance >= 0 ? distance : throw new ArgumentOutOfRangeException(parameter, distance, "A shape cannot be inset or moved a negative distance.");
   }
 }

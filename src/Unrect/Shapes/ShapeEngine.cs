@@ -1,6 +1,7 @@
 using System;
 
 using Unrect.Core;
+using Unrect.Strategies;
 
 namespace Unrect.Shapes
 {
@@ -63,7 +64,7 @@ namespace Unrect.Shapes
       catch (OutOfBoundsException exception)
       {
         return strict
-          ? throw context.Failure(shape, "its offset ran past the available space", availableSpace, null, exception)
+          ? throw context.Failure(shape, Missing(exception), availableSpace, null, exception)
           : false;
       }
       catch (Exception exception)
@@ -154,6 +155,12 @@ namespace Unrect.Shapes
 
     internal static string Threw(string what, Exception exception)
       => $"its {what} strategy threw {exception.GetType().Name}: {exception.Message}";
+
+    // A seek that found nothing says what it was looking for; anything else just ran out of room.
+    private static string Missing(OutOfBoundsException exception)
+      => exception is AnchorNotFoundException anchor
+        ? $"{anchor.Description} exists in the available space"
+        : "its offset ran past the available space";
 
     private readonly struct Placed
     {

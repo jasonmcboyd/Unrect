@@ -255,6 +255,83 @@ namespace Unrect.Tests.Shapes
       Assert.Equal(new[] { "A-1" }, Repeat(item, separatedBy: BlankRows()).Map(space));
     }
 
+    // --- Seeking as the stopping condition ---------------------------------------------------------------------
+    //
+    // A seek that finds nothing is a placement failure, and a repeat treats its item's own placement
+    // failing as "no more items". "Repeat sections until there are no more section labels" therefore
+    // needs no separator, no atLeast, and no coordinates — it falls out of the two rules meeting.
+
+    [Fact]
+    public void Repeat_OfASeekingItem_CollectsEverySectionAndThenStops()
+    {
+      var space = Mixed(new object?[,]
+      {
+        { "Section", null },
+        { "a", 1 },
+        { "Section", null },
+        { "b", 2 },
+        { "unrelated trailing junk", null },
+        { "with no section label", null },
+      });
+
+      var section = Vertical(
+        Cell(v => v.GetString()).Named("label"),
+        Cell(v => v.GetInt()).Right(1).Named("amount"))
+        .Select((label, amount) => amount)
+        .After(SeekRowContaining("Section"));
+
+      var amounts = Repeat(section).Map(space);
+
+      Assert.Equal(new[] { 1, 2 }, amounts);
+    }
+
+    [Fact]
+    public void Repeat_OfASeekingItem_SkipsWhateverSitsBetweenTheSections()
+    {
+      // The point of anchoring on presence: rows inserted between sections move the next label, and
+      // the seek simply finds it again. A skip-while would have stopped at the first inserted row.
+      var space = Mixed(new object?[,]
+      {
+        { "preamble", null },
+        { "Section", null },
+        { "a", 1 },
+        { "an inserted proof row", null },
+        { "Section", null },
+        { "b", 2 },
+      });
+
+      var section = Vertical(
+        Cell(v => v.GetString()).Named("label"),
+        Cell(v => v.GetInt()).Right(1).Named("amount"))
+        .Select((label, amount) => amount)
+        .After(SeekRowContaining("Section"));
+
+      Assert.Equal(new[] { 1, 2 }, Repeat(section).Map(space));
+    }
+
+    [Fact]
+    public void Repeat_OfASeekingItem_WithNoSectionsAtAll_IsEmptyRatherThanAnError()
+    {
+      var space = Mixed(new object?[,] { { "nothing", null }, { "here", null } });
+
+      var section = Cell(v => v.GetString()).After(SeekRowContaining("Section"));
+
+      Assert.Empty(Repeat(section).Map(space));
+    }
+
+    [Fact]
+    public void ASeekingShape_OutsideARepeat_IsStillAHardError()
+    {
+      // The same missing anchor: a stopping condition inside a repeat, a reported failure anywhere
+      // else. Only the item's own placement is allowed to be optional.
+      var space = Mixed(new object?[,] { { "nothing", null }, { "here", null } });
+
+      var failure = Assert.Throws<ShapeException>(() =>
+        Cell(v => v.GetString()).After(SeekRowContaining("Section")).Map(space));
+
+      Assert.Contains("no row containing 'Section' exists in the available space", failure.Message);
+    }
+
     // --- atLeast ---------------------------------------------------------------------------------------------
 
     [Fact]

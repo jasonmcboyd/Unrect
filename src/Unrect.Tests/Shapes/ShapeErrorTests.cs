@@ -50,6 +50,58 @@ namespace Unrect.Tests.Shapes
       Assert.IsType<OutOfBoundsException>(failure.InnerException);
     }
 
+    [Fact]
+    public void ASeekThatFindsNothing_SaysWhatItWasLookingFor()
+    {
+      // A missing anchor resolves as a placement failure, but "its offset ran past the available
+      // space" would be useless: the useful fact is which label was not there.
+      var space = Mixed(new object?[,] { { "nothing", null }, { "relevant", null } });
+
+      var failure = Assert.Throws<ShapeException>(() =>
+        Cell(v => v.GetString()).Named("taxable income").After(SeekRowContaining("Taxable Income")).Map(space));
+
+      Assert.Equal("'taxable income'", failure.Subject);
+      Assert.Contains("no row containing 'Taxable Income' exists in the available space", failure.Message);
+      Assert.Contains("  in 'taxable income' (Cell)", failure.Message);
+      Assert.Contains("(A1)", failure.Message);
+      Assert.Contains("2x2 available", failure.Message);
+    }
+
+    [Fact]
+    public void EverySeekDescribesItsOwnKindOfMiss()
+    {
+      var space = Mixed(new object?[,] { { "nothing", null }, { "relevant", null } });
+
+      Assert.Contains("no row containing 'Total' exists", Missing(SeekRowContaining("Total"), space));
+      Assert.Contains("no column containing 'Total' exists", Missing(SeekColumnContaining("Total"), space));
+      Assert.Contains("no row with a matching cell exists", Missing(SeekRowWhere(_ => false), space));
+      Assert.Contains("no column with a matching cell exists", Missing(SeekColumnWhere(_ => false), space));
+      Assert.Contains("no matching row exists", Missing(SeekRow((_, _) => false), space));
+      Assert.Contains("no matching column exists", Missing(SeekColumn((_, _) => false), space));
+    }
+
+    [Fact]
+    public void ASeekMissNeverEscapesAsABareOutOfBoundsException()
+    {
+      var space = Mixed(new object?[,] { { "nothing", null } });
+
+      Assert.Throws<ShapeException>(() => IntCell().After(SeekRowContaining("Total")).Map(space));
+      Assert.Throws<ShapeException>(() => IntCell().After(FromRight(9)).Map(space));
+      Assert.Throws<ShapeException>(() => IntCell().After(FromBottom(9)).Map(space));
+    }
+
+    [Fact]
+    public void AnOffsetThatMerelyRunsOutOfRoom_StillSaysSo()
+    {
+      // The seek description replaces the generic wording only when there was an anchor to name.
+      var space = Mixed(new object?[,] { { "nothing", null } });
+
+      Assert.Contains("its offset ran past the available space", Missing(FromRight(9), space));
+    }
+
+    private static string Missing(IOffsetStrategy offset, ISpace space)
+      => Assert.Throws<ShapeException>(() => Cell(v => v.GetString()).After(offset).Map(space)).Message;
+
     // --- Case B: the area does not fit ------------------------------------------------------------------
 
     [Fact]

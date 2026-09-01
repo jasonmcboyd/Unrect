@@ -463,5 +463,207 @@ namespace Unrect.Tests
       Assert.Equal(3, area.Size.Width);
       Assert.Equal(1, area.Size.Height);
     }
+
+    // --- Seeking: anchoring on presence -----------------------------------------------------------
+    //
+    // A skip-while anchors on absence and is defeated by anything inserted above the thing being
+    // looked for. A seek scans to the first match, and the region starts AT it.
+
+    /// <summary>A grid of labels; the array adapter treats null and "" as empty cells.</summary>
+    private static ISpace Text(string?[,] values) => ArraySpace.Create(values);
+
+    private static ISpace Labelled() => Text(new string?[,]
+    {
+      { "junk", null },
+      { "an inserted proof row", null },
+      { "  SECTION  ", null },
+      { "a", "b" },
+    });
+
+    [Fact]
+    public void SeekRowContaining_LandsOnTheRowThatHoldsTheLabel()
+    {
+      // The offset stops short of the match, so the region it places starts AT the label rather
+      // than after it — the two junk rows above are exactly what a skip-while would have tripped on.
+      var offset = SeekRowContaining("SECTION").GetOffset(Labelled());
+
+      Assert.Equal(0, offset.Size.Width);
+      Assert.Equal(2, offset.Size.Height);
+    }
+
+    [Fact]
+    public void SeekRowContaining_TrimsBothSidesAndIgnoresCase()
+    {
+      // The sheet says "  SECTION  "; the declaration may say it any way that reads well.
+      Assert.Equal(2, SeekRowContaining("Section").GetOffset(Labelled()).Size.Height);
+      Assert.Equal(2, SeekRowContaining("section").GetOffset(Labelled()).Size.Height);
+      Assert.Equal(2, SeekRowContaining("  section  ").GetOffset(Labelled()).Size.Height);
+    }
+
+    [Theory]
+    [InlineData("ecti")]
+    [InlineData("SEC")]
+    [InlineData("SECTION HEADER")]
+    public void SeekRowContaining_MatchesWholeCellsNotSubstrings(string needle)
+    {
+      // Labels are whole cell values; substring matching would anchor on the first cell that merely
+      // mentions the word. Anything fancier is what the predicate overload is for.
+      Assert.ThrowsAny<OutOfBoundsException>(() => SeekRowContaining(needle).GetOffset(Labelled()));
+    }
+
+    [Fact]
+    public void SeekRowWhere_LandsOnTheFirstRowWithAMatchingCell()
+    {
+      // Column 1 is empty until the last row, so this finds a row by a cell that is not the first.
+      Assert.Equal(3, SeekRowWhere(cell => cell.TryGetString() == "b").GetOffset(Labelled()).Size.Height);
+    }
+
+    [Fact]
+    public void SeekRow_LandsOnTheFirstRowSatisfyingAPositionalPredicate()
+    {
+      var space = Grid(new[,] { { 1, 0 }, { 2, 0 }, { 3, 0 } });
+
+      Assert.Equal(2, SeekRow((s, row) => s[0, row].GetInt() == 3).GetOffset(space).Size.Height);
+    }
+
+    [Fact]
+    public void SeekingLandsOnTheMatch_AndComposesToLandAfterIt()
+    {
+      // "The row after the label" is not a separate strategy; it is the seek and then a step.
+      var space = Labelled();
+
+      Assert.Equal(2, SeekRowContaining("Section").GetOffset(space).Size.Height);
+      Assert.Equal(3, Then(SeekRowContaining("Section"), ExplicitOffset(0, 1)).GetOffset(space).Size.Height);
+    }
+
+    [Theory]
+    [InlineData("Nope")]
+    [InlineData("")]
+    public void SeekRowContaining_WithNoMatch_Throws(string needle)
+    {
+      // A missing anchor is a placement failure: strict callers report it, and a repeat stops.
+      Assert.ThrowsAny<OutOfBoundsException>(() => SeekRowContaining(needle).GetOffset(Labelled()));
+    }
+
+    [Fact]
+    public void SeekRowStrategies_WithNoMatch_AllThrow()
+    {
+      Assert.ThrowsAny<OutOfBoundsException>(() => SeekRow((_, _) => false).GetOffset(Labelled()));
+      Assert.ThrowsAny<OutOfBoundsException>(() => SeekRowWhere(_ => false).GetOffset(Labelled()));
+    }
+
+    // --- The column twins ---------------------------------------------------------------------------
+
+    private static ISpace LabelledColumns() => Text(new string?[,]
+    {
+      { "a", "b", "  TOTAL  ", "d" },
+      { null, null, null, null },
+    });
+
+    [Fact]
+    public void SeekColumnContaining_LandsOnTheColumnThatHoldsTheLabel()
+    {
+      var offset = SeekColumnContaining("Total").GetOffset(LabelledColumns());
+
+      Assert.Equal(2, offset.Size.Width);
+      Assert.Equal(0, offset.Size.Height);
+    }
+
+    [Fact]
+    public void SeekColumnContaining_TrimsBothSidesAndIgnoresCase()
+    {
+      Assert.Equal(2, SeekColumnContaining("total").GetOffset(LabelledColumns()).Size.Width);
+      Assert.Equal(2, SeekColumnContaining("  Total  ").GetOffset(LabelledColumns()).Size.Width);
+    }
+
+    [Fact]
+    public void SeekColumnContaining_MatchesWholeCellsNotSubstrings()
+    {
+      Assert.ThrowsAny<OutOfBoundsException>(() => SeekColumnContaining("Tot").GetOffset(LabelledColumns()));
+    }
+
+    [Fact]
+    public void SeekColumnWhere_LandsOnTheFirstColumnWithAMatchingCell()
+    {
+      Assert.Equal(3, SeekColumnWhere(cell => cell.TryGetString() == "d").GetOffset(LabelledColumns()).Size.Width);
+    }
+
+    [Fact]
+    public void SeekColumn_LandsOnTheFirstColumnSatisfyingAPositionalPredicate()
+    {
+      var space = Grid(new[,] { { 1, 2, 3 } });
+
+      Assert.Equal(1, SeekColumn((s, column) => s[column, 0].GetInt() == 2).GetOffset(space).Size.Width);
+    }
+
+    [Fact]
+    public void SeekColumnStrategies_WithNoMatch_AllThrow()
+    {
+      Assert.ThrowsAny<OutOfBoundsException>(() => SeekColumnContaining("Nope").GetOffset(LabelledColumns()));
+      Assert.ThrowsAny<OutOfBoundsException>(() => SeekColumn((_, _) => false).GetOffset(LabelledColumns()));
+      Assert.ThrowsAny<OutOfBoundsException>(() => SeekColumnWhere(_ => false).GetOffset(LabelledColumns()));
+    }
+
+    [Fact]
+    public void SeekFactories_RejectNullArguments()
+    {
+      Assert.Equal("predicate", Assert.Throws<ArgumentNullException>(() => SeekRow(null!)).ParamName);
+      Assert.Equal("anyCell", Assert.Throws<ArgumentNullException>(() => SeekRowWhere(null!)).ParamName);
+      Assert.Equal("text", Assert.Throws<ArgumentNullException>(() => SeekRowContaining(null!)).ParamName);
+      Assert.Equal("predicate", Assert.Throws<ArgumentNullException>(() => SeekColumn(null!)).ParamName);
+      Assert.Equal("anyCell", Assert.Throws<ArgumentNullException>(() => SeekColumnWhere(null!)).ParamName);
+      Assert.Equal("text", Assert.Throws<ArgumentNullException>(() => SeekColumnContaining(null!)).ParamName);
+    }
+
+    // --- Anchoring to the far edge --------------------------------------------------------------------
+
+    [Fact]
+    public void FromRight_ReservesTheRightmostColumns()
+    {
+      var space = Grid(new[,] { { 1, 2, 3, 4 }, { 11, 12, 13, 14 }, { 21, 22, 23, 24 } });
+
+      var offset = FromRight(2).GetOffset(space);
+
+      Assert.Equal(2, offset.Size.Width);
+      Assert.Equal(0, offset.Size.Height);
+    }
+
+    [Fact]
+    public void FromBottom_ReservesTheBottomRows()
+    {
+      var space = Grid(new[,] { { 1, 2, 3, 4 }, { 11, 12, 13, 14 }, { 21, 22, 23, 24 } });
+
+      var offset = FromBottom(1).GetOffset(space);
+
+      Assert.Equal(0, offset.Size.Width);
+      Assert.Equal(2, offset.Size.Height);
+    }
+
+    [Fact]
+    public void FromEndAnchors_ThatExactlyFill_StartAtTheOrigin()
+    {
+      var space = Grid(new[,] { { 1, 2, 3, 4 }, { 11, 12, 13, 14 }, { 21, 22, 23, 24 } });
+
+      Assert.Equal(0, FromRight(4).GetOffset(space).Size.Width);
+      Assert.Equal(0, FromBottom(3).GetOffset(space).Size.Height);
+    }
+
+    [Fact]
+    public void FromEndAnchors_ThatDoNotFit_Throw()
+    {
+      var space = Grid(new[,] { { 1, 2, 3, 4 }, { 11, 12, 13, 14 }, { 21, 22, 23, 24 } });
+
+      Assert.ThrowsAny<OutOfBoundsException>(() => FromRight(5).GetOffset(space));
+      Assert.ThrowsAny<OutOfBoundsException>(() => FromBottom(4).GetOffset(space));
+    }
+
+    [Fact]
+    public void FromEndAnchors_RejectNegativeExtentsWhenTheyAreDeclared()
+    {
+      // Checked at the factory rather than at resolution time: a negative extent is a broken
+      // declaration, and there is no space it could ever make sense against.
+      Assert.Equal("width", Assert.Throws<ArgumentOutOfRangeException>(() => FromRight(-1)).ParamName);
+      Assert.Equal("height", Assert.Throws<ArgumentOutOfRangeException>(() => FromBottom(-1)).ParamName);
+    }
   }
 }

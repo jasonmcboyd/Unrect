@@ -7,6 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- So ShapeEngine can render AnchorNotFoundException.Description; nothing else is shared. -->
+    <InternalsVisibleTo Include="Unrect" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Unrect.Core\Unrect.Core.csproj" />
   </ItemGroup>
 
