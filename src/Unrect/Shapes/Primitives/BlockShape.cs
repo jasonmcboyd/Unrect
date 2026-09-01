@@ -18,6 +18,6 @@ namespace Unrect.Shapes
     public override string Description { get; }
 
     public override ShapeResult<T> Project(ISpace extent, ShapeContext context)
-      => new ShapeResult<T>(Projection(new CellBlock(extent)), extent.Area.Size);
+      => new ShapeResult<T>(Projection(new CellBlock(extent, context.Origin)), extent.Area.Size);
   }
 }

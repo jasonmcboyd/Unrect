@@ -38,39 +38,57 @@ namespace Unrect.Shapes
 
       while (true)
       {
-        // The cursor is tentative until an item is collected, so a separator followed by nothing
-        // (a trailing blank band) is not counted as consumed.
-        var cursor = along;
-        var reach = across;
+        var mark = context.Diagnostics.Mark();
 
-        if (values.Count > 0 && !TrySeparate(extent.GetSubspace(Step(cursor)), context, ref cursor, ref reach))
-          break;
+        if (TryCollect(extent, context, values, ref along, ref across))
+          continue;
 
-        var remaining = extent.GetSubspace(Step(cursor));
-
-        if (IsEmpty(remaining))
-          break;
-
-        var scope = context.Advance(Step(cursor)).WithIndex(values.Count);
-
-        // Only the item's own placement stops the repetition; a failure deeper inside it is an
-        // error, so intra-block format drift is loud rather than silently truncating.
-        if (!ShapeEngine.TryApply(Item, remaining, scope, out var applied))
-          break;
-
-        // An item that occupies nothing, or advances nowhere, would repeat forever.
-        if (applied.Consumed.Width == 0 || applied.Consumed.Height == 0 || Along(applied.Advance) == 0)
-          break;
-
-        values.Add(applied.Value);
-        along = cursor + Along(applied.Advance);
-        across = Math.Max(reach, Across(applied.Advance));
+        // An attempt that is not collected leaves nothing behind — not even what it tolerated on
+        // the way to being discarded.
+        context.Diagnostics.Rollback(mark);
+        break;
       }
 
       if (values.Count < AtLeast)
         throw context.Failure($"expected at least {AtLeast} occurrences but found {values.Count}", extent);
 
       return new ShapeResult<IReadOnlyList<T>>(values, Extent(along, across));
+    }
+
+    /// <summary>
+    /// One attempt: separate, place, project, and collect. False means the repetition is over, and
+    /// whatever the attempt did is discarded by the caller.
+    /// </summary>
+    private bool TryCollect(ISpace extent, ShapeContext context, List<T> values, ref int along, ref int across)
+    {
+      // The cursor is tentative until an item is collected, so a separator followed by nothing
+      // (a trailing blank band) is not counted as consumed.
+      var cursor = along;
+      var reach = across;
+
+      if (values.Count > 0 && !TrySeparate(extent.GetSubspace(Step(cursor)), context, ref cursor, ref reach))
+        return false;
+
+      var remaining = extent.GetSubspace(Step(cursor));
+
+      if (IsEmpty(remaining))
+        return false;
+
+      var scope = context.Advance(Step(cursor)).WithIndex(values.Count);
+
+      // Only the item's own placement stops the repetition; a failure deeper inside it is an
+      // error, so intra-block format drift is loud rather than silently truncating.
+      if (!ShapeEngine.TryApply(Item, remaining, scope, out var applied))
+        return false;
+
+      // An item that occupies nothing, or advances nowhere, would repeat forever.
+      if (applied.Consumed.Width == 0 || applied.Consumed.Height == 0 || Along(applied.Advance) == 0)
+        return false;
+
+      values.Add(applied.Value);
+      along = cursor + Along(applied.Advance);
+      across = Math.Max(reach, Across(applied.Advance));
+      return true;
     }
 
     private bool TrySeparate(ISpace remaining, ShapeContext context, ref int cursor, ref int reach)

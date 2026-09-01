@@ -40,14 +40,30 @@ namespace Unrect.Shapes
       var values = new object?[Children.Count];
       var along = 0;
       var across = 0;
+      var previous = 0;
 
       for (var index = 0; index < Children.Count; index++)
       {
         var cursor = Step(along);
-        var applied = ShapeEngine.ApplyUntyped(Children[index], extent.GetSubspace(cursor), context.Advance(cursor));
+        AppliedResult<object?> applied;
+
+        try
+        {
+          applied = ShapeEngine.ApplyUntyped(Children[index], extent.GetSubspace(cursor), context.Advance(cursor));
+        }
+        // A sibling that consumed nothing — an absorbed boundary, most often — leaves this child
+        // reading the very cells that just failed, so it fails the same way for the same reason.
+        // The absorption warning may since have been rolled back by an enclosing choice, in which
+        // case this note is the only thing left saying so. It has to be the same cell, though: a
+        // child that re-anchored itself and failed elsewhere failed on its own account.
+        catch (ShapeException failure) when (index > 0 && previous == 0 && failure.Location.IsAt(context.Origin + cursor))
+        {
+          throw failure.WithNote("the preceding sibling consumed nothing at this position");
+        }
 
         values[index] = applied.Value;
-        along += Along(applied.Advance);
+        previous = Along(applied.Advance);
+        along += previous;
         across = Math.Max(across, Across(applied.Advance));
       }
 

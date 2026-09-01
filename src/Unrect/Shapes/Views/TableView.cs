@@ -25,7 +25,8 @@ namespace Unrect.Shapes
 
       Header = new CellStrip(
         space.GetSubspace(new Offset(0, 0), new Area(HasHeader ? ColumnCount : 0, headerRows)),
-        Orientation.Horizontal);
+        Orientation.Horizontal,
+        context.Origin);
 
       ColumnNames = Header.Select(cell => cell.TryGetString()?.Trim() ?? string.Empty).ToList();
     }
@@ -38,6 +39,9 @@ namespace Unrect.Shapes
 
     public CellStrip Header { get; }
     public IReadOnlyList<string> ColumnNames { get; }
+
+    /// <summary>The address of the table's top-left cell, header included.</summary>
+    public ShapeLocation Location => ShapeLocation.At(Context.Origin, Space.Area.Size);
 
     public IReadOnlyList<TableRow> Rows => _rows ??= BuildRows();
 
@@ -65,8 +69,10 @@ namespace Unrect.Shapes
       for (var index = 0; index < rows.Length; index++)
       {
         var offset = new Offset(0, HeaderRows + index);
-        var strip = new CellStrip(Space.GetSubspace(offset, new Area(ColumnCount, 1)), Orientation.Horizontal);
-        rows[index] = new TableRow(this, index, strip, Context.Advance(offset));
+        var rowContext = Context.Advance(offset);
+        var strip = new CellStrip(Space.GetSubspace(offset, new Area(ColumnCount, 1)), Orientation.Horizontal, rowContext.Origin);
+
+        rows[index] = new TableRow(this, index, strip, rowContext);
       }
 
       return rows;
@@ -123,6 +129,24 @@ namespace Unrect.Shapes
     /// case-insensitively. An unknown, ambiguous, or headerless lookup is a declaration error.
     /// </summary>
     public CellValue this[string columnName] => Strip[Resolve(columnName)];
+
+    /// <summary>The address of the row's first cell.</summary>
+    public ShapeLocation Location => Strip.Location;
+
+    /// <summary>
+    /// The address of one cell of the row, for citing it in a message — a data-quality complaint
+    /// can then read like a framework one.
+    /// </summary>
+    public ShapeLocation AddressOf(int column)
+      => column >= 0 && column < Count
+        ? Strip.AddressOf(column)
+        : throw Failure($"column index {column} is out of range; the table has {Count} columns.");
+
+    /// <summary>
+    /// The address of one cell of the row by column name, resolved exactly as the indexer resolves
+    /// it — unknown, ambiguous, and headerless lookups fail the same way.
+    /// </summary>
+    public ShapeLocation AddressOf(string columnName) => Strip.AddressOf(Resolve(columnName));
 
     private TableView Table { get; }
     private CellStrip Strip { get; }

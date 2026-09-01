@@ -111,6 +111,27 @@ namespace Unrect.Shapes
     /// <paramref name="atLeast"/> turns "found nothing" into a good error instead of a silently
     /// empty list.
     /// </para>
+    /// <para>
+    /// One malformed section among a hundred good ones is recovered by re-anchoring rather than by
+    /// a parameter: give the item a fallback that swallows up to the next anchor and yields a
+    /// marker, then drop the markers. The <c>Warning</c> from <c>Else</c> says which section failed,
+    /// where, and why, so nothing is lost by carrying on.
+    /// </para>
+    /// <example>
+    /// The seek belongs to the item, outside the boundary: finding no further anchor is how the
+    /// repetition knows to stop, so that one failure must not be tolerated. Everything after the
+    /// anchor is inside the boundary, where a malformed section is swallowed and reported.
+    /// <code>
+    /// var item =
+    ///   section.Select(s => (Section?)s)          // the section as it should be
+    ///     .Else(Row(_ => (Section?)null))         // ... or just its label row, and a warning
+    ///     .After(SeekRowContaining("Section"));   // ... starting at the next section label
+    ///
+    /// var sections = Repeat(item).Select(all => all.Where(s => s is not null).ToList());
+    ///
+    /// var result = sections.MapWithDiagnostics(sheet);   // result.Diagnostics names the bad one
+    /// </code>
+    /// </example>
     /// </summary>
     public static IShape<IReadOnlyList<T>> Repeat<T>(IShape<T> item, IOffsetStrategy? separatedBy = null, int atLeast = 0)
       => Repeat(Orientation.Vertical, item, separatedBy, atLeast);
@@ -121,6 +142,41 @@ namespace Unrect.Shapes
     /// </summary>
     public static IShape<IReadOnlyList<T>> RepeatHorizontal<T>(IShape<T> item, IOffsetStrategy? separatedBy = null, int atLeast = 0)
       => Repeat(Orientation.Horizontal, item, separatedBy, atLeast);
+
+    // --- Alternatives -------------------------------------------------------------------------
+
+    /// <summary>
+    /// The first of <paramref name="alternatives"/> that matches, tried in declaration order
+    /// against the same extent — one report, several vendor layouts. Every alternative that does
+    /// not match leaves an <c>Info</c> diagnostic saying why, readable through
+    /// <c>MapWithDiagnostics</c>; if none matches, the failure lists all of them side by side.
+    /// <para>
+    /// Alternatives share a result type: <c>Select</c> each variant into whatever shape of result
+    /// the caller wants before handing them over.
+    /// </para>
+    /// <para>
+    /// An alternative that cannot fail makes everything after it unreachable, so a boundary such as
+    /// <c>Optional</c> belongs around the choice rather than inside one of its arms. A failed
+    /// attempt's diagnostics are rolled back, but nothing else about it is: alternatives are tried
+    /// for real, and must not have side effects worth undoing. A projection that broke rather than
+    /// disagreed — a null reference, a bad index — is a bug in the reading code and stops the
+    /// choice instead of moving it on to the next arm.
+    /// </para>
+    /// </summary>
+    public static IShape<T> Choice<T>(params IShape<T>[] alternatives)
+    {
+      if (alternatives is null)
+        throw new ArgumentNullException(nameof(alternatives));
+
+      if (alternatives.Length < 2)
+        throw new ArgumentException("A choice needs at least two alternatives.", nameof(alternatives));
+
+      for (var index = 0; index < alternatives.Length; index++)
+        if (alternatives[index] is null)
+          throw new ArgumentException($"Alternative {index + 1} is null.", nameof(alternatives));
+
+      return new ChoiceShape<T>(alternatives, Placement.Default);
+    }
 
     // --- Offset vocabulary --------------------------------------------------------------------
 

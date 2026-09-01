@@ -140,13 +140,27 @@ namespace Unrect.Shapes
           $"the projection threw {exception.GetType().Name}: {exception.Message}",
           placed.Extent,
           null,
-          exception);
+          exception,
+          IsFault(exception));
       }
 
       // A declared area is consumed in full, even when the projection used less of it.
       var consumed = placed.HasDeclaredArea ? placed.Extent.Area.Size : result.Consumed;
       return new AppliedResult<TResult>(result.Value, placed.Offset, consumed);
     }
+
+    /// <summary>
+    /// Whether a projection broke rather than disagreed with the data. These mean the code is
+    /// wrong, not the file — a null bug, a bad index into an array or a view — so no tolerance
+    /// boundary may quietly swallow them; everything else — a cell of the wrong kind, an
+    /// unparseable value, an overflow — is the sort of failure tolerance is for.
+    /// (ArgumentException itself stays absorbable: parse-style APIs throw it for data reasons.)
+    /// </summary>
+    private static bool IsFault(Exception exception)
+      => exception is NullReferenceException
+        or IndexOutOfRangeException
+        or ArgumentOutOfRangeException
+        or ArgumentNullException;
 
     private static bool Exceeds(Size size, ISpace space)
       => size.Width > space.Area.Size.Width || size.Height > space.Area.Size.Height;

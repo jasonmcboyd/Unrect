@@ -14,6 +14,24 @@ namespace Unrect.Shapes
       Available = available;
     }
 
+    /// <summary>
+    /// The 1-based address of a 0-based offset from the space <c>Map</c> was called with — the one
+    /// place that conversion is done.
+    /// </summary>
+    internal static ShapeLocation At(Offset origin, Size available)
+      => new ShapeLocation(origin.Size.Height + 1, origin.Size.Width + 1, available);
+
+    /// <summary>
+    /// Whether this is the cell at <paramref name="origin"/>, however much space was available
+    /// there — the same conversion, asked the other way round.
+    /// </summary>
+    internal bool IsAt(Offset origin)
+    {
+      var there = At(origin, Available);
+
+      return Row == there.Row && Column == there.Column;
+    }
+
     public int Row { get; }
     public int Column { get; }
     public Size Available { get; }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 using Unrect.Core;
 using Unrect.Strategies;
@@ -44,6 +45,101 @@ namespace Unrect.Shapes
       return ShapeEngine.Apply(shape, space, ShapeContext.Root(space));
     }
 
+    /// <summary>
+    /// <see cref="Map{TResult}"/>, keeping what the decomposition noticed: every tolerance boundary
+    /// that absorbed a failure, every alternative a choice passed over, and space the shape did not
+    /// describe. A failure nothing declared tolerance for still throws — declared tolerance is the
+    /// only thing that ever softens a parse.
+    /// <para>
+    /// Space nothing described is reported as an <c>Info</c>, except where the entire parse was one
+    /// absorbed failure: <c>shape.Optional().MapWithDiagnostics(space)</c> — tolerance declared at
+    /// the root, the nearest thing to a lenient mode — would otherwise say "consumed 0 of N rows"
+    /// underneath a warning that already named the shape, the reason, and the cell. Anything else
+    /// still reports, including a root that consumed nothing after absorbing in two places, or a
+    /// repeat that found no sections at all.
+    /// </para>
+    /// <para>
+    /// Diagnostics belong to one call: a <c>Map</c> nested inside a projection collects its own and
+    /// discards them, so tolerance declared in there is invisible out here. Another reason to
+    /// compose shapes rather than nest calls.
+    /// </para>
+    /// </summary>
+    public static MapResult<TResult> MapWithDiagnostics<TResult>(this IShape<TResult> shape, ISpace space)
+    {
+      if (shape is null)
+        throw new ArgumentNullException(nameof(shape));
+      if (space is null)
+        throw new ArgumentNullException(nameof(space));
+
+      var context = ShapeContext.Root(space);
+      var mark = context.Diagnostics.Mark();
+      var applied = ShapeEngine.Apply(shape, space, context);
+
+      // Suppressed only when the whole parse is one absorbed failure: two boundaries that each
+      // absorbed something have left a gap worth mentioning, even though neither consumed anything.
+      if (!(applied.Advance.Width == 0 && applied.Advance.Height == 0 && context.Diagnostics.AbsorbedAt(mark)))
+        ReportUnconsumed(shape, space, applied.Offset.Size, applied.Consumed, context);
+
+      return new MapResult<TResult>(applied.Value, context.Diagnostics.Snapshot());
+    }
+
+    /// <summary>
+    /// Space left over is the shape drifting from the file — the cells nobody described are exactly
+    /// where the next surprise lives. A leading offset is a gap as much as a trailing remainder is:
+    /// a shape that starts two rows down described neither those two rows nor whatever follows it.
+    /// </summary>
+    private static void ReportUnconsumed(IShape shape, ISpace space, Size gap, Size described, ShapeContext context)
+    {
+      var size = space.Area.Size;
+
+      if (described.Width >= size.Width && described.Height >= size.Height)
+        return;
+
+      var counts = new List<string>(2);
+      var undescribed = new List<string>(2);
+
+      Describe(gap.Height, described.Height, size.Height, "row", counts, undescribed);
+      Describe(gap.Width, described.Width, size.Width, "column", counts, undescribed);
+
+
+      // The earliest cell nothing described, in reading order: a leading gap on either axis starts
+      // at the very first cell, otherwise it is wherever the described region stops.
+      var first =
+        gap.Width > 0 || gap.Height > 0 ? default
+        : described.Width < size.Width ? new Offset(described.Width, 0)
+        : new Offset(0, described.Height);
+
+      context.Advance(first).Report(
+        DiagnosticSeverity.Info,
+        shape,
+        $"the shape consumed {string.Join(" and ", counts)}; {string.Join(" and ", undescribed)} were not described",
+        space);
+    }
+
+    /// <summary>
+    /// Adds one axis's worth of what was read and what was skipped, before it and after it — in
+    /// 1-based terms, because the reader is looking at a spreadsheet.
+    /// </summary>
+    private static void Describe(int gap, int described, int total, string axis, List<string> counts, List<string> undescribed)
+    {
+      if (described >= total)
+        return;
+
+      counts.Add($"{described} of {total} {axis}s");
+
+      var ranges = new List<string>(2);
+
+      if (gap > 0)
+        ranges.Add(gap == 1 ? "1" : $"1-{gap}");
+
+      var after = gap + described;
+
+      if (after < total)
+        ranges.Add($"{after + 1}+");
+
+      undescribed.Add($"{axis}s {string.Join(" and ", ranges)}");
+    }
+
     /// <summary>Labels the shape, so failures and diagnostics say <paramref name="name"/>.</summary>
     public static IShape<T> Named<T>(this IShape<T> shape, string name) => NotNull(shape).WithName(name);
 
@@ -76,6 +172,71 @@ namespace Unrect.Shapes
     /// </summary>
     public static IShape<T> Sized<T>(this IShape<T> shape, IAreaStrategy area)
       => NotNull(shape).WithPlacement(shape.Placement.WithArea(area));
+
+    /// <summary>
+    /// Falls back to <paramref name="fallback"/> when this shape fails, recording a
+    /// <c>Warning</c> that carries the failing shape's own path, location, and problem.
+    /// <para>
+    /// Tolerance is declared where it is acceptable, and nowhere else: everything under this shape
+    /// still fails exactly as loudly, and the failure travels up to the nearest boundary.
+    /// </para>
+    /// <para>
+    /// A boundary's own placement is resolved before it can catch anything, so where the offset
+    /// sits decides what is tolerated: <c>x.After(seek).Else(y)</c> survives a missing anchor,
+    /// while <c>x.Else(y).After(seek)</c> does not — which is exactly what a <c>Repeat</c> wants,
+    /// since running out of anchors is how it knows to stop.
+    /// </para>
+    /// <para>
+    /// What a boundary absorbs is a failure about the shape of the data. A projection that broke
+    /// rather than disagreed — a null reference, an index past the end of your own array — is a bug
+    /// in the reading code and passes straight through, location and all. If the fallback fails as
+    /// well, that failure is what you get, carrying a note about the shape it stood in for.
+    /// </para>
+    /// </summary>
+    public static IShape<T> Else<T>(this IShape<T> shape, IShape<T> fallback)
+    {
+      if (fallback is null)
+        throw new ArgumentNullException(nameof(fallback));
+
+      return new BoundaryShape<T>(NotNull(shape), fallback, default!, Placement.Default, "Else");
+    }
+
+    /// <summary>
+    /// Yields <paramref name="fallbackValue"/> when this shape fails, recording a <c>Warning</c>
+    /// that carries the failing shape's own path, location, and problem.
+    /// <para>
+    /// An absorbed shape consumes nothing beyond its own declared placement — nothing was read, so
+    /// no honest extent exists, and a following sibling in a stack starts where this shape began
+    /// rather than after it. Pair absorbing boundaries with seek-anchored siblings so what comes
+    /// next finds itself by content instead of by arithmetic.
+    /// </para>
+    /// <para>
+    /// That makes <c>Repeat(x.Optional())</c> a trap: an absorbed item advances the repetition by
+    /// nothing, which ends it. A repeat recovers by consuming the malformed section instead — see
+    /// the recipe on <c>Repeat</c> — and only a fallback that reads rows can do that.
+    /// </para>
+    /// <para>
+    /// Tolerance absorbs failures about the shape of the data, never bugs in the code reading it: a
+    /// projection that threw a null reference or ran off the end of its own array comes through
+    /// undiminished.
+    /// </para>
+    /// </summary>
+    public static IShape<T> Else<T>(this IShape<T> shape, T fallbackValue)
+      => new BoundaryShape<T>(NotNull(shape), null, fallbackValue, Placement.Default, "Else");
+
+    /// <summary>
+    /// Yields the default value when this shape fails, recording a <c>Warning</c> that carries the
+    /// failing shape's own path, location, and problem — the spelling for a section that may simply
+    /// not be there.
+    /// <para>
+    /// Like <see cref="Else{T}(IShape{T}, T)"/>, an absorbed shape consumes nothing. For a value
+    /// type the filler is <c>default</c> — <c>0</c>, not null — so where the difference between
+    /// "absent" and "zero" matters, either give the filler explicitly with <c>Else(value)</c> or
+    /// project to a nullable first.
+    /// </para>
+    /// </summary>
+    public static IShape<T?> Optional<T>(this IShape<T> shape)
+      => new BoundaryShape<T?>(NotNull(shape).Select(value => (T?)value), null, default, Placement.Default, "Optional");
 
     /// <summary>
     /// Insets the shape's extent by <paramref name="all"/> cells on every side.

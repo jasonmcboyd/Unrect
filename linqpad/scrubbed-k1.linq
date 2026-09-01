@@ -49,7 +49,15 @@ var section =
 	Cells(RowsWhileAnyValue().ToAreaStrategy(), b => b.Rows.Select(r => r.ToArray()).ToArray())
 		.After(SeekRowContaining("K-1 Lines 1-21")).Named("K-1 lines 1-21");
 
-var report = Vertical(header, section).Select((h, rows) =>
+// The production posture: this section is best-effort. On a clean file Optional changes
+// nothing; on a broken one the import survives with PortfolioItems = null and a Warning
+// in the diagnostics citing exactly where and why the section failed.
+var portfolio =
+	Cells(RowsWhileAnyValue().ToAreaStrategy(), b => b.Rows.Select(r => r.ToArray()).ToArray())
+		.After(SeekRowContaining("Portfolio Income")).Named("portfolio income")
+		.Optional();
+
+var report = Vertical(header, section, portfolio).Select((h, rows, portfolioRows) =>
 {
 	int Col(string caption) => Array.FindIndex(h.Captions,
 		v => string.Equals(v.TryGetString()?.Trim(), caption, StringComparison.OrdinalIgnoreCase));
@@ -63,39 +71,60 @@ var report = Vertical(header, section).Select((h, rows) =>
 		.Select(x => x.i)
 		.ToArray();
 
+	// Every coded row across both sections, pivot-neutral.
+	var allRows = rows.Concat(portfolioRows ?? Array.Empty<CellValue[]>())
+		.Where(r => r[atax].HasValue)
+		.ToArray();
+
+	// Fund-centric pivot, legacy-import-style: Federal rides along as a pseudo-fund with
+	// ownership 1.0 (so every consumer is uniform), and each fund carries only its
+	// non-empty, non-zero line items — sparse, like the legacy cells table.
+	var columns = new[] { (Code: "FEDERAL", Pct: 1.0, Col: fed) }
+		.Concat(fundCols.Select(c => (Code: h.FundRow[c].GetString(), Pct: h.PctRow[c].GetDouble(), Col: c)))
+		.ToArray();
+
+	var funds = columns.Select(f => new
+	{
+		FundCode = f.Code,
+		Percent = f.Pct,
+		LineItems = allRows
+			.Select(r => new
+			{
+				Atax = Code(r[atax]),
+				Label = r[atax + 1].TryGetString() ?? "",
+				Amount = r[f.Col].TryGetDecimal(),
+			})
+			.Where(i => i.Amount is decimal a && a != 0m)
+			.ToArray(),
+	}).ToArray();
+
 	return new
 	{
 		Entity = h.Entity,
-		Funds = fundCols.Select(c => new { Code = h.FundRow[c].GetString(), Pct = h.PctRow[c].GetDouble() }).ToArray(),
-		FederalTI = h.TiRow[fed].GetDecimal(),
-		FundTI = fundCols.Select(c => h.TiRow[c].GetDecimal()).ToArray(),
-		LineItems = rows
-			.Where(r => r[atax].HasValue)
-			.Select(r => new
-			{
-				Dt = Code(r[dt]),
-				Atax = Code(r[atax]),
-				Label = r[atax + 1].TryGetString() ?? "",
-				Federal = r[fed].TryGetDecimal(),
-				FundAmounts = fundCols.Select(c => r[c].TryGetDecimal()).ToArray(),
-			})
-			.ToArray(),
+		Funds = funds,
+		// Cross-region correlation: every FEDERAL line item's amount equals the sum of
+		// that line item across the real funds.
+		AllAllocationsSumToFederal = funds[0].LineItems.All(fi =>
+			funds.Skip(1).SelectMany(f => f.LineItems)
+				.Where(i => i.Atax == fi.Atax)
+				.Sum(i => i.Amount ?? 0m) == fi.Amount),
 	};
 });
 
-var result = report.Map(space);
+var mapped = report.MapWithDiagnostics(space);
+var result = mapped.Value;
+
+// The unconsumed-space Info doubles as the campaign progress meter: as more of the
+// 169 sections get shapes, "rows not described" burns down toward zero.
+mapped.Diagnostics.Select(d => d.ToString()).Dump("diagnostics");
 
 // Post-parse validation: the workbook's own semantics, checked from outside.
 new
 {
-	FundCount = result.Funds.Length,
-	PctSum = result.Funds.Sum(f => f.Pct),
-	FederalTI = result.FederalTI,
-	FundTISumsExactly = result.FundTI.Sum() == result.FederalTI,
-	LineItems = result.LineItems.Length,
-	AllAllocationsSumToFederal = result.LineItems
-		.Where(i => i.Federal is decimal f && f != 0)
-		.All(i => i.FundAmounts.Sum(v => v ?? 0m) == i.Federal),
+	FundCount = result.Funds.Length,                       // 15: FEDERAL + 14 funds
+	PctSum = result.Funds.Skip(1).Sum(f => f.Percent),     // real funds sum to 1
+	FederalLineItems = result.Funds[0].LineItems.Length,
+	result.AllAllocationsSumToFederal,
 }.Dump("validation");
 
 result.Dump();
