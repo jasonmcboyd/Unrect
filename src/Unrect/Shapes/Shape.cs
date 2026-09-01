@@ -290,6 +290,61 @@ namespace Unrect.Shapes
     /// </summary>
     public static IColumnLandmark ColumnContaining(string text) => ColumnLandmarks.ColumnContaining(text);
 
+    // --- Extent vocabulary ----------------------------------------------------------------------
+    //
+    // What `.Sized` takes, re-exported here for the same reason the offset vocabulary above is: a
+    // shape declaration should need one import. Everything here returns the IAreaStrategy the
+    // modifier wants, so no lifting is needed at the call site.
+
+    /// <summary>The whole of the available space.</summary>
+    public static IAreaStrategy WholeExtent() => AreaStrategies.MaxArea();
+
+    /// <summary>Nothing — the identity extent, which a shape declares when it consumes no space.</summary>
+    public static IAreaStrategy NoExtent() => AreaStrategies.MinArea();
+
+    /// <summary>Exactly <paramref name="width"/> by <paramref name="height"/> cells.</summary>
+    public static IAreaStrategy Extent(int width, int height) => AreaStrategies.ExplicitArea(width, height);
+
+    /// <summary>Full available width, and the leading rows that carry values.</summary>
+    public static IAreaStrategy RowsWhileAnyValue() => SizeStrategies.RowsWhileAnyValue().ToAreaStrategy();
+
+    /// <summary>
+    /// Full available width, and as many leading rows as have at least one cell satisfying
+    /// <paramref name="anyCell"/>.
+    /// </summary>
+    public static IAreaStrategy RowsWhileAny(Func<CellValue, bool> anyCell)
+      => SizeStrategies.RowsWhileAny(anyCell).ToAreaStrategy();
+
+    /// <summary>Full available height, and the leading columns that carry values.</summary>
+    public static IAreaStrategy ColumnsWhileAnyValue() => SizeStrategies.ColumnsWhileAnyValue().ToAreaStrategy();
+
+    /// <summary>
+    /// Full available height, and as many leading columns as have at least one cell satisfying
+    /// <paramref name="anyCell"/>.
+    /// </summary>
+    public static IAreaStrategy ColumnsWhileAny(Func<CellValue, bool> anyCell)
+      => SizeStrategies.ColumnsWhileAny(anyCell).ToAreaStrategy();
+
+    // The row/column selectors, for composing an extent from its two axes and for the leaf
+    // overloads that take one — Row(AllColumns(), ...) is a full-width row.
+
+    /// <summary>Exactly <paramref name="count"/> rows.</summary>
+    public static IRowStrategy TakeRows(int count) => RowStrategies.TakeRows(count);
+
+    /// <summary>Exactly <paramref name="count"/> columns.</summary>
+    public static IColumnStrategy TakeColumns(int count) => ColumnStrategies.TakeColumns(count);
+
+    /// <summary>Every row of the available space — the declared spelling of "the full height".</summary>
+    public static IRowStrategy AllRows() => RowStrategies.AllRows();
+
+    /// <summary>Every column of the available space — the declared spelling of "the full width".</summary>
+    public static IColumnStrategy AllColumns() => ColumnStrategies.AllColumns();
+
+    // The area-composing forms (rows.AllColumns(), columns.AllRows()) are deliberately NOT
+    // re-exported: they are extension methods, and a script with `using Unrect.Strategies;` in
+    // scope would see both copies and fail to resolve. Row(AllColumns(), ...) covers the case
+    // that motivated them, using the leaf overload that already takes a column strategy.
+
     // --- Shared construction ------------------------------------------------------------------
 
     private static IShape<T> Strip<T>(Orientation orientation, Func<CellStrip, T> project, IAreaStrategy area, string description)

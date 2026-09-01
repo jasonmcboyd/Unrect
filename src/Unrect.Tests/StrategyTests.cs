@@ -657,6 +657,119 @@ namespace Unrect.Tests
       Assert.ThrowsAny<OutOfBoundsException>(() => FromBottom(4).GetOffset(space));
     }
 
+    // --- The column mirrors of the row strategies above ---------------------------------------------
+    //
+    // Each is the transpose of its row twin: same test, same shape of grid turned on its side, so a
+    // hole in one axis shows up as a missing test rather than as a missing method nobody noticed.
+
+    [Fact]
+    public void ColumnsWhileAnyValue_TakesTheFullHeightAndStopsAtTheFirstAllBlankColumn()
+    {
+      var space = Grid(new[,]
+      {
+        { 1, 0, 0, 4 },
+        { 2, 3, 0, 0 },
+      });
+
+      var size = ColumnsWhileAnyValue().GetSize(space);
+
+      Assert.Equal(2, size.Width);    // column 2 is empty in both rows: the region ends there
+      Assert.Equal(2, size.Height);
+    }
+
+    [Fact]
+    public void ColumnsWhileAnyValue_OnAnImmediatelyBlankSpace_TakesNoColumns()
+    {
+      var space = Grid(new[,] { { 0, 1 }, { 0, 1 } });
+
+      var size = ColumnsWhileAnyValue().GetSize(space);
+
+      Assert.Equal(0, size.Width);
+      Assert.Equal(2, size.Height);
+    }
+
+    [Fact]
+    public void ColumnsWhileAnyValue_WhenEveryColumnHasAValue_TakesEveryColumn()
+    {
+      var space = Grid(new[,] { { 1, 0, 3 }, { 0, 2, 3 } });
+
+      Assert.Equal(3, ColumnsWhileAnyValue().GetSize(space).Width);
+    }
+
+    [Fact]
+    public void ColumnsWhileAny_UsesTheSuppliedPredicate()
+    {
+      var space = Grid(new[,]
+      {
+        { 5, 1, 1, 5 },
+        { 1, 5, 1, 5 },
+      });
+
+      var size = ColumnsWhileAny(v => v.TryGetInt() == 5).GetSize(space);
+
+      Assert.Equal(2, size.Width);    // no cell of column 2 is 5: stop
+      Assert.Equal(2, size.Height);
+    }
+
+    [Fact]
+    public void TakeColumnsWhile_CountsLeadingColumnsSatisfyingACellPredicate()
+    {
+      // The mirror of TakeRowsWhile(column, predicate): read one row, count along it.
+      var space = Grid(new[,] { { 1, 2, 3, 4 }, { 0, 0, 0, 0 } });
+
+      Assert.Equal(2, ColumnStrategies.TakeColumnsWhile(0, (cell, column) => cell.GetInt() < 3).SelectColumns(space));
+    }
+
+    [Fact]
+    public void TakeColumnsTo_IncludesTheMatchingColumn()
+    {
+      var space = Grid(new[,] { { 1, 2, 3, 4 } });
+
+      Assert.Equal(3, ColumnStrategies.TakeColumnsTo((s, column) => s[column, 0].GetInt() == 3).SelectColumns(space));
+    }
+
+    [Fact]
+    public void TakeColumnsTo_WhenNothingMatches_TakesEveryColumn()
+    {
+      var space = Grid(new[,] { { 1, 2 } });
+
+      Assert.Equal(2, ColumnStrategies.TakeColumnsTo((s, column) => s[column, 0].GetInt() == 99).SelectColumns(space));
+    }
+
+    [Fact]
+    public void TakeColumnsToValue_IncludesTheColumnHoldingTheValue()
+    {
+      var space = Grid(new[,] { { 1, 2, 3 } });
+
+      Assert.Equal(2, ColumnStrategies.TakeColumnsToValue(0, CellValue.Of(2)).SelectColumns(space));
+    }
+
+    [Fact]
+    public void AllRowsAndAllColumns_AreTheDeclaredSpellingsOfTheFullExtent()
+    {
+      // What (_, _) => true used to say opaquely at a dozen call sites.
+      var space = Grid(new[,] { { 1, 2, 3 }, { 4, 5, 6 } });
+
+      Assert.Equal(2, RowStrategies.AllRows().SelectRows(space));
+      Assert.Equal(3, ColumnStrategies.AllColumns().SelectColumns(space));
+    }
+
+    [Fact]
+    public void AllRowsAndAllColumns_ComposeIntoAnArea()
+    {
+      // The area-composing forms: one axis chosen, the other taken whole.
+      var space = Grid(new[,] { { 1, 2, 3 }, { 4, 5, 6 } });
+
+      var fullWidthRow = RowStrategies.TakeRows(1).AllColumns().GetArea(space);
+      var fullHeightColumn = ColumnStrategies.TakeColumns(1).AllRows().GetArea(space);
+
+      Assert.Equal(3, fullWidthRow.Size.Width);
+      Assert.Equal(1, fullWidthRow.Size.Height);
+
+      Assert.Equal(1, fullHeightColumn.Size.Width);
+      Assert.Equal(2, fullHeightColumn.Size.Height);
+    }
+
     // --- Landmarks: the same content rules, without the offset -------------------------------------
     //
     // A landmark says where a shape ends, where a seek says where one starts. The trio mirrors the

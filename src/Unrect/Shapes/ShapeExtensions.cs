@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 using Unrect.Core;
 using Unrect.Strategies;
@@ -28,6 +29,13 @@ namespace Unrect.Shapes
     /// Coordinates in failures are relative to <paramref name="space"/>, so a <c>Map</c> called
     /// from inside another shape's projection restarts them and reports positions relative to its
     /// own space. Compose shapes instead of nesting <c>Map</c> calls wherever you can.
+    /// </para>
+    /// <para>
+    /// The root of a path renders by description rather than by a name, deliberately: inferring one
+    /// from the receiver would need an optional compiler-supplied parameter, and that would stop
+    /// <c>Map</c> being usable as a method group — <c>spaces.Select(report.Map)</c>, one shape over
+    /// many workbooks, is the reason this library exists. Name the root with <c>Named</c> if a path
+    /// should carry it.
     /// </para>
     /// </summary>
     public static TResult Map<TResult>(this IShape<TResult> shape, ISpace space) => shape.Apply(space).Value;
@@ -204,12 +212,21 @@ namespace Unrect.Shapes
     /// well, that failure is what you get, carrying a note about the shape it stood in for.
     /// </para>
     /// </summary>
-    public static IShape<T> Else<T>(this IShape<T> shape, IShape<T> fallback)
+    public static IShape<T> Else<T>(
+      this IShape<T> shape,
+      IShape<T> fallback,
+      [CallerArgumentExpression("fallback")] string? declared = null)
     {
       if (fallback is null)
         throw new ArgumentNullException(nameof(fallback));
 
-      return new BoundaryShape<T>(NotNull(shape), fallback, default!, Placement.Default, "Else");
+      return new BoundaryShape<T>(
+        NotNull(shape),
+        fallback,
+        default!,
+        Placement.Default,
+        "Else",
+        UseSite.From(declared, null));
     }
 
     /// <summary>

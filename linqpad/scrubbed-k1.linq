@@ -7,9 +7,7 @@
   <Namespace>Unrect.Core</Namespace>
   <Namespace>Unrect.Excel</Namespace>
   <Namespace>Unrect.Shapes</Namespace>
-  <Namespace>Unrect.Strategies</Namespace>
   <Namespace>static Unrect.Shapes.Shape</Namespace>
-  <Namespace>static Unrect.Strategies.SizeStrategies</Namespace>
 </Query>
 
 // NOTE: examples/scrubbed-k1.xlsx is a LOCAL-ONLY fixture (gitignored, never committed).
@@ -30,11 +28,13 @@ string Code(CellValue v) => v.TryGetString() ?? v.TryGetInt()?.ToString() ?? "";
 int Find(CellValue[] row, string caption) => Array.FindIndex(row,
 	v => string.Equals(v.TryGetString()?.Trim(), caption, StringComparison.OrdinalIgnoreCase));
 
-// A full-width single row anchored by a content seek. The helper does NOT name what it returns:
-// a name baked in here would call every row the same thing at every use site, and the use site
-// is the only place that knows which row this is.
+// A full-width single row anchored by a content seek. AllColumns() is the declared spelling of
+// "the whole width" — Row's default discovers its width and would stop at the first gap, and a
+// caption band has gaps. The helper does NOT name what it returns: a name baked in here would call
+// every row the same thing at every use site, and the use site is the only place that knows which
+// row this is.
 IShape<CellValue[]> FullRow(string anchor) =>
-	Range(RowStrategies.TakeRows(1).TakeColumnsWhile((s, c) => true), b => b.Row(0).ToArray())
+	Row(AllColumns(), r => r.ToArray())
 		.After(SeekRowContaining(anchor));
 
 var entity = Range(2, 5, b => Enumerable.Range(0, 5)
@@ -66,10 +66,10 @@ var header = Overlay(o =>
 
 	return new { Entity = entityFields, AtaxColumn = Find(captions, "ATAX"), Columns = columns };
 })
-	.Sized(RowsWhileAnyValue().ToAreaStrategy());   // bounded: seeks inside stay unambiguous
+	.Sized(RowsWhileAnyValue());   // bounded: seeks inside stay unambiguous
 
 // One section shape: rows while any value, wherever it is anchored.
-var section = Range(RowsWhileAnyValue().ToAreaStrategy(), b => b.Rows.Select(r => r.ToArray()).ToArray());
+var section = Range(RowsWhileAnyValue(), b => b.Rows.Select(r => r.ToArray()).ToArray());
 
 var k1Lines = section.After(SeekRowContaining("K-1 Lines 1-21"));
 

@@ -107,6 +107,9 @@ namespace Unrect.Core
 
     public DateTime? TryGetDateTime() => Kind == CellKind.Temporal ? Temporal : null;
     public DateTime GetDateTime() => TryGetDateTime() ?? throw WrongKind(CellKind.Temporal);
+    /// <summary>The date part, or null when the cell is not temporal — the Try twin of <see cref="GetDate"/>.</summary>
+    public DateTime? TryGetDate() => TryGetDateTime()?.Date;
+
     public DateTime GetDate() => GetDateTime().Date;
 
     public bool? TryGetBoolean() => Kind == CellKind.Boolean ? Boolean : null;

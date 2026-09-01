@@ -30,6 +30,12 @@ namespace Unrect.Strategies
     public static IRowStrategy TakeRowsWhileAnyValue()
       => TakeRowsWhileAny(v => v.HasValue);
 
+    /// <summary>
+    /// Every row of the available space. The declared spelling of "the full height", which otherwise
+    /// has to be written as the opaque constant predicate <c>(s, r) =&gt; true</c>.
+    /// </summary>
+    public static IRowStrategy AllRows() => TakeRowsWhile((_, _) => true);
+
     public static IAreaStrategy TakeRowsWhile(
       this IColumnStrategy strategy,
       Func<ISpace, int, bool> predicate)
@@ -47,5 +53,9 @@ namespace Unrect.Strategies
 
     public static IAreaStrategy TakeRowsWhileAnyValue(this IColumnStrategy strategy)
       => strategy.TakeRowsWhileAny(v => v.HasValue);
+
+    /// <summary>Those columns, at the full available height.</summary>
+    public static IAreaStrategy AllRows(this IColumnStrategy strategy)
+      => strategy.TakeRowsWhile((_, _) => true);
   }
 }

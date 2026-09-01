@@ -209,6 +209,32 @@ namespace Unrect.Tests
     }
 
     [Fact]
+    public void TryGetDate_TruncatesTheTimeOfDay()
+    {
+      // The Try twin of GetDate, so a caller reading an optional date need not reach for exceptions.
+      var moment = new DateTime(2026, 6, 30, 13, 45, 0);
+
+      Assert.Equal(new DateTime(2026, 6, 30), CellValue.Of(moment).TryGetDate());
+    }
+
+    [Fact]
+    public void TryGetDate_OnNonTemporal_ReturnsNull()
+    {
+      Assert.Null(CellValue.Of(45000).TryGetDate());
+      Assert.Null(CellValue.Of("2026-06-30").TryGetDate());
+      Assert.Null(CellValue.Blank.TryGetDate());
+      Assert.Null(CellValue.OfError(CellError.Value).TryGetDate());
+    }
+
+    [Fact]
+    public void GetDate_OnNonTemporal_StillThrows()
+    {
+      // Adding the Try form must not soften the strict one.
+      Assert.Throws<InvalidOperationException>(() => CellValue.Of(45000).GetDate());
+      Assert.Throws<InvalidOperationException>(() => CellValue.Blank.GetDate());
+    }
+
+    [Fact]
     public void GetDate_TruncatesTheTimeOfDay()
     {
       var moment = new DateTime(2026, 6, 30, 13, 45, 0);

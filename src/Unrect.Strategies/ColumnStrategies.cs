@@ -8,8 +8,37 @@ namespace Unrect.Strategies
     public static IColumnStrategy TakeColumnsWhile(Func<ISpace, int, bool> predicate)
       => new TakeWhileColumnStrategy(predicate);
 
+    /// <summary>
+    /// Columns while <paramref name="predicate"/> holds of the cell in <paramref name="row"/> — the
+    /// transpose of <see cref="RowStrategies.TakeRowsWhile(int, Func{CellValue, int, bool})"/>, for
+    /// reading a band off one caption row.
+    /// </summary>
+    public static IColumnStrategy TakeColumnsWhile(int row, Func<CellValue, int, bool> predicate)
+      => TakeColumnsWhile((space, column) => predicate(space[column, row], column));
+
     public static IColumnStrategy TakeColumns(int count)
       => new ExplicitColumnCountStrategy(count);
+
+    /// <summary>
+    /// Columns up to and including the first satisfying <paramref name="predicate"/> — the transpose
+    /// of <see cref="RowStrategies.TakeRowsTo"/>. The match is kept, where a while-strategy stops
+    /// before it.
+    /// </summary>
+    public static IColumnStrategy TakeColumnsTo(Func<ISpace, int, bool> predicate)
+      => new TakeToColumnStrategy(predicate, true);
+
+    /// <summary>
+    /// Columns up to and including the first whose cell in <paramref name="row"/> equals
+    /// <paramref name="value"/> — the transpose of <see cref="RowStrategies.TakeRowsToValue"/>.
+    /// </summary>
+    public static IColumnStrategy TakeColumnsToValue(int row, CellValue value)
+      => TakeColumnsTo((space, column) => space[column, row].Equals(value));
+
+    /// <summary>
+    /// Every column of the available space. The declared spelling of "the full width", which
+    /// otherwise has to be written as the opaque constant predicate <c>(s, c) =&gt; true</c>.
+    /// </summary>
+    public static IColumnStrategy AllColumns() => TakeColumnsWhile((_, _) => true);
 
     public static IColumnStrategy TakeColumnsWhileAll(Func<CellValue, bool> predicate)
       => new TakeWhileAllColumnStrategy(predicate);
@@ -37,5 +66,9 @@ namespace Unrect.Strategies
 
     public static IAreaStrategy TakeColumnsWhileAnyValue(this IRowStrategy strategy)
       => strategy.TakeColumnsWhileAny(v => v.HasValue);
+
+    /// <summary>Those rows, at the full available width.</summary>
+    public static IAreaStrategy AllColumns(this IRowStrategy strategy)
+      => strategy.TakeColumnsWhile((_, _) => true);
   }
 }

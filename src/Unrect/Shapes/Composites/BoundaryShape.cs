@@ -17,19 +17,29 @@ namespace Unrect.Shapes
   /// </summary>
   internal sealed class BoundaryShape<T> : ShapeBase<T>
   {
-    public BoundaryShape(IShape<T> inner, IShape<T>? fallback, T fallbackValue, Placement placement, string description)
+    public BoundaryShape(
+      IShape<T> inner,
+      IShape<T>? fallback,
+      T fallbackValue,
+      Placement placement,
+      string description,
+      UseSite fallbackSite = default)
       : base(placement)
     {
       Inner = inner ?? throw new ArgumentNullException(nameof(inner));
       Fallback = fallback;
       FallbackValue = fallbackValue;
       Description = description;
+      FallbackSite = fallbackSite;
       Children = fallback is null ? new IShape[] { inner } : new IShape[] { inner, fallback };
     }
 
     private IShape<T> Inner { get; }
     private IShape<T>? Fallback { get; }
     private T FallbackValue { get; }
+
+    /// <summary>What the declaration called the fallback, so a stand-in names itself as written.</summary>
+    private UseSite FallbackSite { get; }
 
     public override string Description { get; }
 
@@ -61,7 +71,7 @@ namespace Unrect.Shapes
 
         try
         {
-          var applied = ShapeEngine.Apply(Fallback, extent, context);
+          var applied = ShapeEngine.Apply(Fallback, extent, context.WithUseSite(FallbackSite));
           return new ShapeResult<T>(applied.Value, applied.Advance);
         }
         catch (ShapeException fallbackFailure)

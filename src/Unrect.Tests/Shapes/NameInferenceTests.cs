@@ -274,6 +274,57 @@ namespace Unrect.Tests.Shapes
       Assert.Equal(new[] { "a", "b" }, Repeat(detail, atLeast: 1, separatedBy: BlankRows()).Map(space));
     }
 
+    // --- Capture reaches a fallback as well -----------------------------------------------------------------------
+    //
+    // Else(fallback) captures its argument the same way Next and Repeat do, so a stand-in that
+    // fails names itself rather than hiding behind "Cell".
+
+    [Fact]
+    public void Rung2_AFallbackIsLabelledByTheLocalItWasHoistedInto()
+    {
+      // Both halves failed, so the fallback owns the failure — and it is the fallback's own
+      // identifier that says which stand-in was being read when the parse gave up.
+      var primary = Text().Named("primary");
+      var recovery = Cell(c => c.GetDateTime().ToString());
+
+      var failure = Failure(primary.Else(recovery));
+
+      Assert.Equal("'recovery'", failure.Subject);
+      Assert.Equal("'recovery' (Cell)", failure.Path);
+      Assert.Contains("it stands in for 'primary', which failed too: ", failure.Message);
+    }
+
+    [Fact]
+    public void ASucceedingFallbackLeavesTheWarningNamingThePrimary()
+    {
+      // The label is for the failure the fallback might raise. When it succeeds there is nothing to
+      // blame it for, and the Warning still names the shape that actually went wrong.
+      var primary = Text().Named("primary");
+      var recovery = Cell(c => c.GetInt().ToString());
+
+      var result = primary.Else(recovery).MapWithDiagnostics(Ladder());
+
+      Assert.Equal("1", result.Value);
+
+      var warning = Assert.Single(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Warning);
+
+      Assert.Equal("'primary'", warning.Subject);
+      Assert.Equal("'primary' (Cell)", warning.Path);
+    }
+
+    [Fact]
+    public void Rung3_AnInlineFallbackFallsThroughToItsDescription()
+    {
+      // Like a repeat's item, a fallback is *the* fallback rather than the nth child, so there is
+      // no ordinal to count and rung 3 is the bare description.
+      var primary = Text().Named("primary");
+
+      var failure = Failure(primary.Else(Cell(c => c.GetDateTime().ToString())));
+
+      Assert.Equal("Cell", failure.Subject);
+      Assert.Equal("Cell", failure.Path);
+    }
+
     // --- The helper rule §6.1 makes a rule rather than advice -----------------------------------------------------
 
     [Fact]
