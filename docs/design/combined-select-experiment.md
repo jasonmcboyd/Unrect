@@ -1,9 +1,14 @@
 # Spec: Combined Select — the cursor-lambda flow composite (experiment)
 
-**Status:** ready to implement, experimental (2026-09-01, branch `experiment/combined-select`).
-Extends `wave2-shapes-spec.md` (engine rules, error template, file layout, test style),
-`panel-and-anchoring-spec.md`, and `diagnostics-and-choice-spec.md`; all their conventions
-apply. Nothing in the existing vocabulary changes.
+**Status:** ADOPTED and SUPERSEDED (2026-09-01, branch `experiment/combined-select`).
+The experiment was judged a success: the cursor lambda is now the *only* spelling of a layout
+composite, and the applicative form this document compares against has been deleted. What shipped
+differs from what is described below in three ways — the composites are named `VerticalFlow` /
+`HorizontalFlow` / `Overlay` and describe themselves that way, children take names from their use
+sites, and `.Until` exists — all specified in `flow-vocabulary-spec.md`, which supersedes this
+document's §11a and is the accurate account of the current surface. Read this one for the
+*reasoning* (why a `ref struct`, why nothing but `Next` on the cursor, what opacity costs); read
+that one for what the code does.
 
 ## 0. The question this experiment answers
 
@@ -403,10 +408,47 @@ do not assert it in prose.
    re-reading of tuples, and postpones the question.
 5. **Recording children on first execution.** Rejected in §6.
 
-## 11. Deferred
+## 11a. Adoption decisions (owner, 2026-09-01)
 
-`Overlay(o => …)` (needs a placement-per-child cursor with no advance — a different
-surface, worth doing only if this style is adopted); LINQPad script conversions;
-a `Describe`/dry-run renderer that must handle opaque nodes; deprecating either spelling.
-Both spellings ship side by side while the experiment is judged: they produce identical
-results and identical diagnostics, so the only comparison is how the declarations read.
+The cursor style is **adopted**; the applicative spelling will be removed (overloads,
+`StackShape`, tuple `Select` combines) once the ergonomics-first design pass below settles.
+Decisions recorded from that pass so far:
+
+- **Rename "stack" to "flow."** The composite family is a *flow*, not a stack:
+  `CursorStackShape` → flow naming throughout (types, files, docs). Candidate factory
+  names: `VerticalFlow` / `HorizontalFlow` (final spelling not yet settled).
+- **No redundant naming (variant B).** In the cursor form the member name
+  (`Transactions = v.Next(...)`) already names the child; requiring `.Named("transactions")`
+  an inch away is typing the name twice. The baseline spelling drops per-child `.Named`;
+  diagnostics identify children by inference (ladder under exploration: explicit `.Named` >
+  bare-identifier argument expression via `CallerArgumentExpression` > description + child
+  ordinal). A1 locations were never at stake — only the declaration-path half.
+- **Table projection should support inference too**: mapping row cells to properties by
+  header caption, in addition to today's explicit by-index and by-caption access. Same
+  philosophy: the framework reads names the user already wrote. (Separate work item.)
+- Dry-run/static inspection is consciously forfeited: no side effects in projections, no
+  harm in failure — the owner accepts opacity as the price of the ergonomics.
+- **`.Until(landmark)` — the dual of `.After`** (from the investor-irr scenario): bounds a
+  shape's extent by a forward content landmark. Semantics agreed with the owner: the extent
+  ends just BEFORE the landmark row and consumed = the declared extent, so the landmark is
+  never consumed — the following sibling's space starts at the landmark and its own `After`
+  seek finds it at distance zero. This is what lets a `Repeat` stop before trailing content
+  (the open "repeat cannot stop gracefully" question) and what the K-1 campaign's
+  caption-to-caption sections need. Missing-landmark strictness DECIDED (owner): strict by
+  default (a landmark is an anchor; anchors are loud), with a per-shape opt-in
+  `orEnd: true` for exploratory/partially-completed spreadsheets — "until X, or the end."
+  When the fallback is exercised it records an **Info** diagnostic (declared alternation,
+  like `Choice` — not tolerance-after-failure like `Else`), so `MapWithDiagnostics` shows
+  which sections ran open-ended. No ambient mode.
+- **Reusable placements confirmed as the idiom**: a base shape (`var irrDetails =
+  Repeat(...)`) placed twice via different `.After`/`.Until` chains — immutability already
+  guarantees this; use-site name inference gives the two placements distinct diagnostic
+  identities.
+
+## 11. Deferred — SINCE DONE (see flow-vocabulary-spec.md)
+
+~~`Overlay(o => …)`; LINQPad script conversions; deprecating either spelling. Both
+spellings ship side by side while the experiment is judged.~~ All shipped by the
+flow-vocabulary pass: `Overlay` joined the cursor grammar, every script was converted,
+and the applicative spelling was deleted. Still genuinely deferred: the `Describe`/dry-run
+renderer that must handle opaque nodes.

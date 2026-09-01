@@ -17,7 +17,7 @@ namespace Unrect.Tests.Shapes
   /// not add up" is the caller's, and now it can say where.
   /// <para>
   /// Every address is absolute — relative to the space <c>Map</c> was called with — and must stay
-  /// so through padding, overlays, stacks, and successive repeat items.
+  /// so through padding, overlays, flows, and successive repeat items.
   /// </para>
   /// </summary>
   public class ViewLocationTests
@@ -71,7 +71,7 @@ namespace Unrect.Tests.Shapes
     [Fact]
     public void ABlockKnowsWhereItStartsAndWhereEachCellIs()
     {
-      var addresses = Cells(b => new[] { b.Location.A1, b.AddressOf(0, 0).A1, b.AddressOf(2, 1).A1 })
+      var addresses = Range(b => new[] { b.Location.A1, b.AddressOf(0, 0).A1, b.AddressOf(2, 1).A1 })
         .Map(CoordinateGrid());
 
       Assert.Equal(new[] { "A1", "A1", "C2" }, addresses);
@@ -80,7 +80,7 @@ namespace Unrect.Tests.Shapes
     [Fact]
     public void ABlocksRowsAndColumnsCarryTheirOwnAddresses()
     {
-      var (rowStart, columnStart) = Cells(b => (b.Row(1).Location.A1, b.Column(2).Location.A1)).Map(CoordinateGrid());
+      var (rowStart, columnStart) = Range(b => (b.Row(1).Location.A1, b.Column(2).Location.A1)).Map(CoordinateGrid());
 
       Assert.Equal("A2", rowStart);
       Assert.Equal("C1", columnStart);
@@ -89,7 +89,7 @@ namespace Unrect.Tests.Shapes
     [Fact]
     public void ABlockRefusesToAddressACellItDoesNotHave()
     {
-      var block = Cells(b => b).Map(CoordinateGrid());
+      var block = Range(b => b).Map(CoordinateGrid());
 
       Assert.Throws<ArgumentOutOfRangeException>(() => block.AddressOf(4, 0));
       Assert.Throws<ArgumentOutOfRangeException>(() => block.AddressOf(0, 3));
@@ -102,38 +102,33 @@ namespace Unrect.Tests.Shapes
     public void AddressesAreAbsoluteThroughPadding()
     {
       // Padding shifts where the inner shape reads, so it must shift what the inner shape reports.
-      var addresses = Cells(b => new[] { b.Location.A1, b.AddressOf(1, 0).A1 }).Padded(1).Map(CoordinateGrid());
+      var addresses = Range(b => new[] { b.Location.A1, b.AddressOf(1, 0).A1 }).Padded(1).Map(CoordinateGrid());
 
       Assert.Equal(new[] { "B2", "C2" }, addresses);
     }
 
     [Fact]
-    public void AddressesAreAbsoluteThroughAStack()
+    public void AddressesAreAbsoluteThroughAFlow()
     {
-      var (first, second) = Vertical(
-        Cells(4, 1, b => b.Location.A1),
-        Cells(4, 1, b => b.Location.A1)).Map(CoordinateGrid());
+      var band = Range(4, 1, b => b.Location.A1);
 
-      Assert.Equal("A1", first);
-      Assert.Equal("A2", second);
+      Assert.Equal("A1|A2", VerticalFlow(v => $"{v.Next(band)}|{v.Next(band)}").Map(CoordinateGrid()));
     }
 
     [Fact]
     public void AddressesAreAbsoluteInsideOverlayChildren()
     {
       // Overlay children share an extent but sit in different places inside it.
-      var (topLeft, offset) = Overlay(
-        Cells(1, 1, b => b.Location.A1),
-        Cells(1, 1, b => b.Location.A1).Down(1).Right(2)).Map(CoordinateGrid());
+      var corner = Range(1, 1, b => b.Location.A1);
+      var inset = Range(1, 1, b => b.Location.A1).Down(1).Right(2);
 
-      Assert.Equal("A1", topLeft);
-      Assert.Equal("C2", offset);
+      Assert.Equal("A1|C2", Overlay(o => $"{o.Next(corner)}|{o.Next(inset)}").Map(CoordinateGrid()));
     }
 
     [Fact]
     public void AddressesAreAbsoluteInSuccessiveRepeatItems()
     {
-      var addresses = Repeat(Cells(4, 1, b => b.Location.A1)).Map(CoordinateGrid());
+      var addresses = Repeat(Range(4, 1, b => b.Location.A1)).Map(CoordinateGrid());
 
       Assert.Equal(new[] { "A1", "A2", "A3" }, addresses);
     }
@@ -141,17 +136,16 @@ namespace Unrect.Tests.Shapes
     [Fact]
     public void AddressesSurviveEveryLayerAtOnce()
     {
-      // Overlay inside a stack, padded, two rows down: the arithmetic has to compose.
-      var address = Vertical(
-        Cells(4, 1, b => b.Location.A1),
-        Overlay(
-          Cells(b => b.Location.A1).Padded(1, 0, 0, 0),
-          Cells(1, 1, b => b.Location.A1)))
+      // An overlay inside a flow, padded, a row down: the arithmetic has to compose.
+      var band = Range(4, 1, b => b.Location.A1);
+      var padded = Range(b => b.Location.A1).Padded(1, 0, 0, 0);
+      var corner = Range(1, 1, b => b.Location.A1);
+
+      var address = VerticalFlow(v =>
+        $"{v.Next(band)}|{v.Next(Overlay(o => $"{o.Next(padded)}/{o.Next(corner)}"))}")
         .Map(CoordinateGrid());
 
-      Assert.Equal("A1", address.Item1);
-      Assert.Equal("B2", address.Item2.Item1);
-      Assert.Equal("A2", address.Item2.Item2);
+      Assert.Equal("A1|B2/A2", address);
     }
 
     // --- TableView and TableRow -----------------------------------------------------------------------------
@@ -220,16 +214,17 @@ namespace Unrect.Tests.Shapes
     [Fact]
     public void ATablesAddressesAreAbsoluteWhenItIsNested()
     {
-      var (_, address) = Vertical(
-        Cells(2, 1, b => b.Location.A1),
-        TableRows(r => r.AddressOf("Amount").A1)).Map(Mixed(new object?[,]
+      var caption = Range(2, 1, b => b.Location.A1);
+      var amounts = TableRows(r => r.AddressOf("Amount").A1);
+
+      var address = VerticalFlow(v => $"{v.Next(caption)}|{string.Join(",", v.Next(amounts))}").Map(Mixed(new object?[,]
       {
         { "ignored", "header" },
         { "Name", "Amount" },
         { "Acme", 10 },
       }));
 
-      Assert.Equal(new[] { "B3" }, address);
+      Assert.Equal("A1|B3", address);
     }
   }
 }

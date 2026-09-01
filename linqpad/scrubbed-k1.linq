@@ -14,85 +14,93 @@
 
 // NOTE: examples/scrubbed-k1.xlsx is a LOCAL-ONLY fixture (gitignored, never committed).
 //
-// ONE root shape, ZERO hard-coded coordinates. The working style that survives
-// real-world drift (extra rows, moved columns, varying fund counts):
+// ONE root shape, ZERO hard-coded coordinates. The working style that survives real-world
+// drift (extra rows, moved columns, varying fund counts):
 //   - rows anchor by content seeks (SeekRowContaining);
-//   - the header is an Overlay (independent blocks sharing rows — placement, not flow),
+//   - the header is an Overlay — independent blocks sharing rows, placement rather than flow —
 //     bounded with .Sized so every seek inside it is unambiguous;
-//   - columns are resolved from CONTENT in the final Select: caption row -> column
-//     indexes by name; fund columns -> cells right of the "Fund Short Name" label.
+//   - each layout lambda DIGESTS ITSELF: the header resolves its own columns from content and
+//     hands back what the rest of the declaration needs, so no raw rows travel any further;
+//   - one `section` shape, declared once and placed twice by two different seeks.
 var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\examples\scrubbed-k1.xlsx");
 var space = SpreadsheetSpace.Create(path, "Sheet1");
 
 string Code(CellValue v) => v.TryGetString() ?? v.TryGetInt()?.ToString() ?? "";
 
-// A full-width single row anchored by a content seek.
+int Find(CellValue[] row, string caption) => Array.FindIndex(row,
+	v => string.Equals(v.TryGetString()?.Trim(), caption, StringComparison.OrdinalIgnoreCase));
+
+// A full-width single row anchored by a content seek. The helper does NOT name what it returns:
+// a name baked in here would call every row the same thing at every use site, and the use site
+// is the only place that knows which row this is.
 IShape<CellValue[]> FullRow(string anchor) =>
-	Cells(RowStrategies.TakeRows(1).TakeColumnsWhile((s, c) => true), b => b.Row(0).ToArray())
-		.After(SeekRowContaining(anchor)).Named(anchor);
+	Range(RowStrategies.TakeRows(1).TakeColumnsWhile((s, c) => true), b => b.Row(0).ToArray())
+		.After(SeekRowContaining(anchor));
 
-var header =
-	Overlay(
-		Cells(2, 5, b => Enumerable.Range(0, 5)
-				.ToDictionary(r => b[0, r].GetString().TrimEnd(':'), r => b[1, r].ToString()))
-			.After(Then(SeekColumnContaining("EIN:"), SeekRowContaining("EIN:"))).Named("entity"),
-		FullRow("ATAX"),                                            // the caption row
-		FullRow("Fund Short Name"),                                 // fund codes
-		FullRow("Fund Short Name").Down(4).Named("ownership pcts"),
-		FullRow("Taxable Income"))
-	.Sized(RowsWhileAnyValue().ToAreaStrategy())                    // bounded: seeks stay unambiguous
-	.Named("header")
-	.Select((entity, captions, fundRow, pctRow, tiRow) =>
-		new { Entity = entity, Captions = captions, FundRow = fundRow, PctRow = pctRow, TiRow = tiRow });
+var entity = Range(2, 5, b => Enumerable.Range(0, 5)
+		.ToDictionary(r => b[0, r].GetString().TrimEnd(':'), r => b[1, r].ToString()))
+	.After(Then(SeekColumnContaining("EIN:"), SeekRowContaining("EIN:")));
 
-var section =
-	Cells(RowsWhileAnyValue().ToAreaStrategy(), b => b.Rows.Select(r => r.ToArray()).ToArray())
-		.After(SeekRowContaining("K-1 Lines 1-21")).Named("K-1 lines 1-21");
+var captionRow = FullRow("ATAX");
+var fundNameRow = FullRow("Fund Short Name");
+var ownershipRow = FullRow("Fund Short Name").Down(4);
 
-// The production posture: this section is best-effort. On a clean file Optional changes
-// nothing; on a broken one the import survives with PortfolioItems = null and a Warning
-// in the diagnostics citing exactly where and why the section failed.
-var portfolio =
-	Cells(RowsWhileAnyValue().ToAreaStrategy(), b => b.Rows.Select(r => r.ToArray()).ToArray())
-		.After(SeekRowContaining("Portfolio Income")).Named("portfolio income")
-		.Optional();
-
-var report = Vertical(header, section, portfolio).Select((h, rows, portfolioRows) =>
+// The header reads four independent blocks off the same band of rows and resolves the sheet's
+// column layout from them, so what leaves here is the answer, not the evidence.
+var header = Overlay(o =>
 {
-	int Col(string caption) => Array.FindIndex(h.Captions,
-		v => string.Equals(v.TryGetString()?.Trim(), caption, StringComparison.OrdinalIgnoreCase));
-	int dt = Col("DT"), atax = Col("ATAX"), fed = Col("Federal");
+	var entityFields = o.Next(entity);
+	var captions = o.Next(captionRow);
+	var fundNames = o.Next(fundNameRow);
+	var ownership = o.Next(ownershipRow);
 
-	var labelIdx = Array.FindIndex(h.FundRow,
-		v => string.Equals(v.TryGetString()?.Trim(), "Fund Short Name", StringComparison.OrdinalIgnoreCase));
-	var fundCols = h.FundRow
-		.Select((v, i) => (v, i))
-		.Where(x => x.i > labelIdx && x.v.HasValue)
-		.Select(x => x.i)
+	var label = Find(fundNames, "Fund Short Name");
+
+	// Federal rides along as a pseudo-fund at 100% so every consumer downstream is uniform.
+	var columns = new[] { (Code: "FEDERAL", Percent: 1.0, Column: Find(captions, "Federal")) }
+		.Concat(fundNames
+			.Select((v, i) => (Value: v, Index: i))
+			.Where(x => x.Index > label && x.Value.HasValue)
+			.Select(x => (Code: x.Value.GetString(), Percent: ownership[x.Index].GetDouble(), Column: x.Index)))
 		.ToArray();
+
+	return new { Entity = entityFields, AtaxColumn = Find(captions, "ATAX"), Columns = columns };
+})
+	.Sized(RowsWhileAnyValue().ToAreaStrategy());   // bounded: seeks inside stay unambiguous
+
+// One section shape: rows while any value, wherever it is anchored.
+var section = Range(RowsWhileAnyValue().ToAreaStrategy(), b => b.Rows.Select(r => r.ToArray()).ToArray());
+
+var k1Lines = section.After(SeekRowContaining("K-1 Lines 1-21"));
+
+// The production posture: this section is best-effort. On a clean file Optional changes nothing;
+// on a broken one the import survives with null here and a Warning in the diagnostics citing
+// exactly where and why the section failed.
+var portfolio = section.After(SeekRowContaining("Portfolio Income")).Optional();
+
+var report = VerticalFlow(v =>
+{
+	var head = v.Next(header);
+	var k1Rows = v.Next(k1Lines);
+	var portfolioRows = v.Next(portfolio);
 
 	// Every coded row across both sections, pivot-neutral.
-	var allRows = rows.Concat(portfolioRows ?? Array.Empty<CellValue[]>())
-		.Where(r => r[atax].HasValue)
+	var allRows = k1Rows.Concat(portfolioRows ?? Array.Empty<CellValue[]>())
+		.Where(r => r[head.AtaxColumn].HasValue)
 		.ToArray();
 
-	// Fund-centric pivot, legacy-import-style: Federal rides along as a pseudo-fund with
-	// ownership 1.0 (so every consumer is uniform), and each fund carries only its
-	// non-empty, non-zero line items — sparse, like the legacy cells table.
-	var columns = new[] { (Code: "FEDERAL", Pct: 1.0, Col: fed) }
-		.Concat(fundCols.Select(c => (Code: h.FundRow[c].GetString(), Pct: h.PctRow[c].GetDouble(), Col: c)))
-		.ToArray();
-
-	var funds = columns.Select(f => new
+	// Fund-centric pivot, legacy-import-style: each fund carries only its non-empty, non-zero
+	// line items — sparse, like the legacy cells table.
+	var funds = head.Columns.Select(f => new
 	{
 		FundCode = f.Code,
-		Percent = f.Pct,
+		Percent = f.Percent,
 		LineItems = allRows
 			.Select(r => new
 			{
-				Atax = Code(r[atax]),
-				Label = r[atax + 1].TryGetString() ?? "",
-				Amount = r[f.Col].TryGetDecimal(),
+				Atax = Code(r[head.AtaxColumn]),
+				Label = r[head.AtaxColumn + 1].TryGetString() ?? "",
+				Amount = r[f.Column].TryGetDecimal(),
 			})
 			.Where(i => i.Amount is decimal a && a != 0m)
 			.ToArray(),
@@ -100,10 +108,10 @@ var report = Vertical(header, section, portfolio).Select((h, rows, portfolioRows
 
 	return new
 	{
-		Entity = h.Entity,
+		Entity = head.Entity,
 		Funds = funds,
-		// Cross-region correlation: every FEDERAL line item's amount equals the sum of
-		// that line item across the real funds.
+		// Cross-region correlation: every FEDERAL line item's amount equals the sum of that
+		// line item across the real funds.
 		AllAllocationsSumToFederal = funds[0].LineItems.All(fi =>
 			funds.Skip(1).SelectMany(f => f.LineItems)
 				.Where(i => i.Atax == fi.Atax)

@@ -15,9 +15,6 @@ namespace Unrect.Shapes
     public static AppliedResult<TResult> Apply<TResult>(IShape<TResult> shape, ISpace availableSpace, ShapeContext context)
       => Project(shape, shape.Project, Place(shape, availableSpace, context));
 
-    public static AppliedResult<object?> ApplyUntyped(IShape shape, ISpace availableSpace, ShapeContext context)
-      => Project(shape, shape.ProjectUntyped, Place(shape, availableSpace, context));
-
     /// <summary>
     /// Applies the shape unless its own placement does not fit, which is <c>Repeat</c>'s stopping
     /// condition. Failures deeper inside the shape — a nested misfit, a projection that throws —

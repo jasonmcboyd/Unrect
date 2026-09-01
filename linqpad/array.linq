@@ -28,16 +28,17 @@ var nums = new[,]
 var space = ArraySpace.Create(nums, isBlank: v => v == 0);
 
 // Repeating blocks of varying height, separated by blank rows — the same shape idea as
-// investors-by-deal, in miniature. Nothing here counts rows: Row takes one, Cells discovers
-// the rest of the block by running out of values at the separator, and the separator itself
+// investors-by-deal, in miniature. Nothing here counts rows: firstRow takes one, rest discovers
+// the remainder of the block by running out of values at the separator, and the separator itself
 // is what carries the repeat across the gap to the next block.
-var block =
-	Vertical(
-		Row(r => r.Select(v => v.GetInt()).ToArray())
-			.Named("first row"),
-		Cells(b => b.Rows.Select(r => r.Select(v => v.GetInt()).ToArray()).ToArray())
-			.Named("rest"))
-	.Select((firstRow, rest) => new { FirstRow = firstRow, Rest = rest })
-	.Named("block");
+var firstRow = Row(r => r.Select(v => v.GetInt()).ToArray());
+
+var rest = Range(b => b.Rows.Select(r => r.Select(v => v.GetInt()).ToArray()).ToArray());
+
+var block = VerticalFlow(v => new
+{
+	FirstRow = v.Next(firstRow),
+	Rest = v.Next(rest),
+});
 
 Repeat(block, separatedBy: BlankRows()).Map(space).Dump();

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 using Unrect.Core;
 using Unrect.Strategies;
@@ -46,20 +47,23 @@ namespace Unrect.Shapes
     public static IShape<T> Column<T>(IRowStrategy rows, Func<CellStrip, T> project)
       => Strip(Orientation.Vertical, project, ColumnsThenRows(ColumnStrategies.TakeColumns(1), rows), "Column");
 
-    /// <summary>The maximal leading block of rows and columns that carry values.</summary>
-    public static IShape<T> Cells<T>(Func<CellBlock, T> project)
-      => new BlockShape<T>(project, Placement.Of(DiscoveredBlock()), "Cells");
+    /// <summary>
+    /// A rectangular region, read through a <see cref="CellBlock"/>: the maximal leading block of
+    /// rows and columns that carry values.
+    /// </summary>
+    public static IShape<T> Range<T>(Func<CellBlock, T> project)
+      => new BlockShape<T>(project, Placement.Of(DiscoveredBlock()), "Range");
 
-    /// <summary>A block of exactly <paramref name="width"/> by <paramref name="height"/> cells.</summary>
-    public static IShape<T> Cells<T>(int width, int height, Func<CellBlock, T> project)
-      => new BlockShape<T>(project, Placement.Of(ExplicitArea(width, height)), $"Cells({width}, {height})");
+    /// <summary>A region of exactly <paramref name="width"/> by <paramref name="height"/> cells.</summary>
+    public static IShape<T> Range<T>(int width, int height, Func<CellBlock, T> project)
+      => new BlockShape<T>(project, Placement.Of(ExplicitArea(width, height)), $"Range({width}, {height})");
 
-    /// <summary>A block extending as far as <paramref name="area"/> declares.</summary>
-    public static IShape<T> Cells<T>(IAreaStrategy area, Func<CellBlock, T> project)
+    /// <summary>A region extending as far as <paramref name="area"/> declares.</summary>
+    public static IShape<T> Range<T>(IAreaStrategy area, Func<CellBlock, T> project)
       => new BlockShape<T>(
         project,
         Placement.Of(area ?? throw new ArgumentNullException(nameof(area))),
-        "Cells");
+        "Range");
 
     // --- Tables -------------------------------------------------------------------------------
 
@@ -133,15 +137,32 @@ namespace Unrect.Shapes
     /// </code>
     /// </example>
     /// </summary>
-    public static IShape<IReadOnlyList<T>> Repeat<T>(IShape<T> item, IOffsetStrategy? separatedBy = null, int atLeast = 0)
-      => Repeat(Orientation.Vertical, item, separatedBy, atLeast);
+    /// <param name="item">The shape to apply repeatedly.</param>
+    /// <param name="separatedBy">The offset between occurrences; never applied before the first.</param>
+    /// <param name="atLeast">How many occurrences make a well-formed section.</param>
+    /// <param name="declared">
+    /// Supplied by the compiler as the text of the <paramref name="item"/> argument, so an item
+    /// hoisted into a local is called that in every path — <c>Repeat(investorDetail)</c> reads as
+    /// <c>Repeat[2] -&gt; 'investorDetail'</c>. It is not a naming API; pass <c>.Named(…)</c> to
+    /// choose a name, and note that an item written inline keeps its description instead.
+    /// </param>
+    public static IShape<IReadOnlyList<T>> Repeat<T>(
+      IShape<T> item,
+      IOffsetStrategy? separatedBy = null,
+      int atLeast = 0,
+      [CallerArgumentExpression("item")] string? declared = null)
+      => Repeat(Orientation.Vertical, item, separatedBy, atLeast, declared);
 
     /// <summary>
     /// One item stacked rightwards as many times as the space supports; see <c>Repeat</c> for
-    /// <paramref name="separatedBy"/> and <paramref name="atLeast"/>.
+    /// <paramref name="separatedBy"/>, <paramref name="atLeast"/>, and how the item is named.
     /// </summary>
-    public static IShape<IReadOnlyList<T>> RepeatHorizontal<T>(IShape<T> item, IOffsetStrategy? separatedBy = null, int atLeast = 0)
-      => Repeat(Orientation.Horizontal, item, separatedBy, atLeast);
+    public static IShape<IReadOnlyList<T>> RepeatHorizontal<T>(
+      IShape<T> item,
+      IOffsetStrategy? separatedBy = null,
+      int atLeast = 0,
+      [CallerArgumentExpression("item")] string? declared = null)
+      => Repeat(Orientation.Horizontal, item, separatedBy, atLeast, declared);
 
     // --- Alternatives -------------------------------------------------------------------------
 
@@ -239,29 +260,57 @@ namespace Unrect.Shapes
     /// <summary>The bottom <paramref name="height"/> rows; see <see cref="FromRight"/>.</summary>
     public static IOffsetStrategy FromBottom(int height) => OffsetStrategies.FromBottom(height);
 
+    // --- Landmark vocabulary --------------------------------------------------------------------
+    //
+    // Where a seek says where a shape starts, a landmark says where it ends: shape.Until(landmark).
+    // They match on the same rules as the seeks, so a section can start at SeekRowContaining("A")
+    // and end at RowContaining("B") without the two disagreeing about what a caption is.
+
+    /// <summary>The first row satisfying <paramref name="predicate"/>.</summary>
+    public static IRowLandmark RowWhere(Func<ISpace, int, bool> predicate) => RowLandmarks.RowWhere(predicate);
+
+    /// <summary>The first row with any cell satisfying <paramref name="anyCell"/>.</summary>
+    public static IRowLandmark RowWithCell(Func<CellValue, bool> anyCell) => RowLandmarks.RowWithCell(anyCell);
+
+    /// <summary>
+    /// The first row holding <paramref name="text"/> as a whole cell value, trimmed and
+    /// case-insensitively.
+    /// </summary>
+    public static IRowLandmark RowContaining(string text) => RowLandmarks.RowContaining(text);
+
+    /// <summary>The first column satisfying <paramref name="predicate"/>.</summary>
+    public static IColumnLandmark ColumnWhere(Func<ISpace, int, bool> predicate) => ColumnLandmarks.ColumnWhere(predicate);
+
+    /// <summary>The first column with any cell satisfying <paramref name="anyCell"/>.</summary>
+    public static IColumnLandmark ColumnWithCell(Func<CellValue, bool> anyCell) => ColumnLandmarks.ColumnWithCell(anyCell);
+
+    /// <summary>
+    /// The first column holding <paramref name="text"/> as a whole cell value, trimmed and
+    /// case-insensitively.
+    /// </summary>
+    public static IColumnLandmark ColumnContaining(string text) => ColumnLandmarks.ColumnContaining(text);
+
     // --- Shared construction ------------------------------------------------------------------
 
     private static IShape<T> Strip<T>(Orientation orientation, Func<CellStrip, T> project, IAreaStrategy area, string description)
       => new StripShape<T>(orientation, project, Placement.Of(area), description);
 
-    private static IShape<T> Stack<T>(Orientation orientation, IShape[] children, Func<object?[], T> combine)
-      => new StackShape<T>(orientation, children, combine, Placement.Default);
-
-    private static IShape<T> Overlay<T>(IShape[] children, Func<object?[], T> combine)
-      => new OverlayShape<T>(children, combine, Placement.Default);
-
-    private static IShape<IReadOnlyList<T>> Repeat<T>(Orientation orientation, IShape<T> item, IOffsetStrategy? separatedBy, int atLeast)
+    private static IShape<IReadOnlyList<T>> Repeat<T>(
+      Orientation orientation,
+      IShape<T> item,
+      IOffsetStrategy? separatedBy,
+      int atLeast,
+      string? declared)
     {
       if (atLeast < 0)
         throw new ArgumentOutOfRangeException(nameof(atLeast), atLeast, "A repeat cannot require a negative number of occurrences.");
 
-      return new RepeatShape<T>(item, separatedBy, orientation, atLeast, Placement.Default);
+      // A repeat has one item rather than an nth child, so there is no ordinal to fall back on: an
+      // item that is not a plain identifier keeps its description, exactly as before.
+      return new RepeatShape<T>(item, separatedBy, orientation, atLeast, UseSite.From(declared, null), Placement.Default);
     }
 
-    /// <summary>Validates a stack child where the caller's parameter name is what the user typed.</summary>
-    private static IShape NotNull(IShape child, string parameter) => child ?? throw new ArgumentNullException(parameter);
-
-    /// <summary>The same, for the lambda a cursor flow is declared by.</summary>
+    /// <summary>Validates a layout lambda where the caller's parameter name is what the user typed.</summary>
     private static Layout<T> NotNull<T>(Layout<T> build, string parameter) => build ?? throw new ArgumentNullException(parameter);
 
     private static int NotNegative(int count, string parameter)

@@ -19,7 +19,7 @@ namespace Unrect.Shapes
   /// the way to discard a default. <c>Sized</c> replaces too, since extents do not stack.
   /// </para>
   /// </summary>
-  public static partial class ShapeExtensions
+  public static class ShapeExtensions
   {
     /// <summary>
     /// Decomposes <paramref name="space"/> and projects it in one call. The shape's own placement
@@ -140,7 +140,18 @@ namespace Unrect.Shapes
       undescribed.Add($"{axis}s {string.Join(" and ", ranges)}");
     }
 
-    /// <summary>Labels the shape, so failures and diagnostics say <paramref name="name"/>.</summary>
+    /// <summary>
+    /// Labels the shape, so failures and diagnostics say <paramref name="name"/>.
+    /// <para>
+    /// A name given here beats the one a layout infers from the use site, so a shape-returning
+    /// helper must not name what it returns: every call would produce a shape called the same
+    /// thing, wherever it appeared, and the helper is the one place that cannot know which of them
+    /// this is. Let the use site name it — <c>var captions = FullRow(); … v.Next(captions)</c> reads
+    /// as <c>'captions'</c> — and keep <c>Named</c> for the two jobs inference cannot do: shapes
+    /// written inline, which have no identifier to borrow, and overriding an inferred name that
+    /// reads badly.
+    /// </para>
+    /// </summary>
     public static IShape<T> Named<T>(this IShape<T> shape, string name) => NotNull(shape).WithName(name);
 
     /// <summary>
@@ -206,7 +217,7 @@ namespace Unrect.Shapes
     /// that carries the failing shape's own path, location, and problem.
     /// <para>
     /// An absorbed shape consumes nothing beyond its own declared placement — nothing was read, so
-    /// no honest extent exists, and a following sibling in a stack starts where this shape began
+    /// no honest extent exists, and a following sibling in a flow starts where this shape began
     /// rather than after it. Pair absorbing boundaries with seek-anchored siblings so what comes
     /// next finds itself by content instead of by arithmetic.
     /// </para>
@@ -279,11 +290,60 @@ namespace Unrect.Shapes
     }
 
     /// <summary>
+    /// Ends the shape's extent just before the first row that is <paramref name="landmark"/>, which
+    /// the shape therefore never reads. Where <c>After</c> says where a shape starts by content, this
+    /// says where it ends by content — a section that runs until the next caption:
+    /// <c>Repeat(block, separatedBy: BlankRows()).Until(RowContaining("Cash flows by inception date"))</c>.
+    /// <para>
+    /// The bound is consumed in full, whether or not the shape read all of it, so whatever follows
+    /// starts <em>at</em> the landmark row and can anchor on it at distance zero. That is the point
+    /// of bounding here rather than asking the inner shape to stop.
+    /// </para>
+    /// <para>
+    /// A missing landmark is loud by default, as a missed anchor is: it means the section the
+    /// declaration describes is not the section in the file. It is a disagreement about the data
+    /// rather than a broken projection, so <c>Optional</c> and <c>Else</c> absorb it.
+    /// <paramref name="orEnd"/> opts one shape into "until this, or the end of the space", recording
+    /// an <c>Info</c> when it does run to the end so a reader can still tell which section was
+    /// open-ended.
+    /// </para>
+    /// <para>
+    /// Applied straight to an already-bounded shape, a second <c>Until</c> replaces the first rather
+    /// than nesting — a shape has one end. Through a wrapper it does not: <c>x.Until(A).Select(f)</c>
+    /// then <c>.Until(B)</c> bounds the <c>Select</c>, so B applies outside A and both are in force.
+    /// (Unlike <c>Sized</c>, which replaces whatever it is applied to, because a placement belongs to
+    /// one shape and a bound is a wrapper around one.)
+    /// </para>
+    /// <para>
+    /// It belongs on the section, not on the thing repeated inside it. A bound applies its inner
+    /// shape strictly, as <c>Padded</c> always has, so wrapping a repeat's <em>item</em> turns that
+    /// item's own missing anchor into a hard failure instead of the graceful stop a repeat relies on
+    /// to know it has run out of sections. Write <c>Repeat(item, …).Until(landmark)</c>, not
+    /// <c>Repeat(item.Until(landmark), …)</c>.
+    /// </para>
+    /// </summary>
+    public static IShape<T> Until<T>(this IShape<T> shape, IRowLandmark landmark, bool orEnd = false)
+      => Bound(shape, Landmark.Of(Required(landmark, nameof(landmark))), orEnd);
+
+    /// <summary>
+    /// Ends the shape's extent just before the first column that is <paramref name="landmark"/> —
+    /// the column twin of <see cref="Until{T}(IShape{T}, IRowLandmark, bool)"/>, spelled distinctly
+    /// so the common row form never has to be disambiguated by the reader.
+    /// </summary>
+    public static IShape<T> UntilColumn<T>(this IShape<T> shape, IColumnLandmark landmark, bool orEnd = false)
+      => Bound(shape, Landmark.Of(Required(landmark, nameof(landmark))), orEnd);
+
+    /// <summary>
     /// Projects the shape's result through <paramref name="selector"/>. The wrapper is a shape like
     /// any other, so <c>Named</c> and the placement modifiers work on either side of it.
     /// </summary>
     public static IShape<TResult> Select<T, TResult>(this IShape<T> shape, Func<T, TResult> selector)
       => new MapShape<T, TResult>(NotNull(shape), selector, Placement.Default);
+
+    private static IShape<T> Bound<T>(IShape<T> shape, Landmark landmark, bool orEnd)
+      => NotNull(shape) is UntilShape<T> bounded
+        ? bounded.WithLandmark(landmark, orEnd)
+        : new UntilShape<T>(shape, landmark, orEnd, Placement.Default);
 
     /// <summary>
     /// Carries the shape on from wherever it already sits, so movements read cumulatively. A shape
@@ -301,6 +361,9 @@ namespace Unrect.Shapes
       => new PadShape<T>(NotNull(shape), left, top, right, bottom, Placement.Default);
 
     private static IShape<T> NotNull<T>(IShape<T> shape) => shape ?? throw new ArgumentNullException(nameof(shape));
+
+    private static T Required<T>(T value, string parameter) where T : class
+      => value ?? throw new ArgumentNullException(parameter);
 
     private static int NotNegative(int distance, string parameter)
       => distance >= 0 ? distance : throw new ArgumentOutOfRangeException(parameter, distance, "A shape cannot be inset or moved a negative distance.");

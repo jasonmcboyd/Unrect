@@ -13,45 +13,47 @@
 var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\examples\investor-summary.xlsx");
 
 // Per-investor detail block: a name cell over a transaction table.
-var investorDetail =
-	Vertical(
-		Cell(v => v.GetString()).Named("investor name"),
-		TableRows(r => new
-		{
-			Date = r["Date"].GetDateTime(),
-			Type = r["Transaction Type"].GetString(),
-			Amount = r["Amount"].GetDecimal(),
-		}).Named("transactions"))
-	.Select((investor, txns) => new { Investor = investor, Transactions = txns })
-	.Named("investor detail");
+var investorName = Cell(c => c.GetString());
+
+var detailTransactions = TableRows(r => new
+{
+	Date = r["Date"].GetDateTime(),
+	Type = r["Transaction Type"].GetString(),
+	Amount = r["Amount"].GetDecimal(),
+});
+
+var investorDetail = VerticalFlow(v => new
+{
+	Investor = v.Next(investorName),
+	Transactions = v.Next(detailTransactions),
+});
+
+var reportHeader = Column(c => new
+{
+	Title = c[0].GetString(),
+	ReportDate = c[1].GetDateTime(),
+	ReportId = c[2].GetString(),
+});
+
+var summary = TableRows(r => new
+{
+	Investor = r["Investor"].GetString(),
+	Contributions = r["Contributions"].GetDecimal(),
+	Distributions = r["Distributions"].GetDecimal(),
+	Net = r["Net"].GetDecimal(),
+});
+
+var details = Repeat(investorDetail, separatedBy: BlankRows(), atLeast: 1).AfterBlankRows();
 
 // The report. Column(c => ...) discovers the header height; the gap before the summary is the
 // table's own default offset; the gap before the details section is the repeat's offset; the
 // gaps between detail blocks are the repeat's separator.
-var report =
-	Vertical(
-		Column(c => new
-		{
-			Title = c[0].GetString(),
-			ReportDate = c[1].GetDateTime(),
-			ReportId = c[2].GetString(),
-		}).Named("report header"),
-		TableRows(r => new
-		{
-			Investor = r["Investor"].GetString(),
-			Contributions = r["Contributions"].GetDecimal(),
-			Distributions = r["Distributions"].GetDecimal(),
-			Net = r["Net"].GetDecimal(),
-		}).Named("summary"),
-		Repeat(investorDetail, separatedBy: BlankRows(), atLeast: 1)
-			.AfterBlankRows()
-			.Named("investor details"))
-	.Select((header, summary, details) => new
-	{
-		ReportHeader = header,
-		Summary = summary,
-		Details = details,
-	});
+var report = VerticalFlow(v => new
+{
+	ReportHeader = v.Next(reportHeader),
+	Summary = v.Next(summary),
+	Details = v.Next(details),
+});
 
 var result = report.Map(SpreadsheetSpace.Create(path, "Summary"));
 

@@ -13,7 +13,7 @@ using static Unrect.Tests.Shapes.ShapeTestSpaces;
 namespace Unrect.Tests.Shapes
 {
   /// <summary>
-  /// The leaves: Cell, Row, Column and Cells. Each comes in a discovered form (the default area
+  /// The leaves: Cell, Row, Column and Range. Each comes in a discovered form (the default area
   /// finds the extent), an explicit-count form, and a strategy form — and each validates the extent
   /// it was actually given, so a Column that has been sized two columns wide is an error rather than
   /// a silent half-read.
@@ -148,7 +148,7 @@ namespace Unrect.Tests.Shapes
       Assert.Contains("a Column must be exactly one column wide; this one is 2 columns wide", failure.Message);
     }
 
-    // --- Cells --------------------------------------------------------------------------------------
+    // --- Range --------------------------------------------------------------------------------------
 
     [Fact]
     public void Cells_Discovered_TakesTheMaximalValueBearingBlock()
@@ -161,7 +161,7 @@ namespace Unrect.Tests.Shapes
         { 5, 5, 5 },
       });
 
-      Assert.Equal((2, 2), Cells(b => (b.Width, b.Height)).Map(space));
+      Assert.Equal((2, 2), Range(b => (b.Width, b.Height)).Map(space));
     }
 
     [Fact]
@@ -169,7 +169,7 @@ namespace Unrect.Tests.Shapes
     {
       var space = Grid(new[,] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
 
-      var values = Cells(2, 2, b => new[] { b[0, 0].GetInt(), b[1, 0].GetInt(), b[0, 1].GetInt(), b[1, 1].GetInt() }).Map(space);
+      var values = Range(2, 2, b => new[] { b[0, 0].GetInt(), b[1, 0].GetInt(), b[0, 1].GetInt(), b[1, 1].GetInt() }).Map(space);
 
       Assert.Equal(new[] { 1, 2, 4, 5 }, values);
     }
@@ -179,7 +179,7 @@ namespace Unrect.Tests.Shapes
     {
       var space = Grid(new[,] { { 1, 2, 3 }, { 4, 5, 6 } });
 
-      var shape = Cells(AreaStrategies.ExplicitArea(3, 1), b => (b.Width, b.Height));
+      var shape = Range(AreaStrategies.ExplicitArea(3, 1), b => (b.Width, b.Height));
 
       Assert.Equal((3, 1), shape.Map(space));
     }
@@ -190,7 +190,7 @@ namespace Unrect.Tests.Shapes
       // Unlike Row and Column, a block of any dimensions is legal — including an empty one.
       var space = Grid(new[,] { { 0, 0 }, { 0, 0 } });
 
-      Assert.Equal((0, 0), Cells(b => (b.Width, b.Height)).Map(space));
+      Assert.Equal((0, 0), Range(b => (b.Width, b.Height)).Map(space));
     }
 
     // --- CellStrip ------------------------------------------------------------------------------------
@@ -239,7 +239,7 @@ namespace Unrect.Tests.Shapes
     [Fact]
     public void CellBlock_IsIndexedByColumnThenRow()
     {
-      var block = Capture(Cells(b => b), Grid(new[,] { { 1, 2, 3 }, { 4, 5, 6 } }));
+      var block = Capture(Range(b => b), Grid(new[,] { { 1, 2, 3 }, { 4, 5, 6 } }));
 
       Assert.Equal(3, block.Width);
       Assert.Equal(2, block.Height);
@@ -250,7 +250,7 @@ namespace Unrect.Tests.Shapes
     [Fact]
     public void CellBlock_RowsAndColumnsEnumerateInOrder()
     {
-      var block = Capture(Cells(b => b), Grid(new[,] { { 1, 2, 3 }, { 4, 5, 6 } }));
+      var block = Capture(Range(b => b), Grid(new[,] { { 1, 2, 3 }, { 4, 5, 6 } }));
 
       Assert.Equal(new[] { 1, 2, 3 }, block.Row(0).Select(v => v.GetInt()).ToArray());
       Assert.Equal(new[] { 4, 5, 6 }, block.Row(1).Select(v => v.GetInt()).ToArray());
@@ -266,7 +266,7 @@ namespace Unrect.Tests.Shapes
     [Fact]
     public void CellBlock_OutsideItsExtent_Throws()
     {
-      var block = Capture(Cells(b => b), Grid(new[,] { { 1, 2 }, { 3, 4 } }));
+      var block = Capture(Range(b => b), Grid(new[,] { { 1, 2 }, { 3, 4 } }));
 
       Assert.Throws<ArgumentOutOfRangeException>(() => block[2, 0]);
       Assert.Throws<ArgumentOutOfRangeException>(() => block[0, 2]);
@@ -283,13 +283,13 @@ namespace Unrect.Tests.Shapes
       Assert.Throws<ArgumentNullException>(() => Cell<int>(null!));
       Assert.Throws<ArgumentNullException>(() => Row<int>(null!));
       Assert.Throws<ArgumentNullException>(() => Column<int>(null!));
-      Assert.Throws<ArgumentNullException>(() => Cells<int>(null!));
+      Assert.Throws<ArgumentNullException>(() => Range<int>(null!));
     }
 
     [Fact]
     public void Cells_RejectsANullAreaStrategy()
     {
-      var failure = Assert.Throws<ArgumentNullException>(() => Cells((IAreaStrategy)null!, b => b.Width));
+      var failure = Assert.Throws<ArgumentNullException>(() => Range((IAreaStrategy)null!, b => b.Width));
 
       Assert.Equal("area", failure.ParamName);
     }

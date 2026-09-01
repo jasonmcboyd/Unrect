@@ -175,8 +175,8 @@ namespace Unrect.Tests
       Assert.Equal(2, SizeStrategies.RowsWhileAnyValue().GetSize(byDefault).Height);
       Assert.Equal(4, SizeStrategies.RowsWhileAnyValue().GetSize(strict).Height);
 
-      Assert.Equal((4, 2), Cells(b => (b.Width, b.Height)).Map(byDefault));
-      Assert.Equal((4, 4), Cells(b => (b.Width, b.Height)).Map(strict));
+      Assert.Equal((4, 2), Range(b => (b.Width, b.Height)).Map(byDefault));
+      Assert.Equal((4, 4), Range(b => (b.Width, b.Height)).Map(strict));
     }
 
     [Fact]

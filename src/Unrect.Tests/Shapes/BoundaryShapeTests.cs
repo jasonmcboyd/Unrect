@@ -32,6 +32,10 @@ namespace Unrect.Tests.Shapes
 
     private static IShape<string> Title() => Cell(v => v.GetString()).Named("title");
 
+    /// <summary>Two levels below the boundary: the flow whose second child is the one that fails.</summary>
+    private static IShape<string> Inner()
+      => VerticalFlow(v => $"{v.Next(Cell(c => c.GetInt()))}{v.Next(Cell(c => c.GetString()))}");
+
     /// <summary>
     /// The one warning a parse produced. An absorbing boundary consumes nothing, so a boundary at
     /// the root also leaves an unconsumed-space Info covering the whole sheet; the warning is the
@@ -136,24 +140,19 @@ namespace Unrect.Tests.Shapes
     [Fact]
     public void AFollowingSiblingStartsWhereTheAbsorbedShapeBegan()
     {
-      var (title, first, second) = Vertical(
-        Title().Optional(),
-        Cell(v => v.GetInt()),
-        Cell(v => v.GetInt()))
+      var read = VerticalFlow(v =>
+        $"{v.Next(Title().Optional()) ?? "null"}|{v.Next(Cell(c => c.GetInt()))}|{v.Next(Cell(c => c.GetInt()))}")
         .Map(Numbers());
 
-      Assert.Null(title);
-      Assert.Equal(1, first);
-      Assert.Equal(2, second);
+      Assert.Equal("null|1|2", read);
     }
 
     [Fact]
     public void ElseValue_AlsoConsumesNothing()
     {
-      var (title, first) = Vertical(Title().Else("missing"), Cell(v => v.GetInt())).Map(Numbers());
+      var read = VerticalFlow(v => $"{v.Next(Title().Else("missing"))}|{v.Next(Cell(c => c.GetInt()))}").Map(Numbers());
 
-      Assert.Equal("missing", title);
-      Assert.Equal(1, first);
+      Assert.Equal("missing|1", read);
     }
 
     [Fact]
@@ -161,19 +160,17 @@ namespace Unrect.Tests.Shapes
     {
       // A fallback shape did read something, so it reports an honest extent and the next sibling
       // clears it.
-      var (title, next) = Vertical(
-        Title().Else(Cell(v => v.GetInt().ToString()).Named("plan B")),
-        Cell(v => v.GetInt()))
+      var read = VerticalFlow(v =>
+        $"{v.Next(Title().Else(Cell(c => c.GetInt().ToString()).Named("plan B")))}|{v.Next(Cell(c => c.GetInt()))}")
         .Map(Numbers());
 
-      Assert.Equal("1", title);
-      Assert.Equal(2, next);
+      Assert.Equal("1|2", read);
     }
 
     [Fact]
     public void ElseShape_ReportsTheFallbacksAdvance()
     {
-      var applied = Cells(b => b.Width).Select(w => "wide").Else(Cells(1, 2, b => "narrow")).Apply(Numbers());
+      var applied = Range(b => b.Width).Select(w => "wide").Else(Range(1, 2, b => "narrow")).Apply(Numbers());
 
       Assert.Equal(1, applied.Consumed.Width);
       Assert.Equal(3, applied.Consumed.Height);
@@ -184,34 +181,27 @@ namespace Unrect.Tests.Shapes
     [Fact]
     public void ABoundaryAbsorbsAFailureFromDeepInsideIt()
     {
-      // Three levels down: the boundary wraps a stack whose second child fails. Nothing between
+      // Three levels down: the boundary wraps a flow whose second child fails. Nothing between
       // them softens anything — the failure travels to the nearest boundary and stops there.
-      var shape = Vertical(
-        Cell(v => v.GetInt()),
-        Vertical(Cell(v => v.GetInt()), Cell(v => v.GetString())).Select((first, second) => second).Optional(),
-        Cell(v => v.GetInt()));
+      var shape = VerticalFlow(v =>
+        $"{v.Next(Cell(c => c.GetInt()))}|{v.Next(Inner().Optional()) ?? "null"}|{v.Next(Cell(c => c.GetInt()))}");
 
       var result = shape.MapWithDiagnostics(Numbers());
 
-      var (before, absorbed, after) = result.Value;
-      Assert.Equal(1, before);
-      Assert.Null(absorbed);
-      Assert.Equal(2, after);
+      Assert.Equal("1|null|2", result.Value);
     }
 
     [Fact]
     public void ADeeplyAbsorbedFailure_KeepsItsFullPathAndTrueLocation()
     {
-      var shape = Vertical(
-        Cell(v => v.GetInt()),
-        Vertical(Cell(v => v.GetInt()), Cell(v => v.GetString())).Select((first, second) => second).Optional(),
-        Cell(v => v.GetInt()));
+      var shape = VerticalFlow(v =>
+        $"{v.Next(Cell(c => c.GetInt()))}|{v.Next(Inner().Optional()) ?? "null"}|{v.Next(Cell(c => c.GetInt()))}");
 
       var warning = Assert.Single(
         shape.MapWithDiagnostics(Numbers()).Diagnostics,
         d => d.Severity == DiagnosticSeverity.Warning);
 
-      Assert.Equal("Vertical -> Vertical -> Cell", warning.Path);
+      Assert.Equal("VerticalFlow -> VerticalFlow#2 -> Cell#2", warning.Path);
       Assert.Equal("A3", warning.Location.A1);
     }
 
@@ -274,11 +264,11 @@ namespace Unrect.Tests.Shapes
     [Fact]
     public void ABadViewIndexInAProjection_IsNotAbsorbed()
     {
-      // Cells(b => b[9, 0]) on a 1x1 extent is a wrong index into the view — the reading code is
+      // Range(b => b[9, 0]) on a 1x1 extent is a wrong index into the view — the reading code is
       // wrong, not the file — so the view's ArgumentOutOfRangeException must propagate, not read
       // as "this section was absent".
       var failure = Assert.Throws<ShapeException>(() =>
-        Cells(b => b[9, 0].GetInt()).Named("bad").Optional().Map(Numbers(1)));
+        Range(b => b[9, 0].GetInt()).Named("bad").Optional().Map(Numbers(1)));
 
       Assert.IsType<ArgumentOutOfRangeException>(failure.GetBaseException());
       Assert.Equal("'bad'", failure.Subject);
@@ -353,8 +343,8 @@ namespace Unrect.Tests.Shapes
 
     private static ISpace TextOverNumber() => Mixed(new object?[,] { { "x" }, { 5 } });
 
-    private static IShape<(int, int)> AbsorbedThenSameCell()
-      => Vertical(Cell(v => v.GetInt()).Optional(), Cell(v => v.GetInt()));
+    private static IShape<string> AbsorbedThenSameCell()
+      => VerticalFlow(v => $"{v.Next(Cell(c => c.GetInt()).Optional())}|{v.Next(Cell(c => c.GetInt()))}");
 
     [Fact]
     public void AFailureRightAfterAnAbsorbedSibling_CarriesANote()
@@ -372,7 +362,7 @@ namespace Unrect.Tests.Shapes
       // The quoted exception message brings its own full stop; keeping it would read ".; note:".
       var noted = FirstLine(Assert.Throws<ShapeException>(() => AbsorbedThenSameCell().Map(TextOverNumber())));
       var plain = FirstLine(Assert.Throws<ShapeException>(() =>
-        Vertical(Cell(v => v.GetString()), Cell(v => v.GetString())).Map(TextOverNumber())));
+        VerticalFlow(v => $"{v.Next(Cell(c => c.GetString()))}|{v.Next(Cell(c => c.GetString()))}").Map(TextOverNumber())));
 
       Assert.EndsWith("expected Text.", plain);
       Assert.DoesNotContain("Number.;", noted);
@@ -385,8 +375,10 @@ namespace Unrect.Tests.Shapes
       // The sibling still owns the failure; the note only points at what probably caused it.
       var failure = Assert.Throws<ShapeException>(() => AbsorbedThenSameCell().Map(TextOverNumber()));
 
-      Assert.Equal("Cell", failure.Subject);
-      Assert.Equal("Vertical -> Cell", failure.Path);
+      // The inferred use-site label names the subject as well as the path, so an inline child is
+      // "Cell#2" in both halves of the message rather than disagreeing with itself.
+      Assert.Equal("Cell#2", failure.Subject);
+      Assert.Equal("VerticalFlow -> Cell#2", failure.Path);
       Assert.Equal("A1", failure.Location.A1);
     }
 
@@ -410,10 +402,10 @@ namespace Unrect.Tests.Shapes
     {
       // Nothing consumed nothing, so there is nothing to blame but the shape that failed.
       var laterChild = Assert.Throws<ShapeException>(() =>
-        Vertical(Cell(v => v.GetString()), Cell(v => v.GetString())).Map(TextOverNumber()));
+        VerticalFlow(v => $"{v.Next(Cell(c => c.GetString()))}|{v.Next(Cell(c => c.GetString()))}").Map(TextOverNumber()));
 
       var firstChild = Assert.Throws<ShapeException>(() =>
-        Vertical(Cell(v => v.GetInt()), Cell(v => v.GetInt())).Map(TextOverNumber()));
+        VerticalFlow(v => $"{v.Next(Cell(c => c.GetInt()))}|{v.Next(Cell(c => c.GetInt()))}").Map(TextOverNumber()));
 
       Assert.DoesNotContain("note:", laterChild.Message);
       Assert.DoesNotContain("note:", firstChild.Message);
@@ -425,10 +417,8 @@ namespace Unrect.Tests.Shapes
       // The second child reads the absorbed shape's cells successfully and moves the cursor on, so
       // by the time the third child fails the coincidence has passed.
       var failure = Assert.Throws<ShapeException>(() =>
-        Vertical(
-          Cell(v => v.GetInt()).Optional(),
-          Cell(v => v.GetString()),
-          Cell(v => v.GetString()))
+        VerticalFlow(v =>
+          $"{v.Next(Cell(c => c.GetInt()).Optional())}|{v.Next(Cell(c => c.GetString()))}|{v.Next(Cell(c => c.GetString()))}")
           .Map(TextOverNumber()));
 
       Assert.DoesNotContain("note:", failure.Message);
@@ -442,9 +432,8 @@ namespace Unrect.Tests.Shapes
       var space = Mixed(new object?[,] { { "x" }, { null }, { null }, { 5 }, { 6 } });
 
       var failure = Assert.Throws<ShapeException>(() =>
-        Vertical(
-          Cell(v => v.GetInt()).Optional(),
-          Cell(v => v.GetString()).After(BlankRows()).Down(2))
+        VerticalFlow(v =>
+          $"{v.Next(Cell(c => c.GetInt()).Optional())}|{v.Next(Cell(c => c.GetString()).After(BlankRows()).Down(2))}")
           .Map(space));
 
       Assert.DoesNotContain("note:", failure.Message);
@@ -457,9 +446,8 @@ namespace Unrect.Tests.Shapes
       // Any sibling that consumed nothing leaves the next one in the same position; a boundary is
       // simply the usual way that happens.
       var failure = Assert.Throws<ShapeException>(() =>
-        Vertical(
-          Cells(AreaStrategies.ExplicitArea(1, 0), b => b.Height),
-          Cell(v => v.GetInt()))
+        VerticalFlow(v =>
+          $"{v.Next(Range(AreaStrategies.ExplicitArea(1, 0), b => b.Height))}|{v.Next(Cell(c => c.GetInt()))}")
           .Map(TextOverNumber()));
 
       Assert.Contains("note: the preceding sibling consumed nothing at this position", failure.Message);
@@ -469,7 +457,7 @@ namespace Unrect.Tests.Shapes
     public void AHorizontalFlowIsNotedTheSameWay()
     {
       var failure = Assert.Throws<ShapeException>(() =>
-        Horizontal(Cell(v => v.GetInt()).Optional(), Cell(v => v.GetInt()))
+        HorizontalFlow(h => $"{h.Next(Cell(c => c.GetInt()).Optional())}|{h.Next(Cell(c => c.GetInt()))}")
           .Map(Mixed(new object?[,] { { "x", 5 } })));
 
       Assert.Contains("note: the preceding sibling consumed nothing at this position", failure.Message);
@@ -481,13 +469,17 @@ namespace Unrect.Tests.Shapes
       // The payoff. Inside a choice, a losing branch's absorption Warning is rolled back with the
       // branch — so the note carried by the failure itself is the only surviving evidence that the
       // branch tolerated something before it died.
-      var tolerant = Vertical(Cell(v => v.GetInt()).Optional(), Cell(v => v.GetInt()))
-        .Named("tolerant branch")
-        .Select((absorbed, value) => value);
+      var tolerant = VerticalFlow(v =>
+      {
+        v.Next(Cell(c => c.GetInt()).Optional());
+        return v.Next(Cell(c => c.GetInt()));
+      }).Named("tolerant branch");
 
-      var strict = Vertical(Cell(v => v.GetInt()), Cell(v => v.GetInt()))
-        .Named("strict branch")
-        .Select((first, second) => second);
+      var strict = VerticalFlow(v =>
+      {
+        v.Next(Cell(c => c.GetInt()));
+        return v.Next(Cell(c => c.GetInt()));
+      }).Named("strict branch");
 
       var failure = Assert.Throws<ShapeException>(() => Choice(tolerant, strict).Map(TextOverNumber()));
 

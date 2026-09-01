@@ -657,6 +657,135 @@ namespace Unrect.Tests
       Assert.ThrowsAny<OutOfBoundsException>(() => FromBottom(4).GetOffset(space));
     }
 
+    // --- Landmarks: the same content rules, without the offset -------------------------------------
+    //
+    // A landmark says where a shape ends, where a seek says where one starts. The trio mirrors the
+    // seeks exactly and matches on the same rules; the difference is that a landmark reports "not
+    // found" as null and lets the shape bounding itself decide, where a seek throws.
+
+    private static ISpace RowsWithATotal() => Text(new string?[,]
+    {
+      { "x", "y" },
+      { "  TOTAL  ", null },
+      { "z", null },
+    });
+
+    private static ISpace ColumnsWithATotal() => Text(new string?[,]
+    {
+      { "a", "  TOTAL  ", "c" },
+      { null, null, "z" },
+    });
+
+    [Fact]
+    public void RowWhere_FindsTheFirstRowSatisfyingAPositionalPredicate()
+    {
+      Assert.Equal(2, RowLandmarks.RowWhere((space, row) => space[0, row].TryGetString() == "z").FindRow(RowsWithATotal()));
+    }
+
+    [Fact]
+    public void RowWithCell_FindsTheFirstRowWithAMatchingCell()
+    {
+      // Column 1 is empty except on the first row, so this finds a row by a cell that is not its
+      // first — the reason the "any cell" form exists at all.
+      Assert.Equal(0, RowLandmarks.RowWithCell(cell => cell.TryGetString() == "y").FindRow(RowsWithATotal()));
+    }
+
+    [Fact]
+    public void RowContaining_MatchesWholeCellsTrimmedAndCaseInsensitively()
+    {
+      // The sheet says "  TOTAL  "; the declaration may say it any way that reads well.
+      Assert.Equal(1, RowLandmarks.RowContaining("Total").FindRow(RowsWithATotal()));
+      Assert.Equal(1, RowLandmarks.RowContaining("  total  ").FindRow(RowsWithATotal()));
+    }
+
+    [Fact]
+    public void RowContaining_MatchesWholeCellsNotSubstrings()
+    {
+      Assert.Null(RowLandmarks.RowContaining("TOT").FindRow(RowsWithATotal()));
+      Assert.Null(RowLandmarks.RowContaining("TOTALS").FindRow(RowsWithATotal()));
+    }
+
+    [Fact]
+    public void RowLandmarks_ReportAMissAsNullRatherThanThrowing()
+    {
+      // The whole difference from a seek: a missing end is a question for the shape being bounded,
+      // not a failure in itself.
+      Assert.Null(RowLandmarks.RowWhere((_, _) => false).FindRow(RowsWithATotal()));
+      Assert.Null(RowLandmarks.RowWithCell(_ => false).FindRow(RowsWithATotal()));
+      Assert.Null(RowLandmarks.RowContaining("Nope").FindRow(RowsWithATotal()));
+    }
+
+    [Fact]
+    public void ColumnWhere_FindsTheFirstColumnSatisfyingAPositionalPredicate()
+    {
+      Assert.Equal(2, ColumnLandmarks.ColumnWhere((space, column) => space[column, 0].TryGetString() == "c").FindColumn(ColumnsWithATotal()));
+    }
+
+    [Fact]
+    public void ColumnWithCell_FindsTheFirstColumnWithAMatchingCell()
+    {
+      Assert.Equal(2, ColumnLandmarks.ColumnWithCell(cell => cell.TryGetString() == "z").FindColumn(ColumnsWithATotal()));
+    }
+
+    [Fact]
+    public void ColumnContaining_MatchesWholeCellsTrimmedAndCaseInsensitively()
+    {
+      Assert.Equal(1, ColumnLandmarks.ColumnContaining("Total").FindColumn(ColumnsWithATotal()));
+      Assert.Equal(1, ColumnLandmarks.ColumnContaining("  total  ").FindColumn(ColumnsWithATotal()));
+      Assert.Null(ColumnLandmarks.ColumnContaining("TOT").FindColumn(ColumnsWithATotal()));
+    }
+
+    [Fact]
+    public void ColumnLandmarks_ReportAMissAsNullRatherThanThrowing()
+    {
+      Assert.Null(ColumnLandmarks.ColumnWhere((_, _) => false).FindColumn(ColumnsWithATotal()));
+      Assert.Null(ColumnLandmarks.ColumnWithCell(_ => false).FindColumn(ColumnsWithATotal()));
+      Assert.Null(ColumnLandmarks.ColumnContaining("Nope").FindColumn(ColumnsWithATotal()));
+    }
+
+    [Fact]
+    public void ALandmarkDescribesWhatItLookedForTheWayASeekDoes()
+    {
+      // The descriptions are the negative noun phrases the failure templates are built from, so a
+      // bound reads beside a seek rather than in its own dialect.
+      Assert.Equal("no matching row", RowLandmarks.RowWhere((_, _) => false).Description);
+      Assert.Equal("no row with a matching cell", RowLandmarks.RowWithCell(_ => false).Description);
+      Assert.Equal("no row containing \'Total\'", RowLandmarks.RowContaining("Total").Description);
+
+      Assert.Equal("no matching column", ColumnLandmarks.ColumnWhere((_, _) => false).Description);
+      Assert.Equal("no column with a matching cell", ColumnLandmarks.ColumnWithCell(_ => false).Description);
+      Assert.Equal("no column containing \'Total\'", ColumnLandmarks.ColumnContaining("Total").Description);
+    }
+
+    [Fact]
+    public void ASeekAndALandmarkAgreeOnWhatContainingMeans()
+    {
+      // The deliberate cross-check: both go through the same CellMatching helper, so "containing"
+      // cannot come to mean two things. Where the seek lands is where the landmark is found.
+      var space = RowsWithATotal();
+
+      foreach (var needle in new[] { "Total", "  total  ", "TOTAL" })
+      {
+        Assert.Equal(1, RowLandmarks.RowContaining(needle).FindRow(space));
+        Assert.Equal(1, SeekRowContaining(needle).GetOffset(space).Size.Height);
+      }
+
+      // ...and they agree on what does not match, one by returning null and one by throwing.
+      Assert.Null(RowLandmarks.RowContaining("TOT").FindRow(space));
+      Assert.ThrowsAny<OutOfBoundsException>(() => SeekRowContaining("TOT").GetOffset(space));
+    }
+
+    [Fact]
+    public void LandmarkFactories_RejectNullArguments()
+    {
+      Assert.Equal("predicate", Assert.Throws<ArgumentNullException>(() => RowLandmarks.RowWhere(null!)).ParamName);
+      Assert.Equal("anyCell", Assert.Throws<ArgumentNullException>(() => RowLandmarks.RowWithCell(null!)).ParamName);
+      Assert.Equal("text", Assert.Throws<ArgumentNullException>(() => RowLandmarks.RowContaining(null!)).ParamName);
+      Assert.Equal("predicate", Assert.Throws<ArgumentNullException>(() => ColumnLandmarks.ColumnWhere(null!)).ParamName);
+      Assert.Equal("anyCell", Assert.Throws<ArgumentNullException>(() => ColumnLandmarks.ColumnWithCell(null!)).ParamName);
+      Assert.Equal("text", Assert.Throws<ArgumentNullException>(() => ColumnLandmarks.ColumnContaining(null!)).ParamName);
+    }
+
     [Fact]
     public void FromEndAnchors_RejectNegativeExtentsWhenTheyAreDeclared()
     {

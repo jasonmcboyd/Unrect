@@ -48,7 +48,7 @@ namespace Unrect.Tests.Shapes
     [Fact]
     public void Map_AppliesTheShapesOwnAreaAtTheTopLevel()
     {
-      var block = Cells(2, 3, b => (b.Width, b.Height)).Map(CoordinateGrid());
+      var block = Range(2, 3, b => (b.Width, b.Height)).Map(CoordinateGrid());
 
       Assert.Equal((2, 3), block);
     }
@@ -87,34 +87,35 @@ namespace Unrect.Tests.Shapes
     [Fact]
     public void NestedShape_HasItsOffsetAppliedExactlyOnce()
     {
-      // A one-row offset inside a stack must move the child one row, not two. Applying it twice —
+      // A one-row offset inside a flow must move the child one row, not two. Applying it twice —
       // once to derive the available space and again to slice the extent — was the original trap.
-      var result = Vertical(IntCell(), IntCell().Down(1)).Map(CoordinateGrid(width: 1));
+      var second = IntCell().Down(1);
+      var result = VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(second)}").Map(CoordinateGrid(width: 1));
 
-      Assert.Equal((1, 21), result);
+      Assert.Equal("1|21", result);
     }
 
     [Fact]
     public void NestedShape_HasItsOffsetAppliedOnceAtEveryDepth()
     {
-      var shape = Vertical(
-        IntCell(),
-        Vertical(IntCell(), IntCell().Down(1)).Down(1));
+      var lower = IntCell().Down(1);
+      var inner = VerticalFlow(w => $"{w.Next(IntCell())}|{w.Next(lower)}").Down(1);
+      var shape = VerticalFlow(v => $"{v.Next(IntCell())}/{v.Next(inner)}");
 
-      // Outer child 1 sits at row 1; the inner stack's first cell at row 2 and its second at row 4.
-      Assert.Equal((1, (21, 41)), shape.Map(CoordinateGrid(width: 1, height: 5)));
+      // Outer child 1 sits at row 1; the inner flow's first cell at row 2 and its second at row 4.
+      Assert.Equal("1/21|41", shape.Map(CoordinateGrid(width: 1, height: 5)));
     }
 
-    // --- Offset on the stack versus offset on the first child --------------------------------------
+    // --- Offset on the flow versus offset on the first child ---------------------------------------
 
     [Fact]
-    public void OffsetOnTheStack_PositionsTheWholeStack()
+    public void OffsetOnTheFlow_PositionsTheWholeFlow()
     {
       var space = Grid(new[,] { { 0 }, { 1 }, { 2 }, { 0 } });
 
-      var applied = Vertical(IntCell(), IntCell()).AfterBlankRows().Apply(space);
+      var applied = VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(IntCell())}").AfterBlankRows().Apply(space);
 
-      Assert.Equal((1, 2), applied.Value);
+      Assert.Equal("1|2", applied.Value);
       Assert.Equal(1, applied.Offset.Size.Height);
       Assert.Equal(2, applied.Consumed.Height);
     }
@@ -124,10 +125,11 @@ namespace Unrect.Tests.Shapes
     {
       var space = Grid(new[,] { { 0 }, { 1 }, { 2 }, { 0 } });
 
-      var applied = Vertical(IntCell().AfterBlankRows(), IntCell()).Apply(space);
+      var first = IntCell().AfterBlankRows();
+      var applied = VerticalFlow(v => $"{v.Next(first)}|{v.Next(IntCell())}").Apply(space);
 
-      // Same values, but the stack itself starts at the origin and therefore consumes the blank row.
-      Assert.Equal((1, 2), applied.Value);
+      // Same values, but the flow itself starts at the origin and therefore consumes the blank row.
+      Assert.Equal("1|2", applied.Value);
       Assert.Equal(0, applied.Offset.Size.Height);
       Assert.Equal(3, applied.Consumed.Height);
     }
@@ -137,11 +139,12 @@ namespace Unrect.Tests.Shapes
     {
       var space = Grid(new[,] { { 0 }, { 1 }, { 2 }, { 0 } });
 
-      var onStack = Vertical(IntCell(), IntCell()).AfterBlankRows().Apply(space);
-      var onChild = Vertical(IntCell().AfterBlankRows(), IntCell()).Apply(space);
+      var first = IntCell().AfterBlankRows();
+      var onFlow = VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(IntCell())}").AfterBlankRows().Apply(space);
+      var onChild = VerticalFlow(v => $"{v.Next(first)}|{v.Next(IntCell())}").Apply(space);
 
-      Assert.Equal(onStack.Value, onChild.Value);
-      Assert.Equal(onStack.Advance.Height, onChild.Advance.Height);
+      Assert.Equal(onFlow.Value, onChild.Value);
+      Assert.Equal(onFlow.Advance.Height, onChild.Advance.Height);
     }
 
     // --- Select commutes with the placement modifiers ----------------------------------------------
@@ -233,7 +236,7 @@ namespace Unrect.Tests.Shapes
     [Fact]
     public void RepeatedSizeModifiers_KeepOnlyTheLast()
     {
-      var shape = Cells(b => (b.Width, b.Height))
+      var shape = Range(b => (b.Width, b.Height))
         .Sized(AreaStrategies.ExplicitArea(3, 3))
         .Sized(AreaStrategies.ExplicitArea(2, 1));
 
@@ -289,7 +292,7 @@ namespace Unrect.Tests.Shapes
     [Fact]
     public void Sized_ReturnsANewShapeAndLeavesTheOriginalArea()
     {
-      var original = Cells(b => (b.Width, b.Height));
+      var original = Range(b => (b.Width, b.Height));
       var resized = original.Sized(AreaStrategies.ExplicitArea(1, 1));
 
       Assert.Equal((3, 4), original.Map(CoordinateGrid()));
@@ -379,11 +382,11 @@ namespace Unrect.Tests.Shapes
     }
 
     [Fact]
-    public void StacksAndRepeatsDeriveTheirExtent()
+    public void FlowsAndRepeatsDeriveTheirExtent()
     {
-      // A null Area is what lets a stack size itself from its children — and therefore what lets a
+      // A null Area is what lets a flow size itself from its children — and therefore what lets a
       // Repeat item be declared without any placement at all.
-      Assert.Null(Vertical(IntCell(), IntCell()).Placement.Area);
+      Assert.Null(VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(IntCell())}").Placement.Area);
       Assert.Null(Repeat(IntCell()).Placement.Area);
       Assert.NotNull(IntCell().Placement.Area);
     }

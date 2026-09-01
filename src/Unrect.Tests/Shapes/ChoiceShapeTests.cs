@@ -24,11 +24,11 @@ namespace Unrect.Tests.Shapes
 
     /// <summary>Reads the pair as text-then-number: what the file actually is.</summary>
     private static IShape<int> TextFirst(string name = "vendor A layout")
-      => Vertical(Cell(v => v.GetString()), Cell(v => v.GetInt())).Named(name).Select((label, value) => value);
+      => VerticalFlow(v => { v.Next(Cell(c => c.GetString())); return v.Next(Cell(c => c.GetInt())); }).Named(name);
 
     /// <summary>Reads the pair as number-then-number: a layout this file is not in.</summary>
     private static IShape<int> NumberFirst(string name = "vendor B layout")
-      => Vertical(Cell(v => v.GetInt()), Cell(v => v.GetInt())).Named(name).Select((first, second) => second);
+      => VerticalFlow(v => { v.Next(Cell(c => c.GetInt())); return v.Next(Cell(c => c.GetInt())); }).Named(name);
 
     // --- Choosing ------------------------------------------------------------------------------------
 
@@ -76,7 +76,7 @@ namespace Unrect.Tests.Shapes
 
       var info = Assert.Single(result.Diagnostics);
 
-      Assert.Equal("Choice -> 'vendor B layout' -> Cell", info.Path);
+      Assert.Equal("Choice -> 'vendor B layout' -> Cell#1", info.Path);
       Assert.Equal("A1", info.Location.A1);
     }
 
@@ -99,12 +99,12 @@ namespace Unrect.Tests.Shapes
     public void AnUnnamedAlternative_IsDescribedStructurally()
     {
       var alternatives = Choice(
-        Vertical(Cell(v => v.GetInt()), Cell(v => v.GetInt())).Select((a, b) => b),
+        VerticalFlow(v => { v.Next(Cell(c => c.GetInt())); return v.Next(Cell(c => c.GetInt())); }),
         TextFirst());
 
       var info = Assert.Single(alternatives.MapWithDiagnostics(Pair()).Diagnostics);
 
-      Assert.StartsWith("alternative 1 (Vertical) did not match: ", info.Message);
+      Assert.StartsWith("alternative 1 (VerticalFlow) did not match: ", info.Message);
     }
 
     [Fact]
@@ -150,7 +150,7 @@ namespace Unrect.Tests.Shapes
         Choice(NumberFirst("first try"), NumberFirst("second try")).Map(Pair()));
 
       var inner = Assert.IsType<ShapeException>(failure.InnerException);
-      Assert.Equal("Choice -> 'second try' -> Cell", inner.Path);
+      Assert.Equal("Choice -> 'second try' -> Cell#1", inner.Path);
     }
 
     [Fact]
@@ -198,11 +198,12 @@ namespace Unrect.Tests.Shapes
     {
       // The first alternative tolerates something and then fails anyway. Its warning describes a
       // reading that was thrown away, so keeping it would describe a parse that never happened.
-      var losing = Vertical(
-        Cell(v => v.GetString()).Optional(),
-        Cell(v => v.GetString()))
-        .Named("losing")
-        .Select((first, second) => 0);
+      var losing = VerticalFlow(v =>
+      {
+        v.Next(Cell(c => c.GetString()).Optional());
+        v.Next(Cell(c => c.GetString()));
+        return 0;
+      }).Named("losing");
 
       var result = Choice(losing, TextFirst()).MapWithDiagnostics(Pair());
 
@@ -215,12 +216,12 @@ namespace Unrect.Tests.Shapes
     public void TheWinningAlternativesOwnDiagnostics_Survive()
     {
       // Tolerance exercised by the branch that actually produced the result is part of the result.
-      var winning = Vertical(
-        Cell(v => v.GetString()),
-        Cell(v => v.GetString()).Optional(),
-        Cell(v => v.GetInt()))
-        .Named("winning")
-        .Select((label, absorbed, value) => value);
+      var winning = VerticalFlow(v =>
+      {
+        v.Next(Cell(c => c.GetString()));
+        v.Next(Cell(c => c.GetString()).Optional());
+        return v.Next(Cell(c => c.GetInt()));
+      }).Named("winning");
 
       var result = Choice(NumberFirst(), winning).MapWithDiagnostics(Pair());
 
@@ -228,7 +229,7 @@ namespace Unrect.Tests.Shapes
       Assert.Equal(2, result.Diagnostics.Count);
 
       var warning = Assert.Single(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Warning);
-      Assert.Equal("Choice -> 'winning' -> Cell", warning.Path);
+      Assert.Equal("Choice -> 'winning' -> Cell#2", warning.Path);
     }
 
     // --- Inspection ----------------------------------------------------------------------------------------

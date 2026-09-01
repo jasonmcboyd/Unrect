@@ -27,19 +27,19 @@ namespace Unrect.Tests.Shapes
     // --- simple-report.xlsx: a fixed header over a table ----------------------------------------------------
 
     private static IShape<(SimpleHeader Header, IReadOnlyList<Transaction> Transactions)> SimpleReport() =>
-      Vertical(
-        Column(4, c => new SimpleHeader(
+      VerticalFlow(v => (
+        Header: v.Next(Column(4, c => new SimpleHeader(
           c[0].GetString(),
           c[1].GetString(),
           c[2].GetDateTime(),
           c[3].GetString()))
-          .Named("report header"),
-        TableRows(r => new Transaction(
+          .Named("report header")),
+        Transactions: v.Next(TableRows(r => new Transaction(
           r["Client"].GetString(),
           r["Transaction Date"].GetDateTime(),
           r["Transaction Type"].GetString(),
           r["Amount"].GetDecimal()))
-          .Named("transactions"));
+          .Named("transactions"))));
 
     [Fact]
     public void SimpleReport_ProjectsItsHeader()
@@ -100,16 +100,15 @@ namespace Unrect.Tests.Shapes
     private static IShape<IReadOnlyList<Deal>> InvestorsByDeal()
     {
       var deal =
-        Vertical(
-          Cell(v => v.GetString()).Named("deal code"),
-          TableRows(r => new DealTransaction(
+        VerticalFlow(v => new Deal(
+          Code: v.Next(Cell(c => c.GetString()).Named("deal code")),
+          Transactions: v.Next(TableRows(r => new DealTransaction(
             r["Account Key"].GetString(),
             r["Name"].GetString(),
             r["Transaction Type"].GetString(),
             r["Amount"].GetDecimal(),
             r["Transfer Date"].GetDateTime()))
-            .Named("transactions"))
-          .Select((code, transactions) => new Deal(code, transactions))
+            .Named("transactions"))))
           .Named("deal block");
 
       return Repeat(deal, separatedBy: BlankRows());
@@ -163,29 +162,27 @@ namespace Unrect.Tests.Shapes
     private static IShape<Report> InvestorSummary()
     {
       var detail =
-        Vertical(
-          Cell(v => v.GetString()).Named("investor name"),
-          TableRows(r => new DetailTransaction(
+        VerticalFlow(v => new Detail(
+          Investor: v.Next(Cell(c => c.GetString()).Named("investor name")),
+          Transactions: v.Next(TableRows(r => new DetailTransaction(
             r["Date"].GetDateTime(),
             r["Transaction Type"].GetString(),
             r["Amount"].GetDecimal()))
-            .Named("transactions"))
-          .Select((investor, transactions) => new Detail(investor, transactions))
+            .Named("transactions"))))
           .Named("investor detail");
 
-      return Vertical(
-        Column(c => new SummaryHeader(c[0].GetString(), c[1].GetDateTime(), c[2].GetString()))
-          .Named("report header"),
-        TableRows(r => new SummaryRow(
+      return VerticalFlow(v => new Report(
+        Header: v.Next(Column(c => new SummaryHeader(c[0].GetString(), c[1].GetDateTime(), c[2].GetString()))
+          .Named("report header")),
+        Summary: v.Next(TableRows(r => new SummaryRow(
           r["Investor"].GetString(),
           r["Contributions"].GetDecimal(),
           r["Distributions"].GetDecimal(),
           r["Net"].GetDecimal()))
-          .Named("summary"),
-        Repeat(detail, separatedBy: BlankRows(), atLeast: 1)
+          .Named("summary")),
+        Details: v.Next(Repeat(detail, separatedBy: BlankRows(), atLeast: 1)
           .AfterBlankRows()
-          .Named("investor details"))
-        .Select((header, summary, details) => new Report(header, summary, details));
+          .Named("investor details"))));
     }
 
     [Fact]
@@ -277,7 +274,79 @@ namespace Unrect.Tests.Shapes
       Assert.Equal(28, applied.Consumed.Height);
     }
 
+    // --- investor-irr.xlsx: one shape, two placements of the same repeat -----------------------------------------
+    //
+    // The file the Until vocabulary exists for: two series of per-investor blocks, the first ending
+    // exactly where the second's caption begins. One declaration reads both, because the first
+    // series is bounded by the caption the second is anchored on.
+
+    private static IShape<IrrReport> InvestorIrr()
+    {
+      var investorBlock = TableRows(r => r["Investor Name"].GetString()).Named("investor block");
+
+      // Declared once, placed twice: the same series of blocks read from two different anchors.
+      var series = Repeat(investorBlock, separatedBy: BlankRows());
+
+      const string Inception = "Cash Flows using inception date";
+
+      return VerticalFlow(v => new IrrReport(
+        Title: v.Next(Column(4, c => c[0].GetString()).Named("report header")),
+        Summary: v.Next(TableRows(r => r["Investors"].GetString()).Named("summary")),
+        ByTransferDate: v.Next(series
+          .After(Then(SeekRowContaining("Cash Flows Using Transfer Date"), SkipRows(1)))
+          .Until(RowContaining(Inception))),
+        ByInception: v.Next(series
+          .After(Then(SeekRowContaining(Inception), SkipRows(1))))));
+    }
+
+    [Fact]
+    public void InvestorIrr_ReadsBothSeriesWithOneDeclaration()
+    {
+      var report = InvestorIrr().Map(Workbook("investor-irr.xlsx", "IRR"));
+
+      Assert.Equal("Investor IRR Report", report.Title);
+      Assert.Equal(3, report.Summary.Count);
+
+      // Three blocks in each series, of three, two and four transaction rows.
+      Assert.Equal(3, report.ByTransferDate.Count);
+      Assert.Equal(3, report.ByInception.Count);
+      Assert.Equal(new[] { 3, 2, 4 }, report.ByTransferDate.Select(block => block.Count).ToArray());
+      Assert.Equal(new[] { 3, 2, 4 }, report.ByInception.Select(block => block.Count).ToArray());
+    }
+
+    [Fact]
+    public void InvestorIrr_TheFirstSeriesStopsWhereTheSecondsCaptionBegins()
+    {
+      // Without the bound the first repeat would run into the caption and fail from inside its
+      // item; with it, the second series anchors on that same caption at distance zero.
+      var report = InvestorIrr().Map(Workbook("investor-irr.xlsx", "IRR"));
+
+      Assert.Equal("Alpha Capital LLC", report.ByTransferDate[0][0]);
+      Assert.Equal("Cedar Holdings", report.ByInception[2][0]);
+    }
+
+    [Fact]
+    public void InvestorIrr_DescribesTheWholeSheet()
+    {
+      // An empty diagnostic list IS the full-consumption assertion: anything the shape left over
+      // on either axis would arrive as the unconsumed-space Info. So the sheet's own dimensions and
+      // the absence of diagnostics together say the declaration described all 6x45 of it.
+      var space = Workbook("investor-irr.xlsx", "IRR");
+
+      var result = InvestorIrr().MapWithDiagnostics(space);
+
+      Assert.Equal(6, space.Area.Size.Width);
+      Assert.Equal(45, space.Area.Size.Height);
+      Assert.Empty(result.Diagnostics);
+    }
+
     // --- Result types ------------------------------------------------------------------------------------------
+
+    private sealed record IrrReport(
+      string Title,
+      IReadOnlyList<string> Summary,
+      IReadOnlyList<IReadOnlyList<string>> ByTransferDate,
+      IReadOnlyList<IReadOnlyList<string>> ByInception);
 
     private sealed record SimpleHeader(string Title, string Subtitle, DateTime Date, string Id);
 

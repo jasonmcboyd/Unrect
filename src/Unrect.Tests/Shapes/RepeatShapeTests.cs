@@ -88,7 +88,7 @@ namespace Unrect.Tests.Shapes
       // therefore consume three, not five.
       var space = Grid(new[,] { { 1 }, { 0 }, { 2 }, { 0 }, { 0 } });
 
-      var applied = Repeat(Cells(1, 1, b => b.Width), separatedBy: BlankRows()).Apply(space);
+      var applied = Repeat(Range(1, 1, b => b.Width), separatedBy: BlankRows()).Apply(space);
 
       Assert.Equal(2, applied.Value.Count);
       Assert.Equal(3, applied.Consumed.Height);
@@ -101,14 +101,12 @@ namespace Unrect.Tests.Shapes
       // explicit 1x2 extent is the assertion — it only fits because both blank rows are still there.
       var space = Grid(new[,] { { 1 }, { 0 }, { 2 }, { 0 }, { 0 } });
 
-      var shape = Vertical(
-        Repeat(Cells(1, 1, b => b[0, 0].GetInt()), separatedBy: BlankRows()),
-        Cells(1, 2, b => b.Height));
+      var items = Repeat(Range(1, 1, b => b[0, 0].GetInt()), separatedBy: BlankRows());
+      var band = Range(1, 2, b => b.Height);
 
-      var (items, bandHeight) = shape.Map(space);
+      var read = VerticalFlow(v => $"{string.Join(",", v.Next(items))}|{v.Next(band)}").Map(space);
 
-      Assert.Equal(new[] { 1, 2 }, items);
-      Assert.Equal(2, bandHeight);
+      Assert.Equal("1,2|2", read);
     }
 
     [Fact]
@@ -119,7 +117,7 @@ namespace Unrect.Tests.Shapes
       // a separator can express — bound the repeat's own extent if that is what the format means.
       var space = Grid(new[,] { { 1 }, { 0 }, { 2 }, { 0 }, { 0 }, { 9 } });
 
-      var items = Repeat(Cells(1, 1, b => b[0, 0].GetInt()), separatedBy: BlankRows()).Map(space);
+      var items = Repeat(Range(1, 1, b => b[0, 0].GetInt()), separatedBy: BlankRows()).Map(space);
 
       Assert.Equal(new[] { 1, 2, 9 }, items);
     }
@@ -129,7 +127,7 @@ namespace Unrect.Tests.Shapes
     {
       var space = Grid(new[,] { { 0, 0 }, { 0, 0 } });
 
-      Assert.Empty(Repeat(Cells(b => b.Height)).Map(space));
+      Assert.Empty(Repeat(Range(b => b.Height)).Map(space));
     }
 
     [Fact]
@@ -146,7 +144,7 @@ namespace Unrect.Tests.Shapes
       // An item that occupies nothing would repeat forever. Run it off-thread so a regression fails
       // the test on a timeout rather than hanging the run.
       var space = Grid(new[,] { { 1, 1 }, { 1, 1 } });
-      var shape = Repeat(Cells(AreaStrategies.MinArea(), b => b.Height));
+      var shape = Repeat(Range(AreaStrategies.MinArea(), b => b.Height));
 
       var items = await Task.Run(() => shape.Map(space));
 
@@ -157,7 +155,7 @@ namespace Unrect.Tests.Shapes
     public async Task Repeat_WithAZeroHeightItem_TerminatesInsteadOfLooping()
     {
       var space = Grid(new[,] { { 1, 1 }, { 1, 1 } });
-      var shape = Repeat(Cells(AreaStrategies.ExplicitArea(2, 0), b => b.Height));
+      var shape = Repeat(Range(AreaStrategies.ExplicitArea(2, 0), b => b.Height));
 
       var items = await Task.Run(() => shape.Map(space));
 
@@ -168,7 +166,7 @@ namespace Unrect.Tests.Shapes
     public async Task RepeatHorizontal_WithAZeroWidthItem_TerminatesInsteadOfLooping()
     {
       var space = Grid(new[,] { { 1, 1 }, { 1, 1 } });
-      var shape = RepeatHorizontal(Cells(AreaStrategies.ExplicitArea(0, 2), b => b.Width));
+      var shape = RepeatHorizontal(Range(AreaStrategies.ExplicitArea(0, 2), b => b.Width));
 
       var items = await Task.Run(() => shape.Map(space));
 
@@ -180,7 +178,7 @@ namespace Unrect.Tests.Shapes
     {
       // A trailing partial item is left unconsumed: "no more items" is a stopping condition, not an
       // error. This is the item's OWN placement failing to resolve.
-      var items = Repeat(Cells(1, 2, b => b.Height)).Map(Ladder(5));
+      var items = Repeat(Range(1, 2, b => b.Height)).Map(Ladder(5));
 
       Assert.Equal(new[] { 2, 2 }, items);
     }
@@ -192,7 +190,7 @@ namespace Unrect.Tests.Shapes
     {
       // The item's own placement resolves fine on the last row; it is the item's second child that
       // runs out of space. Intra-block format drift must be loud, not a silent truncation.
-      var item = Vertical(IntCell(), IntCell());
+      var item = VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(IntCell())}");
 
       var failure = Assert.Throws<ShapeException>(() => Repeat(item).Map(Ladder(3)));
 
@@ -218,7 +216,7 @@ namespace Unrect.Tests.Shapes
       // Only running out of space stops a repeat. A strategy that fails any other way is a broken
       // declaration, and silently returning the items collected so far would hide it.
       var space = Grid(new[,] { { 1, 2 }, { 3, 4 } });
-      var item = Cells(AreaStrategies.SelectArea(_ => throw new InvalidOperationException("boom")), b => b.Width);
+      var item = Range(AreaStrategies.SelectArea(_ => throw new InvalidOperationException("boom")), b => b.Width);
 
       var failure = Assert.Throws<ShapeException>(() => Repeat(item).Map(space));
 
@@ -241,10 +239,12 @@ namespace Unrect.Tests.Shapes
         { null, null },
       });
 
-      var item = Vertical(
-        Cell(v => v.GetString()).Named("code"),
-        TableRows(r => r["Amount"].GetInt()).Named("rows"))
-        .Select((code, amounts) => code);
+      var item = VerticalFlow(v =>
+      {
+        var code = v.Next(Cell(c => c.GetString()).Named("code"));
+        v.Next(TableRows(r => r["Amount"].GetInt()).Named("rows"));
+        return code;
+      });
 
       var failure = Assert.Throws<ShapeException>(() => Repeat(item).Map(space));
 
@@ -274,11 +274,11 @@ namespace Unrect.Tests.Shapes
         { "with no section label", null },
       });
 
-      var section = Vertical(
-        Cell(v => v.GetString()).Named("label"),
-        Cell(v => v.GetInt()).Right(1).Named("amount"))
-        .Select((label, amount) => amount)
-        .After(SeekRowContaining("Section"));
+      var section = VerticalFlow(v =>
+      {
+        v.Next(Cell(c => c.GetString()).Named("label"));
+        return v.Next(Cell(c => c.GetInt()).Right(1).Named("amount"));
+      }).After(SeekRowContaining("Section"));
 
       var amounts = Repeat(section).Map(space);
 
@@ -300,11 +300,11 @@ namespace Unrect.Tests.Shapes
         { "b", 2 },
       });
 
-      var section = Vertical(
-        Cell(v => v.GetString()).Named("label"),
-        Cell(v => v.GetInt()).Right(1).Named("amount"))
-        .Select((label, amount) => amount)
-        .After(SeekRowContaining("Section"));
+      var section = VerticalFlow(v =>
+      {
+        v.Next(Cell(c => c.GetString()).Named("label"));
+        return v.Next(Cell(c => c.GetInt()).Right(1).Named("amount"));
+      }).After(SeekRowContaining("Section"));
 
       Assert.Equal(new[] { 1, 2 }, Repeat(section).Map(space));
     }
@@ -355,8 +355,8 @@ namespace Unrect.Tests.Shapes
       // the same shape over the same space either returns empty or fails, by declaration alone.
       var space = Grid(new[,] { { 0, 0 } });
 
-      Assert.Empty(Repeat(Cells(b => b.Height), atLeast: 0).Map(space));
-      Assert.Throws<ShapeException>(() => Repeat(Cells(b => b.Height), atLeast: 1).Map(space));
+      Assert.Empty(Repeat(Range(b => b.Height), atLeast: 0).Map(space));
+      Assert.Throws<ShapeException>(() => Repeat(Range(b => b.Height), atLeast: 1).Map(space));
     }
 
     [Fact]
@@ -395,7 +395,7 @@ namespace Unrect.Tests.Shapes
     {
       var space = Grid(new[,] { { 1, 2, 3, 4, 5 } });
 
-      Assert.Equal(new[] { 2, 2 }, RepeatHorizontal(Cells(2, 1, b => b.Width)).Map(space));
+      Assert.Equal(new[] { 2, 2 }, RepeatHorizontal(Range(2, 1, b => b.Width)).Map(space));
     }
 
     // --- Repeat as a shape ------------------------------------------------------------------------------------
@@ -416,12 +416,10 @@ namespace Unrect.Tests.Shapes
     {
       var space = Grid(new[,] { { 9 }, { 1 }, { 2 }, { 3 } });
 
-      var shape = Vertical(IntCell().Named("total"), Repeat(IntCell()).Named("items"));
+      var shape = VerticalFlow(v =>
+        $"{v.Next(IntCell().Named("total"))}|{string.Join(",", v.Next(Repeat(IntCell()).Named("items")))}");
 
-      var (total, items) = shape.Map(space);
-
-      Assert.Equal(9, total);
-      Assert.Equal(new[] { 1, 2, 3 }, items);
+      Assert.Equal("9|1,2,3", shape.Map(space));
     }
 
     [Fact]
@@ -440,10 +438,9 @@ namespace Unrect.Tests.Shapes
         { "Gamma", 30 },
       });
 
-      var block = Vertical(
-        Cell(v => v.GetString()).Named("code"),
-        TableRows(r => r["Amount"].GetInt()).Named("amounts"))
-        .Select((code, amounts) => (Code: code, Amounts: (IReadOnlyList<int>)amounts))
+      var block = VerticalFlow(v => (
+        Code: v.Next(Cell(c => c.GetString()).Named("code")),
+        Amounts: v.Next(TableRows(r => r["Amount"].GetInt()).Named("amounts"))))
         .Named("block");
 
       var blocks = Repeat(block, separatedBy: BlankRows()).Map(space);

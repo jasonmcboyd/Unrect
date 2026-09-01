@@ -107,7 +107,7 @@ namespace Unrect.Tests.Shapes
     [Fact]
     public void AnAreaThatDoesNotFit_ReportsWhatWasRequestedAndWhatWasAvailable()
     {
-      var failure = Assert.Throws<ShapeException>(() => Cells(3, 3, b => b.Width).Map(Square()));
+      var failure = Assert.Throws<ShapeException>(() => Range(3, 3, b => b.Width).Map(Square()));
 
       Assert.Contains("an extent of 3x3 does not fit here", failure.Message);
       Assert.Contains("2x2 available", failure.Message);
@@ -135,11 +135,11 @@ namespace Unrect.Tests.Shapes
     public void AnAreaStrategyThatThrows_IsReportedAgainstTheShapeThatDeclaredIt()
     {
       var failure = Assert.Throws<ShapeException>(() =>
-        Cells(AreaStrategies.SelectArea(_ => throw new InvalidOperationException("boom")), b => b.Width).Map(Square()));
+        Range(AreaStrategies.SelectArea(_ => throw new InvalidOperationException("boom")), b => b.Width).Map(Square()));
 
       Assert.Contains("its area strategy threw InvalidOperationException: boom", failure.Message);
       Assert.IsType<InvalidOperationException>(failure.InnerException);
-      Assert.Equal("Cells", failure.Subject);
+      Assert.Equal("Range", failure.Subject);
     }
 
     [Fact]
@@ -157,7 +157,7 @@ namespace Unrect.Tests.Shapes
     {
       // Size rejects the negative itself; the engine's job is to say which strategy produced it.
       var failure = Assert.Throws<ShapeException>(() =>
-        Cells(AreaStrategies.SelectArea(_ => new Size(-1, 1)), b => b.Width).Map(Square()));
+        Range(AreaStrategies.SelectArea(_ => new Size(-1, 1)), b => b.Width).Map(Square()));
 
       Assert.Contains("its area strategy threw ArgumentOutOfRangeException", failure.Message);
       Assert.IsType<ArgumentOutOfRangeException>(failure.InnerException);
@@ -167,7 +167,7 @@ namespace Unrect.Tests.Shapes
     public void ASeparatorStrategyThatThrows_IsReportedAgainstTheRepeat()
     {
       var failure = Assert.Throws<ShapeException>(() =>
-        Repeat(Cells(1, 1, b => b.Width), separatedBy: OffsetStrategies.SelectOffset(_ => throw new InvalidOperationException("boom")))
+        Repeat(Range(1, 1, b => b.Width), separatedBy: OffsetStrategies.SelectOffset(_ => throw new InvalidOperationException("boom")))
           .Map(Square()));
 
       Assert.Contains("its separator strategy threw InvalidOperationException: boom", failure.Message);
@@ -196,8 +196,12 @@ namespace Unrect.Tests.Shapes
       // must not accumulate a wrapper at each level.
       var space = Grid(new[,] { { 1 }, { 2 }, { 0 } });
 
-      var shape = Vertical(IntCell(), Repeat(Cell(v => v.GetString())).Named("items"))
-        .Select((first, rest) => first);
+      var shape = VerticalFlow(v =>
+      {
+        var first = v.Next(IntCell());
+        v.Next(Repeat(Cell(c => c.GetString())).Named("items"));
+        return first;
+      });
 
       var failure = Assert.Throws<ShapeException>(() => shape.Map(space));
 
@@ -212,7 +216,7 @@ namespace Unrect.Tests.Shapes
       var space = Mixed(new object?[,] { { "Investor" }, { "Acme" } });
 
       var failure = Assert.Throws<ShapeException>(() =>
-        Vertical(TableRows(r => r["Amount"].GetInt()), IntCell()).Map(space));
+        VerticalFlow(v => $"{string.Join(",", v.Next(TableRows(r => r["Amount"].GetInt())))}|{v.Next(IntCell())}").Map(space));
 
       Assert.Null(failure.InnerException);
       Assert.Equal(1, Occurrences(failure.Message, "  in "));
@@ -243,11 +247,11 @@ namespace Unrect.Tests.Shapes
     public void TheKindSuffixOnlyDecoratesNamedSegments()
     {
       var failure = Assert.Throws<ShapeException>(() =>
-        Vertical(IntCell(), Cell(v => v.GetString())).Named("header").Map(Square()));
+        VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(Cell(c => c.GetString()))}").Named("header").Map(Square()));
 
-      // The named stack is a plain segment; only the failing segment would carry a kind, and it is
-      // unnamed, so no kind appears at all.
-      Assert.Equal("'header' -> Cell", failure.Path);
+      // The named flow is a plain segment; the failing segment carries the kind only when it
+      // rendered as a quoted name, and an ordinal is not one.
+      Assert.Equal("'header' -> Cell#2", failure.Path);
     }
 
     [Fact]
@@ -256,10 +260,14 @@ namespace Unrect.Tests.Shapes
       var space = Grid(new[,] { { 1 }, { 2 } });
 
       var failure = Assert.Throws<ShapeException>(() =>
-        Vertical(IntCell(), Vertical(IntCell(), Cell(v => v.GetString())).Named("inner")).Map(space));
+        VerticalFlow(v =>
+        {
+          v.Next(IntCell());
+          return v.Next(VerticalFlow(w => $"{w.Next(IntCell())}{w.Next(Cell(c => c.GetString()))}").Named("inner"));
+        }).Map(space));
 
       Assert.Contains(" -> ", failure.Path);
-      Assert.StartsWith("Vertical -> 'inner'", failure.Path);
+      Assert.StartsWith("VerticalFlow -> 'inner'", failure.Path);
     }
 
     [Fact]
@@ -287,12 +295,12 @@ namespace Unrect.Tests.Shapes
     public void AnUnnamedSelectContributesNoPathSegment()
     {
       var withoutSelect = Assert.Throws<ShapeException>(() =>
-        Vertical(IntCell(), Cell(v => v.GetString())).Map(Square()));
+        VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(Cell(c => c.GetString()))}").Map(Square()));
 
       var withSelect = Assert.Throws<ShapeException>(() =>
-        Vertical(IntCell(), Cell(v => v.GetString())).Select((a, b) => a).Map(Square()));
+        VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(Cell(c => c.GetString()))}").Select(x => x).Map(Square()));
 
-      Assert.Equal("Vertical -> Cell", withoutSelect.Path);
+      Assert.Equal("VerticalFlow -> Cell#2", withoutSelect.Path);
       Assert.Equal(withoutSelect.Path, withSelect.Path);
       Assert.DoesNotContain("Select", withSelect.Path);
     }
@@ -303,13 +311,14 @@ namespace Unrect.Tests.Shapes
       // Being skipped as an intermediate segment does not mean being unnameable as the culprit: the
       // failing shape is appended to the path even though it contributes no segment of its own.
       var failure = Assert.Throws<ShapeException>(() =>
-        Vertical(
-          IntCell(),
-          Horizontal(IntCell(), IntCell()).Select<int, int, int>(ThrowingSelector))
-          .Map(Square()));
+        VerticalFlow(v =>
+        {
+          v.Next(IntCell());
+          return v.Next(HorizontalFlow(h => h.Next(IntCell())).Select<int, int>(ThrowingSelector));
+        }).Map(Square()));
 
-      Assert.Equal("Select", failure.Subject);
-      Assert.Equal("Vertical -> Select", failure.Path);
+      Assert.Equal("Select#2", failure.Subject);
+      Assert.Equal("VerticalFlow -> Select#2", failure.Path);
       Assert.IsType<InvalidOperationException>(failure.InnerException);
     }
 
@@ -317,9 +326,9 @@ namespace Unrect.Tests.Shapes
     public void ANamedSelectContributesAPathSegment()
     {
       var failure = Assert.Throws<ShapeException>(() =>
-        Vertical(IntCell(), Cell(v => v.GetString())).Select((a, b) => a).Named("report").Map(Square()));
+        VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(Cell(c => c.GetString()))}").Select(x => x).Named("report").Map(Square()));
 
-      Assert.Equal("'report' -> Vertical -> Cell", failure.Path);
+      Assert.Equal("'report' -> VerticalFlow -> Cell#2", failure.Path);
     }
 
     [Fact]
@@ -329,9 +338,11 @@ namespace Unrect.Tests.Shapes
       var space = Grid(new[,] { { 1, 1 }, { 1, 1 }, { 1, 0 } });
 
       var failure = Assert.Throws<ShapeException>(() =>
-        Vertical(Cells(2, 2, b => b.Width), IntCell().Right(1))
-          .Select((block, cell) => cell)
-          .Map(space));
+        VerticalFlow(v =>
+        {
+          v.Next(Range(2, 2, b => b.Width));
+          return v.Next(IntCell().Right(1));
+        }).Select(x => x).Map(space));
 
       Assert.Equal("B3", failure.Location.A1);
     }
@@ -344,7 +355,7 @@ namespace Unrect.Tests.Shapes
       var space = Grid(new[,] { { 1, 1 }, { 1, 1 }, { 1, 0 } });
 
       var failure = Assert.Throws<ShapeException>(() =>
-        Vertical(Cells(2, 2, b => b.Width), IntCell().Right(1)).Map(space));
+        VerticalFlow(v => $"{v.Next(Range(2, 2, b => b.Width))}{v.Next(IntCell().Right(1))}").Map(space));
 
       Assert.Equal(3, failure.Location.Row);
       Assert.Equal(2, failure.Location.Column);
@@ -422,10 +433,11 @@ namespace Unrect.Tests.Shapes
 
       Assert.Throws<ShapeException>(() => Row(9, s => s.Count).Map(space));
       Assert.Throws<ShapeException>(() => Column(9, s => s.Count).Map(space));
-      Assert.Throws<ShapeException>(() => Cells(9, 9, b => b.Width).Map(space));
+      Assert.Throws<ShapeException>(() => Range(9, 9, b => b.Width).Map(space));
       Assert.Throws<ShapeException>(() => IntCell().Down(9).Map(space));
       Assert.Throws<ShapeException>(() => Row(ColumnStrategies.TakeColumns(9), s => s.Count).Map(space));
-      Assert.Throws<ShapeException>(() => Vertical(IntCell(), IntCell(), IntCell()).Map(Grid(new[,] { { 1 } })));
+      Assert.Throws<ShapeException>(() =>
+        VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(IntCell())}{v.Next(IntCell())}").Map(Grid(new[,] { { 1 } })));
     }
 
     [Fact]
@@ -433,7 +445,7 @@ namespace Unrect.Tests.Shapes
     {
       // A view's own ArgumentOutOfRangeException happens inside a projection, so it arrives wrapped
       // with the same path and location as everything else.
-      var failure = Assert.Throws<ShapeException>(() => Cells(b => b[9, 0].GetInt()).Map(Square()));
+      var failure = Assert.Throws<ShapeException>(() => Range(b => b[9, 0].GetInt()).Map(Square()));
 
       Assert.IsType<ArgumentOutOfRangeException>(failure.InnerException);
       Assert.Contains("the projection threw ArgumentOutOfRangeException", failure.Message);
@@ -446,7 +458,7 @@ namespace Unrect.Tests.Shapes
       Assert.Throws<ArgumentNullException>(() => ((IShape<int>)null!).Map(Square()));
     }
 
-    private static int ThrowingSelector(int first, int second)
+    private static int ThrowingSelector(int only)
       => throw new InvalidOperationException("the selector failed");
 
     private static int Occurrences(string text, string value)

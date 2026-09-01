@@ -17,11 +17,11 @@ namespace Unrect.Shapes
     IReadOnlyList<IShape> Children { get; }
 
     /// <summary>
-    /// True only for unnamed <c>Select</c> wrappers, which contribute no segment to a failure path.
+    /// True only for unnamed wrappers (<c>Select</c>, <c>Padded</c>, <c>Until</c>, and the
+    /// <c>Else</c>/<c>Optional</c> boundary), which contribute no segment to a failure path;
+    /// naming a wrapper makes it opaque and it claims the segment.
     /// </summary>
     bool IsTransparent { get; }
-
-    ShapeResult<object?> ProjectUntyped(ISpace extent, ShapeContext context);
   }
 
   public interface IShape<TResult> : IShape

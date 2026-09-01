@@ -28,12 +28,6 @@ namespace Unrect.Shapes
 
     public abstract ShapeResult<TResult> Project(ISpace extent, ShapeContext context);
 
-    public ShapeResult<object?> ProjectUntyped(ISpace extent, ShapeContext context)
-    {
-      var result = Project(extent, context);
-      return new ShapeResult<object?>(result.Value, result.Consumed);
-    }
-
     public IShape<TResult> WithName(string name)
     {
       if (name is null)

@@ -31,7 +31,7 @@ namespace Unrect.Tests.Shapes
     }
 
     private static IShape<(int Width, int Height, int TopLeft)> Extent()
-      => Cells(b => (b.Width, b.Height, b[0, 0].GetInt()));
+      => Range(b => (b.Width, b.Height, b[0, 0].GetInt()));
 
     // --- Inset arithmetic ------------------------------------------------------------------------
 
@@ -100,12 +100,12 @@ namespace Unrect.Tests.Shapes
     public void AFollowingSiblingStartsAfterThePadding()
     {
       // What the consumed size is for: the bottom inset is real space, so the next child clears it.
-      var (padded, next) = Vertical(
-        Cell(v => v.GetInt()).Padded(1),
-        Cell(v => v.GetInt())).Map(CoordinateGrid(height: 5));
+      var block = Cell(v => v.GetInt()).Padded(1);
+      var next = Cell(v => v.GetInt());
 
-      Assert.Equal(12, padded);
-      Assert.Equal(31, next);
+      var read = VerticalFlow(v => $"{v.Next(block)}|{v.Next(next)}").Map(CoordinateGrid(height: 5));
+
+      Assert.Equal("12|31", read);
     }
 
     // --- Composition with movement ---------------------------------------------------------------------

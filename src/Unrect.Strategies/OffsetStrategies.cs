@@ -53,7 +53,7 @@ namespace Unrect.Strategies
 
     /// <summary>Down to the first row with any cell satisfying <paramref name="anyCell"/>.</summary>
     public static IOffsetStrategy SeekRowWhere(Func<CellValue, bool> anyCell)
-      => Seek(new SeekRowStrategy(AnyCellInRow(NotNull(anyCell, nameof(anyCell))), "no row with a matching cell"));
+      => Seek(new SeekRowStrategy(CellMatching.AnyCellInRow(NotNull(anyCell, nameof(anyCell))), "no row with a matching cell"));
 
     /// <summary>
     /// Down to the first row holding <paramref name="text"/> as a whole cell value, trimmed and
@@ -62,7 +62,7 @@ namespace Unrect.Strategies
     /// </summary>
     public static IOffsetStrategy SeekRowContaining(string text)
       => Seek(new SeekRowStrategy(
-        AnyCellInRow(TextEquals(NotNull(text, nameof(text)))),
+        CellMatching.AnyCellInRow(CellMatching.TextEquals(NotNull(text, nameof(text)))),
         $"no row containing '{text}'"));
 
     /// <summary>Right to the first column satisfying <paramref name="predicate"/>.</summary>
@@ -71,7 +71,7 @@ namespace Unrect.Strategies
 
     /// <summary>Right to the first column with any cell satisfying <paramref name="anyCell"/>.</summary>
     public static IOffsetStrategy SeekColumnWhere(Func<CellValue, bool> anyCell)
-      => Seek(new SeekColumnStrategy(AnyCellInColumn(NotNull(anyCell, nameof(anyCell))), "no column with a matching cell"));
+      => Seek(new SeekColumnStrategy(CellMatching.AnyCellInColumn(NotNull(anyCell, nameof(anyCell))), "no column with a matching cell"));
 
     /// <summary>
     /// Right to the first column holding <paramref name="text"/> as a whole cell value, trimmed and
@@ -79,7 +79,7 @@ namespace Unrect.Strategies
     /// </summary>
     public static IOffsetStrategy SeekColumnContaining(string text)
       => Seek(new SeekColumnStrategy(
-        AnyCellInColumn(TextEquals(NotNull(text, nameof(text)))),
+        CellMatching.AnyCellInColumn(CellMatching.TextEquals(NotNull(text, nameof(text)))),
         $"no column containing '{text}'"));
 
     // --- Anchoring to the far edge --------------------------------------------------------------
@@ -113,34 +113,6 @@ namespace Unrect.Strategies
 
     private static IOffsetStrategy Seek(IColumnStrategy strategy)
       => new ColumnOffsetSizeStrategy(strategy).ToOffsetStrategy();
-
-    private static Func<ISpace, int, bool> AnyCellInRow(Func<CellValue, bool> cell)
-      => (space, row) =>
-      {
-        for (var column = 0; column < space.Area.Size.Width; column++)
-          if (cell(space[column, row]))
-            return true;
-
-        return false;
-      };
-
-    private static Func<ISpace, int, bool> AnyCellInColumn(Func<CellValue, bool> cell)
-      => (space, column) =>
-      {
-        for (var row = 0; row < space.Area.Size.Height; row++)
-          if (cell(space[column, row]))
-            return true;
-
-        return false;
-      };
-
-    private static Func<CellValue, bool> TextEquals(string text)
-    {
-      var needle = text.Trim();
-
-      return cell => cell.TryGetString() is string value
-        && value.Trim().Equals(needle, StringComparison.OrdinalIgnoreCase);
-    }
 
     private static T NotNull<T>(T value, string parameter) where T : class
       => value ?? throw new ArgumentNullException(parameter);

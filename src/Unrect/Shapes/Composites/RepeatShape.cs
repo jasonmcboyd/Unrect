@@ -11,17 +11,27 @@ namespace Unrect.Shapes
   /// </summary>
   internal sealed class RepeatShape<T> : ShapeBase<IReadOnlyList<T>>
   {
-    public RepeatShape(IShape<T> item, IOffsetStrategy? separator, Orientation orientation, int atLeast, Placement placement)
+    public RepeatShape(
+      IShape<T> item,
+      IOffsetStrategy? separator,
+      Orientation orientation,
+      int atLeast,
+      UseSite itemSite,
+      Placement placement)
       : base(placement)
     {
       Item = item ?? throw new ArgumentNullException(nameof(item));
       Separator = separator;
       Orientation = orientation;
       AtLeast = atLeast;
+      ItemSite = itemSite;
       Children = new IShape[] { item };
     }
 
     private IShape<T> Item { get; }
+
+    /// <summary>What the declaration called the item, for every occurrence of it to be labelled by.</summary>
+    private UseSite ItemSite { get; }
     private IOffsetStrategy? Separator { get; }
     private Orientation Orientation { get; }
     private int AtLeast { get; }
@@ -74,7 +84,9 @@ namespace Unrect.Shapes
       if (IsEmpty(remaining))
         return false;
 
-      var scope = context.Advance(Step(cursor)).WithIndex(values.Count);
+      // The index belongs to the repeat's own segment; the label belongs to the item, which claims
+      // it on the way in. Descend clears it afterwards, so the item's own children are unaffected.
+      var scope = context.Advance(Step(cursor)).WithIndex(values.Count).WithUseSite(ItemSite);
 
       // Only the item's own placement stops the repetition; a failure deeper inside it is an
       // error, so intra-block format drift is loud rather than silently truncating.

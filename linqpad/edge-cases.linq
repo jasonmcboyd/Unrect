@@ -19,7 +19,7 @@ var defaultSpace = SpreadsheetSpace.Create(path, "Edges");
 var strictSpace = SpreadsheetSpace.Create(path, "Edges", isBlank: _ => false);
 
 // 1. The kind map — errors are first-class, never blank.
-Cells(5, 4, b => Enumerable.Range(0, 4)
+Range(5, 4, b => Enumerable.Range(0, 4)
 		.Select(r => Enumerable.Range(0, 5).Select(c => b[c, r].ToString()).ToArray())
 		.ToArray())
 	.Map(defaultSpace)
@@ -47,7 +47,7 @@ new
 
 // 4. And it changes decomposition: the value-bearing block over cols A-D stops at the
 // whitespace row by default, but includes it under strict fidelity.
-var block = Cells(b => new Unrect.Core.Size(b.Width, b.Height));
+var block = Range(b => new Unrect.Core.Size(b.Width, b.Height));
 new
 {
 	Default = block.Map(defaultSpace.GetSubspace(new Offset(0, 0), new Area(4, 4))).ToString(),

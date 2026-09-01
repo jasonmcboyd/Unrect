@@ -79,13 +79,13 @@ namespace Unrect.Tests.Shapes
     [Fact]
     public void AShapeThatDescribesTheWholeSpace_ReportsNothing()
     {
-      Assert.Empty(Cells(b => b.Width).MapWithDiagnostics(Square()).Diagnostics);
+      Assert.Empty(Range(b => b.Width).MapWithDiagnostics(Square()).Diagnostics);
     }
 
     [Fact]
     public void RowsLeftOver_AreReportedWithTheFirstUndescribedCell()
     {
-      var info = Assert.Single(Cells(2, 1, b => b.Width).MapWithDiagnostics(Square()).Diagnostics);
+      var info = Assert.Single(Range(2, 1, b => b.Width).MapWithDiagnostics(Square()).Diagnostics);
 
       Assert.Equal(DiagnosticSeverity.Info, info.Severity);
       Assert.Equal("the shape consumed 1 of 2 rows; rows 2+ were not described", info.Message);
@@ -95,7 +95,7 @@ namespace Unrect.Tests.Shapes
     [Fact]
     public void ColumnsLeftOver_AreReportedWithTheFirstUndescribedCell()
     {
-      var info = Assert.Single(Cells(1, 2, b => b.Width).MapWithDiagnostics(Square()).Diagnostics);
+      var info = Assert.Single(Range(1, 2, b => b.Width).MapWithDiagnostics(Square()).Diagnostics);
 
       Assert.Equal(DiagnosticSeverity.Info, info.Severity);
       Assert.Equal("the shape consumed 1 of 2 columns; columns 2+ were not described", info.Message);
@@ -168,7 +168,7 @@ namespace Unrect.Tests.Shapes
     {
       // The other half of the rule: a repeat that found no sections described nothing either, but
       // tolerated nothing on the way, so there is no warning to make the Info redundant.
-      var result = Repeat(Cells(b => b.Height)).MapWithDiagnostics(Grid(new[,] { { 0, 0 }, { 0, 0 } }));
+      var result = Repeat(Range(b => b.Height)).MapWithDiagnostics(Grid(new[,] { { 0, 0 }, { 0, 0 } }));
 
       var only = Assert.Single(result.Diagnostics);
 
@@ -186,10 +186,11 @@ namespace Unrect.Tests.Shapes
       // nothing either, but no single warning covers the sheet, so the gap is still worth naming.
       var space = Mixed(new object?[,] { { 1 }, { 2 } });
 
-      var result = Vertical(
-        Cell(v => v.GetString()).Named("a").Optional(),
-        Cell(v => v.GetString()).Named("b").Optional())
-        .MapWithDiagnostics(space);
+      var result = VerticalFlow(v =>
+      {
+        v.Next(Cell(c => c.GetString()).Named("a").Optional());
+        return v.Next(Cell(c => c.GetString()).Named("b").Optional());
+      }).MapWithDiagnostics(space);
 
       Assert.Equal(2, result.Diagnostics.Count(d => d.Severity == DiagnosticSeverity.Warning));
       Assert.Contains(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Info && d.Message.Contains("not described"));
@@ -215,7 +216,11 @@ namespace Unrect.Tests.Shapes
       // sheet and tolerated something still wants to be told about the rest.
       var space = Mixed(new object?[,] { { "a" }, { 5 }, { 6 } });
 
-      var result = Vertical(Cell(v => v.GetString()).Optional(), Cell(v => v.GetInt())).MapWithDiagnostics(space);
+      var result = VerticalFlow(v =>
+      {
+        v.Next(Cell(c => c.GetString()).Optional());
+        return v.Next(Cell(c => c.GetInt()));
+      }).MapWithDiagnostics(space);
 
       Assert.Contains(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Info && d.Message.Contains("not described"));
     }
@@ -238,8 +243,8 @@ namespace Unrect.Tests.Shapes
       var space = Mixed(new object?[,] { { "x" }, { 5 } });
 
       var choice = Choice(
-        Vertical(Cell(v => v.GetInt()), Cell(v => v.GetInt())).Named("A").Select((a, b) => b),
-        Vertical(Cell(v => v.GetString()), Cell(v => v.GetInt())).Named("B").Select((a, b) => b));
+        VerticalFlow(v => { v.Next(Cell(c => c.GetInt())); return v.Next(Cell(c => c.GetInt())); }).Named("A"),
+        VerticalFlow(v => { v.Next(Cell(c => c.GetString())); return v.Next(Cell(c => c.GetInt())); }).Named("B"));
 
       Assert.All(
         choice.MapWithDiagnostics(space).Diagnostics,
@@ -275,10 +280,11 @@ namespace Unrect.Tests.Shapes
     private static IShape<IReadOnlyList<string>> Sections()
     {
       var section =
-        Vertical(
-          Cell(v => v.GetString()).Named("label"),
-          Row(2, r => r[0].GetString()).Named("body"))
-          .Select((label, body) => (string?)body);
+        VerticalFlow(v =>
+        {
+          v.Next(Cell(c => c.GetString()).Named("label"));
+          return (string?)v.Next(Row(2, r => r[0].GetString()).Named("body"));
+        });
 
       var item = section
         .Else(Row(2, _ => (string?)null).Named("unreadable section"))

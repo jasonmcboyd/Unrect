@@ -7,6 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- So the tests can reach IOpaqueComposite, which marks a composite whose children exist only
+         while it runs; asserting that through reflection was the alternative. -->
+    <InternalsVisibleTo Include="Unrect.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Unrect.Core\Unrect.Core.csproj" />
     <ProjectReference Include="..\Unrect.Strategies\Unrect.Strategies.csproj" />
   </ItemGroup>

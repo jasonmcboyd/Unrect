@@ -14,20 +14,23 @@ var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\exam
 
 // One deal block: a deal-code cell over a table. Block extents are derived from what the
 // block's children consume, so blocks may differ in length.
-var deal =
-	Vertical(
-		Cell(v => v.GetString()).Named("deal code"),
-		TableRows(r => new
-		{
-			AccountKey = r["Account Key"].GetString(),
-			FundCode = r["Fund Code"].GetString(),
-			Name = r["Name"].GetString(),
-			Type = r["Transaction Type"].GetString(),
-			Amount = r["Amount"].GetDecimal(),
-			TransferDate = r["Transfer Date"].GetDateTime(),
-		}).Named("transactions"))
-	.Select((code, txns) => new { DealCode = code, Transactions = txns })
-	.Named("deal block");
+var dealCode = Cell(v => v.GetString());
+
+var transactions = TableRows(r => new
+{
+	AccountKey = r["Account Key"].GetString(),
+	FundCode = r["Fund Code"].GetString(),
+	Name = r["Name"].GetString(),
+	Type = r["Transaction Type"].GetString(),
+	Amount = r["Amount"].GetDecimal(),
+	TransferDate = r["Transfer Date"].GetDateTime(),
+});
+
+var deal = VerticalFlow(v => new
+{
+	DealCode = v.Next(dealCode),
+	Transactions = v.Next(transactions),
+});
 
 // The report: that block, repeated, blank-row separated.
 var deals = Repeat(deal, separatedBy: BlankRows());
