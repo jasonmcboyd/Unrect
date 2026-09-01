@@ -1,0 +1,119 @@
+using System;
+using System.Collections.Generic;
+
+using Unrect.Core;
+
+namespace Unrect.Shapes
+{
+  /// <summary>
+  /// One declared item applied as many times as the space supports. The separator sits between
+  /// items and never before the first; a leading gap is the repeat's own offset.
+  /// </summary>
+  internal sealed class RepeatShape<T> : ShapeBase<IReadOnlyList<T>>
+  {
+    public RepeatShape(IShape<T> item, IOffsetStrategy? separator, Orientation orientation, int atLeast, Placement placement)
+      : base(placement)
+    {
+      Item = item ?? throw new ArgumentNullException(nameof(item));
+      Separator = separator;
+      Orientation = orientation;
+      AtLeast = atLeast;
+      Children = new IShape[] { item };
+    }
+
+    private IShape<T> Item { get; }
+    private IOffsetStrategy? Separator { get; }
+    private Orientation Orientation { get; }
+    private int AtLeast { get; }
+
+    public override string Description => Orientation == Orientation.Vertical ? "Repeat" : "RepeatHorizontal";
+
+    public override IReadOnlyList<IShape> Children { get; }
+
+    public override ShapeResult<IReadOnlyList<T>> Project(ISpace extent, ShapeContext context)
+    {
+      var values = new List<T>();
+      var along = 0;
+      var across = 0;
+
+      while (true)
+      {
+        // The cursor is tentative until an item is collected, so a separator followed by nothing
+        // (a trailing blank band) is not counted as consumed.
+        var cursor = along;
+        var reach = across;
+
+        if (values.Count > 0 && !TrySeparate(extent.GetSubspace(Step(cursor)), context, ref cursor, ref reach))
+          break;
+
+        var remaining = extent.GetSubspace(Step(cursor));
+
+        if (IsEmpty(remaining))
+          break;
+
+        var scope = context.Advance(Step(cursor)).WithIndex(values.Count);
+
+        // Only the item's own placement stops the repetition; a failure deeper inside it is an
+        // error, so intra-block format drift is loud rather than silently truncating.
+        if (!ShapeEngine.TryApply(Item, remaining, scope, out var applied))
+          break;
+
+        // An item that occupies nothing, or advances nowhere, would repeat forever.
+        if (applied.Consumed.Width == 0 || applied.Consumed.Height == 0 || Along(applied.Advance) == 0)
+          break;
+
+        values.Add(applied.Value);
+        along = cursor + Along(applied.Advance);
+        across = Math.Max(reach, Across(applied.Advance));
+      }
+
+      if (values.Count < AtLeast)
+        throw context.Failure($"expected at least {AtLeast} occurrences but found {values.Count}", extent);
+
+      return new ShapeResult<IReadOnlyList<T>>(values, Extent(along, across));
+    }
+
+    private bool TrySeparate(ISpace remaining, ShapeContext context, ref int cursor, ref int reach)
+    {
+      if (Separator is null)
+        return true;
+
+      Offset offset;
+      try
+      {
+        offset = Separator.GetOffset(remaining);
+      }
+      catch (ShapeException)
+      {
+        throw;
+      }
+      catch (OutOfBoundsException)
+      {
+        // No room for another separator, so there is no room for another item.
+        return false;
+      }
+      catch (Exception exception)
+      {
+        throw context.Failure(ShapeEngine.Threw("separator", exception), remaining, exception);
+      }
+
+      if (offset.Size.Width > remaining.Area.Size.Width || offset.Size.Height > remaining.Area.Size.Height)
+        return false;
+
+      cursor += Along(offset.Size);
+      reach = Math.Max(reach, Across(offset.Size));
+      return true;
+    }
+
+    private static bool IsEmpty(ISpace space) => space.Area.Size.Width == 0 || space.Area.Size.Height == 0;
+
+    private Offset Step(int along) => Orientation == Orientation.Vertical ? new Offset(0, along) : new Offset(along, 0);
+
+    private int Along(Size size) => Orientation == Orientation.Vertical ? size.Height : size.Width;
+
+    private int Across(Size size) => Orientation == Orientation.Vertical ? size.Width : size.Height;
+
+    private Size Extent(int along, int across)
+      => Orientation == Orientation.Vertical ? new Size(across, along) : new Size(along, across);
+  }
+}

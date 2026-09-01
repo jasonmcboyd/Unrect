@@ -35,5 +35,8 @@ namespace Unrect.Strategies
 
     public static IOffsetStrategy SkipBlankColumns()
       => SkipColumnsWhileAll(v => v.IsBlank);
+
+    public static IOffsetStrategy Then(params IOffsetStrategy[] offsets)
+      => new CompositeOffsetSizeStrategy(offsets).ToOffsetStrategy();
   }
 }

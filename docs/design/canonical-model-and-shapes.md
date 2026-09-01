@@ -1,10 +1,11 @@
 # Design: Canonical Value Model, Shape Vocabulary, and Observability
 
-**Status:** Wave 1 implemented and review-hardened (2026-08-31): `CellValue`/`CellKind`
-in Core, full de-generification, `ArraySpace` mapping adapter, Excel adapter slimmed,
-`Repeat`/`RepeatHorizontal` factories (an early piece of §4's vocabulary), centralized
-subspace resolution with safe termination. Waves 2+ remain proposed.
-(Original design session 2026-08-31.)
+**Status:** Waves 1 and 2 implemented (2026-08-31). Wave 1: `CellValue`/`CellKind` in
+Core, full de-generification, adapter-owned blankness, review-hardened. Wave 2: the
+fused shape layer (`Unrect.Shapes`) per `wave2-shapes-spec.md` — applicative
+shape+projection fusion, `Table` tiers 1+2, `sepBy` `Repeat`, named shapes,
+`ShapeException` diagnostics. Wave 3 (observability) remains proposed; the shape
+layer was designed to accept it (spec §7). (Original design session 2026-08-31.)
 **Drives:** the developer-ergonomics overhaul and the de-generification of the core
 
 This document captures a connected set of design decisions arrived at while reviewing

@@ -33,7 +33,12 @@ namespace Unrect.Excel
     {
       RegisterEncoding();
 
-      using var stream = File.Open(path, FileMode.Open, FileAccess.Read);
+      // FileShare.ReadWrite: the workbook may be open in Excel (which holds a write handle), and
+      // concurrent readers of the same file must not block each other. FileShare.Delete: Excel
+      // saves by writing a temporary file and replacing the original, which an open read handle
+      // would otherwise block. A workbook replaced mid-read surfaces as a zip or CRC read failure
+      // from the reader below, not as silently wrong cells.
+      using var stream = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
       // Auto-detect format, supports:
       //  - Binary Excel files (2.0-2003 format; *.xls)
       //  - OpenXml Excel files (2007 format; *.xlsx, *.xlsb)
