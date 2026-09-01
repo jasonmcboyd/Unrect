@@ -1,16 +1,56 @@
 namespace Unrect.Shapes
 {
   /// <summary>
-  /// Mechanical: <c>Vertical</c> and <c>Horizontal</c> for arities 2 through 8, written out rather
-  /// than abstracted. Arity lives here and nowhere else — one <c>StackShape</c> backs them all, and
-  /// eight is where <c>ValueTuple</c> stops before <c>TRest</c>; nest a stack to go further.
+  /// <c>Vertical</c> and <c>Horizontal</c>: a cursor-lambda form, then the fixed arities 2 through 8
+  /// written out rather than abstracted. Arity lives here and nowhere else — one <c>StackShape</c>
+  /// backs the tuple forms, and eight is where <c>ValueTuple</c> stops before <c>TRest</c>; nest a
+  /// stack, or take the lambda form, to go further.
   /// <para>
-  /// Every overload lays its children out in declaration order along its axis, consuming along that
-  /// axis only, and returns their results as a tuple — which <c>Select</c> unpacks.
+  /// Every overload lays its children out in declaration order along its axis and consumes along
+  /// that axis only. The fixed arities return their results as a tuple — which <c>Select</c> unpacks
+  /// — while the lambda form builds the result where the parts are read.
   /// </para>
   /// </summary>
   public static partial class Shape
   {
+    /// <summary>
+    /// A flow downwards whose children are declared by calling <c>Next</c> on the cursor, in the
+    /// order they appear on the sheet, and whose result the lambda builds from what they read:
+    /// <c>Vertical(v =&gt; new Report(Header: v.Next(header), Rows: v.Next(rows)))</c>. The parts
+    /// are named where they are read, and there is no arity to run out of.
+    /// <para>
+    /// The lambda declares a <em>sequence of shapes</em>, nothing more. Alternation belongs to
+    /// <c>Choice</c>, <c>Else</c>, and <c>Optional</c>; repetition to <c>Repeat</c>; gaps to the
+    /// following shape's offset. Conditionals, loops, and arithmetic over positions inside the
+    /// lambda are the row-walking this library exists to replace, and a lambda that picks a later
+    /// shape from an earlier value can never be rendered or checked without a file.
+    /// </para>
+    /// <para>
+    /// Capture nothing you write to. A shape is safe to apply to many spaces at once only because
+    /// everything it holds is immutable, and a lambda that increments a counter or appends to a
+    /// list gives that up. It also runs partially inside a losing <c>Choice</c> branch, where
+    /// diagnostics roll back but side effects do not.
+    /// </para>
+    /// <para>
+    /// Do the reading inside the leaf, not around it: <c>decimal.Parse(v.Next(raw))</c> that throws
+    /// blames this flow at its own origin, while a projection inside the leaf blames the cell.
+    /// </para>
+    /// <para>
+    /// The lambda must call <c>Next</c> at least once — a flow that declares nothing would match
+    /// anything and describe nothing — and what it declares can be enumerated only by running it, so
+    /// this flow cannot be inspected without a space the way the fixed-arity overloads can.
+    /// </para>
+    /// </summary>
+    public static IShape<T> Vertical<T>(Layout<T> build)
+      => new CursorStackShape<T>(Orientation.Vertical, NotNull(build, nameof(build)), Placement.Default);
+
+    /// <summary>
+    /// A flow rightwards whose children are declared by calling <c>Next</c> on the cursor; see
+    /// <see cref="Vertical{T}(Layout{T})"/> for what belongs in the lambda and what does not.
+    /// </summary>
+    public static IShape<T> Horizontal<T>(Layout<T> build)
+      => new CursorStackShape<T>(Orientation.Horizontal, NotNull(build, nameof(build)), Placement.Default);
+
     /// <summary>2 shapes downwards, in declaration order.</summary>
     public static IShape<(T1, T2)> Vertical<T1, T2>(
       IShape<T1> first,

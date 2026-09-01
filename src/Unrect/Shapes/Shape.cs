@@ -261,6 +261,9 @@ namespace Unrect.Shapes
     /// <summary>Validates a stack child where the caller's parameter name is what the user typed.</summary>
     private static IShape NotNull(IShape child, string parameter) => child ?? throw new ArgumentNullException(parameter);
 
+    /// <summary>The same, for the lambda a cursor flow is declared by.</summary>
+    private static Layout<T> NotNull<T>(Layout<T> build, string parameter) => build ?? throw new ArgumentNullException(parameter);
+
     private static int NotNegative(int count, string parameter)
       => count >= 0 ? count : throw new ArgumentOutOfRangeException(parameter, count, "An offset cannot be negative.");
 
