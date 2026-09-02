@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace Unrect.Shapes
@@ -33,6 +34,6 @@ namespace Unrect.Shapes
 
     /// <summary>A copy, so what a caller reads can never change underneath it.</summary>
     public IReadOnlyList<ShapeDiagnostic> Snapshot()
-      => _diagnostics is null ? System.Array.Empty<ShapeDiagnostic>() : _diagnostics.ToArray();
+      => _diagnostics is null ? Array.Empty<ShapeDiagnostic>() : _diagnostics.ToArray();
   }
 }

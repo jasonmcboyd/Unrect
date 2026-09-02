@@ -25,7 +25,7 @@ namespace Unrect.Tests
     public void Of_EmptyString_IsTextNotBlank()
     {
       // Core never guesses at blankness: only a null string is absent. An adapter that wants ""
-      // to mean "empty cell" makes that decision at adaptation time (see ArraySpaceTests).
+      // to mean "empty cell" makes that decision at adaptation time (see GridSpaceTests).
       var value = CellValue.Of("");
 
       Assert.Equal(CellKind.Text, value.Kind);

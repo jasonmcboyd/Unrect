@@ -1,6 +1,5 @@
 using System;
 
-using Unrect.Array;
 using Unrect.Core;
 using Unrect.Shapes;
 
@@ -14,10 +13,10 @@ namespace Unrect.Tests
   internal static class ShapeTestSpaces
   {
     /// <summary>A grid of numbers in which zero means an empty cell.</summary>
-    public static ISpace Grid(int[,] values) => ArraySpace.Create(values, isBlank: v => v == 0);
+    public static ISpace Grid(int[,] values) => GridSpace.Create(values, isBlank: v => v == 0);
 
     /// <summary>A grid of labels; the array adapter treats null and "" as empty cells.</summary>
-    public static ISpace Text(string?[,] values) => ArraySpace.Create(values);
+    public static ISpace Text(string?[,] values) => GridSpace.Create(values);
 
     /// <summary>
     /// A column of 1..<paramref name="height"/>, so an assertion reads as the row it came from.
@@ -75,7 +74,7 @@ namespace Unrect.Tests
     /// A grid of heterogeneous values: null and "" are blank, everything else adapts to the cell
     /// kind its CLR type implies. This is the array-adapter equivalent of a real sheet.
     /// </summary>
-    public static ISpace Mixed(object?[,] values) => ArraySpace.Create(values, Adapt);
+    public static ISpace Mixed(object?[,] values) => GridSpace.Create(values, Adapt);
 
     private static CellValue Adapt(object? value) =>
       value switch

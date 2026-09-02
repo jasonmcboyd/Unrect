@@ -12,7 +12,7 @@ namespace Unrect.Shapes
   /// </summary>
   public abstract class ShapeBase<TResult> : IShape<TResult>
   {
-    private static readonly IShape[] NoChildren = System.Array.Empty<IShape>();
+    private static readonly IShape[] NoChildren = Array.Empty<IShape>();
 
     /// <summary>
     /// Fixes where the shape sits. Every shape has a placement from the moment it exists, so the

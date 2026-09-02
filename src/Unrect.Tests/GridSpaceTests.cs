@@ -1,6 +1,5 @@
 using System;
 
-using Unrect.Array;
 using Unrect.Core;
 
 using Xunit;
@@ -8,15 +7,15 @@ using Xunit;
 namespace Unrect.Tests
 {
   /// <summary>
-  /// <see cref="ArraySpace"/> is the reference adapter: it fixes the index orientation every other
-  /// space must honour (backing storage is [row, column]; the space indexer is [column, row]) and
-  /// it is where blankness is decided, at adaptation time.
+  /// <see cref="GridSpace"/> is the reference adapter: it fixes the index orientation every other
+  /// space must honour (backing storage is [row, column]; the space indexer is [column, row]), and
+  /// its <c>Create</c> overloads are where blankness is decided, at adaptation time.
   /// </summary>
-  public class ArraySpaceTests
+  public class GridSpaceTests
   {
     // A 3-wide, 2-tall grid. Backing storage is row-major, so the outer initializer is rows.
-    private static ArraySpace TextGrid() =>
-      new ArraySpace(new[,]
+    private static GridSpace TextGrid() =>
+      new GridSpace(new[,]
       {
         { CellValue.Of("a"), CellValue.Of("b"), CellValue.Of("c") },
         { CellValue.Of("d"), CellValue.Of("e"), CellValue.Of("f") },
@@ -24,7 +23,7 @@ namespace Unrect.Tests
 
     // A 4-wide, 4-tall grid whose cell value is (row * 10 + column), so a misread coordinate is
     // immediately obvious in the failure message.
-    private static ArraySpace CoordinateGrid()
+    private static GridSpace CoordinateGrid()
     {
       var values = new int[4, 4];
 
@@ -32,7 +31,7 @@ namespace Unrect.Tests
         for (int column = 0; column < 4; column++)
           values[row, column] = row * 10 + column;
 
-      return ArraySpace.Create(values);
+      return GridSpace.Create(values);
     }
 
     // --- Orientation ----------------------------------------------------------------------------
@@ -75,7 +74,7 @@ namespace Unrect.Tests
     [Fact]
     public void Create_WithBlankPredicate_MapsMatchingValuesToBlank()
     {
-      var space = ArraySpace.Create(new[,] { { 1, 0 }, { 0, 2 } }, isBlank: v => v == 0);
+      var space = GridSpace.Create(new[,] { { 1, 0 }, { 0, 2 } }, isBlank: v => v == 0);
 
       Assert.Equal(1, space[0, 0].GetInt());
       Assert.True(space[1, 0].IsBlank);
@@ -86,7 +85,7 @@ namespace Unrect.Tests
     [Fact]
     public void Create_WithBlankPredicate_UsesTheBlankSingleton()
     {
-      var space = ArraySpace.Create(new[,] { { 0 } }, isBlank: v => v == 0);
+      var space = GridSpace.Create(new[,] { { 0 } }, isBlank: v => v == 0);
 
       Assert.Same(CellValue.Blank, space[0, 0]);
     }
@@ -94,7 +93,7 @@ namespace Unrect.Tests
     [Fact]
     public void Create_WithoutBlankPredicate_TreatsEveryValueAsPresent()
     {
-      var space = ArraySpace.Create(new[,] { { 0, 1 } });
+      var space = GridSpace.Create(new[,] { { 0, 1 } });
 
       Assert.True(space[0, 0].HasValue);
       Assert.Equal(0, space[0, 0].GetInt());
@@ -103,7 +102,7 @@ namespace Unrect.Tests
     [Fact]
     public void Create_FromDoubles_MapsBlanksAndNumbers()
     {
-      var space = ArraySpace.Create(new[,] { { 1.5, double.NaN } }, isBlank: double.IsNaN);
+      var space = GridSpace.Create(new[,] { { 1.5, double.NaN } }, isBlank: double.IsNaN);
 
       Assert.Equal(1.5, space[0, 0].GetDouble());
       Assert.True(space[1, 0].IsBlank);
@@ -112,9 +111,9 @@ namespace Unrect.Tests
     [Fact]
     public void Create_FromStrings_TreatsNullAndEmptyAsBlank()
     {
-      // This adapter's blankness decision differs from Core's: CellValue.Of("") is Text, but in a
-      // string grid an empty string means an empty cell.
-      var space = ArraySpace.Create(new string?[,] { { "x", "", null } });
+      // This overload's blankness decision differs from CellValue's: CellValue.Of("") is Text, but
+      // in a string grid an empty string means an empty cell.
+      var space = GridSpace.Create(new string?[,] { { "x", "", null } });
 
       Assert.Equal("x", space[0, 0].GetString());
       Assert.True(space[1, 0].IsBlank);
@@ -124,7 +123,7 @@ namespace Unrect.Tests
     [Fact]
     public void Create_WithAMap_AdaptsArbitraryValues()
     {
-      var space = ArraySpace.Create(
+      var space = GridSpace.Create(
         new[,] { { "yes", "no" } },
         v => v == "-" ? CellValue.Blank : CellValue.Of(v == "yes"));
 
@@ -137,7 +136,7 @@ namespace Unrect.Tests
     {
       Func<int, CellValue> map = _ => null!;
 
-      Assert.Throws<ArgumentException>(() => ArraySpace.Create(new[,] { { 1 } }, map));
+      Assert.Throws<ArgumentException>(() => GridSpace.Create(new[,] { { 1 } }, map));
     }
 
     [Fact]
@@ -145,7 +144,7 @@ namespace Unrect.Tests
     {
       var values = new[,] { { CellValue.Of(1), null! } };
 
-      Assert.Throws<ArgumentException>(() => new ArraySpace(values));
+      Assert.Throws<ArgumentException>(() => new GridSpace(values));
     }
 
     // --- Subspaces ------------------------------------------------------------------------------

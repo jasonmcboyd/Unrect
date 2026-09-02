@@ -11,8 +11,8 @@
     <PackageTags>excel;spreadsheet;xlsx;parsing;declarative;etl;data-extraction;table;csv;shape</PackageTags>
   </PropertyGroup>
 
-  <!-- One package, four assemblies. A consumer installs "Unrect" and has the whole vocabulary;
-       splitting Core/Strategies/Array into their own packages would publish four version numbers
+  <!-- One package, three assemblies. A consumer installs "Unrect" and has the whole vocabulary;
+       splitting Core and Strategies into their own packages would publish three version numbers
        that must always match. PrivateAssets stops them appearing as dependencies, and the target
        below puts their build output in the package instead. -->
   <ItemGroup>
@@ -24,12 +24,11 @@
   <ItemGroup>
     <ProjectReference Include="..\Unrect.Core\Unrect.Core.csproj" PrivateAssets="all" />
     <ProjectReference Include="..\Unrect.Strategies\Unrect.Strategies.csproj" PrivateAssets="all" />
-    <ProjectReference Include="..\Unrect.Array\Unrect.Array.csproj" PrivateAssets="all" />
   </ItemGroup>
 
   <!-- Symbols ship IN the package rather than in a symbol package. A .snupkg carries one assembly's
        pdb and there is no supported hook for adding a bundled project's, so a symbol package here
-       would debug a quarter of what the package contains. Putting all four pdbs in lib/ instead is
+       would debug a third of what the package contains. Putting all three pdbs in lib/ instead is
        one property, works with SourceLink's embedded commit, and needs nothing of the consumer. -->
   <PropertyGroup>
     <IncludeSymbols>false</IncludeSymbols>

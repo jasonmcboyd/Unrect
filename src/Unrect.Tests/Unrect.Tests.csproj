@@ -18,7 +18,6 @@
     <ProjectReference Include="..\Unrect\Unrect.csproj" />
     <ProjectReference Include="..\Unrect.Core\Unrect.Core.csproj" />
     <ProjectReference Include="..\Unrect.Strategies\Unrect.Strategies.csproj" />
-    <ProjectReference Include="..\Unrect.Array\Unrect.Array.csproj" />
     <ProjectReference Include="..\Unrect.Spreadsheets\Unrect.Spreadsheets.csproj" />
   </ItemGroup>
 

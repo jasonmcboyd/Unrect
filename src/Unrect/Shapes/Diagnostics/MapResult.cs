@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace Unrect.Shapes
@@ -23,6 +24,6 @@ namespace Unrect.Shapes
     /// What the decomposition noticed along the way — near-misses a <c>Choice</c> tried, tolerance a
     /// boundary absorbed, space nothing described. Empty, never null, when nothing was recorded.
     /// </summary>
-    public IReadOnlyList<ShapeDiagnostic> Diagnostics => _diagnostics ?? System.Array.Empty<ShapeDiagnostic>();
+    public IReadOnlyList<ShapeDiagnostic> Diagnostics => _diagnostics ?? Array.Empty<ShapeDiagnostic>();
   }
 }

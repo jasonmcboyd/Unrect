@@ -6,14 +6,19 @@
        documented, and the way it stays that way is that adding an undocumented public member does
        not build. A new member arrives with its doc or it does not arrive.
 
+       "Ships" means packed OR bundled: Unrect.Core and Unrect.Strategies are not themselves
+       packable, but they ride inside the Unrect package with their XML docs (see Unrect.csproj's
+       BundleReferencedProjects), so a consumer sees their IntelliSense same as Unrect's own — the
+       ratchet has to name them explicitly, since IsPackable alone would miss them.
+
        Elsewhere docs still GENERATE — so the compiler checks the ones we do write — but neither a
        missing doc (CS1591) nor a misplaced one (CS1587) is worth a build failure in a test project
        whose XML nobody ships. -->
-  <PropertyGroup Condition="'$(IsPackable)' == 'true'">
+  <PropertyGroup Condition="'$(IsPackable)' == 'true' OR '$(MSBuildProjectName)' == 'Unrect.Core' OR '$(MSBuildProjectName)' == 'Unrect.Strategies'">
     <WarningsAsErrors>$(WarningsAsErrors);CS1591</WarningsAsErrors>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(IsPackable)' != 'true'">
+  <PropertyGroup Condition="'$(IsPackable)' != 'true' AND '$(MSBuildProjectName)' != 'Unrect.Core' AND '$(MSBuildProjectName)' != 'Unrect.Strategies'">
     <NoWarn>$(NoWarn);CS1591;CS1587</NoWarn>
   </PropertyGroup>
 

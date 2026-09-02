@@ -43,7 +43,7 @@ namespace Unrect.Shapes
     public static RowBinding<T> Create(TableBinding<T>? binding)
     {
       var captions = binding?.Captions ?? new Dictionary<string, string>(StringComparer.Ordinal);
-      var ignored = new HashSet<string>(binding?.Ignored ?? System.Array.Empty<string>(), StringComparer.Ordinal);
+      var ignored = new HashSet<string>(binding?.Ignored ?? Array.Empty<string>(), StringComparer.Ordinal);
 
       foreach (var name in captions.Keys)
         if (ignored.Contains(name))

@@ -576,7 +576,7 @@ errors is effectively frozen at publish even though the enum technically is not.
 (round-trip and `ToString`), and `SpreadsheetSpaceEdgeCaseTests` pins seven of the eight
 against `examples/edge-cases.xlsx`. Adding members means adding rows, not changing
 assertions. A synthetic fixture exercising an unrecognised literal cannot be produced with
-ExcelDataReader (§8.4), so `Other` is best pinned through `ArraySpace` and through the
+ExcelDataReader (§8.4), so `Other` is best pinned through `GridSpace` and through the
 `.xls` byte-cast path.
 
 **Sub-recommendation (lower confidence, pre-publish-only):** consider `Other = 0` so that

@@ -17,8 +17,16 @@ namespace Unrect.Core
   /// sheet allocates nothing but the views themselves.
   /// </para>
   /// <para>
+  /// There are two ways in, and which one you want depends on what you are holding. The constructor
+  /// takes cells that are <em>already canonical</em> — whatever produced them has settled what each
+  /// one is, including which are blank. <see cref="Create{T}(T[,], Func{T, CellValue})"/> takes a
+  /// plain array of numbers, strings or anything else and lexes it, which is where <em>blankness is
+  /// decided</em>: the one question an adapter must answer that a grid cannot.
+  /// </para>
+  /// <para>
   /// Useful directly, not only to adapters: a test or a script with values already in hand can build
-  /// one and skip the file entirely.
+  /// one and skip the file entirely, and everything above it behaves exactly as it does over a
+  /// workbook.
   /// </para>
   /// </summary>
   public sealed class GridSpace : ISpace
@@ -46,8 +54,10 @@ namespace Unrect.Core
     private CellValue[,] Values { get; }
     private Offset Offset { get; }
 
+    /// <inheritdoc/>
     public Area Area { get; }
 
+    /// <inheritdoc/>
     public CellValue this[int column, int row]
     {
       get
@@ -62,6 +72,7 @@ namespace Unrect.Core
       }
     }
 
+    /// <inheritdoc/>
     public ISpace GetSubspace(Offset offset, Area area)
     {
       if (offset.Width + area.Width > Area.Width || offset.Height + area.Height > Area.Height)
@@ -69,6 +80,37 @@ namespace Unrect.Core
 
       return new GridSpace(Values, offset + Offset, area);
     }
+
+    /// <summary>
+    /// Values of any type, mapped to cell values one at a time. <paramref name="map"/> is where
+    /// blankness is decided: return <see cref="CellValue.Blank"/> for whatever this source considers
+    /// an empty cell.
+    /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="map"/> returned null for a value.</exception>
+    public static GridSpace Create<T>(T[,] values, Func<T, CellValue> map)
+    {
+      var cells = new CellValue[values.GetLength(0), values.GetLength(1)];
+
+      for (int row = 0; row < values.GetLength(0); row++)
+        for (int column = 0; column < values.GetLength(1); column++)
+          cells[row, column] =
+            map(values[row, column])
+            ?? throw new ArgumentException($"Map returned null for the value at column {column}, row {row}.", nameof(map));
+
+      return new GridSpace(cells);
+    }
+
+    /// <summary>Numbers, with <paramref name="isBlank"/> deciding which count as empty cells.</summary>
+    public static GridSpace Create(int[,] values, Func<int, bool>? isBlank = null)
+      => Create(values, v => isBlank?.Invoke(v) == true ? CellValue.Blank : CellValue.Of(v));
+
+    /// <inheritdoc cref="Create(int[,], Func{int, bool})"/>
+    public static GridSpace Create(double[,] values, Func<double, bool>? isBlank = null)
+      => Create(values, v => isBlank?.Invoke(v) == true ? CellValue.Blank : CellValue.Of(v));
+
+    /// <summary>Text, where the blankness default is that null or empty is an empty cell.</summary>
+    public static GridSpace Create(string?[,] values)
+      => Create(values, v => string.IsNullOrEmpty(v) ? CellValue.Blank : CellValue.Of(v));
 
     private static CellValue[,] ValidateNoNulls(CellValue[,] values)
     {

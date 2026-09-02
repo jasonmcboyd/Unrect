@@ -1,6 +1,5 @@
 using System;
 
-using Unrect.Array;
 using Unrect.Core;
 using Unrect.Strategies;
 

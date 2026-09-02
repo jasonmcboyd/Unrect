@@ -21,10 +21,10 @@ that decide boundaries — and works directly over any 2D grid you can adapt to 
 `Unrect.Spreadsheets` adds the adapters that read spreadsheet files — `.xls`/`.xlsx` today — straight into that grid;
 add it when your data lives in a workbook rather than an array you built yourself.
 
-The `Unrect` package bundles `ArraySpace` (and the lower-level `GridSpace` in Core) for
-exactly that case: `ArraySpace.Create(values, isBlank: ...)` turns an in-memory 2D array
-into a space with nothing else installed — the way to build test fixtures and scripted
-data without a workbook in sight.
+`GridSpace` ships in the `Unrect` package for exactly that case:
+`GridSpace.Create(values, isBlank: ...)` turns a plain 2D array into a space, deciding
+there and then what counts as empty. It needs nothing else installed, which makes it the
+way to build test fixtures and scripted data without a workbook in sight.
 
 ## Show me the code
 

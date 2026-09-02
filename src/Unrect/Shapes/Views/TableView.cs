@@ -77,7 +77,7 @@ namespace Unrect.Shapes
 
       return (_columnsByName ??= BuildColumnsByName()).TryGetValue(columnName.Trim(), out var indices)
         ? indices
-        : System.Array.Empty<int>();
+        : Array.Empty<int>();
     }
 
     private IReadOnlyList<TableRow> BuildRows()

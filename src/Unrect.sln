@@ -5,8 +5,6 @@ VisualStudioVersion = 16.0.32002.261
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Unrect", "Unrect\Unrect.csproj", "{AFCFEB42-BD8F-44D3-AF7B-8F5E876A57A4}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Unrect.Array", "Unrect.Array\Unrect.Array.csproj", "{AB57AC70-9C65-4436-9622-24E92BA68384}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Unrect.Core", "Unrect.Core\Unrect.Core.csproj", "{9787265C-E096-4670-B2AA-4E909C7ED60A}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Unrect.Spreadsheets", "Unrect.Spreadsheets\Unrect.Spreadsheets.csproj", "{4096019B-8A29-40F8-BE3B-E1F9D07394DE}"
@@ -25,10 +23,6 @@ Global
 		{AFCFEB42-BD8F-44D3-AF7B-8F5E876A57A4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AFCFEB42-BD8F-44D3-AF7B-8F5E876A57A4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AFCFEB42-BD8F-44D3-AF7B-8F5E876A57A4}.Release|Any CPU.Build.0 = Release|Any CPU
-		{AB57AC70-9C65-4436-9622-24E92BA68384}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{AB57AC70-9C65-4436-9622-24E92BA68384}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{AB57AC70-9C65-4436-9622-24E92BA68384}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{AB57AC70-9C65-4436-9622-24E92BA68384}.Release|Any CPU.Build.0 = Release|Any CPU
 		{9787265C-E096-4670-B2AA-4E909C7ED60A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{9787265C-E096-4670-B2AA-4E909C7ED60A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9787265C-E096-4670-B2AA-4E909C7ED60A}.Release|Any CPU.ActiveCfg = Release|Any CPU

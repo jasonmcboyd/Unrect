@@ -41,10 +41,9 @@ A "space" is a 2D rectangular grid of values. Spaces can be subdivided into subs
 
 | Project | Purpose |
 |---|---|
-| **Unrect.Core** | Canonical value model (`CellValue`, `CellKind`, `CellError`), core abstractions (`ISpace`, strategy interfaces, `IRowLandmark`/`IColumnLandmark`), primitives (`Size`, `Offset`, `Area`) |
+| **Unrect.Core** | Canonical value model (`CellValue`, `CellKind`, `CellError`), core abstractions (`ISpace`, strategy interfaces, `IRowLandmark`/`IColumnLandmark`), primitives (`Size`, `Offset`, `Area`), and the in-memory adapter `GridSpace` — a `CellValue[,]` viewed as an `ISpace`, entered either by constructor (cells already canonical) or by `Create<T>(values, map)` and the primitive overloads with blank predicates (a plain array, lexed here, blankness decided here). An adapter needing no third-party reader lives in Core; only a vendor-backed one earns a package. |
 | **Unrect** | The shape layer (`Unrect.Shapes`): the `Shape` vocabulary, `IShape<T>`, `ShapeEngine`, the composites and primitives, the cell views (`CellStrip`/`CellBlock`/`TableView`), and diagnostics — plus the shared `Orientation` enum and the `CallerArgumentExpressionAttribute` polyfill (netstandard2.1 has no built-in one; it backs use-site name capture) |
 | **Unrect.Strategies** | Strategy implementations for computing sizes, offsets, rows, and columns |
-| **Unrect.Array** | `ArraySpace` — adapts 2D arrays as `ISpace` via `Create<T>(values, map)` and primitive overloads with blank predicates |
 | **Unrect.Spreadsheets** | `SpreadsheetSpace` — reads spreadsheet files (`.xls`/`.xlsx` via ExcelDataReader) and adapts cells to `CellValue`. Named for the family, not the vendor: further formats belong here rather than in a second package. |
 
 All library projects target .NET Standard 2.1 (`Unrect.Tests` is `net8.0`).
@@ -62,7 +61,7 @@ Excel file / 2D array
 
 ### Key Abstractions
 
-- **`CellValue` / `CellKind`** — The canonical cell vocabulary (Blank, Text, Number, Temporal, Boolean, Error). One `Number` kind with granular checked accessors (`GetDouble`/`GetDecimal`/`GetInt`); numbers created from `decimal`/`int`/`long` retain an exact decimal alongside the double. Blankness is decided at adaptation time (e.g., `ArraySpace.Create(nums, isBlank: v => v == 0)`); `Blank` is a singleton kind, so strategies just test `IsBlank`/`HasValue`.
+- **`CellValue` / `CellKind`** — The canonical cell vocabulary (Blank, Text, Number, Temporal, Boolean, Error). One `Number` kind with granular checked accessors (`GetDouble`/`GetDecimal`/`GetInt`); numbers created from `decimal`/`int`/`long` retain an exact decimal alongside the double. Blankness is decided at adaptation time (e.g., `GridSpace.Create(nums, isBlank: v => v == 0)`); `Blank` is a singleton kind, so strategies just test `IsBlank`/`HasValue`.
 - **`ISpace`** — A 2D rectangular grid of `CellValue` with subspace slicing. Non-generic since the wave-1 canonical-model refactor (see `docs/design/canonical-model-and-shapes.md`).
 - **Strategies** — Pluggable functions that determine spatial boundaries:
   - `ISizeStrategy` — computes a `Size` from available space
@@ -102,7 +101,7 @@ roadmap (named regions, decomposition trace, dry-run renderer, unconsumed-space
 warnings). New API work should be checked against that document.
 
 **Wave 1 (canonical model) is implemented**: `CellValue`/`CellKind` live in Core, the
-`TSpace` generic is gone from the entire surface, `ArraySpace` is a mapping adapter,
+`TSpace` generic is gone from the entire surface, `GridSpace` is the in-memory adapter,
 and `Unrect.Spreadsheets` (then named `Unrect.Excel`) is a thin adapter (`SpreadsheetValueBase` and friends are deleted).
 **Wave 2 (fused shape vocabulary) is implemented** per `docs/design/wave2-shapes-spec.md`,
 and **wave 3 part 1 (diagnostics, tolerance boundaries, `Choice`) is implemented** per
@@ -111,7 +110,7 @@ trace, dry-run renderer, and capability seams.
 
 ## Open Design Questions
 
-- **Strategy layering** — `IAreaStrategy` and `IOffsetStrategy` are thin wrappers around `ISizeStrategy`. Whether this indirection earns its keep or should be collapsed is an open question.
+- **Strategy layering** — `IAreaStrategy` and `IOffsetStrategy` are thin wrappers around `ISizeStrategy`. Whether this indirection earns its keep or should be collapsed is an open question. Adjacent and DECIDED (owner, 2026-09-02, pre-publish): `Area` stays a distinct `Size` wrapper and keeps both its `Size` property and the `Width`/`Height` passthroughs — the two-spellings wart is confined to engine plumbing that library consumers never operate at, so it does not justify surgery on `ISpace`/`Placement`/the strategy interfaces. Revisit only if the strategy-layering question itself is ever taken up.
 - **`SpaceExtensions.GetSubspace(space, offset)` throws `ArgumentOutOfRangeException`** (from `Size`'s negative-length check) for an oversized offset, while the two-argument form correctly throws `OutOfBoundsException`. Unreachable through shapes (`ShapeEngine.TryPlace` rejects an oversized offset first) but publicly reachable on `ISpace` and inconsistent; deliberately not pinned by tests.
 - **`OutOfBoundsException` carries no diagnostics** — no requested-vs-available extents, no location. The shape layer wraps everything in `ShapeException` with path + A1 location, so the bare type now surfaces only from strategies and from direct `ISpace` slicing.
 - ~~`ShapeContext.Root(ISpace)` discards its space argument~~ (null-check only; `Locate` derived availability from the space passed at failure time instead) — **resolved in the wrap-up round following this one:** `Root` now owns its space, closing the question before the decomposition trace is built. The `Locate`-derivation note is left here only as history of the pre-fix behavior.
@@ -128,7 +127,7 @@ Recorded for later by the wrap-up (Copse-cadence) review of 2026-09-02 — none 
 - **`CellMatching` may belong in Core, public, beside `CellValue`** — it is policy over the canonical vocabulary; publishing it would let consumers write predicates under the exact rules `RowContaining` uses and would remove one `InternalsVisibleTo` reason. An API expansion deserving its own decision.
 - **Where does the dry-run renderer live?** `IOpaqueComposite` is internal; a renderer outside `Unrect` would read `Children.Count == 0` on every layout composite and render exactly the lie the marker exists to prevent. Decide before wave-3 tooling starts.
 - **`OutOfBoundsException` diagnostics** (above) and a public `Description` on `AnchorNotFoundException` should be solved together — the latter would remove the last `InternalsVisibleTo` reason but is subsumed by the former.
-- ~~`Unrect.Excel` depends on `Unrect.Array`~~ — **resolved.** The `CellValue[,]`-backed space is `GridSpace` in Core; `ArraySpace` is now the mapping sugar over it, `Unrect.Spreadsheets` builds a `GridSpace` directly, and the project reference is gone.
+- ~~`Unrect.Excel` depends on `Unrect.Array`~~ — **resolved.** There is one in-memory space: `GridSpace` in Core, which `Unrect.Spreadsheets` builds directly. The pre-publish amendment folded the `Create` overloads into it, deleted `ArraySpace` (a delegation shell that did not earn a type) and deleted the `Unrect.Array` project — which also ends that namespace's shadowing of `System.Array`.
 - **`ShapeContext` does three jobs** (tree position, sheet position, diagnostics/naming) at ~300 lines; split the rendering half into a `PathRenderer` if the decomposition trace pushes it much past 450.
 - **`StrategyTests.cs` (~950 lines) should split along its 18 section headers**; the shape suites split at ~500 and it never did.
 - **`EnforceCodeStyleInBuild`** would make unused usings (IDE0005) fail the gate — the wrap-up round proved `TreatWarningsAsErrors` alone cannot catch them. Flip it deliberately, with time to triage whatever other IDE rules it surfaces.
@@ -161,6 +160,6 @@ tested. Automated tests must never depend on the scrubbed file's presence.
 - `linqpad/investors-by-deal.linq` — parses `examples/investors-by-deal.xlsx`: one deal-block `VerticalFlow` (`Text()` over `TableRows<DealTransaction>()`), applied with `Repeat(deal, separatedBy: BlankRows())`. **All six captions bind with nothing declared** — the script that shows the caption comparer earning its keep.
 - `linqpad/investor-summary.linq` — the reference report (`examples/investor-summary.xlsx`), and **deliberately the corpus's one worked example of the lambda table form**: its two tables keep their `TableRows(r => …)` spelling so the escape hatch appears somewhere, and its discovered `Column(c => …)` header is left alone because a discovery is never traded for a child count: discovered header height, summary table, and a nested `Repeat` of per-investor blocks (`atLeast: 1`), plus the post-parse correlation check (summary rows == detail blocks).
 - `linqpad/investor-irr.linq` — `examples/investor-irr.xlsx`: the `.Under`/`.Until` demonstration. Two caption-separated series of the same per-investor blocks, parsed by ONE `Repeat` declared once and placed twice — the first `.Under(Caption("IRR Details"), Caption("Cash Flows Using Transfer Date")).Until(RowContaining(Inception))`, the second `.Under(Caption(Inception))` with the shared literal as a `const`. All three caption rows are nodes. Consumes the whole sheet, no diagnostics.
-- `linqpad/array.linq` — shapes over an in-memory 2D integer array with `ArraySpace.Create(nums, isBlank: v => v == 0)`: `Repeat(block, separatedBy: BlankRows())` over a `VerticalFlow` of `Row` then `Range`; the example that shows the vocabulary is not Excel-specific.
+- `linqpad/array.linq` — shapes over an in-memory 2D integer array with `GridSpace.Create(nums, isBlank: v => v == 0)`: `Repeat(block, separatedBy: BlankRows())` over a `VerticalFlow` of `Row` then `Range`; the example that shows the vocabulary is not Excel-specific.
 - `linqpad/edge-cases.linq` — `examples/edge-cases.xlsx` (the first distilled corner-case fixture): the `Error` kind end-to-end, whitespace-vs-empty-vs-absent blankness under default and strict `isBlank`, how blankness changes discovered extents, and a section printing the typed leaves' kind-vs-conversion diagnostic sentences.
 - `linqpad/scrubbed-k1.linq` — parses the LOCAL-ONLY `examples/scrubbed-k1.xlsx` (gitignored; script fails without it): an `Overlay` header that digests itself into `{Entity, AtaxColumn, Columns}` by resolving fund columns from content (the entity card declared via `Fields`), one `section` shape placed twice under `.Under(Caption(...))` (K-1 lines, and portfolio income with `.Optional()`), and a fund-centric pivot validated by `AllAllocationsSumToFederal`. The unconsumed-space `Info` doubles as the campaign burn-down.
