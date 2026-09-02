@@ -7,7 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- So ShapeEngine can render AnchorNotFoundException.Description; nothing else is shared. -->
+    <!-- Two things are shared: AnchorNotFoundException.Description, which ShapeEngine renders,
+         and CellMatching, so Caption and the matchers agree on what "containing" means. -->
     <InternalsVisibleTo Include="Unrect" />
   </ItemGroup>
 

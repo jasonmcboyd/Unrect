@@ -58,7 +58,7 @@ namespace Unrect.Tests.Shapes
       var space = Mixed(new object?[,] { { "nothing", null }, { "relevant", null } });
 
       var failure = Assert.Throws<ShapeException>(() =>
-        Cell(v => v.GetString()).Named("taxable income").After(SeekRowContaining("Taxable Income")).Map(space));
+        Cell(v => v.GetString()).Named("taxable income").After(To(RowContaining("Taxable Income"))).Map(space));
 
       Assert.Equal("'taxable income'", failure.Subject);
       Assert.Contains("no row containing 'Taxable Income' exists in the available space", failure.Message);
@@ -72,12 +72,12 @@ namespace Unrect.Tests.Shapes
     {
       var space = Mixed(new object?[,] { { "nothing", null }, { "relevant", null } });
 
-      Assert.Contains("no row containing 'Total' exists", Missing(SeekRowContaining("Total"), space));
-      Assert.Contains("no column containing 'Total' exists", Missing(SeekColumnContaining("Total"), space));
-      Assert.Contains("no row with a matching cell exists", Missing(SeekRowWhere(_ => false), space));
-      Assert.Contains("no column with a matching cell exists", Missing(SeekColumnWhere(_ => false), space));
-      Assert.Contains("no matching row exists", Missing(SeekRow((_, _) => false), space));
-      Assert.Contains("no matching column exists", Missing(SeekColumn((_, _) => false), space));
+      Assert.Contains("no row containing 'Total' exists", Missing(To(RowContaining("Total")), space));
+      Assert.Contains("no column containing 'Total' exists", Missing(To(ColumnContaining("Total")), space));
+      Assert.Contains("no row with a matching cell exists", Missing(To(RowWithCell(_ => false)), space));
+      Assert.Contains("no column with a matching cell exists", Missing(To(ColumnWithCell(_ => false)), space));
+      Assert.Contains("no matching row exists", Missing(To(RowWhere((_, _) => false)), space));
+      Assert.Contains("no matching column exists", Missing(To(ColumnWhere((_, _) => false)), space));
     }
 
     [Fact]
@@ -85,7 +85,7 @@ namespace Unrect.Tests.Shapes
     {
       var space = Mixed(new object?[,] { { "nothing", null } });
 
-      Assert.Throws<ShapeException>(() => IntCell().After(SeekRowContaining("Total")).Map(space));
+      Assert.Throws<ShapeException>(() => IntCell().After(To(RowContaining("Total"))).Map(space));
       Assert.Throws<ShapeException>(() => IntCell().After(FromRight(9)).Map(space));
       Assert.Throws<ShapeException>(() => IntCell().After(FromBottom(9)).Map(space));
     }

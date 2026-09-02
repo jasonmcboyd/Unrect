@@ -3,7 +3,8 @@ using Unrect.Core;
 namespace Unrect.Strategies
 {
   /// <summary>
-  /// A seek that found nothing. It is an <see cref="OutOfBoundsException"/> because a missing
+  /// A required anchor that was not there — a matcher lifted into a placement by <c>To</c> or
+  /// <c>Past</c>, finding nothing. It is an <see cref="OutOfBoundsException"/> because a missing
   /// anchor is a placement failure like any other — strict callers report it, and a repeat whose
   /// item seeks its own anchor simply stops. The extra <see cref="Description"/> lets the shape
   /// layer say what was sought; it is internal, and visible to the Unrect assembly for that

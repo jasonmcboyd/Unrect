@@ -19,7 +19,7 @@ namespace Unrect.Strategies
 
     /// <summary>
     /// The first column holding <paramref name="text"/> as a whole cell value, trimmed and
-    /// case-insensitively — the same rule as <c>SeekColumnContaining</c>.
+    /// case-insensitively — the column twin of <see cref="RowLandmarks.RowContaining"/>.
     /// </summary>
     public static IColumnLandmark ColumnContaining(string text)
       => new PredicateColumnLandmark(

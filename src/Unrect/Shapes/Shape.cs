@@ -65,6 +65,31 @@ namespace Unrect.Shapes
         Placement.Of(area ?? throw new ArgumentNullException(nameof(area))),
         "Range");
 
+    /// <summary>
+    /// The row that holds <paramref name="text"/>, as declared content: the shape finds that row,
+    /// asserts the text is there, consumes the row at the full available width, and yields what the
+    /// cell actually says — the file's spelling, untrimmed, not the argument's.
+    /// <para>
+    /// A caption is a node rather than a property of the section under it, so it is described,
+    /// consumed once, and rendered into failure paths like anything else. Put a section under one
+    /// with <c>Under</c>:
+    /// <code>
+    /// var lines   = Range(RowsWhileAnyValue(), b =&gt; b.Rows);
+    /// var section = lines.Under(Caption("K-1 Lines 1-21"))
+    ///                    .Until(RowContaining("Portfolio Income"), orEnd: true);
+    /// </code>
+    /// </para>
+    /// <para>
+    /// Matching is whole-cell, trimmed and case-insensitive — the same rule
+    /// <see cref="RowContaining"/> uses, so a caption and a bound written from the same literal
+    /// cannot disagree. Share the literal with a <c>const</c> when both are needed.
+    /// </para>
+    /// </summary>
+    public static IShape<string> Caption(string text)
+      => new CaptionShape(
+        NotEmpty(text, nameof(text)),
+        new Placement(OffsetStrategies.To(RowLandmarks.RowContaining(text)), FullRow()));
+
     // --- Tables -------------------------------------------------------------------------------
 
     /// <summary>
@@ -129,7 +154,7 @@ namespace Unrect.Shapes
     /// var item =
     ///   section.Select(s => (Section?)s)          // the section as it should be
     ///     .Else(Row(_ => (Section?)null))         // ... or just its label row, and a warning
-    ///     .After(SeekRowContaining("Section"));   // ... starting at the next section label
+    ///     .After(To(RowContaining("Section")));   // ... starting at the next section label
     ///
     /// var sections = Repeat(item).Select(all => all.Where(s => s is not null).ToList());
     ///
@@ -223,33 +248,11 @@ namespace Unrect.Shapes
 
     // --- Anchoring vocabulary -------------------------------------------------------------------
     //
-    // Seeks land the region ON the row or column they find, so "the row after the label" reads
-    // Then(SeekRowContaining("Total"), SkipRows(1)). Finding nothing is a placement failure: a
-    // strict shape reports which anchor was missing, and a Repeat stops looking for more sections.
-
-    /// <summary>Down to the first row satisfying <paramref name="predicate"/>.</summary>
-    public static IOffsetStrategy SeekRow(Func<ISpace, int, bool> predicate) => OffsetStrategies.SeekRow(predicate);
-
-    /// <summary>Down to the first row with any cell satisfying <paramref name="anyCell"/>.</summary>
-    public static IOffsetStrategy SeekRowWhere(Func<CellValue, bool> anyCell) => OffsetStrategies.SeekRowWhere(anyCell);
-
-    /// <summary>
-    /// Down to the first row holding <paramref name="text"/> as a whole cell value, trimmed and
-    /// case-insensitively.
-    /// </summary>
-    public static IOffsetStrategy SeekRowContaining(string text) => OffsetStrategies.SeekRowContaining(text);
-
-    /// <summary>Right to the first column satisfying <paramref name="predicate"/>.</summary>
-    public static IOffsetStrategy SeekColumn(Func<ISpace, int, bool> predicate) => OffsetStrategies.SeekColumn(predicate);
-
-    /// <summary>Right to the first column with any cell satisfying <paramref name="anyCell"/>.</summary>
-    public static IOffsetStrategy SeekColumnWhere(Func<CellValue, bool> anyCell) => OffsetStrategies.SeekColumnWhere(anyCell);
-
-    /// <summary>
-    /// Right to the first column holding <paramref name="text"/> as a whole cell value, trimmed and
-    /// case-insensitively.
-    /// </summary>
-    public static IOffsetStrategy SeekColumnContaining(string text) => OffsetStrategies.SeekColumnContaining(text);
+    // Where a shape starts and ends by content: a matcher (below) locates a row or column, and a
+    // lift decides what to do with it — To lands the shape ON the match so it owns that row, Past
+    // lands it just after, and .Until bounds a shape by one. Finding nothing is a placement
+    // failure: a strict shape reports which anchor was missing, and a Repeat stops looking for
+    // more sections.
 
     /// <summary>
     /// The rightmost <paramref name="width"/> columns. Normally spelled with <c>After</c>, which
@@ -260,11 +263,12 @@ namespace Unrect.Shapes
     /// <summary>The bottom <paramref name="height"/> rows; see <see cref="FromRight"/>.</summary>
     public static IOffsetStrategy FromBottom(int height) => OffsetStrategies.FromBottom(height);
 
-    // --- Landmark vocabulary --------------------------------------------------------------------
+    // --- Matchers -------------------------------------------------------------------------------
     //
-    // Where a seek says where a shape starts, a landmark says where it ends: shape.Until(landmark).
-    // They match on the same rules as the seeks, so a section can start at SeekRowContaining("A")
-    // and end at RowContaining("B") without the two disagreeing about what a caption is.
+    // One family, three shapes of question, both axes. A matcher only locates content and reports
+    // absence; what absence means is the lift's business (To/Past above, .Until below). Because a
+    // section can start at To(RowContaining("A")) and end at Until(RowContaining("B")) through the
+    // same matcher, the two cannot disagree about what a caption is.
 
     /// <summary>The first row satisfying <paramref name="predicate"/>.</summary>
     public static IRowLandmark RowWhere(Func<ISpace, int, bool> predicate) => RowLandmarks.RowWhere(predicate);
@@ -289,6 +293,25 @@ namespace Unrect.Shapes
     /// case-insensitively.
     /// </summary>
     public static IColumnLandmark ColumnContaining(string text) => ColumnLandmarks.ColumnContaining(text);
+
+    /// <summary>
+    /// Onto the row or column <paramref name="landmark"/> matches — the shape starts AT the match
+    /// and owns it. Overloaded on the axis rather than spelled <c>ToColumn</c>, because the
+    /// argument already names the axis.
+    /// </summary>
+    public static IOffsetStrategy To(IRowLandmark landmark) => OffsetStrategies.To(landmark);
+
+    /// <inheritdoc cref="To(IRowLandmark)"/>
+    public static IOffsetStrategy To(IColumnLandmark landmark) => OffsetStrategies.To(landmark);
+
+    /// <summary>
+    /// Onto the row or column after the match, for a shape that starts below (or right of) a row it
+    /// does not want to own — a section under a caption another shape describes.
+    /// </summary>
+    public static IOffsetStrategy Past(IRowLandmark landmark) => OffsetStrategies.Past(landmark);
+
+    /// <inheritdoc cref="Past(IRowLandmark)"/>
+    public static IOffsetStrategy Past(IColumnLandmark landmark) => OffsetStrategies.Past(landmark);
 
     // --- Extent vocabulary ----------------------------------------------------------------------
     //
@@ -367,6 +390,25 @@ namespace Unrect.Shapes
 
     /// <summary>Validates a layout lambda where the caller's parameter name is what the user typed.</summary>
     private static Layout<T> NotNull<T>(Layout<T> build, string parameter) => build ?? throw new ArgumentNullException(parameter);
+
+    /// <summary>
+    /// A caption that could never match anything is a declaration error, not a per-file one: a
+    /// blank cell is <c>Blank</c> and never <c>Text("")</c>, so an empty caption is unsatisfiable.
+    /// </summary>
+    private static string NotEmpty(string text, string parameter)
+    {
+      if (text is null)
+        throw new ArgumentNullException(parameter);
+
+      if (text.Trim().Length == 0)
+        throw new ArgumentException("A caption cannot be empty or whitespace.", parameter);
+
+      return text;
+    }
+
+    /// <summary>One row, at the full available width — a caption row spans the sheet.</summary>
+    private static IAreaStrategy FullRow()
+      => RowsThenColumns(RowStrategies.TakeRows(1), ColumnStrategies.AllColumns());
 
     private static int NotNegative(int count, string parameter)
       => count >= 0 ? count : throw new ArgumentOutOfRangeException(parameter, count, "An offset cannot be negative.");

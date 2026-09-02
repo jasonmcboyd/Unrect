@@ -5,10 +5,10 @@ using Unrect.Core;
 namespace Unrect.Strategies
 {
   /// <summary>
-  /// What it means for a row or a column to hold a piece of text. Seeks and landmarks both ask the
-  /// question, and they must not answer it differently: <c>SeekRowContaining("Total")</c> and
-  /// <c>RowContaining("Total")</c> have to find the same row or a declaration that starts at one and
-  /// ends at the other would be quietly wrong.
+  /// What it means for a row or a column to hold a piece of text. The matchers and
+  /// <c>Caption</c> both ask the question, and they must not answer it differently:
+  /// <c>Caption("Total")</c> and <c>RowContaining("Total")</c> have to agree, or a section would
+  /// assert one thing and be bounded by another.
   /// </summary>
   internal static class CellMatching
   {

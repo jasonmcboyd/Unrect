@@ -49,15 +49,20 @@ var investorBlock = TableRows(r => new
 	Irr = r["IRR"].GetDouble(),
 });
 
-// Declared once; the two placements below differ only in where they start and stop.
+// The caption that both ends the first series and begins the second. One literal, so the bound
+// and the caption cannot drift apart — both go through the same matching rule.
+const string Inception = "Cash Flows using inception date";
+
+// Declared once; the two placements below differ only in what announces them and where they stop.
 var irrDetails = Repeat(investorBlock, separatedBy: BlankRows());
 
+// The caption rows are nodes, not padding inside an offset: Under puts them in the flow, so they
+// are described, consumed once, and named in any failure path underneath.
 var byTransferDate = irrDetails
-	.After(Then(SeekRowContaining("Cash Flows Using Transfer Date"), SkipRows(1)))
-	.Until(RowContaining("Cash Flows using inception date"));
+	.Under(Caption("IRR Details"), Caption("Cash Flows Using Transfer Date"))
+	.Until(RowContaining(Inception));
 
-var byInception = irrDetails
-	.After(Then(SeekRowContaining("Cash Flows using inception date"), SkipRows(1)));
+var byInception = irrDetails.Under(Caption(Inception));
 
 var report = VerticalFlow(v => new
 {

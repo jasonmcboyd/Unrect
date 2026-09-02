@@ -288,7 +288,7 @@ namespace Unrect.Tests.Shapes
 
       var item = section
         .Else(Row(2, _ => (string?)null).Named("unreadable section"))
-        .After(SeekRowContaining("Section"));
+        .After(To(RowContaining("Section")));
 
       return Repeat(item).Select(all => (IReadOnlyList<string>)all.Where(s => s is not null).ToList()!);
     }

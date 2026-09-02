@@ -44,7 +44,7 @@ namespace Unrect.Tests.Shapes
       // Consumed is the bound, not what the inner shape read, so the next child's own seek finds
       // the caption at distance zero. This is what Until is for.
       var section = Lines().Until(RowContaining("Total"));
-      var caption = Cell(c => c.GetString()).After(SeekRowContaining("Total"));
+      var caption = Cell(c => c.GetString()).After(To(RowContaining("Total")));
 
       var read = VerticalFlow(v => $"[{string.Join(",", v.Next(section))}]+{v.Next(caption)}").Map(Sections());
 
@@ -338,7 +338,7 @@ namespace Unrect.Tests.Shapes
       var space = Mixed(new object?[,] { { "Total" }, { "Start" }, { "a" }, { "b" } });
 
       var failure = Assert.Throws<ShapeException>(() =>
-        Lines().After(SeekRowContaining("Start")).Until(RowContaining("Total")).Map(space));
+        Lines().After(To(RowContaining("Start"))).Until(RowContaining("Total")).Map(space));
 
       Assert.Contains("no row containing 'Start' exists in the available space", failure.Message);
     }
@@ -373,10 +373,10 @@ namespace Unrect.Tests.Shapes
       var report = VerticalFlow(v => new
       {
         ByTransferDate = v.Next(series
-          .After(Then(SeekRowContaining("By transfer date"), SkipRows(1)))
+          .After(Past(RowContaining("By transfer date")))
           .Until(RowContaining(Inception))),
         ByInception = v.Next(series
-          .After(Then(SeekRowContaining(Inception), SkipRows(1)))),
+          .After(Past(RowContaining(Inception)))),
       });
 
       var result = report.MapWithDiagnostics(space);

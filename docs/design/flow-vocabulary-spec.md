@@ -1,7 +1,7 @@
 # Spec: The Flow Vocabulary (rename, removal, overlay cursor, use-site names, `Until`)
 
 **Status:** IMPLEMENTED (2026-09-01, branch `experiment/combined-select`). All seven steps of
-§2.3 are done; the suite is green at 707 tests and the vocabulary below is what ships.
+§2.3 are done; the suite is green at 752 tests and the vocabulary below is what ships.
 
 Extends `combined-select-experiment.md` and **supersedes its §11a "Adoption decisions" in
 detail** — §11a records what the owner decided; this document says exactly what to build.

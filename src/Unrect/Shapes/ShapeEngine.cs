@@ -167,7 +167,7 @@ namespace Unrect.Shapes
     internal static string Threw(string what, Exception exception)
       => $"its {what} strategy threw {exception.GetType().Name}: {exception.Message}";
 
-    // A seek that found nothing says what it was looking for; anything else just ran out of room.
+    // A matcher that found nothing says what it was looking for; anything else just ran out of room.
     private static string Missing(OutOfBoundsException exception)
       => exception is AnchorNotFoundException anchor
         ? $"{anchor.Description} exists in the available space"

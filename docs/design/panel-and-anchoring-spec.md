@@ -96,16 +96,19 @@ Add to the `Shape` statics (single-import rule): `SeekRow`, `SeekRowWhere`,
 
 ## 6. Error messages
 
-Seek misses must say what was sought. `SeekRowContaining("Taxable Income")` that finds
+Anchor misses must say what was sought. `To(RowContaining("Taxable Income"))` that finds
 nothing, applied strictly, renders:
 
 ```
 'taxable income': no row containing 'Taxable Income' exists in the available space
   in Overlay -> 'taxable income' (Cell)
-  at row 1, column 1 (A1); 74x2771 available
+  at row 1, column 1 (A1); 63x2772 available
 ```
 
-Mechanism: the seek strategies throw a new internal `AnchorNotFoundException :
+(Spelled `SeekRowContaining` when this spec was written; the seek factories were replaced by the
+`To`/`Past` lifts in `matcher-and-caption-spec.md`, and the fixture measures 63x2772.)
+
+Mechanism: the anchoring strategies throw a new internal `AnchorNotFoundException :
 OutOfBoundsException` carrying the description ("no row containing 'Taxable Income'");
 `ShapeEngine`'s case-A handler uses that description as the problem text when present.
 (Public surface unchanged; substrate callers still just see `OutOfBoundsException`.)

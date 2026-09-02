@@ -351,6 +351,72 @@ namespace Unrect.Shapes
       => Bound(shape, Landmark.Of(Required(landmark, nameof(landmark))), orEnd);
 
     /// <summary>
+    /// Puts this shape under <paramref name="captions"/> — the rows that announce it — so the
+    /// section starts below them and the caption rows are described rather than swallowed:
+    /// <c>lines.Under(Caption("K-1 Lines 1-21"))</c>.
+    /// <para>
+    /// It is sugar for a vertical flow and nothing else: <c>x.Under(a, b)</c> is
+    /// <c>VerticalFlow(v =&gt; { v.Next(a); v.Next(b); return v.Next(x); })</c>. So every caption is
+    /// a real child with its own path segment, each one seeks from where the last left off (a
+    /// stacked pair reads adjacent rows, and a gap is absorbed), the result is this shape's value
+    /// with the caption values discarded, and <c>Named</c>, <c>After</c>, <c>Until</c>,
+    /// <c>Optional</c> and the rest behave as they do on any flow. A missing caption under
+    /// <c>Optional</c> is an absent section, which is usually what you want.
+    /// </para>
+    /// <para>
+    /// <b>Inside a <c>Repeat</c>, anchor the item as well.</b> A repeat stops when the item's own
+    /// <em>placement</em> fails, and this puts the anchor inside the flow, whose placement always
+    /// fits — so the iteration past the last section fails loudly instead of stopping. Hoist the
+    /// matcher and put it on the item too; the lift is idempotent, so the caption inside then finds
+    /// its row at distance zero:
+    /// <code>
+    /// var detail  = RowContaining("Detail");
+    /// var section = lines.Under(Caption("Detail")).After(To(detail));
+    ///
+    /// Repeat(section, separatedBy: BlankRows())   // stops at the first row that is not a section
+    /// </code>
+    /// </para>
+    /// <para>
+    /// <paramref name="captions"/> is typed as any string-valued shape rather than a caption type,
+    /// so a row shape whose value you want discarded may sit there too — but <c>Caption</c> is what
+    /// belongs there.
+    /// </para>
+    /// </summary>
+    public static IShape<T> Under<T>(this IShape<T> shape, params IShape<string>[] captions)
+    {
+      if (shape is null)
+        throw new ArgumentNullException(nameof(shape));
+      if (captions is null)
+        throw new ArgumentNullException(nameof(captions));
+      if (captions.Length == 0)
+        throw new ArgumentException("A shape must sit under at least one caption.", nameof(captions));
+
+      for (var index = 0; index < captions.Length; index++)
+        if (captions[index] is null)
+          throw new ArgumentException($"Caption {index + 1} is null.", nameof(captions));
+
+      // Copied because params may hand us the caller's own array, and the lambda below is captured
+      // for every future application of this shape. A shape that could change is not a declaration.
+      var declared = (IShape<string>[])captions.Clone();
+
+      return new FlowShape<T>(
+        Orientation.Vertical,
+        cursor =>
+        {
+          // declared: null at both sites, and it is mandatory. Left to the compiler, the naming
+          // ladder would read the argument text from inside THIS helper and label every caption
+          // 'caption' and the section 'shape' — identifiers the user never wrote. Capture reads the
+          // immediate call site, so a helper has to opt out.
+          foreach (var caption in declared)
+            cursor.Next(caption, declared: null);
+
+          return cursor.Next(shape, declared: null);
+        },
+        Placement.Default,
+        description: "Under");
+    }
+
+    /// <summary>
     /// Projects the shape's result through <paramref name="selector"/>. The wrapper is a shape like
     /// any other, so <c>Named</c> and the placement modifiers work on either side of it.
     /// </summary>

@@ -205,7 +205,7 @@ namespace Unrect.Tests.Shapes
       var space = Mixed(new object?[,] { { "preamble" }, { "Section" }, { 7 } });
 
       AssertReads(
-        VerticalFlow(v => $"{v.Next(Cell(c => c.GetString()))}|{v.Next(Cell(c => c.GetString()).After(SeekRowContaining("Section")))}"),
+        VerticalFlow(v => $"{v.Next(Cell(c => c.GetString()))}|{v.Next(Cell(c => c.GetString()).After(To(RowContaining("Section"))))}"),
         space,
         "preamble|Section",
         1,

@@ -10,6 +10,7 @@ using Unrect.Shapes;
 using Xunit;
 
 using static Unrect.Shapes.Shape;
+using static Unrect.Tests.Shapes.ShapeTestSpaces;
 
 namespace Unrect.Tests.Shapes
 {
@@ -289,14 +290,17 @@ namespace Unrect.Tests.Shapes
 
       const string Inception = "Cash Flows using inception date";
 
+      // The captions are declared rather than skipped over: each section says what it sits under,
+      // and the rows those captions occupy are described by the shape instead of being absorbed
+      // into an offset nobody can see.
       return VerticalFlow(v => new IrrReport(
         Title: v.Next(Column(4, c => c[0].GetString()).Named("report header")),
         Summary: v.Next(TableRows(r => r["Investors"].GetString()).Named("summary")),
         ByTransferDate: v.Next(series
-          .After(Then(SeekRowContaining("Cash Flows Using Transfer Date"), SkipRows(1)))
+          .Under(Caption("IRR Details"), Caption("Cash Flows Using Transfer Date"))
           .Until(RowContaining(Inception))),
         ByInception: v.Next(series
-          .After(Then(SeekRowContaining(Inception), SkipRows(1))))));
+          .Under(Caption(Inception)))));
     }
 
     [Fact]
@@ -338,6 +342,76 @@ namespace Unrect.Tests.Shapes
       Assert.Equal(6, space.Area.Size.Width);
       Assert.Equal(45, space.Area.Size.Height);
       Assert.Empty(result.Diagnostics);
+    }
+
+    // --- Captioned sections, mirroring scrubbed-k1 -----------------------------------------------------------
+    //
+    // The shape of the K-1 without the workbook: captioned sections separated by a blank row, each
+    // read by the caption it sits under. The pin that matters is the burn-down one — a caption row
+    // is DESCRIBED by the shape that owns it, not smuggled past inside an offset — so the section's
+    // own rows exclude its caption, and the meter counts the caption rows all the same.
+
+    private static ISpace CaptionedSheet() => Mixed(new object?[,]
+    {
+      { "K-1 Lines 1-21", null },
+      { "Ordinary income", 100 },
+      { "Interest income", 25 },
+      { null, null },
+      { "Foreign transactions", null },
+      { "Gross income", 40 },
+    });
+
+    [Fact]
+    public void CaptionedSections_AreReadByTheCaptionsTheySitUnder()
+    {
+      var lines = TableRows(0, r => r[0].GetString());
+
+      var report = VerticalFlow(v => new
+      {
+        Ordinary = v.Next(lines.Under(Caption("K-1 Lines 1-21")).Until(RowContaining("Foreign transactions"))),
+        Foreign = v.Next(lines.Under(Caption("Foreign transactions"))),
+      }).Map(CaptionedSheet());
+
+      Assert.Equal(new[] { "Ordinary income", "Interest income" }, report.Ordinary);
+      Assert.Equal(new[] { "Gross income" }, report.Foreign);
+    }
+
+    [Fact]
+    public void ACaptionRowIsOwnedByItsCaptionAndNotByTheSectionBelowIt()
+    {
+      // The regression pin for "the caption stopped being smuggled": neither section's rows contain
+      // the caption that introduced it, and neither contains the other section's caption either.
+      var lines = TableRows(0, r => r[0].GetString());
+
+      var report = VerticalFlow(v => new
+      {
+        Ordinary = v.Next(lines.Under(Caption("K-1 Lines 1-21")).Until(RowContaining("Foreign transactions"))),
+        Foreign = v.Next(lines.Under(Caption("Foreign transactions"))),
+      }).Map(CaptionedSheet());
+
+      Assert.DoesNotContain("K-1 Lines 1-21", report.Ordinary);
+      Assert.DoesNotContain("Foreign transactions", report.Ordinary);
+      Assert.DoesNotContain("Foreign transactions", report.Foreign);
+    }
+
+    [Fact]
+    public void CaptionRowsAreDescribedRatherThanSkipped()
+    {
+      // ...and the meter did not move: every row of the sheet is accounted for, including the two
+      // caption rows and the blank one the second section's seek crossed.
+      var lines = TableRows(0, r => r[0].GetString());
+
+      var report = VerticalFlow(v => new
+      {
+        Ordinary = v.Next(lines.Under(Caption("K-1 Lines 1-21")).Until(RowContaining("Foreign transactions"))),
+        Foreign = v.Next(lines.Under(Caption("Foreign transactions"))),
+      });
+
+      var result = report.MapWithDiagnostics(CaptionedSheet());
+      var applied = report.Apply(CaptionedSheet());
+
+      Assert.Empty(result.Diagnostics);
+      Assert.Equal(6, applied.Consumed.Height);
     }
 
     // --- Result types ------------------------------------------------------------------------------------------

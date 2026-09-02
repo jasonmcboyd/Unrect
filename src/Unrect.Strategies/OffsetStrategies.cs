@@ -39,48 +39,37 @@ namespace Unrect.Strategies
     public static IOffsetStrategy Then(params IOffsetStrategy[] offsets)
       => new CompositeOffsetSizeStrategy(offsets).ToOffsetStrategy();
 
-    // --- Seeking: anchoring on presence ---------------------------------------------------------
+    // --- The two lifts: where a matcher puts a shape ---------------------------------------------
     //
     // A skip-while stops at the first row that fails its predicate, so anything inserted above the
-    // thing you are looking for moves it. A seek scans to the first row that matches, and the
-    // region starts AT that row — "the row after the label" is Then(SeekRow..., SkipRows(1)).
-    // Finding nothing is a placement failure: OutOfBoundsException, which a strict shape reports
-    // and a repeat treats as "no more sections".
-
-    /// <summary>Down to the first row satisfying <paramref name="predicate"/>.</summary>
-    public static IOffsetStrategy SeekRow(Func<ISpace, int, bool> predicate)
-      => Seek(new SeekRowStrategy(NotNull(predicate, nameof(predicate)), "no matching row"));
-
-    /// <summary>Down to the first row with any cell satisfying <paramref name="anyCell"/>.</summary>
-    public static IOffsetStrategy SeekRowWhere(Func<CellValue, bool> anyCell)
-      => Seek(new SeekRowStrategy(CellMatching.AnyCellInRow(NotNull(anyCell, nameof(anyCell))), "no row with a matching cell"));
+    // thing you are looking for moves it. A matcher scans to the first row that matches instead,
+    // which is what survives that. It locates content and reports absence without deciding what
+    // absence means; these two lifts decide it for a placement — the anchor was required. That
+    // answer arrives as an OutOfBoundsException from an offset strategy, which is how a strict
+    // shape reports a missing anchor and how a repeat learns there are no more sections.
 
     /// <summary>
-    /// Down to the first row holding <paramref name="text"/> as a whole cell value, trimmed and
-    /// case-insensitively. Whole-cell equality rather than a substring: labels are cell values, and
-    /// substring matching invites false anchors — use <see cref="SeekRowWhere"/> for anything else.
+    /// Onto the row <paramref name="landmark"/> matches. The region starts AT that row, so the
+    /// shape owns it — a caption its section should describe, or a label row it reads.
     /// </summary>
-    public static IOffsetStrategy SeekRowContaining(string text)
-      => Seek(new SeekRowStrategy(
-        CellMatching.AnyCellInRow(CellMatching.TextEquals(NotNull(text, nameof(text)))),
-        $"no row containing '{text}'"));
+    public static IOffsetStrategy To(IRowLandmark landmark)
+      => Lift(new LandmarkRowStrategy(NotNull(landmark, nameof(landmark)), past: false));
 
-    /// <summary>Right to the first column satisfying <paramref name="predicate"/>.</summary>
-    public static IOffsetStrategy SeekColumn(Func<ISpace, int, bool> predicate)
-      => Seek(new SeekColumnStrategy(NotNull(predicate, nameof(predicate)), "no matching column"));
-
-    /// <summary>Right to the first column with any cell satisfying <paramref name="anyCell"/>.</summary>
-    public static IOffsetStrategy SeekColumnWhere(Func<CellValue, bool> anyCell)
-      => Seek(new SeekColumnStrategy(CellMatching.AnyCellInColumn(NotNull(anyCell, nameof(anyCell))), "no column with a matching cell"));
+    /// <summary>Onto the column <paramref name="landmark"/> matches; the column twin of <see cref="To(IRowLandmark)"/>.</summary>
+    public static IOffsetStrategy To(IColumnLandmark landmark)
+      => Lift(new LandmarkColumnStrategy(NotNull(landmark, nameof(landmark)), past: false));
 
     /// <summary>
-    /// Right to the first column holding <paramref name="text"/> as a whole cell value, trimmed and
-    /// case-insensitively; the column twin of <see cref="SeekRowContaining"/>.
+    /// Onto the row after the one <paramref name="landmark"/> matches, for a shape that starts
+    /// below a row it does not want to own. This is the whole of the old anchor-then-skip idiom,
+    /// without the hard-coded 1 that stood in for the matched row's own height.
     /// </summary>
-    public static IOffsetStrategy SeekColumnContaining(string text)
-      => Seek(new SeekColumnStrategy(
-        CellMatching.AnyCellInColumn(CellMatching.TextEquals(NotNull(text, nameof(text)))),
-        $"no column containing '{text}'"));
+    public static IOffsetStrategy Past(IRowLandmark landmark)
+      => Lift(new LandmarkRowStrategy(NotNull(landmark, nameof(landmark)), past: true));
+
+    /// <summary>Onto the column after the match; the column twin of <see cref="Past(IRowLandmark)"/>.</summary>
+    public static IOffsetStrategy Past(IColumnLandmark landmark)
+      => Lift(new LandmarkColumnStrategy(NotNull(landmark, nameof(landmark)), past: true));
 
     // --- Anchoring to the far edge --------------------------------------------------------------
     //
@@ -108,10 +97,10 @@ namespace Unrect.Strategies
     private static int Reserve(int available, int extent)
       => extent <= available ? available - extent : throw new OutOfBoundsException();
 
-    private static IOffsetStrategy Seek(IRowStrategy strategy)
+    private static IOffsetStrategy Lift(IRowStrategy strategy)
       => new RowOffsetSizeStrategy(strategy).ToOffsetStrategy();
 
-    private static IOffsetStrategy Seek(IColumnStrategy strategy)
+    private static IOffsetStrategy Lift(IColumnStrategy strategy)
       => new ColumnOffsetSizeStrategy(strategy).ToOffsetStrategy();
 
     private static T NotNull<T>(T value, string parameter) where T : class

@@ -120,6 +120,52 @@ namespace Unrect.Tests.Shapes
       Assert.Equal(1, Column(s => s.Count).Map(space));
     }
 
+    // --- The lifts ------------------------------------------------------------------------------------
+
+    [Fact]
+    public void TheLiftReExportsForwardToTheirStrategies()
+    {
+      var rows = Grid(new[,] { { 1 }, { 2 }, { 3 } });
+      var columns = Grid(new[,] { { 1, 2, 3 } });
+
+      Assert.Equal(
+        OffsetStrategies.To(RowLandmarks.RowWhere((s, r) => s[0, r].GetInt() == 2)).GetOffset(rows).Size.Height,
+        To(RowWhere((s, r) => s[0, r].GetInt() == 2)).GetOffset(rows).Size.Height);
+
+      Assert.Equal(
+        OffsetStrategies.Past(RowLandmarks.RowWhere((s, r) => s[0, r].GetInt() == 2)).GetOffset(rows).Size.Height,
+        Past(RowWhere((s, r) => s[0, r].GetInt() == 2)).GetOffset(rows).Size.Height);
+
+      Assert.Equal(
+        OffsetStrategies.To(ColumnLandmarks.ColumnWhere((s, c) => s[c, 0].GetInt() == 2)).GetOffset(columns).Size.Width,
+        To(ColumnWhere((s, c) => s[c, 0].GetInt() == 2)).GetOffset(columns).Size.Width);
+
+      Assert.Equal(
+        OffsetStrategies.Past(ColumnLandmarks.ColumnWhere((s, c) => s[c, 0].GetInt() == 2)).GetOffset(columns).Size.Width,
+        Past(ColumnWhere((s, c) => s[c, 0].GetInt() == 2)).GetOffset(columns).Size.Width);
+    }
+
+    [Fact]
+    public void ACaptionedSectionIsDeclarableFromTheOneImport()
+    {
+      // Where the single-import claim is actually made: Caption, Under, To, Past and RowContaining,
+      // with no member of Unrect.Strategies anywhere in the declaration.
+      var space = Mixed(new object?[,]
+      {
+        { "junk" },
+        { "Detail" },
+        { "a" },
+        { "b" },
+      });
+
+      var section = Range(b => b.Height).Under(Caption("Detail"));
+      var anchored = Cell(c => c.GetString()).After(Past(RowContaining("Detail")));
+
+      Assert.Equal(2, section.Map(space));
+      Assert.Equal("a", anchored.Map(space));
+      Assert.Equal("Detail", Cell(c => c.GetString()).After(To(RowContaining("Detail"))).Map(space));
+    }
+
     [Fact]
     public void AReExportedExtentResolvesInsideSized()
     {

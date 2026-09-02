@@ -278,7 +278,7 @@ namespace Unrect.Tests.Shapes
       {
         v.Next(Cell(c => c.GetString()).Named("label"));
         return v.Next(Cell(c => c.GetInt()).Right(1).Named("amount"));
-      }).After(SeekRowContaining("Section"));
+      }).After(To(RowContaining("Section")));
 
       var amounts = Repeat(section).Map(space);
 
@@ -304,7 +304,7 @@ namespace Unrect.Tests.Shapes
       {
         v.Next(Cell(c => c.GetString()).Named("label"));
         return v.Next(Cell(c => c.GetInt()).Right(1).Named("amount"));
-      }).After(SeekRowContaining("Section"));
+      }).After(To(RowContaining("Section")));
 
       Assert.Equal(new[] { 1, 2 }, Repeat(section).Map(space));
     }
@@ -314,7 +314,7 @@ namespace Unrect.Tests.Shapes
     {
       var space = Mixed(new object?[,] { { "nothing", null }, { "here", null } });
 
-      var section = Cell(v => v.GetString()).After(SeekRowContaining("Section"));
+      var section = Cell(v => v.GetString()).After(To(RowContaining("Section")));
 
       Assert.Empty(Repeat(section).Map(space));
     }
@@ -327,9 +327,79 @@ namespace Unrect.Tests.Shapes
       var space = Mixed(new object?[,] { { "nothing", null }, { "here", null } });
 
       var failure = Assert.Throws<ShapeException>(() =>
-        Cell(v => v.GetString()).After(SeekRowContaining("Section")).Map(space));
+        Cell(v => v.GetString()).After(To(RowContaining("Section"))).Map(space));
 
       Assert.Contains("no row containing 'Section' exists in the available space", failure.Message);
+    }
+
+    // --- The Under trap, and its recipe (§3.4) -------------------------------------------------------------------
+    //
+    // A repeat stops only when the ITEM'S OWN placement fails. .Under puts the caption's anchor
+    // inside the flow, and the flow's own placement always fits — so a missing caption on the last
+    // iteration is a failure one level down, which is loud. Both halves are documented, so both are
+    // pinned: the trap, and the one-modifier recipe that fixes it.
+
+    /// <summary>Two captioned sections, a blank line between them, and a totals row that is neither.</summary>
+    private static ISpace CaptionedSections() => Mixed(new object?[,]
+    {
+      { "Detail" },
+      { "a" },
+      { null },
+      { "Detail" },
+      { "b" },
+      { null },
+      { "Totals" },
+    });
+
+    [Fact]
+    public void ARepeatOfAnUnderSection_FailsLoudlyWhenTheCaptionsRunOut()
+    {
+      // The trap. The iteration past the last section finds no caption, and because the anchor is
+      // inside the item rather than on it, that is drift rather than exhaustion.
+      var section = Range(b => b.Height).Under(Caption("Detail"));
+
+      var hoisted = Assert.Throws<ShapeException>(() =>
+        Repeat(section, separatedBy: BlankRows()).Map(CaptionedSections()));
+
+      // The repeat's own index, then the item — labelled by the local it was hoisted into — then
+      // the caption that was not found, at its ordinal inside the desugared flow.
+      Assert.Equal("Repeat[2] -> 'section' -> Caption(\"Detail\")#1", hoisted.Path);
+      Assert.Contains("no row containing 'Detail' exists in the available space", hoisted.Message);
+
+      // Written inline there is no identifier to capture, and the flow renders by its description.
+      var inline = Assert.Throws<ShapeException>(() =>
+        Repeat(Range(b => b.Height).Under(Caption("Detail")), separatedBy: BlankRows()).Map(CaptionedSections()));
+
+      Assert.Equal("Repeat[2] -> Under -> Caption(\"Detail\")#1", inline.Path);
+    }
+
+    [Fact]
+    public void ARepeatOfAnUnderSection_StopsGracefullyWhenTheAnchorIsAlsoOnTheItem()
+    {
+      // The recipe: hoist the matcher and put it on the item's placement as well. The seek is
+      // idempotent — the flow lands ON the caption row and the caption inside finds it at distance
+      // zero — so the item's own placement is what runs out, which is a stop.
+      var detail = RowContaining("Detail");
+      var section = Range(b => b.Height).Under(Caption("Detail")).After(To(detail));
+
+      var result = Repeat(section, separatedBy: BlankRows()).MapWithDiagnostics(CaptionedSections());
+
+      Assert.Equal(new[] { 1, 1 }, result.Value);
+
+      // ...and the totals row is left undescribed rather than swallowed or blamed.
+      var info = Assert.Single(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Info);
+      Assert.Equal("the shape consumed 5 of 7 rows; rows 6+ were not described", info.Message);
+    }
+
+    [Fact]
+    public void AnItemAnchoredWithPast_AlsoStopsRatherThanThrowing()
+    {
+      // Past is a lift like To, so it fails the same way, so a repeat treats it the same way.
+      var item = Cell(c => c.GetString()).After(Past(RowContaining("Detail")));
+
+      var items = Repeat(item).Map(Mixed(new object?[,] { { "Detail" }, { "a" }, { "Detail" }, { "b" } }));
+
+      Assert.Equal(new[] { "a", "b" }, items);
     }
 
     // --- atLeast ---------------------------------------------------------------------------------------------

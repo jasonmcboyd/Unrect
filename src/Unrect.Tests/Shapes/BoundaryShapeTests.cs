@@ -214,7 +214,7 @@ namespace Unrect.Tests.Shapes
       // inside it is inside the try block.
       var space = Mixed(new object?[,] { { "nothing" }, { "here" } });
 
-      var result = Cell(v => v.GetString()).After(SeekRowContaining("Section")).Optional().MapWithDiagnostics(space);
+      var result = Cell(v => v.GetString()).After(To(RowContaining("Section"))).Optional().MapWithDiagnostics(space);
 
       Assert.Null(result.Value);
       Assert.Contains(
@@ -230,7 +230,7 @@ namespace Unrect.Tests.Shapes
       var space = Mixed(new object?[,] { { "nothing" }, { "here" } });
 
       var failure = Assert.Throws<ShapeException>(() =>
-        Cell(v => v.GetString()).Optional().After(SeekRowContaining("Section")).Map(space));
+        Cell(v => v.GetString()).Optional().After(To(RowContaining("Section"))).Map(space));
 
       Assert.Contains("no row containing 'Section'", failure.Message);
     }

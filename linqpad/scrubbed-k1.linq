@@ -14,11 +14,13 @@
 //
 // ONE root shape, ZERO hard-coded coordinates. The working style that survives real-world
 // drift (extra rows, moved columns, varying fund counts):
-//   - rows anchor by content seeks (SeekRowContaining);
+//   - rows anchor by content matchers (To(RowContaining(...)));
 //   - the header is an Overlay — independent blocks sharing rows, placement rather than flow —
 //     bounded with .Sized so every seek inside it is unambiguous;
 //   - each layout lambda DIGESTS ITSELF: the header resolves its own columns from content and
 //     hands back what the rest of the declaration needs, so no raw rows travel any further;
+//   - a section's caption is declared with Caption and placed with Under, so the row that
+//     announces the section belongs to it instead of being swallowed by an anchor's offset;
 //   - one `section` shape, declared once and placed twice by two different seeks.
 var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\examples\scrubbed-k1.xlsx");
 var space = SpreadsheetSpace.Create(path, "Sheet1");
@@ -35,11 +37,11 @@ int Find(CellValue[] row, string caption) => Array.FindIndex(row,
 // row this is.
 IShape<CellValue[]> FullRow(string anchor) =>
 	Row(AllColumns(), r => r.ToArray())
-		.After(SeekRowContaining(anchor));
+		.After(To(RowContaining(anchor)));
 
 var entity = Range(2, 5, b => Enumerable.Range(0, 5)
 		.ToDictionary(r => b[0, r].GetString().TrimEnd(':'), r => b[1, r].ToString()))
-	.After(Then(SeekColumnContaining("EIN:"), SeekRowContaining("EIN:")));
+	.After(Then(To(ColumnContaining("EIN:")), To(RowContaining("EIN:"))));
 
 var captionRow = FullRow("ATAX");
 var fundNameRow = FullRow("Fund Short Name");
@@ -71,12 +73,12 @@ var header = Overlay(o =>
 // One section shape: rows while any value, wherever it is anchored.
 var section = Range(RowsWhileAnyValue(), b => b.Rows.Select(r => r.ToArray()).ToArray());
 
-var k1Lines = section.After(SeekRowContaining("K-1 Lines 1-21"));
+var k1Lines = section.Under(Caption("K-1 Lines 1-21"));
 
 // The production posture: this section is best-effort. On a clean file Optional changes nothing;
 // on a broken one the import survives with null here and a Warning in the diagnostics citing
 // exactly where and why the section failed.
-var portfolio = section.After(SeekRowContaining("Portfolio Income")).Optional();
+var portfolio = section.Under(Caption("Portfolio Income")).Optional();
 
 var report = VerticalFlow(v =>
 {

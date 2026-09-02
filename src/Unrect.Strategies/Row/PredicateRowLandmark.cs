@@ -6,7 +6,7 @@ namespace Unrect.Strategies
 {
   /// <summary>
   /// Scans down for the first matching row and says where it is, or that there is none. The same
-  /// scan a seek does, without the throwing: a landmark's caller decides what absence means.
+  /// scan a placement does, without the throwing: a matcher's caller decides what absence means.
   /// </summary>
   internal sealed class PredicateRowLandmark : IRowLandmark
   {
