@@ -45,8 +45,14 @@ jobs:
       - name: Test
         run: dotnet test src/Unrect.sln -c Release --no-build --verbosity minimal
 
+      # Pack the two shippable projects directly, not the solution: solution-level pack invokes
+      # Pack on every project including the non-packable ones, which SDK 10 drove into Build and a
+      # NETSDK1085 collision with --no-build (first publish attempt, 2026-09-02). Per-project pack
+      # sidesteps the whole class, and the projects were built by the Build step above.
       - name: Pack
-        run: dotnet pack src/Unrect.sln -c Release --no-build -o ${{ github.workspace }}/artifacts
+        run: |
+          dotnet pack src/Unrect/Unrect.csproj -c Release --no-build -o ${{ github.workspace }}/artifacts
+          dotnet pack src/Unrect.Spreadsheets/Unrect.Spreadsheets.csproj -c Release --no-build -o ${{ github.workspace }}/artifacts
 
       # Both packages must exist at exactly the tagged version: MinVer derives the version from the
       # tag, so a mismatch here means the tag and the build disagree and nothing should be pushed.

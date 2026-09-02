@@ -7,6 +7,13 @@
     <Nullable>enable</Nullable>
     <LangVersion>Latest</LangVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+
+    <!-- A no-build pack must resolve project references from their EXISTING outputs instead of
+         building them: Unrect's BundleReferencedProjects re-runs ResolveReferences during pack,
+         and without this the reference walk invokes Build on Core/Strategies, which NoBuild turns
+         into NETSDK1085 (first publish attempt, 2026-09-02). The workflow builds before packing,
+         so the outputs are always there. -->
+    <BuildProjectReferences Condition="'$(NoBuild)' == 'true'">false</BuildProjectReferences>
   </PropertyGroup>
 
   <!-- Packaging. Nothing ships unless it opts in: Unrect and Unrect.Excel set IsPackable, and

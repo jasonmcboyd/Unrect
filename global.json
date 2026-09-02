@@ -1,0 +1,9 @@
+{
+  // Pin the SDK line so local builds and CI resolve the same toolchain. The publish
+  // workflow's first failure was diagnosed to the runner's system SDK 10 taking over
+  // despite setup-dotnet installing 8.0.x; this file makes the resolution explicit.
+  "sdk": {
+    "version": "8.0.100",
+    "rollForward": "latestFeature"
+  }
+}
