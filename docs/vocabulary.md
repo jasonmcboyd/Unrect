@@ -14,8 +14,8 @@ drift silently.
 |---|---|---|
 | `Text()` `Decimal()` `Integer()` `Double()` `Date()` `Boolean()` | typed value | One cell; asserts its `CellKind`, applies the canonical accessor. The family is CLOSED over `CellValue`'s accessor set and never leads it — no `Long()`, ever; conversions beyond the set are `Select` territory (typed-leaves-and-tables-spec §2, "the firewall") |
 | `Cell(v => ...)` | `T` | One cell, arbitrary projection — the escape hatch |
-| `Row(r => ...)` / `Row(columns, r => ...)` | from `CellStrip` | One row; width discovered (`while any value`) or by column strategy |
-| `Column(c => ...)` / `Column(n, c => ...)` | from `CellStrip` | One column; height discovered or explicit (explicit counts are for structurally fixed regions only) |
+| `Row(r => ...)` / `Row(width, r => ...)` / `Row(IColumnStrategy, r => ...)` | from `CellStrip` | One row; width discovered (`while any value`), explicit count, or by column strategy (explicit counts are for structurally fixed regions only) |
+| `Column(c => ...)` / `Column(height, c => ...)` / `Column(IRowStrategy, c => ...)` | from `CellStrip` | One column; height discovered (`while any value`), explicit count, or by row strategy (explicit counts are for structurally fixed regions only) |
 | `Range(b => ...)` / `Range(w, h, ...)` / `Range(area, ...)` | from `CellBlock` | Rectangular block |
 | `Caption(text)` | matched text (verbatim) | A declared anchor: seeks its row by the content rule, consumes exactly that row, asserts the text (matcher-and-caption-spec) |
 | `Fields(Field(a), Field(b), ...)` | `IReadOnlyDictionary<string, CellValue>` | Labeled-pair block (label column + value column); self-anchors on its first label; labels matched colon-tolerantly (`LabelEquals`) |
@@ -25,8 +25,9 @@ drift silently.
 | Operator | Yields | Notes |
 |---|---|---|
 | `TableRows()` | rows as caption-keyed dictionaries of `CellValue` | Exploratory: keys discovered from the file, looked up under the binding comparer; duplicate captions are a loud failure |
-| `TableRows<T>()` / `TableRows<T>(bind => ...)` | `IReadOnlyList<T>` | Typed: captions bound to properties by `CaptionComparer` (case- and whitespace-insensitive), kinds inferred from property types (the closed set: `string`, `decimal`, `double`, `int`, `DateTime`, `bool`, their `Nullable<>` forms, and `CellValue`), `Nullable<>` = per-column blank tolerance, strict by default with `bind.Ignore(t => t.X)`; overrides `bind.Column(t => t.X, "caption")` |
-| `TableRows(r => ...)` / `Table(...)` | `T` per row | Full control: hand-written projection with `r["Caption"]` / `r[i]` |
+| `TableRows<T>()` / `TableRows<T>(bind => ...)` | `IReadOnlyList<T>` | Typed: captions bound to properties by `CaptionComparer` (case- and whitespace-insensitive), kinds inferred from property types (the closed set: `string`, `decimal`, `double`, `int`, `DateTime`, `bool`, their `Nullable<>` forms, and `CellValue`), `Nullable<>` AND an annotated `string?` both mean per-column blank tolerance, strict by default with `bind.Ignore(t => t.X)`; overrides `bind.Column(t => t.X, "caption")` |
+| `TableRows(r => ...)` | `IReadOnlyList<T>` (`T` per row) | Full control: hand-written per-row projection with `r["Caption"]` / `r[i]` |
+| `Table(t => ...)` | `T` for the whole table | Full control: one hand-written projection over the `TableView`, for tables that don't decompose row-by-row |
 
 Graduate up the ladder as a table's shape firms: dictionary first to sight-read an
 unfamiliar workbook, typed once you commit, lambda only when a column needs logic.
@@ -35,7 +36,7 @@ unfamiliar workbook, typed once you commit, lambda only when a column needs logi
 
 | Operator | Claim |
 |---|---|
-| `VerticalFlow(v => ...)` / `HorizontalFlow(v => ...)` | Stacked bands, one per child, claimed full-width (a child's band belongs to it even where its content is narrower). `v.Next(shape)` declares the next child and returns its value; any arity |
+| `VerticalFlow(v => ...)` / `HorizontalFlow(v => ...)` | Stacked bands, one per child: each child's band spans the flow's full width, so no sibling ever shares it, even where the child's own content is narrower — but that is a claim on the band, not on what the flow reports consumed. Consumed across the axis is the max over children of their own consumed width (bounding box), not automatically the full width. `v.Next(shape)` declares the next child and returns its value; any arity |
 | `Overlay(o => ...)` | One shared band; each child finds its own place by its own placement; no advance between children; consumed = bounding box |
 | `Repeat(item, separatedBy:, atLeast:)` / `RepeatHorizontal(...)` | N items with separators (`sepBy`). A blank band is a separator, never a terminator — bound the repeat with `.Until` to end it at content |
 | `Choice(a, b, ...)` | The first alternative that fits; an Info per near-miss; a losing branch's diagnostics roll back |
@@ -49,10 +50,10 @@ layout problem.
 
 | Operator | Meaning |
 |---|---|
-| `.After(offset)` | Anchor/move the shape (REPLACES prior placement) |
+| `.After(offset)` | Anchor/move the shape — REPLACES the offset (a declared area survives; `.Sized` is the area's own replace) |
 | `To(matcher)` / `Past(matcher)` | Move to the matched row/column, or just beyond it. A miss throws — and a miss is `Repeat`'s clean stopping condition |
 | `Then(a, b, ...)` | Sequence offsets; each searches only the space the previous shift left (seek the axis that discards least, first) |
-| `SkipRows(n)` `SkipColumns(n)` `BlankRows()` `BlankColumns()` `.AfterBlankRows()` `.Down(n)` `.Right(n)` | Fixed and blank-skipping movements; movement modifiers compose |
+| `SkipRows(n)` `SkipColumns(n)` `BlankRows()` `BlankColumns()` `.AfterBlankRows()` `.AfterBlankColumns()` `.Down(n)` `.Right(n)` | Fixed and blank-skipping movements; movement modifiers compose |
 | `FromRight(w)` / `FromBottom(h)` | From-end anchoring |
 
 ## Extent — where things end
@@ -61,7 +62,8 @@ layout problem.
 |---|---|
 | `.Sized(area)` | Declared extent, consumed in full (REPLACES) |
 | `.Until(matcher)` / `.Until(matcher, orEnd: true)` / `.UntilColumn(...)` | Extent ends just BEFORE a forward landmark; the bound is consumed in full so the next sibling starts AT the landmark (its own `After` finds it at distance zero). Strict by default; `orEnd` runs to the end of space and records an Info when exercised |
-| `Extent(w, h)` `WholeExtent()` `NoExtent()` `RowsWhileAnyValue()` `RowsWhileAny(p)` `ColumnsWhileAnyValue()` `ColumnsWhileAny(p)` `TakeRows(n)` `TakeColumns(n)` `AllRows()` `AllColumns()` | The area vocabulary, mirrored on both axes |
+| `Extent(w, h)` `WholeExtent()` `NoExtent()` `RowsWhileAnyValue()` `RowsWhileAny(p)` `ColumnsWhileAnyValue()` `ColumnsWhileAny(p)` | The area vocabulary, mirrored on both axes |
+| `TakeRows(n)` `TakeColumns(n)` `AllRows()` `AllColumns()` | Axis selectors, not area strategies — they return `IRowStrategy`/`IColumnStrategy`, for `Row(AllColumns(), ...)` / `Column(TakeRows(3), ...)` and for composing an extent from its two axes; not for `.Sized` (`.Sized(TakeRows(3))` does not compile) |
 
 ## Matchers — one family, three lifts
 
@@ -72,11 +74,14 @@ whole-cell. Naming law: bare `Where` = whole-row/column predicate over the space
 `Past`, `.Until`) describes a miss identically, because there is one matcher to describe.
 
 Three matching rules exist in the library and deliberately never unify
-(typed-leaves-and-tables-spec §3): the **content rule** above (matchers, `Caption` —
-literal ↔ cell text), **`LabelEquals`** (`Field` only — content rule plus a trailing
-colon-run ignored), and **`CaptionComparer`** (table binding and dictionary keys —
-case- and whitespace-insensitive, bridging caption ↔ identifier). Each bridges a
-different pair of vocabularies; a declaration must never start in one and end in another.
+(typed-leaves-and-tables-spec §3): the **content rule** above (matchers, `Caption`, and
+also `TableView`/`TableRow`'s by-caption row access — `row["Caption"]` resolves trimmed
+and case-insensitively, the same rule, so it has consumers beyond matchers and `Caption`
+— literal ↔ cell text), **`LabelEquals`** (`Field` only — content rule plus a trailing
+colon-run ignored), and **`CaptionComparer`** (typed `TableRows<T>` binding and the
+`TableRows()` dictionary's keys — case- and whitespace-insensitive, bridging caption ↔
+identifier). Each bridges a different pair of vocabularies; a declaration must never
+start in one and end in another.
 
 ## Wrappers and boundaries
 

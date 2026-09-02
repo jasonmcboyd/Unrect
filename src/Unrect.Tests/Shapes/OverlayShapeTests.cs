@@ -1,4 +1,3 @@
-using System;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -9,7 +8,7 @@ using Unrect.Strategies;
 using Xunit;
 
 using static Unrect.Shapes.Shape;
-using static Unrect.Tests.Shapes.ShapeTestSpaces;
+using static Unrect.Tests.ShapeTestSpaces;
 
 namespace Unrect.Tests.Shapes
 {
@@ -28,19 +27,6 @@ namespace Unrect.Tests.Shapes
   {
     // Values are (row * 10 + column + 1) over 4 columns by 3 rows, so an assertion reads as a
     // coordinate: 1 2 3 4 / 11 12 13 14 / 21 22 23 24.
-    private static ISpace CoordinateGrid(int width = 4, int height = 3)
-    {
-      var values = new int[height, width];
-
-      for (var row = 0; row < height; row++)
-        for (var column = 0; column < width; column++)
-          values[row, column] = row * 10 + column + 1;
-
-      return Grid(values);
-    }
-
-    private static IShape<int> IntCell() => Cell(v => v.GetInt());
-
     // --- No flow ------------------------------------------------------------------------------------
 
     [Fact]

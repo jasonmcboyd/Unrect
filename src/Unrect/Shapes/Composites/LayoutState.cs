@@ -84,7 +84,7 @@ namespace Unrect.Shapes
     /// so the message and the location outrank an exact availability figure.
     /// </summary>
     protected ISpace RemainingAt(Offset at)
-      => at.Size.Width > Extent.Area.Size.Width || at.Size.Height > Extent.Area.Size.Height
+      => at.Width > Extent.Area.Width || at.Height > Extent.Area.Height
         ? Extent
         : Extent.GetSubspace(at);
 

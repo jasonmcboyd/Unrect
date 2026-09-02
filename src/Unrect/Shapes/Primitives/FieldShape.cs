@@ -32,6 +32,9 @@ namespace Unrect.Shapes
     {
       var size = extent.Area.Size;
 
+      // Normally unreachable — the factory fixes the extent at 2x1 — but reachable the moment a
+      // caller replaces the placement (.Sized, a field inside a declared frame), and it is the half
+      // of this leaf a writer would satisfy: the writer emits the pair, the reader verifies it.
       if (size.Width != 2 || size.Height != 1)
         throw context.Failure(
           $"a Field must be two cells wide and one row tall; this one is {size.Width}x{size.Height}", extent);

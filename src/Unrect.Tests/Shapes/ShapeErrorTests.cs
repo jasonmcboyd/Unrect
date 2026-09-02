@@ -7,7 +7,7 @@ using Unrect.Strategies;
 using Xunit;
 
 using static Unrect.Shapes.Shape;
-using static Unrect.Tests.Shapes.ShapeTestSpaces;
+using static Unrect.Tests.ShapeTestSpaces;
 
 namespace Unrect.Tests.Shapes
 {
@@ -19,8 +19,6 @@ namespace Unrect.Tests.Shapes
   /// </summary>
   public class ShapeErrorTests
   {
-    private static IShape<int> IntCell() => Cell(v => v.GetInt());
-
     private static ISpace Square() => Grid(new[,] { { 1, 2 }, { 3, 4 } });
 
     // --- Case A: the offset does not fit ---------------------------------------------------------------
@@ -461,14 +459,5 @@ namespace Unrect.Tests.Shapes
     private static int ThrowingSelector(int only)
       => throw new InvalidOperationException("the selector failed");
 
-    private static int Occurrences(string text, string value)
-    {
-      var count = 0;
-
-      for (var index = text.IndexOf(value, StringComparison.Ordinal); index >= 0; index = text.IndexOf(value, index + 1, StringComparison.Ordinal))
-        count++;
-
-      return count;
-    }
   }
 }

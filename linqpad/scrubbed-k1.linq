@@ -23,7 +23,7 @@
 //     announces the section belongs to it instead of being swallowed by an anchor's offset;
 //   - the entity card is a Fields block: labels declared once, extent from the child count, and
 //     the block finds itself by its own first label;
-//   - one `section` shape, declared once and placed twice by two different seeks.
+//   - one `section` shape, declared once and placed twice under two different captions.
 var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\examples\scrubbed-k1.xlsx");
 var space = SpreadsheetSpace.Create(path, "Sheet1");
 

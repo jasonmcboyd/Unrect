@@ -1,17 +1,20 @@
 # Design: Canonical Value Model, Shape Vocabulary, and Observability
 
-**Status:** Waves 1 and 2 implemented (2026-08-31). Wave 1: `CellValue`/`CellKind` in
-Core, full de-generification, adapter-owned blankness, review-hardened. Wave 2: the
+**Status:** Waves 1, 2, and wave 3 part 1 implemented. Wave 1 (2026-08-31): `CellValue`/`CellKind` in
+Core, full de-generification, adapter-owned blankness, review-hardened. Wave 2 (2026-08-31): the
 fused shape layer (`Unrect.Shapes`) per `wave2-shapes-spec.md` — applicative
 shape+projection fusion, `Table` tiers 1+2, `sepBy` `Repeat`, named shapes,
-`ShapeException` diagnostics. Wave 3 (observability) remains proposed; the shape
-layer was designed to accept it (spec §7). (Original design session 2026-08-31.)
+`ShapeException` diagnostics. Wave 3 part 1 (2026-09-01, `diagnostics-and-choice-spec.md`):
+`Choice`, tolerance boundaries, and unconsumed-space warnings shipped; the decomposition
+trace, dry-run renderer, and capability seams remain proposed. (Original design session
+2026-08-31.)
 **Drives:** the developer-ergonomics overhaul and the de-generification of the core
 
 This document captures a connected set of design decisions arrived at while reviewing
-the ergonomics of the current API. None of it is implemented yet. It builds on the
-Design Philosophy in `CLAUDE.md` (declarative, not imperative; explicit dimensions are
-the exception) and does not revisit it.
+the ergonomics of the current API. (As of the original 2026-08-31 design session, none
+of it was implemented yet; see the Status line above for what has shipped since.) It
+builds on the Design Philosophy in `CLAUDE.md` (declarative, not imperative; explicit
+dimensions are the exception) and does not revisit it.
 
 ---
 

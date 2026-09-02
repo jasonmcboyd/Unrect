@@ -3,7 +3,7 @@ using Unrect.Core;
 
 namespace Unrect.Strategies
 {
-  internal class TakeWhileAnyColumnStrategy : IColumnStrategy
+  internal sealed class TakeWhileAnyColumnStrategy : IColumnStrategy
   {
     public TakeWhileAnyColumnStrategy(Func<CellValue, bool> predicate)
     {
@@ -16,10 +16,10 @@ namespace Unrect.Strategies
     {
       int count = 0;
 
-      while (count < space.Area.Size.Width)
+      while (count < space.Area.Width)
       {
         bool anyMatch = false;
-        for (int i = 0; i < space.Area.Size.Height; i++)
+        for (int i = 0; i < space.Area.Height; i++)
         {
           if (Predicate(space[count, i]))
           {

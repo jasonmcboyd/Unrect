@@ -6,7 +6,7 @@ using Unrect.Shapes;
 using Xunit;
 
 using static Unrect.Shapes.Shape;
-using static Unrect.Tests.Shapes.ShapeTestSpaces;
+using static Unrect.Tests.ShapeTestSpaces;
 
 namespace Unrect.Tests.Shapes
 {
@@ -287,11 +287,5 @@ namespace Unrect.Tests.Shapes
     }
 
     /// <summary>The problem text, without the subject the template puts in front of it.</summary>
-    private static string Problem(ShapeException failure)
-    {
-      var line = failure.Message.Split(new[] { Environment.NewLine }, StringSplitOptions.None)[0];
-
-      return line.Substring(line.IndexOf(": ", StringComparison.Ordinal) + 2);
-    }
   }
 }

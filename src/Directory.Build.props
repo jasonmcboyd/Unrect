@@ -1,0 +1,12 @@
+<Project>
+
+  <!-- Shared by every project here. TargetFramework is deliberately NOT set: the libraries target
+       netstandard2.1 and the test project targets net8.0, so each states its own and this file
+       states only what they genuinely agree on. -->
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <LangVersion>Latest</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+</Project>

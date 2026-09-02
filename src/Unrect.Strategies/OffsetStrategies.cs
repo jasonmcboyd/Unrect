@@ -6,8 +6,6 @@ namespace Unrect.Strategies
 {
   public static class OffsetStrategies
   {
-    public static IOffsetStrategy MaxOffset()
-      => MaxSize().ToOffsetStrategy();
 
     public static IOffsetStrategy MinOffset()
       => MinSize().ToOffsetStrategy();
@@ -82,7 +80,7 @@ namespace Unrect.Strategies
     {
       NotNegative(width, nameof(width));
 
-      return SelectOffset(space => new Size(Reserve(space.Area.Size.Width, width), 0));
+      return SelectOffset(space => new Size(Reserve(space.Area.Width, width), 0));
     }
 
     /// <summary>The bottom <paramref name="height"/> rows of the available space.</summary>
@@ -90,7 +88,7 @@ namespace Unrect.Strategies
     {
       NotNegative(height, nameof(height));
 
-      return SelectOffset(space => new Size(0, Reserve(space.Area.Size.Height, height)));
+      return SelectOffset(space => new Size(0, Reserve(space.Area.Height, height)));
     }
 
     /// <summary>How far in to start so that <paramref name="extent"/> reaches the far edge.</summary>

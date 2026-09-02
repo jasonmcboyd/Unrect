@@ -3,7 +3,7 @@ using Unrect.Core;
 
 namespace Unrect.Strategies
 {
-  internal class ExplicitSizeStrategy : ISizeStrategy
+  internal sealed class ExplicitSizeStrategy : ISizeStrategy
   {
     public ExplicitSizeStrategy(int width, int height)
     {

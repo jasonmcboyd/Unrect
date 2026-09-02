@@ -8,6 +8,14 @@ namespace Unrect.Strategies
   public static class ColumnLandmarks
   {
     /// <summary>The first column satisfying <paramref name="predicate"/>.</summary>
+    /// <summary>
+    /// A matcher that says what it was looking for. The description is the negative noun phrase a
+    /// failure renders — "no column with the label 'EIN'" — so a shape that anchors on something
+    /// other than a caption can still fail in the vocabulary's own voice.
+    /// </summary>
+    public static IColumnLandmark ColumnWhere(Func<ISpace, int, bool> predicate, string description)
+      => new PredicateColumnLandmark(NotNull(predicate, nameof(predicate)), NotNull(description, nameof(description)));
+
     public static IColumnLandmark ColumnWhere(Func<ISpace, int, bool> predicate)
       => new PredicateColumnLandmark(NotNull(predicate, nameof(predicate)), "no matching column");
 

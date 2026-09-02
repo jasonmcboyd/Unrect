@@ -22,10 +22,10 @@ namespace Unrect.Strategies
       => TakeRowsTo((space, row) => space[column, row].Equals(value));
 
     public static IRowStrategy TakeRowsWhileAll(Func<CellValue, bool> predicate)
-      => new TakeToAllRowStrategy(predicate, false);
+      => new TakeWhileAllRowStrategy(predicate);
 
     public static IRowStrategy TakeRowsWhileAny(Func<CellValue, bool> predicate)
-      => new TakeToAnyRowStrategy(predicate, false);
+      => new TakeWhileAnyRowStrategy(predicate);
 
     public static IRowStrategy TakeRowsWhileAnyValue()
       => TakeRowsWhileAny(v => v.HasValue);

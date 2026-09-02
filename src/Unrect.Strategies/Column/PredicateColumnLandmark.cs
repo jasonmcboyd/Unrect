@@ -19,7 +19,7 @@ namespace Unrect.Strategies
 
     public int? FindColumn(ISpace space)
     {
-      for (var column = 0; column < space.Area.Size.Width; column++)
+      for (var column = 0; column < space.Area.Width; column++)
         if (Predicate(space, column))
           return column;
 

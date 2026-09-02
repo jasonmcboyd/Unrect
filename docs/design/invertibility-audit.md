@@ -2,7 +2,10 @@
 
 **Status:** DESIGN ANALYSIS (2026-09-01, branch `experiment/combined-select`, at `4237ee8`).
 No production code was changed and no writer was implemented. Nothing here is a decision;
-everything here is evidence and a proposal.
+everything here is evidence and a proposal. (Body tables are the `4237ee8` snapshot;
+§6 "Recommended order of attack" carries post-hoc ✅ status added as the remediation
+phases below actually shipped — treat a ✅ in §6 as current, everything else as the
+snapshot it was written against.)
 
 **The charge, in the owner's words:** *"I think that will help us make sure we get the algebra
 right."* The audit is not a proposal to build a writer. A writer is a **lens**: it is the
@@ -510,7 +513,7 @@ dual pair is that both ends have the same options.
 | `BlankRows()` | `BlankColumns()` | ✅ |
 | `SkipRows(n)` | `SkipColumns(n)` | ✅ |
 | `FromBottom(h)` | `FromRight(w)` | ✅ (naming, §4.6) |
-| `SeekRow` / `SeekRowWhere` / `SeekRowContaining` | `SeekColumn` / `SeekColumnWhere` / `SeekColumnContaining` | ✅ |
+| ~~`SeekRow` / `SeekRowWhere` / `SeekRowContaining`~~ | ~~`SeekColumn` / `SeekColumnWhere` / `SeekColumnContaining`~~ | ✅ at the snapshot; all twelve factories were **deleted** by the remediation this audit prompted (`matcher-and-caption-spec.md` phase B) in favor of `To`/`Past` lifts over one matcher family — the row is struck, not current |
 | `RowWhere` / `RowWithCell` / `RowContaining` | `ColumnWhere` / `ColumnWithCell` / `ColumnContaining` | ✅ |
 | `SkipRowsWhileAll/Any` | `SkipColumnsWhileAll/Any` | ✅ |
 | `RowStrategies.TakeRowsWhile(pred)` / `TakeRows(n)` / `TakeRowsWhileAll/Any/AnyValue` | `ColumnStrategies.TakeColumns*` | ✅ |

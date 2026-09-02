@@ -2,7 +2,7 @@ using Unrect.Core;
 
 namespace Unrect.Strategies
 {
-  internal class AreaStrategy : IAreaStrategy
+  internal sealed class AreaStrategy : IAreaStrategy
   {
     public AreaStrategy(ISizeStrategy strategy)
     {

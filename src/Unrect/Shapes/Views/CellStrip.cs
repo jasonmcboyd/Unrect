@@ -26,7 +26,7 @@ namespace Unrect.Shapes
     /// <summary>Where the strip starts, relative to the space <c>Map</c> was called with.</summary>
     private Offset Origin { get; }
 
-    public int Count => Orientation == Orientation.Horizontal ? Space.Area.Size.Width : Space.Area.Size.Height;
+    public int Count => Orientation == Orientation.Horizontal ? Space.Area.Width : Space.Area.Height;
 
     public CellValue this[int index]
     {

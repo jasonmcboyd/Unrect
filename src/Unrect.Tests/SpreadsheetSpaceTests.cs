@@ -46,8 +46,11 @@ namespace Unrect.Tests
     [Fact]
     public void Create_WithCaseSensitiveMatchingAndTheWrongCase_FindsNoSheet()
     {
-      Assert.Throws<InvalidOperationException>(() =>
+      var failure = Assert.Throws<ArgumentException>(() =>
         SpreadsheetSpace.Create(WorkbookPath("simple-report.xlsx"), "report", caseSensitive: true));
+
+      Assert.Equal("sheetName", failure.ParamName);
+      Assert.Contains("No sheet named 'report'", failure.Message);
     }
 
     [Fact]

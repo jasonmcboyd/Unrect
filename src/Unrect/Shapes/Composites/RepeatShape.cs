@@ -50,13 +50,13 @@ namespace Unrect.Shapes
       {
         var mark = context.Diagnostics.Mark();
 
-        if (TryCollect(extent, context, values, ref along, ref across))
-          continue;
-
-        // An attempt that is not collected leaves nothing behind — not even what it tolerated on
-        // the way to being discarded.
-        context.Diagnostics.Rollback(mark);
-        break;
+        if (!TryCollect(extent, context, values, ref along, ref across))
+        {
+          // An attempt that is not collected leaves nothing behind — not even what it tolerated on
+          // the way to being discarded.
+          context.Diagnostics.Rollback(mark);
+          break;
+        }
       }
 
       if (values.Count < AtLeast)
@@ -127,7 +127,7 @@ namespace Unrect.Shapes
         throw context.Failure(ShapeEngine.Threw("separator", exception), remaining, exception);
       }
 
-      if (offset.Size.Width > remaining.Area.Size.Width || offset.Size.Height > remaining.Area.Size.Height)
+      if (offset.Width > remaining.Area.Width || offset.Height > remaining.Area.Height)
         return false;
 
       cursor += Along(offset.Size);
@@ -135,7 +135,7 @@ namespace Unrect.Shapes
       return true;
     }
 
-    private static bool IsEmpty(ISpace space) => space.Area.Size.Width == 0 || space.Area.Size.Height == 0;
+    private static bool IsEmpty(ISpace space) => space.Area.Width == 0 || space.Area.Height == 0;
 
     private Offset Step(int along) => Orientation == Orientation.Vertical ? new Offset(0, along) : new Offset(along, 0);
 

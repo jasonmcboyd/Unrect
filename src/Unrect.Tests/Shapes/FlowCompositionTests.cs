@@ -7,7 +7,7 @@ using Unrect.Strategies;
 using Xunit;
 
 using static Unrect.Shapes.Shape;
-using static Unrect.Tests.Shapes.ShapeTestSpaces;
+using static Unrect.Tests.ShapeTestSpaces;
 
 namespace Unrect.Tests.Shapes
 {
@@ -18,29 +18,14 @@ namespace Unrect.Tests.Shapes
   /// cell and message of the failure.
   /// <para>
   /// These expectations began as a differential against the fixed-arity spelling, which proved the
-  /// two produced byte-identical results. That spelling is being removed, so the numbers it agreed
+  /// two produced byte-identical results. That spelling has since been removed, so the numbers it agreed
   /// on are now written down directly: what they pin is the flow arithmetic in <c>FlowState</c> and
   /// the diagnostics that come out of it.
   /// </para>
   /// </summary>
   public class FlowCompositionTests
   {
-    private static IShape<int> IntCell() => Cell(v => v.GetInt());
-
-    private static ISpace Ladder() => Grid(new[,] { { 1 }, { 2 }, { 3 } });
-
     // 4 columns by 3 rows of (row * 10 + column + 1): 1 2 3 4 / 11 12 13 14 / 21 22 23 24.
-    private static ISpace CoordinateGrid()
-    {
-      var values = new int[3, 4];
-
-      for (var row = 0; row < 3; row++)
-        for (var column = 0; column < 4; column++)
-          values[row, column] = row * 10 + column + 1;
-
-      return Grid(values);
-    }
-
     /// <summary>
     /// Applies the shape and pins what it read and how much of the space it took. Every declaration
     /// in this file sits at the origin, so its advance is its consumed extent; asserting both says

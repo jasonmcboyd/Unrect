@@ -26,6 +26,14 @@ namespace Unrect.Strategies
   public static class RowLandmarks
   {
     /// <summary>The first row satisfying <paramref name="predicate"/>.</summary>
+    /// <summary>
+    /// A matcher that says what it was looking for. The description is the negative noun phrase a
+    /// failure renders — "no row with the label 'EIN'" — so a shape that anchors on something
+    /// other than a caption can still fail in the vocabulary's own voice.
+    /// </summary>
+    public static IRowLandmark RowWhere(Func<ISpace, int, bool> predicate, string description)
+      => new PredicateRowLandmark(NotNull(predicate, nameof(predicate)), NotNull(description, nameof(description)));
+
     public static IRowLandmark RowWhere(Func<ISpace, int, bool> predicate)
       => new PredicateRowLandmark(NotNull(predicate, nameof(predicate)), "no matching row");
 

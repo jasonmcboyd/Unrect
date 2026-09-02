@@ -7,7 +7,7 @@ using Unrect.Strategies;
 using Xunit;
 
 using static Unrect.Shapes.Shape;
-using static Unrect.Tests.Shapes.ShapeTestSpaces;
+using static Unrect.Tests.ShapeTestSpaces;
 
 namespace Unrect.Tests.Shapes
 {
@@ -20,16 +20,12 @@ namespace Unrect.Tests.Shapes
   public class PlacementTests
   {
     // Values are (row * 10 + column), so every assertion reads as a coordinate.
+    /// <summary>
+    /// The shared coordinate grid, turned on its side: this file's placements read down a tall
+    /// narrow sheet, where the other suites read across a wide one. Only the default differs.
+    /// </summary>
     private static ISpace CoordinateGrid(int width = 3, int height = 4)
-    {
-      var values = new int[height, width];
-
-      for (var row = 0; row < height; row++)
-        for (var column = 0; column < width; column++)
-          values[row, column] = row * 10 + column + 1;   // +1 keeps cell (0,0) non-blank
-
-      return Grid(values);
-    }
+      => ShapeTestSpaces.CoordinateGrid(width, height);
 
     private static IShape<int> IntCell() => Cell(v => v.GetInt());
 
@@ -38,8 +34,8 @@ namespace Unrect.Tests.Shapes
     [Fact]
     public void Map_AppliesTheShapesOwnOffsetAtTheTopLevel()
     {
-      // The builder layer silently ignored a top-level builder's own strategies. A shape's placement
-      // is applied by one code path at every level, so the declaration means what it reads.
+      // A shape's placement is applied by one code path at every level, the top one included, so a
+      // declaration means what it reads wherever it sits.
       Assert.Equal(11, IntCell().Down(1).Map(CoordinateGrid()));
       Assert.Equal(2, IntCell().Right(1).Map(CoordinateGrid()));
       Assert.Equal(12, IntCell().After(Then(SkipRows(1), SkipColumns(1))).Map(CoordinateGrid()));

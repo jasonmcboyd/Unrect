@@ -9,7 +9,7 @@ using Unrect.Strategies;
 using Xunit;
 
 using static Unrect.Shapes.Shape;
-using static Unrect.Tests.Shapes.ShapeTestSpaces;
+using static Unrect.Tests.ShapeTestSpaces;
 
 namespace Unrect.Tests.Shapes
 {
@@ -26,30 +26,9 @@ namespace Unrect.Tests.Shapes
   /// </summary>
   public class FlowShapeTests
   {
-    private static IShape<int> IntCell() => Cell(v => v.GetInt());
-
-    private static IShape<string> Text() => Cell(v => v.GetString());
-
-    private static ISpace Ladder(int height = 3)
-    {
-      var values = new int[height, 1];
-
-      for (var row = 0; row < height; row++)
-        values[row, 0] = row + 1;
-
-      return Grid(values);
-    }
-
-    private static ISpace CoordinateGrid()
-    {
-      var values = new int[3, 4];
-
-      for (var row = 0; row < 3; row++)
-        for (var column = 0; column < 4; column++)
-          values[row, column] = row * 10 + column + 1;
-
-      return Grid(values);
-    }
+    /// <summary>A cell read as text — named for what it does, so it cannot be mistaken for the
+    /// <c>Text()</c> leaf that the vocabulary now has.</summary>
+    private static IShape<string> StringCell() => Cell(v => v.GetString());
 
     // --- Flow arithmetic ---------------------------------------------------------------------------
 
@@ -202,7 +181,7 @@ namespace Unrect.Tests.Shapes
       var space = Mixed(new object?[,] { { "x" }, { null }, { null }, { 5 }, { 6 } });
 
       var failure = Assert.Throws<ShapeException>(() =>
-        VerticalFlow(v => $"{v.Next(IntCell().Optional())}|{v.Next(Text().After(BlankRows()).Down(2))}").Map(space));
+        VerticalFlow(v => $"{v.Next(IntCell().Optional())}|{v.Next(StringCell().After(BlankRows()).Down(2))}").Map(space));
 
       Assert.DoesNotContain("note:", failure.Message);
       Assert.Equal("A3", failure.Location.A1);
@@ -236,7 +215,7 @@ namespace Unrect.Tests.Shapes
     {
       // A Next call is deeper than the item's own placement, so it is drift, not the end of the run.
       var failure = Assert.Throws<ShapeException>(() =>
-        Repeat(VerticalFlow(v => $"{v.Next(IntCell())}+{v.Next(Text())}")).Map(Ladder()));
+        Repeat(VerticalFlow(v => $"{v.Next(IntCell())}+{v.Next(StringCell())}")).Map(Ladder()));
 
       Assert.Contains("Repeat[0]", failure.Path);
       Assert.Contains("expected Text", failure.Message);
@@ -262,7 +241,7 @@ namespace Unrect.Tests.Shapes
       {
         var first = v.Next(IntCell());
         reached++;
-        return $"{first}{v.Next(Text())}";
+        return $"{first}{v.Next(StringCell())}";
       });
 
       var result = Choice(losing, VerticalFlow(v => $"{v.Next(IntCell())}w")).MapWithDiagnostics(Ladder());
@@ -276,7 +255,7 @@ namespace Unrect.Tests.Shapes
     public void AWinningBranchNamesTheOnesBeforeIt()
     {
       var result = Choice(
-        VerticalFlow(v => $"{v.Next(Text())}"),
+        VerticalFlow(v => $"{v.Next(StringCell())}"),
         VerticalFlow(v => $"{v.Next(IntCell())}"))
         .MapWithDiagnostics(Ladder());
 
@@ -292,7 +271,7 @@ namespace Unrect.Tests.Shapes
     public void ABoundaryAroundAFlow_AbsorbsADeepFailureWithTheInnerPath()
     {
       var deep = VerticalFlow(v =>
-        $"{v.Next(IntCell())}|{v.Next(VerticalFlow(w => $"{w.Next(IntCell())}{w.Next(Text().Named("deep"))}"))}");
+        $"{v.Next(IntCell())}|{v.Next(VerticalFlow(w => $"{w.Next(IntCell())}{w.Next(StringCell().Named("deep"))}"))}");
 
       var result = deep.Optional().MapWithDiagnostics(Ladder());
 
@@ -306,7 +285,7 @@ namespace Unrect.Tests.Shapes
     [Fact]
     public void AnAbsorbedFlow_ConsumesNothing()
     {
-      var applied = VerticalFlow(v => $"{v.Next(VerticalFlow(w => w.Next(Text())).Else("fallback"))}|{v.Next(IntCell())}")
+      var applied = VerticalFlow(v => $"{v.Next(VerticalFlow(w => w.Next(StringCell())).Else("fallback"))}|{v.Next(IntCell())}")
         .Apply(Ladder());
 
       Assert.Equal("fallback|1", applied.Value);
@@ -321,7 +300,7 @@ namespace Unrect.Tests.Shapes
       // The failure belongs to the child, with the child's path and cell. Only the sibling note may
       // ever be added to it.
       var failure = Assert.Throws<ShapeException>(() =>
-        VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(Text().Named("title"))}").Map(Ladder()));
+        VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(StringCell().Named("title"))}").Map(Ladder()));
 
       Assert.Equal("'title'", failure.Subject);
       Assert.Equal("VerticalFlow -> 'title' (Cell)", failure.Path);

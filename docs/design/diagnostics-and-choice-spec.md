@@ -1,8 +1,10 @@
 # Spec: Diagnostics, Tolerance Boundaries, and Choice (wave 3, part 1)
 
-**Status:** ready to implement (2026-09-01). Driven by the production-import parity gap:
-real imports warn-and-continue with cell locations; ours only fail fast. Extends
+**Status:** IMPLEMENTED (`d47e33a`). Driven by the production-import parity gap: real
+imports warn-and-continue with cell locations; ours only fail fast. Extends
 `wave2-shapes-spec.md` and `panel-and-anchoring-spec.md`; all their conventions apply.
+(The leaf this spec calls `Cells` is `Range` as shipped — renamed after this spec was
+written; see `CLAUDE.md`'s open design questions.)
 
 ## The governing principle
 
@@ -55,7 +57,7 @@ softening, ever.
 
 **Unconsumed-space diagnostic:** `MapWithDiagnostics` appends one `Info` diagnostic when
 the root's advance is smaller than the space on either axis: e.g. `"the shape consumed
-2650 of 2771 rows; rows 2651+ were not described"` (both axes reported when both fall
+2650 of 2772 rows; rows 2651+ were not described"` (both axes reported when both fall
 short; location = the first unconsumed cell). This is the "expected EOF" warning from
 the observability roadmap, landing as data instead of a mode.
 

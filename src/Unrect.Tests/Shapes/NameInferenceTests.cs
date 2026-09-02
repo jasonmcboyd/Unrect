@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 
 using Unrect.Core;
 using Unrect.Shapes;
@@ -6,7 +5,7 @@ using Unrect.Shapes;
 using Xunit;
 
 using static Unrect.Shapes.Shape;
-using static Unrect.Tests.Shapes.ShapeTestSpaces;
+using static Unrect.Tests.ShapeTestSpaces;
 
 namespace Unrect.Tests.Shapes
 {
@@ -22,8 +21,6 @@ namespace Unrect.Tests.Shapes
   /// </summary>
   public class NameInferenceTests
   {
-    private static ISpace Ladder() => Grid(new[,] { { 1 }, { 2 }, { 3 } });
-
     private static IShape<int> Number() => Cell(c => c.GetInt());
 
     /// <summary>A shape that always fails, so every test reads its label off the failure.</summary>

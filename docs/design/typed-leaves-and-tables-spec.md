@@ -385,7 +385,18 @@ public static Func<CellValue, bool> LabelEquals(string label)
     && TrimLabel(value).Equals(needle, StringComparison.OrdinalIgnoreCase);
 }
 
-private static string TrimLabel(string text) => text.Trim().TrimEnd(':').Trim();
+// Strips a trailing RUN of colons and whitespace, not just one of each — a single
+// TrimEnd(':').Trim() pass leaves "EIN:" behind on input like "EIN: :"; the loop keeps
+// peeling until nothing more can go, so "EIN: :" reduces to "EIN".
+private static string TrimLabel(string text)
+{
+  var trimmed = text.Trim();
+
+  while (trimmed.Length > 0 && (trimmed[trimmed.Length - 1] == ':' || char.IsWhiteSpace(trimmed[trimmed.Length - 1])))
+    trimmed = trimmed.Substring(0, trimmed.Length - 1);
+
+  return trimmed;
+}
 ```
 
 **`CaptionComparer` is public. [decided here]** It is the only comparer in the library a consumer

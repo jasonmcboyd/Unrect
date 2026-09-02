@@ -75,6 +75,8 @@ namespace Unrect.Shapes
     {
       var parameters = constructor.GetParameters();
 
+      // Unreachable from Create, which routes a parameterless constructor to the property path;
+      // kept so this method is correct read on its own rather than only in context.
       if (parameters.Length == 0)
         throw new ArgumentException($"{typeof(T).Name} has no properties to bind.");
 

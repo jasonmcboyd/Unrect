@@ -59,6 +59,9 @@ namespace Unrect.Shapes
       var name = MemberName(member, nameof(member), nameof(Ignore));
       var ignored = new List<string>(Ignored);
 
+      // Ignoring twice is idempotent and harmless, so it is absorbed; binding twice is a
+      // contradiction — two captions for one member — and stays an error.
+
       if (!ignored.Contains(name, StringComparer.Ordinal))
         ignored.Add(name);
 

@@ -3,7 +3,7 @@ using Unrect.Core;
 
 namespace Unrect.Strategies
 {
-  internal class TakeToRowStrategy : IRowStrategy
+  internal sealed class TakeToRowStrategy : IRowStrategy
   {
     public TakeToRowStrategy(Func<ISpace, int, bool> predicate, bool keepMatchingRow)
     {
@@ -18,10 +18,10 @@ namespace Unrect.Strategies
     {
       int count = 0;
 
-      while (count < space.Area.Size.Height && !Predicate(space, count))
+      while (count < space.Area.Height && !Predicate(space, count))
         count++;
 
-      return KeepMatchingRow && count < space.Area.Size.Height ? count + 1 : count;
+      return KeepMatchingRow && count < space.Area.Height ? count + 1 : count;
     }
   }
 }

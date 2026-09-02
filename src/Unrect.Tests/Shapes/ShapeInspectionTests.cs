@@ -8,20 +8,22 @@ using Unrect.Shapes;
 using Xunit;
 
 using static Unrect.Shapes.Shape;
-using static Unrect.Tests.Shapes.ShapeTestSpaces;
+using static Unrect.Tests.ShapeTestSpaces;
 
 namespace Unrect.Tests.Shapes
 {
   /// <summary>
-  /// A shape is an inspectable value, not a closure over a file: its name, description, placement
-  /// and children can all be read without ever handing it a space. That is what makes the wave-3
-  /// diagnostics (dry runs, traces, capability checks) possible, and it is what makes one shape
-  /// safe to apply to many spaces at once.
+  /// A shape is an inspectable value, not a closure over a file: its name, description and
+  /// placement can all be read without ever handing it a space, and so can its children — except
+  /// for a layout composite, which declares its children by running a lambda and therefore has none
+  /// to show. That one says so rather than passing for a leaf, through <c>IOpaqueComposite</c>.
+  /// <para>
+  /// What is left readable is what makes the wave-3 diagnostics (dry runs, traces, capability
+  /// checks) possible, and it is what makes one shape safe to apply to many spaces at once.
+  /// </para>
   /// </summary>
   public class ShapeInspectionTests
   {
-    private static IShape<int> IntCell() => Cell(v => v.GetInt());
-
     // --- Descriptions ------------------------------------------------------------------------------------
 
     [Fact]

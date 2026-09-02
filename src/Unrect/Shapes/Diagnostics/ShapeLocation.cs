@@ -19,7 +19,7 @@ namespace Unrect.Shapes
     /// place that conversion is done.
     /// </summary>
     internal static ShapeLocation At(Offset origin, Size available)
-      => new ShapeLocation(origin.Size.Height + 1, origin.Size.Width + 1, available);
+      => new ShapeLocation(origin.Height + 1, origin.Width + 1, available);
 
     /// <summary>
     /// Whether this is the cell at <paramref name="origin"/>, however much space was available

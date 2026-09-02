@@ -201,16 +201,6 @@ namespace Unrect.Tests
     }
 
     [Fact]
-    public void GetSubspace_WithNoArguments_IsTheWholeSpace()
-    {
-      var space = CoordinateGrid();
-      var subspace = space.GetSubspace();
-
-      Assert.Equal(space.Area.Size.Width, subspace.Area.Size.Width);
-      Assert.Equal(space.Area.Size.Height, subspace.Area.Size.Height);
-    }
-
-    [Fact]
     public void GetSubspace_BeyondTheSpace_Throws()
     {
       var space = CoordinateGrid();

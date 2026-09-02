@@ -58,7 +58,8 @@ namespace Unrect.Shapes
             ShapeContext.Describe(this),
             $"alternative {index + 1} ({ShapeContext.DescribeThrough(Alternatives[index])}) did not match: {failure.Problem}");
 
-          (failures ??= new ShapeException[Alternatives.Length])[index] = failure;
+          failures ??= new ShapeException[Alternatives.Length];
+          failures[index] = failure;
         }
       }
 

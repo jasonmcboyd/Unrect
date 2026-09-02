@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -10,7 +9,7 @@ using Unrect.Strategies;
 using Xunit;
 
 using static Unrect.Shapes.Shape;
-using static Unrect.Tests.Shapes.ShapeTestSpaces;
+using static Unrect.Tests.ShapeTestSpaces;
 
 namespace Unrect.Tests.Shapes
 {
@@ -22,18 +21,6 @@ namespace Unrect.Tests.Shapes
   /// </summary>
   public class RepeatShapeTests
   {
-    private static IShape<int> IntCell() => Cell(v => v.GetInt());
-
-    private static ISpace Ladder(int height)
-    {
-      var values = new int[height, 1];
-
-      for (var row = 0; row < height; row++)
-        values[row, 0] = row + 1;
-
-      return Grid(values);
-    }
-
     // --- The separator sits between items -------------------------------------------------------------
 
     [Fact]

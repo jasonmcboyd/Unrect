@@ -3,7 +3,7 @@ using Unrect.Core;
 
 namespace Unrect.Strategies
 {
-  internal class TakeWhileColumnStrategy : IColumnStrategy
+  internal sealed class TakeWhileColumnStrategy : IColumnStrategy
   {
     public TakeWhileColumnStrategy(Func<ISpace, int, bool> predicate)
     {
@@ -16,7 +16,7 @@ namespace Unrect.Strategies
     {
       int count = 0;
 
-      while (count < space.Area.Size.Width && Predicate(space, count))
+      while (count < space.Area.Width && Predicate(space, count))
         count++;
 
       return count;

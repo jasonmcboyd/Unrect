@@ -17,7 +17,7 @@ namespace Unrect.Array
     {
       Values = values;
 
-      if (offset.Size.Width + area.Size.Width > values.GetLength(1) || offset.Size.Height + area.Size.Height > values.GetLength(0))
+      if (offset.Width + area.Width > values.GetLength(1) || offset.Height + area.Height > values.GetLength(0))
       {
         throw new OutOfBoundsException();
       }
@@ -57,16 +57,16 @@ namespace Unrect.Array
     {
       get
       {
-        if (column < 0 || column >= Area.Size.Width) throw new IndexOutOfRangeException();
-        if (row < 0 || row >= Area.Size.Height) throw new IndexOutOfRangeException();
+        if (column < 0 || column >= Area.Width) throw new IndexOutOfRangeException();
+        if (row < 0 || row >= Area.Height) throw new IndexOutOfRangeException();
 
-        return Values[Offset.Size.Height + row, Offset.Size.Width + column];
+        return Values[Offset.Height + row, Offset.Width + column];
       }
     }
 
     public ISpace GetSubspace(Offset offset, Area area)
     {
-      if (offset.Size.Width + area.Size.Width > Area.Size.Width || offset.Size.Height + area.Size.Height > Area.Size.Height)
+      if (offset.Width + area.Width > Area.Width || offset.Height + area.Height > Area.Height)
         throw new OutOfBoundsException();
 
       return new ArraySpace(Values, offset + Offset, area);

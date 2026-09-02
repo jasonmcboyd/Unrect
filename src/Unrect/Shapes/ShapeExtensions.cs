@@ -20,7 +20,7 @@ namespace Unrect.Shapes
   /// the way to discard a default. <c>Sized</c> replaces too, since extents do not stack.
   /// </para>
   /// </summary>
-  public static class ShapeExtensions
+  public static partial class ShapeExtensions
   {
     /// <summary>
     /// Decomposes <paramref name="space"/> and projects it in one call. The shape's own placement
@@ -91,62 +91,16 @@ namespace Unrect.Shapes
       return new MapResult<TResult>(applied.Value, context.Diagnostics.Snapshot());
     }
 
-    /// <summary>
-    /// Space left over is the shape drifting from the file — the cells nobody described are exactly
-    /// where the next surprise lives. A leading offset is a gap as much as a trailing remainder is:
-    /// a shape that starts two rows down described neither those two rows nor whatever follows it.
-    /// </summary>
-    private static void ReportUnconsumed(IShape shape, ISpace space, Size gap, Size described, ShapeContext context)
+    private static IShape<T> Move<T>(IShape<T> shape, IOffsetStrategy offset)
     {
-      var size = space.Area.Size;
+      var placement = NotNull(shape).Placement;
 
-      if (described.Width >= size.Width && described.Height >= size.Height)
-        return;
-
-      var counts = new List<string>(2);
-      var undescribed = new List<string>(2);
-
-      Describe(gap.Height, described.Height, size.Height, "row", counts, undescribed);
-      Describe(gap.Width, described.Width, size.Width, "column", counts, undescribed);
-
-
-      // The earliest cell nothing described, in reading order: a leading gap on either axis starts
-      // at the very first cell, otherwise it is wherever the described region stops.
-      var first =
-        gap.Width > 0 || gap.Height > 0 ? default
-        : described.Width < size.Width ? new Offset(described.Width, 0)
-        : new Offset(0, described.Height);
-
-      context.Advance(first).Report(
-        DiagnosticSeverity.Info,
-        shape,
-        $"the shape consumed {string.Join(" and ", counts)}; {string.Join(" and ", undescribed)} were not described",
-        space);
+      return shape.WithPlacement(placement.WithOffset(
+        placement.HasDeclaredOffset ? OffsetStrategies.Then(placement.Offset, offset) : offset));
     }
 
-    /// <summary>
-    /// Adds one axis's worth of what was read and what was skipped, before it and after it — in
-    /// 1-based terms, because the reader is looking at a spreadsheet.
-    /// </summary>
-    private static void Describe(int gap, int described, int total, string axis, List<string> counts, List<string> undescribed)
-    {
-      if (described >= total)
-        return;
-
-      counts.Add($"{described} of {total} {axis}s");
-
-      var ranges = new List<string>(2);
-
-      if (gap > 0)
-        ranges.Add(gap == 1 ? "1" : $"1-{gap}");
-
-      var after = gap + described;
-
-      if (after < total)
-        ranges.Add($"{after + 1}+");
-
-      undescribed.Add($"{axis}s {string.Join(" and ", ranges)}");
-    }
+    private static IShape<T> Pad<T>(IShape<T> shape, int left, int top, int right, int bottom)
+      => new PadShape<T>(NotNull(shape), left, top, right, bottom, Placement.Default);
 
     /// <summary>
     /// Labels the shape, so failures and diagnostics say <paramref name="name"/>.
@@ -201,8 +155,8 @@ namespace Unrect.Shapes
     /// </para>
     /// <para>
     /// A boundary's own placement is resolved before it can catch anything, so where the offset
-    /// sits decides what is tolerated: <c>x.After(seek).Else(y)</c> survives a missing anchor,
-    /// while <c>x.Else(y).After(seek)</c> does not — which is exactly what a <c>Repeat</c> wants,
+    /// sits decides what is tolerated: <c>x.After(anchor).Else(y)</c> survives a missing anchor,
+    /// while <c>x.Else(y).After(anchor)</c> does not — which is exactly what a <c>Repeat</c> wants,
     /// since running out of anchors is how it knows to stop.
     /// </para>
     /// <para>
@@ -235,7 +189,7 @@ namespace Unrect.Shapes
     /// <para>
     /// An absorbed shape consumes nothing beyond its own declared placement — nothing was read, so
     /// no honest extent exists, and a following sibling in a flow starts where this shape began
-    /// rather than after it. Pair absorbing boundaries with seek-anchored siblings so what comes
+    /// rather than after it. Pair absorbing boundaries with content-anchored siblings so what comes
     /// next finds itself by content instead of by arithmetic.
     /// </para>
     /// <para>
@@ -340,7 +294,7 @@ namespace Unrect.Shapes
     /// </para>
     /// </summary>
     public static IShape<T> Until<T>(this IShape<T> shape, IRowLandmark landmark, bool orEnd = false)
-      => Bound(shape, Landmark.Of(Required(landmark, nameof(landmark))), orEnd);
+      => Bound(shape, Landmark.Of(NotNull(landmark, nameof(landmark))), orEnd);
 
     /// <summary>
     /// Ends the shape's extent just before the first column that is <paramref name="landmark"/> —
@@ -348,7 +302,7 @@ namespace Unrect.Shapes
     /// so the common row form never has to be disambiguated by the reader.
     /// </summary>
     public static IShape<T> UntilColumn<T>(this IShape<T> shape, IColumnLandmark landmark, bool orEnd = false)
-      => Bound(shape, Landmark.Of(Required(landmark, nameof(landmark))), orEnd);
+      => Bound(shape, Landmark.Of(NotNull(landmark, nameof(landmark))), orEnd);
 
     /// <summary>
     /// Puts this shape under <paramref name="captions"/> — the rows that announce it — so the
@@ -432,20 +386,9 @@ namespace Unrect.Shapes
     /// Carries the shape on from wherever it already sits, so movements read cumulatively. A shape
     /// that has not been placed yet has nothing to carry on from and simply takes the new offset.
     /// </summary>
-    private static IShape<T> Move<T>(IShape<T> shape, IOffsetStrategy offset)
-    {
-      var placement = NotNull(shape).Placement;
 
-      return shape.WithPlacement(placement.WithOffset(
-        placement.HasDeclaredOffset ? OffsetStrategies.Then(placement.Offset, offset) : offset));
-    }
-
-    private static IShape<T> Pad<T>(IShape<T> shape, int left, int top, int right, int bottom)
-      => new PadShape<T>(NotNull(shape), left, top, right, bottom, Placement.Default);
-
-    private static IShape<T> NotNull<T>(IShape<T> shape) => shape ?? throw new ArgumentNullException(nameof(shape));
-
-    private static T Required<T>(T value, string parameter) where T : class
+    /// <summary>One guard: the receiver defaults to its own parameter name, anything else names itself.</summary>
+    private static T NotNull<T>(T value, string parameter = "shape") where T : class
       => value ?? throw new ArgumentNullException(parameter);
 
     private static int NotNegative(int distance, string parameter)

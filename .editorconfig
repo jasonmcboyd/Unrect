@@ -8,3 +8,8 @@ insert_final_newline = true
 indent_style = space
 indent_size = 2
 csharp_new_line_before_open_brace = all
+
+# The shape layer's folders group by role (Composites, Primitives, Views, Binding, Diagnostics)
+# while the namespace stays flat at Unrect.Shapes — one import for the whole vocabulary.
+[src/Unrect/Shapes/**.cs]
+dotnet_diagnostic.IDE0130.severity = none

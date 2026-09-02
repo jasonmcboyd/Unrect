@@ -7,7 +7,7 @@ using Unrect.Strategies;
 using Xunit;
 
 using static Unrect.Shapes.Shape;
-using static Unrect.Tests.Shapes.ShapeTestSpaces;
+using static Unrect.Tests.ShapeTestSpaces;
 
 namespace Unrect.Tests.Shapes
 {
@@ -496,15 +496,6 @@ namespace Unrect.Tests.Shapes
     private static string FirstLine(ShapeException failure)
       => failure.Message.Split(new[] { Environment.NewLine }, StringSplitOptions.None)[0];
 
-    private static int Occurrences(string text, string value)
-    {
-      var count = 0;
-
-      for (var index = text.IndexOf(value, StringComparison.Ordinal); index >= 0; index = text.IndexOf(value, index + 1, StringComparison.Ordinal))
-        count++;
-
-      return count;
-    }
 
     // --- Transparency and inspection ----------------------------------------------------------------------------------
 

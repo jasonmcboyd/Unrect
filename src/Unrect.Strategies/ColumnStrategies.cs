@@ -25,7 +25,7 @@ namespace Unrect.Strategies
     /// before it.
     /// </summary>
     public static IColumnStrategy TakeColumnsTo(Func<ISpace, int, bool> predicate)
-      => new TakeToColumnStrategy(predicate, true);
+      => new TakeToColumnStrategy(predicate);
 
     /// <summary>
     /// Columns up to and including the first whose cell in <paramref name="row"/> equals

@@ -16,11 +16,13 @@ namespace Unrect.Shapes
       IShape? shape,
       int? index,
       Offset origin,
+      ISpace space,
       DiagnosticCollector diagnostics,
       UseSite site,
       UseSite pending)
     {
       Parent = parent;
+      Space = space;
       Shape = shape;
       Index = index;
       Origin = origin;
@@ -34,10 +36,17 @@ namespace Unrect.Shapes
       if (space is null)
         throw new ArgumentNullException(nameof(space));
 
-      return new ShapeContext(null, null, null, default, new DiagnosticCollector(), default, default);
+      return new ShapeContext(null, null, null, default, space, new DiagnosticCollector(), default, default);
     }
 
-    public ShapeContext? Parent { get; }
+    private ShapeContext? Parent { get; }
+
+    /// <summary>
+    /// The space the decomposition started from. Nothing reads it yet; it is here so the root owns
+    /// what it was given rather than discarding it, which is what a decomposition trace will hang
+    /// off when wave 3 adds one.
+    /// </summary>
+    internal ISpace Space { get; }
     public IShape? Shape { get; }
     public int? Index { get; }
     public Offset Origin { get; }
@@ -58,17 +67,11 @@ namespace Unrect.Shapes
     private UseSite Pending { get; }
 
     /// <summary>
-    /// The declaration path to this context, e.g.
-    /// <c>VerticalFlow -&gt; 'investor details'[2] -&gt; 'investor name' (Cell)</c>.
-    /// </summary>
-    public string Path => Render(Shape);
-
-    /// <summary>
     /// Enters <paramref name="shape"/>, which claims whatever use site was waiting for it. Nothing
     /// is left over: a shape's own children are labelled by their own use sites, not by its.
     /// </summary>
-    public ShapeContext Descend(IShape shape, Offset offset, int? index = null)
-      => new ShapeContext(this, shape, index, Origin + offset, Diagnostics, Pending, default);
+    public ShapeContext Descend(IShape shape, Offset offset)
+      => new ShapeContext(this, shape, null, Origin + offset, Space, Diagnostics, Pending, default);
 
     /// <summary>
     /// Moves the origin without adding a path segment — how layouts and repeats track their cursor.
@@ -77,11 +80,11 @@ namespace Unrect.Shapes
     /// would name.
     /// </summary>
     public ShapeContext Advance(Offset offset)
-      => new ShapeContext(Parent, Shape, Index, Origin + offset, Diagnostics, Site, Pending);
+      => new ShapeContext(Parent, Shape, Index, Origin + offset, Space, Diagnostics, Site, Pending);
 
     /// <summary>Declares where the next child was written, for it to claim on the way in.</summary>
     internal ShapeContext WithUseSite(UseSite site)
-      => new ShapeContext(Parent, Shape, Index, Origin, Diagnostics, Site, site);
+      => new ShapeContext(Parent, Shape, Index, Origin, Space, Diagnostics, Site, site);
 
     public ShapeLocation Locate(ISpace space) => ShapeLocation.At(Origin, space.Area.Size);
 
@@ -94,7 +97,7 @@ namespace Unrect.Shapes
         inner);
 
     internal ShapeContext WithIndex(int index)
-      => new ShapeContext(Parent, Shape, index, Origin, Diagnostics, Site, Pending);
+      => new ShapeContext(Parent, Shape, index, Origin, Space, Diagnostics, Site, Pending);
 
     internal ShapeException Failure(
       IShape shape,
@@ -269,39 +272,5 @@ namespace Unrect.Shapes
 
     private static bool IsLetterOrUnderscore(char character)
       => (character >= 'A' && character <= 'Z') || (character >= 'a' && character <= 'z') || character == '_';
-  }
-
-  /// <summary>
-  /// The diagnostics gathered during one <c>Map</c> call. A choice takes a mark before each
-  /// attempt and rolls back after a failed one, so a branch that did not win leaves nothing behind.
-  /// The list is created on first use: a decomposition with no boundary and no choice never
-  /// allocates one.
-  /// </summary>
-  internal sealed class DiagnosticCollector
-  {
-    private List<ShapeDiagnostic>? _diagnostics;
-
-    public int Mark() => _diagnostics?.Count ?? 0;
-
-    public void Rollback(int mark)
-    {
-      if (_diagnostics is not null && _diagnostics.Count > mark)
-        _diagnostics.RemoveRange(mark, _diagnostics.Count - mark);
-    }
-
-    public void Add(ShapeDiagnostic diagnostic) => (_diagnostics ??= new List<ShapeDiagnostic>()).Add(diagnostic);
-
-    /// <summary>
-    /// Whether everything recorded since <paramref name="mark"/> is one absorbed failure — a shape
-    /// that failed, was tolerated, and produced nothing else to say.
-    /// </summary>
-    public bool AbsorbedAt(int mark)
-      => _diagnostics is not null
-      && _diagnostics.Count == mark + 1
-      && _diagnostics[mark].Severity == DiagnosticSeverity.Warning;
-
-    /// <summary>A copy, so what a caller reads can never change underneath it.</summary>
-    public IReadOnlyList<ShapeDiagnostic> Snapshot()
-      => _diagnostics is null ? System.Array.Empty<ShapeDiagnostic>() : _diagnostics.ToArray();
   }
 }

@@ -1,6 +1,11 @@
 # Wave 2 Implementation Spec: The Fused Shape Layer
 
-**Status:** ready to implement (authored 2026-08-31 by architect pass; prototyped: tuple-Select inference, extension-method-group `spaces.Select(map.Map)`, MemberwiseClone modifiers; default strategies validated against all three example workbooks).
+**Status:** IMPLEMENTED, SUPERSEDED in the layout vocabulary by `flow-vocabulary-spec.md`
+(authored 2026-08-31 by architect pass; prototyped: tuple-Select inference, extension-method-group `spaces.Select(map.Map)`, MemberwiseClone modifiers; default strategies validated against all three example workbooks).
+The applicative spelling this spec designed — `StackShape<T>`, the tuple `Vertical`/`Horizontal`/`Overlay` factories, `Cells` — no longer exists; `docs/vocabulary.md` is the current
+reference for the shipped vocabulary, and `flow-vocabulary-spec.md` for the layout semantics
+that replaced §2's stack. This spec's engine rules, error-message template, file layout, and
+test style remain in force and are still cited by later specs.
 **Governing docs:** `CLAUDE.md`, `docs/design/canonical-model-and-shapes.md` (§4, §5, DECIDED applicative-fusion block are hard constraints).
 
 ## 0. Summary of the approach

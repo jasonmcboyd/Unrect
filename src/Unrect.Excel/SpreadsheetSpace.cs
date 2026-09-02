@@ -24,11 +24,6 @@ namespace Unrect.Excel
     private static readonly Func<CellValue, bool> WhitespaceIsBlank =
       value => value.TryGetString() is string text && string.IsNullOrWhiteSpace(text);
 
-    private static void RegisterEncoding()
-    {
-      Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-    }
-
     /// <summary>
     /// The named sheet of <paramref name="path"/>, with blankness decided by
     /// <paramref name="isBlank"/> — see the sibling overload for what the default does.
@@ -42,7 +37,10 @@ namespace Unrect.Excel
         path,
         c => caseSensitive ? sheetName == c.Name : sheetName.Equals(c.Name, StringComparison.OrdinalIgnoreCase),
         isBlank)
-      .First();
+      .FirstOrDefault()
+      // Named, because "sequence contains no elements" tells a caller nothing about the workbook
+      // they opened or the name they asked for.
+      ?? throw new ArgumentException($"No sheet named '{sheetName}' in '{path}'.", nameof(sheetName));
 
     /// <summary>
     /// Every sheet of <paramref name="path"/> matching <paramref name="predicate"/>.
@@ -65,7 +63,7 @@ namespace Unrect.Excel
       Func<SpreadsheetContext, bool> predicate,
       Func<CellValue, bool>? isBlank = null)
     {
-      RegisterEncoding();
+      Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
       var blank = isBlank ?? WhitespaceIsBlank;
 

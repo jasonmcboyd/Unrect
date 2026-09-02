@@ -13,7 +13,7 @@ namespace Unrect.Shapes
   public static class ShapeEngine
   {
     public static AppliedResult<TResult> Apply<TResult>(IShape<TResult> shape, ISpace availableSpace, ShapeContext context)
-      => Project(shape, shape.Project, Place(shape, availableSpace, context));
+      => Project(shape, Place(shape, availableSpace, context));
 
     /// <summary>
     /// Applies the shape unless its own placement does not fit, which is <c>Repeat</c>'s stopping
@@ -28,12 +28,15 @@ namespace Unrect.Shapes
         return false;
       }
 
-      result = Project(shape, shape.Project, placed);
+      result = Project(shape, placed);
       return true;
     }
 
     private static Placed Place(IShape shape, ISpace availableSpace, ShapeContext context)
     {
+      // Unreachable: TryPlace(strict: true) throws on every path that would return false. It stays
+      // because it is the assertion that keeps the two modes' contract visible at the call site —
+      // if a future branch forgets to throw, this is what says so instead of a null extent later.
       if (!TryPlace(shape, availableSpace, context, strict: true, out var placed))
         throw new InvalidOperationException("A strict placement must throw rather than fail.");
 
@@ -60,9 +63,10 @@ namespace Unrect.Shapes
       }
       catch (OutOfBoundsException exception)
       {
-        return strict
-          ? throw context.Failure(shape, Missing(exception), availableSpace, null, exception)
-          : false;
+        if (strict)
+          throw context.Failure(shape, Missing(exception), availableSpace, null, exception);
+
+        return false;
       }
       catch (Exception exception)
       {
@@ -71,9 +75,10 @@ namespace Unrect.Shapes
 
       if (Exceeds(offset.Size, availableSpace))
       {
-        return strict
-          ? throw context.Failure(shape, $"an offset of {Describe(offset.Size)} does not fit the available space", availableSpace, offset.Size, null)
-          : false;
+        if (strict)
+          throw context.Failure(shape, $"an offset of {Describe(offset.Size)} does not fit the available space", availableSpace, offset.Size, null);
+
+        return false;
       }
 
       var inner = availableSpace.GetSubspace(offset);
@@ -96,9 +101,10 @@ namespace Unrect.Shapes
       }
       catch (OutOfBoundsException exception)
       {
-        return strict
-          ? throw scope.Failure(shape, "its area ran past the space available here", inner, null, exception)
-          : false;
+        if (strict)
+          throw scope.Failure(shape, "its area ran past the space available here", inner, null, exception);
+
+        return false;
       }
       catch (Exception exception)
       {
@@ -107,24 +113,22 @@ namespace Unrect.Shapes
 
       if (Exceeds(area.Size, inner))
       {
-        return strict
-          ? throw scope.Failure(shape, $"an extent of {Describe(area.Size)} does not fit here", inner, area.Size, null)
-          : false;
+        if (strict)
+          throw scope.Failure(shape, $"an extent of {Describe(area.Size)} does not fit here", inner, area.Size, null);
+
+        return false;
       }
 
       placed = new Placed(offset, inner.GetSubspace(area), scope, true);
       return true;
     }
 
-    private static AppliedResult<TResult> Project<TResult>(
-      IShape shape,
-      Func<ISpace, ShapeContext, ShapeResult<TResult>> project,
-      Placed placed)
+    private static AppliedResult<TResult> Project<TResult>(IShape<TResult> shape, Placed placed)
     {
       ShapeResult<TResult> result;
       try
       {
-        result = project(placed.Extent, placed.Scope);
+        result = shape.Project(placed.Extent, placed.Scope);
       }
       catch (ShapeException)
       {
@@ -160,7 +164,7 @@ namespace Unrect.Shapes
         or ArgumentNullException;
 
     private static bool Exceeds(Size size, ISpace space)
-      => size.Width > space.Area.Size.Width || size.Height > space.Area.Size.Height;
+      => size.Width > space.Area.Width || size.Height > space.Area.Height;
 
     private static string Describe(Size size) => $"{size.Width}x{size.Height}";
 

@@ -27,8 +27,8 @@ namespace Unrect.Shapes
     /// <summary>Where the block starts, relative to the space <c>Map</c> was called with.</summary>
     private Offset Origin { get; }
 
-    public int Width => Space.Area.Size.Width;
-    public int Height => Space.Area.Size.Height;
+    public int Width => Space.Area.Width;
+    public int Height => Space.Area.Height;
 
     public CellValue this[int column, int row]
     {

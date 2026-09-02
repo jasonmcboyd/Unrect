@@ -2,7 +2,7 @@ using Unrect.Core;
 
 namespace Unrect.Strategies
 {
-  internal class RowOffsetSizeStrategy : ISizeStrategy
+  internal sealed class RowOffsetSizeStrategy : ISizeStrategy
   {
     public RowOffsetSizeStrategy(IRowStrategy rowSelectionStrategy)
     {

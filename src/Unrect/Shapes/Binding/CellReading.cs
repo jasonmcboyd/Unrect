@@ -11,7 +11,7 @@ namespace Unrect.Shapes
   /// <c>decimal</c> column cannot describe the same cell differently.
   /// <para>
   /// The two sentences are deliberately different. A kind failure speaks the document's vocabulary —
-  /// there are five kinds and one of them is <c>Number</c> — so it never mentions decimals or
+  /// there are six kinds and one of them is <c>Number</c> — so it never mentions decimals or
   /// integers, which are the reader's business. A conversion failure speaks the reader's, on a
   /// number that is really there. Neither carries advice: a per-cell message can appear thousands of
   /// times in one sheet, and advice repeated that often is noise.
@@ -43,7 +43,7 @@ namespace Unrect.Shapes
       return true;
     }
 
-    public static bool ReadDateTime(CellValue cell, Func<string> at, out System.DateTime value, out string? conversion)
+    public static bool ReadDateTime(CellValue cell, Func<string> at, out DateTime value, out string? conversion)
     {
       value = cell.GetDateTime();
       conversion = null;

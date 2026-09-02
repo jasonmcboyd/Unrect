@@ -2,7 +2,7 @@ using Unrect.Core;
 
 namespace Unrect.Strategies
 {
-  internal class OffsetStrategy : IOffsetStrategy
+  internal sealed class OffsetStrategy : IOffsetStrategy
   {
     public OffsetStrategy(ISizeStrategy strategy)
     {

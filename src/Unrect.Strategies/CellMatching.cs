@@ -29,7 +29,7 @@ namespace Unrect.Strategies
     public static Func<ISpace, int, bool> AnyCellInRow(Func<CellValue, bool> cell)
       => (space, row) =>
       {
-        for (var column = 0; column < space.Area.Size.Width; column++)
+        for (var column = 0; column < space.Area.Width; column++)
           if (cell(space[column, row]))
             return true;
 
@@ -39,7 +39,7 @@ namespace Unrect.Strategies
     public static Func<ISpace, int, bool> AnyCellInColumn(Func<CellValue, bool> cell)
       => (space, column) =>
       {
-        for (var row = 0; row < space.Area.Size.Height; row++)
+        for (var row = 0; row < space.Area.Height; row++)
           if (cell(space[column, row]))
             return true;
 

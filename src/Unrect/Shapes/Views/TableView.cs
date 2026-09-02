@@ -33,8 +33,8 @@ namespace Unrect.Shapes
 
     public ISpace Space { get; }
 
-    public int ColumnCount => Space.Area.Size.Width;
-    public int RowCount => Space.Area.Size.Height - HeaderRows;
+    public int ColumnCount => Space.Area.Width;
+    public int RowCount => Space.Area.Height - HeaderRows;
     public bool HasHeader => HeaderRows > 0;
 
     public CellStrip Header { get; }

@@ -3,7 +3,7 @@ using Unrect.Core;
 
 namespace Unrect.Strategies
 {
-  internal class ExplicitRowCountStrategy : IRowStrategy
+  internal sealed class ExplicitRowCountStrategy : IRowStrategy
   {
     public ExplicitRowCountStrategy(int count)
     {
@@ -15,6 +15,6 @@ namespace Unrect.Strategies
     private int Count { get; }
 
     public int SelectRows(ISpace space)
-      => Count <= space.Area.Size.Height ? Count : throw new OutOfBoundsException();
+      => Count <= space.Area.Height ? Count : throw new OutOfBoundsException();
   }
 }

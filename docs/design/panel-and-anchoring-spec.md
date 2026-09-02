@@ -1,11 +1,16 @@
 # Spec: Panel Vocabulary and Content Anchoring (wave 2.2)
 
-**Status:** ready to implement (2026-09-01). Driven by the scrubbed-K-1 exercise: the
+**Status:** IMPLEMENTED; partly SUPERSEDED. Driven by the scrubbed-K-1 exercise: the
 header area is two-dimensional (independent blocks sharing rows), and coordinate/blankness
 anchoring breaks on real-world variance (fund counts, yearly line-item changes, humans
 inserting rows and proof formulas). See CLAUDE.md Design Philosophy; this spec extends
 `wave2-shapes-spec.md` and follows all of its conventions (engine rules, error template,
 file layout, test style).
+
+Superseded in two places by later specs: §1/§5's `Seek*` factories are deleted in favor
+of the `To`/`Past` lifts over landmarks (`matcher-and-caption-spec.md`), and §3's tuple
+`Overlay` factories are deleted in favor of the cursor form (`flow-vocabulary-spec.md`).
+The rest of this spec — from-end anchoring, `Padded` — ships as written.
 
 ## 1. Seek strategies (Unrect.Strategies) — presence anchoring
 

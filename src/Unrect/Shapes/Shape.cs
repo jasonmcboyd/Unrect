@@ -26,8 +26,8 @@ namespace Unrect.Shapes
     // --- Typed leaves ---------------------------------------------------------------------------
     //
     // A cell whose kind the declaration states. The family is closed over CellValue's canonical
-    // accessor set and mirrors it 1:1 — six kinds of reading, because the document has five kinds
-    // and Number is read three ways. There is no Long(), Single(), Money() or Enum<T>(): a CLR
+    // accessor set and mirrors it 1:1 — six kinds of reading over six cell kinds, because Number is
+    // read three ways and two kinds (Blank, Error) have no leaf at all. There is no Long(), Single(), Money() or Enum<T>(): a CLR
     // conversion beyond that set is Select territory (Integer().Select(i => (long)i)), one-way and
     // honest about it. Nothing is added to Core to serve a leaf, and adding an accessor to Core
     // does not add one here — GetDate is a transformation of GetDateTime, not a different reading
@@ -227,92 +227,6 @@ namespace Unrect.Shapes
         $"TableRows<{typeof(T).Name}>");
     }
 
-    private static IReadOnlyList<T> BindRows<T>(TableView table, RowBinding<T> plan)
-    {
-      var columns = new int[plan.Members.Count];
-      var unbound = new List<string>();
-
-      for (var member = 0; member < plan.Members.Count; member++)
-      {
-        var matches = new List<int>();
-
-        for (var column = 0; column < table.ColumnCount; column++)
-          if (CaptionComparer.Default.Equals(table.ColumnNames[column], plan.Members[member].Caption))
-            matches.Add(column);
-
-        if (matches.Count == 0)
-        {
-          unbound.Add(plan.Members[member].Name);
-          continue;
-        }
-
-        if (matches.Count > 1)
-          throw table.Failure(
-            $"{typeof(T).Name}.{plan.Members[member].Name} matches the columns at "
-            + $"{table.Header.AddressOf(matches[0]).A1} ('{table.ColumnNames[matches[0]]}') and "
-            + $"{table.Header.AddressOf(matches[1]).A1} ('{table.ColumnNames[matches[1]]}'); "
-            + "captions are matched ignoring case and whitespace");
-
-        columns[member] = matches[0];
-      }
-
-      if (unbound.Count > 0)
-      {
-        // The example names an UNBOUND member: advice that pointed at a member which already found
-        // its column would send a reader to fix the one thing that is not broken.
-        var example = unbound[0];
-
-        throw table.Failure(
-          $"no column binds {Join(unbound.Select(name => $"{typeof(T).Name}.{name}").ToList())}; the table's captions are "
-          + $"{string.Join(", ", table.ColumnNames.Select(c => $"'{c}'"))}. "
-          + $"Bind one with Column(t => t.{example}, \"…\") or drop it with Ignore(t => t.{example})");
-      }
-
-      var rows = new T[table.Rows.Count];
-      var values = new object?[plan.Members.Count];
-
-      for (var index = 0; index < rows.Length; index++)
-      {
-        var row = table.Rows[index];
-
-        for (var member = 0; member < plan.Members.Count; member++)
-          values[member] = ReadCell(row, columns[member], plan.Members[member], table);
-
-        rows[index] = plan.Materialize(values);
-      }
-
-      return rows;
-    }
-
-    private static object? ReadCell(TableRow row, int column, MemberPlan member, TableView table)
-    {
-      var cell = row[column];
-
-      // A CellValue member asserts nothing: it is the in-table spelling of Cell(c => c), for the
-      // column whose kind genuinely varies.
-      if (member.Read is null)
-        return cell;
-
-      if (member.BlankTolerant && cell.IsBlank)
-        return null;
-
-      // Formatted only when something fails: a large sheet binds tens of thousands of cells, and
-      // every one of them would otherwise build an A1 address that nobody reads.
-      string At() => row.AddressOf(column).A1;
-
-      if (cell.Kind != member.Kind!.Value)
-        throw table.Failure($"column '{member.Caption}': {CellReading.WrongKind(member.Kind.Value, cell, At())}");
-
-      if (!member.Read(cell, At, out var value, out var conversion))
-        throw table.Failure($"column '{member.Caption}': {conversion}");
-
-      return value;
-    }
-
-    private static string Join(IReadOnlyList<string> names)
-      => names.Count == 1 ? names[0]
-       : string.Join(", ", names.Take(names.Count - 1)) + " or " + names[names.Count - 1];
-
     /// <summary>
     /// Every body row as a dictionary keyed by the column captions, with <see cref="CellValue"/>s
     /// for values — kinds and blankness survive, because this is an exploratory reader and not a
@@ -335,44 +249,6 @@ namespace Unrect.Shapes
         DictionaryRows,
         TablePlacement(),
         "TableRows");
-
-    private static IReadOnlyList<IReadOnlyDictionary<string, CellValue>> DictionaryRows(TableView table)
-    {
-      var captions = new string[table.ColumnCount];
-
-      for (var column = 0; column < table.ColumnCount; column++)
-      {
-        var caption = table.ColumnNames[column];
-
-        if (caption.Length == 0)
-          throw table.Failure(
-            $"the column at {table.Header.AddressOf(column).A1} has no caption; every column needs one to be read by name");
-
-        for (var earlier = 0; earlier < column; earlier++)
-          if (CaptionComparer.Default.Equals(captions[earlier], caption))
-            throw table.Failure(
-              $"the columns at {table.Header.AddressOf(earlier).A1} ('{captions[earlier]}') and "
-              + $"{table.Header.AddressOf(column).A1} ('{caption}') carry the same caption; "
-              + "captions are matched ignoring case and whitespace");
-
-        captions[column] = caption;
-      }
-
-      var rows = new IReadOnlyDictionary<string, CellValue>[table.Rows.Count];
-
-      for (var index = 0; index < rows.Length; index++)
-      {
-        var row = table.Rows[index];
-        var cells = new Dictionary<string, CellValue>(captions.Length, CaptionComparer.Default);
-
-        for (var column = 0; column < captions.Length; column++)
-          cells[captions[column]] = row[column];
-
-        rows[index] = cells;
-      }
-
-      return rows;
-    }
 
     // --- Labelled pairs -------------------------------------------------------------------------
 
@@ -470,26 +346,6 @@ namespace Unrect.Shapes
     /// column sits far to the right of a wide sheet. Both landmark classes are already internal to
     /// the strategy layer, so no public landmark surface is added for this.
     /// </summary>
-    private static Placement FieldsPlacement(string label)
-      => new Placement(
-        OffsetStrategies.Then(
-          OffsetStrategies.To(new PredicateColumnLandmark(
-            CellMatching.AnyCellInColumn(CellMatching.LabelEquals(label)), $"no column with the label '{label}'")),
-          OffsetStrategies.To(new PredicateRowLandmark(
-            CellMatching.AnyCellInRow(CellMatching.LabelEquals(label)), $"no row with the label '{label}'"))),
-        null);
-
-    private static string NotEmptyLabel(string label)
-    {
-      if (label is null)
-        throw new ArgumentNullException(nameof(label));
-
-      if (label.Trim().Length == 0)
-        throw new ArgumentException("A field label cannot be empty or whitespace.", nameof(label));
-
-      return label;
-    }
-
     // --- Repetition ---------------------------------------------------------------------------
 
     /// <summary>
@@ -513,7 +369,7 @@ namespace Unrect.Shapes
     /// where, and why, so nothing is lost by carrying on.
     /// </para>
     /// <example>
-    /// The seek belongs to the item, outside the boundary: finding no further anchor is how the
+    /// The anchor belongs to the item, outside the boundary: finding no further anchor is how the
     /// repetition knows to stop, so that one failure must not be tolerated. Everything after the
     /// anchor is inside the boundary, where a malformed section is swallowed and reported.
     /// <code>
@@ -590,150 +446,6 @@ namespace Unrect.Shapes
       return new ChoiceShape<T>(alternatives, Placement.Default);
     }
 
-    // --- Offset vocabulary --------------------------------------------------------------------
-
-    /// <summary>Past however many leading rows are entirely blank.</summary>
-    public static IOffsetStrategy BlankRows() => OffsetStrategies.SkipBlankRows();
-
-    /// <summary>Past however many leading columns are entirely blank.</summary>
-    public static IOffsetStrategy BlankColumns() => OffsetStrategies.SkipBlankColumns();
-
-    /// <summary>Down <paramref name="count"/> rows, blank or not.</summary>
-    public static IOffsetStrategy SkipRows(int count)
-      => OffsetStrategies.ExplicitOffset(0, NotNegative(count, nameof(count)));
-
-    /// <summary>Right <paramref name="count"/> columns, blank or not.</summary>
-    public static IOffsetStrategy SkipColumns(int count)
-      => OffsetStrategies.ExplicitOffset(NotNegative(count, nameof(count)), 0);
-
-    /// <summary>
-    /// Each offset applied to the space the one before it left, and summed — the way to combine
-    /// offsets, since the modifiers replace rather than accumulate.
-    /// </summary>
-    public static IOffsetStrategy Then(params IOffsetStrategy[] offsets) => OffsetStrategies.Then(offsets);
-
-    // --- Anchoring vocabulary -------------------------------------------------------------------
-    //
-    // Where a shape starts and ends by content: a matcher (below) locates a row or column, and a
-    // lift decides what to do with it — To lands the shape ON the match so it owns that row, Past
-    // lands it just after, and .Until bounds a shape by one. Finding nothing is a placement
-    // failure: a strict shape reports which anchor was missing, and a Repeat stops looking for
-    // more sections.
-
-    /// <summary>
-    /// The rightmost <paramref name="width"/> columns. Normally spelled with <c>After</c>, which
-    /// replaces: an anchor measured from the far edge discards wherever a movement left off.
-    /// </summary>
-    public static IOffsetStrategy FromRight(int width) => OffsetStrategies.FromRight(width);
-
-    /// <summary>The bottom <paramref name="height"/> rows; see <see cref="FromRight"/>.</summary>
-    public static IOffsetStrategy FromBottom(int height) => OffsetStrategies.FromBottom(height);
-
-    // --- Matchers -------------------------------------------------------------------------------
-    //
-    // One family, three shapes of question, both axes. A matcher only locates content and reports
-    // absence; what absence means is the lift's business (To/Past above, .Until below). Because a
-    // section can start at To(RowContaining("A")) and end at Until(RowContaining("B")) through the
-    // same matcher, the two cannot disagree about what a caption is.
-
-    /// <summary>The first row satisfying <paramref name="predicate"/>.</summary>
-    public static IRowLandmark RowWhere(Func<ISpace, int, bool> predicate) => RowLandmarks.RowWhere(predicate);
-
-    /// <summary>The first row with any cell satisfying <paramref name="anyCell"/>.</summary>
-    public static IRowLandmark RowWithCell(Func<CellValue, bool> anyCell) => RowLandmarks.RowWithCell(anyCell);
-
-    /// <summary>
-    /// The first row holding <paramref name="text"/> as a whole cell value, trimmed and
-    /// case-insensitively.
-    /// </summary>
-    public static IRowLandmark RowContaining(string text) => RowLandmarks.RowContaining(text);
-
-    /// <summary>The first column satisfying <paramref name="predicate"/>.</summary>
-    public static IColumnLandmark ColumnWhere(Func<ISpace, int, bool> predicate) => ColumnLandmarks.ColumnWhere(predicate);
-
-    /// <summary>The first column with any cell satisfying <paramref name="anyCell"/>.</summary>
-    public static IColumnLandmark ColumnWithCell(Func<CellValue, bool> anyCell) => ColumnLandmarks.ColumnWithCell(anyCell);
-
-    /// <summary>
-    /// The first column holding <paramref name="text"/> as a whole cell value, trimmed and
-    /// case-insensitively.
-    /// </summary>
-    public static IColumnLandmark ColumnContaining(string text) => ColumnLandmarks.ColumnContaining(text);
-
-    /// <summary>
-    /// Onto the row or column <paramref name="landmark"/> matches — the shape starts AT the match
-    /// and owns it. Overloaded on the axis rather than spelled <c>ToColumn</c>, because the
-    /// argument already names the axis.
-    /// </summary>
-    public static IOffsetStrategy To(IRowLandmark landmark) => OffsetStrategies.To(landmark);
-
-    /// <inheritdoc cref="To(IRowLandmark)"/>
-    public static IOffsetStrategy To(IColumnLandmark landmark) => OffsetStrategies.To(landmark);
-
-    /// <summary>
-    /// Onto the row or column after the match, for a shape that starts below (or right of) a row it
-    /// does not want to own — a section under a caption another shape describes.
-    /// </summary>
-    public static IOffsetStrategy Past(IRowLandmark landmark) => OffsetStrategies.Past(landmark);
-
-    /// <inheritdoc cref="Past(IRowLandmark)"/>
-    public static IOffsetStrategy Past(IColumnLandmark landmark) => OffsetStrategies.Past(landmark);
-
-    // --- Extent vocabulary ----------------------------------------------------------------------
-    //
-    // What `.Sized` takes, re-exported here for the same reason the offset vocabulary above is: a
-    // shape declaration should need one import. Everything here returns the IAreaStrategy the
-    // modifier wants, so no lifting is needed at the call site.
-
-    /// <summary>The whole of the available space.</summary>
-    public static IAreaStrategy WholeExtent() => AreaStrategies.MaxArea();
-
-    /// <summary>Nothing — the identity extent, which a shape declares when it consumes no space.</summary>
-    public static IAreaStrategy NoExtent() => AreaStrategies.MinArea();
-
-    /// <summary>Exactly <paramref name="width"/> by <paramref name="height"/> cells.</summary>
-    public static IAreaStrategy Extent(int width, int height) => AreaStrategies.ExplicitArea(width, height);
-
-    /// <summary>Full available width, and the leading rows that carry values.</summary>
-    public static IAreaStrategy RowsWhileAnyValue() => SizeStrategies.RowsWhileAnyValue().ToAreaStrategy();
-
-    /// <summary>
-    /// Full available width, and as many leading rows as have at least one cell satisfying
-    /// <paramref name="anyCell"/>.
-    /// </summary>
-    public static IAreaStrategy RowsWhileAny(Func<CellValue, bool> anyCell)
-      => SizeStrategies.RowsWhileAny(anyCell).ToAreaStrategy();
-
-    /// <summary>Full available height, and the leading columns that carry values.</summary>
-    public static IAreaStrategy ColumnsWhileAnyValue() => SizeStrategies.ColumnsWhileAnyValue().ToAreaStrategy();
-
-    /// <summary>
-    /// Full available height, and as many leading columns as have at least one cell satisfying
-    /// <paramref name="anyCell"/>.
-    /// </summary>
-    public static IAreaStrategy ColumnsWhileAny(Func<CellValue, bool> anyCell)
-      => SizeStrategies.ColumnsWhileAny(anyCell).ToAreaStrategy();
-
-    // The row/column selectors, for composing an extent from its two axes and for the leaf
-    // overloads that take one — Row(AllColumns(), ...) is a full-width row.
-
-    /// <summary>Exactly <paramref name="count"/> rows.</summary>
-    public static IRowStrategy TakeRows(int count) => RowStrategies.TakeRows(count);
-
-    /// <summary>Exactly <paramref name="count"/> columns.</summary>
-    public static IColumnStrategy TakeColumns(int count) => ColumnStrategies.TakeColumns(count);
-
-    /// <summary>Every row of the available space — the declared spelling of "the full height".</summary>
-    public static IRowStrategy AllRows() => RowStrategies.AllRows();
-
-    /// <summary>Every column of the available space — the declared spelling of "the full width".</summary>
-    public static IColumnStrategy AllColumns() => ColumnStrategies.AllColumns();
-
-    // The area-composing forms (rows.AllColumns(), columns.AllRows()) are deliberately NOT
-    // re-exported: they are extension methods, and a script with `using Unrect.Strategies;` in
-    // scope would see both copies and fail to resolve. Row(AllColumns(), ...) covers the case
-    // that motivated them, using the leaf overload that already takes a column strategy.
-
     // --- Shared construction ------------------------------------------------------------------
 
     private static IShape<T> Strip<T>(Orientation orientation, Func<CellStrip, T> project, IAreaStrategy area, string description)
@@ -787,21 +499,5 @@ namespace Unrect.Shapes
       => headerRows == 0 || headerRows == 1
         ? headerRows
         : throw new ArgumentOutOfRangeException(nameof(headerRows), headerRows, "A table has either 0 or 1 header rows; multi-row headers are not supported in this release.");
-
-    private static IAreaStrategy RowsThenColumns(IRowStrategy rows, IColumnStrategy columns)
-      => SelectArea(space =>
-      {
-        var height = rows.SelectRows(space);
-        var width = columns.SelectColumns(space.GetSubspace(new Area(space.Area.Size.Width, height)));
-        return new Size(width, height);
-      });
-
-    private static IAreaStrategy ColumnsThenRows(IColumnStrategy columns, IRowStrategy rows)
-      => SelectArea(space =>
-      {
-        var width = columns.SelectColumns(space);
-        var height = rows.SelectRows(space.GetSubspace(new Area(width, space.Area.Size.Height)));
-        return new Size(width, height);
-      });
   }
 }

@@ -11,8 +11,8 @@ namespace Unrect.Shapes
   /// wrong, and supplies a filler — either a fallback shape or a constant value.
   /// <para>
   /// It behaves like a catch block. Its own placement is resolved before it can catch anything, so
-  /// tolerance goes innermost: <c>x.After(seek).Optional()</c> absorbs a missing anchor, while
-  /// <c>x.Optional().After(seek)</c> does not.
+  /// tolerance goes innermost: <c>x.After(anchor).Optional()</c> absorbs a missing anchor, while
+  /// <c>x.Optional().After(anchor)</c> does not.
   /// </para>
   /// </summary>
   internal sealed class BoundaryShape<T> : ShapeBase<T>

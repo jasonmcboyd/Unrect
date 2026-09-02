@@ -3,7 +3,7 @@ using Unrect.Core;
 
 namespace Unrect.Strategies
 {
-  internal class ExplicitColumnCountStrategy : IColumnStrategy
+  internal sealed class ExplicitColumnCountStrategy : IColumnStrategy
   {
     public ExplicitColumnCountStrategy(int count)
     {
@@ -15,6 +15,6 @@ namespace Unrect.Strategies
     private int Count { get; }
 
     public int SelectColumns(ISpace space)
-      => Count <= space.Area.Size.Width ? Count : throw new OutOfBoundsException();
+      => Count <= space.Area.Width ? Count : throw new OutOfBoundsException();
   }
 }

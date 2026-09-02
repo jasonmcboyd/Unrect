@@ -31,7 +31,7 @@ namespace Unrect.Strategies
       {
         var offset = strategy.GetOffset(availableSpace);
 
-        if (offset.Size.Width > availableSpace.Area.Size.Width || offset.Size.Height > availableSpace.Area.Size.Height)
+        if (offset.Width > availableSpace.Area.Width || offset.Height > availableSpace.Area.Height)
           throw new OutOfBoundsException();
 
         total += offset.Size;

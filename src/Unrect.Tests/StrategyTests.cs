@@ -6,6 +6,8 @@ using Unrect.Strategies;
 
 using Xunit;
 
+using static Unrect.Tests.ShapeTestSpaces;
+
 using static Unrect.Strategies.AreaStrategies;
 using static Unrect.Strategies.OffsetStrategies;
 using static Unrect.Strategies.SizeStrategies;
@@ -19,9 +21,6 @@ namespace Unrect.Tests
   /// </summary>
   public class StrategyTests
   {
-    // 0 is blank in every grid in this class, so the shape of the literal is the shape of the data.
-    private static ISpace Grid(int[,] values) => ArraySpace.Create(values, isBlank: v => v == 0);
-
     private static bool HasValue(CellValue value) => value.HasValue;
 
     // --- SizeStrategies.RowsWhileAny ------------------------------------------------------------
@@ -471,9 +470,6 @@ namespace Unrect.Tests
     // absence and is defeated by anything inserted above the thing being looked for; these anchor on
     // presence, which is what survives an inserted proof row.
 
-    /// <summary>A grid of labels; the array adapter treats null and "" as empty cells.</summary>
-    private static ISpace Text(string?[,] values) => ArraySpace.Create(values);
-
     private static ISpace Labelled() => Text(new string?[,]
     {
       { "junk", null },
@@ -657,17 +653,6 @@ namespace Unrect.Tests
 
       Assert.Equal(1, offset.Size.Width);
       Assert.Equal(1, offset.Size.Height);
-    }
-
-    [Fact]
-    public void SeekFactories_RejectNullArguments()
-    {
-      Assert.Equal("predicate", Assert.Throws<ArgumentNullException>(() => To(RowLandmarks.RowWhere(null!))).ParamName);
-      Assert.Equal("anyCell", Assert.Throws<ArgumentNullException>(() => To(RowLandmarks.RowWithCell(null!))).ParamName);
-      Assert.Equal("text", Assert.Throws<ArgumentNullException>(() => To(RowLandmarks.RowContaining(null!))).ParamName);
-      Assert.Equal("predicate", Assert.Throws<ArgumentNullException>(() => To(ColumnLandmarks.ColumnWhere(null!))).ParamName);
-      Assert.Equal("anyCell", Assert.Throws<ArgumentNullException>(() => To(ColumnLandmarks.ColumnWithCell(null!))).ParamName);
-      Assert.Equal("text", Assert.Throws<ArgumentNullException>(() => To(ColumnLandmarks.ColumnContaining(null!))).ParamName);
     }
 
     // --- Anchoring to the far edge --------------------------------------------------------------------
@@ -912,7 +897,7 @@ namespace Unrect.Tests
     }
 
     [Fact]
-    public void ALandmarkDescribesWhatItLookedForTheWayASeekDoes()
+    public void ALandmarkDescribesWhatItLookedFor()
     {
       // The descriptions are the negative noun phrases the failure templates are built from, so a
       // bound reads beside a seek rather than in its own dialect.
@@ -926,10 +911,12 @@ namespace Unrect.Tests
     }
 
     [Fact]
-    public void ASeekAndALandmarkAgreeOnWhatContainingMeans()
+    public void ALiftAndItsLandmarkAgreeOnWhatContainingMeans()
     {
-      // The deliberate cross-check: both go through the same CellMatching helper, so "containing"
-      // cannot come to mean two things. Where the seek lands is where the landmark is found.
+      // A lift is defined in terms of its landmark, so this is not two implementations agreeing —
+      // it is the lift surfacing the landmark's rule unchanged. Worth pinning because the lift adds
+      // the arithmetic and the failure, and either could have quietly narrowed what "containing"
+      // accepts on the way through.
       var space = RowsWithATotal();
 
       foreach (var needle in new[] { "Total", "  total  ", "TOTAL" })
@@ -938,7 +925,8 @@ namespace Unrect.Tests
         Assert.Equal(1, To(RowLandmarks.RowContaining(needle)).GetOffset(space).Size.Height);
       }
 
-      // ...and they agree on what does not match, one by returning null and one by throwing.
+      // ...including on what does not match, which the two report differently: the landmark returns
+      // null and leaves the decision to its caller, and the lift turns that into a placement failure.
       Assert.Null(RowLandmarks.RowContaining("TOT").FindRow(space));
       Assert.ThrowsAny<OutOfBoundsException>(() => To(RowLandmarks.RowContaining("TOT")).GetOffset(space));
     }
