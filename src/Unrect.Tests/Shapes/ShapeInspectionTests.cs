@@ -27,6 +27,16 @@ namespace Unrect.Tests.Shapes
     [Fact]
     public void LeavesDescribeThemselvesStructurally()
     {
+      // The typed leaves and the labelled block, described by the factory the user typed.
+      Assert.Equal("Text", Text().Description);
+      Assert.Equal("Decimal", Decimal().Description);
+      Assert.Equal("Integer", Integer().Description);
+      Assert.Equal("Double", Double().Description);
+      Assert.Equal("Date", Date().Description);
+      Assert.Equal("Boolean", Boolean().Description);
+      Assert.Equal("Fields", Fields(Field("EIN")).Description);
+      Assert.Equal("Caption(\"Total\")", Caption("Total").Description);
+
       Assert.Equal("Cell", Cell(v => v.GetInt()).Description);
       Assert.Equal("Row", Row(s => s.Count).Description);
       Assert.Equal("Row(3)", Row(3, s => s.Count).Description);

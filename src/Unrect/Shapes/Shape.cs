@@ -23,6 +23,58 @@ namespace Unrect.Shapes
     public static IShape<T> Cell<T>(Func<CellValue, T> project)
       => new CellShape<T>(project, Placement.Of(ExplicitArea(1, 1)));
 
+    // --- Typed leaves ---------------------------------------------------------------------------
+    //
+    // A cell whose kind the declaration states. The family is closed over CellValue's canonical
+    // accessor set and mirrors it 1:1 — six kinds of reading, because the document has five kinds
+    // and Number is read three ways. There is no Long(), Single(), Money() or Enum<T>(): a CLR
+    // conversion beyond that set is Select territory (Integer().Select(i => (long)i)), one-way and
+    // honest about it. Nothing is added to Core to serve a leaf, and adding an accessor to Core
+    // does not add one here — GetDate is a transformation of GetDateTime, not a different reading
+    // of the cell, so it has no leaf.
+    //
+    // Under `using static Shape`, Decimal/Double/Boolean sit beside the framework types of the same
+    // name. Type positions and the keyword aliases are unaffected (decimal.Parse, double.IsNaN);
+    // only a static member reached through the FRAMEWORK TYPE NAME — Decimal.ToDouble(x) — stops
+    // resolving. Write decimal.ToDouble-style calls through the keyword, which is the usual spelling.
+
+    /// <summary>One cell holding text.</summary>
+    public static IShape<string> Text()
+      => Typed<string>(CellKind.Text, "Text", CellReading.ReadString);
+
+    /// <summary>
+    /// One cell holding a number, read as a <see cref="decimal"/> — the accessor that keeps a
+    /// spreadsheet's exact decimal where the file carried one.
+    /// </summary>
+    public static IShape<decimal> Decimal()
+      => Typed<decimal>(CellKind.Number, "Decimal", CellReading.ReadDecimal);
+
+    /// <summary>
+    /// One cell holding a whole number. A number that is really there but is fractional or out of
+    /// range fails as a conversion, not as a kind — the cell is a <c>Number</c> either way.
+    /// </summary>
+    public static IShape<int> Integer()
+      => Typed<int>(CellKind.Number, "Integer", CellReading.ReadInteger);
+
+    /// <summary>One cell holding a number, read as a <see cref="double"/>.</summary>
+    public static IShape<double> Double()
+      => Typed<double>(CellKind.Number, "Double", CellReading.ReadDouble);
+
+    /// <summary>
+    /// One cell holding a date or time, verbatim. The time of day is kept: truncating is
+    /// consumer-side (<c>Date().Select(d =&gt; d.Date)</c>), because a leaf that silently handed
+    /// back less than the cell holds would be the only one in the vocabulary that did.
+    /// </summary>
+    public static IShape<DateTime> Date()
+      => Typed<DateTime>(CellKind.Temporal, "Date", CellReading.ReadDateTime);
+
+    /// <summary>One cell holding a boolean.</summary>
+    public static IShape<bool> Boolean()
+      => Typed<bool>(CellKind.Boolean, "Boolean", CellReading.ReadBoolean);
+
+    private static IShape<T> Typed<T>(CellKind kind, string description, CellReader<T> read)
+      => new TypedCellShape<T>(kind, description, read, Placement.Of(ExplicitArea(1, 1)));
+
     /// <summary>One row, as wide as the leading columns that carry values.</summary>
     public static IShape<T> Row<T>(Func<CellStrip, T> project)
       => Strip(Orientation.Horizontal, project, RowStrategies.TakeRows(1).TakeColumnsWhileAnyValue(), "Row");
@@ -122,6 +174,320 @@ namespace Unrect.Shapes
         table => (IReadOnlyList<T>)table.Rows.Select(project).ToList(),
         TablePlacement(),
         "TableRows");
+    }
+
+    /// <summary>
+    /// Every body row as a <typeparamref name="T"/>, with each member filled from the column whose
+    /// caption matches its name and read as the member's own type declares.
+    /// <para>
+    /// Captions bind to members by <see cref="CaptionComparer"/> — case and whitespace are ignored,
+    /// so <c>"Contribution ITD"</c> fills <c>ContributionItd</c> with nothing declared. The member's
+    /// type chooses the kind to assert and the accessor to use, from the same closed set the typed
+    /// leaves cover: <c>string</c>, <c>decimal</c>, <c>double</c>, <c>int</c>, <c>DateTime</c>,
+    /// <c>bool</c>, <c>CellValue</c>, and the nullable forms. A nullable member tolerates a
+    /// <em>blank</em> cell and still fails on the wrong kind — tolerating a blank says something
+    /// about the data, tolerating a kind would say something about the format, and no real format
+    /// has that.
+    /// </para>
+    /// <para>
+    /// <typeparamref name="T"/> is built through its single parameterized constructor when it has
+    /// one and no parameterless constructor (the positional-record case), otherwise through a
+    /// parameterless constructor and its settable properties. Everything reflective is resolved
+    /// once, when the shape is built; a bad type is an error at that point, not per file.
+    /// </para>
+    /// <para>
+    /// Binding is strict in one direction: every member must find a column, and one that does not is
+    /// a loud failure listing the table's captions. A column no member claims is fine — real reports
+    /// carry columns a consumer does not want.
+    /// </para>
+    /// </summary>
+    public static IShape<IReadOnlyList<T>> TableRows<T>() => TypedRows<T>(null);
+
+    /// <summary>
+    /// <see cref="TableRows{T}()"/> with per-member declarations: <c>Column</c> for a caption the
+    /// comparer would not have found, <c>Ignore</c> for a member this table does not carry.
+    /// <code>
+    /// TableRows&lt;Transaction&gt;(bind =&gt; bind
+    ///   .Column(t =&gt; t.Date, "Transaction Date")
+    ///   .Column(t =&gt; t.Type, "Transaction Type"))
+    /// </code>
+    /// </summary>
+    public static IShape<IReadOnlyList<T>> TableRows<T>(Func<TableBinding<T>, TableBinding<T>> bind)
+      => TypedRows((bind ?? throw new ArgumentNullException(nameof(bind)))(new TableBinding<T>())
+        ?? throw new ArgumentException("The binding lambda returned null.", nameof(bind)));
+
+    private static IShape<IReadOnlyList<T>> TypedRows<T>(TableBinding<T>? binding)
+    {
+      var plan = RowBinding<T>.Create(binding);
+
+      return new TableShape<IReadOnlyList<T>>(
+        1,
+        table => BindRows(table, plan),
+        TablePlacement(),
+        $"TableRows<{typeof(T).Name}>");
+    }
+
+    private static IReadOnlyList<T> BindRows<T>(TableView table, RowBinding<T> plan)
+    {
+      var columns = new int[plan.Members.Count];
+      var unbound = new List<string>();
+
+      for (var member = 0; member < plan.Members.Count; member++)
+      {
+        var matches = new List<int>();
+
+        for (var column = 0; column < table.ColumnCount; column++)
+          if (CaptionComparer.Default.Equals(table.ColumnNames[column], plan.Members[member].Caption))
+            matches.Add(column);
+
+        if (matches.Count == 0)
+        {
+          unbound.Add(plan.Members[member].Name);
+          continue;
+        }
+
+        if (matches.Count > 1)
+          throw table.Failure(
+            $"{typeof(T).Name}.{plan.Members[member].Name} matches the columns at "
+            + $"{table.Header.AddressOf(matches[0]).A1} ('{table.ColumnNames[matches[0]]}') and "
+            + $"{table.Header.AddressOf(matches[1]).A1} ('{table.ColumnNames[matches[1]]}'); "
+            + "captions are matched ignoring case and whitespace");
+
+        columns[member] = matches[0];
+      }
+
+      if (unbound.Count > 0)
+      {
+        // The example names an UNBOUND member: advice that pointed at a member which already found
+        // its column would send a reader to fix the one thing that is not broken.
+        var example = unbound[0];
+
+        throw table.Failure(
+          $"no column binds {Join(unbound.Select(name => $"{typeof(T).Name}.{name}").ToList())}; the table's captions are "
+          + $"{string.Join(", ", table.ColumnNames.Select(c => $"'{c}'"))}. "
+          + $"Bind one with Column(t => t.{example}, \"…\") or drop it with Ignore(t => t.{example})");
+      }
+
+      var rows = new T[table.Rows.Count];
+      var values = new object?[plan.Members.Count];
+
+      for (var index = 0; index < rows.Length; index++)
+      {
+        var row = table.Rows[index];
+
+        for (var member = 0; member < plan.Members.Count; member++)
+          values[member] = ReadCell(row, columns[member], plan.Members[member], table);
+
+        rows[index] = plan.Materialize(values);
+      }
+
+      return rows;
+    }
+
+    private static object? ReadCell(TableRow row, int column, MemberPlan member, TableView table)
+    {
+      var cell = row[column];
+
+      // A CellValue member asserts nothing: it is the in-table spelling of Cell(c => c), for the
+      // column whose kind genuinely varies.
+      if (member.Read is null)
+        return cell;
+
+      if (member.BlankTolerant && cell.IsBlank)
+        return null;
+
+      // Formatted only when something fails: a large sheet binds tens of thousands of cells, and
+      // every one of them would otherwise build an A1 address that nobody reads.
+      string At() => row.AddressOf(column).A1;
+
+      if (cell.Kind != member.Kind!.Value)
+        throw table.Failure($"column '{member.Caption}': {CellReading.WrongKind(member.Kind.Value, cell, At())}");
+
+      if (!member.Read(cell, At, out var value, out var conversion))
+        throw table.Failure($"column '{member.Caption}': {conversion}");
+
+      return value;
+    }
+
+    private static string Join(IReadOnlyList<string> names)
+      => names.Count == 1 ? names[0]
+       : string.Join(", ", names.Take(names.Count - 1)) + " or " + names[names.Count - 1];
+
+    /// <summary>
+    /// Every body row as a dictionary keyed by the column captions, with <see cref="CellValue"/>s
+    /// for values — kinds and blankness survive, because this is an exploratory reader and not a
+    /// stringifier. Keys are matched by <see cref="CaptionComparer"/>, so
+    /// <c>row["contribution itd"]</c> and <c>row["ContributionITD"]</c> both find
+    /// <c>"Contribution ITD"</c>.
+    /// <para>
+    /// The idiom: open an unfamiliar sheet with this, look at the captions and kinds, then graduate
+    /// to <c>TableRows&lt;T&gt;()</c> once the columns are known.
+    /// </para>
+    /// <para>
+    /// It promises one entry per column, so it is strict about the things that would break that
+    /// promise: a column with no caption, and two captions that collide under the comparer, are
+    /// both loud failures naming the cells involved.
+    /// </para>
+    /// </summary>
+    public static IShape<IReadOnlyList<IReadOnlyDictionary<string, CellValue>>> TableRows()
+      => new TableShape<IReadOnlyList<IReadOnlyDictionary<string, CellValue>>>(
+        1,
+        DictionaryRows,
+        TablePlacement(),
+        "TableRows");
+
+    private static IReadOnlyList<IReadOnlyDictionary<string, CellValue>> DictionaryRows(TableView table)
+    {
+      var captions = new string[table.ColumnCount];
+
+      for (var column = 0; column < table.ColumnCount; column++)
+      {
+        var caption = table.ColumnNames[column];
+
+        if (caption.Length == 0)
+          throw table.Failure(
+            $"the column at {table.Header.AddressOf(column).A1} has no caption; every column needs one to be read by name");
+
+        for (var earlier = 0; earlier < column; earlier++)
+          if (CaptionComparer.Default.Equals(captions[earlier], caption))
+            throw table.Failure(
+              $"the columns at {table.Header.AddressOf(earlier).A1} ('{captions[earlier]}') and "
+              + $"{table.Header.AddressOf(column).A1} ('{caption}') carry the same caption; "
+              + "captions are matched ignoring case and whitespace");
+
+        captions[column] = caption;
+      }
+
+      var rows = new IReadOnlyDictionary<string, CellValue>[table.Rows.Count];
+
+      for (var index = 0; index < rows.Length; index++)
+      {
+        var row = table.Rows[index];
+        var cells = new Dictionary<string, CellValue>(captions.Length, CaptionComparer.Default);
+
+        for (var column = 0; column < captions.Length; column++)
+          cells[captions[column]] = row[column];
+
+        rows[index] = cells;
+      }
+
+      return rows;
+    }
+
+    // --- Labelled pairs -------------------------------------------------------------------------
+
+    /// <summary>
+    /// One labelled pair for a <see cref="Fields"/> block: the cell reading <paramref name="label"/>,
+    /// and the value cell immediately to its right.
+    /// <para>
+    /// A label is matched whole-cell, trimmed, case-insensitively, and <em>with a trailing colon
+    /// ignored on both sides</em> — a colon is presentation of a label, not part of it, and an
+    /// export that drops it next year should not break the declaration. That rule applies here and
+    /// nowhere else.
+    /// </para>
+    /// </summary>
+    public static Field Field(string label) => new Field(NotEmptyLabel(label));
+
+    /// <summary>
+    /// A block of labelled pairs — the card of name/value rows that heads so many reports. Two
+    /// columns wide and as many rows as there are fields, keyed by the labels the declaration wrote:
+    /// <code>
+    /// var entity = Fields(Field("EIN"), Field("Entity Type"), Field("Deal Type"));
+    /// </code>
+    /// <para>
+    /// The extent comes from the child count, so there is no width and height to get wrong and
+    /// adding a field is one line. The block finds itself: it anchors on the first field's label,
+    /// column first and then row, so the labels are the declaration <em>and</em> the anchor rather
+    /// than the same literal written twice. <c>.After(…)</c> replaces that anchor when a sheet holds
+    /// two blocks with the same first label.
+    /// </para>
+    /// <para>
+    /// Values are <see cref="CellValue"/>s and blank ones are <c>Blank</c>, not failures: the labels
+    /// are the structure, the values are data. Like <c>Caption</c>, a block searches from the cursor
+    /// and can jump, so inside a <c>Repeat</c> the anchor wants hoisting onto the item as well.
+    /// </para>
+    /// </summary>
+    public static IShape<IReadOnlyDictionary<string, CellValue>> Fields(params Field[] fields)
+    {
+      if (fields is null)
+        throw new ArgumentNullException(nameof(fields));
+
+      if (fields.Length == 0)
+        throw new ArgumentException("A Fields block must declare at least one field.", nameof(fields));
+
+      for (var index = 0; index < fields.Length; index++)
+        if (fields[index] is null)
+          throw new ArgumentException($"Field {index + 1} is null.", nameof(fields));
+
+      // Cloned before validating, so what is checked is what the shape will hold.
+      var declared = (Field[])fields.Clone();
+
+      // Two labels must be distinct under BOTH relations, because they answer different questions
+      // and neither contains the other. Matching decides whether two fields would accept the same
+      // cell; the key comparer decides whether they would collide as entries in the result. A pair
+      // that passed only the first would silently produce one entry for two fields.
+      for (var index = 0; index < declared.Length; index++)
+        for (var earlier = 0; earlier < index; earlier++)
+        {
+          if (CellMatching.LabelEquals(declared[earlier].Label)(CellValue.Of(declared[index].Label)))
+            throw new ArgumentException(
+              $"Two fields carry the label '{declared[index].Label}'; "
+              + "labels are matched ignoring case, surrounding whitespace and a trailing colon.",
+              nameof(fields));
+
+          if (CaptionComparer.Default.Equals(declared[earlier].Label, declared[index].Label))
+            throw new ArgumentException(
+              $"The labels '{declared[earlier].Label}' and '{declared[index].Label}' would be the same key; "
+              + "a block's keys ignore case and all whitespace, so these two fields would collide into one entry.",
+              nameof(fields));
+        }
+
+      // Built once: the children are a property of the declaration, not of any application of it.
+      var pairs = new IShape<CellValue>[declared.Length];
+
+      for (var index = 0; index < declared.Length; index++)
+        pairs[index] = new FieldShape(declared[index].Label, Placement.Of(ExplicitArea(2, 1)));
+
+      return new FlowShape<IReadOnlyDictionary<string, CellValue>>(
+        Orientation.Vertical,
+        cursor =>
+        {
+          var values = new Dictionary<string, CellValue>(declared.Length, CaptionComparer.Default);
+
+          // declared: null — without it the naming ladder would label every child with this
+          // helper's own loop variable, an identifier the user never wrote.
+          for (var index = 0; index < declared.Length; index++)
+            values[declared[index].Label] = cursor.Next(pairs[index], declared: null);
+
+          return values;
+        },
+        FieldsPlacement(declared[0].Label),
+        description: "Fields");
+    }
+
+    /// <summary>
+    /// The block finds its own first label, column then row — the order that works when the label
+    /// column sits far to the right of a wide sheet. Both landmark classes are already internal to
+    /// the strategy layer, so no public landmark surface is added for this.
+    /// </summary>
+    private static Placement FieldsPlacement(string label)
+      => new Placement(
+        OffsetStrategies.Then(
+          OffsetStrategies.To(new PredicateColumnLandmark(
+            CellMatching.AnyCellInColumn(CellMatching.LabelEquals(label)), $"no column with the label '{label}'")),
+          OffsetStrategies.To(new PredicateRowLandmark(
+            CellMatching.AnyCellInRow(CellMatching.LabelEquals(label)), $"no row with the label '{label}'"))),
+        null);
+
+    private static string NotEmptyLabel(string label)
+    {
+      if (label is null)
+        throw new ArgumentNullException(nameof(label));
+
+      if (label.Trim().Length == 0)
+        throw new ArgumentException("A field label cannot be empty or whitespace.", nameof(label));
+
+      return label;
     }
 
     // --- Repetition ---------------------------------------------------------------------------

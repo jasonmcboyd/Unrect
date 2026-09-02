@@ -7,8 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Two things are shared: AnchorNotFoundException.Description, which ShapeEngine renders,
-         and CellMatching, so Caption and the matchers agree on what "containing" means. -->
+    <!-- Three things are shared: AnchorNotFoundException.Description, which ShapeEngine renders;
+         CellMatching, so Caption, Field and the matchers agree on what matching means; and the
+         Predicate*Landmark classes, which Fields uses to anchor itself on its own first label
+         without a public landmark surface being added for it. -->
     <InternalsVisibleTo Include="Unrect" />
   </ItemGroup>
 

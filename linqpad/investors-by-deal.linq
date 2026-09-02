@@ -14,17 +14,11 @@ var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\exam
 
 // One deal block: a deal-code cell over a table. Block extents are derived from what the
 // block's children consume, so blocks may differ in length.
-var dealCode = Cell(v => v.GetString());
+var dealCode = Text();
 
-var transactions = TableRows(r => new
-{
-	AccountKey = r["Account Key"].GetString(),
-	FundCode = r["Fund Code"].GetString(),
-	Name = r["Name"].GetString(),
-	Type = r["Transaction Type"].GetString(),
-	Amount = r["Amount"].GetDecimal(),
-	TransferDate = r["Transfer Date"].GetDateTime(),
-});
+// Every caption binds free — this is the comparer earning its keep, and why it ignores whitespace
+// rather than demanding an exact match.
+var transactions = TableRows<DealTransaction>();
 
 var deal = VerticalFlow(v => new
 {
@@ -36,3 +30,6 @@ var deal = VerticalFlow(v => new
 var deals = Repeat(deal, separatedBy: BlankRows());
 
 deals.Map(SpreadsheetSpace.Create(path, "Investors")).Dump();
+
+record DealTransaction(string AccountKey, string FundCode, string Name,
+					   string TransactionType, decimal Amount, DateTime TransferDate);

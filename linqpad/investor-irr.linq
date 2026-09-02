@@ -23,31 +23,21 @@ var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\exam
 // Without a way to say where the first series ENDS, its repeat runs into the second caption
 // and fails from inside an item. .Until bounds it by content, and — because the bound is
 // consumed in full — the next child's own seek finds that caption at distance zero.
-var reportHeader = Column(4, c => new
+var reportHeader = VerticalFlow(v => new
 {
-	Title = c[0].GetString(),
-	Fund = c[1].GetString(),
-	ReportDate = c[2].GetDateTime(),
-	ReportId = c[3].GetString(),
+	Title = v.Next(Text()),
+	Fund = v.Next(Text()),
+	ReportDate = v.Next(Date()),
+	ReportId = v.Next(Text()),
 });
 
-var summary = TableRows(r => new
-{
-	Investor = r["Investors"].GetString(),
-	Contribution = r["Contribution ITD"].GetDecimal(),
-	Distribution = r["Distribution ITD"].GetDecimal(),
-	ManagementFee = r["Management Fee ITD"].GetDecimal(),
-	EndBalance = r["End Balance"].GetDecimal(),
-	Irr = r["IRR"].GetDouble(),
-});
+// Five of six captions bind with nothing said: the comparer ignores case and whitespace, so
+// "Contribution ITD" fills ContributionItd. Only Investors needs a caption, and only because the
+// sheet's heading is plural where the row is singular.
+var summary = TableRows<SummaryRow>(bind => bind.Column(r => r.Investor, "Investors"));
 
-var investorBlock = TableRows(r => new
-{
-	Investor = r["Investor Name"].GetString(),
-	Date = r["Date"].GetDateTime(),
-	Transaction = r["Transaction"].GetString(),
-	Irr = r["IRR"].GetDouble(),
-});
+// All four bind free.
+var investorBlock = TableRows<CashFlow>();
 
 // The caption that both ends the first series and begins the second. One literal, so the bound
 // and the caption cannot drift apart — both go through the same matching rule.
@@ -90,3 +80,8 @@ new
 }.Dump("validation");
 
 result.Dump();
+
+record SummaryRow(string Investor, decimal ContributionItd, decimal DistributionItd,
+				  decimal ManagementFeeItd, decimal EndBalance, double Irr);
+
+record CashFlow(string InvestorName, DateTime Date, string Transaction, double Irr);

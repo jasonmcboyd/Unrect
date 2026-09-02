@@ -53,3 +53,19 @@ new
 	Default = block.Map(defaultSpace.GetSubspace(new Offset(0, 0), new Area(4, 4))).ToString(),
 	Strict = block.Map(strictSpace.GetSubspace(new Offset(0, 0), new Area(4, 4))).ToString(),
 }.Dump("discovered extent, cols A-D");
+
+// 5. Typed leaves speak the document's vocabulary: kinds for a kind mismatch, conversions for a
+// number that will not fit. Note that the error cell is reported as the Error it is, never as
+// "blank" — and that the sentence changes entirely when the number is genuinely there.
+string Message<T>(IShape<T> shape)
+{
+	try { shape.Map(defaultSpace); return "no failure"; }
+	catch (ShapeException failure) { return failure.Message.Split('\n')[0].TrimEnd('\r'); }
+}
+
+new
+{
+	DecimalOverAnError = Message(Decimal().After(SkipRows(1))),      // A2 is #VALUE!
+	TextOverANumber = Message(Text().After(SkipColumns(1))),         // B1 is 42
+	IntegerOverAFraction = Message(Integer().After(SkipColumns(2))), // C1 is 3.14
+}.Dump("typed-leaf diagnostics");

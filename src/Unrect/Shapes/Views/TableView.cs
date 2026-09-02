@@ -46,7 +46,15 @@ namespace Unrect.Shapes
     public IReadOnlyList<TableRow> Rows => _rows ??= BuildRows();
 
     private int HeaderRows { get; }
-    private ShapeContext Context { get; }
+
+    /// <summary>
+    /// The context the table was projected in — how a projection built on this view reports a
+    /// failure against the table itself.
+    /// </summary>
+    internal ShapeContext Context { get; }
+
+    /// <summary>Reports a problem against the table itself — its origin, its extent.</summary>
+    internal ShapeException Failure(string problem) => Context.Failure(problem, Space);
 
     /// <summary>
     /// The columns carrying <paramref name="columnName"/>; empty when there is no such column.

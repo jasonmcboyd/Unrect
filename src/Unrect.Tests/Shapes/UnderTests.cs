@@ -54,13 +54,10 @@ namespace Unrect.Tests.Shapes
     {
       var section = Lines().Under(Caption("Detail"));
 
-      var marker = section.GetType().GetInterface("Unrect.Shapes.IOpaqueComposite");
+      var marker = Assert.IsAssignableFrom<IOpaqueComposite>(section);
 
       Assert.Empty(section.Children);
-      Assert.NotNull(marker);
-      Assert.Equal(
-        "declared by a cursor lambda; children are known only while it runs",
-        marker!.GetProperty("Reason")!.GetValue(section));
+      Assert.Equal("declared by a cursor lambda; children are known only while it runs", marker.Reason);
     }
 
     [Fact]

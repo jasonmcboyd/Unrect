@@ -14,23 +14,24 @@ var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\exam
 
 // The report definition: shape and projection fused, independent of any file. Each part is
 // hoisted into a local, and the local's name is what diagnostics call it — no .Named needed.
-//   reportHeader — A1:A4, structurally fixed by the format (Column(c => ...) would discover it)
-//   transactions — defaults do the rest: skip the blank gap, one header row, rows while any value
-var reportHeader = Column(4, c => new
+//
+// The header was Column(4, c => ...): a hard-coded height and four accessor calls. As a flow of
+// typed leaves the 4 dissolves into the child count and every field states its kind. It consumes
+// 1x4 either way, so nothing below it moves.
+var reportHeader = VerticalFlow(v => new
 {
-	Title = c[0].GetString(),
-	SubTitle = c[1].GetString(),
-	ReportDate = c[2].GetDateTime(),
-	ReportId = c[3].GetString(),
+	Title = v.Next(Text()),
+	SubTitle = v.Next(Text()),
+	ReportDate = v.Next(Date()),
+	ReportId = v.Next(Text()),
 });
 
-var transactions = TableRows(r => new
-{
-	Client = r["Client"].GetString(),
-	Date = r["Transaction Date"].GetDateTime(),
-	Type = r["Transaction Type"].GetString(),
-	Amount = r["Amount"].GetDecimal(),
-});
+// Captions bind to members by name, ignoring case and whitespace: Client and Amount need nothing
+// said. Date and Type need a caption only because this type chose shorter names than the sheet —
+// naming them TransactionDate/TransactionType would bind free.
+var transactions = TableRows<Transaction>(bind => bind
+	.Column(t => t.Date, "Transaction Date")
+	.Column(t => t.Type, "Transaction Type"));
 
 // One lambda declares the children in flow order and builds the result from what they read.
 var report = VerticalFlow(v => new
@@ -40,3 +41,5 @@ var report = VerticalFlow(v => new
 });
 
 report.Map(SpreadsheetSpace.Create(path, "Report")).Dump();
+
+record Transaction(string Client, DateTime Date, string Type, decimal Amount);

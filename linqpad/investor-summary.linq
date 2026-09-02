@@ -13,7 +13,9 @@
 var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\examples\investor-summary.xlsx");
 
 // Per-investor detail block: a name cell over a transaction table.
-var investorName = Cell(c => c.GetString());
+// The tables below deliberately keep their lambda form: the corpus needs one worked example of
+// the escape hatch that survives for columns whose kind varies or whose value needs a Try*.
+var investorName = Text();
 
 var detailTransactions = TableRows(r => new
 {

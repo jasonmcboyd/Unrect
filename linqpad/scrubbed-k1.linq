@@ -21,6 +21,8 @@
 //     hands back what the rest of the declaration needs, so no raw rows travel any further;
 //   - a section's caption is declared with Caption and placed with Under, so the row that
 //     announces the section belongs to it instead of being swallowed by an anchor's offset;
+//   - the entity card is a Fields block: labels declared once, extent from the child count, and
+//     the block finds itself by its own first label;
 //   - one `section` shape, declared once and placed twice by two different seeks.
 var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\examples\scrubbed-k1.xlsx");
 var space = SpreadsheetSpace.Create(path, "Sheet1");
@@ -39,9 +41,16 @@ IShape<CellValue[]> FullRow(string anchor) =>
 	Row(AllColumns(), r => r.ToArray())
 		.After(To(RowContaining(anchor)));
 
-var entity = Range(2, 5, b => Enumerable.Range(0, 5)
-		.ToDictionary(r => b[0, r].GetString().TrimEnd(':'), r => b[1, r].ToString()))
-	.After(Then(To(ColumnContaining("EIN:")), To(RowContaining("EIN:"))));
+// The entity card: five labels, and nothing else. The block's extent comes from the child count
+// (no 2, 5 to get wrong), it anchors itself on its first label instead of repeating that literal in
+// a second vocabulary, and the label rule absorbs the trailing colon that two of these five carry —
+// so TrimEnd(':') is gone and the keys are the labels as written here.
+var entity = Fields(
+	Field("EIN"),
+	Field("Entity Type"),
+	Field("Deal Type"),
+	Field("State Sourced Income"),
+	Field("Underlying CFC(s)/PFIC(s)"));
 
 var captionRow = FullRow("ATAX");
 var fundNameRow = FullRow("Fund Short Name");

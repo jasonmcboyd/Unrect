@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 using Unrect.Core;
 using Unrect.Shapes;
@@ -23,6 +24,8 @@ namespace Unrect.Tests.Shapes
   /// </summary>
   public class ShapeReExportTests
   {
+    private sealed record Line(string Client, DateTime When, decimal Amount);
+
     // 3 columns by 2 rows: 1 0 3 / 2 0 4 — a blank middle column, so column-wise and row-wise
     // discovery give different answers and a mis-wired re-export cannot hide.
     private static ISpace Patchy() => Grid(new[,] { { 1, 0, 3 }, { 2, 0, 4 } });
@@ -164,6 +167,34 @@ namespace Unrect.Tests.Shapes
       Assert.Equal(2, section.Map(space));
       Assert.Equal("a", anchored.Map(space));
       Assert.Equal("Detail", Cell(c => c.GetString()).After(To(RowContaining("Detail"))).Map(space));
+    }
+
+    [Fact]
+    public void ATypedTableAndALabelledBlockAreDeclarableFromTheOneImport()
+    {
+      // The phase C vocabulary, declared with nothing but `using static Unrect.Shapes.Shape`:
+      // the typed leaves, TableRows<T>, its binding lambda, Fields and Field.
+      var card = Mixed(new object?[,]
+      {
+        { "EIN:", "12-3456789", null },
+        { null, null, null },
+        { "Client", "Transaction Date", "Amount" },
+        { "Acme", new DateTime(2026, 3, 4), 10m },
+      });
+
+      var report = VerticalFlow(v => new
+      {
+        Entity = v.Next(Fields(Field("EIN"))),
+        Lines = v.Next(TableRows<Line>(bind => bind.Column(t => t.When, "Transaction Date"))),
+      }).Map(card);
+
+      Assert.Equal("12-3456789", report.Entity["EIN"].GetString());
+      Assert.Equal(new DateTime(2026, 3, 4), report.Lines[0].When);
+      Assert.Equal(10m, report.Lines[0].Amount);
+
+      // ...and the typed leaves, which are the other half of the phase's vocabulary.
+      Assert.Equal("Acme", Text().Down(3).Map(card));
+      Assert.Equal(10m, Decimal().Down(3).Right(2).Map(card));
     }
 
     [Fact]

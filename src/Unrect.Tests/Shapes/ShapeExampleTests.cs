@@ -29,17 +29,18 @@ namespace Unrect.Tests.Shapes
 
     private static IShape<(SimpleHeader Header, IReadOnlyList<Transaction> Transactions)> SimpleReport() =>
       VerticalFlow(v => (
-        Header: v.Next(Column(4, c => new SimpleHeader(
-          c[0].GetString(),
-          c[1].GetString(),
-          c[2].GetDateTime(),
-          c[3].GetString()))
+        // The header's kinds are declared rather than asked for: four leaves in a flow read the
+        // same four rows Column(4, ...) did, and say what each one is.
+        Header: v.Next(VerticalFlow(h => new SimpleHeader(
+          Title: h.Next(Text()),
+          Subtitle: h.Next(Text()),
+          Date: h.Next(Date()),
+          Id: h.Next(Text())))
           .Named("report header")),
-        Transactions: v.Next(TableRows(r => new Transaction(
-          r["Client"].GetString(),
-          r["Transaction Date"].GetDateTime(),
-          r["Transaction Type"].GetString(),
-          r["Amount"].GetDecimal()))
+        // Two captions the comparer would not have found; the other two bind free.
+        Transactions: v.Next(TableRows<Transaction>(bind => bind
+          .Column(t => t.Date, "Transaction Date")
+          .Column(t => t.Type, "Transaction Type"))
           .Named("transactions"))));
 
     [Fact]
@@ -103,13 +104,8 @@ namespace Unrect.Tests.Shapes
       var deal =
         VerticalFlow(v => new Deal(
           Code: v.Next(Cell(c => c.GetString()).Named("deal code")),
-          Transactions: v.Next(TableRows(r => new DealTransaction(
-            r["Account Key"].GetString(),
-            r["Name"].GetString(),
-            r["Transaction Type"].GetString(),
-            r["Amount"].GetDecimal(),
-            r["Transfer Date"].GetDateTime()))
-            .Named("transactions"))))
+          // Every caption binds free: AccountKey to "Account Key", TransferDate to "Transfer Date".
+          Transactions: v.Next(TableRows<DealTransaction>().Named("transactions"))))
           .Named("deal block");
 
       return Repeat(deal, separatedBy: BlankRows());
@@ -132,18 +128,18 @@ namespace Unrect.Tests.Shapes
       var deals = InvestorsByDeal().Map(Workbook("investors-by-deal.xlsx", "Investors"));
 
       var atlas = deals[0];
-      Assert.Equal("ACCT-10001", atlas.Transactions[0].Account);
+      Assert.Equal("ACCT-10001", atlas.Transactions[0].AccountKey);
       Assert.Equal("Birchwood Partners LP", atlas.Transactions[0].Name);
       Assert.Equal(250000m, atlas.Transactions[0].Amount);
-      Assert.Equal(new DateTime(2026, 3, 12), atlas.Transactions[0].Date);
-      Assert.Equal("Transfer In", atlas.Transactions[2].Type);
+      Assert.Equal(new DateTime(2026, 3, 12), atlas.Transactions[0].TransferDate);
+      Assert.Equal("Transfer In", atlas.Transactions[2].TransactionType);
 
       Assert.Equal("Harlan Endowment", deals[1].Transactions[2].Name);
       Assert.Equal(-75000m, deals[1].Transactions[2].Amount);
       Assert.Equal(95000.5m, deals[1].Transactions[4].Amount);
 
       Assert.Equal(62500.25m, deals[2].Transactions[1].Amount);
-      Assert.Equal(new DateTime(2026, 5, 9), deals[2].Transactions[1].Date);
+      Assert.Equal(new DateTime(2026, 5, 9), deals[2].Transactions[1].TransferDate);
 
       Assert.Equal(1_897_500.75m, deals.SelectMany(d => d.Transactions).Sum(t => t.Amount));
     }
@@ -414,6 +410,41 @@ namespace Unrect.Tests.Shapes
       Assert.Equal(6, applied.Consumed.Height);
     }
 
+    // --- The typed form changed the projection and nothing else ---------------------------------------------------
+
+    [Fact]
+    public void OneGridReadBothWays_GivesTheSameValuesAndTheSameExtent()
+    {
+      // The regression pin for the whole phase: TableRows<T>() is the projecting spelling with the
+      // lambda moved into the type. Same placement, same extent, same numbers — only the code that
+      // says what a column means has moved.
+      var space = Mixed(new object?[,]
+      {
+        { null, null, null },
+        { "Client", "Transaction Date", "Amount" },
+        { "Acme", new DateTime(2026, 3, 4), 250000m },
+        { "Beta", new DateTime(2026, 5, 17), 175500.5m },
+      });
+
+      var typed = TableRows<Line>().Apply(space);
+
+      var projected = TableRows(r => new Line(
+        r["Client"].GetString(),
+        r["Transaction Date"].GetDateTime(),
+        r["Amount"].GetDecimal()))
+        .Apply(space);
+
+      Assert.Equal(projected.Value, typed.Value);
+      Assert.Equal(projected.Offset.Size.Height, typed.Offset.Size.Height);
+      Assert.Equal(projected.Consumed.Width, typed.Consumed.Width);
+      Assert.Equal(projected.Consumed.Height, typed.Consumed.Height);
+
+      Assert.Equal(2, typed.Value.Count);
+      Assert.Equal(425500.5m, typed.Value.Sum(line => line.Amount));
+    }
+
+    private sealed record Line(string Client, DateTime TransactionDate, decimal Amount);
+
     // --- Result types ------------------------------------------------------------------------------------------
 
     private sealed record IrrReport(
@@ -428,7 +459,12 @@ namespace Unrect.Tests.Shapes
 
     private sealed record Deal(string Code, IReadOnlyList<DealTransaction> Transactions);
 
-    private sealed record DealTransaction(string Account, string Name, string Type, decimal Amount, DateTime Date);
+    private sealed record DealTransaction(
+      string AccountKey,
+      string Name,
+      string TransactionType,
+      decimal Amount,
+      DateTime TransferDate);
 
     private sealed record SummaryHeader(string Title, DateTime Date, string Id);
 

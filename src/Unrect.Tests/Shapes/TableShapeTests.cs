@@ -418,7 +418,9 @@ namespace Unrect.Tests.Shapes
     public void TableAndTableRows_RejectANullProjection()
     {
       Assert.Throws<ArgumentNullException>(() => Table<int>(null!));
-      Assert.Throws<ArgumentNullException>(() => TableRows<int>(null!));
+      // Cast because TableRows<T> now also has a binding overload, and an untyped null is
+      // convertible to both delegate types. Any lambda still resolves without help.
+      Assert.Throws<ArgumentNullException>(() => TableRows<int>((Func<TableRow, int>)null!));
     }
   }
 }

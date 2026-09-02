@@ -25,6 +25,9 @@ namespace Unrect.Tests.Shapes
       value switch
       {
         null => CellValue.Blank,
+        // An already-canonical value passes straight through, so a grid can carry an error
+        // cell — the one kind with no CLR literal to write it as.
+        CellValue cell => cell,
         string text => text.Length == 0 ? CellValue.Blank : CellValue.Of(text),
         int number => CellValue.Of(number),
         long number => CellValue.Of(number),
