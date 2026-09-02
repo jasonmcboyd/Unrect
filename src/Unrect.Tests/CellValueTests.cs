@@ -457,6 +457,14 @@ namespace Unrect.Tests
     [InlineData(CellError.Number)]
     [InlineData(CellError.NotAvailable)]
     [InlineData(CellError.GettingData)]
+    [InlineData(CellError.Spill)]
+    [InlineData(CellError.Calc)]
+    [InlineData(CellError.Field)]
+    [InlineData(CellError.Blocked)]
+    [InlineData(CellError.Connect)]
+    [InlineData(CellError.Busy)]
+    [InlineData(CellError.External)]
+    [InlineData(CellError.Other)]
     public void OfError_IsAnErrorCellThatCarriesAValue(CellError error)
     {
       var value = CellValue.OfError(error);
@@ -477,6 +485,16 @@ namespace Unrect.Tests
     [InlineData(CellError.Number, "Error(#NUM!)")]
     [InlineData(CellError.NotAvailable, "Error(#N/A)")]
     [InlineData(CellError.GettingData, "Error(#GETTING_DATA)")]
+    // The modern errors: dynamic arrays (#SPILL!, #CALC!) and linked data types (the rest). A
+    // workbook saved by a current Excel can hold any of them, so an adapter must be able to name
+    // them rather than fall back to Other.
+    [InlineData(CellError.Spill, "Error(#SPILL!)")]
+    [InlineData(CellError.Calc, "Error(#CALC!)")]
+    [InlineData(CellError.Field, "Error(#FIELD!)")]
+    [InlineData(CellError.Blocked, "Error(#BLOCKED!)")]
+    [InlineData(CellError.Connect, "Error(#CONNECT!)")]
+    [InlineData(CellError.Busy, "Error(#BUSY!)")]
+    [InlineData(CellError.External, "Error(#EXTERNAL!)")]
     public void ToString_SpellsAnErrorTheWayASheetShowsIt(CellError error, string expected)
     {
       Assert.Equal(expected, CellValue.OfError(error).ToString());
@@ -485,15 +503,44 @@ namespace Unrect.Tests
     [Fact]
     public void EveryDeclaredErrorHasItsOwnSpelling()
     {
-      // Guards the spelling table against a copy-paste: eight errors, eight distinct renderings.
-      var spellings = Enum.GetValues(typeof(CellError))
-        .Cast<CellError>()
-        .Select(error => CellValue.OfError(error).ToString())
-        .ToArray();
+      // Guards the spelling table against a copy-paste: every error renders differently, and every
+      // NAMED one renders as the literal a spreadsheet shows. Other is excluded from the second
+      // check on purpose — it is the catch-all, so it has no "#..." of its own and renders as
+      // itself until a literal is supplied.
+      var errors = Enum.GetValues(typeof(CellError)).Cast<CellError>().ToArray();
+      var spellings = errors.Select(error => CellValue.OfError(error).ToString()).ToArray();
 
-      Assert.Equal(8, spellings.Length);
+      Assert.Equal(16, spellings.Length);
       Assert.Equal(spellings.Length, spellings.Distinct().Count());
-      Assert.All(spellings, spelling => Assert.StartsWith("Error(#", spelling));
+      Assert.All(
+        errors.Where(error => error != CellError.Other).Select(error => CellValue.OfError(error).ToString()),
+        spelling => Assert.StartsWith("Error(#", spelling));
+      // ...and Other's own rendering is pinned here rather than left to the exclusion above, so the
+      // exclusion cannot quietly grow to cover a member that simply lost its spelling.
+      Assert.Equal("Error(Other)", CellValue.OfError(CellError.Other).ToString());
+    }
+
+    [Fact]
+    public void Other_IsTheZeroValueSoAnUnnamedErrorIsTheDefault()
+    {
+      // Load-bearing, not incidental: an adapter that forgets to set the error must produce "an
+      // error we could not name", never #NULL! — an error the sheet does not contain. Reordering
+      // the enum would silently reassign every persisted or defaulted value.
+      Assert.Equal(0, (int)CellError.Other);
+      Assert.Equal(CellError.Other, default(CellError));
+      Assert.Equal(CellValue.OfError(CellError.Other), CellValue.OfError(default));
+    }
+
+    [Fact]
+    public void AnErrorCodeThisLibraryDoesNotDeclare_StillMakesAnErrorCell()
+    {
+      // The .xls path casts a raw byte to the reader's error enum, so an undefined code is a file
+      // this library should still read. Nothing throws; the code is carried as it arrived.
+      var value = CellValue.OfError((CellError)99);
+
+      Assert.Equal(CellKind.Error, value.Kind);
+      Assert.Equal((CellError)99, value.GetError());
+      Assert.Equal("Error(99)", value.ToString());
     }
 
     [Fact]
@@ -586,6 +633,157 @@ namespace Unrect.Tests
       Assert.Equal(
         CellValue.OfError(CellError.NotAvailable).GetHashCode(),
         CellValue.OfError(CellError.NotAvailable).GetHashCode());
+    }
+
+    // --- Error literals -------------------------------------------------------------------------
+    //
+    // An adapter may fail to NAME an error but may never discard the evidence: the literal the cell
+    // arrived as rides along. It is stored only when it says something the error code does not, so
+    // the common case — a recognised error spelled the ordinary way — carries no extra state and
+    // two adapters that recognise the same error produce equal values.
+
+    [Fact]
+    public void OfError_KeepsALiteralOnlyWhenItDiffersFromTheCanonicalSpelling()
+    {
+      // "#SPILL!" is exactly what Spill already means, so there is nothing to remember.
+      Assert.Null(CellValue.OfError(CellError.Spill, "#SPILL!").TryGetErrorText());
+      Assert.Null(CellValue.OfError(CellError.Spill).TryGetErrorText());
+      Assert.Null(CellValue.OfError(CellError.Other, "Other").TryGetErrorText());
+
+      // LibreOffice's spelling of an error this library cannot name: drop it and the cell becomes
+      // an anonymous "something went wrong", which is not what the file said.
+      Assert.Equal("Err:501", CellValue.OfError(CellError.Other, "Err:501").TryGetErrorText());
+      Assert.Equal("#ERROR!", CellValue.OfError(CellError.Other, "#ERROR!").TryGetErrorText());
+    }
+
+    [Fact]
+    public void ACanonicalLiteralLeavesTheCellSpelledTheCanonicalWay()
+    {
+      // The other side of not storing it: nothing about the cell records that a literal was passed
+      // at all, so an adapter that echoes the spelling it read produces a value indistinguishable
+      // from one that says nothing.
+      Assert.Equal("Error(#SPILL!)", CellValue.OfError(CellError.Spill, "#SPILL!").ToString());
+      Assert.Equal("Error(Other)", CellValue.OfError(CellError.Other, "Other").ToString());
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    [InlineData("\t")]
+    [InlineData("   ")]
+    public void OfError_TreatsABlankLiteralAsNoLiteralAtAll(string literal)
+    {
+      // A literal is carried because it says something the error code does not. Whitespace says
+      // nothing, and storing it would spell the cell "Error()" — a message that reads like a bug in
+      // this library rather than a fact about the sheet. An adapter handing us the empty string it
+      // found gets the same cell as one that hands us nothing.
+      var value = CellValue.OfError(CellError.Value, literal);
+
+      Assert.Null(value.TryGetErrorText());
+      Assert.Equal("Error(#VALUE!)", value.ToString());
+      Assert.Equal(CellValue.OfError(CellError.Value), value);
+      Assert.Equal(CellValue.OfError(CellError.Value).GetHashCode(), value.GetHashCode());
+      Assert.Equal(
+        "Cell value is Error (#VALUE!); expected Number.",
+        Assert.Throws<InvalidOperationException>(() => value.GetDouble()).Message);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("  ")]
+    public void ABlankLiteralOnAnUnnameableErrorStillLeavesTheErrorNamed(string literal)
+    {
+      // Other is where a blank literal is most likely to arrive — a reader that recognised an error
+      // but exposed no text for it. The cell falls back to naming the only thing it knows.
+      var value = CellValue.OfError(CellError.Other, literal);
+
+      Assert.Null(value.TryGetErrorText());
+      Assert.Equal(CellError.Other, value.GetError());
+      Assert.Equal("Error(Other)", value.ToString());
+    }
+
+    [Fact]
+    public void OfError_KeepsALiteralThatDiffersFromANamedErrorOnlyInSpelling()
+    {
+      // Comparison against the canonical spelling is exact, so a differently cased literal is
+      // preserved rather than assumed to be the same string. The error is still Value: the adapter
+      // named it, and the literal only records how the file wrote it.
+      var value = CellValue.OfError(CellError.Value, "#value!");
+
+      Assert.Equal(CellError.Value, value.GetError());
+      Assert.Equal("#value!", value.TryGetErrorText());
+    }
+
+    [Fact]
+    public void TryGetErrorText_OnANonErrorCell_ReturnsNull()
+    {
+      Assert.Null(CellValue.Of(1).TryGetErrorText());
+      Assert.Null(CellValue.Of("#VALUE!").TryGetErrorText());
+      Assert.Null(CellValue.Blank.TryGetErrorText());
+    }
+
+    [Fact]
+    public void ErrorsCarryingDifferentLiterals_AreDifferentValues()
+    {
+      // Err:501 and #ERROR! are both "an error we could not name", but they are not the same cell:
+      // equality that ignored the literal would make the surviving evidence invisible to callers
+      // that group or de-duplicate cells.
+      var libreOffice = CellValue.OfError(CellError.Other, "Err:501");
+      var sheets = CellValue.OfError(CellError.Other, "#ERROR!");
+
+      Assert.NotEqual(libreOffice, sheets);
+      Assert.True(libreOffice != sheets);
+      Assert.Equal(libreOffice, CellValue.OfError(CellError.Other, "Err:501"));
+      Assert.Equal(libreOffice.GetHashCode(), CellValue.OfError(CellError.Other, "Err:501").GetHashCode());
+    }
+
+    [Fact]
+    public void ACanonicalLiteralLeavesAnErrorEqualToTheBareOne()
+    {
+      // The other half of "stored only when it differs": one adapter that passes the literal it
+      // read and another that passes nothing must agree, or equality would depend on adapter
+      // bookkeeping rather than on what the cell says.
+      Assert.Equal(CellValue.OfError(CellError.Spill), CellValue.OfError(CellError.Spill, "#SPILL!"));
+      Assert.Equal(
+        CellValue.OfError(CellError.Spill).GetHashCode(),
+        CellValue.OfError(CellError.Spill, "#SPILL!").GetHashCode());
+    }
+
+    [Fact]
+    public void ToString_ShowsTheLiteralTheCellArrivedAs()
+    {
+      // Diagnostics are where the preserved literal earns its keep: "Error(Err:501)" names a cell
+      // someone can find in the file, where "Error(Other)" would send them looking for nothing.
+      Assert.Equal("Error(Err:501)", CellValue.OfError(CellError.Other, "Err:501").ToString());
+      Assert.Equal("Error(#value!)", CellValue.OfError(CellError.Value, "#value!").ToString());
+    }
+
+    [Fact]
+    public void TypedAccessorsOnAnErrorCell_NameTheLiteralItArrivedAs()
+    {
+      var value = CellValue.OfError(CellError.Other, "Err:501");
+
+      Assert.Equal(
+        "Cell value is Error (Err:501); expected Number.",
+        Assert.Throws<InvalidOperationException>(() => value.GetDecimal()).Message);
+      Assert.Equal(
+        "Cell value is Error (Err:501); expected Text.",
+        Assert.Throws<InvalidOperationException>(() => value.GetString()).Message);
+    }
+
+    [Fact]
+    public void ALiteralChangesNothingElseAboutTheCell()
+    {
+      // The literal is evidence carried alongside the error, not a second reading of the cell: it
+      // is not text, does not make the cell blank, and does not change what GetError answers.
+      var value = CellValue.OfError(CellError.Other, "Err:501");
+
+      Assert.Equal(CellKind.Error, value.Kind);
+      Assert.Equal(CellError.Other, value.GetError());
+      Assert.Equal(CellError.Other, value.TryGetError());
+      Assert.True(value.HasValue);
+      Assert.False(value.IsBlank);
+      Assert.Null(value.TryGetString());
     }
   }
 }

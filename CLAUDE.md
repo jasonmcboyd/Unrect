@@ -2,7 +2,7 @@
 
 ## Status
 
-This project is experimental, but both the substrate (CellValue, spaces, strategies) and the shape layer (`Unrect.Shapes`) now have deliberate, review-hardened semantics pinned by `src/Unrect.Tests` (xUnit, 867 tests). Run `dotnet test src/Unrect.sln`; keep it green. Gate builds with `dotnet build src/Unrect.sln -v q --no-incremental` — incremental builds silently skip analyzer diagnostics (xUnit analyzers etc.), so a plain build can report 0 warnings while warnings exist.
+This project is experimental, but both the substrate (CellValue, spaces, strategies) and the shape layer (`Unrect.Shapes`) now have deliberate, review-hardened semantics pinned by `src/Unrect.Tests` (xUnit, 906 tests). Run `dotnet test src/Unrect.sln`; keep it green. Gate builds with `dotnet build src/Unrect.sln -v q --no-incremental` — incremental builds silently skip analyzer diagnostics (xUnit analyzers etc.), so a plain build can report 0 warnings while warnings exist.
 
 ## Problem Domain
 
@@ -45,7 +45,7 @@ A "space" is a 2D rectangular grid of values. Spaces can be subdivided into subs
 | **Unrect** | The shape layer (`Unrect.Shapes`): the `Shape` vocabulary, `IShape<T>`, `ShapeEngine`, the composites and primitives, the cell views (`CellStrip`/`CellBlock`/`TableView`), and diagnostics — plus the shared `Orientation` enum and the `CallerArgumentExpressionAttribute` polyfill (netstandard2.1 has no built-in one; it backs use-site name capture) |
 | **Unrect.Strategies** | Strategy implementations for computing sizes, offsets, rows, and columns |
 | **Unrect.Array** | `ArraySpace` — adapts 2D arrays as `ISpace` via `Create<T>(values, map)` and primitive overloads with blank predicates |
-| **Unrect.Excel** | `SpreadsheetSpace` — reads Excel files via ExcelDataReader, adapts cells to `CellValue` |
+| **Unrect.Spreadsheets** | `SpreadsheetSpace` — reads spreadsheet files (`.xls`/`.xlsx` via ExcelDataReader) and adapts cells to `CellValue`. Named for the family, not the vendor: further formats belong here rather than in a second package. |
 
 All library projects target .NET Standard 2.1 (`Unrect.Tests` is `net8.0`).
 
@@ -103,7 +103,7 @@ warnings). New API work should be checked against that document.
 
 **Wave 1 (canonical model) is implemented**: `CellValue`/`CellKind` live in Core, the
 `TSpace` generic is gone from the entire surface, `ArraySpace` is a mapping adapter,
-and `Unrect.Excel` is a thin adapter (`SpreadsheetValueBase` and friends are deleted).
+and `Unrect.Spreadsheets` (then named `Unrect.Excel`) is a thin adapter (`SpreadsheetValueBase` and friends are deleted).
 **Wave 2 (fused shape vocabulary) is implemented** per `docs/design/wave2-shapes-spec.md`,
 and **wave 3 part 1 (diagnostics, tolerance boundaries, `Choice`) is implemented** per
 `docs/design/diagnostics-and-choice-spec.md`. Remaining from the roadmap: the decomposition
@@ -128,7 +128,7 @@ Recorded for later by the wrap-up (Copse-cadence) review of 2026-09-02 — none 
 - **`CellMatching` may belong in Core, public, beside `CellValue`** — it is policy over the canonical vocabulary; publishing it would let consumers write predicates under the exact rules `RowContaining` uses and would remove one `InternalsVisibleTo` reason. An API expansion deserving its own decision.
 - **Where does the dry-run renderer live?** `IOpaqueComposite` is internal; a renderer outside `Unrect` would read `Children.Count == 0` on every layout composite and render exactly the lie the marker exists to prevent. Decide before wave-3 tooling starts.
 - **`OutOfBoundsException` diagnostics** (above) and a public `Description` on `AnchorNotFoundException` should be solved together — the latter would remove the last `InternalsVisibleTo` reason but is subsumed by the former.
-- **`Unrect.Excel` depends on `Unrect.Array`** (its materialized buffer). Harmless at one line; the real fix is a `CellValue[,]`-backed space in Core both adapters share.
+- ~~`Unrect.Excel` depends on `Unrect.Array`~~ — **resolved.** The `CellValue[,]`-backed space is `GridSpace` in Core; `ArraySpace` is now the mapping sugar over it, `Unrect.Spreadsheets` builds a `GridSpace` directly, and the project reference is gone.
 - **`ShapeContext` does three jobs** (tree position, sheet position, diagnostics/naming) at ~300 lines; split the rendering half into a `PathRenderer` if the decomposition trace pushes it much past 450.
 - **`StrategyTests.cs` (~950 lines) should split along its 18 section headers**; the shape suites split at ~500 and it never did.
 - **`EnforceCodeStyleInBuild`** would make unused usings (IDE0005) fail the gate — the wrap-up round proved `TreatWarningsAsErrors` alone cannot catch them. Flip it deliberately, with time to triage whatever other IDE rules it surfaces.

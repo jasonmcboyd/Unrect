@@ -47,7 +47,7 @@ owned by Core. `ISpace` becomes non-generic. Builders, strategies, and mappers a
 speak canonical values; the pervasive `<SpreadsheetValueBase>` noise does not get
 hidden — it ceases to exist, because the "token type" is fixed by the framework.
 
-`SpreadsheetValueBase` (currently in `Unrect.Excel`) is the embryo of this type: it
+`SpreadsheetValueBase` (then in `Unrect.Excel`, now `Unrect.Spreadsheets`) is the embryo of this type: it
 already has the kind classification, `HasValue`, and typed accessors. The move is a
 *promotion* into Core (with a rename — it is no longer spreadsheet-specific), not an
 invention. Backend-native value handling becomes an internal detail of each adapter.

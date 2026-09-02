@@ -19,6 +19,7 @@ namespace Unrect.Shapes
       Origin = origin;
     }
 
+    /// <summary>The strip's own extent — one cell wide or one cell tall, depending on its orientation.</summary>
     public ISpace Space { get; }
 
     private Orientation Orientation { get; }
@@ -26,8 +27,10 @@ namespace Unrect.Shapes
     /// <summary>Where the strip starts, relative to the space <c>Map</c> was called with.</summary>
     private Offset Origin { get; }
 
+    /// <summary>How many cells the strip holds.</summary>
     public int Count => Orientation == Orientation.Horizontal ? Space.Area.Width : Space.Area.Height;
 
+    /// <summary>The cell at <paramref name="index"/> along the strip's own axis; an index outside it throws <see cref="ArgumentOutOfRangeException"/>.</summary>
     public CellValue this[int index]
     {
       get
@@ -49,6 +52,7 @@ namespace Unrect.Shapes
       return ShapeLocation.At(Origin + Step(index), Space.Area.Size);
     }
 
+    /// <summary>The strip's cells, in order.</summary>
     public IEnumerator<CellValue> GetEnumerator()
     {
       for (var index = 0; index < Count; index++)

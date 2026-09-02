@@ -341,11 +341,6 @@ namespace Unrect.Shapes
         description: "Fields");
     }
 
-    /// <summary>
-    /// The block finds its own first label, column then row — the order that works when the label
-    /// column sits far to the right of a wide sheet. Both landmark classes are already internal to
-    /// the strategy layer, so no public landmark surface is added for this.
-    /// </summary>
     // --- Repetition ---------------------------------------------------------------------------
 
     /// <summary>

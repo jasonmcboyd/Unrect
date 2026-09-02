@@ -44,11 +44,19 @@ namespace Unrect.Shapes
     {
     }
 
+    /// <summary>The quoted name or description of the shape that failed.</summary>
     public string Subject { get; }
+
+    /// <summary>The chain of enclosing shapes that reached <see cref="Subject"/>, rendered for a failure message.</summary>
     public string Path { get; }
 
+    /// <summary>Where on the sheet the failure occurred.</summary>
     public ShapeLocation Location { get; }
+
+    /// <summary>The extent the failing placement or extent strategy asked for, when the failure names one.</summary>
     public Size? Requested { get; }
+
+    /// <summary>The shape that failed.</summary>
     public IShape Shape { get; }
 
     /// <summary>The problem on its own, without the subject, path, and location around it.</summary>

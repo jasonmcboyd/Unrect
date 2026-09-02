@@ -139,6 +139,10 @@ namespace Unrect.Shapes
       return rows;
     }
 
+    /// <summary>
+    /// The block finds its own first label, column then row — the order that works when the label
+    /// column sits far to the right of a wide sheet.
+    /// </summary>
     private static Placement FieldsPlacement(string label)
       => new Placement(
         OffsetStrategies.Then(

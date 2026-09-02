@@ -12,6 +12,11 @@ namespace Unrect.Shapes
   /// </summary>
   public static class ShapeEngine
   {
+    /// <summary>
+    /// Resolves <paramref name="shape"/>'s placement against <paramref name="availableSpace"/> and
+    /// projects it. Strict: a placement that does not fit throws rather than signalling failure to
+    /// the caller — use <see cref="TryApply{TResult}"/> where running out of space is expected.
+    /// </summary>
     public static AppliedResult<TResult> Apply<TResult>(IShape<TResult> shape, ISpace availableSpace, ShapeContext context)
       => Project(shape, Place(shape, availableSpace, context));
 

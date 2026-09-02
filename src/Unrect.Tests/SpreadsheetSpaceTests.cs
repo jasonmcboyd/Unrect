@@ -3,7 +3,7 @@ using System.IO;
 using System.Linq;
 
 using Unrect.Core;
-using Unrect.Excel;
+using Unrect.Spreadsheets;
 
 using Xunit;
 

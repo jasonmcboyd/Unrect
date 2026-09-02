@@ -31,18 +31,28 @@ namespace Unrect.Shapes
       ColumnNames = Header.Select(cell => cell.TryGetString()?.Trim() ?? string.Empty).ToList();
     }
 
+    /// <summary>The table's full extent, header row(s) included.</summary>
     public ISpace Space { get; }
 
+    /// <summary>How many columns wide the table is.</summary>
     public int ColumnCount => Space.Area.Width;
+
+    /// <summary>How many body rows the table has, header row(s) excluded.</summary>
     public int RowCount => Space.Area.Height - HeaderRows;
+
+    /// <summary>Whether a header row was declared. By-name lookups (<see cref="TableRow.this[string]"/>) need one.</summary>
     public bool HasHeader => HeaderRows > 0;
 
+    /// <summary>The header row(s), when <see cref="HasHeader"/>; a zero-width strip when the table has none.</summary>
     public CellStrip Header { get; }
+
+    /// <summary>Each column's header text, trimmed; the empty string for a column with no caption.</summary>
     public IReadOnlyList<string> ColumnNames { get; }
 
     /// <summary>The address of the table's top-left cell, header included.</summary>
     public ShapeLocation Location => ShapeLocation.At(Context.Origin, Space.Area.Size);
 
+    /// <summary>The table's body rows, header row(s) excluded, built once per view.</summary>
     public IReadOnlyList<TableRow> Rows => _rows ??= BuildRows();
 
     private int HeaderRows { get; }
@@ -120,8 +130,13 @@ namespace Unrect.Shapes
       Index = index;
     }
 
+    /// <summary>This row's 0-based position among the table's body rows.</summary>
     public int Index { get; }
+
+    /// <summary>How many columns wide the row is — the same as the table's <see cref="TableView.ColumnCount"/>.</summary>
     public int Count => Strip.Count;
+
+    /// <summary>The row's cells, by column index.</summary>
     public IReadOnlyList<CellValue> Cells => Strip;
 
     /// <summary>
@@ -133,8 +148,10 @@ namespace Unrect.Shapes
         : throw Failure($"column index {column} is out of range; the table has {Count} columns.");
 
     /// <summary>
-    /// The cell in the column named <paramref name="columnName"/>, matched trimmed and
-    /// case-insensitively. An unknown, ambiguous, or headerless lookup is a declaration error.
+    /// The cell in the column named <paramref name="columnName"/>, resolved by the content rule —
+    /// trimmed and case-insensitively, the same rule matchers and <c>Caption</c> use, not the
+    /// whitespace-stripping <c>CaptionComparer</c> that binds <c>TableRows&lt;T&gt;</c>. An unknown,
+    /// ambiguous, or headerless lookup is a declaration error.
     /// </summary>
     public CellValue this[string columnName] => Strip[Resolve(columnName)];
 

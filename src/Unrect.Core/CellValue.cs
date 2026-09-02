@@ -34,10 +34,11 @@ namespace Unrect.Core
       Boolean = boolean;
     }
 
-    private CellValue(CellError error)
+    private CellValue(CellError error, string? errorText)
     {
       Kind = CellKind.Error;
       Error = error;
+      ErrorText = errorText;
     }
 
     public static CellValue Blank { get; } = new CellValue();
@@ -53,8 +54,19 @@ namespace Unrect.Core
     /// <summary>
     /// A cell holding a spreadsheet error. An error is something the cell says, so an error cell
     /// has a value and is never blank — it must not be skippable as empty space.
+    /// <para>
+    /// <paramref name="literal"/> is the text the error arrived as, and matters most when
+    /// <paramref name="error"/> is <see cref="CellError.Other"/>: an adapter that meets an error it
+    /// cannot name must still be able to say what it saw, or a reader staring at
+    /// <c>Error(Other)</c> cannot tell <c>Err:522</c> from <c>#PYTHON!</c>. Pass null — the usual
+    /// case — when the canonical spelling is the whole truth.
+    /// </para>
     /// </summary>
-    public static CellValue OfError(CellError error) => new CellValue(error);
+    public static CellValue OfError(CellError error, string? literal = null)
+      // Kept only when it says something the canonical spelling does not, so the ordinary path
+      // stores no extra string. A blank literal says nothing at all, and storing one would render
+      // as "Error()".
+      => new CellValue(error, string.IsNullOrWhiteSpace(literal) || literal == Display(error) ? null : literal);
 
     public CellKind Kind { get; }
     public bool IsBlank => Kind == CellKind.Blank;
@@ -66,6 +78,7 @@ namespace Unrect.Core
     private DateTime Temporal { get; }
     private bool Boolean { get; }
     private CellError Error { get; }
+    private string? ErrorText { get; }
 
     public string? TryGetString() => Kind == CellKind.Text ? Text : null;
     public string GetString() => TryGetString() ?? throw WrongKind(CellKind.Text);
@@ -119,6 +132,13 @@ namespace Unrect.Core
     public CellError GetError() => TryGetError() ?? throw WrongKind(CellKind.Error);
 
     /// <summary>
+    /// The text this error arrived as, when it differs from the canonical spelling of its
+    /// <see cref="CellError"/> — otherwise null, including for every cell that is not an error.
+    /// Use it to recover what an <see cref="CellError.Other"/> actually was.
+    /// </summary>
+    public string? TryGetErrorText() => Kind == CellKind.Error ? ErrorText : null;
+
+    /// <summary>
     /// Two cell values are equal when they share a kind and an equal payload. Numbers compare on
     /// their double representation, so <c>Of(1m)</c> equals <c>Of(1.0)</c> even though
     /// <see cref="GetDecimal"/> may report a different precision for each. Number comparison uses
@@ -141,7 +161,7 @@ namespace Unrect.Core
         CellKind.Number => Number.Equals(other.Number),
         CellKind.Temporal => Temporal == other.Temporal,
         CellKind.Boolean => Boolean == other.Boolean,
-        CellKind.Error => Error == other.Error,
+        CellKind.Error => Error == other.Error && ErrorText == other.ErrorText,
         _ => true
       };
     }
@@ -156,7 +176,7 @@ namespace Unrect.Core
         CellKind.Number => Number.GetHashCode(),
         CellKind.Temporal => Temporal.GetHashCode(),
         CellKind.Boolean => Boolean.GetHashCode(),
-        CellKind.Error => Error.GetHashCode(),
+        CellKind.Error => HashCode.Combine(Error, ErrorText),
         _ => 0
       };
 
@@ -177,7 +197,7 @@ namespace Unrect.Core
         CellKind.Number => $"Number({Number})",
         CellKind.Temporal => $"Temporal({Temporal})",
         CellKind.Boolean => $"Boolean({Boolean})",
-        CellKind.Error => $"Error({Display(Error)})",
+        CellKind.Error => $"Error({ErrorText ?? Display(Error)})",
         _ => "Blank"
       };
 
@@ -193,6 +213,13 @@ namespace Unrect.Core
         CellError.Number => "#NUM!",
         CellError.NotAvailable => "#N/A",
         CellError.GettingData => "#GETTING_DATA",
+        CellError.Spill => "#SPILL!",
+        CellError.Calc => "#CALC!",
+        CellError.Field => "#FIELD!",
+        CellError.Blocked => "#BLOCKED!",
+        CellError.Connect => "#CONNECT!",
+        CellError.Busy => "#BUSY!",
+        CellError.External => "#EXTERNAL!",
         _ => error.ToString()
       };
 
@@ -206,7 +233,7 @@ namespace Unrect.Core
     // An error cell says why it has no usable value, so the message says which error it is.
     private string WrongKindMessage(CellKind expected) =>
       Kind == CellKind.Error
-      ? $"Cell value is Error ({Display(Error)}); expected {expected}."
+      ? $"Cell value is Error ({ErrorText ?? Display(Error)}); expected {expected}."
       : $"Cell value is {Kind}; expected {expected}.";
   }
 }

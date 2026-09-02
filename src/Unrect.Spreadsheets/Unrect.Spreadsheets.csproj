@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>Unrect.Spreadsheets</PackageId>
+    <Description>The file-format adapters for Unrect. Reads spreadsheet files — .xls and .xlsx today — and presents each sheet as an Unrect space, so a declared shape can be applied to a real workbook. Blankness is decided here, at the point data enters the system.</Description>
+    <PackageTags>excel;spreadsheet;xlsx;xls;parsing;declarative;unrect</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ExcelDataReader" Version="3.7.0" />
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="8.0.0" />
+  </ItemGroup>
+
+  <!-- The Unrect PROJECT, not Core: this is what makes the package depend on "Unrect" at the same
+       MinVer version. Core is referenced separately and privately because Unrect bundles it with
+       PrivateAssets="all", which by design stops its types flowing transitively — so we compile
+       against Core here while advertising only the one dependency a consumer installs. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Unrect\Unrect.csproj" />
+    <ProjectReference Include="..\Unrect.Core\Unrect.Core.csproj" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>

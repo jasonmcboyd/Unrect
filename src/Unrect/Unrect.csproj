@@ -4,6 +4,17 @@
     <TargetFramework>netstandard2.1</TargetFramework>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>Unrect</PackageId>
+    <Description>Declarative 2D spatial decomposition for spreadsheet-shaped data. Describe the shape of a sheet once — a header, a table, repeating blocks, a section under a caption — and Unrect decomposes the grid along that description and projects each part into typed objects. No cursors, no row loops, no index arithmetic: the shape is a value you can reuse across workbooks, and a failure names the declaration that failed and the cell it failed on. Includes the in-memory adapter for tests and scripts.</Description>
+    <PackageTags>excel;spreadsheet;xlsx;parsing;declarative;etl;data-extraction;table;csv;shape</PackageTags>
+  </PropertyGroup>
+
+  <!-- One package, four assemblies. A consumer installs "Unrect" and has the whole vocabulary;
+       splitting Core/Strategies/Array into their own packages would publish four version numbers
+       that must always match. PrivateAssets stops them appearing as dependencies, and the target
+       below puts their build output in the package instead. -->
   <ItemGroup>
     <!-- So the tests can reach IOpaqueComposite, which marks a composite whose children exist only
          while it runs; asserting that through reflection was the alternative. -->
@@ -11,8 +22,39 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Unrect.Core\Unrect.Core.csproj" />
-    <ProjectReference Include="..\Unrect.Strategies\Unrect.Strategies.csproj" />
+    <ProjectReference Include="..\Unrect.Core\Unrect.Core.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\Unrect.Strategies\Unrect.Strategies.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\Unrect.Array\Unrect.Array.csproj" PrivateAssets="all" />
   </ItemGroup>
+
+  <!-- Symbols ship IN the package rather than in a symbol package. A .snupkg carries one assembly's
+       pdb and there is no supported hook for adding a bundled project's, so a symbol package here
+       would debug a quarter of what the package contains. Putting all four pdbs in lib/ instead is
+       one property, works with SourceLink's embedded commit, and needs nothing of the consumer. -->
+  <PropertyGroup>
+    <IncludeSymbols>false</IncludeSymbols>
+    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
+    <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);BundleReferencedProjects</TargetsForTfmSpecificBuildOutput>
+  </PropertyGroup>
+
+  <!-- The referenced assemblies, their XML docs and their symbols. Only the .dll carries the
+       ProjectReference metadata, so the doc and symbol paths are derived from it rather than
+       filtered for — they sit beside it by construction. -->
+  <Target Name="BundleReferencedProjects" DependsOnTargets="ResolveReferences">
+    <ItemGroup>
+      <_BundledAssembly
+        Include="@(ReferenceCopyLocalPaths)"
+        Condition="'%(ReferenceCopyLocalPaths.ReferenceSourceTarget)' == 'ProjectReference'
+                   And '%(Extension)' == '.dll'" />
+
+      <BuildOutputInPackage Include="@(_BundledAssembly)" />
+      <BuildOutputInPackage
+        Include="@(_BundledAssembly->'%(RootDir)%(Directory)%(Filename).xml')"
+        Condition="Exists('%(RootDir)%(Directory)%(Filename).xml')" />
+      <BuildOutputInPackage
+        Include="@(_BundledAssembly->'%(RootDir)%(Directory)%(Filename).pdb')"
+        Condition="Exists('%(RootDir)%(Directory)%(Filename).pdb')" />
+    </ItemGroup>
+  </Target>
 
 </Project>

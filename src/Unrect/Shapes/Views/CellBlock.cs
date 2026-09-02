@@ -22,14 +22,19 @@ namespace Unrect.Shapes
       Origin = origin;
     }
 
+    /// <summary>The block's own extent.</summary>
     public ISpace Space { get; }
 
     /// <summary>Where the block starts, relative to the space <c>Map</c> was called with.</summary>
     private Offset Origin { get; }
 
+    /// <summary>How many columns wide the block is.</summary>
     public int Width => Space.Area.Width;
+
+    /// <summary>How many rows tall the block is.</summary>
     public int Height => Space.Area.Height;
 
+    /// <summary>The cell at <paramref name="column"/>, <paramref name="row"/>; either index outside the block throws <see cref="ArgumentOutOfRangeException"/>.</summary>
     public CellValue this[int column, int row]
     {
       get
@@ -51,6 +56,7 @@ namespace Unrect.Shapes
       return ShapeLocation.At(Origin + new Offset(column, row), Space.Area.Size);
     }
 
+    /// <summary>The row at <paramref name="index"/>; an index outside the block throws <see cref="ArgumentOutOfRangeException"/>.</summary>
     public CellStrip Row(int index)
     {
       if (index < 0 || index >= Height)
@@ -60,6 +66,7 @@ namespace Unrect.Shapes
       return new CellStrip(Space.GetSubspace(offset, new Area(Width, 1)), Orientation.Horizontal, Origin + offset);
     }
 
+    /// <summary>The column at <paramref name="index"/>; an index outside the block throws <see cref="ArgumentOutOfRangeException"/>.</summary>
     public CellStrip Column(int index)
     {
       if (index < 0 || index >= Width)
@@ -69,7 +76,10 @@ namespace Unrect.Shapes
       return new CellStrip(Space.GetSubspace(offset, new Area(1, Height)), Orientation.Vertical, Origin + offset);
     }
 
+    /// <summary>Every row, top to bottom, built once and cached.</summary>
     public IReadOnlyList<CellStrip> Rows => _rows ??= Build(Height, Row);
+
+    /// <summary>Every column, left to right, built once and cached.</summary>
     public IReadOnlyList<CellStrip> Columns => _columns ??= Build(Width, Column);
 
     private void Validate(int column, int row)

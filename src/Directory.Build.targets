@@ -1,0 +1,20 @@
+<Project>
+
+  <!-- Documentation policy, split by whether a project ships.
+
+       On a package, a missing doc on a public member is an ERROR: the public surface is fully
+       documented, and the way it stays that way is that adding an undocumented public member does
+       not build. A new member arrives with its doc or it does not arrive.
+
+       Elsewhere docs still GENERATE — so the compiler checks the ones we do write — but neither a
+       missing doc (CS1591) nor a misplaced one (CS1587) is worth a build failure in a test project
+       whose XML nobody ships. -->
+  <PropertyGroup Condition="'$(IsPackable)' == 'true'">
+    <WarningsAsErrors>$(WarningsAsErrors);CS1591</WarningsAsErrors>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(IsPackable)' != 'true'">
+    <NoWarn>$(NoWarn);CS1591;CS1587</NoWarn>
+  </PropertyGroup>
+
+</Project>

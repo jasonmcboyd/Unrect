@@ -26,6 +26,7 @@ namespace Unrect.Shapes
       Location = location;
     }
 
+    /// <summary>How much this diagnostic ought to worry the reader.</summary>
     public DiagnosticSeverity Severity { get; }
 
     /// <summary>The problem, phrased as in a <see cref="ShapeException"/>.</summary>
@@ -37,8 +38,10 @@ namespace Unrect.Shapes
     /// <summary>The declaration path of what caused the event, not of what handled it.</summary>
     public string Path { get; }
 
+    /// <summary>Where on the sheet the event occurred.</summary>
     public ShapeLocation Location { get; }
 
+    /// <summary>The one-line form used throughout this codebase's own diagnostics output.</summary>
     public override string ToString() => $"{Severity}: {Subject}: {Message} — in {Path} at {Location}";
 
     /// <summary>

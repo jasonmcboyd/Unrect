@@ -31,6 +31,10 @@ namespace Unrect.Shapes
       Pending = pending;
     }
 
+    /// <summary>
+    /// The context a <c>Map</c> call starts from: no shape yet, no path, origin (0, 0), and a fresh
+    /// diagnostic collector for this decomposition.
+    /// </summary>
     public static ShapeContext Root(ISpace space)
     {
       if (space is null)
@@ -47,8 +51,14 @@ namespace Unrect.Shapes
     /// off when wave 3 adds one.
     /// </summary>
     internal ISpace Space { get; }
+
+    /// <summary>The shape this context is inside, or null at the root.</summary>
     public IShape? Shape { get; }
+
+    /// <summary>Which occurrence of <see cref="Shape"/> this is, where that is meaningful (e.g. inside a <c>Repeat</c>).</summary>
     public int? Index { get; }
+
+    /// <summary>Where this context sits, relative to the space the root <c>Map</c> call was given.</summary>
     public Offset Origin { get; }
 
     /// <summary>
@@ -86,8 +96,13 @@ namespace Unrect.Shapes
     internal ShapeContext WithUseSite(UseSite site)
       => new ShapeContext(Parent, Shape, Index, Origin, Space, Diagnostics, Site, site);
 
+    /// <summary>Where this context sits, expressed as an A1-style address against <paramref name="space"/>'s extent.</summary>
     public ShapeLocation Locate(ISpace space) => ShapeLocation.At(Origin, space.Area.Size);
 
+    /// <summary>
+    /// A <see cref="ShapeException"/> blaming this context's own shape, for a projection to throw
+    /// when the data it was handed is not what the shape declared.
+    /// </summary>
     public ShapeException Failure(string problem, ISpace space, Exception? inner = null)
       => Failure(
         Shape ?? throw new InvalidOperationException("The root context has no shape to blame; report failures from within a shape's projection."),

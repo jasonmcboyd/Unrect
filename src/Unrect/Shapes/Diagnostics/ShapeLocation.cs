@@ -32,12 +32,19 @@ namespace Unrect.Shapes
       return Row == there.Row && Column == there.Column;
     }
 
+    /// <summary>The 1-based row.</summary>
     public int Row { get; }
+
+    /// <summary>The 1-based column.</summary>
     public int Column { get; }
+
+    /// <summary>The extent of the space this location was resolved against, for citing "N available" alongside it.</summary>
     public Size Available { get; }
 
+    /// <summary>The spreadsheet-style address, e.g. <c>"B4"</c>.</summary>
     public string A1 => ColumnName(Column) + Row;
 
+    /// <summary>The form every <see cref="ShapeException"/> and <see cref="ShapeDiagnostic"/> message uses.</summary>
     public override string ToString() => $"row {Row}, column {Column} ({A1})";
 
     private static string ColumnName(int column)

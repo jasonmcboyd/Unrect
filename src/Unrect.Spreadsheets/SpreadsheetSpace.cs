@@ -4,11 +4,30 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Unrect.Array;
 using Unrect.Core;
 
-namespace Unrect.Excel
+namespace Unrect.Spreadsheets
 {
+  /// <summary>
+  /// One worksheet of a spreadsheet file, as a space. Reads <c>.xls</c> and <c>.xlsx</c> through
+  /// ExcelDataReader and adapts each cell to a <see cref="CellValue"/> — which is where
+  /// <em>blankness is decided</em>, the one question the grid itself cannot answer.
+  /// <para>
+  /// <b>Known limitation: the modern Excel errors arrive as blank on the .xlsx path.</b>
+  /// ExcelDataReader's XML reader returns null for an error literal it does not recognise <em>and</em>
+  /// nulls the value with it, so a <c>#SPILL!</c>, <c>#CALC!</c> or <c>#FIELD!</c> cell reaches this
+  /// adapter byte-for-byte identical to an empty one. The information is destroyed upstream; there
+  /// is nothing here to detect and no workaround worth attempting.
+  /// </para>
+  /// <para>
+  /// It matters more than an ordinary fidelity gap because blankness is load-bearing:
+  /// <c>AfterBlankRows</c>, <c>RowsWhileAnyValue</c> and a repeat's separator all key off it, so a
+  /// single such cell in a data column can quietly truncate a region rather than fail loudly. The
+  /// <c>.xls</c> path is unaffected — it reports an error code, and an unrecognised one lexes to
+  /// <see cref="Unrect.Core.CellError.Other"/> carrying its literal. See
+  /// <c>docs/design/vendor-type-survey.md</c> §8.4.
+  /// </para>
+  /// </summary>
   public class SpreadsheetSpace : ISpace
   {
     private SpreadsheetSpace(ISpace innerSpace)
@@ -17,8 +36,13 @@ namespace Unrect.Excel
     }
 
     private ISpace InnerSpace { get; }
+    /// <inheritdoc/>
     public CellValue this[int column, int row] => InnerSpace[column, row];
+
+    /// <inheritdoc/>
     public Area Area => InnerSpace.Area;
+
+    /// <inheritdoc/>
     public ISpace GetSubspace(Offset offset, Area size) => new SpreadsheetSpace(InnerSpace.GetSubspace(offset, size));
 
     private static readonly Func<CellValue, bool> WhitespaceIsBlank =
@@ -108,7 +132,7 @@ namespace Unrect.Excel
           row++;
         }
 
-        yield return new SpreadsheetSpace(new ArraySpace(cells));
+        yield return new SpreadsheetSpace(new GridSpace(cells));
 
       } while (reader.NextResult());
     }

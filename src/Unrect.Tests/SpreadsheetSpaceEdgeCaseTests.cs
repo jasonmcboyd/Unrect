@@ -2,7 +2,7 @@ using System;
 using System.IO;
 
 using Unrect.Core;
-using Unrect.Excel;
+using Unrect.Spreadsheets;
 using Unrect.Shapes;
 using Unrect.Strategies;
 
@@ -203,6 +203,44 @@ namespace Unrect.Tests
       Assert.Equal(byDefault[0, 1], strict[0, 1]);
       Assert.Equal(byDefault[4, 2], strict[4, 2]);
       Assert.Equal(byDefault[4, 3], strict[4, 3]);
+    }
+
+    // --- An error the adapter cannot name -------------------------------------------------------
+    //
+    // On the .xls path the reader casts a raw byte from the file to its own error enum, so an
+    // undefined code is a workbook this library should still read: the adapter maps it to Other
+    // carrying whatever the reader called it, and never throws.
+    //
+    // These pin the value the adapter is required to produce, not the mapping itself. The mapping
+    // lives in an internal extension of Unrect.Spreadsheets, which grants no InternalsVisibleTo, and no
+    // committed fixture can drive it: an .xls with a byte no version of Excel writes is not
+    // something this project can honestly author. The gap is between "the adapter picks Other and
+    // the reader's text" and "Other plus that text behaves like this" — the latter is here.
+
+    [Fact]
+    public void AnErrorWithNoCanonicalNameIsCarriedRatherThanRejected()
+    {
+      // What the adapter builds when its switch falls through: the code it could not name, plus
+      // the reader's own text for it, which for an undefined enum value is the number itself.
+      var value = CellValue.OfError(CellError.Other, "42");
+
+      Assert.Equal(CellKind.Error, value.Kind);
+      Assert.False(value.IsBlank);
+      Assert.Equal(CellError.Other, value.GetError());
+      Assert.Equal("42", value.TryGetErrorText());
+    }
+
+    [Fact]
+    public void AnErrorTheAdapterCannotNameStillSaysSomethingUseful()
+    {
+      // The reason the literal is carried at all: a reader looking at this message has a string to
+      // search the file for. "Error(Other)" would tell them only that something, somewhere, failed.
+      var value = CellValue.OfError(CellError.Other, "42");
+
+      Assert.Equal("Error(42)", value.ToString());
+      Assert.Equal(
+        "Cell value is Error (42); expected Number.",
+        Assert.Throws<InvalidOperationException>(() => value.GetDouble()).Message);
     }
   }
 }

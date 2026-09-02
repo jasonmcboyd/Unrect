@@ -1,0 +1,77 @@
+# Publish NuGet
+
+name: Publish NuGet
+
+on:
+  push:
+    tags:
+      - 'v[0-9]*'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Pack only; skip pushing to NuGet'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: publish-nuget
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          # MinVer reads the version from the tag history, so a shallow clone would version wrongly.
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore src/Unrect.sln
+
+      - name: Build
+        run: dotnet build src/Unrect.sln -c Release --no-restore
+
+      - name: Test
+        run: dotnet test src/Unrect.sln -c Release --no-build --verbosity minimal
+
+      - name: Pack
+        run: dotnet pack src/Unrect.sln -c Release --no-build -o ${{ github.workspace }}/artifacts
+
+      # Both packages must exist at exactly the tagged version: MinVer derives the version from the
+      # tag, so a mismatch here means the tag and the build disagree and nothing should be pushed.
+      - name: Assert tag == package version
+        if: github.event_name == 'push'
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          ls "${{ github.workspace }}/artifacts"/Unrect."$TAG".nupkg
+          ls "${{ github.workspace }}/artifacts"/Unrect.Spreadsheets."$TAG".nupkg
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: nuget-packages
+          path: |
+            ${{ github.workspace }}/artifacts/*.nupkg
+            ${{ github.workspace }}/artifacts/*.snupkg
+
+      - name: NuGet login (OIDC -> temporary API key)
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run)
+        uses: NuGet/login@v1
+        id: nuget-login
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      - name: Push to NuGet
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run)
+        run: dotnet nuget push "${{ github.workspace }}/artifacts/*.nupkg" --source https://api.nuget.org/v3/index.json --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }} --skip-duplicate

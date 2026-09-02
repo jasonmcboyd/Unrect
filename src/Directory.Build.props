@@ -9,4 +9,44 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
+  <!-- Packaging. Nothing ships unless it opts in: Unrect and Unrect.Excel set IsPackable, and
+       Unrect bundles the assemblies a consumer would otherwise have to reference one by one. -->
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <Authors>Jason Boyd</Authors>
+    <Copyright>Copyright (c) 2026 Jason Boyd</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/jasonmcboyd/Unrect</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/jasonmcboyd/Unrect</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <!-- Docs generate everywhere so the compiler checks the ones we have; whether a MISSING doc is an
+       error is decided per project in Directory.Build.targets — an error on what ships, silent on
+       what does not. -->
+  <PropertyGroup>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <!-- One version source: the git tag, read by MinVer. No <Version> anywhere in the tree. -->
+  <PropertyGroup>
+    <MinVerTagPrefix>v</MinVerTagPrefix>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MinVer" Version="6.0.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)..\README.md" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+
 </Project>

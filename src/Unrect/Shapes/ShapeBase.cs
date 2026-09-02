@@ -14,20 +14,36 @@ namespace Unrect.Shapes
   {
     private static readonly IShape[] NoChildren = System.Array.Empty<IShape>();
 
+    /// <summary>
+    /// Fixes where the shape sits. Every shape has a placement from the moment it exists, so the
+    /// engine never has to ask whether one was declared.
+    /// </summary>
+    /// <param name="placement">Where this shape sits within the space it is handed.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="placement"/> is null.</exception>
     protected ShapeBase(Placement placement)
     {
       Placement = placement ?? throw new ArgumentNullException(nameof(placement));
     }
 
+    /// <inheritdoc/>
     public string? Name { get; private set; }
+
+    /// <inheritdoc/>
     public Placement Placement { get; private set; }
 
+    /// <inheritdoc/>
     public abstract string Description { get; }
+
+    /// <summary>No children by default; a composite overrides this to declare its own.</summary>
     public virtual IReadOnlyList<IShape> Children => NoChildren;
+
+    /// <summary>Opaque by default; only an unnamed wrapper overrides this to true.</summary>
     public virtual bool IsTransparent => false;
 
+    /// <inheritdoc/>
     public abstract ShapeResult<TResult> Project(ISpace extent, ShapeContext context);
 
+    /// <inheritdoc/>
     public IShape<TResult> WithName(string name)
     {
       if (name is null)
@@ -38,6 +54,7 @@ namespace Unrect.Shapes
       return clone;
     }
 
+    /// <inheritdoc/>
     public IShape<TResult> WithPlacement(Placement placement)
     {
       if (placement is null)

@@ -1,0 +1,41 @@
+# CI
+
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore src/Unrect.sln
+
+      # The house gate is `dotnet build -v q --no-incremental`, because an incremental build silently
+      # skips analyzer diagnostics and can report 0 warnings while warnings exist. A CI checkout is
+      # clean, so there is nothing to build incrementally FROM and the flag would buy nothing here —
+      # do not "fix" this by adding it, and do not drop it from the local gate either.
+      - name: Build
+        run: dotnet build src/Unrect.sln -c Release --no-restore /p:RunAnalyzers=true
+
+      - name: Test
+        run: dotnet test src/Unrect.sln -c Release --no-build --verbosity minimal
