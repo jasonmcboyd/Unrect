@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <!-- Nothing here ships, and nothing here is documented for a consumer: IsPackable false also
+         takes this project out of the CS1591 doc ratchet (see Directory.Build.targets), the same
+         way the test project is out of it. -->
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.14.0" />
+  </ItemGroup>
+
+  <!-- All four references are direct, and they have to be: Unrect's own references to Core and
+       Strategies are PrivateAssets="all" (they are bundled INTO its package rather than declared as
+       dependencies), so they do not flow transitively to a referencing project. A benchmark naming
+       GridSpace or a strategy type would not compile without naming their assemblies here. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Unrect\Unrect.csproj" />
+    <ProjectReference Include="..\Unrect.Core\Unrect.Core.csproj" />
+    <ProjectReference Include="..\Unrect.Strategies\Unrect.Strategies.csproj" />
+    <ProjectReference Include="..\Unrect.Spreadsheets\Unrect.Spreadsheets.csproj" />
+  </ItemGroup>
+
+</Project>

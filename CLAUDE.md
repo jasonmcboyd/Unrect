@@ -45,6 +45,7 @@ A "space" is a 2D rectangular grid of values. Spaces can be subdivided into subs
 | **Unrect** | The shape layer (`Unrect.Shapes`): the `Shape` vocabulary, `IShape<T>`, `ShapeEngine`, the composites and primitives, the cell views (`CellStrip`/`CellBlock`/`TableView`), and diagnostics — plus the shared `Orientation` enum and the `CallerArgumentExpressionAttribute` polyfill (netstandard2.1 has no built-in one; it backs use-site name capture) |
 | **Unrect.Strategies** | Strategy implementations for computing sizes, offsets, rows, and columns |
 | **Unrect.Spreadsheets** | `SpreadsheetSpace` — reads spreadsheet files (`.xls`/`.xlsx` via ExcelDataReader) and adapts cells to `CellValue`. Named for the family, not the vendor: further formats belong here rather than in a second package. |
+| **Unrect.Benchmarks** | The continuous-benchmark suite (BenchmarkDotNet, 34 benchmarks in six one-class families; not packable). Conventions and the change-judging workflow: `docs/benchmarking.md`. |
 
 All library projects target .NET Standard 2.1 (`Unrect.Tests` is `net8.0`).
 

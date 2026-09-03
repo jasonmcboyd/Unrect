@@ -1,0 +1,425 @@
+name: Continuous Benchmarking
+
+on:
+  push:
+    branches:
+      - master
+    # Dashboard-only changes are deployed by deploy-dashboard.yml; re-measuring nothing helps
+    # no one.
+    paths-ignore:
+      - 'benchmark-dashboard/**'
+      - '.github/workflows/deploy-dashboard.yml'
+  # Manual runs against any branch (pick the branch in the Run workflow dropdown): the pre-merge
+  # "see the numbers first" path. Bencher files results under the actual branch name, so feature
+  # runs never pollute master's history (Bencher handles feature-branch baselines natively).
+  workflow_dispatch:
+
+# Ensure only one benchmark PUBLISH at a time to prevent gh-pages conflicts (the matrix legs
+# are safely concurrent; only the publish job touches gh-pages).
+concurrency:
+  group: benchmarks
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  deployments: write
+
+jobs:
+  # One leg per family, in parallel. Every benchmark class carries exactly one family tag
+  # (its first BenchmarkCategory value), so the legs partition the suite by construction --
+  # no cross-leg tag bookkeeping. IMPORTANT: benchmarks that must be COMPARED to each other
+  # (the Tables ladder's three readers, the Diagnostics Map/MapWithDiagnostics pair) live in
+  # the SAME family and therefore the same leg -- same-run ratios are the only trustworthy
+  # numbers on shared runners; splitting a comparison across runners would compare two
+  # different machines.
+  #
+  # A second invariant the publish job depends on: ONE benchmark class per family. BenchmarkDotNet
+  # names its JSON export after the class (Unrect.Benchmarks.Values-report-full-compressed.json),
+  # and the publish step takes the first match -- a family split across two classes would silently
+  # publish half its rows.
+  run:
+    name: Run ${{ matrix.category }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        category: [Engine, Strategies, Tables, Values, EndToEnd, Diagnostics]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          # 8.0.x is what global.json pins, and the benchmark project targets net8.0. (Copse
+          # needs 9.x because its code uses C# 13 language features; nothing here does, so the
+          # pin stays on the line the rest of this repo builds and publishes with.)
+          dotnet-version: 8.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore src/Unrect.sln
+
+      - name: Build benchmarks
+        run: dotnet build src/Unrect.Benchmarks/Unrect.Benchmarks.csproj -c Release --no-restore
+
+      # Shared runners are a CPU lottery (EPYC 7763 / EPYC 9V74 / Xeon 8573C observed, ~±30%
+      # apart) and every leg draws its own machine. Record which model ran THIS leg so the
+      # Bencher upload can file results under a per-CPU testbed -- per-benchmark thresholds
+      # then learn each CPU's population separately instead of swallowing the fleet spread.
+      - name: Record runner CPU model
+        run: |
+          mkdir -p src/Unrect.Benchmarks/artifacts/${{ matrix.category }}
+          grep -m1 'model name' /proc/cpuinfo | cut -d: -f2- \
+            | sed -E 's/\((R|TM)\)//gi' \
+            | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9\n' '-' | tr -s '-' | sed 's/^-//; s/-$//' \
+            > src/Unrect.Benchmarks/artifacts/${{ matrix.category }}/cpu.txt
+          echo "Runner CPU: $(cat src/Unrect.Benchmarks/artifacts/${{ matrix.category }}/cpu.txt)"
+
+      - name: Run ${{ matrix.category }} benchmarks
+        run: |
+          cd src/Unrect.Benchmarks
+          dotnet run -c Release --no-build -- --exporters json --allCategories ${{ matrix.category }} --artifacts ./artifacts/${{ matrix.category }} --join
+
+      - name: Upload ${{ matrix.category }} results
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.category }}
+          path: src/Unrect.Benchmarks/artifacts/${{ matrix.category }}/
+          retention-days: 30
+
+  # Single publisher: reassembles the legs' artifacts, then stores to gh-pages and Bencher
+  # sequentially (gh-pages writes must not race).
+  publish:
+    name: Publish results
+    needs: run
+    runs-on: ubuntu-latest
+    # Surfaced as an env var so the Bencher steps can gate on its presence: the `secrets` context
+    # is not available in a step-level `if:`, but `env` is. Empty until the BENCHER_API_KEY repo
+    # secret is added, at which point the Bencher steps at the end activate. The gh-pages dashboard
+    # is entirely unaffected either way.
+    env:
+      BENCHER_API_KEY: ${{ secrets.BENCHER_API_KEY }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Create gh-pages branch if it doesn't exist
+        run: |
+          if ! git ls-remote --exit-code --heads origin gh-pages; then
+            echo "gh-pages branch doesn't exist, creating it..."
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git checkout --orphan gh-pages
+            git reset --hard
+            git commit --allow-empty -m "Initialize gh-pages branch"
+            git push origin gh-pages
+            git checkout master
+            git branch -D gh-pages
+          else
+            echo "gh-pages branch already exists"
+          fi
+
+      - name: Download benchmark results
+        uses: actions/download-artifact@v7
+        with:
+          path: src/Unrect.Benchmarks/artifacts/
+
+      - name: Find results and create memory benchmarks
+        id: find-results
+        run: |
+          for category in Engine Strategies Tables Values EndToEnd Diagnostics; do
+            # Find the runtime benchmark JSON file
+            RESULTS_FILE=$(find src/Unrect.Benchmarks/artifacts/$category/results -name "*-report-full-compressed.json" -type f | head -n 1)
+            echo "${category,,}_file=$RESULTS_FILE" >> $GITHUB_OUTPUT
+            echo "Found $category results: $RESULTS_FILE"
+
+            # Create memory benchmark JSON from the results
+            if [ -f "$RESULTS_FILE" ]; then
+              MEMORY_FILE="src/Unrect.Benchmarks/artifacts/$category/results/memory-benchmarks.json"
+              jq '[.Benchmarks[] | {name: .FullName, unit: "bytes", value: (.Memory.BytesAllocatedPerOperation // 0)}]' "$RESULTS_FILE" > "$MEMORY_FILE"
+              echo "Created memory benchmark file: $MEMORY_FILE"
+            fi
+          done
+
+      # Ensure no local gh-pages exists so benchmark action can fetch cleanly
+      - name: Clean local gh-pages state
+        run: |
+          git branch -D gh-pages 2>/dev/null || true
+          git update-ref -d refs/heads/gh-pages 2>/dev/null || true
+
+      # Store results for each family -- MASTER ONLY: the gh-pages dashboard is master's trend
+      # line, so dispatch runs against feature branches must not append to it (their numbers
+      # live in the run artifacts and in Bencher, which files them under the branch name).
+      # The FIRST store fetches gh-pages; the rest skip the fetch; the LAST store auto-pushes
+      # all accumulated results at once.
+      - name: Store Engine benchmark results
+        if: github.ref == 'refs/heads/master'
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: Engine Benchmarks
+          tool: 'benchmarkdotnet'
+          output-file-path: ${{ steps.find-results.outputs.engine_file }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: false
+          alert-threshold: '150%'
+          comment-on-alert: false
+          fail-on-alert: false
+          gh-pages-branch: gh-pages
+          benchmark-data-dir-path: benchmarks
+
+      - name: Store Strategies benchmark results
+        if: github.ref == 'refs/heads/master'
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: Strategies Benchmarks
+          tool: 'benchmarkdotnet'
+          output-file-path: ${{ steps.find-results.outputs.strategies_file }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: false
+          skip-fetch-gh-pages: true
+          alert-threshold: '150%'
+          comment-on-alert: false
+          fail-on-alert: false
+          gh-pages-branch: gh-pages
+          benchmark-data-dir-path: benchmarks
+
+      - name: Store Tables benchmark results
+        if: github.ref == 'refs/heads/master'
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: Tables Benchmarks
+          tool: 'benchmarkdotnet'
+          output-file-path: ${{ steps.find-results.outputs.tables_file }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: false
+          skip-fetch-gh-pages: true
+          alert-threshold: '150%'
+          comment-on-alert: false
+          fail-on-alert: false
+          gh-pages-branch: gh-pages
+          benchmark-data-dir-path: benchmarks
+
+      - name: Store Values benchmark results
+        if: github.ref == 'refs/heads/master'
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: Values Benchmarks
+          tool: 'benchmarkdotnet'
+          output-file-path: ${{ steps.find-results.outputs.values_file }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: false
+          skip-fetch-gh-pages: true
+          alert-threshold: '150%'
+          comment-on-alert: false
+          fail-on-alert: false
+          gh-pages-branch: gh-pages
+          benchmark-data-dir-path: benchmarks
+
+      - name: Store EndToEnd benchmark results
+        if: github.ref == 'refs/heads/master'
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: EndToEnd Benchmarks
+          tool: 'benchmarkdotnet'
+          output-file-path: ${{ steps.find-results.outputs.endtoend_file }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: false
+          skip-fetch-gh-pages: true
+          alert-threshold: '150%'
+          comment-on-alert: false
+          fail-on-alert: false
+          gh-pages-branch: gh-pages
+          benchmark-data-dir-path: benchmarks
+
+      - name: Store Diagnostics benchmark results
+        if: github.ref == 'refs/heads/master'
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: Diagnostics Benchmarks
+          tool: 'benchmarkdotnet'
+          output-file-path: ${{ steps.find-results.outputs.diagnostics_file }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: false
+          skip-fetch-gh-pages: true
+          alert-threshold: '150%'
+          comment-on-alert: false
+          fail-on-alert: false
+          gh-pages-branch: gh-pages
+          benchmark-data-dir-path: benchmarks
+
+      # Store memory benchmark results for each family
+      - name: Store Engine memory results
+        if: github.ref == 'refs/heads/master'
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: Engine Memory
+          tool: 'customSmallerIsBetter'
+          output-file-path: src/Unrect.Benchmarks/artifacts/Engine/results/memory-benchmarks.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: false
+          skip-fetch-gh-pages: true
+          alert-threshold: '150%'
+          comment-on-alert: false
+          fail-on-alert: false
+          gh-pages-branch: gh-pages
+          benchmark-data-dir-path: benchmarks
+
+      - name: Store Strategies memory results
+        if: github.ref == 'refs/heads/master'
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: Strategies Memory
+          tool: 'customSmallerIsBetter'
+          output-file-path: src/Unrect.Benchmarks/artifacts/Strategies/results/memory-benchmarks.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: false
+          skip-fetch-gh-pages: true
+          alert-threshold: '150%'
+          comment-on-alert: false
+          fail-on-alert: false
+          gh-pages-branch: gh-pages
+          benchmark-data-dir-path: benchmarks
+
+      - name: Store Tables memory results
+        if: github.ref == 'refs/heads/master'
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: Tables Memory
+          tool: 'customSmallerIsBetter'
+          output-file-path: src/Unrect.Benchmarks/artifacts/Tables/results/memory-benchmarks.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: false
+          skip-fetch-gh-pages: true
+          alert-threshold: '150%'
+          comment-on-alert: false
+          fail-on-alert: false
+          gh-pages-branch: gh-pages
+          benchmark-data-dir-path: benchmarks
+
+      - name: Store Values memory results
+        if: github.ref == 'refs/heads/master'
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: Values Memory
+          tool: 'customSmallerIsBetter'
+          output-file-path: src/Unrect.Benchmarks/artifacts/Values/results/memory-benchmarks.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: false
+          skip-fetch-gh-pages: true
+          alert-threshold: '150%'
+          comment-on-alert: false
+          fail-on-alert: false
+          gh-pages-branch: gh-pages
+          benchmark-data-dir-path: benchmarks
+
+      - name: Store EndToEnd memory results
+        if: github.ref == 'refs/heads/master'
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: EndToEnd Memory
+          tool: 'customSmallerIsBetter'
+          output-file-path: src/Unrect.Benchmarks/artifacts/EndToEnd/results/memory-benchmarks.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: false
+          skip-fetch-gh-pages: true
+          alert-threshold: '150%'
+          comment-on-alert: false
+          fail-on-alert: false
+          gh-pages-branch: gh-pages
+          benchmark-data-dir-path: benchmarks
+
+      # Final benchmark-action step: auto-push commits all accumulated family results at once.
+      - name: Store Diagnostics memory results
+        if: github.ref == 'refs/heads/master'
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: Diagnostics Memory
+          tool: 'customSmallerIsBetter'
+          output-file-path: src/Unrect.Benchmarks/artifacts/Diagnostics/results/memory-benchmarks.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          skip-fetch-gh-pages: true
+          alert-threshold: '150%'
+          comment-on-alert: false
+          fail-on-alert: false
+          gh-pages-branch: gh-pages
+          benchmark-data-dir-path: benchmarks
+
+      # --- Bencher (continuous-benchmarking SaaS), running side-by-side with the gh-pages
+      # dashboard. It reads the SAME BenchmarkDotNet JSON the github-action-benchmark steps
+      # above consume, so it is purely additive: it never writes benchmarks/data.js and never
+      # touches the custom dashboard. Placed AFTER the gh-pages storage steps so that a Bencher
+      # failure (bad project slug, API hiccup) can't break the dashboard push. The whole block
+      # no-ops until the BENCHER_API_KEY repo secret exists. ---
+      - name: Install Bencher CLI
+        if: ${{ env.BENCHER_API_KEY != '' }}
+        uses: bencherdev/bencher@main
+
+      - name: Upload results to Bencher
+        if: ${{ env.BENCHER_API_KEY != '' }}
+        env:
+          # Set a BENCHER_PROJECT repo variable to your Bencher project slug. Defaults to the
+          # repo name if unset -- change this or the variable so the two match.
+          BENCHER_PROJECT: ${{ vars.BENCHER_PROJECT || 'unrect' }}
+        run: |
+          set -euo pipefail
+          # Feature branches: fork Bencher's branch from MASTER's population, cloning master's
+          # per-testbed thresholds, so every branch upload is COMPARED against master -- the
+          # branch-vs-master answer the dashboard (master-only by design) never gives. Reset on
+          # each RUN so the comparison is always against current master, never stale branch
+          # history -- but only on the run's FIRST upload: --start-point-reset replaces the
+          # Bencher branch head, so carrying it into the per-family loop would orphan every
+          # previously-uploaded family's data and alerts each iteration (Copse observed
+          # 2026-08-15: only the last family survived on the branch view). Subsequent uploads
+          # append to the head the first one minted. Master itself needs no start point.
+          START_POINT_ARGS=""
+          if [ "$GITHUB_REF_NAME" != "master" ]; then
+            START_POINT_ARGS="--start-point master --start-point-clone-thresholds --start-point-reset"
+          fi
+          # One report per family, filed under a PER-CPU-MODEL testbed (recorded by each leg):
+          # shared runners are a CPU lottery, and per-CPU testbeds let Bencher's per-benchmark
+          # thresholds learn each machine model's population separately -- a fleet change shows
+          # up as a new testbed, not a fake regression. Cross-family absolute comparisons were
+          # never meaningful on shared runners anyway (every leg is a different machine);
+          # within-family ratios (the Tables ladder, the Diagnostics Map pair) are the
+          # trustworthy numbers, and those always share a leg.
+          for category in Engine Strategies Tables Values EndToEnd Diagnostics; do
+            FILE=$(find "src/Unrect.Benchmarks/artifacts/$category/results" -name "*-report-full-compressed.json" -type f | head -n 1)
+            if [ -z "$FILE" ] || [ ! -f "$FILE" ]; then
+              echo "::warning::No Bencher results file for $category; skipping."
+              continue
+            fi
+            TESTBED=$(cat "src/Unrect.Benchmarks/artifacts/$category/cpu.txt" 2>/dev/null || true)
+            TESTBED=${TESTBED:-ubuntu-latest}
+            # Convert to Bencher Metric Format keyed by BenchmarkDotNet's FullName. The
+            # c_sharp_dot_net adapter names benchmarks Namespace.Method -- it DROPS the class --
+            # so every same-named method across classes would merge into one Bencher series and
+            # every threshold would learn a meaningless mixed population. FullName keeps the
+            # class (Unrect.Benchmarks.Values.Create_FromInts): one series per real row.
+            # Latency only; value +- one standard deviation.
+            BMF="src/Unrect.Benchmarks/artifacts/$category/bencher-bmf.json"
+            jq '[.Benchmarks[] | select(.Statistics != null) | {(.FullName): {latency: {
+                  value: .Statistics.Mean,
+                  lower_value: (.Statistics.Mean - .Statistics.StandardDeviation),
+                  upper_value: (.Statistics.Mean + .Statistics.StandardDeviation)}}}]
+                | add // {}' "$FILE" > "$BMF"
+            echo "Uploading $category -> Bencher ($(jq 'length' "$BMF") rows from $FILE) on testbed $TESTBED"
+            bencher run \
+              --project "$BENCHER_PROJECT" \
+              --key "$BENCHER_API_KEY" \
+              --branch "$GITHUB_REF_NAME" \
+              $START_POINT_ARGS \
+              --testbed "$TESTBED" \
+              --adapter json \
+              --file "$BMF" \
+              --threshold-measure latency \
+              --threshold-test t_test \
+              --threshold-max-sample-size 64 \
+              --threshold-upper-boundary 0.98 \
+              --thresholds-reset
+            START_POINT_ARGS=""
+          done
+          # Note: no --error-on-alert flag, so an alert is reported but does NOT fail the build
+          # during the trial. Add --error-on-alert once you trust the thresholds and want
+          # regressions to block master. Early runs won't alert until each benchmark has a few
+          # samples of history to compare against.
