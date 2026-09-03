@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1788453187910,
+  "lastUpdate": 1788453188118,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -1324,6 +1324,60 @@ window.BENCHMARK_DATA = {
             "value": 1238935.1954520089,
             "unit": "ns",
             "range": "± 7983.0364044679245"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": false,
+          "id": "37bb6bef3d2e23e9778f5b9e84c650537b11688b",
+          "message": "The rig meets the struct: delete the null-fill helper\n\nCanonicalSpaces.Fill pre-filled sparse builders' null slots with Blank\n— meaningless under the struct, where default(CellValue) IS Blank and\n??= on a value type rightly refuses to compile. The compiler was the\ntest; the helper joins SpreadsheetSpace's pre-fill loop in the bin.\n(The rig postdates the spike, so this branch first built it in CI.)\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016BvUBicaVLLYkdp7iqFZNo",
+          "timestamp": "2026-09-03T16:07:53Z",
+          "tree_id": "7ee5fa22b9a124939f19ebe64c0fe44407a9744e",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/37bb6bef3d2e23e9778f5b9e84c650537b11688b"
+        },
+        "date": 1788453188095,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Diagnostics.Map_Plain",
+            "value": 2032876.3973958334,
+            "unit": "ns",
+            "range": "± 28031.79861367632"
+          },
+          {
+            "name": "Unrect.Benchmarks.Diagnostics.Map_WithDiagnostics",
+            "value": 2070522.2013020834,
+            "unit": "ns",
+            "range": "± 29201.731334308366"
+          },
+          {
+            "name": "Unrect.Benchmarks.Diagnostics.Choice_FirstAlternativeLoses",
+            "value": 236181.95477701823,
+            "unit": "ns",
+            "range": "± 2014.0064686936755"
+          },
+          {
+            "name": "Unrect.Benchmarks.Diagnostics.Optional_AbsorbsFailure",
+            "value": 245592.23932291666,
+            "unit": "ns",
+            "range": "± 2290.845260474672"
+          },
+          {
+            "name": "Unrect.Benchmarks.Diagnostics.ShapeException_Render",
+            "value": 1333440.4614955357,
+            "unit": "ns",
+            "range": "± 11559.197260018465"
           }
         ]
       }
