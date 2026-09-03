@@ -1,5 +1,24 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <!--
+    THE CHARTER: this project contains exactly the types its contracts speak — nothing else.
+
+    Every type here appears in a contract signature, or in behaviour a contract documents:
+
+      ISpace, the strategy interfaces, IRowLandmark/IColumnLandmark  the contracts themselves
+      CellValue (and CellKind/CellError through it)                  ISpace's indexer
+      Size, Offset, Area                                             the strategy signatures
+      OutOfBoundsException                                           the throw ISpace mandates
+
+    A type that merely USES those contracts belongs above them, in Unrect. That is why GridSpace
+    (an implementation of ISpace) and SpaceExtensions (sugar over one of its methods) left on
+    2026-09-03: both were reachable from here, neither was spoken of by anything here.
+
+    The test before adding a type: name the contract it appears in. If you cannot, it goes in
+    Unrect — which ships in the same package, so nothing about the move reaches a consumer but
+    the namespace.
+  -->
+
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
   </PropertyGroup>

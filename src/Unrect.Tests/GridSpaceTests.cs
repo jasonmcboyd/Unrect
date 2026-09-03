@@ -212,6 +212,12 @@ namespace Unrect.Tests
       Assert.Throws<OutOfBoundsException>(() => space.GetSubspace(new Offset(0, 0), new Area(5, 1)));
       Assert.Throws<OutOfBoundsException>(() => space.GetSubspace(new Offset(0, 0), new Area(1, 5)));
       Assert.Throws<OutOfBoundsException>(() => space.GetSubspace(new Offset(3, 0), new Area(2, 1)));
+
+      // The convenience overloads too — the test is named for the condition, not for one spelling
+      // of it, and the offset-only form is the one that used to answer differently.
+      Assert.Throws<OutOfBoundsException>(() => space.GetSubspace(new Offset(5, 0)));
+      Assert.Throws<OutOfBoundsException>(() => space.GetSubspace(new Offset(0, 5)));
+      Assert.Throws<OutOfBoundsException>(() => space.GetSubspace(new Area(5, 1)));
     }
 
     [Fact]

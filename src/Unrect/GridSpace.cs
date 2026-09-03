@@ -1,6 +1,8 @@
 using System;
 
-namespace Unrect.Core
+using Unrect.Core;
+
+namespace Unrect
 {
   /// <summary>
   /// A rectangular grid of <see cref="CellValue"/>s, viewed as an <see cref="ISpace"/>. This is what

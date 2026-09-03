@@ -112,6 +112,70 @@ namespace Unrect.Tests
       Assert.Throws<OutOfBoundsException>(() => { _ = slice[0, 1]; });
     }
 
+    // --- The three spellings of "give me a subspace" --------------------------------------------------
+    //
+    // Two of these are extension methods rather than members of ISpace, which is why they were not
+    // in this class before. They belong here now because a caller cannot tell the difference: the
+    // convenience overloads are part of the contract as experienced, and the rule they have to keep
+    // is the same one the interface keeps — running off the edge of a space is a bounds condition.
+    //
+    // The offset-only form used to break that rule by accident. An oversized offset produced a
+    // negative extent, and Area's own validation reported it as ArgumentOutOfRangeException — a
+    // different exception from the one the two-argument form throws for the same mistake, and the
+    // wrong kind besides, because ArgumentOutOfRangeException is on the engine's fault list and can
+    // never be absorbed by a tolerance boundary. It went unpinned for as long as it was an accident
+    // nobody had decided about. It is decided now, so it is pinned now.
+
+    [Theory]
+    [MemberData(nameof(Doors))]
+    public void AnOversizedOffsetIsABoundsConditionInEverySpelling(string door)
+    {
+      var space = Door(door);      // three wide, two tall
+
+      Assert.Throws<OutOfBoundsException>(() => space.GetSubspace(new Offset(4, 0)));
+      Assert.Throws<OutOfBoundsException>(() => space.GetSubspace(new Offset(0, 3)));
+      Assert.Throws<OutOfBoundsException>(() => space.GetSubspace(new Offset(4, 0), new Area(1, 1)));
+      Assert.Throws<OutOfBoundsException>(() => space.GetSubspace(new Area(4, 1)));
+      Assert.Throws<OutOfBoundsException>(() => space.GetSubspace(new Area(1, 3)));
+    }
+
+    [Theory]
+    [MemberData(nameof(Doors))]
+    public void AnOffsetAtTheFarCornerIsTheEmptyRemainderRatherThanAFailure(string door)
+    {
+      // The boundary the check has to fall on the right side of. An offset EQUAL to the extent has
+      // not run off the edge — it has arrived at it, and what is left is a real, empty space. A
+      // check written with >= instead of > would turn "there is nothing after this" into an
+      // exception, which is a different and much worse answer for a declaration that is asking
+      // precisely that question.
+      var remainder = Door(door).GetSubspace(new Offset(3, 2));
+
+      Assert.Equal(0, remainder.Area.Size.Width);
+      Assert.Equal(0, remainder.Area.Size.Height);
+    }
+
+    [Theory]
+    [MemberData(nameof(Doors))]
+    public void EachSpellingTakesTheSameRectangleAsTheLongOne(string door)
+    {
+      // The overloads are shorthand, not different operations: an offset with no area means "the
+      // rest", and an area with no offset means "from the corner". Pinned beside their failure mode
+      // so the pair reads as one rule rather than as two unrelated facts.
+      var space = Door(door);
+
+      var remainder = space.GetSubspace(new Offset(1, 1));
+
+      Assert.Equal(2, remainder.Area.Size.Width);
+      Assert.Equal(1, remainder.Area.Size.Height);
+      Assert.Equal("1,1", remainder[0, 0].GetString());
+
+      var corner = space.GetSubspace(new Area(2, 1));
+
+      Assert.Equal("0,0", corner[0, 0].GetString());
+      Assert.Equal("1,0", corner[1, 0].GetString());
+      Assert.Throws<OutOfBoundsException>(() => { _ = corner[2, 0]; });
+    }
+
     // --- Degenerate extents -------------------------------------------------------------------------
 
     [Fact]
@@ -129,6 +193,13 @@ namespace Unrect.Tests
       Assert.Throws<OutOfBoundsException>(() => { _ = space[0, space.Area.Size.Height]; });
       Assert.Throws<OutOfBoundsException>(
         () => space.GetSubspace(new Offset(0, 0), new Area(space.Area.Size.Width + 1, 1)));
+
+      // ...including through the convenience overloads, which is where the three spellings used to
+      // disagree.
+      Assert.Throws<OutOfBoundsException>(
+        () => space.GetSubspace(new Offset(space.Area.Size.Width + 1, 0)));
+      Assert.Throws<OutOfBoundsException>(
+        () => space.GetSubspace(new Area(space.Area.Size.Width + 1, 1)));
     }
 
     [Fact]
