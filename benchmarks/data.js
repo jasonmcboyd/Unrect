@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1788453187441,
+  "lastUpdate": 1788453187685,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -956,6 +956,72 @@ window.BENCHMARK_DATA = {
             "value": 2551807.6846354166,
             "unit": "ns",
             "range": "± 40032.559972058894"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": false,
+          "id": "37bb6bef3d2e23e9778f5b9e84c650537b11688b",
+          "message": "The rig meets the struct: delete the null-fill helper\n\nCanonicalSpaces.Fill pre-filled sparse builders' null slots with Blank\n— meaningless under the struct, where default(CellValue) IS Blank and\n??= on a value type rightly refuses to compile. The compiler was the\ntest; the helper joins SpreadsheetSpace's pre-fill loop in the bin.\n(The rig postdates the spike, so this branch first built it in CI.)\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016BvUBicaVLLYkdp7iqFZNo",
+          "timestamp": "2026-09-03T16:07:53Z",
+          "tree_id": "7ee5fa22b9a124939f19ebe64c0fe44407a9744e",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/37bb6bef3d2e23e9778f5b9e84c650537b11688b"
+        },
+        "date": 1788453187661,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Values.Create_FromInts",
+            "value": 67907750.42016806,
+            "unit": "ns",
+            "range": "± 1380302.7971648688"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Create_FromObjects",
+            "value": 32181577.9625,
+            "unit": "ns",
+            "range": "± 300820.6104633273"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Sweep_GetDecimal",
+            "value": 19921997.75669643,
+            "unit": "ns",
+            "range": "± 15442.91222481531"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Sweep_GetString",
+            "value": 2667624.3580729165,
+            "unit": "ns",
+            "range": "± 17986.455906881845"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Sweep_TryGetByKind",
+            "value": 1732037.1286458333,
+            "unit": "ns",
+            "range": "± 27065.563330751986"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Sweep_Equality",
+            "value": 7773322.544170673,
+            "unit": "ns",
+            "range": "± 10269.598126166473"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Sweep_Blankness",
+            "value": 595143.7081380208,
+            "unit": "ns",
+            "range": "± 16636.167674800345"
           }
         ]
       }
