@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1788475703637,
+  "lastUpdate": 1788475703791,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -3114,6 +3114,65 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/jasonmcboyd/Unrect/commit/ef348dd370a754a5e4d2cce5dbea9a4328100c95"
         },
         "date": 1788472137654,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Strategies.RowsWhileAnyValue_FullHeight",
+            "value": 344,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.RowsWhileAnyValue_Sparse",
+            "value": 344,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_HitAt10Percent",
+            "value": 376,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_HitAt90Percent",
+            "value": 379,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_MissWholeGrid",
+            "value": 2715,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Until_BoundResolution",
+            "value": 523,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.BlankRows_Skip",
+            "value": 377,
+            "unit": "bytes"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "f9d4b35d017794b434bd9f3a3ecf31dc81ff83bb",
+          "message": "Fix the 2-core CI flake: a blocked-borrower proof needs a started borrower\n\nAReachWaitsForAWarmerRatherThanStartingASecondOpenOfTheSameFile failed on\nthe GitHub runner (ef348dd) on \"the wait is counted\": WarmWaitMilliseconds\nwas 0, and 0 was the honest count. The pool's warmers ride Task.Run and\nthe gated arrangement BLOCKS them inside their opens, one pool thread\neach — on a two-core runner that is the entire starting thread pool, so\nthe test's own Task.Run borrower never started until thread injection got\naround to it. Both blocked-ness assertions passed vacuously (not finished\nbecause not scheduled), and by the time the reach ran, the warm reader was\nparked and there was nothing left to wait for.\n\nReproduced under taskset -c 0,1: three failures in four runs before the\nfix, none in six Debug runs plus a Release run after. The fix is\nOnItsOwnThread (TaskCreationOptions.LongRunning) at the four sites that\nassert a borrower is blocked — a dedicated thread starts unconditionally,\nso \"started, and still not finished\" really does mean \"parked inside\nBorrow\". The three sibling sites could only pass vacuously, never fail,\nbut their proofs were the same lie under starvation. The burst tests\nalready stood on structural evidence (SpinUntil on OpensStarted) and are\nuntouched.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016BvUBicaVLLYkdp7iqFZNo",
+          "timestamp": "2026-09-03T22:37:18Z",
+          "tree_id": "c37ffff8e7e618f8d8cdb3778c429c1bd5259fc9",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/f9d4b35d017794b434bd9f3a3ecf31dc81ff83bb"
+        },
+        "date": 1788475703772,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
