@@ -83,8 +83,9 @@ namespace Unrect.Tests
       // The title row has a value only in column 0; the rest of the row is genuinely empty.
       Assert.True(space[0, 0].HasValue);
       Assert.True(space[1, 0].IsBlank);
-      Assert.Same(CellValue.Blank, space[1, 0]);
-      Assert.Same(CellValue.Blank, space[3, 0]);
+      // Was Assert.Same: CellValue is a value type, so blankness is a value, not an instance.
+      Assert.Equal(CellValue.Blank, space[1, 0]);
+      Assert.Equal(CellValue.Blank, space[3, 0]);
     }
 
     [Fact]

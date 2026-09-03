@@ -83,11 +83,12 @@ namespace Unrect.Tests
     }
 
     [Fact]
-    public void Create_WithBlankPredicate_UsesTheBlankSingleton()
+    public void Create_WithBlankPredicate_YieldsTheBlankValue()
     {
       var space = GridSpace.Create(new[,] { { 0 } }, isBlank: v => v == 0);
 
-      Assert.Same(CellValue.Blank, space[0, 0]);
+      // Was Assert.Same: CellValue is a value type, so blankness is a value, not an instance.
+      Assert.Equal(CellValue.Blank, space[0, 0]);
     }
 
     [Fact]
@@ -131,20 +132,24 @@ namespace Unrect.Tests
       Assert.False(space[1, 0].GetBoolean());
     }
 
+    // Two tests stood here — Create_WhenTheMapReturnsNull_Throws and
+    // Constructor_WithANullCell_Throws — and both are gone because the thing they guarded against
+    // no longer exists: CellValue is a value type, so a map cannot return null and an array cannot
+    // hold a null cell. The states are unrepresentable rather than merely rejected. What the tests
+    // were really protecting — that an unfilled cell is Blank, not something broken — is now
+    // structural (default(CellValue) is Blank) and is covered by
+    // Constructor_LeavesUnfilledCellsBlank below.
+
     [Fact]
-    public void Create_WhenTheMapReturnsNull_Throws()
+    public void Constructor_LeavesUnfilledCellsBlank()
     {
-      Func<int, CellValue> map = _ => null!;
+      var values = new CellValue[1, 2];
+      values[0, 0] = CellValue.Of(1);
 
-      Assert.Throws<ArgumentException>(() => GridSpace.Create(new[,] { { 1 } }, map));
-    }
+      var space = new GridSpace(values);
 
-    [Fact]
-    public void Constructor_WithANullCell_Throws()
-    {
-      var values = new[,] { { CellValue.Of(1), null! } };
-
-      Assert.Throws<ArgumentException>(() => new GridSpace(values));
+      Assert.Equal(1, space[0, 0].GetInt());
+      Assert.True(space[1, 0].IsBlank);
     }
 
     // --- Subspaces ------------------------------------------------------------------------------

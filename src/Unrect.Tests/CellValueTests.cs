@@ -44,9 +44,11 @@ namespace Unrect.Tests
     }
 
     [Fact]
-    public void Of_NullString_ReturnsTheBlankSingleton()
+    public void Of_NullString_ReturnsBlank()
     {
-      Assert.Same(CellValue.Blank, CellValue.Of((string?)null));
+      // Was Assert.Same on the blank singleton: CellValue is a value type, so what is asserted is
+      // that a null string produces the blank value, which is the whole of what the singleton meant.
+      Assert.Equal(CellValue.Blank, CellValue.Of((string?)null));
     }
 
     [Fact]

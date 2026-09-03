@@ -33,11 +33,11 @@ namespace Unrect.Core
   {
     /// <summary>
     /// The whole of <paramref name="values"/>, as a space. Blankness is already decided: whatever
-    /// produced the array chose which cells are <see cref="CellValue.Blank"/>.
+    /// produced the array chose which cells are <see cref="CellValue.Blank"/> — and a cell nobody
+    /// filled in is already one, because <c>default(CellValue)</c> is blank.
     /// </summary>
-    /// <exception cref="ArgumentException">A cell is null.</exception>
     public GridSpace(CellValue[,] values)
-      : this(ValidateNoNulls(values), default, new Area(values.GetLength(1), values.GetLength(0)))
+      : this(values, default, new Area(values.GetLength(1), values.GetLength(0)))
     {
     }
 
@@ -86,16 +86,13 @@ namespace Unrect.Core
     /// blankness is decided: return <see cref="CellValue.Blank"/> for whatever this source considers
     /// an empty cell.
     /// </summary>
-    /// <exception cref="ArgumentException"><paramref name="map"/> returned null for a value.</exception>
     public static GridSpace Create<T>(T[,] values, Func<T, CellValue> map)
     {
       var cells = new CellValue[values.GetLength(0), values.GetLength(1)];
 
       for (int row = 0; row < values.GetLength(0); row++)
         for (int column = 0; column < values.GetLength(1); column++)
-          cells[row, column] =
-            map(values[row, column])
-            ?? throw new ArgumentException($"Map returned null for the value at column {column}, row {row}.", nameof(map));
+          cells[row, column] = map(values[row, column]);
 
       return new GridSpace(cells);
     }
@@ -111,15 +108,5 @@ namespace Unrect.Core
     /// <summary>Text, where the blankness default is that null or empty is an empty cell.</summary>
     public static GridSpace Create(string?[,] values)
       => Create(values, v => string.IsNullOrEmpty(v) ? CellValue.Blank : CellValue.Of(v));
-
-    private static CellValue[,] ValidateNoNulls(CellValue[,] values)
-    {
-      for (int row = 0; row < values.GetLength(0); row++)
-        for (int column = 0; column < values.GetLength(1); column++)
-          if (values[row, column] is null)
-            throw new ArgumentException($"The value at column {column}, row {row} is null.", nameof(values));
-
-      return values;
-    }
   }
 }

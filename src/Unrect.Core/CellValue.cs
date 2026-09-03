@@ -8,48 +8,70 @@ namespace Unrect.Core
   /// for <see cref="CellKind.Error"/>); read it back with the typed <c>TryGet*</c>/<c>Get*</c> pairs,
   /// never by inspecting a backend type directly — that boundary is the whole point of the canonical
   /// model.
+  /// <para>
+  /// A value type, and deliberately a small one: a sheet is an array of these, and a million-row
+  /// workbook holds eight million of them. Three fields carry every kind — the kind itself, eight
+  /// bytes of payload, and one reference for the payloads that need a heap object (a string, or the
+  /// exact decimal a number may remember). A number that arrived as a <c>double</c>, a date, a
+  /// boolean and a blank therefore cost nothing beyond the array slot they sit in.
+  /// </para>
+  /// <para>
+  /// <c>default(CellValue)</c> is <see cref="Blank"/>, which is what makes a freshly allocated
+  /// <c>CellValue[,]</c> an already-blank sheet.
+  /// </para>
   /// </summary>
-  public sealed class CellValue : IEquatable<CellValue>
+  public readonly struct CellValue : IEquatable<CellValue>
   {
-    private CellValue()
+    // Ticks occupy the low 62 bits of a DateTime and its DateTimeKind the top two — the runtime's
+    // own encoding, replicated here so a temporal cell packs into the payload word without losing
+    // the Kind a caller may read back off GetDateTime.
+    private const long TicksMask = 0x3FFFFFFFFFFFFFFF;
+
+    private readonly CellKind _kind;
+
+    // The payload that fits in a word: a double's bits, a packed DateTime, a boolean as 0/1, or an
+    // error's code. Unused, and zero, for Blank and Text.
+    private readonly long _value;
+
+    // The payload that does not: a Text cell's string, a Number cell's exact decimal when it kept
+    // one (boxed), or an Error cell's literal when it differs from the canonical spelling. Null
+    // whenever the kind has nothing to hang here, which is the common case.
+    private readonly object? _overflow;
+
+    private CellValue(CellKind kind, long value, object? overflow)
     {
-      Kind = CellKind.Blank;
+      _kind = kind;
+      _value = value;
+      _overflow = overflow;
     }
 
     private CellValue(string text)
+      : this(CellKind.Text, 0L, text)
     {
-      Kind = CellKind.Text;
-      Text = text;
     }
 
     private CellValue(double number, decimal? exactNumber)
+      : this(CellKind.Number, BitConverter.DoubleToInt64Bits(number), exactNumber.HasValue ? (object)exactNumber.Value : null)
     {
-      Kind = CellKind.Number;
-      Number = number;
-      ExactNumber = exactNumber;
     }
 
     private CellValue(DateTime temporal)
+      : this(CellKind.Temporal, temporal.Ticks | ((long)temporal.Kind << 62), null)
     {
-      Kind = CellKind.Temporal;
-      Temporal = temporal;
     }
 
     private CellValue(bool boolean)
+      : this(CellKind.Boolean, boolean ? 1L : 0L, null)
     {
-      Kind = CellKind.Boolean;
-      Boolean = boolean;
     }
 
     private CellValue(CellError error, string? errorText)
+      : this(CellKind.Error, (long)error, errorText)
     {
-      Kind = CellKind.Error;
-      Error = error;
-      ErrorText = errorText;
     }
 
-    /// <summary>The one blank instance — <see cref="CellKind.Blank"/> carries no payload, so nothing distinguishes two blanks.</summary>
-    public static CellValue Blank { get; } = new CellValue();
+    /// <summary>The blank value — <see cref="CellKind.Blank"/> carries no payload, so nothing distinguishes two blanks.</summary>
+    public static CellValue Blank => default;
 
     /// <summary>A <see cref="CellKind.Text"/> cell, or <see cref="Blank"/> when <paramref name="value"/> is null.</summary>
     public static CellValue Of(string? value) => value is null ? Blank : new CellValue(value);
@@ -90,7 +112,7 @@ namespace Unrect.Core
       => new CellValue(error, string.IsNullOrWhiteSpace(literal) || literal == Display(error) ? null : literal);
 
     /// <summary>Which kind of value this cell holds.</summary>
-    public CellKind Kind { get; }
+    public CellKind Kind => _kind;
 
     /// <summary>Whether this cell carries no value — <see cref="Kind"/> is <see cref="CellKind.Blank"/>.</summary>
     public bool IsBlank => Kind == CellKind.Blank;
@@ -98,13 +120,15 @@ namespace Unrect.Core
     /// <summary>The negation of <see cref="IsBlank"/>; an error cell has a value and is never blank.</summary>
     public bool HasValue => !IsBlank;
 
-    private string? Text { get; }
-    private double Number { get; }
-    private decimal? ExactNumber { get; }
-    private DateTime Temporal { get; }
-    private bool Boolean { get; }
-    private CellError Error { get; }
-    private string? ErrorText { get; }
+    // The payloads, unpacked. Each is meaningful only for its own kind; every reader below checks
+    // Kind first, exactly as it did when these were fields.
+    private string? Text => (string?)_overflow;
+    private double Number => BitConverter.Int64BitsToDouble(_value);
+    private decimal? ExactNumber => _overflow is decimal exact ? exact : (decimal?)null;
+    private DateTime Temporal => new DateTime(_value & TicksMask, (DateTimeKind)((_value >> 62) & 3L));
+    private bool Boolean => _value != 0L;
+    private CellError Error => (CellError)_value;
+    private string? ErrorText => (string?)_overflow;
 
     /// <summary>The cell's text, or null when <see cref="Kind"/> is not <see cref="CellKind.Text"/>.</summary>
     public string? TryGetString() => Kind == CellKind.Text ? Text : null;
@@ -113,7 +137,7 @@ namespace Unrect.Core
     public string GetString() => TryGetString() ?? throw WrongKind(CellKind.Text);
 
     /// <summary>The cell's number as a <see cref="double"/>, or null when <see cref="Kind"/> is not <see cref="CellKind.Number"/>.</summary>
-    public double? TryGetDouble() => Kind == CellKind.Number ? Number : null;
+    public double? TryGetDouble() => Kind == CellKind.Number ? Number : (double?)null;
 
     /// <summary>The cell's number as a <see cref="double"/>; throws when <see cref="Kind"/> is not <see cref="CellKind.Number"/> (see <see cref="TryGetDouble"/>).</summary>
     public double GetDouble() => TryGetDouble() ?? throw WrongKind(CellKind.Number);
@@ -129,7 +153,7 @@ namespace Unrect.Core
       if (Kind != CellKind.Number)
         return null;
 
-      return ExactNumber ?? (IsRepresentableAsDecimal(Number) ? (decimal)Number : null);
+      return ExactNumber ?? (IsRepresentableAsDecimal(Number) ? (decimal)Number : (decimal?)null);
     }
 
     /// <summary>The cell's number as a <see cref="decimal"/>; throws when it does not fit or <see cref="Kind"/> is not <see cref="CellKind.Number"/> (see <see cref="TryGetDecimal"/>).</summary>
@@ -146,9 +170,11 @@ namespace Unrect.Core
       if (Kind != CellKind.Number)
         return null;
 
-      return Number >= int.MinValue && Number <= int.MaxValue && Math.Floor(Number) == Number
-        ? (int)Number
-        : null;
+      var number = Number;
+
+      return number >= int.MinValue && number <= int.MaxValue && Math.Floor(number) == number
+        ? (int)number
+        : (int?)null;
     }
 
     /// <summary>The cell's number as an <see cref="int"/>; throws when it is not a whole number in range or <see cref="Kind"/> is not <see cref="CellKind.Number"/> (see <see cref="TryGetInt"/>).</summary>
@@ -160,7 +186,7 @@ namespace Unrect.Core
         : WrongKindMessage(CellKind.Number));
 
     /// <summary>The cell's date and time, or null when <see cref="Kind"/> is not <see cref="CellKind.Temporal"/>.</summary>
-    public DateTime? TryGetDateTime() => Kind == CellKind.Temporal ? Temporal : null;
+    public DateTime? TryGetDateTime() => Kind == CellKind.Temporal ? Temporal : (DateTime?)null;
 
     /// <summary>The cell's date and time; throws when <see cref="Kind"/> is not <see cref="CellKind.Temporal"/> (see <see cref="TryGetDateTime"/>).</summary>
     public DateTime GetDateTime() => TryGetDateTime() ?? throw WrongKind(CellKind.Temporal);
@@ -171,13 +197,13 @@ namespace Unrect.Core
     public DateTime GetDate() => GetDateTime().Date;
 
     /// <summary>The cell's boolean, or null when <see cref="Kind"/> is not <see cref="CellKind.Boolean"/>.</summary>
-    public bool? TryGetBoolean() => Kind == CellKind.Boolean ? Boolean : null;
+    public bool? TryGetBoolean() => Kind == CellKind.Boolean ? Boolean : (bool?)null;
 
     /// <summary>The cell's boolean; throws when <see cref="Kind"/> is not <see cref="CellKind.Boolean"/> (see <see cref="TryGetBoolean"/>).</summary>
     public bool GetBoolean() => TryGetBoolean() ?? throw WrongKind(CellKind.Boolean);
 
     /// <summary>The cell's error, or null when <see cref="Kind"/> is not <see cref="CellKind.Error"/>.</summary>
-    public CellError? TryGetError() => Kind == CellKind.Error ? Error : null;
+    public CellError? TryGetError() => Kind == CellKind.Error ? Error : (CellError?)null;
 
     /// <summary>The cell's error; throws when <see cref="Kind"/> is not <see cref="CellKind.Error"/> (see <see cref="TryGetError"/>).</summary>
     public CellError GetError() => TryGetError() ?? throw WrongKind(CellKind.Error);
@@ -197,12 +223,8 @@ namespace Unrect.Core
     /// hash-consistent, deviating from IEEE <c>==</c> on purpose. Equality is for matching
     /// cells; <see cref="GetDecimal"/> is for extracting values.
     /// </summary>
-    public bool Equals(CellValue? other)
+    public bool Equals(CellValue other)
     {
-      if (other is null)
-        return false;
-      if (ReferenceEquals(this, other))
-        return true;
       if (Kind != other.Kind)
         return false;
 
@@ -218,7 +240,7 @@ namespace Unrect.Core
     }
 
     /// <summary>Equality against any object — see <see cref="Equals(CellValue)"/> when the other value is not a <see cref="CellValue"/>.</summary>
-    public override bool Equals(object? obj) => Equals(obj as CellValue);
+    public override bool Equals(object? obj) => obj is CellValue other && Equals(other);
 
     /// <summary>Consistent with <see cref="Equals(CellValue)"/>: hashes the kind and its payload, numbers on their double representation.</summary>
     public override int GetHashCode()
@@ -236,11 +258,11 @@ namespace Unrect.Core
       return HashCode.Combine(Kind, payload);
     }
 
-    /// <summary>Same as <see cref="Equals(CellValue)"/>, null-safe on either side.</summary>
-    public static bool operator ==(CellValue? first, CellValue? second) => first?.Equals(second) ?? second is null;
+    /// <summary>Same as <see cref="Equals(CellValue)"/>; the compiler lifts it over <c>CellValue?</c>, where two nulls are equal.</summary>
+    public static bool operator ==(CellValue first, CellValue second) => first.Equals(second);
 
     /// <summary>The negation of the equality operator above.</summary>
-    public static bool operator !=(CellValue? first, CellValue? second) => !(first == second);
+    public static bool operator !=(CellValue first, CellValue second) => !(first == second);
 
     /// <summary>
     /// A diagnostic rendering of the kind and payload, not display output. Formatting a cell for

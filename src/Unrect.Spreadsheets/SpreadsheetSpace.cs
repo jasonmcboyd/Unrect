@@ -114,10 +114,9 @@ namespace Unrect.Spreadsheets
         var rowCount = reader.RowCount;
         var fieldCount = reader.FieldCount;
 
+        // Already blank: default(CellValue) is Blank, so a short row leaves the cells it never
+        // reached exactly as they should be, with no fill pass over the sheet.
         var cells = new CellValue[rowCount, fieldCount];
-        for (int i = 0; i < rowCount; i++)
-          for (int j = 0; j < fieldCount; j++)
-            cells[i, j] = CellValue.Blank;
 
         var row = 0;
         while (row < rowCount && reader.Read())
