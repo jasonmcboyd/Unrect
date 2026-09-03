@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1788448658922,
+  "lastUpdate": 1788449670693,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -60,6 +60,64 @@ window.BENCHMARK_DATA = {
             "value": 12246216.028846154,
             "unit": "ns",
             "range": "± 48079.52826762986"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd",
+            "email": "jason.boyd.ce@gmail.com"
+          },
+          "committer": {
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd",
+            "email": "jason.boyd.ce@gmail.com"
+          },
+          "id": "16017b750b8e22d895c32aba953f6dff549436ab",
+          "message": "Continuous benchmarking: the Copse rig, stolen faithfully\n\nsrc/Unrect.Benchmarks: 34 benchmarks in six one-class families —\nEngine (layout composites), Strategies (scans and anchors), Tables\n(the ladder at 10k/100k plus binder construction), Values (the\nrepresentation-sensitive family: space construction, accessor and\nequality sweeps), EndToEnd (the investor-IRR document at 400/4,000\ninvestors), Diagnostics (Map vs MapWithDiagnostics, rollback and\nabsorption costs) — over GridSpace-built synthetic fixtures, no\nworkbooks on runners.\n\nWorkflows adapted from copselib/copse-dotnet: per-family matrix legs\n(comparisons never cross the shared-runner CPU lottery), per-CPU\ntestbed recording, gh-pages trend dashboard (master-only), optional\nBencher overlay with branch-vs-master baselining. deploy-dashboard\nsyncs benchmark-dashboard/ to gh-pages.\n\nConventions in docs/benchmarking.md, including the load-bearing rule\ndiscovered while building: one benchmark class per family, because the\nexport is named for the class and the publish step takes the first\nmatch — a split family silently publishes half its rows. Two fixture\nfidelity bugs found by checking outputs rather than timings, fixed:\na sparse fixture whose all-blank rows truncated every scan, and a\nkind-cycle resonance that blanked two columns in every row.\n\nFirst findings on record: the diagnostics channel is free on a clean\nparse (ratio 0.98), and Values.Create_FromInts allocates ~96 MB/op —\nthe number the parked CellValue struct patch exists to move, now with\na trend line waiting to judge it.\n\n906 tests, 0 warnings.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016BvUBicaVLLYkdp7iqFZNo",
+          "timestamp": "2026-09-03T01:51:32Z",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/16017b750b8e22d895c32aba953f6dff549436ab"
+        },
+        "date": 1788449669770,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Engine.VerticalFlow_ManyChildren",
+            "value": 1048744.6022786458,
+            "unit": "ns",
+            "range": "± 14565.080188403246"
+          },
+          {
+            "name": "Unrect.Benchmarks.Engine.Flow_Nested",
+            "value": 246152.837890625,
+            "unit": "ns",
+            "range": "± 3665.704356575879"
+          },
+          {
+            "name": "Unrect.Benchmarks.Engine.Overlay_AnchoredChildren",
+            "value": 264675.2246791295,
+            "unit": "ns",
+            "range": "± 542.8726398710696"
+          },
+          {
+            "name": "Unrect.Benchmarks.Engine.Repeat_SeparatedBlocks",
+            "value": 518220.03388671874,
+            "unit": "ns",
+            "range": "± 7290.058419558245"
+          },
+          {
+            "name": "Unrect.Benchmarks.Engine.Under_CaptionedSection",
+            "value": 87248.77011343148,
+            "unit": "ns",
+            "range": "± 133.79600049037106"
+          },
+          {
+            "name": "Unrect.Benchmarks.Engine.Range_ReadAllCells",
+            "value": 11833196.595833333,
+            "unit": "ns",
+            "range": "± 122155.13512031641"
           }
         ]
       }
