@@ -312,10 +312,18 @@ tables, and should become a third example workbook when wave 2 starts.
 - `CellValue` equality is double-based by design (`Of(1m) == Of(1.0)`), while
   `GetDecimal()` may return different exact values for equal cells — documented on
   `Equals`. Revisit if exact-decimal matching is ever needed.
-- `CellValue` memory layout: each instance carries all payload slots (~72 bytes/cell)
+- ~~`CellValue` memory layout: each instance carries all payload slots (~72 bytes/cell)
   and `SpreadsheetSpace` materializes whole sheets eagerly. Fine at example scale;
   revisit before million-row workloads (the `Blank` singleton already covers the
-  dominant sparse case).
+  dominant sparse case).~~ **Revisited at the million-row edge (2026-09-03), both halves.**
+  `CellValue` is now a 24-byte readonly struct (kind + inline long payload + overflow
+  reference); the `Blank` singleton was *replaced by* `default(CellValue)`, which is
+  Blank by construction — the sparse case stays free without an identity to share.
+  Judged by the benchmark rig on neutral runners: creation allocations −42%/−61%,
+  double/string/date/bool cells allocate zero heap; faithfulness held by the full suite
+  plus a 54-check cross-build harness. Eager materialization's fix (the windowed
+  streaming space, 681 MB → 2 MB measured) is prototyped and parked pending the engine's
+  area-resolution double-pass fusion.
 - Exact shape of the capability-declaration API on shapes.
 - ~~Whether `Table()` yields a composite region or a mapped result~~ — resolved by
   the applicative-fusion decision: combinators carry projections and yield mapped

@@ -2,7 +2,7 @@
 
 ## Status
 
-This project is experimental, but both the substrate (CellValue, spaces, strategies) and the shape layer (`Unrect.Shapes`) now have deliberate, review-hardened semantics pinned by `src/Unrect.Tests` (xUnit, 906 tests). Run `dotnet test src/Unrect.sln`; keep it green. Gate builds with `dotnet build src/Unrect.sln -v q --no-incremental` — incremental builds silently skip analyzer diagnostics (xUnit analyzers etc.), so a plain build can report 0 warnings while warnings exist.
+This project is experimental, but both the substrate (CellValue, spaces, strategies) and the shape layer (`Unrect.Shapes`) now have deliberate, review-hardened semantics pinned by `src/Unrect.Tests` (xUnit, 905 tests). Run `dotnet test src/Unrect.sln`; keep it green. Gate builds with `dotnet build src/Unrect.sln -v q --no-incremental` — incremental builds silently skip analyzer diagnostics (xUnit analyzers etc.), so a plain build can report 0 warnings while warnings exist.
 
 ## Problem Domain
 
@@ -62,7 +62,7 @@ Excel file / 2D array
 
 ### Key Abstractions
 
-- **`CellValue` / `CellKind`** — The canonical cell vocabulary (Blank, Text, Number, Temporal, Boolean, Error). One `Number` kind with granular checked accessors (`GetDouble`/`GetDecimal`/`GetInt`); numbers created from `decimal`/`int`/`long` retain an exact decimal alongside the double. Blankness is decided at adaptation time (e.g., `GridSpace.Create(nums, isBlank: v => v == 0)`); `Blank` is a singleton kind, so strategies just test `IsBlank`/`HasValue`.
+- **`CellValue` / `CellKind`** — The canonical cell vocabulary (Blank, Text, Number, Temporal, Boolean, Error). One `Number` kind with granular checked accessors (`GetDouble`/`GetDecimal`/`GetInt`); numbers created from `decimal`/`int`/`long` retain an exact decimal alongside the double. Blankness is decided at adaptation time (e.g., `GridSpace.Create(nums, isBlank: v => v == 0)`); `CellValue` is a 24-byte readonly struct whose `default` IS `Blank` (adopted 2026-09-03, judged by the benchmark rig: creation allocations −42% to −61%, double/string/date/bool cells allocate zero heap); strategies just test `IsBlank`/`HasValue`.
 - **`ISpace`** — A 2D rectangular grid of `CellValue` with subspace slicing. Non-generic since the wave-1 canonical-model refactor (see `docs/design/canonical-model-and-shapes.md`).
 - **Strategies** — Pluggable functions that determine spatial boundaries:
   - `ISizeStrategy` — computes a `Size` from available space
