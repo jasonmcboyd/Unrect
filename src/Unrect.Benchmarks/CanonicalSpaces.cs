@@ -255,7 +255,6 @@ namespace Unrect.Benchmarks
           for (int column = 0; column < Columns; column++)
             cells[block * (blockRows + 1) + row, column] = CellValue.Of(block * blockRows + row + column);
 
-      Fill(cells, CellValue.Blank);
 
       return cells;
     }
@@ -334,7 +333,6 @@ namespace Unrect.Benchmarks
       cells[row++, 0] = CellValue.Of(InceptionCaption);
       WriteBlocks(cells, row, investors, 2023);
 
-      Fill(cells, CellValue.Blank);
 
       return cells;
     }
@@ -417,17 +415,5 @@ namespace Unrect.Benchmarks
 
     private static string Investor(int i) => "Investor " + i.ToString(CultureInfo.InvariantCulture);
 
-    /// <summary>
-    /// Replaces the array's nulls with <paramref name="value"/>. Builders that write a sparse
-    /// layout leave holes, and <see cref="GridSpace"/> rejects a null cell -- deliberately, since a
-    /// null cell in a real adapter is a bug. Filling at the end costs one pass and keeps the
-    /// builders readable.
-    /// </summary>
-    private static void Fill(CellValue[,] cells, CellValue value)
-    {
-      for (int row = 0; row < cells.GetLength(0); row++)
-        for (int column = 0; column < cells.GetLength(1); column++)
-          cells[row, column] ??= value;
-    }
   }
 }
