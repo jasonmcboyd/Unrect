@@ -201,7 +201,7 @@ namespace Unrect.Tests.Streaming
       using var pool = new ReaderPool(source, 1, warmReaders: false);
 
       var held = pool.Borrow(0, 0, out _);
-      var waiting = Task.Run(() => pool.Return(pool.Borrow(1, 0, out _)));
+      var waiting = OnItsOwnThread(() => pool.Return(pool.Borrow(1, 0, out _)));
 
       Assert.False(waiting.IsCompleted, "the second borrow must not proceed while the only reader is out");
       Assert.NotSame(waiting, await Task.WhenAny(waiting, Task.Delay(200)));
@@ -406,9 +406,12 @@ namespace Unrect.Tests.Streaming
     public async Task AReachWaitsForAWarmerRatherThanStartingASecondOpenOfTheSameFile()
     {
       // Two opens of one file finish no sooner than one and the loser's work is thrown away, so
-      // waiting is the right move — and this is what that wait costs. The gate makes the race an
-      // arrangement rather than a hope: the warmer is provably still inside its open when the reach
-      // arrives.
+      // waiting is the right move — and this is what that wait costs. Two things make the race an
+      // arrangement rather than a hope, and each proves a different half: the gate holds the warmer
+      // provably inside its open, and the dedicated thread makes the reach provably ARRIVE while it
+      // is there — this is the test the OnItsOwnThread doc tells the story of, the one that can
+      // FAIL under starvation, because a reach that runs after the warmer parked waits 0ms and 0ms
+      // is the honest count.
       var source = Sheet();
       using var gate = new ManualResetEventSlim(initialState: false);
       using var pool = new ReaderPool(source, 2, warmReaders: true);
@@ -416,7 +419,7 @@ namespace Unrect.Tests.Streaming
       source.OpenGate = gate;
       pool.BeginWarming();                          // the warmers block inside Open
 
-      var reaching = Task.Run(() => pool.Return(pool.Borrow(0, 10, out _)));
+      var reaching = OnItsOwnThread(() => pool.Return(pool.Borrow(0, 10, out _)));
 
       Assert.NotSame(reaching, await Task.WhenAny(reaching, Task.Delay(200)));
       Assert.False(reaching.IsCompleted, "the reach must wait for the warmer it would otherwise duplicate");
@@ -446,6 +449,20 @@ namespace Unrect.Tests.Streaming
 
     /// <summary>Long enough that "still not finished" means blocked rather than merely slow.</summary>
     private static readonly TimeSpan LongEnoughToProveItIsBlocked = TimeSpan.FromMilliseconds(200);
+
+    /// <summary>
+    /// A borrower whose blocked-ness a test asserts must run on its own thread. Task.Run is not
+    /// good enough: the pool's warmers also ride the thread pool, and in the gated arrangements
+    /// they BLOCK inside their opens holding a pool thread each — on a two-core CI runner that is
+    /// the entire starting pool, and a queued borrower does not run until thread injection gets
+    /// around to it (~1/sec). "Not finished after 200ms" is then true because the borrower never
+    /// STARTED, not because it is waiting — every blocked-proof passes vacuously, and a test that
+    /// asserts the cost of the wait fails, because by the time the borrower runs there is nothing
+    /// left to wait for. A dedicated thread starts unconditionally, so "started, and still not
+    /// finished" really does mean "parked inside Borrow". (Found by CI on ef348dd, 2026-09-03.)
+    /// </summary>
+    private static Task OnItsOwnThread(Action borrower)
+      => Task.Factory.StartNew(borrower, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 
     [Fact]
     public async Task AFailedBorrowReturnsItsLease()
@@ -498,10 +515,11 @@ namespace Unrect.Tests.Streaming
       pool.Adopt(pool.OpenParked(), 0, 0);
 
       var held = pool.Borrow(0, 0, out _);
-      var waiting = Task.Run(() => pool.Return(pool.Borrow(0, 10, out _)));
+      var waiting = OnItsOwnThread(() => pool.Return(pool.Borrow(0, 10, out _)));
 
-      // Not a sleep: this PROVES the borrower is parked. With the only lease checked out there is
-      // nowhere else it can be, and it demonstrably has not finished.
+      // Not a sleep: this PROVES the borrower is parked. On its own thread it has certainly
+      // started; with the only lease checked out there is nowhere else it can be, and it
+      // demonstrably has not finished.
       Assert.NotSame(waiting, await Task.WhenAny(waiting, Task.Delay(LongEnoughToProveItIsBlocked)));
 
       pool.Dispose();
@@ -586,7 +604,7 @@ namespace Unrect.Tests.Streaming
       await pool.WhenWarmersIdle();
 
       var held = pool.Borrow(0, 0, out _);
-      var waiting = Task.Run(() => pool.Return(pool.Borrow(0, 5, out _)));
+      var waiting = OnItsOwnThread(() => pool.Return(pool.Borrow(0, 5, out _)));
 
       Assert.NotSame(waiting, await Task.WhenAny(waiting, Task.Delay(LongEnoughToProveItIsBlocked)));
 
