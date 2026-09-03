@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1788453189011,
+  "lastUpdate": 1788453189239,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -2393,6 +2393,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Unrect.Benchmarks.EndToEnd.Document_4000Investors",
             "value": 38507735,
+            "unit": "bytes"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": false,
+          "id": "37bb6bef3d2e23e9778f5b9e84c650537b11688b",
+          "message": "The rig meets the struct: delete the null-fill helper\n\nCanonicalSpaces.Fill pre-filled sparse builders' null slots with Blank\n— meaningless under the struct, where default(CellValue) IS Blank and\n??= on a value type rightly refuses to compile. The compiler was the\ntest; the helper joins SpreadsheetSpace's pre-fill loop in the bin.\n(The rig postdates the spike, so this branch first built it in CI.)\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016BvUBicaVLLYkdp7iqFZNo",
+          "timestamp": "2026-09-03T16:07:53Z",
+          "tree_id": "7ee5fa22b9a124939f19ebe64c0fe44407a9744e",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/37bb6bef3d2e23e9778f5b9e84c650537b11688b"
+        },
+        "date": 1788453189214,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.EndToEnd.Document_400Investors",
+            "value": 3874499,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.EndToEnd.Document_4000Investors",
+            "value": 38635859,
             "unit": "bytes"
           }
         ]
