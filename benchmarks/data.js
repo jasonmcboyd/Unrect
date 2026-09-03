@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1788472136381,
+  "lastUpdate": 1788472136545,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -684,6 +684,72 @@ window.BENCHMARK_DATA = {
             "value": 1236732.7483723958,
             "unit": "ns",
             "range": "± 1351.5268297297707"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "ef348dd370a754a5e4d2cce5dbea9a4328100c95",
+          "message": "Streaming Part 1: Workbook, the windowed store, the lead/chase pool\n\ndocs/design/streaming-spec.md made real. The memory investigation's\nanswer, built on the algebra's own monotonicity: a million-row workbook\nparses in a ~1 MB window instead of 214 MB resident.\n\n- Workbook.Open(path) owns the apparatus — file handles, reader pool,\n  chunk stores — and vends lent Sheet(name) views: pure ISpace values,\n  invalidated only by the owner's Dispose (a fault, never absorbable).\n  Sheet is idempotent per name; a second declaration over the same open\n  book rides warm readers and hot chunks. The motivating idiom: one\n  shape over a year of monthly closes, one using-block per file,\n  Parallel.ForEach-ready\n- The IRowSource seam (blankness decided adapter-side, faults\n  injectable, benchmarks workbook-free), the chunked SheetStore\n  (BytesPerCell = 24, no pre-fill — default IS Blank; window >= tallest\n  open band is the sizing law; WindowOverruns says a band didn't fit,\n  ChunkReloads says what it cost), and the ReaderPool: lexicographic\n  lead/chase positioning, adoption-slot reservation made structural,\n  adaptive warming grown only on evidence (spare open or reopen —\n  contention is not pressure), BorrowAnywhere catalogue walks\n- IO fault discipline: IsProjectionFault became IsFault and grew\n  IOException/ObjectDisposedException/OutOfMemoryException at all four\n  wrap sites — .Optional() can never swallow a disk failure as a\n  missing section. Bounds unified across every door: any ISpace overrun\n  is OutOfBoundsException, a data condition, pinned by a contract suite\n- Four concurrency races found by review and QA, fixed and pinned\n  deterministically (FakeRowSource gates, no sleeps; the hang-shaped\n  one timeout-armored so its regression fails in seconds, never wedges\n  CI): the InUse leak that turned one disk error into a hung workbook,\n  the pulse Dispose forgot, and the warm-vs-Fill pair the reservation\n  invariant now excludes by construction\n- The Streaming benchmark family (7 rows in 3 same-run pairs, fixtures\n  sized against store statistics after two inert first drafts) joins\n  the rig: 41 benchmarks, seven families, 14 store steps\n- Two committed fixtures (multi-sheet.xlsx, tall-ledger.xlsx), 175\n  streaming tests among 1,080 total, and the full doc set: streaming.md\n  user guide, README's Large files, CLAUDE.md, vocabulary.md,\n  benchmarking.md — every claim verified against shipped code\n\nPart 2 (lazy extents — bound+project fusion, opening with the\nheader-derived Table width decision) is specced at streaming-spec §11,\ngated on this merge.\n\n1,080 tests, 0 warnings.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016BvUBicaVLLYkdp7iqFZNo",
+          "timestamp": "2026-09-03T21:43:30Z",
+          "tree_id": "9f817ac162237f132ebb583899d911728ccb09a0",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/ef348dd370a754a5e4d2cce5dbea9a4328100c95"
+        },
+        "date": 1788472136521,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Strategies.RowsWhileAnyValue_FullHeight",
+            "value": 384184.22716346156,
+            "unit": "ns",
+            "range": "± 2572.436851010054"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.RowsWhileAnyValue_Sparse",
+            "value": 387218.74668666295,
+            "unit": "ns",
+            "range": "± 6147.8206514389285"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_HitAt10Percent",
+            "value": 239997.0117563101,
+            "unit": "ns",
+            "range": "± 233.00650611568446"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_HitAt90Percent",
+            "value": 2232079.163762019,
+            "unit": "ns",
+            "range": "± 6868.853225188102"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_MissWholeGrid",
+            "value": 2454727.779597356,
+            "unit": "ns",
+            "range": "± 6760.530190215174"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Until_BoundResolution",
+            "value": 2552381.4422433036,
+            "unit": "ns",
+            "range": "± 8732.625691154779"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.BlankRows_Skip",
+            "value": 979536.765625,
+            "unit": "ns",
+            "range": "± 2100.2714177608664"
           }
         ]
       }
