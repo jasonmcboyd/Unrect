@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1788475702679,
+  "lastUpdate": 1788475702856,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -1270,6 +1270,72 @@ window.BENCHMARK_DATA = {
             "value": 355971.83231026784,
             "unit": "ns",
             "range": "± 1339.1257733882217"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "f9d4b35d017794b434bd9f3a3ecf31dc81ff83bb",
+          "message": "Fix the 2-core CI flake: a blocked-borrower proof needs a started borrower\n\nAReachWaitsForAWarmerRatherThanStartingASecondOpenOfTheSameFile failed on\nthe GitHub runner (ef348dd) on \"the wait is counted\": WarmWaitMilliseconds\nwas 0, and 0 was the honest count. The pool's warmers ride Task.Run and\nthe gated arrangement BLOCKS them inside their opens, one pool thread\neach — on a two-core runner that is the entire starting thread pool, so\nthe test's own Task.Run borrower never started until thread injection got\naround to it. Both blocked-ness assertions passed vacuously (not finished\nbecause not scheduled), and by the time the reach ran, the warm reader was\nparked and there was nothing left to wait for.\n\nReproduced under taskset -c 0,1: three failures in four runs before the\nfix, none in six Debug runs plus a Release run after. The fix is\nOnItsOwnThread (TaskCreationOptions.LongRunning) at the four sites that\nassert a borrower is blocked — a dedicated thread starts unconditionally,\nso \"started, and still not finished\" really does mean \"parked inside\nBorrow\". The three sibling sites could only pass vacuously, never fail,\nbut their proofs were the same lie under starvation. The burst tests\nalready stood on structural evidence (SpinUntil on OpensStarted) and are\nuntouched.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016BvUBicaVLLYkdp7iqFZNo",
+          "timestamp": "2026-09-03T22:37:18Z",
+          "tree_id": "c37ffff8e7e618f8d8cdb3778c429c1bd5259fc9",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/f9d4b35d017794b434bd9f3a3ecf31dc81ff83bb"
+        },
+        "date": 1788475702837,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Tables.Lambda_10k",
+            "value": 1322062.4272460938,
+            "unit": "ns",
+            "range": "± 121897.83957174656"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Lambda_100k",
+            "value": 35509863.772327036,
+            "unit": "ns",
+            "range": "± 1459481.07753367"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Bound_10k",
+            "value": 4867011.364746094,
+            "unit": "ns",
+            "range": "± 91120.73575858535"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Bound_100k",
+            "value": 122012007.26200002,
+            "unit": "ns",
+            "range": "± 9947970.404135173"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Dictionary_10k",
+            "value": 4471830.072150735,
+            "unit": "ns",
+            "range": "± 86783.3070654835"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Dictionary_100k",
+            "value": 110945551.88928573,
+            "unit": "ns",
+            "range": "± 4763137.293110714"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Bound_ShapeConstruction",
+            "value": 349003.1975097656,
+            "unit": "ns",
+            "range": "± 660.2602406323265"
           }
         ]
       }
