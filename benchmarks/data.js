@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1788451025978,
+  "lastUpdate": 1788451026400,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -700,6 +700,70 @@ window.BENCHMARK_DATA = {
             "value": 3260289.294456845,
             "unit": "ns",
             "range": "± 74756.21221194195"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd",
+            "email": "jason.boyd.ce@gmail.com"
+          },
+          "committer": {
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd",
+            "email": "jason.boyd.ce@gmail.com"
+          },
+          "id": "16017b750b8e22d895c32aba953f6dff549436ab",
+          "message": "Continuous benchmarking: the Copse rig, stolen faithfully\n\nsrc/Unrect.Benchmarks: 34 benchmarks in six one-class families —\nEngine (layout composites), Strategies (scans and anchors), Tables\n(the ladder at 10k/100k plus binder construction), Values (the\nrepresentation-sensitive family: space construction, accessor and\nequality sweeps), EndToEnd (the investor-IRR document at 400/4,000\ninvestors), Diagnostics (Map vs MapWithDiagnostics, rollback and\nabsorption costs) — over GridSpace-built synthetic fixtures, no\nworkbooks on runners.\n\nWorkflows adapted from copselib/copse-dotnet: per-family matrix legs\n(comparisons never cross the shared-runner CPU lottery), per-CPU\ntestbed recording, gh-pages trend dashboard (master-only), optional\nBencher overlay with branch-vs-master baselining. deploy-dashboard\nsyncs benchmark-dashboard/ to gh-pages.\n\nConventions in docs/benchmarking.md, including the load-bearing rule\ndiscovered while building: one benchmark class per family, because the\nexport is named for the class and the publish step takes the first\nmatch — a split family silently publishes half its rows. Two fixture\nfidelity bugs found by checking outputs rather than timings, fixed:\na sparse fixture whose all-blank rows truncated every scan, and a\nkind-cycle resonance that blanked two columns in every row.\n\nFirst findings on record: the diagnostics channel is free on a clean\nparse (ratio 0.98), and Values.Create_FromInts allocates ~96 MB/op —\nthe number the parked CellValue struct patch exists to move, now with\na trend line waiting to judge it.\n\n906 tests, 0 warnings.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016BvUBicaVLLYkdp7iqFZNo",
+          "timestamp": "2026-09-03T01:51:32Z",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/16017b750b8e22d895c32aba953f6dff549436ab"
+        },
+        "date": 1788451026377,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Values.Create_FromInts",
+            "value": 62441856.275,
+            "unit": "ns",
+            "range": "± 808453.9698979758"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Create_FromObjects",
+            "value": 54971018.15384615,
+            "unit": "ns",
+            "range": "± 225118.10681727546"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Sweep_GetDecimal",
+            "value": 11204808.912259616,
+            "unit": "ns",
+            "range": "± 5897.20521583639"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Sweep_GetString",
+            "value": 5239238.502403846,
+            "unit": "ns",
+            "range": "± 25960.21529177962"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Sweep_TryGetByKind",
+            "value": 2829519.61953125,
+            "unit": "ns",
+            "range": "± 29372.147771938788"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Sweep_Equality",
+            "value": 4398559.239783654,
+            "unit": "ns",
+            "range": "± 8507.843919161634"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Sweep_Blankness",
+            "value": 2551807.6846354166,
+            "unit": "ns",
+            "range": "± 40032.559972058894"
           }
         ]
       }
