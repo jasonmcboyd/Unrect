@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1788456122732,
+  "lastUpdate": 1788456122919,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -3209,6 +3209,55 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/jasonmcboyd/Unrect/commit/37bb6bef3d2e23e9778f5b9e84c650537b11688b"
         },
         "date": 1788453189438,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Diagnostics.Map_Plain",
+            "value": 3874499,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Diagnostics.Map_WithDiagnostics",
+            "value": 3875515,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Diagnostics.Choice_FirstAlternativeLoses",
+            "value": 5688,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Diagnostics.Optional_AbsorbsFailure",
+            "value": 4384,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Diagnostics.ShapeException_Render",
+            "value": 2158801,
+            "unit": "bytes"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "3e69dc58aa0c9a0300fe0f43a33218891c36e566",
+          "message": "Docs: the struct era, on the record\n\nCLAUDE.md's singleton line becomes the struct story (default IS Blank,\nadopted 2026-09-03, judged by the rig: creation allocations -42%/-61%,\nzero-heap double/string/date/bool cells); test count 905. The\ncanonical-model design doc's \"revisit before million-row workloads\"\ngets its strike-through and its account: both halves revisited — the\nrepresentation by spike, patch, and branch verdict; the eager\nmaterialization by the parked windowed-space prototype (681 MB -> 2 MB)\nawaiting the area-resolution fusion.\n\nThat sentence, written before wave 1 shipped, called both problems and\ntheir order. Some prophecies keep.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016BvUBicaVLLYkdp7iqFZNo",
+          "timestamp": "2026-09-03T17:01:58Z",
+          "tree_id": "ee45abc46b58f0dc515d34a15cb71482009b1b9d",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/3e69dc58aa0c9a0300fe0f43a33218891c36e566"
+        },
+        "date": 1788456122896,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
