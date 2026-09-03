@@ -76,7 +76,11 @@ namespace Unrect.Tests
     /// </summary>
     public static ISpace Mixed(object?[,] values) => GridSpace.Create(values, Adapt);
 
-    private static CellValue Adapt(object? value) =>
+    /// <summary>
+    /// One CLR value as the cell it stands for — the rule <see cref="Mixed"/> is built from, shared
+    /// so a source that is not a grid (the streaming fake) writes its rows the same way.
+    /// </summary>
+    public static CellValue Adapt(object? value) =>
       value switch
       {
         null => CellValue.Blank,

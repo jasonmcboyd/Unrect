@@ -124,7 +124,7 @@ namespace Unrect.Shapes
       }
       catch (Exception exception)
       {
-        throw context.Failure(ShapeEngine.Threw("separator", exception), remaining, exception);
+        throw context.Failure(ShapeEngine.Threw("separator", exception), remaining, exception, ShapeEngine.IsFault(exception));
       }
 
       if (offset.Width > remaining.Area.Width || offset.Height > remaining.Area.Height)

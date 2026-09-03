@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using Unrect.Core;
 
 namespace Unrect.Spreadsheets
@@ -87,7 +86,7 @@ namespace Unrect.Spreadsheets
       Func<SpreadsheetContext, bool> predicate,
       Func<CellValue, bool>? isBlank = null)
     {
-      Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+      SpreadsheetEncodings.Register();
 
       var blank = isBlank ?? WhitespaceIsBlank;
 

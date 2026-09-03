@@ -10,7 +10,20 @@ namespace Unrect.Core
     /// <summary>The space's own extent.</summary>
     Area Area { get; }
 
-    /// <summary>The cell at <paramref name="column"/>, <paramref name="row"/>, 0-based from this space's own origin.</summary>
+    /// <summary>
+    /// The cell at <paramref name="column"/>, <paramref name="row"/>, 0-based from this space's own
+    /// origin. Implementations must throw <see cref="OutOfBoundsException"/> for a coordinate
+    /// outside <see cref="Area"/>.
+    /// <para>
+    /// That type, and not <see cref="System.IndexOutOfRangeException"/>, because reading past the
+    /// edge of a space is a statement about the data rather than a bug in the reader: it is how a
+    /// declaration discovers it has run out of room, and the shape layer classifies it as a
+    /// recoverable bounds condition. An <c>IndexOutOfRangeException</c> is on the engine's fault
+    /// list — a bug in the code, never absorbed by a tolerance boundary — so a space that threw one
+    /// for an ordinary overrun would make that overrun unrecoverable.
+    /// </para>
+    /// </summary>
+    /// <exception cref="OutOfBoundsException">The coordinate lies outside <see cref="Area"/>.</exception>
     CellValue this[int column, int row] { get; }
 
     /// <summary>

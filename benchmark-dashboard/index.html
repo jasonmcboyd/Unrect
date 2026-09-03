@@ -188,7 +188,7 @@ function buildRows() {
       const deltaPct = (epochBreak==null && prev!=null && prev!==0) ? (latest-prev)/prev*100 : null;
       const metric = unit==="bytes" ? "Memory" : "Time";
       // The size tier a row was measured at, read out of its name. Rows that carry no tier
-      // (most of Engine, Strategies and Values, which each measure one canonical fixture) group
+      // (most of Engine, Strategies, Values and Streaming, each measuring one canonical fixture) group
       // under "—" rather than being invented into a bucket they do not belong to.
       const investors = /(\d+)Investors$/i.exec(short);
       const scale = /_100k$/i.test(short) ? "100k"

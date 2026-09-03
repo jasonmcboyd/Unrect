@@ -19,7 +19,7 @@ namespace Unrect.Shapes
       Size? requested,
       IShape shape,
       Exception? inner,
-      bool isProjectionFault = false)
+      bool isFault = false)
       : base(BuildMessage(subject, problem, path, location), inner)
     {
       Subject = subject;
@@ -28,7 +28,7 @@ namespace Unrect.Shapes
       Location = location;
       Requested = requested;
       Shape = shape;
-      IsProjectionFault = isProjectionFault;
+      IsFault = isFault;
     }
 
     private ShapeException(string problem, ShapeException original)
@@ -40,7 +40,7 @@ namespace Unrect.Shapes
         original.Requested,
         original.Shape,
         original,
-        original.IsProjectionFault)
+        original.IsFault)
     {
     }
 
@@ -63,12 +63,17 @@ namespace Unrect.Shapes
     internal string Problem { get; }
 
     /// <summary>
-    /// True when the projection did not merely disagree with the data but broke: a null reference,
-    /// an index past the end of the caller's own array. Tolerance boundaries absorb failures about
-    /// the shape of the data, never bugs in the code reading it, so this travels with the failure
-    /// to keep it from being swallowed.
+    /// True when something broke rather than disagreed: a bug in the reading code, or the
+    /// environment failing underneath it — a null reference, an index past the end of the caller's
+    /// own array, a disk that stopped answering, a workbook read after its owner was disposed.
+    /// <para>
+    /// Tolerance boundaries absorb failures about the shape of the data, never these, so the flag
+    /// travels with the failure to keep it from being swallowed. It covers placement as well as
+    /// projection: under streaming a strategy reads cells too, and a disk failure inside
+    /// <c>SkipBlankRows</c> must never be reported as "the section is absent".
+    /// </para>
     /// </summary>
-    internal bool IsProjectionFault { get; }
+    internal bool IsFault { get; }
 
     /// <summary>
     /// The same failure with something added to its problem — for context only the shape above it

@@ -52,7 +52,7 @@ namespace Unrect.Shapes
       // enclosing repetition by consuming nothing. That is a bug in the declaration, so no tolerance
       // boundary may absorb it.
       if (state.Count == 0)
-        throw context.Failure(this, state.DeclaredNothing, extent, null, null, isProjectionFault: true);
+        throw context.Failure(this, state.DeclaredNothing, extent, null, null, isFault: true);
 
       return new ShapeResult<T>(value, state.Consumed);
     }

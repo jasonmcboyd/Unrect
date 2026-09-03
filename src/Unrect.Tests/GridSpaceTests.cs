@@ -66,7 +66,7 @@ namespace Unrect.Tests
     {
       var space = TextGrid();
 
-      Assert.Throws<IndexOutOfRangeException>(() => { _ = space[column, row]; });
+      Assert.Throws<OutOfBoundsException>(() => { _ = space[column, row]; });
     }
 
     // --- Adaptation and blankness ---------------------------------------------------------------
@@ -230,8 +230,8 @@ namespace Unrect.Tests
     {
       var subspace = CoordinateGrid().GetSubspace(new Offset(1, 1), new Area(2, 2));
 
-      Assert.Throws<IndexOutOfRangeException>(() => { _ = subspace[2, 0]; });
-      Assert.Throws<IndexOutOfRangeException>(() => { _ = subspace[0, 2]; });
+      Assert.Throws<OutOfBoundsException>(() => { _ = subspace[2, 0]; });
+      Assert.Throws<OutOfBoundsException>(() => { _ = subspace[0, 2]; });
     }
   }
 }

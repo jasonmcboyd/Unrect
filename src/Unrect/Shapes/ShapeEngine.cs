@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 
 using Unrect.Core;
 using Unrect.Strategies;
@@ -75,7 +76,7 @@ namespace Unrect.Shapes
       }
       catch (Exception exception)
       {
-        throw context.Failure(shape, Threw("offset", exception), availableSpace, null, exception);
+        throw context.Failure(shape, Threw("offset", exception), availableSpace, null, exception, IsFault(exception));
       }
 
       if (Exceeds(offset.Size, availableSpace))
@@ -113,7 +114,7 @@ namespace Unrect.Shapes
       }
       catch (Exception exception)
       {
-        throw scope.Failure(shape, Threw("area", exception), inner, null, exception);
+        throw scope.Failure(shape, Threw("area", exception), inner, null, exception, IsFault(exception));
       }
 
       if (Exceeds(area.Size, inner))
@@ -156,17 +157,42 @@ namespace Unrect.Shapes
     }
 
     /// <summary>
-    /// Whether a projection broke rather than disagreed with the data. These mean the code is
-    /// wrong, not the file — a null bug, a bad index into an array or a view — so no tolerance
-    /// boundary may quietly swallow them; everything else — a cell of the wrong kind, an
-    /// unparseable value, an overflow — is the sort of failure tolerance is for.
-    /// (ArgumentException itself stays absorbable: parse-style APIs throw it for data reasons.)
+    /// Whether something broke rather than disagreed with the data. These mean the code is wrong or
+    /// the environment failed — a null bug, a bad index into an array or a view, a disk that stopped
+    /// answering, a workbook read after its owner was disposed — so no tolerance boundary may
+    /// quietly swallow them. Everything else — a cell of the wrong kind, an unparseable value, an
+    /// overflow — is the sort of failure tolerance is for.
+    /// <para>
+    /// It is consulted at every site where the engine wraps a foreign exception, not just the
+    /// projection, and that is the point. A strategy reads cells too: under streaming, a disk read
+    /// failing inside <c>SkipBlankRows</c> within <c>section.Optional()</c> would otherwise be
+    /// reported as "section absent", with a warning, and the parse would continue and produce a
+    /// quietly wrong answer.
+    /// </para>
+    /// <para>
+    /// The membership is deliberate on both sides. <see cref="System.IO.FileNotFoundException"/>,
+    /// <see cref="System.IO.DirectoryNotFoundException"/> and the reader's own IO failures derive
+    /// from <see cref="IOException"/> and are covered. <see cref="ObjectDisposedException"/> derives
+    /// from <see cref="InvalidOperationException"/>, which is <em>not</em> listed and must not be —
+    /// parse helpers throw that for data reasons — so it is named explicitly.
+    /// <see cref="ArgumentException"/> itself stays absorbable, for the same reason.
+    /// <see cref="OutOfBoundsException"/> is not here at all: running out of room is how a
+    /// <c>Repeat</c> stops, and no IO condition produces it.
+    /// </para>
     /// </summary>
-    private static bool IsFault(Exception exception)
+    internal static bool IsFault(Exception exception)
       => exception is NullReferenceException
         or IndexOutOfRangeException
         or ArgumentOutOfRangeException
-        or ArgumentNullException;
+        or ArgumentNullException
+        or IOException                 // the disk, the network share, the workbook replaced mid-read
+        or ObjectDisposedException     // a view outliving its Workbook
+        or OutOfMemoryException;       // never a statement about the data
+
+    // A note on the last one: under a genuine out-of-memory condition the wrap itself may fail to
+    // allocate, and the original exception then escapes unwrapped. That is fine and is not a hole —
+    // an unwrapped OutOfMemoryException is not a ShapeException, so no tolerance boundary catches
+    // it either. The property that matters holds by both routes: it is never absorbed.
 
     private static bool Exceeds(Size size, ISpace space)
       => size.Width > space.Area.Width || size.Height > space.Area.Height;

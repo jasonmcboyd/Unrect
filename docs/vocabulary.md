@@ -4,7 +4,7 @@ A survey of every operator in the shape layer, grouped by role in the algebra. E
 here is available from a single `using static Unrect.Shapes.Shape;`. For semantics in
 depth, each group cites its governing spec in `docs/design/`.
 
-Current as of 2026-09-02 (post typed-leaves-and-tables). When this file and a spec
+Current as of 2026-09-03 (post streaming Part 1). When this file and a spec
 disagree, the spec is wrong or this file is stale — fix whichever it is; do not let them
 drift silently.
 
@@ -105,6 +105,27 @@ start in one and end in another.
 All three are usable as method groups — `spaces.Select(report.Map)` — and pinned so
 (`MethodGroupTests`): no optional parameter may ever be added to them.
 
+**Where the `space` comes from.** `SpreadsheetSpace.Create(path, sheet)` (`Unrect.Spreadsheets`)
+reads a whole sheet eagerly, once, before any shape sees it — the simple default. `Workbook.Open(path)`
+(same namespace) is the streaming door: `book.Sheet(name)` vends a lent `ISpace` view over a windowed
+store instead of the whole grid — a value, not a handle, good to slice and pass around until the
+workbook that vended it is disposed. Declare the shape once and apply it to many files with the peak
+bounded per iteration, the idiom `Workbook` exists for:
+
+```csharp
+var report = VerticalFlow(v => ...);               // one declaration, reused
+
+foreach (var path in monthlyCloseOfFunds)
+{
+  using var book = Workbook.Open(path);
+  Publish(report.Map(book.Sheet("Detail")));        // bounded memory per iteration
+}
+```
+
+Streaming's cost is declaration-shaped, not a flat tax — see `docs/design/streaming-spec.md` §2.7
+for the full cost model and the sizing law (the window must be at least as tall as the tallest
+extent a declaration holds open at once).
+
 ## The cross-cutting laws
 
 - **The naming ladder.** A child's diagnostic identity is the first of: its own
@@ -127,3 +148,9 @@ All three are usable as method groups — `spaces.Select(report.Map)` — and pi
 - **The two design tests.** Does an operator let the user *say what the data looks
   like*, or *say how to walk it*? And could a writer execute the declaration —
   produce the file as well as read it? Declarations run backward; opaque code does not.
+- **IO faults are not tolerance.** A disk failure, or a read against a `Workbook` view
+  after its workbook is disposed, classifies as a fault (`ShapeEngine.IsFault`) rather
+  than a disagreement about the data, at every site that could otherwise absorb a
+  foreign exception as "section absent" — `.Optional()`, `.Else()`, and `Choice` all let
+  it through unchanged. A wrong-kind cell or a missing anchor is still absorbable; the
+  environment failing underneath the read is not.

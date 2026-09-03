@@ -62,11 +62,13 @@ namespace Unrect.Core
     {
       get
       {
+        // OutOfBoundsException, per the ISpace contract: running off the edge of a space is a data
+        // condition a declaration may recover from, not a bug in the reading code.
         if (column < 0 || column >= Area.Width)
-          throw new IndexOutOfRangeException();
+          throw new OutOfBoundsException();
 
         if (row < 0 || row >= Area.Height)
-          throw new IndexOutOfRangeException();
+          throw new OutOfBoundsException();
 
         return Values[Offset.Height + row, Offset.Width + column];
       }

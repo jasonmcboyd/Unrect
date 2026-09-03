@@ -58,7 +58,7 @@ namespace Unrect.Shapes
       }
       // A projection that broke rather than disagreed is a bug in the reading code, not a shape of
       // data to tolerate, so it passes straight through with its location intact.
-      catch (ShapeException failure) when (!failure.IsProjectionFault)
+      catch (ShapeException failure) when (!failure.IsFault)
       {
         // Whatever the failed attempt tolerated along the way goes with it; what replaces it all is
         // the one warning saying which shape failed, where, and why.

@@ -1,9 +1,10 @@
 # Benchmarking Conventions
 
-The continuous-benchmark rig (modeled on Copse's): `src/Unrect.Benchmarks` runs 34
-benchmarks in six families, one CI matrix leg per family, publishing trend lines to the
-gh-pages dashboard and (optionally) Bencher. This file records the conventions that keep
-the numbers honest.
+The continuous-benchmark rig (modeled on Copse's): `src/Unrect.Benchmarks` runs 41
+benchmarks in seven families — `Values`, `Strategies`, `Engine`, `Tables`, `Diagnostics`,
+`EndToEnd`, and `Streaming` (`docs/design/streaming-spec.md` §12) — one CI matrix leg per
+family, publishing trend lines to the gh-pages dashboard and (optionally) Bencher. This
+file records the conventions that keep the numbers honest.
 
 ## The rules
 
@@ -24,7 +25,10 @@ the numbers honest.
   timings of the wrong thing.
 - **Fixtures are GridSpace-built synthetics** (`CanonicalSpaces`, `IrrReport`) — CI
   runners get no workbooks. The 1M-row xlsx load measurements live outside the rig as
-  scratch probes; the rig measures the layers we control.
+  scratch probes; the rig measures the layers we control. `Streaming`'s fixture keeps the
+  same rule a different way: a synthetic `IRowSource` (`StreamingSpaces`) stands in for
+  ExcelDataReader, so the family measures the window and the reader pool without a real
+  file either.
 - **Per-CPU testbeds**: each leg records its runner's CPU model, and Bencher files
   results per model so thresholds learn each machine's population separately. Cross-family
   absolute comparisons are meaningless by construction; don't make them.
@@ -57,3 +61,9 @@ not paste local numbers into discussions as if they were CI numbers.
   `Map_Plain`.
 - `Values.Create_FromInts` allocating ~96 MB/op (class-`CellValue` era) is the number the
   representation work targets; its trend line is the decision's receipt.
+- **`Streaming`'s honesty caveat, read every time the family's numbers come up:** its
+  fixture is a synthetic `IRowSource`, so an "open" there is free. The adversarial
+  benchmarks (`Adversarial_OneReader` vs `Adversarial_Pooled`) measure only the
+  *repositioning* half of the reader pool's value, never the ExcelDataReader open
+  (~5s on the 1M-row probe workbook, §1.1 of the streaming spec) that the pool exists to
+  overlap — that half is deliberately measured nowhere in CI.

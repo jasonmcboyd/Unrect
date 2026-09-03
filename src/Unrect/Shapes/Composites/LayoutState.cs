@@ -75,7 +75,7 @@ namespace Unrect.Shapes
           RemainingAt(at),
           null,
           null,
-          isProjectionFault: true);
+          isFault: true);
     }
 
     /// <summary>

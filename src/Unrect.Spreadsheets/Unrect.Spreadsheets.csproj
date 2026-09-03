@@ -16,6 +16,15 @@
     <PackageReference Include="System.Text.Encoding.CodePages" Version="8.0.0" />
   </ItemGroup>
 
+  <!-- The streaming internals — the row-source seam, the pool, the store — are internal on purpose
+       (see IRowSource): publishing the seam would commit to an API before a second implementation
+       has argued with it. Tests need to inject a synthetic source to arrange chunk maths, warming
+       races and IO faults at a chosen row; benchmarks need one because CI runners get no workbooks. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="Unrect.Tests" />
+    <InternalsVisibleTo Include="Unrect.Benchmarks" />
+  </ItemGroup>
+
   <!-- The Unrect PROJECT, not Core: this is what makes the package depend on "Unrect" at the same
        MinVer version. Core is referenced separately and privately because Unrect bundles it with
        PrivateAssets="all", which by design stops its types flowing transitively — so we compile

@@ -48,7 +48,7 @@ namespace Unrect.Shapes
         }
         // A projection that broke rather than disagreed is a bug in the reading code; trying the
         // next alternative would only bury it.
-        catch (ShapeException failure) when (!failure.IsProjectionFault)
+        catch (ShapeException failure) when (!failure.IsFault)
         {
           // Whatever this branch tolerated on its way to failing goes with it.
           context.Diagnostics.Rollback(mark);

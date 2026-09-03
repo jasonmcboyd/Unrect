@@ -111,6 +111,20 @@ namespace Unrect.Shapes
         null,
         inner);
 
+    /// <summary>
+    /// The same failure as the public <see cref="Failure(string, ISpace, Exception?)"/>, carrying
+    /// the fault flag. An overload rather than an optional parameter on the public method: adding a
+    /// parameter there would be a binary break, and the flag is not a caller's to set.
+    /// </summary>
+    internal ShapeException Failure(string problem, ISpace space, Exception? inner, bool isFault)
+      => Failure(
+        Shape ?? throw new InvalidOperationException("The root context has no shape to blame; report failures from within a shape's projection."),
+        problem,
+        space,
+        null,
+        inner,
+        isFault);
+
     internal ShapeContext WithIndex(int index)
       => new ShapeContext(Parent, Shape, index, Origin, Space, Diagnostics, Site, Pending);
 
@@ -120,8 +134,8 @@ namespace Unrect.Shapes
       ISpace space,
       Size? requested,
       Exception? inner,
-      bool isProjectionFault = false)
-      => new ShapeException(Describe(shape, SiteOf(shape)), problem, Render(shape), Locate(space), requested, shape, inner, isProjectionFault);
+      bool isFault = false)
+      => new ShapeException(Describe(shape, SiteOf(shape)), problem, Render(shape), Locate(space), requested, shape, inner, isFault);
 
     /// <summary>
     /// Records something about <paramref name="shape"/> that happened here.

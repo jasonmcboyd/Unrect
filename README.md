@@ -20,6 +20,8 @@ dotnet add package Unrect.Spreadsheets
 that decide boundaries — and works directly over any 2D grid you can adapt to `ISpace`.
 `Unrect.Spreadsheets` adds the adapters that read spreadsheet files — `.xls`/`.xlsx` today — straight into that grid;
 add it when your data lives in a workbook rather than an array you built yourself.
+The same package also has a streaming door, `Workbook`, for files too large to read
+whole — see [Large files](#large-files) below.
 
 `GridSpace` ships in the `Unrect` package for exactly that case:
 `GridSpace.Create(values, isBlank: ...)` turns a plain 2D array into a space, deciding
@@ -101,10 +103,38 @@ record CashFlow(string InvestorName, DateTime Date, string Transaction, double I
   their place by what a row or column *says*, not by a hard-coded offset that breaks the
   next time someone inserts a row.
 
+## Large files
+
+`SpreadsheetSpace.Create` reads a sheet whole, which is the simple default and the right
+choice for anything that fits comfortably in memory. For a file too big for that, or the
+same declaration applied to many files in sequence, `Workbook` reads a window at a time
+instead of the whole grid:
+
+```csharp
+var report = VerticalFlow(v => ...);              // one declaration, reused
+
+foreach (var path in monthlyCloseOfFunds)
+{
+  using var book = Workbook.Open(path);
+  Publish(report.Map(book.Sheet("Detail")));       // bounded memory per iteration
+}
+```
+
+Same shapes, same results — the two paths differ only in the shape of their cost. A
+monotone read through `Workbook` costs about 35% more wall time for about 2.7× less live
+memory than `SpreadsheetSpace.Create`; a declaration that reaches backwards or sweeps a
+band wider than its window can cost more than that, which `book.Statistics("Detail")`
+will tell you. Shapes are immutable and workbooks are independent, so
+`Parallel.ForEach(monthlyCloseOfFunds, path => { using var book = ...; })` needs nothing
+added. The full guide, including the sizing law and the statistics to act on: `docs/streaming.md`.
+
 ## Learn more
 
 - `docs/vocabulary.md` — the full operator survey, grouped by role.
-- `docs/design/` — the specs behind the vocabulary (layout, matching, tables, diagnostics).
+- `docs/streaming.md` — the `Workbook` guide: when to reach for it, the lifecycle rules,
+  the sizing law, and the statistics vocabulary.
+- `docs/design/` — the specs behind the vocabulary (layout, matching, tables, diagnostics,
+  streaming).
 - `linqpad/` — worked examples against the workbooks in `examples/`, including the report
   above (`linqpad/investor-irr.linq`).
 
