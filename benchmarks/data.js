@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1788556079757,
+  "lastUpdate": 1788556079940,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -7274,6 +7274,72 @@ window.BENCHMARK_DATA = {
             "value": 25603540.457291666,
             "unit": "ns",
             "range": "± 453060.36343471956"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "eddc5d17c38c715f41cd95d041452deb66f8354c",
+          "message": "Interning: equal text shares one instance through both doors\n\nAdapter-level string interning — a find-my-twin table at each door's\nadapt seam. The eager door threads a per-Create-call HashSet through both\nfill paths (one instance per distinct value across every sheet of the\ncall); the streaming door hangs one capped ConcurrentDictionary on the\nWorkbook, plumbed into every store's chunk fill, so a chase reader's\nre-parse dedupes against the first parse. Strings only: every other kind\nis inline in the 24-byte struct or unreachable from the spreadsheet door.\n\nThe win is retention, not allocation — the duplicate is allocated by the\nreader before the adapter sees it and dies in gen0 after dedup, which is\nwhy the Retention leg is the judge and MemoryDiagnoser is blind to it.\nMeasured against the committed floor: eager space held 106.8 -> 55.5 MB,\nlanding on the priced shared-string target to the byte; held results\n82.1 -> 30.8 MB, byte-identical across doors; all three unique controls\nflat to the byte; wall time noise on the 1M-row parse.\n\nThe cap (WorkbookOptions.MaxInternedStrings, default 65,536; 0 = off)\nand the 256-char length guard bound what the book-lifetime table can\npin. Documented as a two-way knob: a full table costs its entries for\nthe book's life — some 40 MB at the default cap — so it turns DOWN, to\n0, for known-unique text, and the docs say so at every site (the rig is\nstructurally blind to the table's own live set: readings are taken with\nthe book closed). Workbook.InterningStatistics reports hits, distinct,\nand estimated bytes (64-bit layout, exact for it; Hits counts fills, so\na reloaded chunk counts again — read against ChunkReloads).\n\nExcelDataReader fact on the record: shared-string cells arrive\npre-deduped from the reader's own SST; the duplication this kills comes\nfrom inline-string cells, formula-result cells, and .xls. Pinned by 36\ntests including a cross-door sharing differential, mutation-checked both\ndirections, and a WeakReference proof that Dispose releases the strings.\nSuite 1,423.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016BvUBicaVLLYkdp7iqFZNo",
+          "timestamp": "2026-09-04T19:19:56Z",
+          "tree_id": "fea5150f427d5b65cf652662879afb3b470547f2",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/eddc5d17c38c715f41cd95d041452deb66f8354c"
+        },
+        "date": 1788556079915,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Streaming.Monotone_Eager",
+            "value": 190235245.47619042,
+            "unit": "ns",
+            "range": "± 3321098.113671084"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Monotone_Windowed",
+            "value": 480989039.06666666,
+            "unit": "ns",
+            "range": "± 2318323.441470195"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Monotone_Resident",
+            "value": 222380676.09523812,
+            "unit": "ns",
+            "range": "± 1468841.9164388566"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Band_WindowFits",
+            "value": 49865826.468,
+            "unit": "ns",
+            "range": "± 1306128.9483046003"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Band_WindowTooSmall",
+            "value": 145703872.7638889,
+            "unit": "ns",
+            "range": "± 2942412.0648582065"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Adversarial_OneReader",
+            "value": 48597693.23030303,
+            "unit": "ns",
+            "range": "± 276577.49275127955"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Adversarial_Pooled",
+            "value": 29713619.883333333,
+            "unit": "ns",
+            "range": "± 157313.6106998786"
           }
         ]
       }
