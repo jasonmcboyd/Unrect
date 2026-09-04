@@ -186,10 +186,17 @@ function buildRows() {
       // An epoch on the latest point severs it from prev -- no delta across the boundary.
       const epochBreak = pts.length>=2 ? pts[pts.length-1].epoch : null;
       const deltaPct = (epochBreak==null && prev!=null && prev!==0) ? (latest-prev)/prev*100 : null;
-      const metric = unit==="bytes" ? "Memory" : "Time";
+      // Two different questions share the byte: what an operation ALLOCATES (BenchmarkDotNet's
+      // MemoryDiagnoser, derived per family into a "… Memory" suite) and what a held result keeps
+      // LIVE (the Retention suite, measured one-shot after a forced full collection). Grouping them
+      // together would put ~100 MB live-set rows beside per-operation allocation rows as if the
+      // numbers were comparable; they are not, and a dedup change moves one without touching the
+      // other. Keyed on the suite, which the publish step names.
+      const metric = unit!=="bytes" ? "Time" : (suite === "Retention" ? "Retained" : "Memory");
       // The size tier a row was measured at, read out of its name. Rows that carry no tier
-      // (most of Engine, Strategies, Values and Streaming, each measuring one canonical fixture) group
-      // under "—" rather than being invented into a bucket they do not belong to.
+      // (most of Engine, Strategies, Values, Streaming and all of Retention, each measuring one
+      // canonical fixture) group under "—" rather than being invented into a bucket they do not
+      // belong to.
       const investors = /(\d+)Investors$/i.exec(short);
       const scale = /_100k$/i.test(short) ? "100k"
                   : /_10k$/i.test(short) ? "10k"

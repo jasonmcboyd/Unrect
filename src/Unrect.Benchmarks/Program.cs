@@ -10,6 +10,18 @@ namespace Unrect.Benchmarks
   {
     public static void Main(string[] args)
     {
+      // The retention family is measured, not benchmarked: a deterministic live-set reading needs one
+      // build and one forced collection, where a benchmark engine's whole job is to run an operation
+      // thousands of times and keep none of the results. It rides the same matrix leg, the same
+      // --artifacts convention and the same stored JSON shape as everything else; only the instrument
+      // differs. See Retention and docs/benchmarking.md.
+      if (Array.IndexOf(args, "--retention") >= 0)
+      {
+        Retention.Run(args);
+
+        return;
+      }
+
       var isCI = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI"))
               || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
 

@@ -37,13 +37,19 @@ jobs:
   # names its JSON export after the class (Unrect.Benchmarks.Values-report-full-compressed.json),
   # and the publish step takes the first match -- a family split across two classes would silently
   # publish half its rows.
+  #
+  # Retention is the one leg that is NOT a BenchmarkDotNet family. It measures a live set -- a
+  # deterministic quantity that needs one build and one forced collection, not a distribution -- and
+  # it emits the same {name, unit: bytes, value} document the memory rows of every other family are
+  # already stored as. It runs here so it rides the same matrix, the same per-CPU testbed record and
+  # the same publish; only the instrument differs. See docs/benchmarking.md.
   run:
     name: Run ${{ matrix.category }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        category: [Engine, Strategies, Tables, Values, EndToEnd, Diagnostics, Streaming]
+        category: [Engine, Strategies, Tables, Values, EndToEnd, Diagnostics, Streaming, Retention]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -78,7 +84,17 @@ jobs:
       - name: Run ${{ matrix.category }} benchmarks
         run: |
           cd src/Unrect.Benchmarks
-          dotnet run -c Release --no-build -- --exporters json --allCategories ${{ matrix.category }} --artifacts ./artifacts/${{ matrix.category }} --join
+          if [ "${{ matrix.category }}" = "Retention" ]; then
+            # Not a BenchmarkDotNet run: a one-shot live-set measurement that writes
+            # artifacts/Retention/results/retention-benchmarks.json directly, in the same
+            # customSmallerIsBetter shape the memory rows use. ~65s measured locally, of which
+            # most is ExcelDataReader parsing the generated fixture workbooks (the eager rows
+            # must go through the real door to be able to move at all -- docs/benchmarking.md).
+            # Still comfortably the shortest leg in the matrix.
+            dotnet run -c Release --no-build -- --retention --artifacts ./artifacts/${{ matrix.category }}
+          else
+            dotnet run -c Release --no-build -- --exporters json --allCategories ${{ matrix.category }} --artifacts ./artifacts/${{ matrix.category }} --join
+          fi
 
       - name: Upload ${{ matrix.category }} results
         uses: actions/upload-artifact@v7
@@ -360,7 +376,6 @@ jobs:
           gh-pages-branch: gh-pages
           benchmark-data-dir-path: benchmarks
 
-      # Final benchmark-action step: auto-push commits all accumulated family results at once.
       - name: Store Streaming memory results
         if: github.ref == 'refs/heads/master'
         uses: benchmark-action/github-action-benchmark@v1
@@ -369,9 +384,36 @@ jobs:
           tool: 'customSmallerIsBetter'
           output-file-path: src/Unrect.Benchmarks/artifacts/Streaming/results/memory-benchmarks.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-push: true
+          auto-push: false
           skip-fetch-gh-pages: true
           alert-threshold: '150%'
+          comment-on-alert: false
+          fail-on-alert: false
+          gh-pages-branch: gh-pages
+          benchmark-data-dir-path: benchmarks
+
+      # Retention: LIVE bytes, not allocated bytes -- a different question from every Memory suite
+      # above, which is why it is its own suite rather than "Retention Memory". Its document is
+      # written by the leg itself (no jq derivation: there is no BenchmarkDotNet export to derive it
+      # from) in the same customSmallerIsBetter shape.
+      #
+      # The alert threshold is tighter than the families' 150% on purpose: retention is deterministic
+      # to the byte (the local run's three readings agree exactly), so 150% would mean a live set
+      # could half again before anyone heard about it. 110% still leaves room for a genuine fixture
+      # or runtime change without crying wolf.
+      #
+      # Final benchmark-action step: auto-push commits all accumulated family results at once.
+      - name: Store Retention results
+        if: github.ref == 'refs/heads/master'
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: Retention
+          tool: 'customSmallerIsBetter'
+          output-file-path: src/Unrect.Benchmarks/artifacts/Retention/results/retention-benchmarks.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          skip-fetch-gh-pages: true
+          alert-threshold: '110%'
           comment-on-alert: false
           fail-on-alert: false
           gh-pages-branch: gh-pages
@@ -451,6 +493,39 @@ jobs:
               --thresholds-reset
             START_POINT_ARGS=""
           done
+
+          # Retention, filed the same way and per-testbed the same way, but as its own measure: it is
+          # bytes that stay live, not nanoseconds, and mixing it into `latency` would put two units in
+          # one population. Its model is PERCENTAGE rather than t_test because the number is
+          # deterministic -- three readings of a scenario agree to the byte -- so a statistical test
+          # over a zero-variance population is meaningless where "more than 10% above baseline" is
+          # exactly the question.
+          #
+          # NO --thresholds-reset here, deliberately: reset clears every threshold on the
+          # branch+testbed pair that this invocation does not name, and the retention leg can easily
+          # draw the same CPU model as a family leg -- which would silently delete the latency
+          # thresholds the loop above just created for it.
+          RETENTION="src/Unrect.Benchmarks/artifacts/Retention/results/retention-benchmarks.json"
+          if [ -f "$RETENTION" ]; then
+            TESTBED=$(cat "src/Unrect.Benchmarks/artifacts/Retention/cpu.txt" 2>/dev/null || true)
+            TESTBED=${TESTBED:-ubuntu-latest}
+            BMF="src/Unrect.Benchmarks/artifacts/Retention/bencher-bmf.json"
+            jq '[.[] | {(.name): {retention: {value: .value}}}] | add // {}' "$RETENTION" > "$BMF"
+            echo "Uploading Retention -> Bencher ($(jq 'length' "$BMF") rows) on testbed $TESTBED"
+            bencher run \
+              --project "$BENCHER_PROJECT" \
+              --key "$BENCHER_API_KEY" \
+              --branch "$GITHUB_REF_NAME" \
+              $START_POINT_ARGS \
+              --testbed "$TESTBED" \
+              --adapter json \
+              --file "$BMF" \
+              --threshold-measure retention \
+              --threshold-test percentage \
+              --threshold-upper-boundary 0.10
+          else
+            echo "::warning::No Bencher results file for Retention; skipping."
+          fi
           # Note: no --error-on-alert flag, so an alert is reported but does NOT fail the build
           # during the trial. Add --error-on-alert once you trust the thresholds and want
           # regressions to block master. Early runs won't alert until each benchmark has a few
