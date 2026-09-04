@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1788533063959,
+  "lastUpdate": 1788533064159,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -1988,6 +1988,72 @@ window.BENCHMARK_DATA = {
             "value": 604317.6751302084,
             "unit": "ns",
             "range": "± 6731.79881921444"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "10027e9f1d263aac70041f0f7166b186324129e8",
+          "message": "Both doors measure a sheet that will not say how big it is\n\nSpreadsheetSpace.Create sized its grid from reader.RowCount/FieldCount and\nsilently yielded an empty space when the reader would not give them — the\none outcome an adapter must not have, and a divergence from the streaming\ndoor, which has measured such sheets since Part 2 step 7. The fill is now\ntwo named siblings behind one dichotomy: ReadDeclared (the original loop,\nunchanged) and ReadMeasured (rows collected at their own width, the widest\nrow wins, absent trailing cells Blank — the same answer Workbook.Measure\ngives). The guard is rowCount <= 0 alone, deliberately mirroring the\nstreaming door so the two can never disagree about the same file.\n\nThe recorded cause was wrong, and is corrected everywhere it appeared: a\nmissing dimension element does not trigger this — ExcelDataReader derives\nboth counts from a pre-scan of the cells on every format it handles. The\nreachable trigger is a sheet with NO valued cell (rows of formatted-but-\nvalueless cells, a pre-formatted export region). Pinned by the committed\nTestData/no-extent.xlsx (dimensionless AND valueless, with the survey's\nRowsMeasured == 4 doubling as the fixture's own guard against a\nregeneration that quietly stops reaching the path) and a both-doors\nidentity test.\n\nRides along, both owner decisions from this session's discussion:\n- MaxReaders: spec §14 Q2 DECIDED — 3 stays and stops being provisional,\n  because no number is right: reader demand is the declaration's monotone-\n  cursor count, unbounded in principle, data-independent in practice, and\n  the ceiling fails gently (Reopens is the counted, named signal to raise\n  it). Sizing guidance added to docs/streaming.md; per-reader economics\n  (~5s CPU per open, position must be walked, reader-per-row is O(n^2))\n  recorded in the spec.\n- Table's header-derived width: spec §14 Q1 DEFERRED, superseding the\n  2026-09-03 yes — the step-8 interleave delivered the lazy win with\n  today's denotation intact, so the K-1 campaign votes before the\n  denotation change is paid for.\n\nSuite 1,382 -> 1,387; gates green in Debug and 2-core Release.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016BvUBicaVLLYkdp7iqFZNo",
+          "timestamp": "2026-09-04T14:29:21Z",
+          "tree_id": "fc431b0954d2e3a5115a177bd1a21d63c169ffae",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/10027e9f1d263aac70041f0f7166b186324129e8"
+        },
+        "date": 1788533064134,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Values.Create_FromInts",
+            "value": 63318990.208333336,
+            "unit": "ns",
+            "range": "± 445914.3843933183"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Create_FromObjects",
+            "value": 31378065.6375,
+            "unit": "ns",
+            "range": "± 256126.16690296723"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Sweep_GetDecimal",
+            "value": 18274715.957291666,
+            "unit": "ns",
+            "range": "± 53293.47734740174"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Sweep_GetString",
+            "value": 2905304.8684895835,
+            "unit": "ns",
+            "range": "± 17084.53446220274"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Sweep_TryGetByKind",
+            "value": 1624612.9776041666,
+            "unit": "ns",
+            "range": "± 12927.440707844973"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Sweep_Equality",
+            "value": 6223539.868303572,
+            "unit": "ns",
+            "range": "± 6271.822483183774"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Sweep_Blankness",
+            "value": 518097.71240234375,
+            "unit": "ns",
+            "range": "± 2327.7510245913313"
           }
         ]
       }
