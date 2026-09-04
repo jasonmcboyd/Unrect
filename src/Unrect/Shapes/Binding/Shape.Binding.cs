@@ -55,18 +55,23 @@ namespace Unrect.Shapes
           + $"Bind one with Column(t => t.{example}, \"…\") or drop it with Ignore(t => t.{example})");
       }
 
-      var rows = new T[table.Rows.Count];
+      // Streamed rather than indexed: the columns are settled from the header above, and from here on
+      // the table is read forward-only, one row per step. On an extent whose height is discovered as
+      // it is read that is the difference between one pass over the sheet and two.
+      var rows = new List<T>();
       var values = new object?[plan.Members.Count];
 
-      for (var index = 0; index < rows.Length; index++)
+      foreach (var row in table.StreamRows())
       {
-        var row = table.Rows[index];
-
         for (var member = 0; member < plan.Members.Count; member++)
           values[member] = ReadCell(row, columns[member], plan.Members[member], table);
 
-        rows[index] = plan.Materialize(values);
+        rows.Add(plan.Materialize(values));
       }
+
+      // Grown rather than pre-sized, because asking how many rows there are is the forcing question
+      // streaming exists to avoid — so the doubling's slack is given back here instead.
+      rows.TrimExcess();
 
       return rows;
     }
@@ -123,18 +128,21 @@ namespace Unrect.Shapes
         captions[column] = caption;
       }
 
-      var rows = new IReadOnlyDictionary<string, CellValue>[table.Rows.Count];
+      // The captions are settled from the header above; the body is read forward-only from here.
+      var rows = new List<IReadOnlyDictionary<string, CellValue>>();
 
-      for (var index = 0; index < rows.Length; index++)
+      foreach (var row in table.StreamRows())
       {
-        var row = table.Rows[index];
         var cells = new Dictionary<string, CellValue>(captions.Length, CaptionComparer.Default);
 
         for (var column = 0; column < captions.Length; column++)
           cells[captions[column]] = row[column];
 
-        rows[index] = cells;
+        rows.Add(cells);
       }
+
+      // Grown rather than pre-sized, for the reason BindRows gives; the slack goes back the same way.
+      rows.TrimExcess();
 
       return rows;
     }

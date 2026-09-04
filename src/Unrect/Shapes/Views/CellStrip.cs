@@ -27,8 +27,11 @@ namespace Unrect.Shapes
     /// <summary>Where the strip starts, relative to the space <c>Map</c> was called with.</summary>
     private Offset Origin { get; }
 
-    /// <summary>How many cells the strip holds.</summary>
-    public int Count => Orientation == Orientation.Horizontal ? Space.Area.Width : Space.Area.Height;
+    /// <summary>
+    /// How many cells the strip holds. A row's length is its extent's width, which is free even where
+    /// the height is still being discovered; a column's is that height, and asking settles it.
+    /// </summary>
+    public int Count => Orientation == Orientation.Horizontal ? BoundedSpace.WidthOf(Space) : Space.Area.Height;
 
     /// <summary>The cell at <paramref name="index"/> along the strip's own axis; an index outside it throws <see cref="ArgumentOutOfRangeException"/>.</summary>
     public CellValue this[int index]
@@ -41,7 +44,10 @@ namespace Unrect.Shapes
       }
     }
 
-    /// <summary>The address of the strip's first cell.</summary>
+    /// <summary>
+    /// The address of the strip's first cell. It carries the extent it was found in, so on one whose
+    /// height is still being discovered this settles the bound.
+    /// </summary>
     public ShapeLocation Location => ShapeLocation.At(Origin, Space.Area.Size);
 
     /// <summary>The address of one cell of the strip, for citing it in a message.</summary>

@@ -115,6 +115,18 @@ namespace Unrect.Spreadsheets
       return new Workbook(path, new SpreadsheetRowSource(path, options.IsBlank ?? WhitespaceIsBlank), options);
     }
 
+    /// <summary>
+    /// A workbook over an arbitrary row source — the seam the streaming tests read through. Some
+    /// conditions cannot be arranged with a file at all: an IO failure at a chosen row, and a sheet
+    /// whose reader reports no dimensions.
+    /// </summary>
+    internal static Workbook Over(IRowSource source, WorkbookOptions options)
+    {
+      options.Validate();
+
+      return new Workbook(source.Name, source, options);
+    }
+
     /// <summary>The file this workbook reads.</summary>
     public string Path { get; }
 
@@ -148,12 +160,14 @@ namespace Unrect.Spreadsheets
     /// already-open book re-pays neither the reader open nor, if the rows are still resident, the
     /// read. That warm reuse is the point of holding a workbook open rather than a sheet.
     /// </para>
+    /// <para>
+    /// A sheet whose reader will not say how big it is — some xlsx files carry no <c>dimension</c>
+    /// element — is measured here, by being read once. See <see cref="Measure"/>. That survey runs
+    /// holding the workbook's gate, so vending such a sheet blocks every other <see cref="Sheet"/>
+    /// and <see cref="Statistics"/> call on this workbook for as long as the pass takes.
+    /// </para>
     /// </summary>
     /// <exception cref="ArgumentException">No sheet of that name exists.</exception>
-    /// <exception cref="NotSupportedException">
-    /// The sheet reports no row count — some xlsx files carry no <c>dimension</c> element — which the
-    /// streaming index needs. Read such a workbook with <see cref="SpreadsheetSpace"/> instead.
-    /// </exception>
     /// <exception cref="ObjectDisposedException">This workbook has been disposed.</exception>
     public ISpace Sheet(string name)
     {
@@ -171,30 +185,86 @@ namespace Unrect.Spreadsheets
           ?? throw new ArgumentException(
             $"No sheet named '{name}' in '{Path}'. Sheets seen so far: {Seen()}.", nameof(name));
 
-        var chunkRows = _options.ChunkRows > 0
-          ? _options.ChunkRows
-          : SheetStore.DefaultChunkRows(entry.ColumnCount);
-
-        var store = new SheetStore(
-          _pool,
-          entry.Index,
-          entry.Name,
-          entry.RowCount,
-          entry.ColumnCount,
-          chunkRows,
-          SheetStore.WindowChunksFor(_options.WindowRows, chunkRows));
-
         // The parked reader is standing on this very sheet at row 0. Hand it to the pool as the
-        // first lease rather than closing it and opening another.
+        // first lease rather than closing it and opening another — before the measure below, so a
+        // sheet that has to be surveyed is surveyed by the reader already in the right place.
         if (_parked is not null && _parked.SheetIndex == entry.Index)
         {
           _pool.Adopt(_parked, entry.Index, 0);
           _parked = null;
         }
 
+        var surveyed = entry.RowCount <= 0;
+        var (rowCount, columnCount) = surveyed ? Measure(entry) : (entry.RowCount, entry.ColumnCount);
+
+        var chunkRows = _options.ChunkRows > 0 ? _options.ChunkRows : SheetStore.DefaultChunkRows(columnCount);
+
+        var store = new SheetStore(
+          _pool,
+          entry.Index,
+          entry.Name,
+          rowCount,
+          columnCount,
+          chunkRows,
+          SheetStore.WindowChunksFor(_options.WindowRows, chunkRows),
+          // What the survey read, so the pass a caller never asked for is visible where its cost is
+          // read: zero for a sheet that described itself.
+          rowsMeasured: surveyed ? rowCount : 0);
+
         _stores.Add(entry.Name, store);
 
         return new WindowedSpace(store);
+      }
+    }
+
+    /// <summary>
+    /// How big <paramref name="entry"/> really is, found by reading it once and counting — for a
+    /// sheet whose reader will not say, which is what some xlsx files with no <c>dimension</c>
+    /// element amount to. Called holding the gate.
+    /// <para>
+    /// <b>Why measure rather than guess.</b> A space has to answer <c>Area</c>, so an unmeasured
+    /// sheet would have to claim some upper bound instead — and every declaration that scans blank
+    /// rows (a repeat's separator, <c>SkipBlankRows</c>, <c>AfterBlankRows</c>) would then walk that
+    /// bound to the end of it after the content ran out, and every unconsumed-space diagnostic would
+    /// report a sheet that does not exist. The honest extent costs one forward pass, and only for a
+    /// sheet that declined to describe itself.
+    /// </para>
+    /// <para>
+    /// It costs time, never memory: rows are counted and dropped, none is materialised. The pass is
+    /// a reader movement and shows up as one in <see cref="ReaderStatistics"/>, and the rows it read
+    /// are reported as <see cref="StreamingStatistics.RowsMeasured"/> — which is where this cost is
+    /// read, since the sheet's other counters describe reading through the window and this pass never
+    /// touched it. It leaves its reader at the end of the sheet, so the first chunk load is served by
+    /// another reader — or, in a one-reader pool, by a reopen.
+    /// </para>
+    /// <para>
+    /// The width is watched as well as the rows, because a reader that was not told the sheet's
+    /// dimensions may not know how wide it is either until rows go past. A source that never says
+    /// measures 0 wide, and the sheet reads as empty rather than as wrong.
+    /// </para>
+    /// </summary>
+    private (int RowCount, int ColumnCount) Measure(SheetEntry entry)
+    {
+      var lease = _pool.Borrow(entry.Index, 0, out _);
+
+      try
+      {
+        var cursor = lease.Cursor!;
+        var rows = 0;
+        var columns = entry.ColumnCount;
+
+        while (cursor.Read())
+        {
+          lease.CountRow();
+          rows++;
+          columns = Math.Max(columns, cursor.ColumnCount);
+        }
+
+        return (rows, columns);
+      }
+      finally
+      {
+        _pool.Return(lease);
       }
     }
 

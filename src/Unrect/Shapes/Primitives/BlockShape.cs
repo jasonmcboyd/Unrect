@@ -18,6 +18,12 @@ namespace Unrect.Shapes
     public override string Description { get; }
 
     public override ShapeResult<T> Project(ISpace extent, ShapeContext context)
-      => new ShapeResult<T>(Projection(new CellBlock(extent, context.Origin)), extent.Area.Size);
+    {
+      var value = Projection(new CellBlock(extent, context.Origin));
+
+      // The extent is measured after the projection has run, never before: on a bound still being
+      // discovered, asking first would settle it before the projection had read a row.
+      return new ShapeResult<T>(value, extent.Area.Size);
+    }
   }
 }

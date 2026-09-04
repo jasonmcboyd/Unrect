@@ -171,7 +171,7 @@ namespace Unrect.Shapes
 
       return new TableShape<IReadOnlyList<T>>(
         ValidateHeaderRows(headerRows),
-        table => (IReadOnlyList<T>)table.Rows.Select(project).ToList(),
+        table => (IReadOnlyList<T>)table.StreamRows().Select(project).ToList(),
         TablePlacement(),
         "TableRows");
     }

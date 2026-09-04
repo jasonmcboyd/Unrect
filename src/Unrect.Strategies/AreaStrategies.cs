@@ -21,14 +21,16 @@ namespace Unrect.Strategies
 
     /// <summary>
     /// Rows first, then columns measured inside them — the order that matters when a table's width
-    /// should be judged from the rows it actually occupies.
+    /// should be judged from the rows it actually occupies. Where both halves are per-row rules the
+    /// two are read as one forward walk, which leaves the height discoverable as a projection
+    /// consumes it; otherwise the extent is measured up front.
     /// </summary>
     public static IAreaStrategy RowsThenColumns(IRowStrategy rows, IColumnStrategy columns)
-      => new RowAndColumnSizeStrategy(rows, columns).ToAreaStrategy();
+      => RowAndColumnSizeStrategy.RowsThenColumns(rows, columns).ToAreaStrategy();
 
-    /// <summary>Columns first, then rows measured inside them; the transpose of <see cref="RowsThenColumns"/>.</summary>
+    /// <summary>Columns first, then rows measured inside them; the transpose of <see cref="RowsThenColumns"/>, and always measured up front.</summary>
     public static IAreaStrategy ColumnsThenRows(IColumnStrategy columns, IRowStrategy rows)
-      => new RowAndColumnSizeStrategy(columns, rows).ToAreaStrategy();
+      => RowAndColumnSizeStrategy.ColumnsThenRows(columns, rows).ToAreaStrategy();
 
     /// <summary>Whatever <paramref name="selector"/> computes from the available space. See <see cref="SizeStrategies.SelectSize"/>.</summary>
     public static IAreaStrategy SelectArea(Func<ISpace, Size> selector)

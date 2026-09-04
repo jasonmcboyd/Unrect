@@ -113,9 +113,14 @@ namespace Unrect.Tests.Streaming
 
       public string SheetName => Sheet.Name;
 
-      public int RowCount => Sheet.RowCount;
+      public int RowCount => Sheet.ReportsDimension ? Sheet.RowCount : 0;
 
-      public int ColumnCount => Sheet.ColumnCount;
+      /// <summary>
+      /// Zero until a row has been read, on a sheet that reports no dimension: a reader that was
+      /// never told how wide a sheet is learns it from the rows going past, and the measuring pass
+      /// is written to exactly that.
+      /// </summary>
+      public int ColumnCount => Sheet.ReportsDimension || _row >= 0 ? Sheet.ColumnCount : 0;
 
       public bool NextSheet()
       {
@@ -198,6 +203,13 @@ namespace Unrect.Tests.Streaming
 
     /// <summary>What the cursor will actually yield. Equal to <see cref="RowCount"/> unless a test says otherwise.</summary>
     internal int ReadableRows { get; }
+
+    /// <summary>
+    /// Whether the cursor will say how big this sheet is. False models the xlsx files that carry no
+    /// <c>dimension</c> element: the sheet is exactly as big as it says here, and the reader reports
+    /// none of it until rows have gone past.
+    /// </summary>
+    internal bool ReportsDimension { get; set; } = true;
 
     internal CellValue Cell(int column, int row)
       => _cell is null ? CellValue.Of($"{column},{row}") : _cell(column, row);

@@ -59,19 +59,19 @@ namespace Unrect.Strategies
     public static IAreaStrategy TakeColumnsWhile(
       this IRowStrategy strategy,
       Func<ISpace, int, bool> predicate)
-      => new RowAndColumnSizeStrategy(strategy, TakeColumnsWhile(predicate)).ToAreaStrategy();
+      => AreaStrategies.RowsThenColumns(strategy, TakeColumnsWhile(predicate));
 
     /// <summary>Combines <paramref name="strategy"/>'s rows with columns selected by <see cref="TakeColumnsWhileAll(Func{CellValue, bool})"/>, rows measured first.</summary>
     public static IAreaStrategy TakeColumnsWhileAll(
       this IRowStrategy strategy,
       Func<CellValue, bool> predicate)
-      => new RowAndColumnSizeStrategy(strategy, TakeColumnsWhileAll(predicate)).ToAreaStrategy();
+      => AreaStrategies.RowsThenColumns(strategy, TakeColumnsWhileAll(predicate));
 
     /// <summary>Combines <paramref name="strategy"/>'s rows with columns selected by <see cref="TakeColumnsWhileAny(Func{CellValue, bool})"/>, rows measured first.</summary>
     public static IAreaStrategy TakeColumnsWhileAny(
       this IRowStrategy strategy,
       Func<CellValue, bool> predicate)
-      => new RowAndColumnSizeStrategy(strategy, TakeColumnsWhileAny(predicate)).ToAreaStrategy();
+      => AreaStrategies.RowsThenColumns(strategy, TakeColumnsWhileAny(predicate));
 
     /// <summary>Those rows, at the columns that carry values — <see cref="TakeColumnsWhileAny(Func{CellValue, bool})"/> with <c>HasValue</c> as the predicate.</summary>
     public static IAreaStrategy TakeColumnsWhileAnyValue(this IRowStrategy strategy)

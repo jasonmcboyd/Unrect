@@ -32,6 +32,7 @@ namespace Unrect.Spreadsheets
       long windowOverruns,
       long rowsMaterialised,
       long rowsSkipped,
+      long rowsMeasured,
       int residentChunks,
       int peakResidentChunks,
       long bytesPerChunk)
@@ -45,6 +46,7 @@ namespace Unrect.Spreadsheets
       WindowOverruns = windowOverruns;
       RowsMaterialised = rowsMaterialised;
       RowsSkipped = rowsSkipped;
+      RowsMeasured = rowsMeasured;
       ResidentChunks = residentChunks;
       PeakResidentChunks = peakResidentChunks;
       ResidentBytes = residentChunks * bytesPerChunk;
@@ -102,6 +104,14 @@ namespace Unrect.Spreadsheets
     /// </summary>
     public long RowsSkipped { get; }
 
+    /// <summary>
+    /// Rows read by the survey that sized this sheet, and zero for a sheet whose reader reported its
+    /// own dimension. A sheet with no <c>dimension</c> element is read once, before the window sees
+    /// anything, to find out how big it is; that pass costs time and no memory, and this is the only
+    /// counter it moves. Above zero means a whole extra forward pass over the file was paid for.
+    /// </summary>
+    public long RowsMeasured { get; }
+
     /// <summary>Chunks held right now.</summary>
     public int ResidentChunks { get; }
 
@@ -114,11 +124,16 @@ namespace Unrect.Spreadsheets
     /// <summary>Bytes of cells resident at the peak.</summary>
     public long PeakResidentBytes { get; }
 
-    /// <summary>The one-line form, for reading a run.</summary>
+    /// <summary>
+    /// The one-line form, for reading a run. <see cref="RowsMeasured"/> appears only when a survey
+    /// happened: it is zero for every sheet that described itself, which is nearly all of them, and a
+    /// column of zeroes is not worth the width.
+    /// </summary>
     public override string ToString() =>
       $"'{SheetName}' chunk {ChunkRows}r x {WindowChunks} ({WindowRows:N0} rows) | " +
       $"loads {ChunkLoads:N0} (reloads {ChunkReloads:N0}) | evictions {Evictions:N0} | " +
       $"overruns {WindowOverruns:N0} | rows read {RowsMaterialised:N0} skipped {RowsSkipped:N0} | " +
-      $"resident {ResidentChunks} chunks / {ResidentBytes:N0}B (peak {PeakResidentChunks} / {PeakResidentBytes:N0}B)";
+      $"resident {ResidentChunks} chunks / {ResidentBytes:N0}B (peak {PeakResidentChunks} / {PeakResidentBytes:N0}B)" +
+      (RowsMeasured > 0 ? $" | measured {RowsMeasured:N0} rows" : string.Empty);
   }
 }

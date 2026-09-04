@@ -13,6 +13,14 @@ namespace Unrect.Shapes
   /// </summary>
   public static class ShapeEngine
   {
+    // Test-only, and the whole of the switch: the differential suite runs a declaration twice, once
+    // with its bounds discovered as they are consumed and once with every extent measured up front,
+    // and asserts the two agree — values, consumed extents and diagnostics alike. [ThreadStatic]
+    // rather than a plain static because the test suite runs classes in parallel and a decomposition
+    // is synchronous: the setting reaches exactly the Map calls the setting thread makes.
+    [ThreadStatic]
+    private static bool _forcedEager;
+
     /// <summary>
     /// Resolves <paramref name="shape"/>'s placement against <paramref name="availableSpace"/> and
     /// projects it. Strict: a placement that does not fit throws rather than signalling failure to
@@ -96,6 +104,12 @@ namespace Unrect.Shapes
         return true;
       }
 
+      if (Bind(shape, inner, scope, strict) is BoundedSpace bound)
+      {
+        placed = new Placed(offset, bound, scope, hasDeclaredArea: true, bound: bound);
+        return true;
+      }
+
       Area area;
       try
       {
@@ -108,13 +122,13 @@ namespace Unrect.Shapes
       catch (OutOfBoundsException exception)
       {
         if (strict)
-          throw scope.Failure(shape, "its area ran past the space available here", inner, null, exception);
+          throw AreaFailure(scope, shape, inner, exception);
 
         return false;
       }
       catch (Exception exception)
       {
-        throw scope.Failure(shape, Threw("area", exception), inner, null, exception, IsFault(exception));
+        throw AreaFailure(scope, shape, inner, exception);
       }
 
       if (Exceeds(area.Size, inner))
@@ -127,6 +141,55 @@ namespace Unrect.Shapes
 
       placed = new Placed(offset, inner.GetSubspace(area), scope, true);
       return true;
+    }
+
+    /// <summary>
+    /// The extent as a bound to be discovered while the projection consumes it, or null where it must
+    /// be measured up front. Two conditions, both hard:
+    /// <list type="number">
+    /// <item>the strategy says its bound is a per-row rule, by implementing <see cref="IIncrementalAreaStrategy"/>; and</item>
+    /// <item>the placement is strict. A <c>Repeat</c> stops when its item's <em>placement</em> fails,
+    /// and a failure deferred into the projection would arrive after the item had been collected — so
+    /// a non-strict placement is always measured up front.</item>
+    /// </list>
+    /// Beginning the scan is the strategy call this replaces, so it fails exactly as measuring would.
+    /// <para>
+    /// <b>What this buys, and where it stops.</b> Only a LEAF extent stays unresolved for long. The
+    /// moment a bound extent is handed to a composite, placing that composite's first child runs
+    /// <see cref="Exceeds"/> against it and then slices it with <c>GetSubspace(offset)</c> — two
+    /// questions about the parent's height, both asked before any child projects — so a
+    /// <c>.Sized(RowsWhileAnyValue())</c> on a flow or an overlay resolves in full and immediately.
+    /// Making those two sites bound-aware is future work, deliberately not attempted here; the limit
+    /// is pinned by <c>LazyDenotationTests</c>' census so that lifting it has to be a decision.
+    /// </para>
+    /// </summary>
+    private static BoundedSpace? Bind(IShape shape, ISpace inner, ShapeContext scope, bool strict)
+    {
+      if (!strict || _forcedEager || shape.Placement.Area is not IIncrementalAreaStrategy incremental)
+        return null;
+
+      IAreaScan scan;
+      try
+      {
+        scan = incremental.BeginArea(inner);
+      }
+      catch (ShapeException)
+      {
+        throw;
+      }
+      catch (Exception exception)
+      {
+        throw AreaFailure(scope, shape, inner, exception);
+      }
+
+      // A scan's height is bounded by the rows there are — that is what its eager reading is defined
+      // as — so the only way a discovered extent can fail to fit is its width, and saying so needs
+      // the height the eager reading would have measured. Declining to bind hands that one case to
+      // the measured path below, which is the only place that reports it.
+      if (scan.Width > inner.Area.Width)
+        return null;
+
+      return new BoundedSpace(inner, scan, exception => AreaFailure(scope, shape, inner, exception));
     }
 
     private static AppliedResult<TResult> Project<TResult>(IShape<TResult> shape, Placed placed)
@@ -151,10 +214,30 @@ namespace Unrect.Shapes
           IsFault(exception));
       }
 
-      // A declared area is consumed in full, even when the projection used less of it.
-      var consumed = placed.HasDeclaredArea ? placed.Extent.Area.Size : result.Consumed;
+      // A declared area is consumed in full, even when the projection used less of it — which is
+      // where a bound that was left to be discovered is read to exhaustion. A projection that read
+      // every row has already settled it, so the canonical case forces nothing twice.
+      var consumed = placed.HasDeclaredArea
+        ? placed.Bound?.ForceResolved() ?? placed.Extent.Area.Size
+        : result.Consumed;
+
       return new AppliedResult<TResult>(result.Value, placed.Offset, consumed);
     }
+
+    /// <summary>
+    /// How a declared extent's failure is reported: a strategy that ran out of room says so, and one
+    /// that broke says what broke.
+    /// <para>
+    /// Shared with <see cref="BoundedSpace"/>, which is handed it as the identity of the placement
+    /// whose bound it discovers. That is what makes a deferred failure the placement's failure: the
+    /// subject, path, location and fault flag are not merely alike, they are produced by this one
+    /// expression from the same scope, shape and space. Only the moment differs.
+    /// </para>
+    /// </summary>
+    private static ShapeException AreaFailure(ShapeContext scope, IShape shape, ISpace inner, Exception exception)
+      => exception is OutOfBoundsException
+        ? scope.Failure(shape, "its area ran past the space available here", inner, null, exception)
+        : scope.Failure(shape, Threw("area", exception), inner, null, exception, IsFault(exception));
 
     /// <summary>
     /// Whether something broke rather than disagreed with the data. These mean the code is wrong or
@@ -210,18 +293,46 @@ namespace Unrect.Shapes
 
     private readonly struct Placed
     {
-      public Placed(Offset offset, ISpace extent, ShapeContext scope, bool hasDeclaredArea)
+      public Placed(Offset offset, ISpace extent, ShapeContext scope, bool hasDeclaredArea, BoundedSpace? bound = null)
       {
         Offset = offset;
         Extent = extent;
         Scope = scope;
         HasDeclaredArea = hasDeclaredArea;
+        Bound = bound;
       }
 
       public Offset Offset { get; }
       public ISpace Extent { get; }
       public ShapeContext Scope { get; }
       public bool HasDeclaredArea { get; }
+
+      /// <summary>
+      /// The extent, when it is one still being discovered — the same object as <see cref="Extent"/>,
+      /// named separately so the rule that a declared area is consumed in full does not depend on a
+      /// property getter happening to force.
+      /// </summary>
+      public BoundedSpace? Bound { get; }
+    }
+
+    /// <summary>
+    /// Test-only. Measures every declared extent up front on the calling thread, as the engine did
+    /// before bounds could be discovered, until the returned scope is disposed. Nested scopes restore
+    /// rather than clear, so it composes with itself.
+    /// </summary>
+    internal static IDisposable ForceEager() => new EagerScope();
+
+    private sealed class EagerScope : IDisposable
+    {
+      private readonly bool _previous;
+
+      public EagerScope()
+      {
+        _previous = _forcedEager;
+        _forcedEager = true;
+      }
+
+      public void Dispose() => _forcedEager = _previous;
     }
   }
 }

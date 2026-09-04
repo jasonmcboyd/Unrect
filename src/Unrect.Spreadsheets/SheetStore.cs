@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Threading;
 
 using Unrect.Core;
@@ -57,8 +58,23 @@ namespace Unrect.Spreadsheets
     private readonly object _gate = new object();
     private readonly ReaderPool _pool;
     private readonly int _sheetIndex;
-    private readonly CellValue[]?[] _resident;
-    private readonly long[] _recency;
+
+    /// <summary>
+    /// The resident index, keyed by chunk and grown as chunks are wanted rather than sized from the
+    /// row count up front.
+    /// <para>
+    /// A slot outlives its cells: eviction nulls <see cref="Chunk.Cells"/> and leaves the slot
+    /// behind, so live cells stay bounded by the window while the slot remembers that this chunk was
+    /// once held — which is exactly what makes the next load of it a reload rather than a first
+    /// load. The index therefore costs one small entry per chunk ever touched, and nothing at all
+    /// for the rest of the sheet.
+    /// </para>
+    /// <para>
+    /// Concurrent because reads take no gate: every mutation happens under <see cref="_gate"/>, but
+    /// a lookup races them.
+    /// </para>
+    /// </summary>
+    private readonly ConcurrentDictionary<int, Chunk> _chunks = new ConcurrentDictionary<int, Chunk>();
 
     private long _tick;
     private int _locusFrom;
@@ -83,38 +99,42 @@ namespace Unrect.Spreadsheets
       int rowCount,
       int columnCount,
       int chunkRows,
-      int windowChunks)
+      int windowChunks,
+      long rowsMeasured = 0)
     {
-      if (rowCount <= 0)
-        // Some xlsx files carry no dimension element, and the resident index is sized from the row
-        // count. Failing loudly beats silently truncating a sheet to nothing.
-        throw new NotSupportedException(
-          $"The sheet '{sheetName}' does not report a row count, which the streaming reader needs to " +
-          "index it. Read this workbook with SpreadsheetSpace.Create instead.");
-
       _pool = pool;
       _sheetIndex = sheetIndex;
       SheetName = sheetName;
-      RowCount = rowCount;
+      RowsMeasured = rowsMeasured;
 
-      // Not clamped to 1: a sheet with no columns is 0 wide, which is exactly what the eager path
-      // reports for the same file. Widening it to 1 would hand back a column of blanks that the
-      // other path does not have, and identity between the two paths is worth more than avoiding a
-      // degenerate case — a 0-wide store simply holds nothing.
+      // Neither extent is clamped to 1: an empty sheet is 0 by 0, which is exactly what the eager
+      // path reports for the same file. Widening either would hand back a band of blanks the other
+      // path does not have, and identity between the two paths is worth more than avoiding a
+      // degenerate case — a store with no extent simply holds nothing.
+      RowCount = Math.Max(0, rowCount);
       ColumnCount = Math.Max(0, columnCount);
       ChunkRows = chunkRows > 0 ? chunkRows : DefaultChunkRows(ColumnCount);
       WindowChunks = Math.Max(MinimumWindowChunks, windowChunks);
-
-      var chunks = (RowCount + ChunkRows - 1) / ChunkRows;
-      _resident = new CellValue[]?[chunks];
-      _recency = new long[chunks];
     }
 
     internal string SheetName { get; }
 
+    /// <summary>
+    /// Rows in this sheet: what the reader reported, or what measuring it found for a sheet whose
+    /// reader would not say. It bounds the index rather than sizing it — the index grows to the
+    /// chunks actually wanted, which is why a sheet nobody could size is still a sheet this store
+    /// can hold.
+    /// </summary>
     internal int RowCount { get; }
 
     internal int ColumnCount { get; }
+
+    /// <summary>
+    /// Rows the survey read to find <see cref="RowCount"/>, and zero for a sheet whose reader
+    /// reported its own dimension. It is a cost this store was handed rather than one it paid, and
+    /// is carried only so <see cref="StreamingStatistics.RowsMeasured"/> can report it.
+    /// </summary>
+    internal long RowsMeasured { get; }
 
     internal int ChunkRows { get; }
 
@@ -168,46 +188,63 @@ namespace Unrect.Spreadsheets
       if (Volatile.Read(ref _disposed))
         throw new ObjectDisposedException("Workbook", $"The workbook owning sheet '{SheetName}' has been disposed.");
 
-      var chunk = row / ChunkRows;
-      var cells = Volatile.Read(ref _resident[chunk]);
+      var index = row / ChunkRows;
+      var cells = Resident(index, extentTop, extentHeight) ?? Load(index, extentTop, extentHeight);
 
-      if (cells is null)
-      {
-        cells = Load(chunk, extentTop, extentHeight);
-      }
-      else
-      {
-        Touch(chunk);
-
-        // The locus is recorded on every resident read, not only when the chunk changes. Gating it
-        // on a chunk transition read an unsynchronised field to decide whether to apply the
-        // residency law at all — so under two threads the law was applied or skipped by a race,
-        // and a band could lose its anchor precisely when it was being swept. Recency bookkeeping
-        // stays deliberately unsynchronised because a lost increment picks a slightly worse victim;
-        // dropping an anchor is not that harmless.
-        lock (_gate)
-          Anchor(extentTop, extentHeight);
-      }
-
-      return cells[((row - (chunk * ChunkRows)) * ColumnCount) + column];
+      return cells[((row - (index * ChunkRows)) * ColumnCount) + column];
     }
 
-    private CellValue[] Load(int chunk, int extentTop, int extentHeight)
+    /// <summary>
+    /// The chunk's cells if the window still holds them, having recorded the read against the
+    /// residency bookkeeping — and null if it does not, which costs the caller one trip through the
+    /// gate that re-checks.
+    /// </summary>
+    private CellValue[]? Resident(int index, int extentTop, int extentHeight)
+    {
+      if (!_chunks.TryGetValue(index, out var chunk))
+        return null;
+
+      var cells = Volatile.Read(ref chunk.Cells);
+
+      if (cells is null)
+        return null;
+
+      Touch(chunk);
+
+      // The locus is recorded on every resident read, not only when the chunk changes. Gating it on
+      // a chunk transition read an unsynchronised field to decide whether to apply the residency law
+      // at all — so under two threads the law was applied or skipped by a race, and a band could
+      // lose its anchor precisely when it was being swept. Recency bookkeeping stays deliberately
+      // unsynchronised because a lost increment picks a slightly worse victim; dropping an anchor is
+      // not that harmless.
+      lock (_gate)
+        Anchor(extentTop, extentHeight);
+
+      return cells;
+    }
+
+    private CellValue[] Load(int index, int extentTop, int extentHeight)
     {
       lock (_gate)
       {
         Anchor(extentTop, extentHeight);
 
-        // Another thread may have loaded it between the plain read above and this gate.
-        var existing = _resident[chunk];
-        if (existing is not null)
+        // The slot, made if this chunk has never been held. Another thread may have filled it
+        // between the read that missed and this gate.
+        var chunk = _chunks.GetOrAdd(index, _ => new Chunk());
+
+        if (chunk.Cells is CellValue[] existing)
         {
           Touch(chunk);
           return existing;
         }
 
-        var start = chunk * ChunkRows;
-        var rows = Math.Min(ChunkRows, RowCount - start);
+        var start = index * ChunkRows;
+
+        // Floored at zero: a chunk past the end of the sheet holds no rows. Reaching one is a bounds
+        // error the space above is there to catch, and it must not become a negative array length
+        // here on the way to being caught.
+        var rows = Math.Min(ChunkRows, Math.Max(0, RowCount - start));
 
         // No pre-fill: default(CellValue) IS Blank, so a freshly allocated chunk is already an
         // all-blank band and a short row leaves the cells it never reached exactly right.
@@ -237,10 +274,14 @@ namespace Unrect.Spreadsheets
         Evict();
 
         _chunkLoads++;
-        if (_recency[chunk] != 0)
+
+        // A slot that has been touched before is a chunk this store held and dropped: the load just
+        // paid for is a re-materialisation. The slot outliving its cells is what makes that
+        // knowable at all.
+        if (chunk.Recency != 0)
           _chunkReloads++;
 
-        Volatile.Write(ref _resident[chunk], cells);
+        Volatile.Write(ref chunk.Cells, cells);
         _liveResident++;
         if (_liveResident > _peakResident)
           _peakResident = _liveResident;
@@ -267,40 +308,46 @@ namespace Unrect.Spreadsheets
       {
         var victim = Victim(respectLocus: true);
 
-        if (victim < 0)
+        if (victim is null)
         {
           victim = Victim(respectLocus: false);
 
-          if (victim >= 0)
+          if (victim is not null)
             _windowOverruns++;
         }
 
-        if (victim < 0)
+        if (victim is null)
           return;
 
-        Volatile.Write(ref _resident[victim], null);
+        Volatile.Write(ref victim.Cells, null);
         _liveResident--;
         _evictions++;
       }
     }
 
-    private int Victim(bool respectLocus)
+    /// <summary>
+    /// The resident chunk to drop, or null when there is none to drop under these rules. Scans the
+    /// index, which holds an entry per chunk ever loaded rather than one per chunk of the sheet.
+    /// </summary>
+    private Chunk? Victim(bool respectLocus)
     {
-      var victim = -1;
+      Chunk? victim = null;
       var oldest = long.MaxValue;
 
-      for (var i = 0; i < _resident.Length; i++)
+      foreach (var entry in _chunks)
       {
-        if (_resident[i] is null)
+        var chunk = entry.Value;
+
+        if (chunk.Cells is null)
           continue;
 
-        if (respectLocus && InLocus(i))
+        if (respectLocus && InLocus(entry.Key))
           continue;
 
-        if (_recency[i] < oldest)
+        if (chunk.Recency < oldest)
         {
-          oldest = _recency[i];
-          victim = i;
+          oldest = chunk.Recency;
+          victim = chunk;
         }
       }
 
@@ -373,9 +420,9 @@ namespace Unrect.Spreadsheets
       return start < _locusTo && start + ChunkRows > _locusFrom;
     }
 
-    private void Touch(int chunk)
+    private void Touch(Chunk chunk)
     {
-      _recency[chunk] = ++_tick;
+      chunk.Recency = ++_tick;
     }
 
     /// <summary>A snapshot of what reading this sheet has cost, taken under the gate.</summary>
@@ -392,6 +439,7 @@ namespace Unrect.Spreadsheets
           _windowOverruns,
           _rowsMaterialised,
           _rowsSkipped,
+          RowsMeasured,
           _liveResident,
           _peakResident,
           (long)ChunkRows * ColumnCount * BytesPerCell);
@@ -404,11 +452,35 @@ namespace Unrect.Spreadsheets
 
       lock (_gate)
       {
-        for (var i = 0; i < _resident.Length; i++)
-          Volatile.Write(ref _resident[i], null);
+        // Both halves: the cells go first, so a read that raced this far holding a slot stops
+        // pinning them, and the index goes after.
+        foreach (var entry in _chunks)
+          Volatile.Write(ref entry.Value.Cells, null);
 
+        _chunks.Clear();
         _liveResident = 0;
       }
+    }
+
+    /// <summary>
+    /// One entry of the resident index: a chunk's cells while it is held, and when it was last
+    /// wanted. The slot survives eviction and the cells do not, which is what lets the index grow
+    /// with the sheet while live cells stay bounded by the window.
+    /// </summary>
+    private sealed class Chunk
+    {
+      /// <summary>
+      /// The cells, or null while this chunk is not resident. Written through <see cref="Volatile"/>,
+      /// and read that way off the gate — the reads taken under the gate are plain, since the gate
+      /// already orders them. A field rather than a property so it can be.
+      /// </summary>
+      internal CellValue[]? Cells;
+
+      /// <summary>
+      /// The tick this chunk was last touched, and zero until it is first loaded — which is how a
+      /// reload is told apart from a first load.
+      /// </summary>
+      internal long Recency;
     }
   }
 }

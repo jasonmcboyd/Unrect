@@ -9,6 +9,14 @@ namespace Unrect.Shapes
   /// <summary>
   /// A table's extent split into an optional header row and the body rows beneath it. Cells are
   /// reachable by index and, when a header row was declared, by column name.
+  /// <para>
+  /// Over an extent whose height is discovered while it is read, a table costs its header row up
+  /// front and then whatever the projection asks for: <see cref="StreamRows"/> reads one row per step
+  /// and never asks how many there are, while <see cref="Rows"/>, <see cref="RowCount"/> and
+  /// <see cref="Location"/> are dimension queries and settle the bound. <see cref="ColumnCount"/> and
+  /// the header itself are free — a width is settled before any row is read. That is why the three
+  /// built-in row projections are written against <see cref="StreamRows"/>.
+  /// </para>
   /// </summary>
   public sealed class TableView
   {
@@ -34,10 +42,17 @@ namespace Unrect.Shapes
     /// <summary>The table's full extent, header row(s) included.</summary>
     public ISpace Space { get; }
 
-    /// <summary>How many columns wide the table is.</summary>
-    public int ColumnCount => Space.Area.Width;
+    /// <summary>
+    /// How many columns wide the table is. Free on an extent still being discovered: a width is
+    /// settled before the first row is read.
+    /// </summary>
+    public int ColumnCount => BoundedSpace.WidthOf(Space);
 
-    /// <summary>How many body rows the table has, header row(s) excluded.</summary>
+    /// <summary>
+    /// How many body rows the table has, header row(s) excluded. A dimension query, so on an extent
+    /// still being discovered this reads the sheet through to wherever the declaration's rule stops;
+    /// <see cref="StreamRows"/> is the reading that does not need the answer.
+    /// </summary>
     public int RowCount => Space.Area.Height - HeaderRows;
 
     /// <summary>Whether a header row was declared. By-name lookups (<see cref="TableRow.this[string]"/>) need one.</summary>
@@ -49,11 +64,38 @@ namespace Unrect.Shapes
     /// <summary>Each column's header text, trimmed; the empty string for a column with no caption.</summary>
     public IReadOnlyList<string> ColumnNames { get; }
 
-    /// <summary>The address of the table's top-left cell, header included.</summary>
+    /// <summary>
+    /// The address of the table's top-left cell, header included. It carries the extent the table was
+    /// found in, so on one still being discovered this settles the bound.
+    /// </summary>
     public ShapeLocation Location => ShapeLocation.At(Context.Origin, Space.Area.Size);
 
-    /// <summary>The table's body rows, header row(s) excluded, built once per view.</summary>
+    /// <summary>
+    /// The table's body rows, header row(s) excluded, built once per view. Materialising them is a
+    /// dimension query, so on an extent still being discovered this settles the bound — use
+    /// <see cref="StreamRows"/> to read a tall table a row at a time.
+    /// </summary>
     public IReadOnlyList<TableRow> Rows => _rows ??= BuildRows();
+
+    /// <summary>
+    /// The table's body rows, header row(s) excluded, read one at a time as the enumeration advances:
+    /// each step asks whether there is a row there and stops when there is not, so an extent whose
+    /// height is still being discovered is consumed forward-only, in step with the reading, and is
+    /// never measured up front.
+    /// <para>
+    /// This is what the built-in row projections — <c>TableRows&lt;T&gt;()</c>, <c>TableRows()</c> and
+    /// <c>TableRows(row =&gt; …)</c> — are written against, and what a projection of your own should
+    /// use where the sheet is tall. The rows it hands back are the same <see cref="TableRow"/> views
+    /// <see cref="Rows"/> holds; unlike <see cref="Rows"/> they are not cached, so enumerating twice
+    /// builds them twice — a second enumeration costs no extra rows of the sheet, the bound having
+    /// been settled by the first.
+    /// </para>
+    /// </summary>
+    public IEnumerable<TableRow> StreamRows()
+    {
+      for (var index = 0; BoundedSpace.HasRow(Space, HeaderRows + index); index++)
+        yield return RowAt(index);
+    }
 
     private int HeaderRows { get; }
 
@@ -63,7 +105,10 @@ namespace Unrect.Shapes
     /// </summary>
     internal ShapeContext Context { get; }
 
-    /// <summary>Reports a problem against the table itself — its origin, its extent.</summary>
+    /// <summary>
+    /// Reports a problem against the table itself — its origin, its extent. Citing the extent settles
+    /// a bound still being discovered, which costs nothing worth saving on the way to a failure.
+    /// </summary>
     internal ShapeException Failure(string problem) => Context.Failure(problem, Space);
 
     /// <summary>
@@ -80,20 +125,30 @@ namespace Unrect.Shapes
         : Array.Empty<int>();
     }
 
-    private IReadOnlyList<TableRow> BuildRows()
+    /// <summary>
+    /// Every body row in one list, sized exactly. A caller of <see cref="Rows"/> is already paying
+    /// the dimension query <see cref="RowCount"/> is, so asking it first costs nothing and the list
+    /// is allocated once at the right size instead of doubling its way there. The <c>TableRows</c>
+    /// rungs deliberately do the opposite and grow their lists, because for them asking how many
+    /// rows there are is the forcing question streaming exists to avoid.
+    /// </summary>
+    private List<TableRow> BuildRows()
     {
-      var rows = new TableRow[RowCount];
+      var rows = new List<TableRow>(RowCount);
 
-      for (var index = 0; index < rows.Length; index++)
-      {
-        var offset = new Offset(0, HeaderRows + index);
-        var rowContext = Context.Advance(offset);
-        var strip = new CellStrip(Space.GetSubspace(offset, new Area(ColumnCount, 1)), Orientation.Horizontal, rowContext.Origin);
-
-        rows[index] = new TableRow(this, index, strip, rowContext);
-      }
+      foreach (var row in StreamRows())
+        rows.Add(row);
 
       return rows;
+    }
+
+    private TableRow RowAt(int index)
+    {
+      var offset = new Offset(0, HeaderRows + index);
+      var rowContext = Context.Advance(offset);
+      var strip = new CellStrip(Space.GetSubspace(offset, new Area(ColumnCount, 1)), Orientation.Horizontal, rowContext.Origin);
+
+      return new TableRow(this, index, strip, rowContext);
     }
 
     private Dictionary<string, List<int>> BuildColumnsByName()

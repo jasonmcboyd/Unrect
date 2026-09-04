@@ -147,20 +147,104 @@ namespace Unrect.Tests.Streaming
       Assert.Equal(4, stats.RowsMaterialised);
     }
 
+    // --- A sheet that will not say how big it is -------------------------------------------------
+    //
+    // Some xlsx files carry no dimension element. The index is growable, so the store no longer
+    // needs the row count to hold the sheet — the workbook measures it instead, which is why these
+    // go through Workbook.Over rather than building a store directly: the measure is where a sheet
+    // is vended, and only a synthetic source can report no dimension at all.
+
+    /// <summary>A workbook over <paramref name="source"/>, warming off so the counts are deterministic.</summary>
+    private static Workbook Book(FakeRowSource source, int windowRows = 8192, int chunkRows = 0) =>
+      Workbook.Over(
+        source,
+        new WorkbookOptions { WarmReaders = false, WindowRows = windowRows, ChunkRows = chunkRows });
+
     [Fact]
-    public void ASheetThatReportsNoRowCountIsRejectedByName()
+    public void ASheetThatReportsNoDimensionIsMeasuredByReadingIt()
     {
-      // Some xlsx files carry no dimension element, and the resident index is sized from the row
-      // count. Failing loudly beats truncating a sheet to nothing, and the message has to name the
-      // sheet and the way out, because the way out is a different API.
-      var source = FakeRowSource.Of(rows: 1, columns: 3);
-      using var pool = new ReaderPool(source, 1, warmReaders: false);
+      // The extent is discovered rather than declared, and it is a real extent when it arrives: the
+      // space is exactly as big as the sheet turned out to be, so a shape sees the same thing it
+      // would have seen had the file described itself.
+      using var book = Book(new FakeRowSource(new FakeSheet("Ledger", 25, 3) { ReportsDimension = false }));
 
-      var failure = Assert.Throws<NotSupportedException>(
-        () => new SheetStore(pool, 0, "Ledger", rowCount: 0, columnCount: 3, chunkRows: 4, windowChunks: 4));
+      var sheet = book.Sheet("Ledger");
 
-      Assert.Contains("'Ledger'", failure.Message);
-      Assert.Contains("SpreadsheetSpace.Create", failure.Message);
+      Assert.Equal(3, sheet.Area.Size.Width);
+      Assert.Equal(25, sheet.Area.Size.Height);
+      Assert.Equal("0,0", sheet[0, 0].GetString());
+      Assert.Equal("2,24", sheet[2, 24].GetString());
+    }
+
+    [Fact]
+    public void AMeasuredSheetIsStillReadAWindowAtATime()
+    {
+      // Measuring settles the extent; it must not settle the memory. The window still bounds what is
+      // held, every row is still materialised exactly once, and the survey pass itself materialises
+      // nothing — it counted rows and dropped them.
+      using var book = Book(new FakeRowSource(new FakeSheet("Ledger", 100, 2) { ReportsDimension = false }), windowRows: 40, chunkRows: 10);
+      var sheet = book.Sheet("Ledger");
+
+      for (var row = 0; row < 100; row++)
+        _ = sheet[0, row];
+
+      var stats = book.Statistics("Ledger")!.Value;
+
+      Assert.Equal(100, stats.RowsMaterialised);
+      Assert.Equal(10, stats.ChunkLoads);
+      Assert.Equal(0, stats.ChunkReloads);
+      Assert.True(stats.PeakResidentChunks <= stats.WindowChunks);
+    }
+
+    [Fact]
+    public void ReadingPastTheEndOfAMeasuredSheetIsOutOfBounds()
+    {
+      // The contract every space keeps, kept here too: the end found by measuring is the end, and
+      // running off it is an ordinary bounds condition a declaration may recover from — not a blank
+      // row, which would let a scan run on past the sheet.
+      using var book = Book(new FakeRowSource(new FakeSheet("Ledger", 6, 2) { ReportsDimension = false }));
+      var sheet = book.Sheet("Ledger");
+
+      Assert.Throws<OutOfBoundsException>(() => sheet[0, 6]);
+      Assert.Throws<OutOfBoundsException>(() => sheet[2, 0]);
+    }
+
+    [Fact]
+    public void TheRowsTheSurveyReadAreReportedAsRowsMeasured()
+    {
+      // The survey is a forward pass over the whole file that the caller never asked for, and it
+      // moves none of the sheet's other counters — it materialises nothing, loads no chunk and
+      // touches no window — so without this number its cost is invisible. Reported where the sheet's
+      // other costs are read, and zero for the sheets that described themselves, which is nearly all
+      // of them: a column of zeroes is not worth the width, so ToString omits it there.
+      using var book = Book(new FakeRowSource(
+        new FakeSheet("Surveyed", 25, 3) { ReportsDimension = false },
+        new FakeSheet("Declared", 25, 3)));
+
+      _ = book.Sheet("Surveyed");
+      _ = book.Sheet("Declared");
+
+      // Twenty-five rows counted and dropped, against zero rows materialised: the pass cost time and
+      // no memory, which is exactly the distinction the counter exists to draw.
+      var surveyed = book.Statistics("Surveyed")!.Value;
+      Assert.Equal(25, surveyed.RowsMeasured);
+      Assert.Equal(0, surveyed.RowsMaterialised);
+
+      // A sheet whose reader answered was never surveyed, so it owes nothing to report.
+      Assert.Equal(0, book.Statistics("Declared")!.Value.RowsMeasured);
+    }
+
+    [Fact]
+    public void ASheetThatYieldsNoRowsMeasuresEmpty()
+    {
+      // The degenerate case reads as empty rather than as anything else. A sheet nobody can size and
+      // nobody can read is 0 by 0, which is what the eager path makes of the same file.
+      using var book = Book(new FakeRowSource(new FakeSheet("Ledger", 0, 0) { ReportsDimension = false }));
+
+      var sheet = book.Sheet("Ledger");
+
+      Assert.Equal(0, sheet.Area.Size.Height);
+      Assert.Throws<OutOfBoundsException>(() => sheet[0, 0]);
     }
 
     // --- The window ------------------------------------------------------------------------------

@@ -16,6 +16,12 @@ namespace Unrect.Spreadsheets
   /// passed to any shape and held as long as the caller likes, and the only thing that invalidates
   /// it is the <see cref="Workbook"/> it came from being disposed.
   /// </para>
+  /// <para>
+  /// The extent is the sheet's own, as the workbook settled it: what the reader reported, or — for
+  /// a sheet whose reader would not say — what measuring it found. Either way it is a real extent,
+  /// never an upper bound, so running off it is an ordinary
+  /// <see cref="OutOfBoundsException"/> as it is for any space.
+  /// </para>
   /// </summary>
   internal sealed class WindowedSpace : ISpace
   {

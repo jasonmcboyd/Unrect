@@ -20,8 +20,8 @@ namespace Unrect.Tests.Streaming
   /// </summary>
   public class StreamingStatisticsTests
   {
-    private static SheetStore Store(ReaderPool pool, int rows, int columns, int chunkRows, int windowChunks) =>
-      new SheetStore(pool, 0, "Data", rows, columns, chunkRows, windowChunks);
+    private static SheetStore Store(ReaderPool pool, int rows, int columns, int chunkRows, int windowChunks, long rowsMeasured = 0) =>
+      new SheetStore(pool, 0, "Data", rows, columns, chunkRows, windowChunks, rowsMeasured);
 
     // --- The pool's arithmetic --------------------------------------------------------------------
 
@@ -198,6 +198,30 @@ namespace Unrect.Tests.Streaming
         rendered);
 
       Assert.DoesNotContain("rewinds", rendered);       // that word belongs to the pool, not a sheet
+      Assert.DoesNotContain("measured", rendered);      // nor does a survey that never happened
+    }
+
+    [Fact]
+    public void ASheetThatHadToBeSurveyedSaysSoAtTheEndOfItsLine()
+    {
+      // The conditional half of the line above, and the reason it is conditional: a sheet that
+      // described itself measured nothing, which is nearly every sheet, and a column of zeroes is not
+      // worth the width. A sheet that had to be read once before the window saw anything paid for a
+      // whole extra forward pass, and that is worth a clause.
+      var source = FakeRowSource.Of(rows: 1500, columns: 2);
+      using var pool = new ReaderPool(source, 2, warmReaders: false);
+      var store = Store(pool, 1500, 2, chunkRows: 100, windowChunks: 4, rowsMeasured: 1500);
+
+      for (var row = 0; row < 1500; row++)
+        _ = store.GetCell(0, row, row, 1);
+
+      // Rendered in full rather than by its suffix, so the clause is pinned in its place — after the
+      // resident figures, where a reader looking for what a run cost finds the rest of the costs.
+      // Grouped like every other count on the line: a survey worth reporting is rarely a small one.
+      Assert.Equal(
+        "'Data' chunk 100r x 4 (400 rows) | loads 15 (reloads 0) | evictions 11 | overruns 0 | " +
+        "rows read 1,500 skipped 0 | resident 4 chunks / 19,200B (peak 4 / 19,200B) | measured 1,500 rows",
+        store.Snapshot().ToString());
     }
 
     [Fact]

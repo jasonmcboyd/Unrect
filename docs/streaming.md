@@ -53,6 +53,35 @@ sheet determines whether streaming is cheap, free, or a bad idea:
   the other way to pay for this door twice. Both failure modes have a counter that says
   so — see [The sizing law](#the-sizing-law) and the statistics table below — so "slow" is
   always diagnosable, never mysterious.
+- **A row-wise leaf extent reads its rows once, not twice.** Where a **leaf** extent is
+  sized by a per-row rule — `Range(RowsWhileAnyValue(), …)`, a `Range` or a `Table` left on
+  its default placement, and `.Sized(RowsWhileAnyValue())` applied *directly to one of
+  those* — its height is discovered *as the projection consumes it* rather than measured
+  first, so the rows pass the window once. The three built-in table projections
+  (`TableRows<T>()`, `TableRows()`, `TableRows(row => …)`) are written against that reading,
+  through `TableView.StreamRows()`, and so is a block read by `Row(i)` or
+  `block[column, row]`. A **dimension query** asks how far the extent goes and settles it
+  there and then: `TableView.Rows`, `.RowCount`, `.Location`, `CellBlock.Height`, `.Rows`,
+  `.Columns`, `.Column`, `.Location`, `.AddressOf`, and `ISpace.Area` itself. Widths are
+  free either way.
+- **Laziness stops at the first composite.** A `.Sized(RowsWhileAnyValue())` on a
+  `VerticalFlow`, a `HorizontalFlow` or an `Overlay` resolves eagerly, in full, today.
+  Placing that composite's first child asks the parent extent whether the child fits and
+  then slices it, and both questions settle the bound before any child projection runs — so
+  a lazy extent buys nothing once there is a box around it. Put the `.Sized` on the leaf
+  that reads the rows rather than on the flow that holds it. This limit is pinned by
+  `LazyDenotationTests`' census, so lifting it is a deliberate change rather than an
+  accident.
+- **A width discovered from the data costs the rows it takes to settle, and no more.** A
+  `Table` on its default placement finds its width from the sheet too, in the *same* forward
+  walk as its height: each row the height rule accepts is fed to the width rule as it is
+  taken, and the walk stops as soon as no further row could change the width. On the usual
+  sheet — a full header row, or a first body row with every column occupied — that is one
+  row, and the table then streams exactly as a fixed-width one does. Where a leading column
+  is blank for a long stretch, settling the width honestly costs the rows it takes to fill
+  it, and the extent is forced that far before the projection sees its first row. That is
+  the one case where `.Sized(RowsWhileAnyValue())` — full available width, nothing to
+  discover — still buys something.
 
 ## The `Workbook` / `Sheet` lifecycle
 
@@ -193,6 +222,7 @@ readers 1/2 | opens 1 | reopens 0 | spare opens 1 (warm 0, waited 0ms) |
 | `WindowOverruns` | How many times a band did not fit the window — the diagnosis half of the pair; see [the counterintuitive reading](#the-counterintuitive-reading-a-plain-walk-down-a-tall-sheet-reports-one-overrun-that-costs-nothing) above. |
 | `RowsMaterialised` | Rows read from the source and adapted into cells. |
 | `RowsSkipped` | Rows parsed and discarded to move a reader to a wanted chunk — owned by window sizing, invariant under `MaxReaders`. |
+| `RowsMeasured` | Rows read by the survey that sized a sheet with no `dimension` element; `0` for a sheet that reported its own. Above zero means a whole extra forward pass over the file was paid for before the window saw anything. Appears in `ToString()` only when non-zero. |
 | `ResidentChunks` | Chunks held right now. |
 | `PeakResidentChunks` | The most chunks ever held at once; never exceeds `WindowChunks`. |
 | `ResidentBytes` | Bytes of `CellValue`s resident right now. |
@@ -239,15 +269,25 @@ quietly — the one failure mode this feature could not ship with.
   streaming test fixture, and the identity suite that proves a window reads the same cells
   as `SpreadsheetSpace.Create`, is `.xlsx`. Treat `.xls` through `Workbook` as unproven
   until it has its own fixture.
-- **A sheet with no `dimension` element fails loudly, not silently.** The streaming index
-  is sized from the sheet's row count up front; some exported `.xlsx` files omit it. Such a
-  sheet throws `NotSupportedException` from `Sheet(name)`, naming the sheet, rather than
-  streaming a truncated one. Read that workbook with `SpreadsheetSpace.Create` instead.
+- **A sheet with no `dimension` element costs one pass to measure.** Some exported `.xlsx`
+  files omit it, and the reader then cannot say how big the sheet is. `Sheet(name)` reads
+  such a sheet once, counting rows and watching the width, and hands the real extent to the
+  window — so a declaration sees exactly the space it would have seen from a file that
+  described itself, and running off the end is the ordinary `OutOfBoundsException`. The pass
+  costs time, not memory: no row is materialised by it. Where the cost shows is
+  `Statistics(sheet)!.Value.RowsMeasured` — the rows the survey read, and `0` for every
+  sheet that reported its own dimension — plus the reader's own travel in
+  `ReaderStatistics`. It also runs holding the workbook's gate, so vending such a sheet
+  blocks other `Sheet()` and `Statistics()` calls on that workbook until it finishes. Note
+  that the eager path has no equivalent — `SpreadsheetSpace.Create` sizes its grid from the
+  same absent dimension and yields an empty sheet — so this is the door to use for such a
+  file, not the one to avoid.
 - **Reads against one sheet serialise.** Different workbooks, and different sheets of one
   workbook, read in parallel; two threads mapping the *same* sheet at once are correct —
   no torn read, no chunk installed twice — but serialised on that sheet's store, one load
   at a time. A concurrent-map-over-one-sheet workload that actually wants parallel chunk
   loads would need per-chunk load coordination that does not exist yet.
 
-Further-out deferrals (a public row-source seam, async APIs, lazy extents, an adaptive
-`MaxReaders`) are tracked in `docs/design/streaming-spec.md` §13–§14, not repeated here.
+Further-out deferrals (a public row-source seam, async APIs, a streaming result type, an
+adaptive `MaxReaders`) are tracked in `docs/design/streaming-spec.md` §13–§14, not repeated
+here.

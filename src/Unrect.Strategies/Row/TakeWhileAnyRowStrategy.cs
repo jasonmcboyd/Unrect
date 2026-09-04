@@ -3,7 +3,7 @@ using Unrect.Core;
 
 namespace Unrect.Strategies
 {
-  internal sealed class TakeWhileAnyRowStrategy : IRowStrategy
+  internal sealed class TakeWhileAnyRowStrategy : IIncrementalRowStrategy, IRowScan
   {
     public TakeWhileAnyRowStrategy(Func<CellValue, bool> predicate)
     {
@@ -12,27 +12,18 @@ namespace Unrect.Strategies
 
     private Func<CellValue, bool> Predicate { get; }
 
-    public int SelectRows(ISpace space)
-    {
-      int count = 0;
+    // The rule carries nothing from row to row, so one instance is every scan of it.
+    public IRowScan BeginRows() => this;
 
-      while (count < space.Area.Height)
+    public bool IncludesRow(ISpace space, int row)
+    {
+      for (int i = 0; i < space.Area.Width; i++)
       {
-        bool anyMatch = false;
-        for (int i = 0; i < space.Area.Width; i++)
-        {
-          if (Predicate(space[i, count]))
-          {
-            anyMatch = true;
-            break;
-          }
-        }
-        if (!anyMatch)
-          return count;
-        count++;
+        if (Predicate(space[i, row]))
+          return true;
       }
 
-      return count;
+      return false;
     }
   }
 }

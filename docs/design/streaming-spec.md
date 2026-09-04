@@ -4,8 +4,18 @@
 `SheetStore`, `ReaderPool` with adaptive warming and `BorrowAnywhere` catalogue walks, the
 IO fault discipline, the `Streaming` benchmark family, and a 159-test suite; four defects
 found by that suite and fixed pre-commit, corrections marked `[corrected
-post-implementation]` throughout. **Part 2 (lazy extents, §11) is NOT built** — specced and
-gated on Part 1's merge, opening with the owner-decided header-derived `Table` width step.
+post-implementation]` throughout. **Part 2 (lazy extents, §11) is IMPLEMENTED
+(2026-09-04)** — all eight steps of §10.2, pinned by five test suites (differential
+denotation sweep, forcing counts, error timing, fold identities, column-rewrite oracle).
+Measured against §11.8's prediction on the 1M-row monotone `TableRows` parse:
+`RowsMaterialised` 1,000,001 exactly as predicted, `ChunkReloads` 0, wall time ~13s — the
+19.6s-vs-14.7s gap against eager is gone, at 1.6 MB peak resident. Two honest corrections
+to §11.5's table: a public `ISpace.Area` width query forces *permanently* (Area is one
+struct; the free width landed as an internal seam on `BoundedSpace`, observable on the
+views — `CellBlock.Width` costs zero rows), and `CellBlock`'s validating indexer/`Row(i)`
+stream rather than force since step 6. `RowFirst=false` (`ColumnsThenRows`) is deliberately
+NOT incremental: its width decision reads rows the height scan may never reach, which
+`IAreaScan.Width` forbids.
 Originally settled by two spikes and an owner design conversation; branch base `master` @
 `3e69dc5` (struct-era `CellValue`).
 
@@ -432,7 +442,7 @@ of a bounded sweep or a walk down the sheet.
 | `Slices` counter deleted | It existed to size a per-slice pin protocol that is not being built — and it was an unsynchronised `++` from arbitrary threads, i.e. a live data race in the probe. |
 | `ResidentCellBytes` (computed from *live* residency, documented as *peak*) split into **`ResidentBytes`** and **`PeakResidentBytes`** | The probe's number said one thing and computed another. |
 | `isBlank` no longer reaches the store | §3. |
-| `RowCount <= 0` from the source is rejected at `Sheet(name)` with `NotSupportedException` naming the sheet | The fixed resident index needs the row count, and some xlsx files carry no `dimension` element. Part 2 step 7 removes the restriction by making the index growable; until then, failing loudly beats a silently truncated sheet. |
+| `RowCount <= 0` from the source is rejected at `Sheet(name)` with `NotSupportedException` naming the sheet | The fixed resident index needs the row count, and some xlsx files carry no `dimension` element. Part 2 step 7 removes the restriction by making the index growable; until then, failing loudly beats a silently truncated sheet. **[superseded by Part 2 step 7]** The index is now a chunk-keyed growable map and needs no row count; `Sheet(name)` *measures* an undimensioned sheet instead — one forward pass counting rows and watching the width, materialising nothing — and hands the real extent down. Deciding this way rather than reporting an upper-bound extent is what keeps every blank-row scan and every unconsumed-space diagnostic honest; the pass is a reader movement and appears in `ReaderStatistics`, not in the sheet's own. |
 
 ### 4.4 Load
 
@@ -728,7 +738,11 @@ open on a `ManualResetEventSlim` so warming races are deterministic rather than 
   `0`. A plain monotone walk whose root extent exceeds the window reports `overruns 1,
   reloads 0`: the extent genuinely did not fit, and the zero reloads say it cost nothing.)
 - Cross-chunk boundary reads return the right cell (the `(row - chunk*ChunkRows)` maths).
-- `RowCount <= 0` from the source → `NotSupportedException` naming the sheet.
+- ~~`RowCount <= 0` from the source → `NotSupportedException` naming the sheet.~~ Replaced at
+  Part 2 step 7 by the measured-sheet trio, driven through `Workbook.Over(fakeSource, …)`
+  because only a synthetic source can report no dimension at all: a sheet reporting none is
+  measured and reads end to end, a measured sheet is still read a window at a time, and a read
+  past its measured end is an `OutOfBoundsException`.
 
 ### 8.2 `ReaderPoolTests`
 

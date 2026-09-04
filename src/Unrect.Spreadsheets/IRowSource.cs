@@ -65,12 +65,16 @@ namespace Unrect.Spreadsheets
 
     /// <summary>
     /// Rows in the current sheet, or a non-positive number when the source cannot say — some xlsx
-    /// files carry no <c>dimension</c> element. The store rejects that case loudly rather than
-    /// truncating a sheet silently.
+    /// files carry no <c>dimension</c> element. The workbook measures such a sheet by reading it
+    /// once rather than trusting the silence.
     /// </summary>
     int RowCount { get; }
 
-    /// <summary>Columns in the current sheet.</summary>
+    /// <summary>
+    /// Columns in the current sheet. A source that could not say how tall a sheet is may not know
+    /// how wide it is either until rows have gone past, so this may grow as <see cref="Read"/>
+    /// advances; the measuring pass reads it per row for exactly that reason.
+    /// </summary>
     int ColumnCount { get; }
 
     /// <summary>Moves to the next sheet. Forward only; false when there are no more.</summary>
