@@ -53,6 +53,17 @@ sheet determines whether streaming is cheap, free, or a bad idea:
   the other way to pay for this door twice. Both failure modes have a counter that says
   so — see [The sizing law](#the-sizing-law) and the statistics table below — so "slow" is
   always diagnosable, never mysterious.
+- **Sizing `MaxReaders` (default 3, and there is no "right" number).** Reader demand is set
+  by your *declaration's* shape, never by your file: it is the count of monotone cursors
+  the declaration holds open at once — backward reaches spanning more than the window,
+  landmark lookaheads (`.Until`), sheets read in alternation. Declarations compose, so no
+  fixed ceiling covers every one; the ceiling is a file-handle promise and a cost knob, not
+  a correctness bound. It fails gently — a shortfall is `Reopens`, counted and named, time
+  and never wrongness — and because the demand is data-independent, one glance at
+  `Reopens` after the first file of a batch settles the setting for the whole run:
+  persistently positive means raise `MaxReaders` to match. Sane values stay in the single
+  digits; the default (lead + chase + spare) covers one backward level plus one lookahead,
+  which is every declaration this corpus has produced.
 - **A row-wise leaf extent reads its rows once, not twice.** Where a **leaf** extent is
   sized by a per-row rule — `Range(RowsWhileAnyValue(), …)`, a `Range` or a `Table` left on
   its default placement, and `.Sized(RowsWhileAnyValue())` applied *directly to one of
@@ -222,7 +233,7 @@ readers 1/2 | opens 1 | reopens 0 | spare opens 1 (warm 0, waited 0ms) |
 | `WindowOverruns` | How many times a band did not fit the window — the diagnosis half of the pair; see [the counterintuitive reading](#the-counterintuitive-reading-a-plain-walk-down-a-tall-sheet-reports-one-overrun-that-costs-nothing) above. |
 | `RowsMaterialised` | Rows read from the source and adapted into cells. |
 | `RowsSkipped` | Rows parsed and discarded to move a reader to a wanted chunk — owned by window sizing, invariant under `MaxReaders`. |
-| `RowsMeasured` | Rows read by the survey that sized a sheet with no `dimension` element; `0` for a sheet that reported its own. Above zero means a whole extra forward pass over the file was paid for before the window saw anything. Appears in `ToString()` only when non-zero. |
+| `RowsMeasured` | Rows read by the survey that sized a sheet whose reader reported no extent (a sheet with no valued cell); `0` for a sheet that reported its own. Above zero means a whole extra forward pass over the file was paid for before the window saw anything. Appears in `ToString()` only when non-zero. |
 | `ResidentChunks` | Chunks held right now. |
 | `PeakResidentChunks` | The most chunks ever held at once; never exceeds `WindowChunks`. |
 | `ResidentBytes` | Bytes of `CellValue`s resident right now. |
@@ -269,8 +280,10 @@ quietly — the one failure mode this feature could not ship with.
   streaming test fixture, and the identity suite that proves a window reads the same cells
   as `SpreadsheetSpace.Create`, is `.xlsx`. Treat `.xls` through `Workbook` as unproven
   until it has its own fixture.
-- **A sheet with no `dimension` element costs one pass to measure.** Some exported `.xlsx`
-  files omit it, and the reader then cannot say how big the sheet is. `Sheet(name)` reads
+- **A sheet whose reader reports no extent costs one pass to measure.** For the formats
+  ExcelDataReader handles that means a sheet with no valued cell — rows of
+  formatted-but-valueless cells, a pre-formatted export region — since the reader derives
+  its counts from a pre-scan of the cells, not from the `dimension` element. `Sheet(name)` reads
   such a sheet once, counting rows and watching the width, and hands the real extent to the
   window — so a declaration sees exactly the space it would have seen from a file that
   described itself, and running off the end is the ordinary `OutOfBoundsException`. The pass
@@ -278,10 +291,12 @@ quietly — the one failure mode this feature could not ship with.
   `Statistics(sheet)!.Value.RowsMeasured` — the rows the survey read, and `0` for every
   sheet that reported its own dimension — plus the reader's own travel in
   `ReaderStatistics`. It also runs holding the workbook's gate, so vending such a sheet
-  blocks other `Sheet()` and `Statistics()` calls on that workbook until it finishes. Note
-  that the eager path has no equivalent — `SpreadsheetSpace.Create` sizes its grid from the
-  same absent dimension and yields an empty sheet — so this is the door to use for such a
-  file, not the one to avoid.
+  blocks other `Sheet()` and `Statistics()` calls on that workbook until it finishes. The
+  eager path measures such a sheet too — `SpreadsheetSpace.Create` reads it and builds the
+  grid from what arrived, rather than from counts the reader would not give — so the two
+  doors report the same extent for the same file and neither is the one to avoid. The cost
+  differs in the usual way: the eager measure holds the rows it counted, the streaming one
+  counts and drops them.
 - **Reads against one sheet serialise.** Different workbooks, and different sheets of one
   workbook, read in parallel; two threads mapping the *same* sheet at once are correct —
   no torn read, no chunk installed twice — but serialised on that sheet's store, one load

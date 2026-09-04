@@ -80,6 +80,12 @@ namespace Unrect.Spreadsheets
     /// The default cannot blank an error cell, because an error is not text — which is the right
     /// outcome: <c>#REF!</c> is something the sheet says, not empty space to be skipped.
     /// </para>
+    /// <para>
+    /// A sheet whose reader will not say how big it is is measured by being read, so it comes back as
+    /// tall as the rows that arrive and as wide as the widest of them — the same extent
+    /// <see cref="Workbook.Sheet"/> gives for the same sheet. It costs those rows in memory while the
+    /// grid is built, and only for such a sheet.
+    /// </para>
     /// </summary>
     public static IEnumerable<SpreadsheetSpace> Create(
       string path,
@@ -110,29 +116,96 @@ namespace Unrect.Spreadsheets
         if (!predicate(context))
           continue;
 
-        var rowCount = reader.RowCount;
-        var fieldCount = reader.FieldCount;
-
-        // Already blank: default(CellValue) is Blank, so a short row leaves the cells it never
-        // reached exactly as they should be, with no fill pass over the sheet.
-        var cells = new CellValue[rowCount, fieldCount];
-
-        var row = 0;
-        while (row < rowCount && reader.Read())
-        {
-          var columnCount = Math.Min(fieldCount, reader.FieldCount);
-          for (int i = 0; i < columnCount; i++)
-          {
-            var value = reader.GetCellValue(i);
-            cells[row, i] = blank(value) ? CellValue.Blank : value;
-          }
-
-          row++;
-        }
+        // A sheet that declines to report its extent is measured by reading it — the same answer the
+        // streaming door gives, rather than the empty space a grid sized from nothing would be.
+        var cells = reader.RowCount > 0
+          ? ReadDeclared(reader, blank)
+          : ReadMeasured(reader, blank);
 
         yield return new SpreadsheetSpace(new GridSpace(cells));
 
       } while (reader.NextResult());
+    }
+
+    /// <summary>
+    /// The sheet at the size the reader gave, filled row by row. A sheet that yields fewer rows or
+    /// narrower ones than it claimed keeps the size it claimed; the cells nothing reached are blank.
+    /// </summary>
+    private static CellValue[,] ReadDeclared(IExcelDataReader reader, Func<CellValue, bool> blank)
+    {
+      var rowCount = reader.RowCount;
+      var fieldCount = reader.FieldCount;
+
+      // Already blank: default(CellValue) is Blank, so a short row leaves the cells it never
+      // reached exactly as they should be, with no fill pass over the sheet.
+      var cells = new CellValue[rowCount, fieldCount];
+
+      var row = 0;
+      while (row < rowCount && reader.Read())
+      {
+        var columnCount = Math.Min(fieldCount, reader.FieldCount);
+        for (int i = 0; i < columnCount; i++)
+          cells[row, i] = Adapt(reader, i, blank);
+
+        row++;
+      }
+
+      return cells;
+    }
+
+    /// <summary>
+    /// The sheet as reading it turns out to be — for a reader that will not say how big it is, which
+    /// is what a sheet with no <c>dimension</c> element and no valued cell to infer one from amounts
+    /// to.
+    /// <para>
+    /// The extent is the one the streaming door measures for the same sheet: as tall as the rows that
+    /// actually arrive, as wide as the widest of them, and blank where a shorter row ran out. Sizing
+    /// a grid from a count of nothing instead would yield an empty space for a sheet with rows in it,
+    /// and say nothing about having done so — which is the one outcome an adapter must not have.
+    /// </para>
+    /// <para>
+    /// Each row is asked its own width rather than the sheet's, because a reader that was never told
+    /// the extent may only learn it as rows go past. It costs the rows in memory, which the declared
+    /// path does not: nothing here knows how tall the sheet is until it ends. (No real file can
+    /// exercise a per-row-varying width today — the only reader state that reaches this path also
+    /// reports every row zero wide — so the rule is forward-proofing mirrored from
+    /// <c>Workbook.Measure</c>; the width-learned-from-rows behaviour is pinned through the streaming
+    /// door's fakes. The caveat is recorded in full in <c>SpreadsheetSpaceTests</c>.)
+    /// </para>
+    /// </summary>
+    private static CellValue[,] ReadMeasured(IExcelDataReader reader, Func<CellValue, bool> blank)
+    {
+      var rows = new List<CellValue[]>();
+      var width = 0;
+
+      while (reader.Read())
+      {
+        var values = new CellValue[reader.FieldCount];
+        for (int i = 0; i < values.Length; i++)
+          values[i] = Adapt(reader, i, blank);
+
+        rows.Add(values);
+        width = Math.Max(width, values.Length);
+      }
+
+      var cells = new CellValue[rows.Count, width];
+      for (int row = 0; row < rows.Count; row++)
+        for (int column = 0; column < rows[row].Length; column++)
+          cells[row, column] = rows[row][column];
+
+      return cells;
+    }
+
+    /// <summary>
+    /// One cell of the reader's current row, canonical — which is where blankness is decided. Shared
+    /// by both fill paths, so a sheet that reported its extent and one that had to be measured cannot
+    /// disagree about what a cell is.
+    /// </summary>
+    private static CellValue Adapt(IExcelDataReader reader, int column, Func<CellValue, bool> blank)
+    {
+      var value = reader.GetCellValue(column);
+
+      return blank(value) ? CellValue.Blank : value;
     }
   }
 }

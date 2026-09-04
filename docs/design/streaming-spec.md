@@ -1167,8 +1167,15 @@ at ~line 46, the results loop at ~line 130, the Bencher loop at ~line 386) and u
 
 Two, both narrow, neither blocking.
 
-1. ~~Should `Table`'s default width discovery change?~~ **DECIDED (owner, 2026-09-03): yes —
-   header-derived.** `Table`'s default width becomes "columns while the header row carries
+1. ~~Should `Table`'s default width discovery change?~~ **DEFERRED (owner, 2026-09-04),
+   superseding the 2026-09-03 "yes — header-derived".** Part 2 did not take the directed
+   kickoff step; the step-8 interleave delivered the entire lazy win with today's
+   denotation intact, so the performance half of the rationale is gone and only the
+   semantic argument ("a table is as wide as its header") remains — against the full cost
+   of a denotation change (wider-than-header data rows would clip; gated step, respelled
+   pins, re-verified known-goods). The K-1 campaign votes: if real sections show
+   header-clipping helping rather than hurting, implement then. Original decision text
+   kept below for the record. `Table`'s default width becomes "columns while the header row carries
    captions" (a one-row scan; the strategy already exists — phase A's mirror hygiene built
    `TakeColumnsWhile(row, predicate)` for exactly this shape of need). "A table is as wide
    as its header" is the truer reading; other width strategies can be supported later if a
@@ -1178,16 +1185,24 @@ Two, both narrow, neither blocking.
    change — data rows wider than the header now clip to header width — so it lands as its
    own gated step with its own pins (width-discovery tests respelled deliberately, script
    known-goods re-verified) at the Part 2 kickoff, not smuggled into a performance step.
-2. **Does `MaxReaders = 3` want to be adaptive too?** OWNER DIRECTION (2026-09-03): before
-   settling a ceiling, enumerate and measure the scenarios that genuinely require more than
-   two readers. The probe's taxonomy: the canonical vertical parse needs 1–2 ever (1 after
-   Part 2 fuses its passes); multi-anchor overlays were satisfied by 2; the genuine >2
-   customer is an N-child `HorizontalFlow` whose band exceeds the window budget — and the
-   honest trade there is readers-vs-window (window wins whenever the band is affordable:
-   readers remove opens but never the invariant repositioning cost). Since Part 2 halves
-   every pass count, the decision runs a dedicated scenario matrix AFTER lazy extents land:
-   N-child horizontal flows × band heights × window budgets × pool sizes. Until then the
-   ceiling stays fixed at 3 and visible (`Reopens` is the tell), explicitly provisional.
+2. ~~Does `MaxReaders = 3` want to be adaptive too?~~ **DECIDED (owner, 2026-09-04): 3
+   stays, no longer provisional — and no number is "right", which is the decision.** Reader
+   demand is the count of monotone cursors a declaration holds open at once (backward
+   reaches spanning more than the window, landmark lookaheads, sheet alternations); it is a
+   static property of the declaration, unbounded in principle because declarations compose
+   — for any fixed N there is a declaration wanting N+1. So the ceiling is a user-settable
+   cost knob, not a number to get right: it fails in the gentle direction (`Reopens =
+   passes − readers`, counted and named — time, never wrongness — where undersizing
+   `WindowRows` is collapse), the demand is data-independent (one glance at `Reopens` after
+   the first file of a monthly-close loop settles the setting for the campaign), and the
+   per-reader economics keep sane values in the single digits (an open is ~5s CPU on a
+   1M-row file — its own shared-strings parse — and a reader's position must be *walked*,
+   so reader-per-row is O(n²); readers are expensive to create, cheap to hold, valuable
+   only for their position). 3 = lead + chase + spare covers one backward level plus one
+   lookahead — every declaration in the corpus. The scenario matrix demotes from decision
+   input to a docs illustration. A declaration reporting its own cursor demand would be the
+   principled upgrade, but is blocked on layout-composite opacity, same as the dry-run
+   renderer; it falls out for free if wave-3 tooling solves introspection.
 
 ---
 

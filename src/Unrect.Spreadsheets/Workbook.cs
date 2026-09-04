@@ -161,8 +161,9 @@ namespace Unrect.Spreadsheets
     /// read. That warm reuse is the point of holding a workbook open rather than a sheet.
     /// </para>
     /// <para>
-    /// A sheet whose reader will not say how big it is — some xlsx files carry no <c>dimension</c>
-    /// element — is measured here, by being read once. See <see cref="Measure"/>. That survey runs
+    /// A sheet whose reader will not say how big it is — for the formats ExcelDataReader handles
+    /// that means a sheet with no valued cell, such as a formatted-but-empty export region — is
+    /// measured here, by being read once. See <see cref="Measure"/>. That survey runs
     /// holding the workbook's gate, so vending such a sheet blocks every other <see cref="Sheet"/>
     /// and <see cref="Statistics"/> call on this workbook for as long as the pass takes.
     /// </para>
@@ -219,8 +220,9 @@ namespace Unrect.Spreadsheets
 
     /// <summary>
     /// How big <paramref name="entry"/> really is, found by reading it once and counting — for a
-    /// sheet whose reader will not say, which is what some xlsx files with no <c>dimension</c>
-    /// element amount to. Called holding the gate.
+    /// sheet whose reader will not say. (ExcelDataReader derives its counts from a pre-scan of the
+    /// cells on every format, so the reachable trigger is a sheet with no valued cell — not, as
+    /// first recorded, a missing <c>dimension</c> element.) Called holding the gate.
     /// <para>
     /// <b>Why measure rather than guess.</b> A space has to answer <c>Area</c>, so an unmeasured
     /// sheet would have to claim some upper bound instead — and every declaration that scans blank

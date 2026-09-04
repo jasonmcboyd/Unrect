@@ -61,4 +61,20 @@
     </Content>
   </ItemGroup>
 
+  <!--
+    The sheet that will not say how big it is: four ragged rows of formatted, valueless cells,
+    with the dimension element stripped. The missing dimension alone would not do it — ExcelDataReader
+    pre-scans the cells on every format and derives its counts from them — so what makes the reader
+    report neither a row count nor a field count is that no cell carries a VALUE for the pre-scan to
+    find. Both halves are load-bearing: a regenerated fixture that keeps a value anywhere describes
+    itself again and stops reaching the path these tests are about.
+    It is the one committed file that reaches the measure-by-reading path in either door, and it
+    exists to hold both doors to the same extent over it.
+  -->
+  <ItemGroup>
+    <Content Include="TestData\no-extent.xlsx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>

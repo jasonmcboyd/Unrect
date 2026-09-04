@@ -36,6 +36,7 @@ namespace Unrect.Tests.Streaming
       { "edge-cases.xlsx", "Edges" },
       { "multi-sheet.xlsx", "Detail" },
       { "tall-ledger.xlsx", "Ledger" },
+      { "no-extent.xlsx", "Undeclared" },
     };
 
     [Theory]
@@ -73,6 +74,31 @@ namespace Unrect.Tests.Streaming
           Assert.Equal(eager[column, row], streamed[column, row]);
 
       Assert.Equal(1, book.Statistics(sheet)!.Value.ChunkRows);
+    }
+
+    [Fact]
+    public void BothDoorsMeasureASheetThatWillNotSayHowBigItIsTheSameWay()
+    {
+      // Named rather than left to the theory above, because this is the one file the differential
+      // form cannot carry on its own. Its cell loop is vacuous — a zero-wide space has no cells to
+      // compare — so the whole law is in the extent, and an extent the two doors agree on could
+      // still be agreed nonsense. Hence the only literal in this class: four rows are really in the
+      // file. The streaming door has measured such a sheet since it shipped; the eager door sized
+      // its grid from the counts the reader would not give and yielded an empty space for a file
+      // with four rows in it. Both now read the sheet to find out, and get the same answer.
+      var eager = SpreadsheetSpace.Create(Path("no-extent.xlsx"), "Undeclared");
+      using var book = Workbook.Open(Path("no-extent.xlsx"), new WorkbookOptions { WarmReaders = false });
+      var streamed = book.Sheet("Undeclared");
+
+      Assert.Equal(4, eager.Area.Size.Height);
+      Assert.Equal(eager.Area.Size.Height, streamed.Area.Size.Height);
+      Assert.Equal(eager.Area.Size.Width, streamed.Area.Size.Width);
+
+      // The measure is where that answer came from, and the streaming door says so out loud — which
+      // also guards the fixture. A regenerated no-extent.xlsx that described itself again would
+      // still pass every assertion above, by the ordinary declared path, and would have stopped
+      // testing anything; a survey of zero rows here says so.
+      Assert.Equal(4, book.Statistics("Undeclared")!.Value.RowsMeasured);
     }
 
     // --- The flagship declaration ---------------------------------------------------------------------
