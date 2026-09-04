@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1788537631853,
+  "lastUpdate": 1788542160302,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -536,6 +536,66 @@ window.BENCHMARK_DATA = {
             "value": 13924500.870404411,
             "unit": "ns",
             "range": "± 279892.4114123886"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "2d73985e95c70f51a2b26d7dc98c3936f1f52d5d",
+          "message": "Retention: the live-set floor for the interning change, with the target on the chart\n\nAn eighth CI leg that is not a BenchmarkDotNet family: interning reduces\nRETAINED bytes, not allocations (a duplicate string is allocated by the\nreader before the adapter sees it and dies young after dedup), so the\nAllocated column cannot see it — and retention is deterministic, so it\nneeds no statistical engine. A one-shot job measures live bytes with the\nresult held, emits the same JSON document the rig already stores, and\nrides the same workflow and dashboard as everything else.\n\nBuilding it surfaced two facts worth more than the plumbing:\n\n- The eager door's duplication depends on how the file spells its text.\n  Shared-string cells come back already deduped (the reader returns its\n  table's own instance); inline strings and formula-result cells\n  materialise fresh per cell. A real Excel export is both (the local K-1:\n  9,049 text cells, 2,876 values, 4,016 instances — the formula results\n  are the duplicated half). The family brackets it, and the shared-string\n  row is the priced TARGET: the same cells read 112.0 MB duplicated vs\n  58.2 MB deduped, so ~48% is what a complete eager interner is worth on\n  this shape — short of that is unfinished, not failed.\n- The first fixture boxed decimals a real read never produces (16 MB of\n  boxes in a retained-bytes measurement); the retention fixtures now\n  yield doubles like a reader does. StreamingSpaces is deliberately\n  untouched — changing it would re-baseline that family's history.\n\nScenarios exercise the real seams the interning change will live in: the\neager rows go through SpreadsheetSpace.Create over generated workbooks\n(RetentionWorkbooks: a minimal hand-rolled OOXML writer, no new package;\nthe one deliberate exception to the no-workbooks rule, recorded in\ndocs/benchmarking.md), the streaming rows through the store's chunk fill.\nFloor: eager space held 106.8 MB, results held 82.1 MB both doors\n(byte-identical — streaming's promise stated in the metric), controls\nbyte-identical to their duplicated twins by fixed-width padding. Leg\nruns ~65s, the shortest in the matrix.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016BvUBicaVLLYkdp7iqFZNo",
+          "timestamp": "2026-09-04T16:47:38Z",
+          "tree_id": "0c756ae6dd2d4f17cd84e585c99d7d3ae08fd409",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/2d73985e95c70f51a2b26d7dc98c3936f1f52d5d"
+        },
+        "date": 1788542159211,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Engine.VerticalFlow_ManyChildren",
+            "value": 1346003.789341518,
+            "unit": "ns",
+            "range": "± 17325.027216562623"
+          },
+          {
+            "name": "Unrect.Benchmarks.Engine.Flow_Nested",
+            "value": 284373.5279259315,
+            "unit": "ns",
+            "range": "± 3611.553358738709"
+          },
+          {
+            "name": "Unrect.Benchmarks.Engine.Overlay_AnchoredChildren",
+            "value": 308236.8565848214,
+            "unit": "ns",
+            "range": "± 481.3513901294236"
+          },
+          {
+            "name": "Unrect.Benchmarks.Engine.Repeat_SeparatedBlocks",
+            "value": 642570.9265950521,
+            "unit": "ns",
+            "range": "± 7153.810520462548"
+          },
+          {
+            "name": "Unrect.Benchmarks.Engine.Under_CaptionedSection",
+            "value": 107295.43564547025,
+            "unit": "ns",
+            "range": "± 94.59030633566061"
+          },
+          {
+            "name": "Unrect.Benchmarks.Engine.Range_ReadAllCells",
+            "value": 14501139.392708333,
+            "unit": "ns",
+            "range": "± 231982.53961076154"
           }
         ]
       }
