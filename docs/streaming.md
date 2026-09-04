@@ -212,8 +212,9 @@ and read the *pair* with `ChunkReloads` as the number to act on.
 ## The statistics vocabulary
 
 `Workbook.Statistics(sheetName)` returns `StreamingStatistics?` — null until that sheet has
-been vended, non-null after. `Workbook.ReaderStatistics` returns `ReaderPoolStatistics`,
-shared across every sheet of the book. Both render a one-line diagnostic via `ToString()`:
+been vended, non-null after. `Workbook.ReaderStatistics` and `Workbook.InterningStatistics`
+belong to the *book*, shared across every sheet of it. All three render a one-line
+diagnostic via `ToString()`:
 
 ```
 'Data' chunk 10r x 6 (60 rows) | loads 14 (reloads 7) | evictions 8 | overruns 1 |
@@ -221,6 +222,8 @@ shared across every sheet of the book. Both render a one-line diagnostic via `To
 
 readers 1/2 | opens 1 | reopens 0 | spare opens 1 (warm 0, waited 0ms) |
   cheap rewinds 0 | per reader 10/0
+
+shared 1,014,999 | distinct 5,009/65,536 | saved ~32,319,976B (estimated)
 ```
 
 ### `StreamingStatistics` — what reading one sheet has cost
@@ -241,7 +244,7 @@ readers 1/2 | opens 1 | reopens 0 | spare opens 1 (warm 0, waited 0ms) |
 | `ResidentChunks` | Chunks held right now. |
 | `PeakResidentChunks` | The most chunks ever held at once; never exceeds `WindowChunks`. |
 | `ResidentBytes` | Bytes of `CellValue`s resident right now. |
-| `PeakResidentBytes` | The same at the peak. **Not the whole floor**: strings a `Text` cell points at live in the reader's shared-string table, are not counted here, and do not shrink with the window. |
+| `PeakResidentBytes` | The same at the peak. **Not the whole floor**: strings a `Text` cell points at are not counted here. Three things can hold one, and only the third shrinks with the window — the interning table, up to its cap; the reader's own shared-string table, for a file that spells its text that way; otherwise nothing but the chunk it sits in, which is why a string past the 256-character guard dies with its chunk (see [`InterningStatistics`](#interningstatistics--what-sharing-repeated-text-has-earned-one-workbook)). |
 
 ### `ReaderPoolStatistics` — what one workbook's readers have cost
 
@@ -256,6 +259,65 @@ readers 1/2 | opens 1 | reopens 0 | spare opens 1 (warm 0, waited 0ms) |
 | `WarmWaitMilliseconds` | Time a reach spent blocked on a warmer that had started but not finished. |
 | `CheapRewinds` | Backward reaches served by a reader parked behind the target — no open, no re-stream. Goes *up* when the pool is doing its job. |
 | `RowsPerReader` | Rows each reader has moved over, skipped and read alike. |
+
+### `InterningStatistics` — what sharing repeated text has earned one workbook
+
+Equal `Text` cells are handed **one instance** of their characters rather than one each. The
+duplicate is built by the reader before the adapter sees it, so this saves *retention*, not
+*allocation*: the twin dies in gen0 and what survives is one string per distinct value. On a
+text-heavy sheet it is the largest single reduction available to either door — measured on a
+250,000-row, five-text-column ledger, a held grid fell from 112.0 MB to 58.2 MB (exactly what
+the same file costs when the *reader* has already deduped it, via shared strings) and a held
+projection from 86.1 MB to 32.3 MB. Both doors do it, at their own adapter seam, under the
+same length guard, so for any file whose distinct text fits the cap the two produce
+byte-identical live sets — the same 32.3 MB above, from either door.
+
+| Member | Meaning |
+|---|---|
+| `DistinctValues` | Distinct values the table took in. Does not fall when `Dispose` drops the entries — it is the count reached, not the entries alive at the moment of asking. |
+| `Capacity` | The ceiling on it (`WorkbookOptions.MaxInternedStrings`, 65,536 by default; `0` turns sharing off). |
+| `AtCapacity` | Whether the table stopped growing. Past the cap, values already in it go on being shared and one newly met does not — degradation, never failure. Appears in `ToString()` only when true. **It does not say on its own which way to move the cap** — see [what a full table costs](#what-a-full-table-costs) below. |
+| `Hits` | Cells handed an instance the table already held. Each is a duplicate string that did not have to be retained. Counted per *fill*, not per cell: a chunk reloaded after eviction shares its cells again and counts them again, so this can exceed a sheet's text-cell count — read it against `ChunkReloads`. |
+| `EstimatedBytesSaved` | What those hits are worth, **estimated** and named so: the sum over every hit of what a string of that length occupies on a 64-bit runtime (header, length, characters, rounded to the allocation granularity), counted per fill exactly as `Hits` is. It models the layout, not the heap. To know a live set, measure a live set. |
+
+Two guards bound what the table itself can pin, because it lives as long as the workbook and
+therefore outlives the window it feeds. `Capacity` bounds the entries; a **256-character
+limit** bounds each one — long spreadsheet text is a memo or a free-text note, nearly always
+unique, so it would take an entry that never scores a hit while pinning the most bytes of
+anything in the table, and cost the most to hash on every cell that goes past. What actually
+repeats — captions, currency and account codes, categories, party names — is short.
+
+#### What a full table costs
+
+Reaching the cap costs nothing *in sharing*. A column that never repeats — a transaction
+reference, an invoice number — fills any cap without displacing anything, because the values
+that *do* repeat are met in the sheet's first rows and are in the table long before it fills.
+So `AtCapacity` alone is not a reason to raise `MaxInternedStrings`.
+
+What it costs is the entries. Every one is held for the life of the workbook whether it ever
+scores a hit or not, at roughly `Capacity × 530` bytes of characters plus the table's own
+~56 bytes an entry — at the default cap, some 40 MB were every entry a full 256 characters,
+against a default window of about 1.5 MB on an eight-column sheet. **So the knob turns both
+ways:** raise it when a sheet's genuinely repeating vocabulary is larger than the cap, and
+lower it — or pass `0` — when the text does not repeat and the memory floor is the point.
+
+How much a wasted entry actually costs depends on the file. Where an `.xlsx` spells its text
+through the workbook's shared-string table, the reader pins those strings for its own
+lifetime anyway and an entry here adds its dictionary node rather than its characters, so the
+marginal cost is near nothing. The cost lands on files whose text is inline, and on `.xls`.
+
+One thing the retention rig cannot see, and worth saying because the before-and-after figures
+at the top of this section come from it: its readings are taken with the workbook closed,
+which releases the table. A cap full of entries that never hit is invisible to those numbers
+by construction — it is a floor to reason about from `DistinctValues` and `Hits`, not one the
+receipts will show you.
+
+The eager door does the same thing without the counters and without a cap:
+`SpreadsheetSpace.Create` shares text across every sheet of one call, so a `foreach` over
+several sheets holds one reference per distinct value of every sheet materialised so far —
+whether the caller kept those grids or not — until the enumeration ends and the table goes
+with it. The single-sheet overload disposes its enumerator at the sheet it wanted, so it
+holds nothing past the grid it filled.
 
 ## IO errors are faults
 

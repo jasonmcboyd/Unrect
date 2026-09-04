@@ -164,5 +164,105 @@ namespace Unrect.Tests
       Assert.Equal(4, space.GetSubspace(new Offset(0, 0), new Area(0, 4)).Area.Size.Height);
       Assert.Throws<OutOfBoundsException>(() => space.GetSubspace(new Offset(0, 0), new Area(0, 5)));
     }
+
+    // --- Repeated text is shared ------------------------------------------------------------------
+    //
+    // repeated-text.xlsx is the fixture these read, and it is the only committed file written to have
+    // the properties they need (the csproj entry records them): its text is spelled INLINE, so the
+    // reader hands the adapter a fresh instance per cell rather than the deduplicated one a
+    // shared-string table would give, and its duplicates include the length guard's two neighbours.
+    // Several other fixtures happen to repeat a value — every committed workbook is written inline —
+    // but they repeat it incidentally, and a test resting on that would be pinning an accident.
+    //
+    //         A              B               C                      D
+    //   Ledger
+    //   1     Fund           Category        Note                   Amount
+    //   2     Alpha Fund     Capital Call    256 characters         1000
+    //   3     Alpha Fund     Capital Call    256 characters         2000
+    //   4     Beta Fund      Distribution    257 characters         3000
+    //   5     Beta Fund      Distribution    257 characters         4000
+    //   Notes
+    //   1     Fund
+    //   2     Alpha Fund
+    //   3     Beta Fund
+    //
+    // What is NOT covered here, recorded so nobody reads more into it than it says: the measured fill
+    // (ReadMeasured, for a sheet whose reader will not say how big it is) shares through the same
+    // table by the same call, and no file can show it doing so. The one condition that reaches that
+    // path is a sheet with no VALUED cell — which is a sheet with no text to share. The rule is the
+    // same one already recorded for the measured path's width above, and for the same reason.
+
+    private static ISpace RepeatedText(string sheetName = "Ledger")
+      => SpreadsheetSpace.Create(WorkbookPath("repeated-text.xlsx"), sheetName);
+
+    [Fact]
+    public void EqualTextCellsInOneSheetAreGivenOneInstanceOfTheirCharacters()
+    {
+      // What sharing removes is the duplicate that would have SURVIVED the fill, not the one the
+      // reader made: on a file that spells its text inline the reader hands over a fresh instance per
+      // cell, and on a text-heavy sheet those copies are most of what the grid retains.
+      var space = RepeatedText();
+
+      Assert.Same(space[0, 1].GetString(), space[0, 2].GetString());     // "Alpha Fund", twice
+      Assert.Same(space[1, 1].GetString(), space[1, 2].GetString());     // "Capital Call", twice
+
+      // A different value is a different instance, which is the half that says the first assertion is
+      // about identity rather than about the adapter handing back one string for everything.
+      Assert.NotSame(space[0, 1].GetString(), space[0, 3].GetString());
+      Assert.Equal("Alpha Fund", space[0, 2].GetString());
+      Assert.Equal("Beta Fund", space[0, 3].GetString());
+    }
+
+    [Fact]
+    public void TextIsSharedAcrossEverySheetOfOneCreateCall()
+    {
+      // The table is scoped to the call, not to a sheet: captions, codes and categories repeat across
+      // the sheets of a workbook, so a caller enumerating several of them gets one instance per
+      // distinct value across all of them.
+      var sheets = SpreadsheetSpace.Create(WorkbookPath("repeated-text.xlsx"), _ => true).ToArray();
+      var ledger = sheets[0];
+      var notes = sheets[1];
+
+      Assert.Same(ledger[0, 0].GetString(), notes[0, 0].GetString());    // "Fund"
+      Assert.Same(ledger[0, 1].GetString(), notes[0, 1].GetString());    // "Alpha Fund"
+
+      // ...and the scope is the call. A second call reads the file again and builds its own table, so
+      // nothing here is a process-wide intern pool that would outlive the grid it was made for.
+      Assert.NotSame(ledger[0, 1].GetString(), RepeatedText()[0, 1].GetString());
+    }
+
+    [Fact]
+    public void AStringAtTheLengthGuardIsSharedAndOneCharacterLongerIsNot()
+    {
+      // The eager door applies the same guard as the streaming one, at the same boundary, so the two
+      // doors share exactly the same values and a caller cannot tell which one produced a grid. Long
+      // text in a spreadsheet is a memo or a free-text note — nearly always unique, so it would
+      // occupy an entry that never scores a hit while pinning the most bytes of anything in the table.
+      var space = RepeatedText();
+
+      Assert.Equal(256, space[2, 1].GetString().Length);
+      Assert.Same(space[2, 1].GetString(), space[2, 2].GetString());
+
+      Assert.Equal(257, space[2, 3].GetString().Length);
+      Assert.NotSame(space[2, 3].GetString(), space[2, 4].GetString());
+
+      // Not shared is not the same as not equal: the cell is exactly what the file says either way.
+      Assert.Equal(space[2, 3], space[2, 4]);
+    }
+
+    [Fact]
+    public void SharingLeavesEveryOtherKindAlone()
+    {
+      // Strings only. A number, a date, a boolean and a blank hold no heap object to share, and the
+      // grid must come back from a fill that shares text indistinguishable from one that did not.
+      // (The kinds themselves are pinned in full by SpreadsheetSpaceEdgeCaseTests; this is the one
+      // claim those tests cannot make, because they do not know a table exists.)
+      var space = RepeatedText();
+
+      Assert.Equal(CellKind.Number, space[3, 1].Kind);
+      Assert.Equal(1000, space[3, 1].GetInt());
+      Assert.Equal(4000, space[3, 4].GetInt());
+      Assert.True(space[0, 0].HasValue);
+    }
   }
 }

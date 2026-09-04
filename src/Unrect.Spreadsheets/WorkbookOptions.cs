@@ -71,6 +71,48 @@ namespace Unrect.Spreadsheets
     public bool CaseSensitiveSheetNames { get; init; }
 
     /// <summary>
+    /// The most distinct text values this workbook will keep so that equal <c>Text</c> cells can
+    /// share one instance of their characters instead of holding a copy each. It is the other memory
+    /// knob: <see cref="WindowRows"/> bounds the cells held, and this bounds what their <em>strings</em>
+    /// cost — see <see cref="Workbook.InterningStatistics"/> for what it earns.
+    /// <para>
+    /// 65,536 by default, which is generous on purpose. What actually repeats in a workbook —
+    /// captions, currency and account codes, categories, party names — runs to hundreds or a few
+    /// thousand distinct values per sheet and tens of thousands across a large multi-sheet book, so
+    /// the default holds every one of them for nearly every real file while bounding what the table
+    /// itself can pin. Only strings of 256 characters or fewer are ever entered (a memo field is
+    /// almost never repeated and would occupy an entry that never scores a hit), so this is a real
+    /// ceiling: roughly this many times 530 bytes of characters, plus the table's own ~56 bytes an
+    /// entry — some 40 MB at the default were every entry a full 256 characters, and a small fraction
+    /// of that in practice.
+    /// </para>
+    /// <para>
+    /// Past the cap the table stops growing rather than failing: values already in it go on being
+    /// shared, and one first met afterwards keeps the instance it arrived with.
+    /// <see cref="InterningStatistics.AtCapacity"/> is what reports having got there — and it says
+    /// nothing on its own about which way to move this. Reaching the cap costs nothing
+    /// <em>in sharing</em>: a column that never repeats (a transaction reference, an invoice number)
+    /// fills any cap without displacing anything, because the values that <em>do</em> repeat are met
+    /// in the sheet's first rows and are in the table long before it fills. What it costs is the
+    /// entries — held for the life of the workbook whether they ever score a hit or not, and beside a
+    /// window of single-digit MB that is the larger number. So raise this when a sheet's genuinely
+    /// repeating vocabulary is larger than the cap, and lower it when the text does not repeat and
+    /// the memory floor is the point. Zero turns sharing off entirely, for measurement or for a
+    /// workbook whose text is known to be unique.
+    /// </para>
+    /// <para>
+    /// How much a wasted entry actually costs depends on the file. Where an <c>.xlsx</c> spells its
+    /// text through the workbook's shared-string table, the reader pins those strings for its own
+    /// lifetime anyway and an entry here adds its dictionary node rather than its characters. The
+    /// cost lands on files whose text is inline, and on <c>.xls</c>.
+    /// </para>
+    /// </summary>
+    public int MaxInternedStrings { get; init; } = DefaultMaxInternedStrings;
+
+    /// <inheritdoc cref="MaxInternedStrings"/>
+    internal const int DefaultMaxInternedStrings = 65_536;
+
+    /// <summary>
     /// The largest chunk this accepts. Four of them is a 4,000,000-row window floor, which is
     /// already far past any sensible budget.
     /// </summary>
@@ -83,6 +125,12 @@ namespace Unrect.Spreadsheets
 
       if (MaxReaders < 1)
         throw new ArgumentOutOfRangeException(nameof(MaxReaders), MaxReaders, "A workbook needs at least one reader.");
+
+      if (MaxInternedStrings < 0)
+        throw new ArgumentOutOfRangeException(
+          nameof(MaxInternedStrings),
+          MaxInternedStrings,
+          "The interning cap cannot be negative; pass 0 to share nothing.");
 
       if (ChunkRows < 0)
         throw new ArgumentOutOfRangeException(nameof(ChunkRows), ChunkRows, "Rows per chunk cannot be negative; pass 0 to derive it from the sheet's width.");

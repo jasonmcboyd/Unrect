@@ -37,6 +37,7 @@ namespace Unrect.Tests.Streaming
       { "multi-sheet.xlsx", "Detail" },
       { "tall-ledger.xlsx", "Ledger" },
       { "no-extent.xlsx", "Undeclared" },
+      { "repeated-text.xlsx", "Ledger" },
     };
 
     [Theory]
@@ -99,6 +100,55 @@ namespace Unrect.Tests.Streaming
       // still pass every assertion above, by the ordinary declared path, and would have stopped
       // testing anything; a survey of zero rows here says so.
       Assert.Equal(4, book.Statistics("Undeclared")!.Value.RowsMeasured);
+    }
+
+    [Theory]
+    [MemberData(nameof(Workbooks))]
+    public void EveryWorkbookSharesItsRepeatedTextTheSameWayThroughAWindow(string file, string sheet)
+    {
+      // The differential form applied to identity rather than to value. Each door is asked, for every
+      // text cell of a sheet, which earlier cell it shares its characters with — and the two answers
+      // must be the same list. That is the strongest form of "the doors differ in nothing a caller can
+      // observe": it is not enough that the cells are equal, because a caller who holds a grid pays
+      // for the instances, and the two doors keep separate tables with separate guards that could
+      // drift apart. repeated-text.xlsx is the case with something to say (its 256- and 257-character
+      // neighbours land on opposite sides of the guard, and both doors must put them there); the rest
+      // are the control.
+      var eager = SpreadsheetSpace.Create(Path(file), sheet);
+      using var book = Workbook.Open(Path(file), new WorkbookOptions { WarmReaders = false });
+      var streamed = book.Sheet(sheet);
+
+      Assert.Equal(SharingPattern(eager), SharingPattern(streamed));
+    }
+
+    /// <summary>
+    /// For each cell in reading order, the position of the first cell holding the same string
+    /// INSTANCE — itself for a first sighting, and -1 for a cell that is not text at all. Two spaces
+    /// with the same pattern share exactly the same values as each other.
+    /// </summary>
+    private static IReadOnlyList<int> SharingPattern(ISpace space)
+    {
+      // Reference equality on purpose: the question is which instance a cell points at, and the
+      // default comparer would answer the one this test is not asking.
+      var seen = new Dictionary<object, int>(ReferenceEqualityComparer.Instance);
+      var pattern = new List<int>();
+
+      for (var row = 0; row < space.Area.Size.Height; row++)
+        for (var column = 0; column < space.Area.Size.Width; column++)
+        {
+          if (space[column, row].TryGetString() is not string text)
+          {
+            pattern.Add(-1);
+            continue;
+          }
+
+          if (!seen.TryGetValue(text, out var first))
+            seen[text] = first = pattern.Count;
+
+          pattern.Add(first);
+        }
+
+      return pattern;
     }
 
     // --- The flagship declaration ---------------------------------------------------------------------

@@ -57,6 +57,7 @@ namespace Unrect.Spreadsheets
 
     private readonly object _gate = new object();
     private readonly ReaderPool _pool;
+    private readonly StringInterner _strings;
     private readonly int _sheetIndex;
 
     /// <summary>
@@ -100,9 +101,15 @@ namespace Unrect.Spreadsheets
       int columnCount,
       int chunkRows,
       int windowChunks,
-      long rowsMeasured = 0)
+      long rowsMeasured = 0,
+      StringInterner? strings = null)
     {
       _pool = pool;
+      // A workbook shares one table across its sheets, which is where the value is: captions repeat
+      // across sheets, and a chase reader re-parsing dropped rows must find what the first parse
+      // canonicalised. A store built without one still shares within itself rather than not at all —
+      // there is no configuration under which a chunk fill hands out avoidable duplicates.
+      _strings = strings ?? new StringInterner(WorkbookOptions.DefaultMaxInternedStrings);
       _sheetIndex = sheetIndex;
       SheetName = sheetName;
       RowsMeasured = rowsMeasured;
@@ -262,8 +269,10 @@ namespace Unrect.Spreadsheets
             lease.CountRow();
             _rowsMaterialised++;
 
+            // The one place every row source's cells enter a window, and therefore the one place
+            // repeated text can be given a single instance to share.
             for (var c = 0; c < ColumnCount; c++)
-              cells[(r * ColumnCount) + c] = cursor[c];
+              cells[(r * ColumnCount) + c] = _strings.Share(cursor[c]);
           }
         }
         finally
@@ -445,7 +454,13 @@ namespace Unrect.Spreadsheets
           (long)ChunkRows * ColumnCount * BytesPerCell);
     }
 
-    /// <summary>Drops every resident chunk. The readers belong to the workbook, not to this store.</summary>
+    /// <summary>
+    /// Drops every resident chunk. The readers belong to the workbook, not to this store — and so
+    /// does the string table on the path that matters: a workbook releases the one it passed in,
+    /// after every store is disposed. A store that built its own (the no-interner constructor, which
+    /// is the test and benchmark path) keeps its entries through this and loses them only when the
+    /// store itself becomes unreachable.
+    /// </summary>
     public void Dispose()
     {
       Volatile.Write(ref _disposed, true);

@@ -195,6 +195,24 @@ number is deterministic; CI's run is what goes on the trend line.
   byte, arrived at without ever materialising the grid the eager door retains. And **the eager
   grid splits about half and half** — 48 MB of `CellValue` cells against 64 MB of strings — so
   string dedup is the largest single lever this shape offers.
+- **The same floor with interning in** (2026-09-04, local, .NET 8.0.419, same machine and
+  fixture — **local-run figures, pending the next CI point**):
+
+  | row | before | after | MB | change |
+  |---|---|---|---|---|
+  | `Eager_SpaceHeld` | 112,000,168 | 58,223,080 | 55.5 | −48% |
+  | `Eager_SpaceHeld_Unique` (control) | 112,000,168 | 112,000,168 | 106.8 | flat |
+  | `Eager_SpaceHeld_Shared` (control + target) | 58,223,080 | 58,223,080 | 55.5 | flat |
+  | `Eager_ResultHeld` | 86,096,872 | 32,319,784 | 30.8 | −62% |
+  | `Streaming_ResultHeld` | 86,096,872 | 32,319,784 | 30.8 | −62% |
+  | `Streaming_ResultHeld_Unique` (control) | 86,096,872 | 86,096,872 | 82.1 | flat |
+
+  Read the controls first, as the workflow says, and all three are flat to the byte — so the
+  movement is the mechanism and not drift. `Eager_SpaceHeld` landed on
+  `Eager_SpaceHeld_Shared` exactly: the target was the reader's own dedup, and the number is
+  the target's, not near it. The two result rows stayed byte-identical to each other while
+  both fell by 62%, which is the doors' equivalence surviving the change rather than being
+  restated after it.
 - **`Streaming`'s honesty caveat, read every time the family's numbers come up:** its
   fixture is a synthetic `IRowSource`, so an "open" there is free. The adversarial
   benchmarks (`Adversarial_OneReader` vs `Adversarial_Pooled`) measure only the

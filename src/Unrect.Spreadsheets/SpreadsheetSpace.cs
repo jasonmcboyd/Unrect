@@ -96,6 +96,11 @@ namespace Unrect.Spreadsheets
 
       var blank = isBlank ?? WhitespaceIsBlank;
 
+      // One table for the whole call rather than one per sheet: captions and codes repeat across the
+      // sheets of a workbook, so a caller enumerating several of them gets one instance per distinct
+      // value across all of them. It is dropped when the enumeration ends.
+      var texts = new TextTable();
+
       // FileShare.ReadWrite: the workbook may be open in Excel (which holds a write handle), and
       // concurrent readers of the same file must not block each other. FileShare.Delete: Excel
       // saves by writing a temporary file and replacing the original, which an open read handle
@@ -119,8 +124,8 @@ namespace Unrect.Spreadsheets
         // A sheet that declines to report its extent is measured by reading it — the same answer the
         // streaming door gives, rather than the empty space a grid sized from nothing would be.
         var cells = reader.RowCount > 0
-          ? ReadDeclared(reader, blank)
-          : ReadMeasured(reader, blank);
+          ? ReadDeclared(reader, blank, texts)
+          : ReadMeasured(reader, blank, texts);
 
         yield return new SpreadsheetSpace(new GridSpace(cells));
 
@@ -131,7 +136,7 @@ namespace Unrect.Spreadsheets
     /// The sheet at the size the reader gave, filled row by row. A sheet that yields fewer rows or
     /// narrower ones than it claimed keeps the size it claimed; the cells nothing reached are blank.
     /// </summary>
-    private static CellValue[,] ReadDeclared(IExcelDataReader reader, Func<CellValue, bool> blank)
+    private static CellValue[,] ReadDeclared(IExcelDataReader reader, Func<CellValue, bool> blank, TextTable texts)
     {
       var rowCount = reader.RowCount;
       var fieldCount = reader.FieldCount;
@@ -145,7 +150,7 @@ namespace Unrect.Spreadsheets
       {
         var columnCount = Math.Min(fieldCount, reader.FieldCount);
         for (int i = 0; i < columnCount; i++)
-          cells[row, i] = Adapt(reader, i, blank);
+          cells[row, i] = Adapt(reader, i, blank, texts);
 
         row++;
       }
@@ -173,7 +178,7 @@ namespace Unrect.Spreadsheets
     /// door's fakes. The caveat is recorded in full in <c>SpreadsheetSpaceTests</c>.)
     /// </para>
     /// </summary>
-    private static CellValue[,] ReadMeasured(IExcelDataReader reader, Func<CellValue, bool> blank)
+    private static CellValue[,] ReadMeasured(IExcelDataReader reader, Func<CellValue, bool> blank, TextTable texts)
     {
       var rows = new List<CellValue[]>();
       var width = 0;
@@ -182,7 +187,7 @@ namespace Unrect.Spreadsheets
       {
         var values = new CellValue[reader.FieldCount];
         for (int i = 0; i < values.Length; i++)
-          values[i] = Adapt(reader, i, blank);
+          values[i] = Adapt(reader, i, blank, texts);
 
         rows.Add(values);
         width = Math.Max(width, values.Length);
@@ -197,15 +202,55 @@ namespace Unrect.Spreadsheets
     }
 
     /// <summary>
-    /// One cell of the reader's current row, canonical — which is where blankness is decided. Shared
-    /// by both fill paths, so a sheet that reported its extent and one that had to be measured cannot
-    /// disagree about what a cell is.
+    /// One cell of the reader's current row, canonical — which is where blankness is decided, and
+    /// where repeated text is given one instance to share. Shared by both fill paths, so a sheet that
+    /// reported its extent and one that had to be measured cannot disagree about what a cell is.
     /// </summary>
-    private static CellValue Adapt(IExcelDataReader reader, int column, Func<CellValue, bool> blank)
+    private static CellValue Adapt(IExcelDataReader reader, int column, Func<CellValue, bool> blank, TextTable texts)
     {
       var value = reader.GetCellValue(column);
 
-      return blank(value) ? CellValue.Blank : value;
+      return blank(value) ? CellValue.Blank : texts.Share(value);
+    }
+
+    /// <summary>
+    /// The eager door's find-my-twin table: one canonical instance per distinct string, so equal
+    /// <c>Text</c> cells in the grid point at the same characters instead of holding a copy each. A
+    /// file that spells its text inline hands this adapter a fresh instance per cell, and on a
+    /// text-heavy sheet the copies are most of what the grid retains.
+    /// <para>
+    /// Deliberately simpler than the streaming door's <see cref="StringInterner"/>, which it mirrors
+    /// in behaviour and not in machinery. A fill here is single-threaded, so a plain
+    /// <see cref="HashSet{T}"/> does what a concurrent dictionary would at less cost; and it carries
+    /// no cap, because it is scoped to the <c>Create</c> <em>call</em> and dies with it. That scope
+    /// is the trade, stated plainly: a single-sheet <c>Create</c> disposes its enumerator at the
+    /// sheet it wanted, so the table holds nothing past the grid it filled — but a <c>foreach</c>
+    /// over several sheets holds one reference per distinct value of every sheet materialised so
+    /// far, whether the caller kept those grids or not, until the enumeration ends. That is
+    /// cross-sheet sharing, which is the point of one table per call rather than one per sheet, and
+    /// it is what an unbounded table costs to get it. What it does keep is the same length guard, so
+    /// for any file whose distinct text fits the streaming door's cap the two doors share exactly the
+    /// same values and a caller cannot tell which one produced a grid.
+    /// </para>
+    /// </summary>
+    private sealed class TextTable
+    {
+      private readonly HashSet<string> _texts = new HashSet<string>(StringComparer.Ordinal);
+
+      internal CellValue Share(CellValue value)
+      {
+        if (value.TryGetString() is not string text || text.Length > StringInterner.MaximumLength)
+          return value;
+
+        // A hit costs one lookup and a first sighting two, which is the right way round: the cells
+        // this exists for are the repeats.
+        if (_texts.TryGetValue(text, out var canonical))
+          return CellValue.Of(canonical);
+
+        _texts.Add(text);
+
+        return value;
+      }
     }
   }
 }

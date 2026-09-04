@@ -77,4 +77,24 @@
     </Content>
   </ItemGroup>
 
+  <!--
+    The workbook that exists to have duplicated text in it, for the tests that pin equal Text cells
+    onto one instance of their characters. Two properties are load-bearing, and a regenerated file
+    that loses either stops testing anything:
+      1. Every text cell is spelled INLINE (t="inlineStr"), so the reader hands the adapter a FRESH
+         instance per cell. A shared-string fixture comes back deduplicated by the reader itself
+         and would say nothing about the adapter's own table.
+      2. The duplicates are deliberate, and include the length guard's two neighbours: a value of
+         exactly 256 characters, which is shared, and one of 257, which is never entered.
+    Two sheets ('Ledger' and 'Notes') carry values in common, so sharing can be shown ACROSS the
+    sheets of one Create call and one Workbook rather than only within one sheet. Every other
+    committed fixture is written inline too and several happen to repeat a value, but they repeat it
+    incidentally — none of them would be regenerated with these properties in mind.
+  -->
+  <ItemGroup>
+    <Content Include="TestData\repeated-text.xlsx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>

@@ -43,10 +43,14 @@ namespace Unrect.Spreadsheets
   /// eager when the file fits comfortably in memory, and a workbook when it does not — or when many
   /// files go through one declaration and the peak is what matters.</para>
   ///
-  /// <para><b>The floor, said out loud.</b> Streaming bounds the grid, not the process. The reader's
-  /// shared-string table owns every string a <c>Text</c> cell points at, is not part of the window
-  /// and does not shrink with it; on a text-heavy sheet it can dominate. What streaming removes is
-  /// the materialised grid, not the parser.</para>
+  /// <para><b>The floor, said out loud.</b> Streaming bounds the grid, not the process. The strings a
+  /// <c>Text</c> cell points at are not part of the window and do not shrink with it: the reader's
+  /// shared-string table owns them for a file that spells its text that way, and this adapter holds
+  /// one instance of each distinct value so that equal cells can share it — bounded by
+  /// <see cref="WorkbookOptions.MaxInternedStrings"/>, and reported by
+  /// <see cref="InterningStatistics"/>. That sharing roughly halved the measured floor on an inline
+  /// file, but on a text-heavy sheet what remains can still dominate. What streaming removes is the
+  /// materialised grid, not the parser.</para>
   ///
   /// <para><b>Lifetime.</b> The workbook owns every file handle, reader and chunk store. A view from
   /// <see cref="Sheet"/> is a value, not a handle: it has no <c>Dispose</c>, it can be sliced and
@@ -59,6 +63,7 @@ namespace Unrect.Spreadsheets
     private readonly object _gate = new object();
     private readonly WorkbookOptions _options;
     private readonly ReaderPool _pool;
+    private readonly StringInterner _strings;
     private readonly List<SheetEntry> _catalogue = new List<SheetEntry>();
     private readonly Dictionary<string, SheetStore> _stores;
 
@@ -74,6 +79,9 @@ namespace Unrect.Spreadsheets
       Path = path;
       _options = options;
       _pool = new ReaderPool(source, options.MaxReaders, options.WarmReaders);
+      // One table for the book, shared by every sheet it vends — see StringInterner for why it is
+      // scoped there and not per sheet.
+      _strings = new StringInterner(options.MaxInternedStrings);
       _stores = new Dictionary<string, SheetStore>(
         options.CaseSensitiveSheetNames ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase);
 
@@ -210,7 +218,8 @@ namespace Unrect.Spreadsheets
           SheetStore.WindowChunksFor(_options.WindowRows, chunkRows),
           // What the survey read, so the pass a caller never asked for is visible where its cost is
           // read: zero for a sheet that described itself.
-          rowsMeasured: surveyed ? rowCount : 0);
+          rowsMeasured: surveyed ? rowCount : 0,
+          strings: _strings);
 
         _stores.Add(entry.Name, store);
 
@@ -290,6 +299,17 @@ namespace Unrect.Spreadsheets
 
     /// <summary>What this workbook's readers have cost — shared across every sheet of it.</summary>
     public ReaderPoolStatistics ReaderStatistics => _pool.Snapshot();
+
+    /// <summary>
+    /// What sharing repeated text has earned this workbook. Like <see cref="ReaderStatistics"/> and
+    /// unlike <see cref="Statistics"/>, it belongs to the book rather than to a sheet: one table
+    /// serves them all, so a per-sheet split would report numbers that do not add up.
+    /// <para>
+    /// Readable after <see cref="Dispose"/>, for the same reason the sheet figures are: the counters
+    /// describe reading that has already happened, and disposing drops the entries and keeps them.
+    /// </para>
+    /// </summary>
+    public InterningStatistics InterningStatistics => _strings.Snapshot();
 
     /// <summary>
     /// Finds <paramref name="name"/> in the catalogue, extending the catalogue if it has not reached
@@ -422,6 +442,11 @@ namespace Unrect.Spreadsheets
 
         foreach (var store in _stores.Values)
           store.Dispose();
+
+        // The table outlives the window by design, so it must not outlive the workbook: a caller who
+        // holds a disposed book to total up what an import cost would otherwise still be pinning
+        // every distinct string of it. The counters survive; the strings do not.
+        _strings.Release();
 
         _parked?.Dispose();
         _parked = null;
