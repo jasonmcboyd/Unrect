@@ -79,10 +79,14 @@ sheet determines whether streaming is cheap, free, or a bad idea:
   `VerticalFlow`, a `HorizontalFlow` or an `Overlay` resolves eagerly, in full, today.
   Placing that composite's first child asks the parent extent whether the child fits and
   then slices it, and both questions settle the bound before any child projection runs — so
-  a lazy extent buys nothing once there is a box around it. Put the `.Sized` on the leaf
-  that reads the rows rather than on the flow that holds it. This limit is pinned by
-  `LazyDenotationTests`' census, so lifting it is a deliberate change rather than an
-  accident.
+  a lazy extent buys nothing once there is a box around it. A `.Sized` composite is a
+  legitimate spelling with no leaf equivalent — a composite has no intrinsic extent, and a
+  declared band is what scopes its internal seeks and settles its consumption — but in
+  practice such bands are short (a bounded header), where settling them eagerly costs
+  nothing. Where the region that reads the rows *is* a single leaf, size the leaf; the
+  deferred fix for tall sized composites is recorded in the spec (§13, Part 3), and this
+  limit is pinned by `LazyDenotationTests`' census, so lifting it is a deliberate change
+  rather than an accident.
 - **A width discovered from the data costs the rows it takes to settle, and no more.** A
   `Table` on its default placement finds its width from the sheet too, in the *same* forward
   walk as its height: each row the height rule accepts is fed to the width rule as it is
