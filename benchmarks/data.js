@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1788537629211,
+  "lastUpdate": 1788537629429,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -1654,6 +1654,72 @@ window.BENCHMARK_DATA = {
             "value": 355413.4931315104,
             "unit": "ns",
             "range": "± 1692.3921464682194"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "c01531cec6968e544acc578291244292172a00a5",
+          "message": "Docs: Part 3 deferred on principle, and .Sized's composite role stated honestly\n\nSpec §13 gains the Part 3 row (bound-aware composite placement): the\nengine's remaining greed sorted into one necessary force (Repeat items —\nthe item's existence is the question), one free force (post-Project\nconsumption, amortised by the root's accounting), and one debt (composite\nchild placement, whose questions have lazy answers nobody asks for).\nDeferred until the first tall sized composite pays the debt — sized\ncomposites in the corpus are short header bands, where settling eagerly\ncosts nothing. The K-1 campaign is the likely judge; the census pin is the\ntripwire.\n\ndocs/streaming.md stops saying \"put the .Sized on the leaf\" as if it were\na law: a sized composite is a legitimate spelling with no leaf equivalent\n— a composite has no intrinsic extent, and the declared band is what\nscopes its internal seeks and settles its consumption.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016BvUBicaVLLYkdp7iqFZNo",
+          "timestamp": "2026-09-04T15:37:53Z",
+          "tree_id": "6188ce68af3130bfba604f38845b0c515958cb34",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/c01531cec6968e544acc578291244292172a00a5"
+        },
+        "date": 1788537629398,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Tables.Lambda_10k",
+            "value": 1458095.1534598214,
+            "unit": "ns",
+            "range": "± 9290.095088302503"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Lambda_100k",
+            "value": 14351786.985677084,
+            "unit": "ns",
+            "range": "± 32267.824888697567"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Bound_10k",
+            "value": 8608660.751041668,
+            "unit": "ns",
+            "range": "± 79132.26203297981"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Bound_100k",
+            "value": 93451655.61111112,
+            "unit": "ns",
+            "range": "± 1593170.2597476132"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Dictionary_10k",
+            "value": 9811919.9578125,
+            "unit": "ns",
+            "range": "± 287532.55183138174"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Dictionary_100k",
+            "value": 112326454.65333334,
+            "unit": "ns",
+            "range": "± 1692930.2500263725"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Bound_ShapeConstruction",
+            "value": 355717.7154622396,
+            "unit": "ns",
+            "range": "± 2837.7249469511416"
           }
         ]
       }
