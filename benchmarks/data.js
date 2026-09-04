@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1788556081550,
+  "lastUpdate": 1788556081724,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -8068,6 +8068,72 @@ window.BENCHMARK_DATA = {
           {
             "name": "Unrect.Benchmarks.Retention.Streaming_ResultHeld",
             "value": 86096872,
+            "range": "± 0 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · TableRows through a window; result held, workbook closed"
+          },
+          {
+            "name": "Unrect.Benchmarks.Retention.Streaming_ResultHeld_Unique",
+            "value": 86096872,
+            "range": "± 0 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · CONTROL — the same projection, every text distinct"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "eddc5d17c38c715f41cd95d041452deb66f8354c",
+          "message": "Interning: equal text shares one instance through both doors\n\nAdapter-level string interning — a find-my-twin table at each door's\nadapt seam. The eager door threads a per-Create-call HashSet through both\nfill paths (one instance per distinct value across every sheet of the\ncall); the streaming door hangs one capped ConcurrentDictionary on the\nWorkbook, plumbed into every store's chunk fill, so a chase reader's\nre-parse dedupes against the first parse. Strings only: every other kind\nis inline in the 24-byte struct or unreachable from the spreadsheet door.\n\nThe win is retention, not allocation — the duplicate is allocated by the\nreader before the adapter sees it and dies in gen0 after dedup, which is\nwhy the Retention leg is the judge and MemoryDiagnoser is blind to it.\nMeasured against the committed floor: eager space held 106.8 -> 55.5 MB,\nlanding on the priced shared-string target to the byte; held results\n82.1 -> 30.8 MB, byte-identical across doors; all three unique controls\nflat to the byte; wall time noise on the 1M-row parse.\n\nThe cap (WorkbookOptions.MaxInternedStrings, default 65,536; 0 = off)\nand the 256-char length guard bound what the book-lifetime table can\npin. Documented as a two-way knob: a full table costs its entries for\nthe book's life — some 40 MB at the default cap — so it turns DOWN, to\n0, for known-unique text, and the docs say so at every site (the rig is\nstructurally blind to the table's own live set: readings are taken with\nthe book closed). Workbook.InterningStatistics reports hits, distinct,\nand estimated bytes (64-bit layout, exact for it; Hits counts fills, so\na reloaded chunk counts again — read against ChunkReloads).\n\nExcelDataReader fact on the record: shared-string cells arrive\npre-deduped from the reader's own SST; the duplication this kills comes\nfrom inline-string cells, formula-result cells, and .xls. Pinned by 36\ntests including a cross-door sharing differential, mutation-checked both\ndirections, and a WeakReference proof that Dispose releases the strings.\nSuite 1,423.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016BvUBicaVLLYkdp7iqFZNo",
+          "timestamp": "2026-09-04T19:19:56Z",
+          "tree_id": "fea5150f427d5b65cf652662879afb3b470547f2",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/eddc5d17c38c715f41cd95d041452deb66f8354c"
+        },
+        "date": 1788556081699,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Retention.Eager_SpaceHeld",
+            "value": 58223080,
+            "range": "± 0 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · SpreadsheetSpace.Create over a real .xlsx (inline strings); grid held"
+          },
+          {
+            "name": "Unrect.Benchmarks.Retention.Eager_SpaceHeld_Unique",
+            "value": 112000168,
+            "range": "± 6,144 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · CONTROL — the same file and reader, every text distinct"
+          },
+          {
+            "name": "Unrect.Benchmarks.Retention.Eager_SpaceHeld_Shared",
+            "value": 58222544,
+            "range": "± 536 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · CONTROL/TARGET — the same values shared-string encoded, which the reader already dedups"
+          },
+          {
+            "name": "Unrect.Benchmarks.Retention.Eager_ResultHeld",
+            "value": 32319784,
+            "range": "± 0 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · TableRows over the eager grid; result held, grid released"
+          },
+          {
+            "name": "Unrect.Benchmarks.Retention.Streaming_ResultHeld",
+            "value": 32319784,
             "range": "± 0 bytes",
             "unit": "bytes",
             "extra": "median of 3 · TableRows through a window; result held, workbook closed"
