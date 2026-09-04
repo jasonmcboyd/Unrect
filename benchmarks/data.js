@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1788537628996,
+  "lastUpdate": 1788537629211,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -1062,6 +1062,72 @@ window.BENCHMARK_DATA = {
             "value": 1593382.947544643,
             "unit": "ns",
             "range": "± 1916.1591141937213"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "c01531cec6968e544acc578291244292172a00a5",
+          "message": "Docs: Part 3 deferred on principle, and .Sized's composite role stated honestly\n\nSpec §13 gains the Part 3 row (bound-aware composite placement): the\nengine's remaining greed sorted into one necessary force (Repeat items —\nthe item's existence is the question), one free force (post-Project\nconsumption, amortised by the root's accounting), and one debt (composite\nchild placement, whose questions have lazy answers nobody asks for).\nDeferred until the first tall sized composite pays the debt — sized\ncomposites in the corpus are short header bands, where settling eagerly\ncosts nothing. The K-1 campaign is the likely judge; the census pin is the\ntripwire.\n\ndocs/streaming.md stops saying \"put the .Sized on the leaf\" as if it were\na law: a sized composite is a legitimate spelling with no leaf equivalent\n— a composite has no intrinsic extent, and the declared band is what\nscopes its internal seeks and settles its consumption.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016BvUBicaVLLYkdp7iqFZNo",
+          "timestamp": "2026-09-04T15:37:53Z",
+          "tree_id": "6188ce68af3130bfba604f38845b0c515958cb34",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/c01531cec6968e544acc578291244292172a00a5"
+        },
+        "date": 1788537629181,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Strategies.RowsWhileAnyValue_FullHeight",
+            "value": 892472.4880719866,
+            "unit": "ns",
+            "range": "± 3770.7625112615096"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.RowsWhileAnyValue_Sparse",
+            "value": 865834.60078125,
+            "unit": "ns",
+            "range": "± 10114.05218223816"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_HitAt10Percent",
+            "value": 307628.42693219864,
+            "unit": "ns",
+            "range": "± 259.262546150526"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_HitAt90Percent",
+            "value": 2770471.802734375,
+            "unit": "ns",
+            "range": "± 13057.051291626973"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_MissWholeGrid",
+            "value": 3234241.2170758927,
+            "unit": "ns",
+            "range": "± 10203.727320747214"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Until_BoundResolution",
+            "value": 3682464.8577008927,
+            "unit": "ns",
+            "range": "± 40350.695902064275"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.BlankRows_Skip",
+            "value": 1596455.0910993305,
+            "unit": "ns",
+            "range": "± 4147.305986590257"
           }
         ]
       }
