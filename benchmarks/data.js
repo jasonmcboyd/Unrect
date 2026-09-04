@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1788537631422,
+  "lastUpdate": 1788537631640,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -5867,6 +5867,55 @@ window.BENCHMARK_DATA = {
           {
             "name": "Unrect.Benchmarks.Diagnostics.Map_WithDiagnostics",
             "value": 3989985,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Diagnostics.Choice_FirstAlternativeLoses",
+            "value": 5872,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Diagnostics.Optional_AbsorbsFailure",
+            "value": 4384,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Diagnostics.ShapeException_Render",
+            "value": 2218833,
+            "unit": "bytes"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "c01531cec6968e544acc578291244292172a00a5",
+          "message": "Docs: Part 3 deferred on principle, and .Sized's composite role stated honestly\n\nSpec §13 gains the Part 3 row (bound-aware composite placement): the\nengine's remaining greed sorted into one necessary force (Repeat items —\nthe item's existence is the question), one free force (post-Project\nconsumption, amortised by the root's accounting), and one debt (composite\nchild placement, whose questions have lazy answers nobody asks for).\nDeferred until the first tall sized composite pays the debt — sized\ncomposites in the corpus are short header bands, where settling eagerly\ncosts nothing. The K-1 campaign is the likely judge; the census pin is the\ntripwire.\n\ndocs/streaming.md stops saying \"put the .Sized on the leaf\" as if it were\na law: a sized composite is a legitimate spelling with no leaf equivalent\n— a composite has no intrinsic extent, and the declared band is what\nscopes its internal seeks and settles its consumption.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016BvUBicaVLLYkdp7iqFZNo",
+          "timestamp": "2026-09-04T15:37:53Z",
+          "tree_id": "6188ce68af3130bfba604f38845b0c515958cb34",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/c01531cec6968e544acc578291244292172a00a5"
+        },
+        "date": 1788537631609,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Diagnostics.Map_Plain",
+            "value": 3988971,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Diagnostics.Map_WithDiagnostics",
+            "value": 3989987,
             "unit": "bytes"
           },
           {
