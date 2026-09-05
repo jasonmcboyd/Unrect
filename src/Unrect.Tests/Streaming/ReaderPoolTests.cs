@@ -208,7 +208,7 @@ namespace Unrect.Tests.Streaming
 
       pool.Return(held);
 
-      await waiting.WaitAsync(TimeSpan.FromSeconds(10));
+      await WithTimeout(waiting, TimeSpan.FromSeconds(10));
       Assert.Equal(1, source.Opens);
     }
 
@@ -426,7 +426,7 @@ namespace Unrect.Tests.Streaming
 
       gate.Set();
 
-      await reaching.WaitAsync(TimeSpan.FromSeconds(10));
+      await WithTimeout(reaching, TimeSpan.FromSeconds(10));
       await pool.WhenWarmersIdle();
 
       var stats = pool.Snapshot();
@@ -446,6 +446,15 @@ namespace Unrect.Tests.Streaming
 
     /// <summary>How long a thing that should take microseconds is allowed before it counts as wedged.</summary>
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
+
+    /// <summary>`Task.WaitAsync(TimeSpan)` is .NET 6 and up; this is the same thing, portably.</summary>
+    private static async Task WithTimeout(Task task, TimeSpan patience)
+    {
+      if (await Task.WhenAny(task, Task.Delay(patience)) != task)
+        throw new TimeoutException($"The task did not complete within {patience}.");
+
+      await task;   // observe the fault, unwrapped, so ThrowsAsync still sees the original
+    }
 
     /// <summary>Long enough that "still not finished" means blocked rather than merely slow.</summary>
     private static readonly TimeSpan LongEnoughToProveItIsBlocked = TimeSpan.FromMilliseconds(200);
@@ -486,7 +495,7 @@ namespace Unrect.Tests.Streaming
 
       // The failing borrow must COMPLETE — as a failure. Before the fix it completed too; it was
       // what came after that hung, so this bound is here to keep the arrangement honest.
-      var failure = await Assert.ThrowsAsync<IOException>(() => failing.WaitAsync(Patience));
+      var failure = await Assert.ThrowsAsync<IOException>(() => WithTimeout(failing, Patience));
 
       Assert.Contains("mid-advance", failure.Message);
 
@@ -497,7 +506,7 @@ namespace Unrect.Tests.Streaming
       // wedged run into a named failure.
       var afterwards = Task.Run(() => pool.Return(pool.Borrow(0, 1200, out _)));
 
-      await afterwards.WaitAsync(Patience);
+      await WithTimeout(afterwards, Patience);
 
       Assert.Equal(1, source.Opens);      // and it was served by the same reader, not a new one
     }
@@ -524,7 +533,7 @@ namespace Unrect.Tests.Streaming
 
       pool.Dispose();
 
-      var failure = await Assert.ThrowsAsync<ObjectDisposedException>(() => waiting.WaitAsync(Patience));
+      var failure = await Assert.ThrowsAsync<ObjectDisposedException>(() => WithTimeout(waiting, Patience));
 
       Assert.Contains("disposed", failure.Message);
     }
@@ -560,7 +569,7 @@ namespace Unrect.Tests.Streaming
 
       gate.Set();
 
-      await Task.WhenAll(first, second).WaitAsync(Patience);
+      await WithTimeout(Task.WhenAll(first, second), Patience);
       await pool.WhenWarmersIdle();
 
       pool.Dispose();
@@ -610,7 +619,7 @@ namespace Unrect.Tests.Streaming
 
       pool.Return(held);
 
-      await waiting.WaitAsync(Patience);
+      await WithTimeout(waiting, Patience);
       await pool.WhenWarmersIdle();
 
       var stats = pool.Snapshot();

@@ -104,8 +104,8 @@ namespace Unrect.Tests
     };
 
     /// <summary>
-    /// The fold, written out here rather than called from <see cref="IRowScan.Fold"/>, so the test
-    /// says independently what the interface's default implementation claims.
+    /// The fold, written out here rather than called from <see cref="Scans.Fold"/>, so the test
+    /// says independently what every implementation's one-line delegation claims.
     /// </summary>
     private static int Fold(IRowScan scan, ISpace space)
     {

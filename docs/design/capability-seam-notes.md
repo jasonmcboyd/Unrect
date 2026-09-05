@@ -25,9 +25,18 @@ Verified against the shipped code, not asserted:
    not. (`GridSpace` returns plain slices, correctly — it has nothing extra to carry.)
 3. **Adding an interface to a sealed public class is non-breaking**, and new interfaces in
    Core are additive. `sealed` blocks inheritance, not capability.
-4. **The safety net**: netstandard2.1 supports default interface members, so even `ISpace`
+4. ~~**The safety net**: netstandard2.1 supports default interface members, so even `ISpace`
    itself could gain a default-implemented capability accessor later without breaking any
-   implementor. Reach for this only if type-testing proves insufficient.
+   implementor. Reach for this only if type-testing proves insufficient.~~
+   **Withdrawn 2026-09-05.** The libraries now multi-target `netstandard2.0;netstandard2.1`
+   for .NET Framework consumers, and .NET Framework's runtime cannot dispatch a default
+   interface member — so a DIM on `ISpace` would compile and then fail at run time on half
+   the supported surface. There is no safety net; adding a member to a published Core
+   interface is a breaking change, full stop. (This is not hypothetical: the incremental
+   strategy calculus *had* DIMs and gave them up in the same change — its folds moved to the
+   static `Unrect.Core.Scans`, see `streaming-spec.md` §11.2.) Items 1–3 are untouched, and
+   they were always the real argument: type-testing on `ISpace` is what makes a capability
+   additive, and it needs nothing of the target framework.
 
 ## The recipe (for whoever builds the first capability)
 

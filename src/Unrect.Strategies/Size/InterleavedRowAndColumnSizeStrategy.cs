@@ -45,6 +45,8 @@ namespace Unrect.Strategies
         RowSelectionStrategy.BeginRows(),
         ColumnSelectionStrategy.BeginColumns(availableSpace.Area.Width));
 
+    public Size GetSize(ISpace availableSpace) => Scans.FoldSize(BeginSize(availableSpace), availableSpace);
+
     private sealed class Scan : IAreaScan
     {
       /// <summary>

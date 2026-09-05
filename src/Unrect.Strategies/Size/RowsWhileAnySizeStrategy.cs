@@ -15,6 +15,8 @@ namespace Unrect.Strategies
     public IAreaScan BeginSize(ISpace availableSpace)
       => new Scan(availableSpace.Area.Width, RowSelectionStrategy.BeginRows());
 
+    public Size GetSize(ISpace availableSpace) => Scans.FoldSize(BeginSize(availableSpace), availableSpace);
+
     /// <summary>
     /// The width is the whole of what is available, so it is settled before a cell is read and the
     /// scan is nothing but its row strategy's, carrying that width.

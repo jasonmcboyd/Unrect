@@ -221,8 +221,12 @@ namespace Unrect.Spreadsheets
     /// <para>
     /// Deliberately simpler than the streaming door's <see cref="StringInterner"/>, which it mirrors
     /// in behaviour and not in machinery. A fill here is single-threaded, so a plain
-    /// <see cref="HashSet{T}"/> does what a concurrent dictionary would at less cost; and it carries
-    /// no cap, because it is scoped to the <c>Create</c> <em>call</em> and dies with it. That scope
+    /// <see cref="Dictionary{TKey, TValue}"/> does what a concurrent dictionary would at less cost;
+    /// and it carries no cap, because it is scoped to the <c>Create</c> <em>call</em> and dies with
+    /// it. (A <see cref="HashSet{T}"/> is the honest structure for a set of canonical instances and
+    /// is what this was; <c>HashSet&lt;T&gt;.TryGetValue</c> — the one member that makes a set usable
+    /// as an intern table — does not exist on netstandard2.0, so the key and the value are the same
+    /// string here.) That scope
     /// is the trade, stated plainly: a single-sheet <c>Create</c> disposes its enumerator at the
     /// sheet it wanted, so the table holds nothing past the grid it filled — but a <c>foreach</c>
     /// over several sheets holds one reference per distinct value of every sheet materialised so
@@ -235,7 +239,7 @@ namespace Unrect.Spreadsheets
     /// </summary>
     private sealed class TextTable
     {
-      private readonly HashSet<string> _texts = new HashSet<string>(StringComparer.Ordinal);
+      private readonly Dictionary<string, string> _texts = new Dictionary<string, string>(StringComparer.Ordinal);
 
       internal CellValue Share(CellValue value)
       {
@@ -247,7 +251,7 @@ namespace Unrect.Spreadsheets
         if (_texts.TryGetValue(text, out var canonical))
           return CellValue.Of(canonical);
 
-        _texts.Add(text);
+        _texts.Add(text, text);
 
         return value;
       }

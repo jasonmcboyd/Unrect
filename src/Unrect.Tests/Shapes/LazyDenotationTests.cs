@@ -653,6 +653,8 @@ namespace Unrect.Tests.Shapes
     {
       public IAreaScan BeginArea(ISpace availableSpace) => new Scan(availableSpace.Area.Width + 1);
 
+      public Area GetArea(ISpace availableSpace) => Scans.FoldArea(BeginArea(availableSpace), availableSpace);
+
       private sealed class Scan : IAreaScan
       {
         public Scan(int width) => Width = width;

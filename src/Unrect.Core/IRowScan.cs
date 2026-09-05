@@ -25,20 +25,5 @@ namespace Unrect.Core
     /// </para>
     /// </summary>
     bool IncludesRow(ISpace space, int row);
-
-    /// <summary>
-    /// The number of leading rows of <paramref name="space"/> that <paramref name="scan"/> includes,
-    /// read to exhaustion. This is the definition every incremental strategy's eager answer is
-    /// expressed as, so the eager and incremental readings of one strategy cannot disagree.
-    /// </summary>
-    static int Fold(IRowScan scan, ISpace space)
-    {
-      int count = 0;
-
-      while (count < space.Area.Height && scan.IncludesRow(space, count))
-        count++;
-
-      return count;
-    }
   }
 }

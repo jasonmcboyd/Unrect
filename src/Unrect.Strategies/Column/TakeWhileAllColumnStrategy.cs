@@ -24,6 +24,9 @@ namespace Unrect.Strategies
 
     public IColumnAccumulator BeginColumns(int width) => new Accumulator(Predicate, width);
 
+    public int SelectColumns(ISpace space)
+      => ColumnAccumulators.Fold(BeginColumns(space.Area.Width), space);
+
     private sealed class Accumulator : IColumnAccumulator
     {
       public Accumulator(Func<CellValue, bool> predicate, int width)

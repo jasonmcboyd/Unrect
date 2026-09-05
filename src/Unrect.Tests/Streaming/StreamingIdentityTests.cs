@@ -130,7 +130,7 @@ namespace Unrect.Tests.Streaming
     {
       // Reference equality on purpose: the question is which instance a cell points at, and the
       // default comparer would answer the one this test is not asking.
-      var seen = new Dictionary<object, int>(ReferenceEqualityComparer.Instance);
+      var seen = new Dictionary<object, int>(ByReference.Instance);
       var pattern = new List<int>();
 
       for (var row = 0; row < space.Area.Size.Height; row++)
@@ -322,5 +322,15 @@ namespace Unrect.Tests.Streaming
       string.Join(
         Environment.NewLine,
         diagnostics.Select(d => $"{d.Severity}|{d.Subject}|{d.Message}|{d.Path}|{d.Location}"));
+
+    /// <summary>`ReferenceEqualityComparer` is .NET 5 and up; this is the same thing, portably.</summary>
+    private sealed class ByReference : IEqualityComparer<object>
+    {
+      internal static readonly ByReference Instance = new ByReference();
+
+      public new bool Equals(object? x, object? y) => ReferenceEquals(x, y);
+
+      public int GetHashCode(object obj) => System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj);
+    }
   }
 }

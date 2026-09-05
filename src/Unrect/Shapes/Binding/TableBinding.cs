@@ -44,7 +44,9 @@ namespace Unrect.Shapes
       if (Captions.ContainsKey(name))
         throw new ArgumentException($"{typeof(T).Name}.{name} is bound twice.", nameof(member));
 
-      var captions = new Dictionary<string, string>(Captions, StringComparer.Ordinal) { [name] = caption };
+      var captions = Captions.ToDictionary(bound => bound.Key, bound => bound.Value, StringComparer.Ordinal);
+
+      captions.Add(name, caption);
 
       return new TableBinding<T>(captions, Ignored);
     }

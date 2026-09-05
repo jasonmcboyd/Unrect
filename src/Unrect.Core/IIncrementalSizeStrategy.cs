@@ -2,8 +2,10 @@ namespace Unrect.Core
 {
   /// <summary>
   /// The size layer's <see cref="IIncrementalRowStrategy"/>: a size whose width is settled up front
-  /// and whose height is a per-row rule. <see cref="ISizeStrategy.GetSize"/> is defined as the fold
-  /// of <see cref="BeginSize"/>, so eager and incremental cannot disagree.
+  /// and whose height is a per-row rule. <see cref="ISizeStrategy.GetSize"/> is defined as
+  /// <c>Scans.FoldSize(BeginSize(availableSpace), availableSpace)</c>, which is how an implementation
+  /// is expected to spell it — see <see cref="IIncrementalRowStrategy"/> for why the definition is a
+  /// convention rather than an inherited body, and what pins it.
   /// </summary>
   public interface IIncrementalSizeStrategy : ISizeStrategy
   {
@@ -13,13 +15,5 @@ namespace Unrect.Core
     /// themselves.
     /// </summary>
     IAreaScan BeginSize(ISpace availableSpace);
-
-    /// <inheritdoc />
-    Size ISizeStrategy.GetSize(ISpace availableSpace)
-    {
-      var scan = BeginSize(availableSpace);
-
-      return new Size(scan.Width, IRowScan.Fold(scan, availableSpace));
-    }
   }
 }

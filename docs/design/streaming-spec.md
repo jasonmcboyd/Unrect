@@ -29,7 +29,8 @@ carry over and which are rewritten. Every one of its measurements is quoted here
 
 Conventions inherited: `wave2-shapes-spec.md` (engine rules, error-message template, file
 layout, test style), `flow-vocabulary-spec.md` (removal orders, `[decided here]` markers),
-`capability-seam-notes.md` (additive capability recipe, default interface members),
+`capability-seam-notes.md` (additive capability recipe; its default-interface-member escape
+hatch was withdrawn on 2026-09-05 — see that note's item 4),
 `docs/benchmarking.md` (benchmark family rules).
 
 Everything the owner settled is recorded as settled. Where a detail had to be decided to
@@ -882,7 +883,7 @@ step leaves a coherent system.
 
 | # | Step | Value if you stop here |
 |---|---|---|
-| 1 | Core: `IIncrementalRowStrategy`/`IRowScan` with the **definitional fold** as a default interface member; implement on `TakeWhileAnyRowStrategy`, `TakeWhileAllRowStrategy`, `TakeToRowStrategy` | none yet; eager behaviour provably unchanged (existing `StrategyTests` untouched) |
+| 1 | Core: `IIncrementalRowStrategy`/`IRowScan` with the **definitional fold** as a default interface member (since 2026-09-05: as `Scans.Fold`, delegated to in a line — see §11.2); implement on `TakeWhileAnyRowStrategy`, `TakeWhileAllRowStrategy`, `TakeToRowStrategy` | none yet; eager behaviour provably unchanged (existing `StrategyTests` untouched) |
 | 2 | Row-major rewrite of `TakeWhileAnyColumnStrategy` / `TakeWhileAllColumnStrategy` (§11.3), denotation-identical | a genuinely better column scan for every path |
 | 3 | `IIncrementalSizeStrategy` / `IIncrementalAreaStrategy` and the lifting rules through `RowsWhileAnySizeStrategy` and the `ToAreaStrategy` adapter | none yet |
 | 4 | `BoundedSpace`: the lazily bounded space, forcing rules, pre-built failure identity | none yet |
@@ -925,6 +926,22 @@ In `Unrect.Core`, additive, mirroring the existing three-layer strategy calculus
 default interface member — so eager and lazy cannot disagree by construction, which is worth
 more than any number of equivalence tests. (netstandard2.1 supports DIMs; the capability-seam
 note already blesses them.)
+
+> **Corrected 2026-09-05 — the guarantee shifted when the libraries added netstandard2.0.**
+> .NET Framework's runtime cannot dispatch a default interface member, so the DIMs are gone:
+> the three folds live on a static `Unrect.Core.Scans` (`Fold`, `FoldSize`, `FoldArea`), and
+> every implementation spells its eager method as a one-line delegation to the matching fold.
+> The column side's `IRowMajorColumnStrategy.SelectColumns` moved the same way, to an internal
+> `ColumnAccumulators.Fold` in `Unrect.Strategies`.
+>
+> The definition is therefore a **convention an implementation follows**, not a body it
+> inherits, and the claim below has to be read accordingly: eager and lazy cannot disagree
+> **because the fold-identity suite says so**, not by construction. `IncrementalStrategyTests`
+> already carried exactly that pin before the change — for every factory in the vocabulary it
+> asserts the eager answer equals a fold of the scan written out by hand — which is why the
+> shift costs coverage rather than confidence. The residue is that a *new* implementation could
+> now write its own loop and drift; the suite catches it only if the new factory is added to
+> the suite's theory data, so that obligation is now real where it used to be structural.
 
 ```csharp
 public interface IRowScan
@@ -1224,6 +1241,7 @@ Two, both narrow, neither blocking.
 | 11 | `WindowedSpace` throws `OutOfBoundsException`, not bare `IndexOutOfRangeException`, for an out-of-range index — otherwise the new fault list classifies a bounds condition as a bug | 9 |
 | 12 | `BytesPerCell` is asserted against `Unsafe.SizeOf<CellValue>()` in a test | 8.1 |
 | 13 | The definitional fold as a default interface member, so eager and lazy cannot disagree by construction | 11.2 |
+| 13a | **[corrected 2026-09-05]** The DIMs were removed when the libraries multi-targeted to netstandard2.0, which has no default interface members. The folds moved to the static `Scans` (Core) and `ColumnAccumulators` (Strategies); each implementation delegates in a line. "Cannot disagree by construction" became "cannot disagree, pinned by the fold-identity suite" — `IncrementalStrategyTests` was already that pin | 11.2 |
 | 14 | The row-major rewrite of the `WhileAny`/`WhileAll` column strategies, without which Part 2 delivers nothing for `Table` | 11.3 |
 | 15 | Laziness is disabled for non-strict placement, so a `Repeat`'s stop condition is unaffected | 11.6 |
 | 16 | The benchmark family measures a synthetic source, with the free-open caveat documented | 12 |

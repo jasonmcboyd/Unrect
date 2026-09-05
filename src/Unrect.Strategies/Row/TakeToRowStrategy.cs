@@ -16,6 +16,8 @@ namespace Unrect.Strategies
 
     public IRowScan BeginRows() => new Scan(this);
 
+    public int SelectRows(ISpace space) => Scans.Fold(BeginRows(), space);
+
     /// <summary>
     /// The one stateful scan in the family, and the reason <see cref="IRowScan"/> is an object
     /// rather than a function: when the matching row is kept it is included and the extent ends, so

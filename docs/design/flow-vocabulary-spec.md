@@ -374,9 +374,14 @@ attribute. **Verified experimentally on this machine (SDK 8.0.419):** a netstand
 library with an *internal* polyfill, consumed by a **net8.0** project that has the real
 attribute in its framework, still gets inference at the call site and produces no
 conflict — Roslyn matches the attribute on the parameter by full type name in metadata,
-and an internal type in another assembly cannot collide with the framework's. `Unrect`
-targets netstandard2.1 only, so no `#if` is needed; add
-`#if !NET5_0_OR_GREATER` around it if the project ever multi-targets.
+and an internal type in another assembly cannot collide with the framework's. No `#if` is
+needed; add `#if !NET5_0_OR_GREATER` around it only if a target that *supplies* the
+attribute is ever added.
+
+> **Amended 2026-09-05.** `Unrect` now multi-targets `netstandard2.0;netstandard2.1`, and
+> the polyfill is still unconditional — the sentence that used to say "add `#if` if the
+> project ever multi-targets" named the wrong condition. What matters is not the number of
+> targets but whether any of them defines the attribute; neither netstandard does.
 
 **The identifier test** is a hand-rolled ASCII scan (no `System.Text.RegularExpressions`
 dependency, no allocation): first char `A–Z a–z _`, rest `A–Z a–z 0–9 _`, empty string

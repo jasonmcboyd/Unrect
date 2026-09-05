@@ -1,9 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <!-- net48 cannot RUN on the Linux CI runner, and `dotnet test` runs every TFM it finds. The
+         OS condition keeps the Linux legs at net8.0 exactly as before; on Windows the solution
+         builds and runs both. The cost, stated: Linux CI no longer COMPILES the net48 leg, so a
+         net48 portability regression surfaces only on Windows. -->
+    <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('Windows'))">net8.0;net48</TargetFrameworks>
+    <TargetFrameworks Condition="!$([MSBuild]::IsOSPlatform('Windows'))">net8.0</TargetFrameworks>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />

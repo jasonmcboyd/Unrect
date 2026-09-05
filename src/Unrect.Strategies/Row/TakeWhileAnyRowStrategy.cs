@@ -15,6 +15,8 @@ namespace Unrect.Strategies
     // The rule carries nothing from row to row, so one instance is every scan of it.
     public IRowScan BeginRows() => this;
 
+    public int SelectRows(ISpace space) => Scans.Fold(BeginRows(), space);
+
     public bool IncludesRow(ISpace space, int row)
     {
       for (int i = 0; i < space.Area.Width; i++)

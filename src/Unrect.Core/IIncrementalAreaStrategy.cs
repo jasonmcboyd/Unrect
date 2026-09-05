@@ -3,7 +3,9 @@ namespace Unrect.Core
   /// <summary>
   /// The area layer's <see cref="IIncrementalRowStrategy"/>: a declared extent whose height a caller
   /// may discover as it consumes, rather than measure first. <see cref="IAreaStrategy.GetArea"/> is
-  /// defined as the fold of <see cref="BeginArea"/>, so eager and incremental cannot disagree.
+  /// defined as <c>Scans.FoldArea(BeginArea(availableSpace), availableSpace)</c>, which is how an
+  /// implementation is expected to spell it — see <see cref="IIncrementalRowStrategy"/> for why the
+  /// definition is a convention rather than an inherited body, and what pins it.
   /// </summary>
   public interface IIncrementalAreaStrategy : IAreaStrategy
   {
@@ -13,13 +15,5 @@ namespace Unrect.Core
     /// themselves.
     /// </summary>
     IAreaScan BeginArea(ISpace availableSpace);
-
-    /// <inheritdoc />
-    Area IAreaStrategy.GetArea(ISpace availableSpace)
-    {
-      var scan = BeginArea(availableSpace);
-
-      return new Area(scan.Width, IRowScan.Fold(scan, availableSpace));
-    }
   }
 }

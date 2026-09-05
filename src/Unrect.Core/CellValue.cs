@@ -251,11 +251,24 @@ namespace Unrect.Core
         CellKind.Number => Number.GetHashCode(),
         CellKind.Temporal => Temporal.GetHashCode(),
         CellKind.Boolean => Boolean.GetHashCode(),
-        CellKind.Error => HashCode.Combine(Error, ErrorText),
+        CellKind.Error => Combine(Error.GetHashCode(), ErrorText?.GetHashCode() ?? 0),
         _ => 0
       };
 
-      return HashCode.Combine(Kind, payload);
+      return Combine(Kind.GetHashCode(), payload);
+    }
+
+    /// <summary>
+    /// Two hashes mixed into one — the multiply-and-add the compiler itself emits for a record or an
+    /// anonymous type. Written out because <c>System.HashCode</c> is netstandard2.1 and up, and these
+    /// libraries also target netstandard2.0.
+    /// </summary>
+    private static int Combine(int first, int second)
+    {
+      unchecked
+      {
+        return (first * -1521134295) + second;
+      }
     }
 
     /// <summary>Same as <see cref="Equals(CellValue)"/>; the compiler lifts it over <c>CellValue?</c>, where two nulls are equal.</summary>
