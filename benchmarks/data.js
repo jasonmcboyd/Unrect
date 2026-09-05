@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1788630324319,
+  "lastUpdate": 1788630324494,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -8002,6 +8002,72 @@ window.BENCHMARK_DATA = {
             "value": 29713619.883333333,
             "unit": "ns",
             "range": "± 157313.6106998786"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "16fef6aa0fb6978c79559b92910716e6ad44c995",
+          "message": "netstandard2.0: the packages install on .NET Framework, one source, no forks\n\nAll four libraries multi-target netstandard2.0;netstandard2.1. The rule\nthat made it clean: no #if anywhere — netstandard2.1-only constructs are\nremoved rather than branched on, so both targets compile one source and\ncannot drift.\n\nThe structural change is de-DIMing the incremental calculus. .NET\nFramework's runtime cannot dispatch a default interface member, so the\ndefinitional folds move from DIM bodies to the static Unrect.Core.Scans\n(Fold/FoldSize/FoldArea) and internal ColumnAccumulators.Fold, with every\nimplementation delegating in one line. The guarantee shifts and every doc\nthat claimed it says so honestly: \"eager and lazy cannot disagree by\nconstruction\" is now \"cannot disagree, pinned by the fold-identity suite\"\n— IncrementalStrategyTests asserts SelectRows == a hand-written fold for\nevery factory, and a new incremental strategy carries the obligation to\njoin that theory data. Corollary recorded in capability-seam-notes: the\nDIM \"safety net\" for evolving ISpace is withdrawn — a member added to a\npublished Core interface is now a breaking change with no escape hatch;\ntype-testing is the whole capability recipe.\n\nThe rest the compiler found: System.HashCode (Core hand-rolls its combine\nrather than take Microsoft.Bcl.HashCode — the bundling would have\nsuppressed the dependency from the nuspec and thrown FileNotFoundException\non Framework; both packages stay at zero new dependencies), the\nDictionary-from-pairs constructor, and HashSet<string>.TryGetValue (the\neager intern table is a Dictionary now; the comment that argued HashSet\nwas the honest structure records why it changed). The two polyfills are\nunconditional because neither netstandard has the types; a net5.0+ target\nis what would force an #if.\n\nTests multi-target net8.0;net48 on Windows only (OS-conditioned csproj,\nso Linux CI runs exactly what it ran — verified against all three\nworkflows). Two portable shims replace .NET-5+/6+ APIs the suite used:\nWithTimeout for Task.WaitAsync(TimeSpan), ByReference for\nReferenceEqualityComparer. The full suite has run green on the Framework\nCLR itself: 1,423 on net48 against the netstandard2.0 build, ExcelDataReader's\nown Framework assembly included — verified by the owner on Windows.\nBoth nupkgs verified to carry lib/netstandard2.0 and lib/netstandard2.1.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016BvUBicaVLLYkdp7iqFZNo",
+          "timestamp": "2026-09-05T17:36:21Z",
+          "tree_id": "67b64bc3184652344901c8a243f8ce1256d858b9",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/16fef6aa0fb6978c79559b92910716e6ad44c995"
+        },
+        "date": 1788630324467,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Streaming.Monotone_Eager",
+            "value": 207226431.02020204,
+            "unit": "ns",
+            "range": "± 6436823.008883498"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Monotone_Windowed",
+            "value": 394482194.7164179,
+            "unit": "ns",
+            "range": "± 18553578.533091925"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Monotone_Resident",
+            "value": 214136858.20772952,
+            "unit": "ns",
+            "range": "± 10259830.9482446"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Band_WindowFits",
+            "value": 43371447.79296875,
+            "unit": "ns",
+            "range": "± 2493487.8979083304"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Band_WindowTooSmall",
+            "value": 103083811.71428572,
+            "unit": "ns",
+            "range": "± 2924820.7519416776"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Adversarial_OneReader",
+            "value": 32979033.161458332,
+            "unit": "ns",
+            "range": "± 265796.6169957925"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Adversarial_Pooled",
+            "value": 24246960.40625,
+            "unit": "ns",
+            "range": "± 99379.58201128425"
           }
         ]
       }
