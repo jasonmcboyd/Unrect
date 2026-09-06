@@ -28,7 +28,7 @@ namespace Unrect.Shapes
   /// <c>Map</c> call, and is never shared across calls.
   /// </para>
   /// </summary>
-  internal sealed class BoundedSpace : ISpace
+  internal sealed class BoundedSpace : ISpace, ISpaceChart
   {
     /// <summary>Rows the scan has accepted — the height so far, and the final one once the scan stops.</summary>
     private int _resolved;
@@ -45,6 +45,13 @@ namespace Unrect.Shapes
 
     /// <summary>The space this extent is being discovered inside — already resolved for the offset.</summary>
     private ISpace Inner { get; }
+
+    /// <summary>
+    /// The chart's underlying space. A bound narrows a height and moves nothing, so a capability
+    /// found through here answers about exactly the cells this space addresses — the condition
+    /// <see cref="ISpaceChart"/> imposes, met here by construction.
+    /// </summary>
+    ISpace ISpaceChart.Underlying => Inner;
 
     private IAreaScan Scan { get; }
 

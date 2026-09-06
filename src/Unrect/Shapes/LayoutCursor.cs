@@ -56,5 +56,56 @@ namespace Unrect.Shapes
 
       return _state.Next(shape, declared);
     }
+
+    /// <summary>
+    /// The layout in progress, or null for <c>default(LayoutCursor)</c> — how a demanding layout
+    /// re-types this cursor without the state leaving the assembly.
+    /// </summary>
+    internal LayoutState? State => _state;
   }
+
+  /// <summary>
+  /// EXPERIMENT (typed-spaces): the cursor form of <see cref="Layout{TSpace, TResult}"/>. Identical
+  /// to <see cref="LayoutCursor"/> in every respect but one — <see cref="Next{T}"/> accepts a child
+  /// demanding at most <typeparamref name="TSpace"/>, which is what makes a layout's demand the
+  /// union of its children's, checked as each is declared rather than when the parse runs.
+  /// </summary>
+  /// <typeparam name="TSpace">The space the enclosing layout is declared over.</typeparam>
+  public readonly ref struct LayoutCursor<TSpace>
+    where TSpace : class, Core.ISpace
+  {
+    private readonly LayoutState? _state;
+
+    internal LayoutCursor(LayoutState? state)
+    {
+      _state = state;
+    }
+
+    /// <inheritdoc cref="LayoutCursor.Next{T}"/>
+    /// <param name="shape">
+    /// The shape to read here. A plain shape converts in by variance; a shape demanding more than
+    /// <typeparamref name="TSpace"/> does not compile, and the fix is to say so on the layout.
+    /// </param>
+    /// <param name="declared">Supplied by the compiler as the text of the <paramref name="shape"/> argument.</param>
+    public T Next<T>(IShape<TSpace, T> shape, [CallerArgumentExpression("shape")] string? declared = null)
+    {
+      if (_state is null)
+        throw new InvalidOperationException(LayoutState.NoLayout);
+
+      // The one cast the typed layer makes, licensed by the rule on IShape<TSpace, TResult>: every
+      // shape this library builds implements IShape<T>, and TSpace is a phantom the engine never sees.
+      return _state.Next((IShape<T>)shape, declared);
+    }
+  }
+
+  /// <summary>
+  /// EXPERIMENT (typed-spaces): a layout over a space offering at least <typeparamref name="TSpace"/>.
+  /// The demanding twin of <see cref="Layout{TResult}"/>; <c>VerticalFlow&lt;TSpace, TResult&gt;</c>
+  /// and its siblings take one of these.
+  /// </summary>
+  /// <typeparam name="TSpace">The space the layout is declared over.</typeparam>
+  /// <typeparam name="TResult">What the layout builds from what its children read.</typeparam>
+  /// <param name="cursor">The cursor the layout declares its children with.</param>
+  public delegate TResult Layout<TSpace, TResult>(LayoutCursor<TSpace> cursor)
+    where TSpace : class, Core.ISpace;
 }

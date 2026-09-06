@@ -214,6 +214,14 @@ namespace Unrect.Shapes
     public ShapeLocation Location => Strip.Location;
 
     /// <summary>
+    /// The row's own extent, one row tall and as wide as the table — the mirror of
+    /// <see cref="CellStrip.Space"/> and <see cref="CellBlock.Space"/>, and the reach-through a
+    /// projection asks a capability through:
+    /// <c>row.Space.Capability&lt;IFormulaSpace&gt;()?.FormulaAt(column, 0)</c>.
+    /// </summary>
+    public ISpace Space => Strip.Space;
+
+    /// <summary>
     /// The address of one cell of the row, for citing it in a message — a data-quality complaint
     /// can then read like a framework one.
     /// </summary>
