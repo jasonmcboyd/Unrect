@@ -168,7 +168,7 @@ namespace Unrect.Tests.Shapes
     {
       // The other half of the rule: a repeat that found no sections described nothing either, but
       // tolerated nothing on the way, so there is no warning to make the Info redundant.
-      var result = Repeat(Range(b => b.Height)).MapWithDiagnostics(Grid(new[,] { { 0, 0 }, { 0, 0 } }));
+      var result = VerticalRepeat(Range(b => b.Height)).MapWithDiagnostics(Grid(new[,] { { 0, 0 }, { 0, 0 } }));
 
       var only = Assert.Single(result.Diagnostics);
 
@@ -202,7 +202,7 @@ namespace Unrect.Tests.Shapes
       // The item absorbs, and so consumes nothing, and so is not collected — the repetition ends
       // having read nothing. A warning about a reading that was thrown away would describe a parse
       // that never happened, exactly as with a losing choice branch.
-      var result = Repeat(Cell(v => v.GetString()).Optional()).MapWithDiagnostics(Mixed(new object?[,] { { 1 }, { 2 }, { 3 } }));
+      var result = VerticalRepeat(Cell(v => v.GetString()).Optional()).MapWithDiagnostics(Mixed(new object?[,] { { 1 }, { 2 }, { 3 } }));
 
       Assert.Empty(result.Value);
       Assert.DoesNotContain(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Warning);
@@ -288,9 +288,9 @@ namespace Unrect.Tests.Shapes
 
       var item = section
         .Else(Row(2, _ => (string?)null).Named("unreadable section"))
-        .After(To(RowContaining("Section")));
+        .On(RowContaining("Section"));
 
-      return Repeat(item).Select(all => (IReadOnlyList<string>)all.Where(s => s is not null).ToList()!);
+      return VerticalRepeat(item).Select(all => (IReadOnlyList<string>)all.Where(s => s is not null).ToList()!);
     }
 
     [Fact]
@@ -352,7 +352,7 @@ namespace Unrect.Tests.Shapes
 
       Assert.Equal("'body'", warning.Subject);
       Assert.Contains("Cell value is Number; expected Text", warning.Message);
-      Assert.Contains("Repeat[1]", warning.Path);
+      Assert.Contains("VerticalRepeat[1]", warning.Path);
 
       // Row 4 is the malformed body row — the warning points into the junk, not at the repeat.
       Assert.Equal("A4", warning.Location.A1);

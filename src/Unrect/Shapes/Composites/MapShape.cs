@@ -7,7 +7,7 @@ namespace Unrect.Shapes
 {
   /// <summary>
   /// Backs <c>Select</c>. Its own placement is applied by the engine like any other shape's, so
-  /// <c>x.Select(f).After(o)</c> and <c>x.After(o).Select(f)</c> land in the same place.
+  /// <c>x.Select(f).OffsetBy(o)</c> and <c>x.OffsetBy(o).Select(f)</c> land in the same place.
   /// </summary>
   internal sealed class MapShape<TSource, TResult> : ShapeBase<TResult>
   {

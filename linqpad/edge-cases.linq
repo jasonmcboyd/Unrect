@@ -64,7 +64,7 @@ string Message<T>(IShape<T> shape)
 
 new
 {
-	DecimalOverAnError = Message(Decimal().After(SkipRows(1))),      // A2 is #VALUE!
-	TextOverANumber = Message(Text().After(SkipColumns(1))),         // B1 is 42
-	IntegerOverAFraction = Message(Integer().After(SkipColumns(2))), // C1 is 3.14
+	DecimalOverAnError = Message(Decimal().OffsetBy(SkipRows(1))),      // A2 is #VALUE!
+	TextOverANumber = Message(Text().OffsetBy(SkipColumns(1))),         // B1 is 42
+	IntegerOverAFraction = Message(Integer().OffsetBy(SkipColumns(2))), // C1 is 3.14
 }.Dump("typed-leaf diagnostics");

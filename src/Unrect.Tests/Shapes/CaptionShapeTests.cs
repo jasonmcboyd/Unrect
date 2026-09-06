@@ -119,7 +119,7 @@ namespace Unrect.Tests.Shapes
       // the assertion half: the row it was pointed at is not the row it was promised.
       var space = Mixed(new object?[,] { { "x" }, { "y" } });
 
-      var failure = Assert.Throws<ShapeException>(() => Caption("ein:").After(SkipRows(1)).Map(space));
+      var failure = Assert.Throws<ShapeException>(() => Caption("ein:").OffsetBy(SkipRows(1)).Map(space));
 
       Assert.Contains("expected a row containing 'ein:' here", failure.Message);
       Assert.Equal("A2", failure.Location.A1);

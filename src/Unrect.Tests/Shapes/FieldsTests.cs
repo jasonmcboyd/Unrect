@@ -162,7 +162,7 @@ namespace Unrect.Tests.Shapes
         { "EIN:", "12-3456789" },
       });
 
-      Assert.Equal("12-3456789", Fields(Field("EIN")).After(SkipRows(1)).Map(space).Values.Single().GetString());
+      Assert.Equal("12-3456789", Fields(Field("EIN")).OffsetBy(SkipRows(1)).Map(space).Values.Single().GetString());
     }
 
     [Fact]

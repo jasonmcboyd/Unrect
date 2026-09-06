@@ -36,7 +36,7 @@ namespace Unrect.Shapes
     private Orientation Orientation { get; }
     private int AtLeast { get; }
 
-    public override string Description => Orientation == Orientation.Vertical ? "Repeat" : "RepeatHorizontal";
+    public override string Description => Orientation == Orientation.Vertical ? "VerticalRepeat" : "HorizontalRepeat";
 
     public override IReadOnlyList<IShape> Children { get; }
 

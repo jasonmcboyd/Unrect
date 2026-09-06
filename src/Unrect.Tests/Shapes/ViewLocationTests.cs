@@ -117,7 +117,7 @@ namespace Unrect.Tests.Shapes
     [Fact]
     public void AddressesAreAbsoluteInSuccessiveRepeatItems()
     {
-      var addresses = Repeat(Range(4, 1, b => b.Location.A1)).Map(CoordinateGrid());
+      var addresses = VerticalRepeat(Range(4, 1, b => b.Location.A1)).Map(CoordinateGrid());
 
       Assert.Equal(new[] { "A1", "A2", "A3" }, addresses);
     }

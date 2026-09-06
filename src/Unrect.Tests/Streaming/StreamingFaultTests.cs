@@ -109,7 +109,7 @@ namespace Unrect.Tests.Streaming
     {
       // A landmark searches for a row, so it reads its way down the sheet; a search that fails
       // because the disk did is not the same as a search that finished and found nothing.
-      AssertSurfacedAsAFault(fault, space => Cell(cell => cell.GetString()).After(To(RowContaining("nowhere"))).Map(space));
+      AssertSurfacedAsAFault(fault, space => Cell(cell => cell.GetString()).On(RowContaining("nowhere")).Map(space));
     }
 
     [Theory]
@@ -118,7 +118,7 @@ namespace Unrect.Tests.Streaming
     {
       // The fourth wrapping site, and the one that needed a fault-carrying overload of Failure to
       // reach at all.
-      AssertSurfacedAsAFault(fault, space => Repeat(Row(row => row[0].GetString()), separatedBy: BlankRows()).Map(space));
+      AssertSurfacedAsAFault(fault, space => VerticalRepeat(Row(row => row[0].GetString()), separatedBy: BlankRows()).Map(space));
     }
 
     [Theory]
@@ -128,7 +128,7 @@ namespace Unrect.Tests.Streaming
       // The consequence for a repeat's ITEM. Non-strict placement returns false only for
       // OutOfBoundsException — running out of room is how a repeat stops — so an IO failure inside
       // an item is not a stopping condition and must not be mistaken for the end of the sections.
-      AssertSurfacedAsAFault(fault, space => Repeat(Row(row => row[0].GetString())).Map(space));
+      AssertSurfacedAsAFault(fault, space => VerticalRepeat(Row(row => row[0].GetString())).Map(space));
     }
 
     // --- What must not absorb it -------------------------------------------------------------------
@@ -187,11 +187,11 @@ namespace Unrect.Tests.Streaming
 
       AssertSurfacedAsAFault(
         fault,
-        space => Cell(cell => cell.GetString()).After(To(RowContaining("nowhere"))).Optional().Map(space));
+        space => Cell(cell => cell.GetString()).On(RowContaining("nowhere")).Optional().Map(space));
 
       AssertSurfacedAsAFault(
         fault,
-        space => Repeat(Row(row => row[0].GetString()), separatedBy: BlankRows()).Optional().Map(space));
+        space => VerticalRepeat(Row(row => row[0].GetString()), separatedBy: BlankRows()).Optional().Map(space));
     }
 
     [Fact]
@@ -240,7 +240,7 @@ namespace Unrect.Tests.Streaming
     [Fact]
     public void AMissingAnchorIsStillAbsorbed()
     {
-      var value = Cell(cell => cell.GetString()).After(To(RowContaining("absent"))).Optional().Map(Sound());
+      var value = Cell(cell => cell.GetString()).On(RowContaining("absent")).Optional().Map(Sound());
 
       Assert.Null(value);
     }
@@ -257,7 +257,7 @@ namespace Unrect.Tests.Streaming
     public void ARepeatStillStopsAtTheEndOfItsSections()
     {
       // Running out of room is how a repeat ends, and no part of the fault work may change that.
-      var rows = Repeat(Row(row => row[0].GetString())).Map(Sound());
+      var rows = VerticalRepeat(Row(row => row[0].GetString())).Map(Sound());
 
       Assert.Equal(new[] { "Name", "a", "b" }, rows.ToArray());
     }

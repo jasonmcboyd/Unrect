@@ -9,6 +9,25 @@ It also extends `wave2-shapes-spec.md` (engine rules, error-message template, fi
 test style), `panel-and-anchoring-spec.md` (Overlay, seeks), and
 `diagnostics-and-choice-spec.md` (severity rationale). All of their conventions apply.
 
+> **Amended 2026-09-05 — the placement-vocabulary renovation.** Two spellings used throughout
+> this document have changed; no semantics have.
+>
+> - `.After(offsetStrategy)` is now **`.OffsetBy(offsetStrategy)`** — same replace-not-compose
+>   behaviour, renamed because "after" reads as a relation to the thing in the argument when it is
+>   in fact an assignment ("my start is where that resolves to"). `.AfterBlankRows()` /
+>   `.AfterBlankColumns()` keep their names: filler genuinely has an after, and neither takes a
+>   positional argument for a reader to mis-read. Where this spec writes `.After(To(m))` /
+>   `.After(Past(m))` / `.After(Then(Seek…, SkipRows(1)))`, a declaration now writes `.On(m)`,
+>   `.Below(m)` (rows) or `.RightOf(m)` (columns).
+> - `Repeat<T>` / `RepeatHorizontal<T>` are now **`VerticalRepeat<T>` / `HorizontalRepeat<T>`**,
+>   for the symmetry §1 gave the flows: neither axis is the unmarked normal case. The
+>   `CallerArgumentExpression` capture of §12 is unchanged, and the rendered description follows the
+>   vocabulary — a path segment now reads `VerticalRepeat[2] -> 'investorDetail'`.
+>
+> `.Until`, `.Down`, `.Right`, `FromRight`, `FromBottom` and everything about the flows themselves
+> are untouched. The laws behind the renaming are in `docs/vocabulary.md` ("Placement — the six
+> laws").
+
 Everything here is settled. This is a consolidation pass, not a design pass: where a
 detail had to be decided to make the spec mechanical, it is marked **[decided here]** so
 the owner can see what was added.

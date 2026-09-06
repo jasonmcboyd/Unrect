@@ -201,10 +201,10 @@ namespace Unrect.Tests.Shapes
       // Rule 2: a repeat's item is placed non-strictly and therefore never defers. What is under test
       // here is that saying so changed nothing about what the repeat produces.
       "repeat of discovered items" => Scenario.Of(
-        Repeat(Range(RowsWhileAnyValue(), b => b.Height), separatedBy: BlankRows()).Select(items => items.Count),
+        VerticalRepeat(Range(RowsWhileAnyValue(), b => b.Height), separatedBy: BlankRows()).Select(items => items.Count),
         Sheet()),
       "repeat requiring one" => Scenario.Of(
-        Repeat(Range(RowsWhileAnyValue(), b => b.Height), separatedBy: BlankRows(), atLeast: 1).Select(items => items.Count),
+        VerticalRepeat(Range(RowsWhileAnyValue(), b => b.Height), separatedBy: BlankRows(), atLeast: 1).Select(items => items.Count),
         Sheet()),
 
       // A scan claiming one column more than there is. The engine declines to bind rather than

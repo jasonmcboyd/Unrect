@@ -1,5 +1,10 @@
 # Spec: Diagnostics, Tolerance Boundaries, and Choice (wave 3, part 1)
 
+> **Superseded spellings (2026-09-05):** examples in this spec use the retired
+> `.After(To(...))` form and bare `Repeat`; the current spellings are `.On(m)`/`.Below(m)`,
+> `.OffsetBy(strategy)`, and `VerticalRepeat` — see `docs/vocabulary.md`. The semantics
+> described here are unchanged.
+
 **Status:** IMPLEMENTED (`d47e33a`). Driven by the production-import parity gap: real
 imports warn-and-continue with cell locations; ours only fail fast. Extends
 `wave2-shapes-spec.md` and `panel-and-anchoring-spec.md`; all their conventions apply.

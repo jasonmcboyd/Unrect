@@ -162,7 +162,7 @@ namespace Unrect.Tests.Streaming
     private static IShape<(string Title, IReadOnlyList<string> Summary, IReadOnlyList<IReadOnlyList<string>> ByTransferDate, IReadOnlyList<IReadOnlyList<string>> ByInception)> InvestorIrr()
     {
       var investorBlock = TableRows(row => row["Investor Name"].GetString()).Named("investor block");
-      var series = Repeat(investorBlock, separatedBy: BlankRows());
+      var series = VerticalRepeat(investorBlock, separatedBy: BlankRows());
 
       const string Inception = "Cash Flows using inception date";
 
@@ -250,7 +250,7 @@ namespace Unrect.Tests.Streaming
     {
       // investors-by-deal: repeating blocks separated by blank bands, which is the shape whose
       // termination depends on reading past the end of one block and into the next.
-      var declaration = Repeat(
+      var declaration = VerticalRepeat(
         VerticalFlow(v => (
           Deal: v.Next(Cell(cell => cell.GetString())),
           Rows: v.Next(TableRows(row => row["Name"].GetString())))),

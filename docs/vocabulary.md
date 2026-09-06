@@ -1,10 +1,12 @@
 # The Unrect Vocabulary
 
 A survey of every operator in the shape layer, grouped by role in the algebra. Everything
-here is available from a single `using static Unrect.Shapes.Shape;`. For semantics in
-depth, each group cites its governing spec in `docs/design/`.
+here is available from a single `using static Unrect.Shapes.Shape;` — except the two raw
+lifts noted under Placement (`OffsetStrategies.To`/`Past`), which are an escape hatch by
+design and spelled like one. For semantics in depth, each group cites its governing spec
+in `docs/design/`.
 
-Current as of 2026-09-03 (post streaming Part 1). When this file and a spec
+Current as of 2026-09-05 (post the placement-vocabulary renovation). When this file and a spec
 disagree, the spec is wrong or this file is stale — fix whichever it is; do not let them
 drift silently.
 
@@ -38,7 +40,7 @@ unfamiliar workbook, typed once you commit, lambda only when a column needs logi
 |---|---|
 | `VerticalFlow(v => ...)` / `HorizontalFlow(v => ...)` | Stacked bands, one per child: each child's band spans the flow's full width, so no sibling ever shares it, even where the child's own content is narrower — but that is a claim on the band, not on what the flow reports consumed. Consumed across the axis is the max over children of their own consumed width (bounding box), not automatically the full width. `v.Next(shape)` declares the next child and returns its value; any arity |
 | `Overlay(o => ...)` | One shared band; each child finds its own place by its own placement; no advance between children; consumed = bounding box |
-| `Repeat(item, separatedBy:, atLeast:)` / `RepeatHorizontal(...)` | N items with separators (`sepBy`). A blank band is a separator, never a terminator — bound the repeat with `.Until` to end it at content |
+| `VerticalRepeat(item, separatedBy:, atLeast:)` / `HorizontalRepeat(...)` | N items with separators (`sepBy`). A blank band is a separator, never a terminator — bound the repeat with `.Until` to end it at content. Both axes are marked, like the flows: no substrate's dominant axis is the unmarked normal case |
 | `Choice(a, b, ...)` | The first alternative that fits; an Info per near-miss; a losing branch's diagnostics roll back |
 
 The composite you pick is the geometric claim you make: flows say "stacked, one after
@@ -48,30 +50,91 @@ layout problem.
 
 ## Placement — where things start
 
+**Silence is adjacency.** A shape with no placement modifier starts exactly where the one
+before it left off. Every operator below is therefore a *declared exception*, and each word
+names the kind of reason it is an exception for — so reading a declaration you never have to
+ask why a shape moved.
+
+| Operator | Kind of reason | Meaning |
+|---|---|---|
+| `.On(rowLandmark)` / `.On(columnLandmark)` | a relation | The shape starts AT the match and OWNS that row/column. One word for both axes: occupancy has no direction, and the argument's type carries the axis |
+| `.Below(rowLandmark)` | a relation | Starts on the row directly below the match — exactly one beyond, which is the matched row's own height and never a step you chose |
+| `.RightOf(columnLandmark)` | a relation | The column twin of `.Below`. Spelled apart because the direction is part of what is being said, and it is grid-absolute (down the sheet, right along it), not "the next band along whichever way this flow runs" |
+| `.AfterBlankRows()` / `.AfterBlankColumns()` | filler | Step over the blank band in front. Tolerant by nature: no filler means no movement, not a failure |
+| `.Down(n)` / `.Right(n)` | a distance | Fixed movement, honestly named as one |
+| `.OffsetBy(offsetStrategy)` | delegated | *My start is where that resolves to* — an assignment, and the one marked crossing from the cell-model surface into the interval-model strategy calculus |
+| `.Sized(area)` | — | Not placement; the extent's own replace (see below) |
+
+The anchors and `.OffsetBy` **REPLACE** the offset (including a default — that is how a `Table`
+is told not to skip its blank rows); the movements **COMPOSE** onto whatever the shape already
+had. A declared area survives all of them.
+
+Absence semantics live in the word, not in a flag: a landmark that matches nothing is **loud**
+(`Optional`/`Else` absorb it; a repeat reads it as having run out of sections), while a
+filler-skip that finds no filler is **tolerant** and simply does not move.
+
+The strategy vocabulary `.OffsetBy` takes — reached through the one door, so it is visible in a
+declaration that it is being reached for:
+
 | Operator | Meaning |
 |---|---|
-| `.After(offset)` | Anchor/move the shape — REPLACES the offset (a declared area survives; `.Sized` is the area's own replace) |
-| `To(matcher)` / `Past(matcher)` | Move to the matched row/column, or just beyond it. A miss throws — and a miss is `Repeat`'s clean stopping condition |
+| `SkipRows(n)` `SkipColumns(n)` `BlankRows()` `BlankColumns()` | Fixed and blank-skipping offsets |
 | `Then(a, b, ...)` | Sequence offsets; each searches only the space the previous shift left (seek the axis that discards least, first) |
-| `SkipRows(n)` `SkipColumns(n)` `BlankRows()` `BlankColumns()` `.AfterBlankRows()` `.AfterBlankColumns()` `.Down(n)` `.Right(n)` | Fixed and blank-skipping movements; movement modifiers compose |
 | `FromRight(w)` / `FromBottom(h)` | From-end anchoring |
+| `OffsetStrategies.To(m)` / `Past(m)` | The lifts `.On` / `.Below` / `.RightOf` are built on. Public in `Unrect.Strategies`, deliberately NOT re-exported on `Shape` — at shape level a landmark is placed by a modifier that names its own relation, and the raw lift is an escape hatch spelled like one |
+
+## Placement — the six laws
+
+The vocabulary above is what these six produce. They are the test any future placement
+operator has to pass; an operator that cannot be justified by one of them does not belong.
+
+1. **Silence is adjacency.** No modifier means "starts where the last one ended". Every
+   placement operator is therefore a declared exception, and its word names the *kind* of
+   reason — a relation (`.On`, `.Below`, `.RightOf`), filler (`.AfterBlankRows`), a distance
+   (`.Down`, `.Right`), or a delegation (`.OffsetBy`).
+2. **Grid-absolute over flow-relative, and direction appears in the word exactly when the
+   concept has one.** `.Below` means down the sheet, not "next along whichever way this flow
+   runs". `.On` names no direction because occupancy has none — one word, both axes, the
+   argument's type carrying the axis.
+3. **Positions are relations to things, never distances arrived at.** `.On(caption)` says
+   *which row*; the arithmetic of reaching it is the engine's business, not the
+   declaration's. This is what makes a declaration survive an inserted row — and what makes
+   it runnable backward by a writer.
+4. **Absence semantics are part of the word.** A landmark miss is loud and absorbable; a
+   filler-skip that finds no filler is tolerant and silent. You never have to look up which
+   one an operator is, or pass a flag to say.
+5. **The surface vocabulary is cell-model (the A1 world of rows, columns and captions); the
+   engine calculus stays interval-model (offsets and sizes over intervals).** They do not
+   blend. `.OffsetBy` is the one *marked* crossing between them, which is why it is a word
+   you can see in a declaration rather than an overload you fall into.
+6. **The algebra never encodes one substrate's dominant axis as normal.** Spreadsheets grow
+   downward; the vocabulary does not assume it. `VerticalFlow`/`HorizontalFlow`,
+   `VerticalRepeat`/`HorizontalRepeat`, `.Below`/`.RightOf` — both halves marked, neither
+   the default. (`.Until`/`.UntilColumn` is the one pair that is not, and deliberately: its
+   argument does not have to be read to know the axis, so the row form carries no marking —
+   matcher-and-caption-spec §1.6.)
 
 ## Extent — where things end
 
 | Operator | Meaning |
 |---|---|
 | `.Sized(area)` | Declared extent, consumed in full (REPLACES) |
-| `.Until(matcher)` / `.Until(matcher, orEnd: true)` / `.UntilColumn(...)` | Extent ends just BEFORE a forward landmark; the bound is consumed in full so the next sibling starts AT the landmark (its own `After` finds it at distance zero). Strict by default; `orEnd` runs to the end of space and records an Info when exercised |
+| `.Until(matcher)` / `.Until(matcher, orEnd: true)` / `.UntilColumn(...)` | Extent ends just BEFORE a forward landmark; the bound is consumed in full so the next sibling starts AT the landmark (its own `.On` finds it at distance zero). Strict by default; `orEnd` runs to the end of space and records an Info when exercised |
 | `Extent(w, h)` `WholeExtent()` `NoExtent()` `RowsWhileAnyValue()` `RowsWhileAny(p)` `ColumnsWhileAnyValue()` `ColumnsWhileAny(p)` | The area vocabulary, mirrored on both axes |
 | `TakeRows(n)` `TakeColumns(n)` `AllRows()` `AllColumns()` | Axis selectors, not area strategies — they return `IRowStrategy`/`IColumnStrategy`, for `Row(AllColumns(), ...)` / `Column(TakeRows(3), ...)` and for composing an extent from its two axes; not for `.Sized` (`.Sized(TakeRows(3))` does not compile) |
 
-## Matchers — one family, three lifts
+## Matchers — one family, four modifiers
 
 `RowContaining(text)` · `RowWhere(spacePredicate)` · `RowWithCell(cellPredicate)` — and
 the three column twins. One content rule everywhere: trimmed, case-insensitive,
 whole-cell. Naming law: bare `Where` = whole-row/column predicate over the space;
-`WithCell` = per-cell predicate; `Containing` = the content rule. Every lift (`To`,
-`Past`, `.Until`) describes a miss identically, because there is one matcher to describe.
+`WithCell` = per-cell predicate; `Containing` = the content rule.
+
+A matcher only *locates* and reports absence; what absence means belongs to the modifier
+that takes it — `.On` (own the match), `.Below` / `.RightOf` (one beyond), `.Until` (bound by
+it). All four describe a miss identically, because there is one matcher to describe. Because
+a section can start at `.On(RowContaining("A"))` and end at `.Until(RowContaining("B"))`
+through the same matcher, the start and the end cannot disagree about what a caption is.
 
 Three matching rules exist in the library and deliberately never unify
 (typed-leaves-and-tables-spec §3): the **content rule** above (matchers, `Caption`, and
@@ -130,15 +193,17 @@ extent a declaration holds open at once).
 
 - **The naming ladder.** A child's diagnostic identity is the first of: its own
   `.Named`; the bare identifier it was written as (captured at `v.Next(x)`, at
-  `Repeat(x, ...)`'s item, and at `.Else(x)`'s fallback — never at `Map`, which is the
-  declaration/infrastructure seam); otherwise `Description#ordinal`. Hoist shapes into
+  `VerticalRepeat(x, ...)`'s item, and at `.Else(x)`'s fallback — never at `Map`, which is
+  the declaration/infrastructure seam); otherwise `Description#ordinal`. Hoist shapes into
   well-named locals and let the use site name them; a helper must not name what it
   returns.
 - **Transparency.** Unnamed wrappers (`Select`, `Padded`, `Until`, boundaries)
   contribute no path segment; naming a wrapper makes it opaque and it claims the segment.
-- **Replace vs compose.** Placement (`After`) and extent (`Sized`) replace; movements
-  compose via `Then`; `Until` replaces only when applied directly to another `Until`
-  (through a wrapper it nests, both bounds in force); wrappers nest.
+- **Replace vs compose.** Anchors (`.On`, `.Below`, `.RightOf`), `.OffsetBy` and extent
+  (`.Sized`) replace; movements (`.Down`, `.Right`, `.AfterBlankRows`,
+  `.AfterBlankColumns`) compose, and strategy-level offsets compose via `Then`; `Until`
+  replaces only when applied directly to another `Until` (through a wrapper it nests, both
+  bounds in force); wrappers nest.
 - **Failure discipline.** Kind failures speak kind ("expected Number at B4, found
   Text" — never "expected Decimal"); conversion failures speak conversion ("the Number
   at B4 is not a whole number"); every failure carries subject, declaration path, and

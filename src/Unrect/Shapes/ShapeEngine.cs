@@ -30,7 +30,7 @@ namespace Unrect.Shapes
       => Project(shape, Place(shape, availableSpace, context));
 
     /// <summary>
-    /// Applies the shape unless its own placement does not fit, which is <c>Repeat</c>'s stopping
+    /// Applies the shape unless its own placement does not fit, which is a repeat's stopping
     /// condition. Failures deeper inside the shape — a nested misfit, a projection that throws —
     /// still propagate: format drift inside a block is an error, not a quiet truncation.
     /// </summary>
@@ -59,7 +59,7 @@ namespace Unrect.Shapes
 
     /// <summary>
     /// Resolves the shape's own placement. Running out of space is a stopping condition when
-    /// <paramref name="strict"/> is false (that is what <c>Repeat</c> asks for); every other way a
+    /// <paramref name="strict"/> is false (that is what a repeat asks for); every other way a
     /// strategy can fail is a malformed declaration and throws either way.
     /// </summary>
     private static bool TryPlace(IShape shape, ISpace availableSpace, ShapeContext context, bool strict, out Placed placed)
@@ -148,7 +148,7 @@ namespace Unrect.Shapes
     /// be measured up front. Two conditions, both hard:
     /// <list type="number">
     /// <item>the strategy says its bound is a per-row rule, by implementing <see cref="IIncrementalAreaStrategy"/>; and</item>
-    /// <item>the placement is strict. A <c>Repeat</c> stops when its item's <em>placement</em> fails,
+    /// <item>the placement is strict. A repeat stops when its item's <em>placement</em> fails,
     /// and a failure deferred into the projection would arrive after the item had been collected — so
     /// a non-strict placement is always measured up front.</item>
     /// </list>
@@ -260,7 +260,7 @@ namespace Unrect.Shapes
     /// parse helpers throw that for data reasons — so it is named explicitly.
     /// <see cref="ArgumentException"/> itself stays absorbable, for the same reason.
     /// <see cref="OutOfBoundsException"/> is not here at all: running out of room is how a
-    /// <c>Repeat</c> stops, and no IO condition produces it.
+    /// repeat stops, and no IO condition produces it.
     /// </para>
     /// </summary>
     internal static bool IsFault(Exception exception)

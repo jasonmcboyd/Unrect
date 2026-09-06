@@ -255,7 +255,7 @@ namespace Unrect.Tests.Shapes
       });
 
       if (underRepeat)
-        Repeat(item, separatedBy: BlankRows()).Apply(counter);
+        VerticalRepeat(item, separatedBy: BlankRows()).Apply(counter);
       else
         item.Apply(counter);
 
@@ -278,7 +278,7 @@ namespace Unrect.Tests.Shapes
     [InlineData(true)]
     public void ARepeatOfDiscoveredItemsStopsRatherThanThrowing(bool eager)
     {
-      var repeat = Repeat(Range(RowsWhileAnyValue(), b => b.Height), separatedBy: BlankRows());
+      var repeat = VerticalRepeat(Range(RowsWhileAnyValue(), b => b.Height), separatedBy: BlankRows());
 
       IReadOnlyList<int> items;
       if (eager)

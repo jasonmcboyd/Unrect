@@ -13,7 +13,7 @@
 //
 // ONE root shape, ZERO hard-coded coordinates. The working style that survives real-world
 // drift (extra rows, moved columns, varying fund counts):
-//   - rows anchor by content matchers (To(RowContaining(...)));
+//   - rows anchor by content matchers (.On(RowContaining(...)));
 //   - the header is an Overlay — independent blocks sharing rows, placement rather than flow —
 //     bounded with .Sized so every seek inside it is unambiguous;
 //   - each layout lambda DIGESTS ITSELF: the header resolves its own columns from content and
@@ -38,7 +38,7 @@ int Find(CellValue[] row, string caption) => Array.FindIndex(row,
 // row this is.
 IShape<CellValue[]> FullRow(string anchor) =>
 	Row(AllColumns(), r => r.ToArray())
-		.After(To(RowContaining(anchor)));
+		.On(RowContaining(anchor));
 
 // The entity card: five labels, and nothing else. The block's extent comes from the child count
 // (no 2, 5 to get wrong), it anchors itself on its first label instead of repeating that literal in

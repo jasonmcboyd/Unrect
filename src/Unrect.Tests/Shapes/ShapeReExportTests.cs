@@ -20,6 +20,12 @@ namespace Unrect.Tests.Shapes
   /// <c>Unrect.Strategies</c>. The spelling tests below them do not use a single member of it — that
   /// is where the single-import claim is actually made, and where it would break.
   /// </para>
+  /// <para>
+  /// The lifts used to be re-exported here and are not any more: <c>OffsetStrategies.To</c>/
+  /// <c>Past</c> stay public in <c>Unrect.Strategies</c>, and at shape level a landmark is placed by
+  /// <c>On</c>/<c>Below</c>/<c>RightOf</c>, whose forwarding is pinned in
+  /// <see cref="AnchorModifierTests"/> — where the anchors' own semantics are.
+  /// </para>
   /// </summary>
   public class ShapeReExportTests
   {
@@ -122,36 +128,14 @@ namespace Unrect.Tests.Shapes
       Assert.Equal(1, Column(s => s.Count).Map(space));
     }
 
-    // --- The lifts ------------------------------------------------------------------------------------
-
-    [Fact]
-    public void TheLiftReExportsForwardToTheirStrategies()
-    {
-      var rows = Grid(new[,] { { 1 }, { 2 }, { 3 } });
-      var columns = Grid(new[,] { { 1, 2, 3 } });
-
-      Assert.Equal(
-        OffsetStrategies.To(RowLandmarks.RowWhere((s, r) => s[0, r].GetInt() == 2)).GetOffset(rows).Size.Height,
-        To(RowWhere((s, r) => s[0, r].GetInt() == 2)).GetOffset(rows).Size.Height);
-
-      Assert.Equal(
-        OffsetStrategies.Past(RowLandmarks.RowWhere((s, r) => s[0, r].GetInt() == 2)).GetOffset(rows).Size.Height,
-        Past(RowWhere((s, r) => s[0, r].GetInt() == 2)).GetOffset(rows).Size.Height);
-
-      Assert.Equal(
-        OffsetStrategies.To(ColumnLandmarks.ColumnWhere((s, c) => s[c, 0].GetInt() == 2)).GetOffset(columns).Size.Width,
-        To(ColumnWhere((s, c) => s[c, 0].GetInt() == 2)).GetOffset(columns).Size.Width);
-
-      Assert.Equal(
-        OffsetStrategies.Past(ColumnLandmarks.ColumnWhere((s, c) => s[c, 0].GetInt() == 2)).GetOffset(columns).Size.Width,
-        Past(ColumnWhere((s, c) => s[c, 0].GetInt() == 2)).GetOffset(columns).Size.Width);
-    }
+    // --- The single-import claim, on whole declarations ---------------------------------------------------
 
     [Fact]
     public void ACaptionedSectionIsDeclarableFromTheOneImport()
     {
-      // Where the single-import claim is actually made: Caption, Under, To, Past and RowContaining,
-      // with no member of Unrect.Strategies anywhere in the declaration.
+      // Where the single-import claim is actually made: Caption, Under, On, Below and RowContaining,
+      // with no member of Unrect.Strategies anywhere in the declaration. (Stronger since the
+      // renovation: the old spelling reached To/Past through re-exports; the modifiers ARE Shape's.)
       var space = Mixed(new object?[,]
       {
         { "junk" },
@@ -161,11 +145,11 @@ namespace Unrect.Tests.Shapes
       });
 
       var section = Range(b => b.Height).Under(Caption("Detail"));
-      var anchored = Cell(c => c.GetString()).After(Past(RowContaining("Detail")));
+      var anchored = Cell(c => c.GetString()).Below(RowContaining("Detail"));
 
       Assert.Equal(2, section.Map(space));
       Assert.Equal("a", anchored.Map(space));
-      Assert.Equal("Detail", Cell(c => c.GetString()).After(To(RowContaining("Detail"))).Map(space));
+      Assert.Equal("Detail", Cell(c => c.GetString()).On(RowContaining("Detail")).Map(space));
     }
 
     [Fact]

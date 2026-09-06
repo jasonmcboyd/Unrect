@@ -16,7 +16,7 @@ namespace Unrect.Shapes
     /// are named where they are read, and there is no arity to run out of.
     /// <para>
     /// The lambda declares a <em>sequence of shapes</em>, nothing more. Alternation belongs to
-    /// <c>Choice</c>, <c>Else</c>, and <c>Optional</c>; repetition to <c>Repeat</c>; gaps to the
+    /// <c>Choice</c>, <c>Else</c>, and <c>Optional</c>; repetition to <c>VerticalRepeat</c>/<c>HorizontalRepeat</c>; gaps to the
     /// following shape's offset. Conditionals, loops, and arithmetic over positions inside the
     /// lambda are the row-walking this library exists to replace, and a lambda that picks a later
     /// shape from an earlier value can never be rendered or checked without a file.

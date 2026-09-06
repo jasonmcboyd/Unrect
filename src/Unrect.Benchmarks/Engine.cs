@@ -51,13 +51,13 @@ namespace Unrect.Benchmarks
     // Four independent readings of the same band. An overlay's children each start from the band's
     // own origin, so this measures placement without the flow's advance.
     private static readonly IShape<int> Anchored = Overlay(o =>
-      o.Next(Row(r => r.Count).After(To(RowContaining(CanonicalSpaces.Landmark))))
+      o.Next(Row(r => r.Count).On(RowContaining(CanonicalSpaces.Landmark)))
       + o.Next(Column(CanonicalSpaces.BlockRows, c => c.Count))
       + o.Next(Range(2, 2, b => b.Width))
       + o.Next(Cell(c => c.HasValue ? 1 : 0)));
 
     private static readonly IShape<IReadOnlyList<int>> Blocks =
-      Repeat(Range(RowsWhileAnyValue(), b => b.Height), separatedBy: BlankRows());
+      VerticalRepeat(Range(RowsWhileAnyValue(), b => b.Height), separatedBy: BlankRows());
 
     private static readonly IShape<int> AllCells = Range(b =>
     {

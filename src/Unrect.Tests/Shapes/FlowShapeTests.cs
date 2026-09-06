@@ -181,7 +181,7 @@ namespace Unrect.Tests.Shapes
       var space = Mixed(new object?[,] { { "x" }, { null }, { null }, { 5 }, { 6 } });
 
       var failure = Assert.Throws<ShapeException>(() =>
-        VerticalFlow(v => $"{v.Next(IntCell().Optional())}|{v.Next(StringCell().After(BlankRows()).Down(2))}").Map(space));
+        VerticalFlow(v => $"{v.Next(IntCell().Optional())}|{v.Next(StringCell().OffsetBy(BlankRows()).Down(2))}").Map(space));
 
       Assert.DoesNotContain("note:", failure.Message);
       Assert.Equal("A3", failure.Location.A1);
@@ -194,7 +194,7 @@ namespace Unrect.Tests.Shapes
     {
       var space = Grid(new[,] { { 1 }, { 2 }, { 0 }, { 3 }, { 4 }, { 0 }, { 0 } });
 
-      var items = Repeat(VerticalFlow(v => $"{v.Next(IntCell())}+{v.Next(IntCell())}"), separatedBy: BlankRows()).Map(space);
+      var items = VerticalRepeat(VerticalFlow(v => $"{v.Next(IntCell())}+{v.Next(IntCell())}"), separatedBy: BlankRows()).Map(space);
 
       Assert.Equal(new[] { "1+2", "3+4" }, items);
     }
@@ -205,7 +205,7 @@ namespace Unrect.Tests.Shapes
       var space = Grid(new[,] { { 1 }, { 2 }, { 0 }, { 3 }, { 4 }, { 0 }, { 0 } });
 
       var failure = Assert.Throws<ShapeException>(() =>
-        Repeat(VerticalFlow(v => $"{v.Next(IntCell())}+{v.Next(IntCell())}"), separatedBy: BlankRows(), atLeast: 5).Map(space));
+        VerticalRepeat(VerticalFlow(v => $"{v.Next(IntCell())}+{v.Next(IntCell())}"), separatedBy: BlankRows(), atLeast: 5).Map(space));
 
       Assert.Contains("expected at least 5 occurrences but found 2", failure.Message);
     }
@@ -215,16 +215,16 @@ namespace Unrect.Tests.Shapes
     {
       // A Next call is deeper than the item's own placement, so it is drift, not the end of the run.
       var failure = Assert.Throws<ShapeException>(() =>
-        Repeat(VerticalFlow(v => $"{v.Next(IntCell())}+{v.Next(StringCell())}")).Map(Ladder()));
+        VerticalRepeat(VerticalFlow(v => $"{v.Next(IntCell())}+{v.Next(StringCell())}")).Map(Ladder()));
 
-      Assert.Contains("Repeat[0]", failure.Path);
+      Assert.Contains("VerticalRepeat[0]", failure.Path);
       Assert.Contains("expected Text", failure.Message);
     }
 
     [Fact]
     public void ARepeatedFlowThatConsumesNothing_Terminates()
     {
-      Assert.Empty(Repeat(VerticalFlow(v => v.Next(Range(AreaStrategies.MinArea(), b => b.Width)))).Map(Ladder()));
+      Assert.Empty(VerticalRepeat(VerticalFlow(v => v.Next(Range(AreaStrategies.MinArea(), b => b.Width)))).Map(Ladder()));
     }
 
     // --- Alternation -----------------------------------------------------------------------------------

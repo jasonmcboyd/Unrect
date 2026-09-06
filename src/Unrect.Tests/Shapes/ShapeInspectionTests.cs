@@ -54,8 +54,8 @@ namespace Unrect.Tests.Shapes
       Assert.Equal("VerticalFlow", VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(IntCell())}").Description);
       Assert.Equal("HorizontalFlow", HorizontalFlow(h => $"{h.Next(IntCell())}{h.Next(IntCell())}").Description);
       Assert.Equal("Overlay", Overlay(o => $"{o.Next(IntCell())}{o.Next(IntCell())}").Description);
-      Assert.Equal("Repeat", Repeat(IntCell()).Description);
-      Assert.Equal("RepeatHorizontal", RepeatHorizontal(IntCell()).Description);
+      Assert.Equal("VerticalRepeat", VerticalRepeat(IntCell()).Description);
+      Assert.Equal("HorizontalRepeat", HorizontalRepeat(IntCell()).Description);
       Assert.Equal("Select", IntCell().Select(v => v + 1).Description);
       Assert.Equal("Table", Table(t => t.RowCount).Description);
       Assert.Equal("TableRows", TableRows(r => r[0]).Description);
@@ -105,7 +105,7 @@ namespace Unrect.Tests.Shapes
     {
       var item = IntCell().Named("item");
 
-      Assert.Same(item, Assert.Single(Repeat(item).Children));
+      Assert.Same(item, Assert.Single(VerticalRepeat(item).Children));
     }
 
     [Fact]
@@ -134,7 +134,7 @@ namespace Unrect.Tests.Shapes
       // Shapes that are levels of the tree in their own right never are.
       Assert.False(IntCell().IsTransparent);
       Assert.False(VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(IntCell())}").IsTransparent);
-      Assert.False(Repeat(IntCell()).IsTransparent);
+      Assert.False(VerticalRepeat(IntCell()).IsTransparent);
     }
 
     // --- Placement ---------------------------------------------------------------------------------------------
@@ -151,7 +151,7 @@ namespace Unrect.Tests.Shapes
     public void CompositesDeriveTheirArea()
     {
       Assert.Null(VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(IntCell())}").Placement.Area);
-      Assert.Null(Repeat(IntCell()).Placement.Area);
+      Assert.Null(VerticalRepeat(IntCell()).Placement.Area);
       Assert.Null(IntCell().Select(v => v).Placement.Area);
     }
 
@@ -163,7 +163,7 @@ namespace Unrect.Tests.Shapes
       // The dry-run traversal in miniature: no ISpace anywhere. It walks the wrappers and the
       // repeat happily, and stops where a layout composite is — reporting why rather than
       // pretending the layout is a leaf.
-      var shape = Repeat(
+      var shape = VerticalRepeat(
         TableRows(r => r[0])
           .Named("rows")
           .Until(RowContaining("Total"))
@@ -174,7 +174,7 @@ namespace Unrect.Tests.Shapes
       Assert.Equal(
         new[]
         {
-          "'blocks' (Repeat)",
+          "'blocks' (VerticalRepeat)",
           "  'block' (Select)",
           "    Until",
           "      'rows' (TableRows)",
@@ -185,12 +185,12 @@ namespace Unrect.Tests.Shapes
     [Fact]
     public void TheWalkStopsAtALayoutAndSaysWhy()
     {
-      var shape = Repeat(VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(IntCell())}").Named("block"));
+      var shape = VerticalRepeat(VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(IntCell())}").Named("block"));
 
       Assert.Equal(
         new[]
         {
-          "Repeat",
+          "VerticalRepeat",
           "  'block' (VerticalFlow) [opaque: declared by a cursor lambda; children are known only while it runs]",
         },
         Describe(shape).ToArray());
@@ -220,7 +220,7 @@ namespace Unrect.Tests.Shapes
     [Fact]
     public void OneShapeCanBeAppliedToManyDifferentSpaces()
     {
-      var shape = VerticalFlow(v => (v.Next(IntCell()), v.Next(Repeat(IntCell()))));
+      var shape = VerticalFlow(v => (v.Next(IntCell()), v.Next(VerticalRepeat(IntCell()))));
 
       Assert.Equal("1:2,3", Read(shape, Grid(new[,] { { 1 }, { 2 }, { 3 } })));
       Assert.Equal("9:8", Read(shape, Grid(new[,] { { 9 }, { 8 } })));
@@ -231,7 +231,7 @@ namespace Unrect.Tests.Shapes
     public void OneShapeCanBeAppliedToManySpacesConcurrently()
     {
       // The context tree is built per Map call, so nothing is shared between concurrent runs.
-      var shape = VerticalFlow(v => (v.Next(IntCell()), v.Next(Repeat(IntCell()))));
+      var shape = VerticalFlow(v => (v.Next(IntCell()), v.Next(VerticalRepeat(IntCell()))));
 
       var spaces = Enumerable.Range(0, 64)
         .Select(seed => Grid(new[,] { { seed + 1 }, { seed + 2 }, { seed + 3 } }))

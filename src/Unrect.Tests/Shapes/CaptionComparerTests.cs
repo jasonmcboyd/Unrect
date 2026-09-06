@@ -114,7 +114,7 @@ namespace Unrect.Tests.Shapes
       // satisfy it — and so would a dozen other things nobody asked for.
       var space = Mixed(new object?[,] { { "NetIncome" } });
 
-      Assert.Throws<ShapeException>(() => Cell(c => c.GetString()).After(To(RowContaining("Net Income"))).Map(space));
+      Assert.Throws<ShapeException>(() => Cell(c => c.GetString()).On(RowContaining("Net Income")).Map(space));
       Assert.Throws<ShapeException>(() => Caption("Net Income").Map(space));
 
       // ...while the comparer itself would have said yes, which is the whole point of the pin.

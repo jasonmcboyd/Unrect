@@ -44,7 +44,7 @@ var summary = TableRows(r => new
 	Net = r["Net"].GetDecimal(),
 });
 
-var details = Repeat(investorDetail, separatedBy: BlankRows(), atLeast: 1).AfterBlankRows();
+var details = VerticalRepeat(investorDetail, separatedBy: BlankRows(), atLeast: 1).AfterBlankRows();
 
 // The report. Column(c => ...) discovers the header height; the gap before the summary is the
 // table's own default offset; the gap before the details section is the repeat's offset; the

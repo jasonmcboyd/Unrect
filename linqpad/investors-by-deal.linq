@@ -26,7 +26,7 @@ var deal = VerticalFlow(v => new
 });
 
 // The report: that block, repeated, blank-row separated.
-var deals = Repeat(deal, separatedBy: BlankRows());
+var deals = VerticalRepeat(deal, separatedBy: BlankRows());
 
 deals.Map(SpreadsheetSpace.Create(path, "Investors")).Dump();
 

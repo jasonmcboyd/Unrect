@@ -25,7 +25,7 @@ namespace Unrect.Benchmarks
     private static readonly IShape<int> WholeHeight = Range(RowsWhileAnyValue(), b => b.Height);
 
     private static readonly IShape<int> Seek =
-      Row(r => r.Count).After(To(RowContaining(CanonicalSpaces.Landmark)));
+      Row(r => r.Count).On(RowContaining(CanonicalSpaces.Landmark));
 
     // The miss: absorbed, so the row measures the full-grid scan and not the throw.
     private static readonly IShape<int> SeekMiss = Seek.Optional();
@@ -33,7 +33,7 @@ namespace Unrect.Benchmarks
     private static readonly IShape<int> Bounded =
       Range(RowsWhileAnyValue(), b => b.Height).Until(RowContaining(CanonicalSpaces.Landmark));
 
-    private static readonly IShape<int> SkipBlanks = Row(r => r.Count).After(BlankRows());
+    private static readonly IShape<int> SkipBlanks = Row(r => r.Count).OffsetBy(BlankRows());
 
     private ISpace _dense = default!;
     private ISpace _sparse = default!;

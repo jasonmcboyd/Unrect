@@ -42,7 +42,7 @@ namespace Unrect.Tests.Shapes
       var space = Grid(new[,] { { 1 }, { 2 }, { 3 }, { 4 } });
 
       var failure = Assert.Throws<ShapeException>(() =>
-        IntCell().After(Then(SkipRows(3), SkipRows(3))).Map(space));
+        IntCell().OffsetBy(Then(SkipRows(3), SkipRows(3))).Map(space));
 
       Assert.Contains("its offset ran past the available space", failure.Message);
       Assert.IsType<OutOfBoundsException>(failure.InnerException);
@@ -56,7 +56,7 @@ namespace Unrect.Tests.Shapes
       var space = Mixed(new object?[,] { { "nothing", null }, { "relevant", null } });
 
       var failure = Assert.Throws<ShapeException>(() =>
-        Cell(v => v.GetString()).Named("taxable income").After(To(RowContaining("Taxable Income"))).Map(space));
+        Cell(v => v.GetString()).Named("taxable income").On(RowContaining("Taxable Income")).Map(space));
 
       Assert.Equal("'taxable income'", failure.Subject);
       Assert.Contains("no row containing 'Taxable Income' exists in the available space", failure.Message);
@@ -70,12 +70,12 @@ namespace Unrect.Tests.Shapes
     {
       var space = Mixed(new object?[,] { { "nothing", null }, { "relevant", null } });
 
-      Assert.Contains("no row containing 'Total' exists", Missing(To(RowContaining("Total")), space));
-      Assert.Contains("no column containing 'Total' exists", Missing(To(ColumnContaining("Total")), space));
-      Assert.Contains("no row with a matching cell exists", Missing(To(RowWithCell(_ => false)), space));
-      Assert.Contains("no column with a matching cell exists", Missing(To(ColumnWithCell(_ => false)), space));
-      Assert.Contains("no matching row exists", Missing(To(RowWhere((_, _) => false)), space));
-      Assert.Contains("no matching column exists", Missing(To(ColumnWhere((_, _) => false)), space));
+      Assert.Contains("no row containing 'Total' exists", Missing(OffsetStrategies.To(RowContaining("Total")), space));
+      Assert.Contains("no column containing 'Total' exists", Missing(OffsetStrategies.To(ColumnContaining("Total")), space));
+      Assert.Contains("no row with a matching cell exists", Missing(OffsetStrategies.To(RowWithCell(_ => false)), space));
+      Assert.Contains("no column with a matching cell exists", Missing(OffsetStrategies.To(ColumnWithCell(_ => false)), space));
+      Assert.Contains("no matching row exists", Missing(OffsetStrategies.To(RowWhere((_, _) => false)), space));
+      Assert.Contains("no matching column exists", Missing(OffsetStrategies.To(ColumnWhere((_, _) => false)), space));
     }
 
     [Fact]
@@ -83,9 +83,9 @@ namespace Unrect.Tests.Shapes
     {
       var space = Mixed(new object?[,] { { "nothing", null } });
 
-      Assert.Throws<ShapeException>(() => IntCell().After(To(RowContaining("Total"))).Map(space));
-      Assert.Throws<ShapeException>(() => IntCell().After(FromRight(9)).Map(space));
-      Assert.Throws<ShapeException>(() => IntCell().After(FromBottom(9)).Map(space));
+      Assert.Throws<ShapeException>(() => IntCell().On(RowContaining("Total")).Map(space));
+      Assert.Throws<ShapeException>(() => IntCell().OffsetBy(FromRight(9)).Map(space));
+      Assert.Throws<ShapeException>(() => IntCell().OffsetBy(FromBottom(9)).Map(space));
     }
 
     [Fact]
@@ -98,7 +98,7 @@ namespace Unrect.Tests.Shapes
     }
 
     private static string Missing(IOffsetStrategy offset, ISpace space)
-      => Assert.Throws<ShapeException>(() => Cell(v => v.GetString()).After(offset).Map(space)).Message;
+      => Assert.Throws<ShapeException>(() => Cell(v => v.GetString()).OffsetBy(offset).Map(space)).Message;
 
     // --- Case B: the area does not fit ------------------------------------------------------------------
 
@@ -144,7 +144,7 @@ namespace Unrect.Tests.Shapes
     public void AnOffsetStrategyThatThrows_IsReportedAgainstTheShapeThatDeclaredIt()
     {
       var failure = Assert.Throws<ShapeException>(() =>
-        IntCell().After(OffsetStrategies.SelectOffset(_ => throw new InvalidOperationException("boom"))).Map(Square()));
+        IntCell().OffsetBy(OffsetStrategies.SelectOffset(_ => throw new InvalidOperationException("boom"))).Map(Square()));
 
       Assert.Contains("its offset strategy threw InvalidOperationException: boom", failure.Message);
       Assert.IsType<InvalidOperationException>(failure.InnerException);
@@ -165,11 +165,11 @@ namespace Unrect.Tests.Shapes
     public void ASeparatorStrategyThatThrows_IsReportedAgainstTheRepeat()
     {
       var failure = Assert.Throws<ShapeException>(() =>
-        Repeat(Range(1, 1, b => b.Width), separatedBy: OffsetStrategies.SelectOffset(_ => throw new InvalidOperationException("boom")))
+        VerticalRepeat(Range(1, 1, b => b.Width), separatedBy: OffsetStrategies.SelectOffset(_ => throw new InvalidOperationException("boom")))
           .Map(Square()));
 
       Assert.Contains("its separator strategy threw InvalidOperationException: boom", failure.Message);
-      Assert.Equal("Repeat", failure.Subject);
+      Assert.Equal("VerticalRepeat", failure.Subject);
       Assert.IsType<InvalidOperationException>(failure.InnerException);
     }
 
@@ -197,7 +197,7 @@ namespace Unrect.Tests.Shapes
       var shape = VerticalFlow(v =>
       {
         var first = v.Next(IntCell());
-        v.Next(Repeat(Cell(c => c.GetString())).Named("items"));
+        v.Next(VerticalRepeat(Cell(c => c.GetString())).Named("items"));
         return first;
       });
 
@@ -274,9 +274,9 @@ namespace Unrect.Tests.Shapes
       var space = Grid(new[,] { { 1 }, { 2 }, { 0 } });
 
       var failure = Assert.Throws<ShapeException>(() =>
-        Repeat(Cell(v => v.GetString()).Named("code")).Map(space));
+        VerticalRepeat(Cell(v => v.GetString()).Named("code")).Map(space));
 
-      Assert.Equal("Repeat[0] -> 'code' (Cell)", failure.Path);
+      Assert.Equal("VerticalRepeat[0] -> 'code' (Cell)", failure.Path);
     }
 
     [Fact]
@@ -284,9 +284,9 @@ namespace Unrect.Tests.Shapes
     {
       var space = Grid(new[,] { { 1 }, { 2 }, { 0 } });
 
-      var failure = Assert.Throws<ShapeException>(() => Repeat(IntCell()).Map(space));
+      var failure = Assert.Throws<ShapeException>(() => VerticalRepeat(IntCell()).Map(space));
 
-      Assert.Equal("Repeat[2] -> Cell", failure.Path);
+      Assert.Equal("VerticalRepeat[2] -> Cell", failure.Path);
     }
 
     [Fact]
@@ -379,7 +379,7 @@ namespace Unrect.Tests.Shapes
 
       values[row - 1, column - 1] = 0;   // the blank the projection will trip over
 
-      var shape = IntCell().After(Then(SkipColumns(column - 1), SkipRows(row - 1)));
+      var shape = IntCell().OffsetBy(Then(SkipColumns(column - 1), SkipRows(row - 1)));
       var failure = Assert.Throws<ShapeException>(() => shape.Map(Grid(values)));
 
       Assert.Equal(expected, failure.Location.A1);

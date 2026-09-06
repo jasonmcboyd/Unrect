@@ -9,6 +9,25 @@ message templates), `wave2-shapes-spec.md` (engine rules, file layout, test styl
 `panel-and-anchoring-spec.md` (seeks and anchoring), and `diagnostics-and-choice-spec.md`
 (severity rationale). All of their conventions apply.
 
+> **Superseded in part, 2026-09-05 — the placement-vocabulary renovation.** The matcher family
+> (§1.1–1.5), `Caption` (§2) and `.Under` (§3) stand exactly as specced. What changed is how a
+> declaration *spells* a lift. `OffsetStrategies.To`/`Past` remain public and unchanged in the
+> strategy calculus, but the four `Shape` re-exports of them are **removed**, and a shape now
+> anchors on a landmark through modifiers that name their own relation:
+>
+> | Was (this spec) | Is now |
+> |---|---|
+> | `x.After(To(rowLandmark))` / `x.After(To(columnLandmark))` | `x.On(landmark)` — both axes, one word |
+> | `x.After(Past(rowLandmark))` | `x.Below(landmark)` |
+> | `x.After(Past(columnLandmark))` | `x.RightOf(landmark)` |
+> | `x.After(offsetStrategy)` | `x.OffsetBy(offsetStrategy)` |
+> | `Repeat(item, …)` / `RepeatHorizontal(item, …)` | `VerticalRepeat(item, …)` / `HorizontalRepeat(item, …)` |
+>
+> Semantics are untouched: `.On`/`.Below`/`.RightOf` are the same two lifts, still replacing the
+> offset, still loud on a miss, still `Repeat`'s stopping condition. Read every `After(To(…))` and
+> `After(Past(…))` below as the corresponding modifier; the reasoning about what the lifts *mean*
+> is unaffected. The governing laws are in `docs/vocabulary.md` ("Placement — the six laws").
+
 Everything in §§1–3 is owner-settled. Where a detail had to be decided to make the spec
 mechanical it is marked **[decided here]**; §9 lists every one of them in one place, and §10 lists
 what is deliberately deferred.
@@ -83,6 +102,17 @@ public static IOffsetStrategy To(IColumnLandmark landmark);
 public static IOffsetStrategy Past(IRowLandmark landmark);
 public static IOffsetStrategy Past(IColumnLandmark landmark);
 ```
+
+> **Superseded 2026-09-05.** The four `Shape` re-exports are removed; the `OffsetStrategies`
+> declarations above are unchanged and still public. A shape now says `.On(landmark)` (both axes),
+> `.Below(rowLandmark)` and `.RightOf(columnLandmark)`, each built on the lift it replaces. The
+> single-import rule is unbroken because the *modifier* is what a declaration reaches for; the raw
+> lift is an escape hatch and is spelled like one — `.OffsetBy(OffsetStrategies.To(…))`.
+>
+> The axis-naming rule below survives the renovation with one refinement: `.On` is still one word
+> for both axes because its argument names the axis, but `.Below`/`.RightOf` are spelled apart even
+> though *their* argument names the axis too — because the direction is part of what is being said,
+> not merely a consequence of it. **Direction appears in the word exactly when the concept has one.**
 
 **Overloads, not `ToColumn`/`PastColumn`. [decided here]** `.Until`/`.UntilColumn` are spelled
 apart because their argument does not have to be read to know the axis; here the argument *is* the
@@ -199,6 +229,14 @@ deprecated in the same commit so the count of vocabularies does not go up.
 | `Then(SeekColumnContaining(t), SkipColumns(1))` | `Past(ColumnContaining(t))` |
 | `Unrect.Strategies/Row/SeekRowStrategy.cs` | `Row/LandmarkRowStrategy.cs` |
 | `Unrect.Strategies/Column/SeekColumnStrategy.cs` | `Column/LandmarkColumnStrategy.cs` |
+
+> **Superseded 2026-09-05 by the `.On`/`.Below`/`.RightOf` modifiers.** The history above is still
+> true and worth keeping — the two `Then(Seek…, Skip…(1))` rows in particular record that `Past` is
+> what that idiom used to spell, without the hard-coded 1 standing in for the matched row's own
+> height. Only the shape-level column has moved on: the two `Shape.Seek*` rows now land on
+> `x.On(RowWhere/RowWithCell/RowContaining(…))`, and the two `Then(Seek…, Skip…(1))` rows on
+> `x.Below(RowContaining(t))` and `x.RightOf(ColumnContaining(t))`. The `OffsetStrategies` and
+> file-rename rows are unchanged.
 
 Unchanged: `AnchorNotFoundException` (still internal, still an `OutOfBoundsException`), all six
 landmark factories, `.Until`/`.UntilColumn`, `CellMatching`.

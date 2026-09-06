@@ -13,17 +13,17 @@ using static Unrect.Tests.ShapeTestSpaces;
 namespace Unrect.Tests.Shapes
 {
   /// <summary>
-  /// <c>.After</c> says where a shape starts by content; <c>.Until</c> says where it ends by one.
-  /// The bound is exclusive and consumed in full, so the shape that follows begins <em>at</em> the
-  /// landmark and can anchor on it — which is the whole reason this is a bound on the shape rather
-  /// than a "stop before" option on <c>Repeat</c>.
+  /// <c>.On</c> and <c>.Below</c> say where a shape starts by content; <c>.Until</c> says where it
+  /// ends by one. The bound is exclusive and consumed in full, so the shape that follows begins
+  /// <em>at</em> the landmark and can anchor on it — which is the whole reason this is a bound on
+  /// the shape rather than a "stop before" option on the repeat.
   /// </summary>
   public class UntilShapeTests
   {
     // A, B, Total, C, End — two rows, a caption, two more.
     private static ISpace Sections() => Mixed(new object?[,] { { "A" }, { "B" }, { "Total" }, { "C" }, { "End" } });
 
-    private static IShape<IReadOnlyList<string>> Lines() => Repeat(Cell(c => c.GetString()));
+    private static IShape<IReadOnlyList<string>> Lines() => VerticalRepeat(Cell(c => c.GetString()));
 
     // --- The bound ------------------------------------------------------------------------------
 
@@ -44,7 +44,7 @@ namespace Unrect.Tests.Shapes
       // Consumed is the bound, not what the inner shape read, so the next child's own seek finds
       // the caption at distance zero. This is what Until is for.
       var section = Lines().Until(RowContaining("Total"));
-      var caption = Cell(c => c.GetString()).After(To(RowContaining("Total")));
+      var caption = Cell(c => c.GetString()).On(RowContaining("Total"));
 
       var read = VerticalFlow(v => $"[{string.Join(",", v.Next(section))}]+{v.Next(caption)}").Map(Sections());
 
@@ -76,11 +76,11 @@ namespace Unrect.Tests.Shapes
 
       Assert.Equal(
         new[] { "A", "B", "Total", "C" },
-        Repeat(Cell(c => c.GetString()), separatedBy: BlankRows()).Map(space));
+        VerticalRepeat(Cell(c => c.GetString()), separatedBy: BlankRows()).Map(space));
 
       Assert.Equal(
         new[] { "A", "B" },
-        Repeat(Cell(c => c.GetString()), separatedBy: BlankRows()).Until(RowContaining("Total")).Map(space));
+        VerticalRepeat(Cell(c => c.GetString()), separatedBy: BlankRows()).Until(RowContaining("Total")).Map(space));
     }
 
     // --- A missing landmark ----------------------------------------------------------------------------
@@ -94,7 +94,7 @@ namespace Unrect.Tests.Shapes
         Lines().Named("items").Until(RowContaining("Nope")).Map(Sections()));
 
       Assert.Equal("'items'", failure.Subject);
-      Assert.Equal("'items' (Repeat)", failure.Path);
+      Assert.Equal("'items' (VerticalRepeat)", failure.Path);
       Assert.Equal("A1", failure.Location.A1);
       Assert.Contains("no row containing 'Nope' exists to end this shape", failure.Message);
     }
@@ -104,8 +104,8 @@ namespace Unrect.Tests.Shapes
     {
       var failure = Assert.Throws<ShapeException>(() => Lines().Until(RowContaining("Nope")).Map(Sections()));
 
-      Assert.Equal("Repeat", failure.Subject);
-      Assert.Equal("Repeat", failure.Path);
+      Assert.Equal("VerticalRepeat", failure.Subject);
+      Assert.Equal("VerticalRepeat", failure.Path);
       Assert.DoesNotContain("Until", failure.Path);
     }
 
@@ -133,9 +133,9 @@ namespace Unrect.Tests.Shapes
       // A missing start is exhaustion; a missing end is drift. The item was found, so the failure
       // is deeper than the item's own placement.
       var failure = Assert.Throws<ShapeException>(() =>
-        Repeat(Cell(c => c.GetString()).Until(RowContaining("Nope"))).Map(Sections()));
+        VerticalRepeat(Cell(c => c.GetString()).Until(RowContaining("Nope"))).Map(Sections()));
 
-      Assert.Contains("Repeat[0]", failure.Path);
+      Assert.Contains("VerticalRepeat[0]", failure.Path);
       Assert.Contains("no row containing 'Nope' exists to end this shape", failure.Message);
     }
 
@@ -152,11 +152,11 @@ namespace Unrect.Tests.Shapes
       var info = Assert.Single(result.Diagnostics);
 
       Assert.Equal(DiagnosticSeverity.Info, info.Severity);
-      Assert.Equal("Repeat", info.Subject);
+      Assert.Equal("VerticalRepeat", info.Subject);
       Assert.Equal(
         "no row containing 'Nope' exists to end this shape, so it ran to the end of the space",
         info.Message);
-      Assert.Equal("Repeat", info.Path);
+      Assert.Equal("VerticalRepeat", info.Path);
       Assert.Equal("A1", info.Location.A1);
     }
 
@@ -234,12 +234,14 @@ namespace Unrect.Tests.Shapes
     }
 
     [Fact]
-    public void AfterThenUntil_AnchorsInsideWhatTheLandmarkLeft()
+    public void AnOffsetThenUntil_AnchorsInsideWhatTheLandmarkLeft()
     {
-      // The reading order — start here, stop there — and the recommended spelling.
+      // The reading order — start here, stop there. Spelled with OffsetBy because what this pins is
+      // that a bound composes with a placement of any kind; an anchor would read better in a
+      // declaration, and AnchorModifierTests owns that half.
       var space = Mixed(new object?[,] { { "skip" }, { "A" }, { "B" }, { "Total" } });
 
-      var section = Lines().After(SkipRows(1)).Until(RowContaining("Total"));
+      var section = Lines().OffsetBy(SkipRows(1)).Until(RowContaining("Total"));
 
       Assert.Equal(new[] { "A", "B" }, section.Map(space));
     }
@@ -251,7 +253,7 @@ namespace Unrect.Tests.Shapes
     {
       var space = Mixed(new object?[,] { { "a", "b", "Total", "d" } });
 
-      var cells = RepeatHorizontal(Cell(c => c.GetString())).UntilColumn(ColumnContaining("Total"));
+      var cells = HorizontalRepeat(Cell(c => c.GetString())).UntilColumn(ColumnContaining("Total"));
       var applied = HorizontalFlow(h => string.Join(",", h.Next(cells))).Apply(space);
 
       Assert.Equal("a,b", applied.Value);
@@ -338,7 +340,7 @@ namespace Unrect.Tests.Shapes
       var space = Mixed(new object?[,] { { "Total" }, { "Start" }, { "a" }, { "b" } });
 
       var failure = Assert.Throws<ShapeException>(() =>
-        Lines().After(To(RowContaining("Start"))).Until(RowContaining("Total")).Map(space));
+        Lines().On(RowContaining("Start")).Until(RowContaining("Total")).Map(space));
 
       Assert.Contains("no row containing 'Start' exists in the available space", failure.Message);
     }
@@ -368,15 +370,15 @@ namespace Unrect.Tests.Shapes
 
       const string Inception = "By inception date";
 
-      var series = Repeat(Cell(c => c.GetString()), separatedBy: BlankRows());
+      var series = VerticalRepeat(Cell(c => c.GetString()), separatedBy: BlankRows());
 
       var report = VerticalFlow(v => new
       {
         ByTransferDate = v.Next(series
-          .After(Past(RowContaining("By transfer date")))
+          .Below(RowContaining("By transfer date"))
           .Until(RowContaining(Inception))),
         ByInception = v.Next(series
-          .After(Past(RowContaining(Inception)))),
+          .Below(RowContaining(Inception))),
       });
 
       var result = report.MapWithDiagnostics(space);

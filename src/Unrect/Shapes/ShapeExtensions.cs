@@ -10,14 +10,24 @@ namespace Unrect.Shapes
   /// <summary>
   /// Application, naming, and placement modifiers.
   /// <para>
+  /// <b>Silence is adjacency.</b> A shape with no placement modifier starts exactly where the one
+  /// before it left off, so every modifier here is a declared exception — and each word names the
+  /// <em>kind</em> of reason it is an exception for. <c>On</c>, <c>Below</c> and <c>RightOf</c>
+  /// state a relation to something in the grid; <c>AfterBlankRows</c> and <c>AfterBlankColumns</c>
+  /// step over filler; <c>Down</c> and <c>Right</c> count cells; <c>OffsetBy</c> hands the decision
+  /// to the strategy calculus. Reading a declaration, you never have to ask why a shape moved.
+  /// </para>
+  /// <para>
   /// The movement modifiers — <c>Down</c>, <c>Right</c>, <c>AfterBlankRows</c>,
   /// <c>AfterBlankColumns</c> — <em>compose</em>: each one starts from where the shape already sits,
   /// so <c>.Right(9).Down(1)</c> anchors at column 9, row 1, and <c>Table(...).Down(2)</c> means
   /// "past the blank rows, then two more".
   /// </para>
   /// <para>
-  /// <c>After</c> <em>replaces</em> the offset outright — the "put it exactly here" spelling, and
-  /// the way to discard a default. <c>Sized</c> replaces too, since extents do not stack.
+  /// The anchors — <c>On</c>, <c>Below</c>, <c>RightOf</c> — and <c>OffsetBy</c> <em>replace</em>
+  /// the offset outright: a position stated as a relation to a thing owes nothing to wherever the
+  /// cursor had got to, and replacing is also how a default is discarded. <c>Sized</c> replaces
+  /// too, since extents do not stack.
   /// </para>
   /// </summary>
   public static partial class ShapeExtensions
@@ -91,6 +101,10 @@ namespace Unrect.Shapes
       return new MapResult<TResult>(applied.Value, context.Diagnostics.Snapshot());
     }
 
+    /// <summary>
+    /// Carries the shape on from wherever it already sits, so movements read cumulatively. A shape
+    /// that has not been placed yet has nothing to carry on from and simply takes the new offset.
+    /// </summary>
     private static IShape<T> Move<T>(IShape<T> shape, IOffsetStrategy offset)
     {
       var placement = NotNull(shape).Placement;
@@ -117,16 +131,87 @@ namespace Unrect.Shapes
     public static IShape<T> Named<T>(this IShape<T> shape, string name) => NotNull(shape).WithName(name);
 
     /// <summary>
-    /// Positions the shape at <paramref name="offset"/>, <em>replacing</em> any offset it had —
-    /// including a default, which is how a <c>Table</c> is told not to skip its blank rows.
+    /// Puts the shape <em>on</em> the row <paramref name="landmark"/> matches: it starts at that row
+    /// and owns it, so a caption is content the shape reads rather than a gap it steps over.
+    /// <para>
+    /// A position is a relation to a thing, never a distance arrived at — <c>On</c> says which row,
+    /// and the arithmetic of reaching it is not the declaration's business. Occupancy has no
+    /// direction, so the word names none; the argument's type carries the axis, and the column form
+    /// is this same word.
+    /// </para>
+    /// <para>
+    /// Anchoring <em>replaces</em> the shape's offset, including a default. A landmark that matches
+    /// nothing is loud, because it means the section the declaration describes is not the section in
+    /// the file. That is a disagreement about the data rather than a broken projection, so
+    /// <c>Optional</c> and <c>Else</c> absorb it — and a <c>VerticalRepeat</c> reads it as having run
+    /// out of sections, which is how a repetition knows to stop.
+    /// </para>
     /// </summary>
-    public static IShape<T> After<T>(this IShape<T> shape, IOffsetStrategy offset)
+    public static IShape<T> On<T>(this IShape<T> shape, IRowLandmark landmark)
+      => shape.OffsetBy(OffsetStrategies.To(landmark));
+
+    /// <inheritdoc cref="On{T}(IShape{T}, IRowLandmark)"/>
+    public static IShape<T> On<T>(this IShape<T> shape, IColumnLandmark landmark)
+      => shape.OffsetBy(OffsetStrategies.To(landmark));
+
+    /// <summary>
+    /// Starts the shape on the row directly below the one <paramref name="landmark"/> matches — for
+    /// a section that sits under a caption some other shape describes, or under one nothing does.
+    /// <para>
+    /// Exactly one row beyond the match, which is the matched row's own height and never a step you
+    /// chose. Like <c>On</c>, it states a relation and <em>replaces</em> the offset; unlike
+    /// <c>On</c>, the concept genuinely has a direction, so the word carries one — and it is
+    /// grid-absolute, meaning down the sheet, not "the next band along whichever way this flow
+    /// happens to run".
+    /// </para>
+    /// <para>
+    /// A landmark that matches nothing is loud, absorbable by <c>Optional</c> and <c>Else</c>, and
+    /// read by a repetition as the end of its sections — the same absence semantics as <c>On</c>.
+    /// </para>
+    /// </summary>
+    public static IShape<T> Below<T>(this IShape<T> shape, IRowLandmark landmark)
+      => shape.OffsetBy(OffsetStrategies.Past(landmark));
+
+    /// <summary>
+    /// Starts the shape on the column directly right of the one <paramref name="landmark"/> matches
+    /// — the column twin of <see cref="Below{T}"/>, spelled distinctly because the direction is part
+    /// of what is being said.
+    /// </summary>
+    public static IShape<T> RightOf<T>(this IShape<T> shape, IColumnLandmark landmark)
+      => shape.OffsetBy(OffsetStrategies.Past(landmark));
+
+    /// <summary>
+    /// Starts the shape wherever <paramref name="offset"/> ends — an assignment rather than a
+    /// movement: <em>my start is where that resolves to</em>. So it <em>replaces</em> any offset the
+    /// shape had, including a default, which is how a <c>Table</c> is told not to skip its blank
+    /// rows.
+    /// <para>
+    /// This is the door onto the strategy calculus, and the one marked crossing between the two
+    /// models the library otherwise keeps apart: the vocabulary around it speaks of rows, columns
+    /// and cells the way a sheet is read, while a strategy computes offsets and sizes over
+    /// intervals. Reach for it when no anchor says what you mean —
+    /// <c>.OffsetBy(Then(BlankRows(), SkipRows(1)))</c>, or a lift the shape layer does not
+    /// re-export — and prefer the anchors when one does.
+    /// </para>
+    /// </summary>
+    public static IShape<T> OffsetBy<T>(this IShape<T> shape, IOffsetStrategy offset)
       => NotNull(shape).WithPlacement(shape.Placement.WithOffset(offset));
 
-    /// <summary>Moves the shape on past the blank rows in front of it.</summary>
+    /// <summary>
+    /// Moves the shape on past the blank rows in front of it.
+    /// <para>
+    /// One of the two operators that keep the word <em>after</em>, and they earn it: filler is the
+    /// one thing that genuinely has an after, and neither takes a positional argument, so there is
+    /// no relation for a reader to mis-read as a distance. Tolerant by nature — no blank rows in
+    /// front means no movement, not a failure.
+    /// </para>
+    /// </summary>
     public static IShape<T> AfterBlankRows<T>(this IShape<T> shape) => Move(shape, OffsetStrategies.SkipBlankRows());
 
-    /// <summary>Moves the shape on past the blank columns in front of it.</summary>
+    /// <summary>
+    /// Moves the shape on past the blank columns in front of it; see
+    /// <see cref="AfterBlankRows{T}"/> for why these two keep the word "after".
+    /// </summary>
     public static IShape<T> AfterBlankColumns<T>(this IShape<T> shape) => Move(shape, OffsetStrategies.SkipBlankColumns());
 
     /// <summary>Moves the shape on <paramref name="rows"/> rows down from where it sits.</summary>
@@ -155,9 +240,9 @@ namespace Unrect.Shapes
     /// </para>
     /// <para>
     /// A boundary's own placement is resolved before it can catch anything, so where the offset
-    /// sits decides what is tolerated: <c>x.After(anchor).Else(y)</c> survives a missing anchor,
-    /// while <c>x.Else(y).After(anchor)</c> does not — which is exactly what a <c>Repeat</c> wants,
-    /// since running out of anchors is how it knows to stop.
+    /// sits decides what is tolerated: <c>x.On(anchor).Else(y)</c> survives a missing anchor,
+    /// while <c>x.Else(y).On(anchor)</c> does not — which is exactly what a <c>VerticalRepeat</c>
+    /// wants, since running out of anchors is how it knows to stop.
     /// </para>
     /// <para>
     /// What a boundary absorbs is a failure about the shape of the data. A projection that broke
@@ -193,9 +278,10 @@ namespace Unrect.Shapes
     /// next finds itself by content instead of by arithmetic.
     /// </para>
     /// <para>
-    /// That makes <c>Repeat(x.Optional())</c> a trap: an absorbed item advances the repetition by
-    /// nothing, which ends it. A repeat recovers by consuming the malformed section instead — see
-    /// the recipe on <c>Repeat</c> — and only a fallback that reads rows can do that.
+    /// That makes <c>VerticalRepeat(x.Optional())</c> a trap: an absorbed item advances the
+    /// repetition by nothing, which ends it. A repeat recovers by consuming the malformed section
+    /// instead — see the recipe on <c>VerticalRepeat</c> — and only a fallback that reads rows can
+    /// do that.
     /// </para>
     /// <para>
     /// Tolerance absorbs failures about the shape of the data, never bugs in the code reading it: a
@@ -262,9 +348,9 @@ namespace Unrect.Shapes
 
     /// <summary>
     /// Ends the shape's extent just before the first row that is <paramref name="landmark"/>, which
-    /// the shape therefore never reads. Where <c>After</c> says where a shape starts by content, this
-    /// says where it ends by content — a section that runs until the next caption:
-    /// <c>Repeat(block, separatedBy: BlankRows()).Until(RowContaining("Cash flows by inception date"))</c>.
+    /// the shape therefore never reads. Where <c>On</c> and <c>Below</c> say where a shape starts by
+    /// content, this says where it ends by content — a section that runs until the next caption:
+    /// <c>VerticalRepeat(block, separatedBy: BlankRows()).Until(RowContaining("Cash flows by inception date"))</c>.
     /// <para>
     /// The bound is consumed in full, whether or not the shape read all of it, so whatever follows
     /// starts <em>at</em> the landmark row and can anchor on it at distance zero. That is the point
@@ -289,8 +375,8 @@ namespace Unrect.Shapes
     /// It belongs on the section, not on the thing repeated inside it. A bound applies its inner
     /// shape strictly, as <c>Padded</c> always has, so wrapping a repeat's <em>item</em> turns that
     /// item's own missing anchor into a hard failure instead of the graceful stop a repeat relies on
-    /// to know it has run out of sections. Write <c>Repeat(item, …).Until(landmark)</c>, not
-    /// <c>Repeat(item.Until(landmark), …)</c>.
+    /// to know it has run out of sections. Write <c>VerticalRepeat(item, …).Until(landmark)</c>, not
+    /// <c>VerticalRepeat(item.Until(landmark), …)</c>.
     /// </para>
     /// </summary>
     public static IShape<T> Until<T>(this IShape<T> shape, IRowLandmark landmark, bool orEnd = false)
@@ -313,21 +399,21 @@ namespace Unrect.Shapes
     /// <c>VerticalFlow(v =&gt; { v.Next(a); v.Next(b); return v.Next(x); })</c>. So every caption is
     /// a real child with its own path segment, each one seeks from where the last left off (a
     /// stacked pair reads adjacent rows, and a gap is absorbed), the result is this shape's value
-    /// with the caption values discarded, and <c>Named</c>, <c>After</c>, <c>Until</c>,
+    /// with the caption values discarded, and <c>Named</c>, <c>On</c>, <c>Until</c>,
     /// <c>Optional</c> and the rest behave as they do on any flow. A missing caption under
     /// <c>Optional</c> is an absent section, which is usually what you want.
     /// </para>
     /// <para>
-    /// <b>Inside a <c>Repeat</c>, anchor the item as well.</b> A repeat stops when the item's own
-    /// <em>placement</em> fails, and this puts the anchor inside the flow, whose placement always
-    /// fits — so the iteration past the last section fails loudly instead of stopping. Hoist the
-    /// matcher and put it on the item too; the lift is idempotent, so the caption inside then finds
-    /// its row at distance zero:
+    /// <b>Inside a <c>VerticalRepeat</c>, anchor the item as well.</b> A repeat stops when the
+    /// item's own <em>placement</em> fails, and this puts the anchor inside the flow, whose placement
+    /// always fits — so the iteration past the last section fails loudly instead of stopping. Hoist
+    /// the matcher and put it on the item too; anchoring is idempotent, so the caption inside then
+    /// finds its row at distance zero:
     /// <code>
     /// var detail  = RowContaining("Detail");
-    /// var section = lines.Under(Caption("Detail")).After(To(detail));
+    /// var section = lines.Under(Caption("Detail")).On(detail);
     ///
-    /// Repeat(section, separatedBy: BlankRows())   // stops at the first row that is not a section
+    /// VerticalRepeat(section, separatedBy: BlankRows())   // stops at the first row that is not a section
     /// </code>
     /// </para>
     /// <para>
@@ -381,11 +467,6 @@ namespace Unrect.Shapes
       => NotNull(shape) is UntilShape<T> bounded
         ? bounded.WithLandmark(landmark, orEnd)
         : new UntilShape<T>(shape, landmark, orEnd, Placement.Default);
-
-    /// <summary>
-    /// Carries the shape on from wherever it already sits, so movements read cumulatively. A shape
-    /// that has not been placed yet has nothing to carry on from and simply takes the new offset.
-    /// </summary>
 
     /// <summary>One guard: the receiver defaults to its own parameter name, anything else names itself.</summary>
     private static T NotNull<T>(T value, string parameter = "shape") where T : class

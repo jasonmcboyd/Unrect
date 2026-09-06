@@ -34,7 +34,7 @@ namespace Unrect.Shapes
     {
       var size = extent.Area.Size;
 
-      // Reachable only when the placement was replaced — Caption("X").After(SkipRows(1)), or a
+      // Reachable only when the placement was replaced — Caption("X").OffsetBy(SkipRows(1)), or a
       // caption inside a declared frame. Left in because it is also the half of this leaf that a
       // writer would satisfy: the writer emits the row, the reader verifies it.
       if (size.Height != 1)

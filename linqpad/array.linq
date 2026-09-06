@@ -40,4 +40,4 @@ var block = VerticalFlow(v => new
 	Rest = v.Next(rest),
 });
 
-Repeat(block, separatedBy: BlankRows()).Map(space).Dump();
+VerticalRepeat(block, separatedBy: BlankRows()).Map(space).Dump();

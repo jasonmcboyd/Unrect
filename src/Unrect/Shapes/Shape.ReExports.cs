@@ -30,20 +30,15 @@ namespace Unrect.Shapes
 
     /// <summary>
     /// Each offset applied to the space the one before it left, and summed — the way to combine
-    /// offsets, since the modifiers replace rather than accumulate.
+    /// offsets, since the modifiers replace rather than accumulate. Reached through
+    /// <c>.OffsetBy(...)</c>, the shape layer's one door onto the strategy calculus.
     /// </summary>
     public static IOffsetStrategy Then(params IOffsetStrategy[] offsets) => OffsetStrategies.Then(offsets);
 
-    // --- Anchoring vocabulary -------------------------------------------------------------------
-    //
-    // Where a shape starts and ends by content: a matcher (below) locates a row or column, and a
-    // lift decides what to do with it — To lands the shape ON the match so it owns that row, Past
-    // lands it just after, and .Until bounds a shape by one. Finding nothing is a placement
-    // failure: a strict shape reports which anchor was missing, and a Repeat stops looking for
-    // more sections.
+    // --- Anchoring to the far edge --------------------------------------------------------------
 
     /// <summary>
-    /// The rightmost <paramref name="width"/> columns. Normally spelled with <c>After</c>, which
+    /// The rightmost <paramref name="width"/> columns. Normally spelled with <c>.OffsetBy</c>, which
     /// replaces: an anchor measured from the far edge discards wherever a movement left off.
     /// </summary>
     public static IOffsetStrategy FromRight(int width) => OffsetStrategies.FromRight(width);
@@ -54,9 +49,17 @@ namespace Unrect.Shapes
     // --- Matchers -------------------------------------------------------------------------------
     //
     // One family, three shapes of question, both axes. A matcher only locates content and reports
-    // absence; what absence means is the lift's business (To/Past above, .Until below). Because a
-    // section can start at To(RowContaining("A")) and end at Until(RowContaining("B")) through the
-    // same matcher, the two cannot disagree about what a caption is.
+    // absence; what absence means belongs to the modifier that takes it — .On lands a shape ON the
+    // match so it owns that row, .Below (.RightOf) one beyond, and .Until bounds a shape by one.
+    // Because a section can start at .On(RowContaining("A")) and end at .Until(RowContaining("B"))
+    // through the same matcher, the two cannot disagree about what a caption is.
+    //
+    // The lifts those modifiers are built on — OffsetStrategies.To/Past — are deliberately NOT
+    // re-exported. At shape level a landmark is placed by a modifier that names its own relation;
+    // a raw offset strategy over a landmark is an escape hatch, and it is spelled like one:
+    // .OffsetBy(OffsetStrategies.To(...)). One position the modifiers cannot reach: a repeat's
+    // separatedBy: takes an IOffsetStrategy, not a shape, so a landmark-anchored separator is
+    // spelled with the raw lift there too.
 
     /// <summary>The first row satisfying <paramref name="predicate"/>.</summary>
     public static IRowLandmark RowWhere(Func<ISpace, int, bool> predicate) => RowLandmarks.RowWhere(predicate);
@@ -81,25 +84,6 @@ namespace Unrect.Shapes
     /// case-insensitively.
     /// </summary>
     public static IColumnLandmark ColumnContaining(string text) => ColumnLandmarks.ColumnContaining(text);
-
-    /// <summary>
-    /// Onto the row or column <paramref name="landmark"/> matches — the shape starts AT the match
-    /// and owns it. Overloaded on the axis rather than spelled <c>ToColumn</c>, because the
-    /// argument already names the axis.
-    /// </summary>
-    public static IOffsetStrategy To(IRowLandmark landmark) => OffsetStrategies.To(landmark);
-
-    /// <inheritdoc cref="To(IRowLandmark)"/>
-    public static IOffsetStrategy To(IColumnLandmark landmark) => OffsetStrategies.To(landmark);
-
-    /// <summary>
-    /// Onto the row or column after the match, for a shape that starts below (or right of) a row it
-    /// does not want to own — a section under a caption another shape describes.
-    /// </summary>
-    public static IOffsetStrategy Past(IRowLandmark landmark) => OffsetStrategies.Past(landmark);
-
-    /// <inheritdoc cref="Past(IRowLandmark)"/>
-    public static IOffsetStrategy Past(IColumnLandmark landmark) => OffsetStrategies.Past(landmark);
 
     // --- Extent vocabulary ----------------------------------------------------------------------
     //

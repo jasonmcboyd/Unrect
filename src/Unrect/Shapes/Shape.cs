@@ -274,13 +274,13 @@ namespace Unrect.Shapes
     /// The extent comes from the child count, so there is no width and height to get wrong and
     /// adding a field is one line. The block finds itself: it anchors on the first field's label,
     /// column first and then row, so the labels are the declaration <em>and</em> the anchor rather
-    /// than the same literal written twice. <c>.After(…)</c> replaces that anchor when a sheet holds
+    /// than the same literal written twice. <c>.On(…)</c> replaces that anchor when a sheet holds
     /// two blocks with the same first label.
     /// </para>
     /// <para>
     /// Values are <see cref="CellValue"/>s and blank ones are <c>Blank</c>, not failures: the labels
     /// are the structure, the values are data. Like <c>Caption</c>, a block searches from the cursor
-    /// and can jump, so inside a <c>Repeat</c> the anchor wants hoisting onto the item as well.
+    /// and can jump, so inside a repeat the anchor wants hoisting onto the item as well.
     /// </para>
     /// </summary>
     public static IShape<IReadOnlyDictionary<string, CellValue>> Fields(params Field[] fields)
@@ -346,9 +346,14 @@ namespace Unrect.Shapes
     /// <summary>
     /// One item stacked downwards as many times as the space supports.
     /// <para>
+    /// The axis is in the name because the concept has one, and the two forms are spelled
+    /// symmetrically for the same reason the flows are: no substrate's dominant axis is treated as
+    /// the normal case that needs no marking.
+    /// </para>
+    /// <para>
     /// <paramref name="separatedBy"/> is the offset <em>between</em> items and is never applied
     /// before the first — a leading gap belongs to the repeat itself
-    /// (<c>Repeat(...).AfterBlankRows()</c>). It is also load-bearing for termination: when
+    /// (<c>VerticalRepeat(...).AfterBlankRows()</c>). It is also load-bearing for termination: when
     /// content follows the last item, the separator is what carries the cursor over the gap so the
     /// repetition can recognise that the next item is not there. Without it, an item whose own
     /// placement still fits will be applied to that content and fail loudly.
@@ -371,9 +376,9 @@ namespace Unrect.Shapes
     /// var item =
     ///   section.Select(s => (Section?)s)          // the section as it should be
     ///     .Else(Row(_ => (Section?)null))         // ... or just its label row, and a warning
-    ///     .After(To(RowContaining("Section")));   // ... starting at the next section label
+    ///     .On(RowContaining("Section"));          // ... starting at the next section label
     ///
-    /// var sections = Repeat(item).Select(all => all.Where(s => s is not null).ToList());
+    /// var sections = VerticalRepeat(item).Select(all => all.Where(s => s is not null).ToList());
     ///
     /// var result = sections.MapWithDiagnostics(sheet);   // result.Diagnostics names the bad one
     /// </code>
@@ -384,11 +389,12 @@ namespace Unrect.Shapes
     /// <param name="atLeast">How many occurrences make a well-formed section.</param>
     /// <param name="declared">
     /// Supplied by the compiler as the text of the <paramref name="item"/> argument, so an item
-    /// hoisted into a local is called that in every path — <c>Repeat(investorDetail)</c> reads as
-    /// <c>Repeat[2] -&gt; 'investorDetail'</c>. It is not a naming API; pass <c>.Named(…)</c> to
-    /// choose a name, and note that an item written inline keeps its description instead.
+    /// hoisted into a local is called that in every path — <c>VerticalRepeat(investorDetail)</c>
+    /// reads as <c>VerticalRepeat[2] -&gt; 'investorDetail'</c>. It is not a naming API; pass
+    /// <c>.Named(…)</c> to choose a name, and note that an item written inline keeps its description
+    /// instead.
     /// </param>
-    public static IShape<IReadOnlyList<T>> Repeat<T>(
+    public static IShape<IReadOnlyList<T>> VerticalRepeat<T>(
       IShape<T> item,
       IOffsetStrategy? separatedBy = null,
       int atLeast = 0,
@@ -396,10 +402,11 @@ namespace Unrect.Shapes
       => Repeat(Orientation.Vertical, item, separatedBy, atLeast, declared);
 
     /// <summary>
-    /// One item stacked rightwards as many times as the space supports; see <c>Repeat</c> for
-    /// <paramref name="separatedBy"/>, <paramref name="atLeast"/>, and how the item is named.
+    /// One item stacked rightwards as many times as the space supports; see
+    /// <see cref="VerticalRepeat{T}"/> for <paramref name="separatedBy"/>,
+    /// <paramref name="atLeast"/>, and how the item is named.
     /// </summary>
-    public static IShape<IReadOnlyList<T>> RepeatHorizontal<T>(
+    public static IShape<IReadOnlyList<T>> HorizontalRepeat<T>(
       IShape<T> item,
       IOffsetStrategy? separatedBy = null,
       int atLeast = 0,

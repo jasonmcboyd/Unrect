@@ -55,7 +55,7 @@ namespace Unrect.Shapes
     /// <summary>The shape this context is inside, or null at the root.</summary>
     public IShape? Shape { get; }
 
-    /// <summary>Which occurrence of <see cref="Shape"/> this is, where that is meaningful (e.g. inside a <c>Repeat</c>).</summary>
+    /// <summary>Which occurrence of <see cref="Shape"/> this is, where that is meaningful (e.g. inside a repeat).</summary>
     public int? Index { get; }
 
     /// <summary>Where this context sits, relative to the space the root <c>Map</c> call was given.</summary>

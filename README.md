@@ -63,7 +63,7 @@ var investorBlock = TableRows<CashFlow>();
 
 // Declared once, placed twice — .Until bounds the first series so it stops at the
 // second caption instead of trying to parse it as another investor block.
-var series = Repeat(investorBlock, separatedBy: BlankRows());
+var series = VerticalRepeat(investorBlock, separatedBy: BlankRows());
 const string Inception = "Cash Flows using inception date";
 
 var byTransferDate = series
@@ -99,9 +99,9 @@ record CashFlow(string InvestorName, DateTime Date, string Transaction, double I
 - **Tolerance is declared per shape, never ambient.** `.Optional()` and `.Else()` mark
   exactly where a missing or malformed region is acceptable; nothing is silently lenient
   everywhere.
-- **Content anchors survive layout drift.** `To`, `Past`, `Caption`, and `.Until` find
-  their place by what a row or column *says*, not by a hard-coded offset that breaks the
-  next time someone inserts a row.
+- **Content anchors survive layout drift.** `.On`, `.Below`, `.RightOf`, `Caption`, and
+  `.Until` find their place by what a row or column *says*, not by a hard-coded offset that
+  breaks the next time someone inserts a row.
 
 ## Large files
 

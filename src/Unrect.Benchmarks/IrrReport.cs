@@ -51,7 +51,7 @@ namespace Unrect.Benchmarks
     private static readonly IShape<IReadOnlyList<CashFlow>> InvestorBlock = TableRows<CashFlow>();
 
     private static readonly IShape<IReadOnlyList<IReadOnlyList<CashFlow>>> Series =
-      Repeat(InvestorBlock, separatedBy: BlankRows());
+      VerticalRepeat(InvestorBlock, separatedBy: BlankRows());
 
     private static readonly IShape<IReadOnlyList<IReadOnlyList<CashFlow>>> ByTransferDate = Series
       .Under(Caption(CanonicalSpaces.DetailsCaption), Caption(CanonicalSpaces.TransferDateCaption))

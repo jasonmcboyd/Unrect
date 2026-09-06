@@ -60,6 +60,10 @@ namespace Unrect.Strategies
     // absence means; these two lifts decide it for a placement — the anchor was required. That
     // answer arrives as an OutOfBoundsException from an offset strategy, which is how a strict
     // shape reports a missing anchor and how a repeat learns there are no more sections.
+    //
+    // These are the calculus's spelling and stay mirror-symmetric with the rest of it. A shape
+    // declaration says the same two things as .On (both axes) and .Below/.RightOf (one each),
+    // where the word carries the relation and a direction appears only where the concept has one.
 
     /// <summary>
     /// Onto the row <paramref name="landmark"/> matches. The region starts AT that row, so the
@@ -87,7 +91,7 @@ namespace Unrect.Strategies
     // --- Anchoring to the far edge --------------------------------------------------------------
     //
     // Both measure back from the end of the available space, so they are normally spelled with
-    // .After(...), which replaces: composing a movement before a from-end anchor rarely means
+    // .OffsetBy(...), which replaces: composing a movement before a from-end anchor rarely means
     // anything, since the anchor discards where the movement left off.
 
     /// <summary>The rightmost <paramref name="width"/> columns of the available space.</summary>

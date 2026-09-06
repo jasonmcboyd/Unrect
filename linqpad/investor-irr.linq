@@ -12,7 +12,7 @@
 var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\examples\investor-irr.xlsx");
 
 // What this demonstrates: ONE shape declared once and PLACED TWICE, and .Until — the dual of
-// .After. The sheet carries the same per-investor blocks twice, under two captions:
+// .On. The sheet carries the same per-investor blocks twice, under two captions:
 //
 //   Cash Flows Using Transfer Date        <- first series
 //     ... three investor blocks ...
@@ -43,7 +43,7 @@ var investorBlock = TableRows<CashFlow>();
 const string Inception = "Cash Flows using inception date";
 
 // Declared once; the two placements below differ only in what announces them and where they stop.
-var irrDetails = Repeat(investorBlock, separatedBy: BlankRows());
+var irrDetails = VerticalRepeat(investorBlock, separatedBy: BlankRows());
 
 // The caption rows are nodes, not padding inside an offset: Under puts them in the flow, so they
 // are described, consumed once, and named in any failure path underneath.

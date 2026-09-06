@@ -153,7 +153,7 @@ namespace Unrect.Tests.Shapes
     public void ARepeatChild()
     {
       AssertReads(
-        VerticalFlow(v => $"{v.Next(IntCell())}|{string.Join(",", v.Next(Repeat(IntCell())))}"),
+        VerticalFlow(v => $"{v.Next(IntCell())}|{string.Join(",", v.Next(VerticalRepeat(IntCell())))}"),
         Ladder(),
         "1|2,3",
         1,
@@ -190,7 +190,7 @@ namespace Unrect.Tests.Shapes
       var space = Mixed(new object?[,] { { "preamble" }, { "Section" }, { 7 } });
 
       AssertReads(
-        VerticalFlow(v => $"{v.Next(Cell(c => c.GetString()))}|{v.Next(Cell(c => c.GetString()).After(To(RowContaining("Section"))))}"),
+        VerticalFlow(v => $"{v.Next(Cell(c => c.GetString()))}|{v.Next(Cell(c => c.GetString()).On(RowContaining("Section")))}"),
         space,
         "preamble|Section",
         1,
@@ -204,7 +204,7 @@ namespace Unrect.Tests.Shapes
     {
       var space = Grid(new[,] { { 1 }, { 2 }, { 0 }, { 3 }, { 4 }, { 0 }, { 0 } });
 
-      var shape = Repeat(VerticalFlow(v => $"{v.Next(IntCell())}+{v.Next(IntCell())}"), separatedBy: BlankRows())
+      var shape = VerticalRepeat(VerticalFlow(v => $"{v.Next(IntCell())}+{v.Next(IntCell())}"), separatedBy: BlankRows())
         .Select(items => string.Join(" ", items));
 
       AssertReads(shape, space, "1+2 3+4", 1, 5);
@@ -213,9 +213,9 @@ namespace Unrect.Tests.Shapes
       AssertDiagnostic(
         Assert.Single(shape.MapWithDiagnostics(space).Diagnostics),
         DiagnosticSeverity.Info,
-        "Repeat",
+        "VerticalRepeat",
         "the shape consumed 5 of 7 rows; rows 6+ were not described",
-        "Repeat",
+        "VerticalRepeat",
         "A6");
     }
 

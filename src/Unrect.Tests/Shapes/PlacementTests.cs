@@ -38,7 +38,7 @@ namespace Unrect.Tests.Shapes
       // declaration means what it reads wherever it sits.
       Assert.Equal(11, IntCell().Down(1).Map(CoordinateGrid()));
       Assert.Equal(2, IntCell().Right(1).Map(CoordinateGrid()));
-      Assert.Equal(12, IntCell().After(Then(SkipRows(1), SkipColumns(1))).Map(CoordinateGrid()));
+      Assert.Equal(12, IntCell().OffsetBy(Then(SkipRows(1), SkipColumns(1))).Map(CoordinateGrid()));
     }
 
     [Fact]
@@ -146,19 +146,19 @@ namespace Unrect.Tests.Shapes
     // --- Select commutes with the placement modifiers ----------------------------------------------
 
     [Fact]
-    public void SelectThenAfter_IsEquivalentToAfterThenSelect()
+    public void SelectThenOffsetBy_IsEquivalentToOffsetByThenSelect()
     {
       // The Select wrapper's placement is applied by the engine like any other shape's, so it does
       // not matter which side of the Select the modifier lands on.
       var space = Grid(new[,] { { 0 }, { 5 }, { 9 } });
 
-      var selectThenAfter = IntCell().Select(v => v * 2).After(SkipRows(1)).Apply(space);
-      var afterThenSelect = IntCell().After(SkipRows(1)).Select(v => v * 2).Apply(space);
+      var selectThenOffset = IntCell().Select(v => v * 2).OffsetBy(SkipRows(1)).Apply(space);
+      var offsetThenSelect = IntCell().OffsetBy(SkipRows(1)).Select(v => v * 2).Apply(space);
 
-      Assert.Equal(10, selectThenAfter.Value);
-      Assert.Equal(10, afterThenSelect.Value);
-      Assert.Equal(selectThenAfter.Advance.Height, afterThenSelect.Advance.Height);
-      Assert.Equal(selectThenAfter.Advance.Width, afterThenSelect.Advance.Width);
+      Assert.Equal(10, selectThenOffset.Value);
+      Assert.Equal(10, offsetThenSelect.Value);
+      Assert.Equal(selectThenOffset.Advance.Height, offsetThenSelect.Advance.Height);
+      Assert.Equal(selectThenOffset.Advance.Width, offsetThenSelect.Advance.Width);
     }
 
     [Fact]
@@ -172,7 +172,10 @@ namespace Unrect.Tests.Shapes
       Assert.Equal("bumped", shape.Name);
     }
 
-    // --- Movements compose; After and Sized replace --------------------------------------------------
+    // --- Movements compose; OffsetBy, the anchors and Sized replace -----------------------------------
+    //
+    // The anchors' half of the rule lives in AnchorModifierTests, beside what they anchor on; this
+    // file pins the rule itself, through the modifier that states it with nothing else attached.
 
     [Fact]
     public void RepeatedOffsetModifiers_Compose()
@@ -191,12 +194,13 @@ namespace Unrect.Tests.Shapes
     }
 
     [Fact]
-    public void After_ReplacesAnyMovementsAlreadyApplied()
+    public void OffsetBy_ReplacesAnyMovementsAlreadyApplied()
     {
-      // After is the "put it exactly here" spelling: it discards what came before rather than
-      // adding to it, which is also how a shape is told to ignore an offset it defaults to.
-      Assert.Equal(21, IntCell().Down(1).After(SkipRows(2)).Map(CoordinateGrid(width: 1)));
-      Assert.Equal(1, IntCell().Down(3).After(SkipRows(0)).Map(CoordinateGrid(width: 1)));
+      // OffsetBy is the "my start is where that resolves to" spelling: an assignment, so it discards
+      // what came before rather than adding to it, which is also how a shape is told to ignore an
+      // offset it defaults to.
+      Assert.Equal(21, IntCell().Down(1).OffsetBy(SkipRows(2)).Map(CoordinateGrid(width: 1)));
+      Assert.Equal(1, IntCell().Down(3).OffsetBy(SkipRows(0)).Map(CoordinateGrid(width: 1)));
     }
 
     [Fact]
@@ -215,8 +219,8 @@ namespace Unrect.Tests.Shapes
       Assert.Equal(new[] { "Investor", "Amount" }, Table(t => t.ColumnNames).Map(space));
       Assert.Equal(new[] { "Acme", "10" }, Table(t => t.ColumnNames).Down(1).Map(space));
 
-      // ...and After discards the default outright, landing exactly one row down.
-      Assert.Equal(new[] { "Investor", "Amount" }, Table(t => t.ColumnNames).After(SkipRows(1)).Map(space));
+      // ...and OffsetBy discards the default outright, landing exactly one row down.
+      Assert.Equal(new[] { "Investor", "Amount" }, Table(t => t.ColumnNames).OffsetBy(SkipRows(1)).Map(space));
     }
 
     [Fact]
@@ -251,13 +255,13 @@ namespace Unrect.Tests.Shapes
       // "Past the blank band, then one row further."
       var space = Grid(new[,] { { 0 }, { 0 }, { 9 }, { 7 } });
 
-      Assert.Equal(7, IntCell().After(Then(BlankRows(), SkipRows(1))).Map(space));
+      Assert.Equal(7, IntCell().OffsetBy(Then(BlankRows(), SkipRows(1))).Map(space));
     }
 
     [Fact]
     public void Then_WithNoOffsets_IsTheOrigin()
     {
-      Assert.Equal(1, IntCell().After(Then()).Map(CoordinateGrid()));
+      Assert.Equal(1, IntCell().OffsetBy(Then()).Map(CoordinateGrid()));
     }
 
     // --- Shapes are immutable values ----------------------------------------------------------------
@@ -274,7 +278,7 @@ namespace Unrect.Tests.Shapes
     }
 
     [Fact]
-    public void After_ReturnsANewShapeAndLeavesTheOriginalPlacement()
+    public void AMovement_ReturnsANewShapeAndLeavesTheOriginalPlacement()
     {
       var original = IntCell();
       var moved = original.Down(1);
@@ -363,7 +367,7 @@ namespace Unrect.Tests.Shapes
     public void ModifiersRejectANullShape()
     {
       Assert.Equal("shape", Assert.Throws<ArgumentNullException>(() => ((IShape<int>)null!).Named("x")).ParamName);
-      Assert.Equal("shape", Assert.Throws<ArgumentNullException>(() => ((IShape<int>)null!).After(SkipRows(1))).ParamName);
+      Assert.Equal("shape", Assert.Throws<ArgumentNullException>(() => ((IShape<int>)null!).OffsetBy(SkipRows(1))).ParamName);
       Assert.Equal("shape", Assert.Throws<ArgumentNullException>(() => ((IShape<int>)null!).Sized(AreaStrategies.MaxArea())).ParamName);
       Assert.Equal("shape", Assert.Throws<ArgumentNullException>(() => ((IShape<int>)null!).Select(v => v)).ParamName);
     }
@@ -383,7 +387,7 @@ namespace Unrect.Tests.Shapes
       // A null Area is what lets a flow size itself from its children — and therefore what lets a
       // Repeat item be declared without any placement at all.
       Assert.Null(VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(IntCell())}").Placement.Area);
-      Assert.Null(Repeat(IntCell()).Placement.Area);
+      Assert.Null(VerticalRepeat(IntCell()).Placement.Area);
       Assert.NotNull(IntCell().Placement.Area);
     }
   }

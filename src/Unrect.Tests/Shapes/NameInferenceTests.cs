@@ -167,7 +167,7 @@ namespace Unrect.Tests.Shapes
     {
       // Inference applies to Next only; capturing factory arguments is deferred. A repeat's index is
       // a coordinate into data and stays 0-based in brackets, beside a 1-based ordinal in hashes.
-      var items = Repeat(Text());
+      var items = VerticalRepeat(Text());
 
       var failure = Failure(VerticalFlow(v => $"{string.Join(",", v.Next(items))}"));
 
@@ -176,10 +176,10 @@ namespace Unrect.Tests.Shapes
 
     // --- Capture reaches a repeat's item as well as a Next call -------------------------------------------------
     //
-    // Repeat and RepeatHorizontal capture their item argument the same way Next captures a child,
-    // through the same ladder. Two things about the rendering are worth pinning because both were
-    // discovered rather than designed: the index stays on the repeat's own segment, and a repeat's
-    // item has no ordinal to fall back on — it is *the* item, not the nth child.
+    // VerticalRepeat and HorizontalRepeat capture their item argument the same way Next captures
+    // a child, through the same ladder. Two things about the rendering are worth pinning because
+    // both were discovered rather than designed: the index stays on the repeat's own segment, and
+    // a repeat's item has no ordinal to fall back on — it is *the* item, not the nth child.
 
     [Fact]
     public void Rung2_ARepeatsItemIsLabelledByTheLocalItWasHoistedInto()
@@ -188,10 +188,10 @@ namespace Unrect.Tests.Shapes
       // always rendered. Capture only changes which rung supplies that segment's text.
       var investorDetail = Text();
 
-      var failure = Failure(Repeat(investorDetail));
+      var failure = Failure(VerticalRepeat(investorDetail));
 
       Assert.Equal("'investorDetail'", failure.Subject);
-      Assert.Equal("Repeat[0] -> 'investorDetail' (Cell)", failure.Path);
+      Assert.Equal("VerticalRepeat[0] -> 'investorDetail' (Cell)", failure.Path);
     }
 
     [Fact]
@@ -199,7 +199,7 @@ namespace Unrect.Tests.Shapes
     {
       var chosen = Text().Named("explicit");
 
-      Assert.Equal("Repeat[0] -> 'explicit' (Cell)", Failure(Repeat(chosen)).Path);
+      Assert.Equal("VerticalRepeat[0] -> 'explicit' (Cell)", Failure(VerticalRepeat(chosen)).Path);
     }
 
     [Fact]
@@ -209,20 +209,20 @@ namespace Unrect.Tests.Shapes
       // call, and a modifier chain are all "not a bare identifier" and all render the same way.
       var block = Text();
 
-      Assert.Equal("Repeat[0] -> Cell", Failure(Repeat(Cell(c => c.GetString()))).Path);
-      Assert.Equal("Repeat[0] -> Cell", Failure(Repeat(MakeBlock())).Path);
-      Assert.Equal("Repeat[0] -> Cell", Failure(Repeat(block.Down(1))).Path);
+      Assert.Equal("VerticalRepeat[0] -> Cell", Failure(VerticalRepeat(Cell(c => c.GetString()))).Path);
+      Assert.Equal("VerticalRepeat[0] -> Cell", Failure(VerticalRepeat(MakeBlock())).Path);
+      Assert.Equal("VerticalRepeat[0] -> Cell", Failure(VerticalRepeat(block.Down(1))).Path);
     }
 
     [Fact]
-    public void RepeatHorizontal_CapturesItsItemIdentically()
+    public void HorizontalRepeat_CapturesItsItemIdentically()
     {
       var detail = Text();
 
       var failure = Assert.Throws<ShapeException>(() =>
-        RepeatHorizontal(detail).Map(Grid(new[,] { { 1, 2 } })));
+        HorizontalRepeat(detail).Map(Grid(new[,] { { 1, 2 } })));
 
-      Assert.Equal("RepeatHorizontal[0] -> 'detail' (Cell)", failure.Path);
+      Assert.Equal("HorizontalRepeat[0] -> 'detail' (Cell)", failure.Path);
     }
 
     [Fact]
@@ -233,7 +233,7 @@ namespace Unrect.Tests.Shapes
       var space = Mixed(new object?[,] { { "a" }, { null }, { "b" }, { null }, { 9 } });
 
       var detail = Text();
-      var details = Repeat(detail, separatedBy: BlankRows());
+      var details = VerticalRepeat(detail, separatedBy: BlankRows());
 
       var failure = Assert.Throws<ShapeException>(() =>
         VerticalFlow(v => string.Join(",", v.Next(details))).Map(space));
@@ -248,7 +248,7 @@ namespace Unrect.Tests.Shapes
       // by its own ladder, at its own use sites.
       var inner = Text();
       var detailFlow = VerticalFlow(w => $"{w.Next(Cell(c => c.GetInt()))}{w.Next(inner)}");
-      var blocks = Repeat(detailFlow);
+      var blocks = VerticalRepeat(detailFlow);
 
       var failure = Assert.Throws<ShapeException>(() =>
         VerticalFlow(v => string.Join(",", v.Next(blocks))).Map(Ladder()));
@@ -266,9 +266,9 @@ namespace Unrect.Tests.Shapes
 
       var detail = Text();
 
-      Assert.Equal(new[] { "a", "b" }, Repeat(detail, separatedBy: BlankRows(), atLeast: 1).Map(space));
-      Assert.Equal(new[] { "a", "b" }, Repeat(detail, separatedBy: BlankRows()).Map(space));
-      Assert.Equal(new[] { "a", "b" }, Repeat(detail, atLeast: 1, separatedBy: BlankRows()).Map(space));
+      Assert.Equal(new[] { "a", "b" }, VerticalRepeat(detail, separatedBy: BlankRows(), atLeast: 1).Map(space));
+      Assert.Equal(new[] { "a", "b" }, VerticalRepeat(detail, separatedBy: BlankRows()).Map(space));
+      Assert.Equal(new[] { "a", "b" }, VerticalRepeat(detail, atLeast: 1, separatedBy: BlankRows()).Map(space));
     }
 
     // --- Capture reaches a fallback as well -----------------------------------------------------------------------

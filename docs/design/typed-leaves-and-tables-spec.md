@@ -1,5 +1,11 @@
 # Spec: Typed Leaves, Typed Tables, and the Labelled-Pair Block
 
+> **Superseded spellings (2026-09-05):** placement examples in this spec use the retired
+> `.After(To(...))`/`.After(Past(...))` forms and bare `Repeat`. The current spellings are
+> `.On(m)`/`.Below(m)`/`.RightOf(m)`, `.OffsetBy(strategy)`, and
+> `VerticalRepeat`/`HorizontalRepeat` — see `docs/vocabulary.md`. The semantics described
+> here are unchanged.
+
 **Status:** IMPLEMENTED (2026-09-02, branch `experiment/combined-select`). All eight steps of §9 are done and the suite is green. Every §7 failure text and every §11 script expectation was reproduced, including the flat K-1 burn-down (92 of 2772), the entity card's keys and its 2x5 footprint at J2, and the accessor counts 53 → 22. The new test suites (§10) are QA's.
 
 This is **phase C** of the invertibility-audit remediation: audit items **6** (declared table
