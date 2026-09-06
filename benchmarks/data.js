@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1788712513982,
+  "lastUpdate": 1788712514171,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -5880,6 +5880,65 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/jasonmcboyd/Unrect/commit/16fef6aa0fb6978c79559b92910716e6ad44c995"
         },
         "date": 1788630324834,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Strategies.RowsWhileAnyValue_FullHeight",
+            "value": 489,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.RowsWhileAnyValue_Sparse",
+            "value": 489,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_HitAt10Percent",
+            "value": 496,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_HitAt90Percent",
+            "value": 499,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_MissWholeGrid",
+            "value": 2715,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Until_BoundResolution",
+            "value": 667,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.BlankRows_Skip",
+            "value": 497,
+            "unit": "bytes"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "e1d21c2d706b054d252bbea3a996b97f6f7bfc4b",
+          "message": "Hygiene: .gitattributes and editorconfig trim — line endings become a decision\n\nThe repo had no .gitattributes, so line endings were whatever tool\ntouched a file last — four .linq files sat CRLF in the index beside an\nLF corpus, and the vocabulary respell nearly flipped three of them\nwholesale (caught in review; a 10-line diff had become 366). One rule\nnow: the index holds LF (* text=auto); .linq and .sln check out CRLF\nbecause their native editors are Windows-bound; spreadsheets and images\nare explicitly binary. This commit carries the one-time renormalization\nso the flip lives here, deliberately, and nowhere else.\n\n.editorconfig gains trailing-whitespace trimming, with markdown exempt\n(a trailing double-space is a hard line break).\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016BvUBicaVLLYkdp7iqFZNo",
+          "timestamp": "2026-09-06T00:49:13Z",
+          "tree_id": "ce25b3593543c4145d69070ff009c9f67ff1aa09",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/e1d21c2d706b054d252bbea3a996b97f6f7bfc4b"
+        },
+        "date": 1788712514136,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
