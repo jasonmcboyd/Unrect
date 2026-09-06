@@ -1,0 +1,11 @@
+# One rule: the index holds LF; the working tree gets what the tool expects.
+# * text=auto normalizes every text file to LF in the repository. The two overrides
+# pin a CRLF checkout for the file kinds whose native editors are Windows-only
+# (LINQPad, Visual Studio's solution loader) so those tools never see a flip.
+# Everything matched binary is left byte-exact.
+* text=auto
+*.linq text eol=crlf
+*.sln  text eol=crlf
+*.xlsx binary
+*.xls  binary
+*.png  binary
