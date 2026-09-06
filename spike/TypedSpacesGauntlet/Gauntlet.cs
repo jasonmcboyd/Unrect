@@ -270,6 +270,32 @@ namespace TypedSpacesGauntlet
       where TSpace : class, ISpace
       => VerticalRepeat(item, separatedBy: BlankRows());
 
+    // =============================================================================================
+    // Scenario 8 — the phase-1 question: ONE modifier definition, both demands. (Added 2026-09-08.)
+    // =============================================================================================
+    //
+    // Every modifier is now generic in the SHAPE's own type and hands that type straight back, so
+    // the same six-call chain below is written once in the library and typed twice at the use site.
+    // Read the two declared types: the plain chain stays IShape<T> — which is what makes every
+    // existing test and every hoisted `IShape<T> Helper() => …` in the corpus keep compiling — and
+    // the demanding chain stays IShape<IFormulaSpace, T>, with nothing annotated on either.
+    public static string ModifiersPreserveWhatTheyAreGiven()
+    {
+      IShape<string> plain = Text()
+        .Named("title").Down(1).Right(2).AfterBlankRows().Padded(0).On(RowContaining("Total"));
+
+      IShape<IFormulaSpace, string?> demanding = Formula()
+        .Named("total").Down(1).Right(2).AfterBlankRows().Padded(0).On(RowContaining("Total"));
+
+      return $"{DeclaredType(plain)} | {DeclaredType(demanding)}";
+    }
+
+    // The lift is the one place a modifier's own type is not enough, and it is not a duplicate: the
+    // matcher's demand and the receiver's are unified by inference, which a fixed receiver type
+    // cannot do. Written plain, read demanding, annotated nowhere.
+    public static string LiftsRaiseWhatTheyTouch()
+      => DeclaredType(Text().Named("cell").Until(RowWithFormula()));
+
     public static void Run()
     {
       var formulaSheet = Sheets.WithFormulas();
@@ -290,6 +316,8 @@ namespace TypedSpacesGauntlet
       Show("7  hoisted plain helper          ", DeclaredType(AllocationRow()));
       Show("7  hoisted demanding helper      ", DeclaredType(SourcedRow()));
       Show("7  hoisted generic helper        ", DeclaredType(Sections(SourcedRow())));
+      Show("8  one modifier chain, two types ", ModifiersPreserveWhatTheyAreGiven());
+      Show("8  a lift raises the demand      ", LiftsRaiseWhatTheyTouch());
 
       // The runtime-fault design, priced: what the typed layer makes unreachable.
       try

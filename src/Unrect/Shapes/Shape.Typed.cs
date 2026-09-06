@@ -8,12 +8,21 @@ using Unrect.Strategies;
 namespace Unrect.Shapes
 {
   /// <summary>
-  /// EXPERIMENT (typed-spaces): the demanding twins of the vocabulary's composing factories.
+  /// EXPERIMENT (typed-spaces): the composing factories that have to be told what they are declared
+  /// over.
   /// <para>
-  /// Only the factories that <em>take</em> shapes need one. A leaf demands nothing, so
+  /// Only the factories that <em>take</em> shapes appear here. A leaf demands nothing, so
   /// <c>Text()</c>, <c>Range</c>, <c>TableRows&lt;T&gt;()</c> and the rest are unchanged and run
-  /// everywhere by variance; a composite's demand is the union of its children's, and C# will not
-  /// infer that union, so each of these has to be told.
+  /// everywhere by variance; and a modifier is written once and hands its receiver's own type back,
+  /// so none of those appear here either.
+  /// </para>
+  /// <para>
+  /// The three layouts are here because a lambda body cannot drive inference: nothing about
+  /// <c>v.Next(formulaChild)</c> tells the compiler what the flow demands, so the flow is told —
+  /// by two type arguments, or by one witness word. The two repeats and the choice are here for a
+  /// different and smaller reason: their result type is not their item's, and a type parameter
+  /// standing for the whole shape cannot be re-pointed at a new result. That is the residual
+  /// doubling, and it is a language limit.
   /// </para>
   /// </summary>
   public static partial class Shape

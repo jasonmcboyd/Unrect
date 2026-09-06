@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 using Unrect.Core;
@@ -29,12 +28,25 @@ namespace Unrect.Shapes
   /// cursor had got to, and replacing is also how a default is discarded. <c>Sized</c> replaces
   /// too, since extents do not stack.
   /// </para>
+  /// <para>
+  /// <b>A modifier keeps the demand it is applied to.</b> Each one is generic in the <em>shape's own
+  /// type</em> and hands that type back, so <c>Text().Named("t")</c> is an <c>IShape&lt;string&gt;</c>
+  /// exactly as it always was, and the same modifier on a formula-reading declaration hands back a
+  /// formula-reading declaration. That is why there is one of each here rather than one per demand.
+  /// Raising a demand is a different act with its own overloads — see
+  /// <c>ShapeExtensions.Typed</c> — because only a matcher, not a modifier, can add one.
+  /// </para>
   /// </summary>
   public static partial class ShapeExtensions
   {
     /// <summary>
     /// Decomposes <paramref name="space"/> and projects it in one call. The shape's own placement
     /// is applied here too, exactly as it would be nested inside another shape.
+    /// <para>
+    /// <paramref name="space"/> must satisfy whatever the shape demands, which for a declaration
+    /// that names no capability is any <see cref="ISpace"/> at all. A declaration that reads
+    /// formulas will not compile against a grid that has none.
+    /// </para>
     /// <para>
     /// Coordinates in failures are relative to <paramref name="space"/>, so a <c>Map</c> called
     /// from inside another shape's projection restarts them and reports positions relative to its
@@ -48,26 +60,37 @@ namespace Unrect.Shapes
     /// should carry it.
     /// </para>
     /// </summary>
-    public static TResult Map<TResult>(this IShape<TResult> shape, ISpace space) => shape.Apply(space).Value;
+    /// <typeparam name="TSpace">What the shape demands of the space.</typeparam>
+    /// <typeparam name="TResult">What the shape reads.</typeparam>
+    /// <param name="shape">The declaration.</param>
+    /// <param name="space">The space to decompose.</param>
+    public static TResult Map<TSpace, TResult>(this IShape<TSpace, TResult> shape, TSpace space)
+      where TSpace : class, ISpace
+      => shape.Apply(space).Value;
 
     /// <summary>
-    /// <see cref="Map{TResult}"/> plus where the shape landed and how much it consumed.
+    /// <see cref="Map{TSpace, TResult}"/> plus where the shape landed and how much it consumed.
     /// </summary>
-    public static AppliedResult<TResult> Apply<TResult>(this IShape<TResult> shape, ISpace space)
+    /// <typeparam name="TSpace">What the shape demands of the space.</typeparam>
+    /// <typeparam name="TResult">What the shape reads.</typeparam>
+    /// <param name="shape">The declaration.</param>
+    /// <param name="space">The space to decompose.</param>
+    public static AppliedResult<TResult> Apply<TSpace, TResult>(this IShape<TSpace, TResult> shape, TSpace space)
+      where TSpace : class, ISpace
     {
       if (shape is null)
         throw new ArgumentNullException(nameof(shape));
       if (space is null)
         throw new ArgumentNullException(nameof(space));
 
-      return ShapeEngine.Apply(shape, space, ShapeContext.Root(space));
+      return ShapeEngine.Apply(Plain(shape), space, ShapeContext.Root(space));
     }
 
     /// <summary>
-    /// <see cref="Map{TResult}"/>, keeping what the decomposition noticed: every tolerance boundary
-    /// that absorbed a failure, every alternative a choice passed over, and space the shape did not
-    /// describe. A failure nothing declared tolerance for still throws — declared tolerance is the
-    /// only thing that ever softens a parse.
+    /// <see cref="Map{TSpace, TResult}"/>, keeping what the decomposition noticed: every tolerance
+    /// boundary that absorbed a failure, every alternative a choice passed over, and space the shape
+    /// did not describe. A failure nothing declared tolerance for still throws — declared tolerance
+    /// is the only thing that ever softens a parse.
     /// <para>
     /// Space nothing described is reported as an <c>Info</c>, except where the entire parse was one
     /// absorbed failure: <c>shape.Optional().MapWithDiagnostics(space)</c> — tolerance declared at
@@ -82,39 +105,30 @@ namespace Unrect.Shapes
     /// compose shapes rather than nest calls.
     /// </para>
     /// </summary>
-    public static MapResult<TResult> MapWithDiagnostics<TResult>(this IShape<TResult> shape, ISpace space)
+    /// <typeparam name="TSpace">What the shape demands of the space.</typeparam>
+    /// <typeparam name="TResult">What the shape reads.</typeparam>
+    /// <param name="shape">The declaration.</param>
+    /// <param name="space">The space to decompose.</param>
+    public static MapResult<TResult> MapWithDiagnostics<TSpace, TResult>(this IShape<TSpace, TResult> shape, TSpace space)
+      where TSpace : class, ISpace
     {
       if (shape is null)
         throw new ArgumentNullException(nameof(shape));
       if (space is null)
         throw new ArgumentNullException(nameof(space));
 
+      var plain = Plain(shape);
       var context = ShapeContext.Root(space);
       var mark = context.Diagnostics.Mark();
-      var applied = ShapeEngine.Apply(shape, space, context);
+      var applied = ShapeEngine.Apply(plain, space, context);
 
       // Suppressed only when the whole parse is one absorbed failure: two boundaries that each
       // absorbed something have left a gap worth mentioning, even though neither consumed anything.
       if (!(applied.Advance.Width == 0 && applied.Advance.Height == 0 && context.Diagnostics.AbsorbedAt(mark)))
-        ReportUnconsumed(shape, space, applied.Offset.Size, applied.Consumed, context);
+        ReportUnconsumed(plain, space, applied.Offset.Size, applied.Consumed, context);
 
       return new MapResult<TResult>(applied.Value, context.Diagnostics.Snapshot());
     }
-
-    /// <summary>
-    /// Carries the shape on from wherever it already sits, so movements read cumulatively. A shape
-    /// that has not been placed yet has nothing to carry on from and simply takes the new offset.
-    /// </summary>
-    private static IShape<T> Move<T>(IShape<T> shape, IOffsetStrategy offset)
-    {
-      var placement = NotNull(shape).Placement;
-
-      return shape.WithPlacement(placement.WithOffset(
-        placement.HasDeclaredOffset ? OffsetStrategies.Then(placement.Offset, offset) : offset));
-    }
-
-    private static IShape<T> Pad<T>(IShape<T> shape, int left, int top, int right, int bottom)
-      => new PadShape<T>(NotNull(shape), left, top, right, bottom, Placement.Default);
 
     /// <summary>
     /// Labels the shape, so failures and diagnostics say <paramref name="name"/>.
@@ -128,7 +142,12 @@ namespace Unrect.Shapes
     /// reads badly.
     /// </para>
     /// </summary>
-    public static IShape<T> Named<T>(this IShape<T> shape, string name) => NotNull(shape).WithName(name);
+    /// <typeparam name="TShape">The shape's own type, which the modifier hands back.</typeparam>
+    /// <param name="shape">The declaration.</param>
+    /// <param name="name">What failures and diagnostics should call it.</param>
+    public static TShape Named<TShape>(this TShape shape, string name)
+      where TShape : class, IShape
+      => Cloned<TShape>(Base(shape).Renamed(name ?? throw new ArgumentNullException(nameof(name))));
 
     /// <summary>
     /// Puts the shape <em>on</em> the row <paramref name="landmark"/> matches: it starts at that row
@@ -147,11 +166,19 @@ namespace Unrect.Shapes
     /// out of sections, which is how a repetition knows to stop.
     /// </para>
     /// </summary>
-    public static IShape<T> On<T>(this IShape<T> shape, IRowLandmark landmark)
+    /// <typeparam name="TShape">The shape's own type, which the modifier hands back.</typeparam>
+    /// <param name="shape">The declaration.</param>
+    /// <param name="landmark">The row to sit on.</param>
+    public static TShape On<TShape>(this TShape shape, IRowLandmark landmark)
+      where TShape : class, IShape
       => shape.OffsetBy(OffsetStrategies.To(landmark));
 
-    /// <inheritdoc cref="On{T}(IShape{T}, IRowLandmark)"/>
-    public static IShape<T> On<T>(this IShape<T> shape, IColumnLandmark landmark)
+    /// <inheritdoc cref="On{TShape}(TShape, IRowLandmark)"/>
+    /// <typeparam name="TShape">The shape's own type, which the modifier hands back.</typeparam>
+    /// <param name="shape">The declaration.</param>
+    /// <param name="landmark">The column to sit on.</param>
+    public static TShape On<TShape>(this TShape shape, IColumnLandmark landmark)
+      where TShape : class, IShape
       => shape.OffsetBy(OffsetStrategies.To(landmark));
 
     /// <summary>
@@ -169,15 +196,23 @@ namespace Unrect.Shapes
     /// read by a repetition as the end of its sections — the same absence semantics as <c>On</c>.
     /// </para>
     /// </summary>
-    public static IShape<T> Below<T>(this IShape<T> shape, IRowLandmark landmark)
+    /// <typeparam name="TShape">The shape's own type, which the modifier hands back.</typeparam>
+    /// <param name="shape">The declaration.</param>
+    /// <param name="landmark">The row to sit below.</param>
+    public static TShape Below<TShape>(this TShape shape, IRowLandmark landmark)
+      where TShape : class, IShape
       => shape.OffsetBy(OffsetStrategies.Past(landmark));
 
     /// <summary>
     /// Starts the shape on the column directly right of the one <paramref name="landmark"/> matches
-    /// — the column twin of <see cref="Below{T}"/>, spelled distinctly because the direction is part
-    /// of what is being said.
+    /// — the column twin of <see cref="Below{TShape}"/>, spelled distinctly because the direction is
+    /// part of what is being said.
     /// </summary>
-    public static IShape<T> RightOf<T>(this IShape<T> shape, IColumnLandmark landmark)
+    /// <typeparam name="TShape">The shape's own type, which the modifier hands back.</typeparam>
+    /// <param name="shape">The declaration.</param>
+    /// <param name="landmark">The column to sit right of.</param>
+    public static TShape RightOf<TShape>(this TShape shape, IColumnLandmark landmark)
+      where TShape : class, IShape
       => shape.OffsetBy(OffsetStrategies.Past(landmark));
 
     /// <summary>
@@ -194,8 +229,12 @@ namespace Unrect.Shapes
     /// re-export — and prefer the anchors when one does.
     /// </para>
     /// </summary>
-    public static IShape<T> OffsetBy<T>(this IShape<T> shape, IOffsetStrategy offset)
-      => NotNull(shape).WithPlacement(shape.Placement.WithOffset(offset));
+    /// <typeparam name="TShape">The shape's own type, which the modifier hands back.</typeparam>
+    /// <param name="shape">The declaration.</param>
+    /// <param name="offset">Where the shape starts.</param>
+    public static TShape OffsetBy<TShape>(this TShape shape, IOffsetStrategy offset)
+      where TShape : class, IShape
+      => Cloned<TShape>(Base(shape).Replaced(shape.Placement.WithOffset(offset)));
 
     /// <summary>
     /// Moves the shape on past the blank rows in front of it.
@@ -206,30 +245,50 @@ namespace Unrect.Shapes
     /// front means no movement, not a failure.
     /// </para>
     /// </summary>
-    public static IShape<T> AfterBlankRows<T>(this IShape<T> shape) => Move(shape, OffsetStrategies.SkipBlankRows());
+    /// <typeparam name="TShape">The shape's own type, which the modifier hands back.</typeparam>
+    /// <param name="shape">The declaration.</param>
+    public static TShape AfterBlankRows<TShape>(this TShape shape)
+      where TShape : class, IShape
+      => Move(shape, OffsetStrategies.SkipBlankRows());
 
     /// <summary>
     /// Moves the shape on past the blank columns in front of it; see
-    /// <see cref="AfterBlankRows{T}"/> for why these two keep the word "after".
+    /// <see cref="AfterBlankRows{TShape}"/> for why these two keep the word "after".
     /// </summary>
-    public static IShape<T> AfterBlankColumns<T>(this IShape<T> shape) => Move(shape, OffsetStrategies.SkipBlankColumns());
+    /// <typeparam name="TShape">The shape's own type, which the modifier hands back.</typeparam>
+    /// <param name="shape">The declaration.</param>
+    public static TShape AfterBlankColumns<TShape>(this TShape shape)
+      where TShape : class, IShape
+      => Move(shape, OffsetStrategies.SkipBlankColumns());
 
     /// <summary>Moves the shape on <paramref name="rows"/> rows down from where it sits.</summary>
-    public static IShape<T> Down<T>(this IShape<T> shape, int rows)
+    /// <typeparam name="TShape">The shape's own type, which the modifier hands back.</typeparam>
+    /// <param name="shape">The declaration.</param>
+    /// <param name="rows">How far down.</param>
+    public static TShape Down<TShape>(this TShape shape, int rows)
+      where TShape : class, IShape
       => Move(shape, OffsetStrategies.ExplicitOffset(0, NotNegative(rows, nameof(rows))));
 
     /// <summary>
     /// Moves the shape on <paramref name="columns"/> columns right from where it sits.
     /// </summary>
-    public static IShape<T> Right<T>(this IShape<T> shape, int columns)
+    /// <typeparam name="TShape">The shape's own type, which the modifier hands back.</typeparam>
+    /// <param name="shape">The declaration.</param>
+    /// <param name="columns">How far right.</param>
+    public static TShape Right<TShape>(this TShape shape, int columns)
+      where TShape : class, IShape
       => Move(shape, OffsetStrategies.ExplicitOffset(NotNegative(columns, nameof(columns)), 0));
 
     /// <summary>
     /// Declares the shape's extent, replacing whatever it had — including a derived one, after
     /// which the extent is consumed in full whether the projection reads all of it or not.
     /// </summary>
-    public static IShape<T> Sized<T>(this IShape<T> shape, IAreaStrategy area)
-      => NotNull(shape).WithPlacement(shape.Placement.WithArea(area));
+    /// <typeparam name="TShape">The shape's own type, which the modifier hands back.</typeparam>
+    /// <param name="shape">The declaration.</param>
+    /// <param name="area">The extent.</param>
+    public static TShape Sized<TShape>(this TShape shape, IAreaStrategy area)
+      where TShape : class, IShape
+      => Cloned<TShape>(Base(shape).Replaced(shape.Placement.WithArea(area)));
 
     /// <summary>
     /// Falls back to <paramref name="fallback"/> when this shape fails, recording a
@@ -250,22 +309,26 @@ namespace Unrect.Shapes
     /// in the reading code and passes straight through, location and all. If the fallback fails as
     /// well, that failure is what you get, carrying a note about the shape it stood in for.
     /// </para>
+    /// <para>
+    /// The two shapes must read the same thing, and the compiler settles the pair's demand between
+    /// them: a plain shape with a formula-reading fallback is a formula-reading declaration, since
+    /// either of them may be the one that runs.
+    /// </para>
     /// </summary>
-    public static IShape<T> Else<T>(
-      this IShape<T> shape,
-      IShape<T> fallback,
+    /// <typeparam name="TShape">The type both shapes share, which the modifier hands back.</typeparam>
+    /// <param name="shape">The declaration.</param>
+    /// <param name="fallback">What to read instead.</param>
+    /// <param name="declared">Supplied by the compiler as the text of the <paramref name="fallback"/> argument.</param>
+    public static TShape Else<TShape>(
+      this TShape shape,
+      TShape fallback,
       [CallerArgumentExpression("fallback")] string? declared = null)
+      where TShape : class, IShape
     {
       if (fallback is null)
         throw new ArgumentNullException(nameof(fallback));
 
-      return new BoundaryShape<T>(
-        NotNull(shape),
-        fallback,
-        default!,
-        Placement.Default,
-        "Else",
-        UseSite.From(declared, null));
+      return Wrapped<TShape>(Base(shape).Otherwise(fallback, declared));
     }
 
     /// <summary>
@@ -288,7 +351,14 @@ namespace Unrect.Shapes
     /// projection that threw a null reference or ran off the end of its own array comes through
     /// undiminished.
     /// </para>
+    /// <para>
+    /// A filler value is not a declaration, so this is one of the few modifiers whose result type
+    /// differs from its receiver's; see <c>ShapeExtensions.Typed</c> for the demanding form.
+    /// </para>
     /// </summary>
+    /// <typeparam name="T">What the shape reads.</typeparam>
+    /// <param name="shape">The declaration.</param>
+    /// <param name="fallbackValue">What to yield instead.</param>
     public static IShape<T> Else<T>(this IShape<T> shape, T fallbackValue)
       => new BoundaryShape<T>(NotNull(shape), null, fallbackValue, Placement.Default, "Else");
 
@@ -303,13 +373,30 @@ namespace Unrect.Shapes
     /// project to a nullable first.
     /// </para>
     /// </summary>
+    /// <typeparam name="T">What the shape reads.</typeparam>
+    /// <param name="shape">The declaration.</param>
     public static IShape<T?> Optional<T>(this IShape<T> shape)
       => new BoundaryShape<T?>(NotNull(shape).Select(value => (T?)value), null, default, Placement.Default, "Optional");
 
     /// <summary>
+    /// Projects the shape's result through <paramref name="selector"/>. The wrapper is a shape like
+    /// any other, so <c>Named</c> and the placement modifiers work on either side of it.
+    /// </summary>
+    /// <typeparam name="T">What the shape reads.</typeparam>
+    /// <typeparam name="TResult">What the selector produces.</typeparam>
+    /// <param name="shape">The declaration.</param>
+    /// <param name="selector">The projection.</param>
+    public static IShape<TResult> Select<T, TResult>(this IShape<T> shape, Func<T, TResult> selector)
+      => new MapShape<T, TResult>(NotNull(shape), selector, Placement.Default);
+
+    /// <summary>
     /// Insets the shape's extent by <paramref name="all"/> cells on every side.
     /// </summary>
-    public static IShape<T> Padded<T>(this IShape<T> shape, int all)
+    /// <typeparam name="TShape">The shape's own type, which the modifier hands back.</typeparam>
+    /// <param name="shape">The declaration.</param>
+    /// <param name="all">The inset on every side.</param>
+    public static TShape Padded<TShape>(this TShape shape, int all)
+      where TShape : class, IShape
     {
       NotNegative(all, nameof(all));
 
@@ -320,7 +407,12 @@ namespace Unrect.Shapes
     /// Insets the shape's extent by <paramref name="horizontal"/> cells left and right and
     /// <paramref name="vertical"/> cells top and bottom.
     /// </summary>
-    public static IShape<T> Padded<T>(this IShape<T> shape, int horizontal, int vertical)
+    /// <typeparam name="TShape">The shape's own type, which the modifier hands back.</typeparam>
+    /// <param name="shape">The declaration.</param>
+    /// <param name="horizontal">The inset left and right.</param>
+    /// <param name="vertical">The inset top and bottom.</param>
+    public static TShape Padded<TShape>(this TShape shape, int horizontal, int vertical)
+      where TShape : class, IShape
     {
       NotNegative(horizontal, nameof(horizontal));
       NotNegative(vertical, nameof(vertical));
@@ -336,7 +428,14 @@ namespace Unrect.Shapes
     /// between this and the movement modifiers, and the two compose freely.
     /// </para>
     /// </summary>
-    public static IShape<T> Padded<T>(this IShape<T> shape, int left, int top, int right, int bottom)
+    /// <typeparam name="TShape">The shape's own type, which the modifier hands back.</typeparam>
+    /// <param name="shape">The declaration.</param>
+    /// <param name="left">The inset on the left.</param>
+    /// <param name="top">The inset on the top.</param>
+    /// <param name="right">The inset on the right.</param>
+    /// <param name="bottom">The inset on the bottom.</param>
+    public static TShape Padded<TShape>(this TShape shape, int left, int top, int right, int bottom)
+      where TShape : class, IShape
     {
       NotNegative(left, nameof(left));
       NotNegative(top, nameof(top));
@@ -379,15 +478,25 @@ namespace Unrect.Shapes
     /// <c>VerticalRepeat(item.Until(landmark), …)</c>.
     /// </para>
     /// </summary>
-    public static IShape<T> Until<T>(this IShape<T> shape, IRowLandmark landmark, bool orEnd = false)
+    /// <typeparam name="TShape">The shape's own type, which the modifier hands back.</typeparam>
+    /// <param name="shape">The declaration.</param>
+    /// <param name="landmark">The row the extent stops before.</param>
+    /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
+    public static TShape Until<TShape>(this TShape shape, IRowLandmark landmark, bool orEnd = false)
+      where TShape : class, IShape
       => Bound(shape, Landmark.Of(NotNull(landmark, nameof(landmark))), orEnd);
 
     /// <summary>
     /// Ends the shape's extent just before the first column that is <paramref name="landmark"/> —
-    /// the column twin of <see cref="Until{T}(IShape{T}, IRowLandmark, bool)"/>, spelled distinctly
+    /// the column twin of <see cref="Until{TShape}(TShape, IRowLandmark, bool)"/>, spelled distinctly
     /// so the common row form never has to be disambiguated by the reader.
     /// </summary>
-    public static IShape<T> UntilColumn<T>(this IShape<T> shape, IColumnLandmark landmark, bool orEnd = false)
+    /// <typeparam name="TShape">The shape's own type, which the modifier hands back.</typeparam>
+    /// <param name="shape">The declaration.</param>
+    /// <param name="landmark">The column the extent stops before.</param>
+    /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
+    public static TShape UntilColumn<TShape>(this TShape shape, IColumnLandmark landmark, bool orEnd = false)
+      where TShape : class, IShape
       => Bound(shape, Landmark.Of(NotNull(landmark, nameof(landmark))), orEnd);
 
     /// <summary>
@@ -419,13 +528,16 @@ namespace Unrect.Shapes
     /// <para>
     /// <paramref name="captions"/> is typed as any string-valued shape rather than a caption type,
     /// so a row shape whose value you want discarded may sit there too — but <c>Caption</c> is what
-    /// belongs there.
+    /// belongs there. A caption demands nothing of its space, which is the whole of what a caption
+    /// is; a section that sits under one it cannot read has a matcher problem, not a caption one.
     /// </para>
     /// </summary>
-    public static IShape<T> Under<T>(this IShape<T> shape, params IShape<string>[] captions)
+    /// <typeparam name="TShape">The shape's own type, which the modifier hands back.</typeparam>
+    /// <param name="shape">The declaration.</param>
+    /// <param name="captions">The rows that announce it.</param>
+    public static TShape Under<TShape>(this TShape shape, params IShape<string>[] captions)
+      where TShape : class, IShape
     {
-      if (shape is null)
-        throw new ArgumentNullException(nameof(shape));
       if (captions is null)
         throw new ArgumentNullException(nameof(captions));
       if (captions.Length == 0)
@@ -435,38 +547,72 @@ namespace Unrect.Shapes
         if (captions[index] is null)
           throw new ArgumentException($"Caption {index + 1} is null.", nameof(captions));
 
-      // Copied because params may hand us the caller's own array, and the lambda below is captured
-      // for every future application of this shape. A shape that could change is not a declaration.
-      var declared = (IShape<string>[])captions.Clone();
-
-      return new FlowShape<T>(
-        Orientation.Vertical,
-        cursor =>
-        {
-          // declared: null at both sites, and it is mandatory. Left to the compiler, the naming
-          // ladder would read the argument text from inside THIS helper and label every caption
-          // 'caption' and the section 'shape' — identifiers the user never wrote. Capture reads the
-          // immediate call site, so a helper has to opt out.
-          foreach (var caption in declared)
-            cursor.Next(caption, declared: null);
-
-          return cursor.Next(shape, declared: null);
-        },
-        Placement.Default,
-        description: "Under");
+      // Copied because params may hand us the caller's own array, and the flow below is captured for
+      // every future application of this shape. A shape that could change is not a declaration.
+      return Wrapped<TShape>(Base(shape).Beneath((IShape<string>[])captions.Clone()));
     }
 
     /// <summary>
-    /// Projects the shape's result through <paramref name="selector"/>. The wrapper is a shape like
-    /// any other, so <c>Named</c> and the placement modifiers work on either side of it.
+    /// The shape as the engine sees it. Sound because every <see cref="IShape{TSpace, TResult}"/>
+    /// this library produces is a <see cref="ShapeBase{TResult}"/>, which implements
+    /// <see cref="IShape{TResult}"/>; the demand lives only in the static type, so forgetting it
+    /// here is the identity.
     /// </summary>
-    public static IShape<TResult> Select<T, TResult>(this IShape<T> shape, Func<T, TResult> selector)
-      => new MapShape<T, TResult>(NotNull(shape), selector, Placement.Default);
+    internal static IShape<T> Plain<TSpace, T>(IShape<TSpace, T> shape)
+      where TSpace : class, ISpace
+      => shape as IShape<T> ?? throw NotOurs(shape, nameof(shape));
 
-    private static IShape<T> Bound<T>(IShape<T> shape, Landmark landmark, bool orEnd)
-      => NotNull(shape) is UntilShape<T> bounded
-        ? bounded.WithLandmark(landmark, orEnd)
-        : new UntilShape<T>(shape, landmark, orEnd, Placement.Default);
+    /// <summary>
+    /// Carries the shape on from wherever it already sits, so movements read cumulatively. A shape
+    /// that has not been placed yet has nothing to carry on from and simply takes the new offset.
+    /// </summary>
+    private static TShape Move<TShape>(TShape shape, IOffsetStrategy offset)
+      where TShape : class, IShape
+    {
+      var placement = NotNull(shape).Placement;
+
+      return shape.OffsetBy(placement.HasDeclaredOffset
+        ? OffsetStrategies.Then(placement.Offset, offset)
+        : offset);
+    }
+
+    private static TShape Pad<TShape>(TShape shape, int left, int top, int right, int bottom)
+      where TShape : class, IShape
+      => Wrapped<TShape>(Base(shape).Inset(left, top, right, bottom));
+
+    private static TShape Bound<TShape>(TShape shape, Landmark landmark, bool orEnd)
+      where TShape : class, IShape
+      => Wrapped<TShape>(Base(shape).BoundedBy(landmark, orEnd));
+
+    /// <summary>The shape as this library builds them, which is the only kind a modifier can modify.</summary>
+    private static ShapeBase Base<TShape>(TShape shape)
+      where TShape : class, IShape
+      => NotNull(shape) as ShapeBase ?? throw NotOurs(shape, nameof(shape));
+
+    /// <summary>
+    /// A clone back as the receiver's own type. Total: a clone has the receiver's runtime type, so
+    /// it is whatever the receiver was seen as.
+    /// </summary>
+    private static TShape Cloned<TShape>(IShape clone)
+      where TShape : class, IShape
+      => (TShape)clone;
+
+    /// <summary>
+    /// A wrapper back as the receiver's own type. A wrapper is a new shape reading the same thing,
+    /// so it satisfies every <em>interface</em> the receiver was seen through — but it is not the
+    /// receiver's class, which only a caller holding a shape by its own concrete type would ask for.
+    /// </summary>
+    private static TShape Wrapped<TShape>(IShape wrapper)
+      where TShape : class, IShape
+      => wrapper as TShape
+        ?? throw new InvalidOperationException(
+          $"A modifier that wraps hands back a {wrapper.GetType().Name}, which is not a {typeof(TShape).Name}. "
+          + "Hold the shape as IShape<T> — or, where it demands a capability, as IShape<TSpace, T> — rather than as its own class.");
+
+    private static ArgumentException NotOurs(IShape? shape, string parameter)
+      => new ArgumentException(
+        $"{shape?.GetType().Name ?? "null"} is not a shape this library built; only those can be modified or applied.",
+        parameter);
 
     /// <summary>One guard: the receiver defaults to its own parameter name, anything else names itself.</summary>
     private static T NotNull<T>(T value, string parameter = "shape") where T : class

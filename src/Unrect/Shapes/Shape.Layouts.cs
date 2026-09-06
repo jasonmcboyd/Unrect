@@ -35,7 +35,7 @@ namespace Unrect.Shapes
     /// Hoist each child into a well-named local and let the use site name it: <c>v.Next(summary)</c>
     /// makes the child <c>'summary'</c> in every path and message, at no cost. Reserve <c>Named</c>
     /// for shapes written inline, and never bake a name into a shape-returning helper — see
-    /// <see cref="ShapeExtensions.Named{T}(IShape{T}, string)"/>.
+    /// <see cref="ShapeExtensions.Named{TShape}(TShape, string)"/>.
     /// </para>
     /// <para>
     /// The lambda must call <c>Next</c> at least once — a flow that declares nothing would match
