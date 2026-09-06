@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1788712512643,
+  "lastUpdate": 1788712512836,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -1566,6 +1566,72 @@ window.BENCHMARK_DATA = {
             "value": 1605165.2389322917,
             "unit": "ns",
             "range": "± 3617.1205466288093"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "e1d21c2d706b054d252bbea3a996b97f6f7bfc4b",
+          "message": "Hygiene: .gitattributes and editorconfig trim — line endings become a decision\n\nThe repo had no .gitattributes, so line endings were whatever tool\ntouched a file last — four .linq files sat CRLF in the index beside an\nLF corpus, and the vocabulary respell nearly flipped three of them\nwholesale (caught in review; a 10-line diff had become 366). One rule\nnow: the index holds LF (* text=auto); .linq and .sln check out CRLF\nbecause their native editors are Windows-bound; spreadsheets and images\nare explicitly binary. This commit carries the one-time renormalization\nso the flip lives here, deliberately, and nowhere else.\n\n.editorconfig gains trailing-whitespace trimming, with markdown exempt\n(a trailing double-space is a hard line break).\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016BvUBicaVLLYkdp7iqFZNo",
+          "timestamp": "2026-09-06T00:49:13Z",
+          "tree_id": "ce25b3593543c4145d69070ff009c9f67ff1aa09",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/e1d21c2d706b054d252bbea3a996b97f6f7bfc4b"
+        },
+        "date": 1788712512802,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Strategies.RowsWhileAnyValue_FullHeight",
+            "value": 851355.2435128348,
+            "unit": "ns",
+            "range": "± 4320.804323160854"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.RowsWhileAnyValue_Sparse",
+            "value": 850854.9916015625,
+            "unit": "ns",
+            "range": "± 2631.816231020582"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_HitAt10Percent",
+            "value": 306444.71349158656,
+            "unit": "ns",
+            "range": "± 388.8597580927375"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_HitAt90Percent",
+            "value": 2785118.716536458,
+            "unit": "ns",
+            "range": "± 9701.525098346014"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_MissWholeGrid",
+            "value": 3247446.809988839,
+            "unit": "ns",
+            "range": "± 8639.956673505836"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Until_BoundResolution",
+            "value": 3964145.0868164063,
+            "unit": "ns",
+            "range": "± 140878.5637053738"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.BlankRows_Skip",
+            "value": 1586267.1114676339,
+            "unit": "ns",
+            "range": "± 2401.7001035425656"
           }
         ]
       }
