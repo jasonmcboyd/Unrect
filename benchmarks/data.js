@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1788712513417,
+  "lastUpdate": 1788712513610,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -4456,6 +4456,60 @@ window.BENCHMARK_DATA = {
             "value": 1360673.8890625,
             "unit": "ns",
             "range": "± 9610.826032943814"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "e1d21c2d706b054d252bbea3a996b97f6f7bfc4b",
+          "message": "Hygiene: .gitattributes and editorconfig trim — line endings become a decision\n\nThe repo had no .gitattributes, so line endings were whatever tool\ntouched a file last — four .linq files sat CRLF in the index beside an\nLF corpus, and the vocabulary respell nearly flipped three of them\nwholesale (caught in review; a 10-line diff had become 366). One rule\nnow: the index holds LF (* text=auto); .linq and .sln check out CRLF\nbecause their native editors are Windows-bound; spreadsheets and images\nare explicitly binary. This commit carries the one-time renormalization\nso the flip lives here, deliberately, and nowhere else.\n\n.editorconfig gains trailing-whitespace trimming, with markdown exempt\n(a trailing double-space is a hard line break).\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016BvUBicaVLLYkdp7iqFZNo",
+          "timestamp": "2026-09-06T00:49:13Z",
+          "tree_id": "ce25b3593543c4145d69070ff009c9f67ff1aa09",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/e1d21c2d706b054d252bbea3a996b97f6f7bfc4b"
+        },
+        "date": 1788712513575,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Diagnostics.Map_Plain",
+            "value": 1192346.6865234375,
+            "unit": "ns",
+            "range": "± 19445.737897213225"
+          },
+          {
+            "name": "Unrect.Benchmarks.Diagnostics.Map_WithDiagnostics",
+            "value": 1207929.2671875,
+            "unit": "ns",
+            "range": "± 11632.079205711485"
+          },
+          {
+            "name": "Unrect.Benchmarks.Diagnostics.Choice_FirstAlternativeLoses",
+            "value": 115825.8216389974,
+            "unit": "ns",
+            "range": "± 977.5888180862589"
+          },
+          {
+            "name": "Unrect.Benchmarks.Diagnostics.Optional_AbsorbsFailure",
+            "value": 120641.95217285157,
+            "unit": "ns",
+            "range": "± 896.7486944812345"
+          },
+          {
+            "name": "Unrect.Benchmarks.Diagnostics.ShapeException_Render",
+            "value": 749985.125,
+            "unit": "ns",
+            "range": "± 5613.0140376645995"
           }
         ]
       }
