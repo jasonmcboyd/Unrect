@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1788823322537,
+  "lastUpdate": 1788823322753,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -6341,6 +6341,65 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/jasonmcboyd/Unrect/commit/e1d21c2d706b054d252bbea3a996b97f6f7bfc4b"
         },
         "date": 1788712514136,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Strategies.RowsWhileAnyValue_FullHeight",
+            "value": 489,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.RowsWhileAnyValue_Sparse",
+            "value": 489,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_HitAt10Percent",
+            "value": 496,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_HitAt90Percent",
+            "value": 499,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_MissWholeGrid",
+            "value": 2715,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Until_BoundResolution",
+            "value": 667,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.BlankRows_Skip",
+            "value": 497,
+            "unit": "bytes"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "bf1fc2851544d9f87ffb3b76df4fa0b714780243",
+          "message": "Merge experiment/typed-spaces: the projection model\n\nThe deepest cut since wave 2: what was called Shape is a projection; the\nspace and its subspaces are the shapes. Seven phases plus pre-merge\ncleanup (docs/design/projection-model-spec.md, judgment record in §10):\nthe modifier doubling killed (43 -> 6 irreducible), IShape -> IProjection\nwith namespace Unrect.Projections, the capability stack (IFormulaSpace,\nCapability<T>() transport, the slicing law, shared-formula\nreconstruction), OrBlank and the eachRow slot, the CaptionMap bind, the\nscoped entry Over<TSpace>() and MapWorkbook, phase-7 acceptance with the\nfourteen recorded refusals, and the three-sweep cleanup.\n\nSuite 1,709 green (net8.0 and net48); both library TFMs 0 warnings.\nBreaking: the rename, the Table family, the SpreadsheetSpace shell\nretirement, and the entries.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016BvUBicaVLLYkdp7iqFZNo",
+          "timestamp": "2026-09-07T23:11:42Z",
+          "tree_id": "d091a9f7437fb1ec8d2b35119ab628b2a54047a3",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/bf1fc2851544d9f87ffb3b76df4fa0b714780243"
+        },
+        "date": 1788823322708,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
