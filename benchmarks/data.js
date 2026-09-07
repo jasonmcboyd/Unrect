@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1788823321167,
+  "lastUpdate": 1788823321389,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -2614,6 +2614,72 @@ window.BENCHMARK_DATA = {
             "value": 334138.58558872767,
             "unit": "ns",
             "range": "± 960.2315675890964"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "bf1fc2851544d9f87ffb3b76df4fa0b714780243",
+          "message": "Merge experiment/typed-spaces: the projection model\n\nThe deepest cut since wave 2: what was called Shape is a projection; the\nspace and its subspaces are the shapes. Seven phases plus pre-merge\ncleanup (docs/design/projection-model-spec.md, judgment record in §10):\nthe modifier doubling killed (43 -> 6 irreducible), IShape -> IProjection\nwith namespace Unrect.Projections, the capability stack (IFormulaSpace,\nCapability<T>() transport, the slicing law, shared-formula\nreconstruction), OrBlank and the eachRow slot, the CaptionMap bind, the\nscoped entry Over<TSpace>() and MapWorkbook, phase-7 acceptance with the\nfourteen recorded refusals, and the three-sweep cleanup.\n\nSuite 1,709 green (net8.0 and net48); both library TFMs 0 warnings.\nBreaking: the rename, the Table family, the SpreadsheetSpace shell\nretirement, and the entries.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016BvUBicaVLLYkdp7iqFZNo",
+          "timestamp": "2026-09-07T23:11:42Z",
+          "tree_id": "d091a9f7437fb1ec8d2b35119ab628b2a54047a3",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/bf1fc2851544d9f87ffb3b76df4fa0b714780243"
+        },
+        "date": 1788823321341,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Tables.Lambda_10k",
+            "value": 1103795.1287667411,
+            "unit": "ns",
+            "range": "± 15875.341780261742"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Lambda_100k",
+            "value": 11766050.028492646,
+            "unit": "ns",
+            "range": "± 233397.49242534352"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Bound_10k",
+            "value": 6624956.045955882,
+            "unit": "ns",
+            "range": "± 126678.04411861612"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Bound_100k",
+            "value": 73710892.35326087,
+            "unit": "ns",
+            "range": "± 1858685.341611843"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Dictionary_10k",
+            "value": 8391091.986458333,
+            "unit": "ns",
+            "range": "± 149679.22359221763"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Dictionary_100k",
+            "value": 82327838.76923075,
+            "unit": "ns",
+            "range": "± 1224739.2696057209"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Bound_ProjectionConstruction",
+            "value": 228360.5376953125,
+            "unit": "ns",
+            "range": "± 2005.704880274489"
           }
         ]
       }
