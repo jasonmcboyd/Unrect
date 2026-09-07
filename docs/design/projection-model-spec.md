@@ -455,7 +455,7 @@ Why the bind wins, on the record:
 | 4 | `OrBlank()`; row projections: `Table(headerRows, row)` slot; positional rung | the ladder's rung 3; positional binder subsumed |
 | 5 | The bind + `CaptionMap`; `Table<T>()` as the reflection desugarer — **DONE (2026-09-09)**, desugar recorded as conceptual only (§6.1) | rungs 1–3; `TableRows*` retired into the `Table` family |
 | 6 | Entry B (`Over<T>()` scope), backend vocabulary statics, `MapWorkbook` sugar — **DONE (2026-09-10)**, as built in §4.1 | the announced-demand ergonomics |
-| 7 | Gauntlet rerun as acceptance + the work-Claude parser in final form | the judgment evidence |
+| 7 | Gauntlet rerun as acceptance + the work-Claude parser in final form — **DONE**, judged in §10 | the judgment evidence |
 
 ## 9. Open questions
 
@@ -474,3 +474,122 @@ Why the bind wins, on the record:
 5. `CellValue`'s name stays (owner-reviewed 2026-09-07): Core is generic over
    *backends*, not over *domains* — the document vocabulary is the declared center, and
    the charter wording should say so.
+
+## 10. Acceptance (phase 7) — the judgment record
+
+The evidence left the spike. `src/Unrect.Tests/Projections/ProjectionModelAcceptanceTests.cs`
+(16 tests) runs the gauntlet's *runnable* scenarios that no phase suite already pinned, and its
+distinctive content is whole declarations rather than mechanisms: a pre-campaign declaration
+applied to two spaces, the work-Claude buying-power export read as a document, the IRR report at
+the top of the table ladder, and the audited ledger through the scope. The fourteen refusals — the
+half that cannot be a test, because a test project must compile — are documented verbatim in
+`projection-model-refusals.md` and stay re-runnable in `spike/TypedSpacesGauntlet/MustNotCompile.cs`.
+All fourteen still refuse, with the recorded messages unchanged, re-run against this tree.
+
+The experiment's §7 criteria, revisited item by item. Honest verdicts, including the two costs that
+survived.
+
+### 1. "Scenario 1 unchanged, or fail" — **PASS, verified one last time**
+
+A plain declaration is spelled with no type argument the vocabulary did not always have, no witness,
+no scope, and the word *space* nowhere:
+
+```csharp
+IProjection<Report> report = VerticalFlow(v => new Report(
+  Title: v.Next(Text()),
+  Rows:  v.Next(Table<Allocation>())));
+```
+
+That is the acceptance suite's first test, and it also runs, unchanged, over a space that
+implements a capability — variance, not an overload. The corpus-scale proof is stronger than any
+one test and was collected as the phases landed: phases 1 and 2 changed **zero** plain declarations
+(1,439 tests untouched and green through both), and the 72 explicitly-typed `IProjection<T>` sites
+in the suite were never edited.
+
+### 2. The annotation tax — **final census: two sites pay, and each states a requirement**
+
+Everything the gauntlet marked TAX in scenarios 2–7 is gone except two entries, and neither is a
+type argument written to appease inference:
+
+| Site | Final cost | Reads as |
+|---|---|---|
+| A capability leaf (`Formula()`), a capability matcher (`.On(RowWithFormula())`), any chain over either | **zero** | the demand climbs by inference; the declaration is written as if untyped |
+| A *mixed* layout — one demanding child among plain ones | **one word**: `VerticalFlow(Formulas, v => …)` or `Over<ISpreadsheetSpace>()` once for the declaration | a requirement, in prose position. The explicit-type-argument spelling (two arguments, one of them ceremony) was pruned in phase 2 |
+| A hoisted demanding helper | one type argument **in the return type** | a statement of what the helper needs — the thing a tooltip shows at every use site |
+| A hoisted *generic* helper (`Sections<TSpace, T>`) | the parameter, its `where TSpace : class, ISpace` constraint, and — recorded at phase 7 — its plain instantiation is `IProjection<ISpace, T>`, which does **not** convert to `IProjection<T>` (the latter derives from the former; the conversion runs one way) | appeasing the compiler. This is the tax's whole remaining balance |
+
+Scenario 2's original tax (`.Demanding<IFormulaSpace, IReadOnlyList<T>>()`, two type arguments of
+which one was pure ceremony) is not paid by anyone, because the reach-through spelling it existed
+for was never shipped: `Formula()` is a leaf (§5), and the witness form `.Demanding(Formulas)`
+writes no type argument at all.
+
+Verdict: **PASS.** The one site that reads as appeasement is the generic helper, it costs a
+constraint and a base-form return type, and it is the rarest shape in the vocabulary.
+
+### 3. The doubling — **43 → 6, and the six are not duplicates of each other**
+
+Phase 1's third design won: a modifier is generic in the *projection's* own type and hands it
+straight back, so one definition serves plain and demanding receivers without knowing demands
+exist. The final census: **21 single-definition modifiers; 16 demand-raising or demand-declaring
+members** (a distinct set — the lifts unify the receiver's demand with the matcher's, which a fixed
+receiver type cannot do); **6 residual doubles**, five of them the type-function limit (C# cannot
+say "this same projection with `T` replaced by `T?`" — `Optional`, `Select`, `Else`) and one
+(`Choice`) kept doubled by owner judgment for its named type errors.
+
+Engine damage, the other half of criterion 3: **none.** `TSpace` is a phantom — it appears in no
+member — so `ProjectionEngine`, `Placement`, the views and every composite are written against the
+untyped form exactly as before, and the typed layer costs one internal cast at the seam.
+
+### 4. Error-message quality — **PASS, with a documented worst case and its cure**
+
+The taxonomy is exact and is tabulated in the refusals ledger: refusals landing on an **assignment
+or an argument** produce CS0266/CS1503 messages that name both types and the capability; refusals
+landing on **generic inference** produce CS0411 boilerplate that names neither. The worst message in
+the set is (e) — a demanding child in a plain flow, reported as `CS0411` on `Next`, pointing two
+lines from the fix.
+
+The phase-6 finding stands as the campaign's sharpest ergonomic result: inside a scope the cursor's
+space is already fixed, so the same mistake is a failed *argument conversion* —
+
+```
+CS1503: Argument 1: cannot convert from 'IProjection<IFormulaSpace, string?>'
+                                     to 'IProjection<Unrect.Core.ISpace, string>'
+```
+
+— both types named, at the child that raised the demand. **Scoping a declaration buys diagnosis,
+not just brevity.** That was not why entry B was specified and it is now the strongest argument for
+it.
+
+### 5. What the fallback (§5) turned out to be — **the floor, not the alternative**
+
+The experiment priced the runtime-fault design as the remainder if the typed layer failed. The typed
+layer did not fail, and §5 shipped anyway and is not redundant, because the types close three doors
+short of all of them:
+
+1. **The cast escapes** — a phantom parameter has nothing to check at run time, and
+   `(IProjection<T>)demanding` compiles and succeeds. Explicit at the site; nothing warns.
+2. **A lambda's body is invisible** — the original "do not adopt" finding, dissolved for the main
+   path by moving records onto projections (§6) and by shipping `Formula()` as a leaf rather than a
+   reach-through (§5), not by the type system growing eyes.
+3. **`Landmark` drops the demand at the seam** — deliberately, so the runtime fault stays reachable
+   and therefore has to stay correct.
+
+So the boundary rule ("I could not look" is a fault, never a no-match, and no tolerance absorbs it)
+is load-bearing under the typed layer rather than instead of it. It is pinned in
+`CapabilityFaultTests` and `FormulaCapabilityTests`, and it is what makes the three holes survivable
+rather than silent.
+
+### The campaign's numbers
+
+| Phase | Suite | Note |
+|---|---|---|
+| checkpoint | 1,439 | the spec, the spike, the gauntlet |
+| 1 — the doubling dies | 1,439 | zero delta: nothing user-visible changed |
+| 2 — the rename | 1,439 | zero delta, literal pins respelled in the same pass |
+| 3 — the capability stack | 1,545 | +106: formulas, shared-formula reconstruction, the slicing law as a theory |
+| 4 — `OrBlank`, the `eachRow` slot | 1,610 | +65 |
+| 5 — the bind and the `CaptionMap` | 1,641 | +31 |
+| 6 — the scoped entry, `MapWorkbook` | 1,684 | +43 |
+| 7 — acceptance | **1,700** | +16, plus the refusals ledger (14 recorded refusals, re-verified) |
+
+Both TFMs 0 warnings, `--no-incremental`, at every phase including this one.

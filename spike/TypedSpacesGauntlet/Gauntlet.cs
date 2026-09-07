@@ -385,19 +385,8 @@ namespace TypedSpacesGauntlet
       }
     }
 
-    /// <summary>
-    /// The walk is monotone: the table's own bound is discovered a row at a time and each record is
-    /// projected as its row is reached, so nothing reads behind the furthest row already read. The
-    /// answer a windowed reader cares about is the second number.
-    /// </summary>
-    public static string SparseRowsAreReadForwardOnly()
-    {
-      var watched = new WatermarkSpace(Sheets.BuyingPower());
-
-      var records = SparseRows(watched);
-
-      return $"{records.Count} records; high-water row {watched.HighWaterMark}; deepest backward reach {watched.BackwardReach} rows";
-    }
+    // The forward-only measurement moved to the suite (ProjectionModelAcceptanceTests, via the
+    // test project's own WatermarkSpace mirror) when phase 7 promoted it from evidence to pin.
 
     // =============================================================================================
     // Scenario 10 — the bind, §6's matrix cells 1 and 2. (Added 2026-09-09, phase 5.)
@@ -629,7 +618,6 @@ namespace TypedSpacesGauntlet
       Show("9  failure names the record      ", FailureInsideARecord());
       Show("9  OrBlank vs a wrong kind       ", OrBlankStillFailsOnKind());
       Show("9  OrBlank vs a non-leaf         ", OrBlankIsForLeaves());
-      Show("9  forward-only walk             ", SparseRowsAreReadForwardOnly());
       Show("10 bound rows (captions)         ", JoinAll(BoundRows(plainSheet)));
       Show("10 ... same bind, columns moved  ", JoinAll(BoundRows(Sheets.Reordered())));
       Show("10 a bound row's demand          ", DeclaredType(BoundSourcedRecords()));
