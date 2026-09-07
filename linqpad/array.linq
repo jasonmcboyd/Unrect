@@ -4,11 +4,11 @@
   <Reference Relative="..\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll</Reference>
   <Namespace>Unrect</Namespace>
   <Namespace>Unrect.Core</Namespace>
-  <Namespace>Unrect.Shapes</Namespace>
-  <Namespace>static Unrect.Shapes.Shape</Namespace>
+  <Namespace>Unrect.Projections</Namespace>
+  <Namespace>static Unrect.Projections.Projection</Namespace>
 </Query>
 
-// Shapes over an in-memory array. The adapter decides blankness where data enters
+// Projections over an in-memory array. The adapter decides blankness where data enters
 // the system — in this grid, zero means empty — and everything above it is the same
 // vocabulary the spreadsheet scripts use.
 var nums = new[,]

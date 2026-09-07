@@ -85,8 +85,8 @@ namespace Unrect.Tests.Streaming
       // The guarantee, stated with the condition that actually bounds it. Chunks are allocated and
       // dropped continuously as the window slides, so one on the Large Object Heap would trade a
       // bounded heap for a fragmenting one — but a chunk cannot hold less than a row, and one row
-      // of 3,542 columns is already 85,008 bytes. Past about 3,541 columns the sheet itself decides,
-      // and nothing the chunk maths can do will help. That is documented, not a bug.
+      // of 3,542 columns is already 85,008 bytes. Past about 3,541 columns the sheet itself
+      // decides, and nothing the chunk maths can do will help. That is documented, not a bug.
       var rows = SheetStore.DefaultChunkRows(columns);
       var bytes = (long)rows * columns * SheetStore.BytesPerCell;
 
@@ -164,8 +164,8 @@ namespace Unrect.Tests.Streaming
     public void ASheetThatReportsNoDimensionIsMeasuredByReadingIt()
     {
       // The extent is discovered rather than declared, and it is a real extent when it arrives: the
-      // space is exactly as big as the sheet turned out to be, so a shape sees the same thing it
-      // would have seen had the file described itself.
+      // space is exactly as big as the sheet turned out to be, so a projection sees the same thing
+      // it would have seen had the file described itself.
       using var book = Book(new FakeRowSource(new FakeSheet("Ledger", 25, 3) { ReportsDimension = false }));
 
       var sheet = book.Sheet("Ledger");
@@ -179,9 +179,9 @@ namespace Unrect.Tests.Streaming
     [Fact]
     public void AMeasuredSheetIsStillReadAWindowAtATime()
     {
-      // Measuring settles the extent; it must not settle the memory. The window still bounds what is
-      // held, every row is still materialised exactly once, and the survey pass itself materialises
-      // nothing — it counted rows and dropped them.
+      // Measuring settles the extent; it must not settle the memory. The window still bounds what
+      // is held, every row is still materialised exactly once, and the survey pass itself
+      // materialises nothing — it counted rows and dropped them.
       using var book = Book(new FakeRowSource(new FakeSheet("Ledger", 100, 2) { ReportsDimension = false }), windowRows: 40, chunkRows: 10);
       var sheet = book.Sheet("Ledger");
 
@@ -214,9 +214,9 @@ namespace Unrect.Tests.Streaming
     {
       // The survey is a forward pass over the whole file that the caller never asked for, and it
       // moves none of the sheet's other counters — it materialises nothing, loads no chunk and
-      // touches no window — so without this number its cost is invisible. Reported where the sheet's
-      // other costs are read, and zero for the sheets that described themselves, which is nearly all
-      // of them: a column of zeroes is not worth the width, so ToString omits it there.
+      // touches no window — so without this number its cost is invisible. Reported where the
+      // sheet's other costs are read, and zero for the sheets that described themselves, which is
+      // nearly all of them: a column of zeroes is not worth the width, so ToString omits it there.
       using var book = Book(new FakeRowSource(
         new FakeSheet("Surveyed", 25, 3) { ReportsDimension = false },
         new FakeSheet("Declared", 25, 3)));
@@ -224,8 +224,8 @@ namespace Unrect.Tests.Streaming
       _ = book.Sheet("Surveyed");
       _ = book.Sheet("Declared");
 
-      // Twenty-five rows counted and dropped, against zero rows materialised: the pass cost time and
-      // no memory, which is exactly the distinction the counter exists to draw.
+      // Twenty-five rows counted and dropped, against zero rows materialised: the pass cost time
+      // and no memory, which is exactly the distinction the counter exists to draw.
       var surveyed = book.Statistics("Surveyed")!.Value;
       Assert.Equal(25, surveyed.RowsMeasured);
       Assert.Equal(0, surveyed.RowsMaterialised);
@@ -237,8 +237,8 @@ namespace Unrect.Tests.Streaming
     [Fact]
     public void ASheetThatYieldsNoRowsMeasuresEmpty()
     {
-      // The degenerate case reads as empty rather than as anything else. A sheet nobody can size and
-      // nobody can read is 0 by 0, which is what the eager path makes of the same file.
+      // The degenerate case reads as empty rather than as anything else. A sheet nobody can size
+      // and nobody can read is 0 by 0, which is what the eager path makes of the same file.
       using var book = Book(new FakeRowSource(new FakeSheet("Ledger", 0, 0) { ReportsDimension = false }));
 
       var sheet = book.Sheet("Ledger");
@@ -355,8 +355,8 @@ namespace Unrect.Tests.Streaming
     [Fact]
     public void ABandThatFitsTheWindowReportsNoOverrun()
     {
-      // The control for the pair below. Five chunks inside a six-chunk budget: the band is anchored,
-      // nothing is evicted from inside it, and neither counter has anything to say.
+      // The control for the pair below. Five chunks inside a six-chunk budget: the band is
+      // anchored, nothing is evicted from inside it, and neither counter has anything to say.
       var store = Store(rows: 200, columns: 2, chunkRows: 10, windowChunks: 6);
 
       for (var pass = 0; pass < 3; pass++)

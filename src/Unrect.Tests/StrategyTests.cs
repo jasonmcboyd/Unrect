@@ -5,7 +5,7 @@ using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Tests.ShapeTestSpaces;
+using static Unrect.Tests.ProjectionTestSpaces;
 
 using static Unrect.Strategies.AreaStrategies;
 using static Unrect.Strategies.OffsetStrategies;
@@ -14,9 +14,9 @@ using static Unrect.Strategies.SizeStrategies;
 namespace Unrect.Tests
 {
   /// <summary>
-  /// Strategies are how a shape declares a boundary without walking the grid. These tests pin the
-  /// counting semantics of each one: what "while all" and "while any" mean, whether the terminating
-  /// row is included, and what happens when an explicit count does not fit.
+  /// Strategies are how a projection declares a boundary without walking the grid. These tests pin
+  /// the counting semantics of each one: what "while all" and "while any" mean, whether the
+  /// terminating row is included, and what happens when an explicit count does not fit.
   /// </summary>
   public class StrategyTests
   {
@@ -609,7 +609,7 @@ namespace Unrect.Tests
     }
 
     [Fact]
-    public void EveryLiftShapeThrowsOnAMiss_OnBothAxes()
+    public void EveryLiftProjectionThrowsOnAMiss_OnBothAxes()
     {
       Assert.ThrowsAny<OutOfBoundsException>(() => To(RowLandmarks.RowWhere((_, _) => false)).GetOffset(Labelled()));
       Assert.ThrowsAny<OutOfBoundsException>(() => To(RowLandmarks.RowWithCell(_ => false)).GetOffset(Labelled()));
@@ -811,9 +811,9 @@ namespace Unrect.Tests
 
     // --- Landmarks: the same content rules, without the offset -------------------------------------
     //
-    // A landmark says where a shape ends, where a seek says where one starts. The trio mirrors the
+    // A landmark says where a projection ends, where a seek says where one starts. The trio mirrors the
     // seeks exactly and matches on the same rules; the difference is that a landmark reports "not
-    // found" as null and lets the shape bounding itself decide, where a seek throws.
+    // found" as null and lets the projection bounding itself decide, where a seek throws.
 
     private static ISpace RowsWithATotal() => Text(new string?[,]
     {
@@ -860,8 +860,8 @@ namespace Unrect.Tests
     [Fact]
     public void RowLandmarks_ReportAMissAsNullRatherThanThrowing()
     {
-      // The whole difference from a seek: a missing end is a question for the shape being bounded,
-      // not a failure in itself.
+      // The whole difference from a seek: a missing end is a question for the projection being
+      // bounded, not a failure in itself.
       Assert.Null(RowLandmarks.RowWhere((_, _) => false).FindRow(RowsWithATotal()));
       Assert.Null(RowLandmarks.RowWithCell(_ => false).FindRow(RowsWithATotal()));
       Assert.Null(RowLandmarks.RowContaining("Nope").FindRow(RowsWithATotal()));
@@ -925,7 +925,8 @@ namespace Unrect.Tests
       }
 
       // ...including on what does not match, which the two report differently: the landmark returns
-      // null and leaves the decision to its caller, and the lift turns that into a placement failure.
+      // null and leaves the decision to its caller, and the lift turns that into a placement
+      // failure.
       Assert.Null(RowLandmarks.RowContaining("TOT").FindRow(space));
       Assert.ThrowsAny<OutOfBoundsException>(() => To(RowLandmarks.RowContaining("TOT")).GetOffset(space));
     }

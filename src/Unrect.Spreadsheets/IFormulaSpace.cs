@@ -1,7 +1,7 @@
 using System;
 
 using Unrect.Core;
-using Unrect.Shapes;
+using Unrect.Projections;
 
 namespace Unrect.Spreadsheets
 {
@@ -15,7 +15,8 @@ namespace Unrect.Spreadsheets
   /// </para>
   /// <para>
   /// <b>The slicing law.</b> An implementation's subspaces must be capable too, with translated
-  /// coordinates: a slice may never invent capability its parent lacked nor shed what its parent had.
+  /// coordinates: a slice may never invent capability its parent lacked nor shed what its parent
+  /// had.
   /// </para>
   /// </summary>
   public interface IFormulaSpace : ISpace
@@ -33,7 +34,7 @@ namespace Unrect.Spreadsheets
   /// EXPERIMENT (typed-spaces): the formula capability's declaration vocabulary — one leaf, one
   /// matcher, one reach-through. What a backend package would ship if the experiment were adopted.
   /// </summary>
-  public static class FormulaShapes
+  public static class FormulaProjections
   {
     /// <summary>
     /// The formula capability's ascription witness: <c>rows.Demanding(Formulas)</c> states that a
@@ -46,8 +47,8 @@ namespace Unrect.Spreadsheets
     /// spelling: a declaration containing this one cannot be applied to a space without formulas,
     /// and the demand travels up through whatever composes it.
     /// </summary>
-    public static IShape<IFormulaSpace, string?> Formula()
-      => Shape.Range(1, 1, block => block.Space.Capability<IFormulaSpace>()?.FormulaAt(0, 0))
+    public static IProjection<IFormulaSpace, string?> Formula()
+      => Projection.Range(1, 1, block => block.Space.Capability<IFormulaSpace>()?.FormulaAt(0, 0))
         .Named("Formula")
         .Demanding<IFormulaSpace, string?>();
 

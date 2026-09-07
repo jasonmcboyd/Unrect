@@ -5,7 +5,7 @@ using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Tests.ShapeTestSpaces;
+using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests
 {
@@ -216,8 +216,9 @@ namespace Unrect.Tests
       // What anchors the oracle. Every case above compares two computations of the same sentence,
       // which would agree just as happily if the sentence were wrong; these are the answers written
       // out by hand. The pair worth reading twice is "no-rows": with nothing to look at, no column
-      // has a matching cell and every column matches vacuously, so the two readings land at opposite
-      // ends of the width. That asymmetry is the denotation, not an accident of either loop.
+      // has a matching cell and every column matches vacuously, so the two readings land at
+      // opposite ends of the width. That asymmetry is the denotation, not an accident of either
+      // loop.
       var space = Space(grid);
 
       Assert.Equal(any, ColumnStrategies.TakeColumnsWhileAny(value => value.HasValue).SelectColumns(space));
@@ -262,9 +263,9 @@ namespace Unrect.Tests
     [Fact]
     public void WhenTheFirstRowFailsAtColumnZero_TheAllReadingStopsThere()
     {
-      // The dual early exit. The "all" answer starts at the full width and only ever falls, so it is
-      // settled the moment it reaches zero — one cell read, one row touched, and the full rows below
-      // it never looked at.
+      // The dual early exit. The "all" answer starts at the full width and only ever falls, so it
+      // is settled the moment it reaches zero — one cell read, one row touched, and the full rows
+      // below it never looked at.
       var space = new CountingSpace(Grid(new[,]
       {
         { 0, 0, 0, 0 },

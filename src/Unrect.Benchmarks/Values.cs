@@ -10,16 +10,16 @@ namespace Unrect.Benchmarks
   /// The value model itself: adapting an array into cells, and reading a million of them back.
   /// Every row here is a tight sweep over a flat <see cref="CellValue"/> array rather than over a
   /// space, so nothing but the representation is in the measurement -- no indexer, no bounds check,
-  /// no shape.
+  /// no projection.
   ///
   /// <para><b>This family exists for a specific pending question.</b> <c>CellValue</c> is a sealed
   /// class today: every cell is a heap object and a grid is an array of references. Turning it into
   /// a struct trades allocation and indirection for copying, and the trade is not obviously good in
   /// either direction -- a struct with a string field, a decimal, a DateTime and a discriminator is
   /// not small. These rows are the evidence for that decision: adaptation cost (how much is
-  /// allocated to build a grid), sweep cost (what a read costs once built), equality (which a struct
-  /// changes from a reference-first comparison to a field-wise one), and the blankness predicates
-  /// that every strategy in the library calls per cell.</para>
+  /// allocated to build a grid), sweep cost (what a read costs once built), equality (which a
+  /// struct changes from a reference-first comparison to a field-wise one), and the blankness
+  /// predicates that every strategy in the library calls per cell.</para>
   ///
   /// <para>Sweeps accumulate into a returned value rather than discarding: BenchmarkDotNet only
   /// guarantees a benchmark's work survives dead-code elimination if the result leaves the

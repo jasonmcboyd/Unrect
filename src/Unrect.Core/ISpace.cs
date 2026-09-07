@@ -2,8 +2,8 @@ namespace Unrect.Core
 {
   /// <summary>
   /// A rectangular grid of <see cref="CellValue"/>s — what an adapter turns a backend's data into,
-  /// and what everything above it decomposes. Every implementation must agree on kind classification
-  /// and blankness; nothing above this layer touches a backend type directly.
+  /// and what everything above it decomposes. Every implementation must agree on kind
+  /// classification and blankness; nothing above this layer touches a backend type directly.
   /// </summary>
   public interface ISpace
   {
@@ -17,7 +17,7 @@ namespace Unrect.Core
     /// <para>
     /// That type, and not <see cref="System.IndexOutOfRangeException"/>, because reading past the
     /// edge of a space is a statement about the data rather than a bug in the reader: it is how a
-    /// declaration discovers it has run out of room, and the shape layer classifies it as a
+    /// declaration discovers it has run out of room, and the projection layer classifies it as a
     /// recoverable bounds condition. An <c>IndexOutOfRangeException</c> is on the engine's fault
     /// list — a bug in the code, never absorbed by a tolerance boundary — so a space that threw one
     /// for an ordinary overrun would make that overrun unrecoverable.

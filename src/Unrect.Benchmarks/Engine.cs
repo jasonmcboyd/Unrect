@@ -3,17 +3,17 @@ using System.Collections.Generic;
 using BenchmarkDotNet.Attributes;
 
 using Unrect.Core;
-using Unrect.Shapes;
+using Unrect.Projections;
 
-using static Unrect.Shapes.Shape;
+using static Unrect.Projections.Projection;
 
 namespace Unrect.Benchmarks
 {
   /// <summary>
-  /// The composites themselves: what a child costs to place, whatever it reads. Every shape here
-  /// projects as little as possible -- a cell count, a row index -- so the row measures the engine's
-  /// own work (cursor advance, context descent, placement resolution, extent bookkeeping) rather
-  /// than the projection hanging off it.
+  /// The composites themselves: what a child costs to place, whatever it reads. Every projection
+  /// here projects as little as possible -- a cell count, a row index -- so the row measures the
+  /// engine's own work (cursor advance, context descent, placement resolution, extent bookkeeping)
+  /// rather than the projection hanging off it.
   /// </summary>
   [MemoryDiagnoser]
   [BenchmarkCategory("Engine")]
@@ -22,11 +22,11 @@ namespace Unrect.Benchmarks
     private const int FlowChildren = 5_000;
     private const int NestedRows = 500;
 
-    // Declared once, at field initialization: a shape is a value, and building it is the Tables
-    // family's subject, not this one's.
-    private static readonly IShape<int> Line = Row(r => r.Count);
+    // Declared once, at field initialization: a projection is a value, and building it is the
+    // Tables family's subject, not this one's.
+    private static readonly IProjection<int> Line = Row(r => r.Count);
 
-    private static readonly IShape<int> ManyChildren = VerticalFlow(v =>
+    private static readonly IProjection<int> ManyChildren = VerticalFlow(v =>
     {
       var total = 0;
 
@@ -38,7 +38,7 @@ namespace Unrect.Benchmarks
       return total;
     });
 
-    private static readonly IShape<int> Nested = VerticalFlow(v =>
+    private static readonly IProjection<int> Nested = VerticalFlow(v =>
     {
       var total = 0;
 
@@ -50,16 +50,16 @@ namespace Unrect.Benchmarks
 
     // Four independent readings of the same band. An overlay's children each start from the band's
     // own origin, so this measures placement without the flow's advance.
-    private static readonly IShape<int> Anchored = Overlay(o =>
+    private static readonly IProjection<int> Anchored = Overlay(o =>
       o.Next(Row(r => r.Count).On(RowContaining(CanonicalSpaces.Landmark)))
       + o.Next(Column(CanonicalSpaces.BlockRows, c => c.Count))
       + o.Next(Range(2, 2, b => b.Width))
       + o.Next(Cell(c => c.HasValue ? 1 : 0)));
 
-    private static readonly IShape<IReadOnlyList<int>> Blocks =
+    private static readonly IProjection<IReadOnlyList<int>> Blocks =
       VerticalRepeat(Range(RowsWhileAnyValue(), b => b.Height), separatedBy: BlankRows());
 
-    private static readonly IShape<int> AllCells = Range(b =>
+    private static readonly IProjection<int> AllCells = Range(b =>
     {
       var present = 0;
 
@@ -71,7 +71,7 @@ namespace Unrect.Benchmarks
       return present;
     });
 
-    private static readonly IShape<int> Section =
+    private static readonly IProjection<int> Section =
       Range(RowsWhileAnyValue(), b => b.Height).Under(Caption(CanonicalSpaces.DetailsCaption));
 
     private ISpace _tall = default!;

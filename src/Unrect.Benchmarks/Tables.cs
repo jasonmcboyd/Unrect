@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using BenchmarkDotNet.Attributes;
 
 using Unrect.Core;
-using Unrect.Shapes;
+using Unrect.Projections;
 
-using static Unrect.Shapes.Shape;
+using static Unrect.Projections.Projection;
 
 namespace Unrect.Benchmarks
 {
@@ -34,12 +34,12 @@ namespace Unrect.Benchmarks
   [BenchmarkCategory("Tables")]
   public class Tables
   {
-    private static readonly IShape<IReadOnlyList<decimal>> Projected =
+    private static readonly IProjection<IReadOnlyList<decimal>> Projected =
       TableRows(r => r["Contribution"].GetDecimal());
 
-    private static readonly IShape<IReadOnlyList<TabularRow>> Bound = TableRows<TabularRow>();
+    private static readonly IProjection<IReadOnlyList<TabularRow>> Bound = TableRows<TabularRow>();
 
-    private static readonly IShape<IReadOnlyList<IReadOnlyDictionary<string, CellValue>>> Dictionaries =
+    private static readonly IProjection<IReadOnlyList<IReadOnlyDictionary<string, CellValue>>> Dictionaries =
       TableRows();
 
     private ISpace _large = default!;
@@ -72,11 +72,11 @@ namespace Unrect.Benchmarks
 
     /// <summary>
     /// Declaration only: member resolution, nullability reading and materializer compilation, with
-    /// no grid in sight. Sub-millisecond by design -- it is the one row in the suite exempt from the
-    /// noise floor, because inflating it would mean declaring the same shape a thousand times,
-    /// which measures a loop rather than a declaration.
+    /// no grid in sight. Sub-millisecond by design -- it is the one row in the suite exempt from
+    /// the noise floor, because inflating it would mean declaring the same projection a thousand
+    /// times, which measures a loop rather than a declaration.
     /// </summary>
     [Benchmark]
-    public object Bound_ShapeConstruction() => TableRows<TabularRow>();
+    public object Bound_ProjectionConstruction() => TableRows<TabularRow>();
   }
 }

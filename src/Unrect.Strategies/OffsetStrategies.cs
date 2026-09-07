@@ -4,11 +4,11 @@ using static Unrect.Strategies.SizeStrategies;
 
 namespace Unrect.Strategies
 {
-  /// <summary>Factories for <see cref="IOffsetStrategy"/> — how a shape's origin is found within the space it is handed.</summary>
+  /// <summary>Factories for <see cref="IOffsetStrategy"/> — how a projection's origin is found within the space it is handed.</summary>
   public static class OffsetStrategies
   {
 
-    /// <summary>No movement — the origin the shape was handed.</summary>
+    /// <summary>No movement — the origin the projection was handed.</summary>
     public static IOffsetStrategy MinOffset()
       => MinSize().ToOffsetStrategy();
 
@@ -46,28 +46,28 @@ namespace Unrect.Strategies
 
     /// <summary>
     /// Sequences <paramref name="offsets"/>: each is resolved against the space the one before it
-    /// left, and the displacements sum — so <c>Then(SkipBlankRows(), ExplicitOffset(0, 1))</c> reads
-    /// as "past the blank band, then one more row".
+    /// left, and the displacements sum — so <c>Then(SkipBlankRows(), ExplicitOffset(0, 1))</c>
+    /// reads as "past the blank band, then one more row".
     /// </summary>
     public static IOffsetStrategy Then(params IOffsetStrategy[] offsets)
       => new CompositeOffsetSizeStrategy(offsets).ToOffsetStrategy();
 
-    // --- The two lifts: where a matcher puts a shape ---------------------------------------------
+    // --- The two lifts: where a matcher puts a projection ---------------------------------------------
     //
     // A skip-while stops at the first row that fails its predicate, so anything inserted above the
     // thing you are looking for moves it. A matcher scans to the first row that matches instead,
     // which is what survives that. It locates content and reports absence without deciding what
     // absence means; these two lifts decide it for a placement — the anchor was required. That
     // answer arrives as an OutOfBoundsException from an offset strategy, which is how a strict
-    // shape reports a missing anchor and how a repeat learns there are no more sections.
+    // projection reports a missing anchor and how a repeat learns there are no more sections.
     //
-    // These are the calculus's spelling and stay mirror-symmetric with the rest of it. A shape
+    // These are the calculus's spelling and stay mirror-symmetric with the rest of it. A projection
     // declaration says the same two things as .On (both axes) and .Below/.RightOf (one each),
     // where the word carries the relation and a direction appears only where the concept has one.
 
     /// <summary>
     /// Onto the row <paramref name="landmark"/> matches. The region starts AT that row, so the
-    /// shape owns it — a caption its section should describe, or a label row it reads.
+    /// projection owns it — a caption its section should describe, or a label row it reads.
     /// </summary>
     public static IOffsetStrategy To(IRowLandmark landmark)
       => Lift(new LandmarkRowStrategy(NotNull(landmark, nameof(landmark)), past: false));
@@ -77,7 +77,7 @@ namespace Unrect.Strategies
       => Lift(new LandmarkColumnStrategy(NotNull(landmark, nameof(landmark)), past: false));
 
     /// <summary>
-    /// Onto the row after the one <paramref name="landmark"/> matches, for a shape that starts
+    /// Onto the row after the one <paramref name="landmark"/> matches, for a projection that starts
     /// below a row it does not want to own. This is the whole of the old anchor-then-skip idiom,
     /// without the hard-coded 1 that stood in for the matched row's own height.
     /// </summary>

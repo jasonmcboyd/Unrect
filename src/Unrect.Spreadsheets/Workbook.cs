@@ -9,7 +9,7 @@ namespace Unrect.Spreadsheets
   /// <summary>
   /// A spreadsheet file, read a window at a time. Where
   /// <see cref="SpreadsheetSpace.Create(string, string, bool, Func{CellValue, bool})"/> loads a whole
-  /// sheet into memory before anything reads it, a workbook loads rows as the shape asks for them and
+  /// sheet into memory before anything reads it, a workbook loads rows as the projection asks for them and
   /// holds only a window of them at once.
   ///
   /// <code>
@@ -30,13 +30,13 @@ namespace Unrect.Spreadsheets
   /// }
   /// </code>
   ///
-  /// <para>Shapes are immutable and workbooks are independent, so <c>Parallel.ForEach</c> over that
+  /// <para>Projections are immutable and workbooks are independent, so <c>Parallel.ForEach</c> over that
   /// same loop needs nothing added. Within one workbook, maps over different sheets run in parallel
   /// and maps over one sheet serialise.</para>
   ///
   /// <para><b>Which door to use.</b> The two paths differ in the shape of their cost, never in their
   /// results. Eager reads the file once, entirely, and a second pass over the same rows is free
-  /// because it is an array. Streaming reads as the shape asks, and a second pass costs a cheap
+  /// because it is an array. Streaming reads as the projection asks, and a second pass costs a cheap
   /// rewind if a reader is parked behind it, or a chunk reload if the window has moved on. A monotone
   /// walk down a sheet measured about 35% slower than eager while holding about 2.7× less live
   /// memory; a declaration that sweeps a band taller than its window can be arbitrarily slower. Use
@@ -144,7 +144,8 @@ namespace Unrect.Spreadsheets
     /// <b>Costs an open if you ask first.</b> Naming every sheet means walking the parked reader to
     /// the end of the workbook, which leaves it past every sheet and therefore useless as a first
     /// lease; it is retired, and the first <see cref="Sheet"/> call afterwards pays for a reader of
-    /// its own. Asking for a sheet by name first, and the catalogue afterwards, costs nothing extra.
+    /// its own. Asking for a sheet by name first, and the catalogue afterwards, costs nothing
+    /// extra.
     /// </para>
     /// </summary>
     public IReadOnlyList<string> SheetNames
@@ -164,9 +165,9 @@ namespace Unrect.Spreadsheets
     /// <summary>
     /// The named sheet as a space.
     /// <para>
-    /// Idempotent: asking twice returns views over one store, so a second declaration mapped over an
-    /// already-open book re-pays neither the reader open nor, if the rows are still resident, the
-    /// read. That warm reuse is the point of holding a workbook open rather than a sheet.
+    /// Idempotent: asking twice returns views over one store, so a second declaration mapped over
+    /// an already-open book re-pays neither the reader open nor, if the rows are still resident,
+    /// the read. That warm reuse is the point of holding a workbook open rather than a sheet.
     /// </para>
     /// <para>
     /// A sheet whose reader will not say how big it is — for the formats ExcelDataReader handles
@@ -235,18 +236,18 @@ namespace Unrect.Spreadsheets
     /// <para>
     /// <b>Why measure rather than guess.</b> A space has to answer <c>Area</c>, so an unmeasured
     /// sheet would have to claim some upper bound instead — and every declaration that scans blank
-    /// rows (a repeat's separator, <c>SkipBlankRows</c>, <c>AfterBlankRows</c>) would then walk that
-    /// bound to the end of it after the content ran out, and every unconsumed-space diagnostic would
-    /// report a sheet that does not exist. The honest extent costs one forward pass, and only for a
-    /// sheet that declined to describe itself.
+    /// rows (a repeat's separator, <c>SkipBlankRows</c>, <c>AfterBlankRows</c>) would then walk
+    /// that bound to the end of it after the content ran out, and every unconsumed-space diagnostic
+    /// would report a sheet that does not exist. The honest extent costs one forward pass, and only
+    /// for a sheet that declined to describe itself.
     /// </para>
     /// <para>
     /// It costs time, never memory: rows are counted and dropped, none is materialised. The pass is
-    /// a reader movement and shows up as one in <see cref="ReaderStatistics"/>, and the rows it read
-    /// are reported as <see cref="StreamingStatistics.RowsMeasured"/> — which is where this cost is
-    /// read, since the sheet's other counters describe reading through the window and this pass never
-    /// touched it. It leaves its reader at the end of the sheet, so the first chunk load is served by
-    /// another reader — or, in a one-reader pool, by a reopen.
+    /// a reader movement and shows up as one in <see cref="ReaderStatistics"/>, and the rows it
+    /// read are reported as <see cref="StreamingStatistics.RowsMeasured"/> — which is where this
+    /// cost is read, since the sheet's other counters describe reading through the window and this
+    /// pass never touched it. It leaves its reader at the end of the sheet, so the first chunk load
+    /// is served by another reader — or, in a one-reader pool, by a reopen.
     /// </para>
     /// <para>
     /// The width is watched as well as the rows, because a reader that was not told the sheet's
@@ -305,15 +306,17 @@ namespace Unrect.Spreadsheets
     /// unlike <see cref="Statistics"/>, it belongs to the book rather than to a sheet: one table
     /// serves them all, so a per-sheet split would report numbers that do not add up.
     /// <para>
-    /// Readable after <see cref="Dispose"/>, for the same reason the sheet figures are: the counters
-    /// describe reading that has already happened, and disposing drops the entries and keeps them.
+    /// Readable after <see cref="Dispose"/>, for the same reason the sheet figures are: the
+    /// counters describe reading that has already happened, and disposing drops the entries and
+    /// keeps them.
     /// </para>
     /// </summary>
     public InterningStatistics InterningStatistics => _strings.Snapshot();
 
     /// <summary>
-    /// Finds <paramref name="name"/> in the catalogue, extending the catalogue if it has not reached
-    /// that far yet. Null <paramref name="name"/> walks to the end. Called holding the gate.
+    /// Finds <paramref name="name"/> in the catalogue, extending the catalogue if it has not
+    /// reached that far yet. Null <paramref name="name"/> walks to the end. Called holding the
+    /// gate.
     /// <para>
     /// The catalogue is built as a reader passes each sheet, so a walk stops at the sheet actually
     /// asked for rather than paying for the whole workbook. Walking eagerly at <c>Open</c> would
@@ -422,13 +425,13 @@ namespace Unrect.Spreadsheets
     }
 
     /// <summary>
-    /// Closes every reader and drops every window. Idempotent, and it does not wait on a reader being
-    /// warmed in the background — that warm disposes what it opened when it finds the workbook gone,
-    /// so returning promptly still leaks no handle.
+    /// Closes every reader and drops every window. Idempotent, and it does not wait on a reader
+    /// being warmed in the background — that warm disposes what it opened when it finds the
+    /// workbook gone, so returning promptly still leaks no handle.
     /// <para>
-    /// Disposing while a map is running is a caller error rather than corruption: the map fails with
-    /// <see cref="ObjectDisposedException"/>, wrapped by the engine as a fault naming the shape and
-    /// the cell it was reading.
+    /// Disposing while a map is running is a caller error rather than corruption: the map fails
+    /// with <see cref="ObjectDisposedException"/>, wrapped by the engine as a fault naming the
+    /// projection and the cell it was reading.
     /// </para>
     /// </summary>
     public void Dispose()
@@ -443,9 +446,9 @@ namespace Unrect.Spreadsheets
         foreach (var store in _stores.Values)
           store.Dispose();
 
-        // The table outlives the window by design, so it must not outlive the workbook: a caller who
-        // holds a disposed book to total up what an import cost would otherwise still be pinning
-        // every distinct string of it. The counters survive; the strings do not.
+        // The table outlives the window by design, so it must not outlive the workbook: a caller
+        // who holds a disposed book to total up what an import cost would otherwise still be
+        // pinning every distinct string of it. The counters survive; the strings do not.
         _strings.Release();
 
         _parked?.Dispose();

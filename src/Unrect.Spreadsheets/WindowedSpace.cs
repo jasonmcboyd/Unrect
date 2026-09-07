@@ -3,9 +3,9 @@ using Unrect.Core;
 namespace Unrect.Spreadsheets
 {
   /// <summary>
-  /// A sheet as a space, read a window at a time. The same shape as a grid — an offset and an extent
-  /// into shared backing data — except that the backing data is a file and only part of it is in
-  /// memory at once.
+  /// A sheet as a space, read a window at a time. The same shape as a grid — an offset and an
+  /// extent into shared backing data — except that the backing data is a file and only part of it
+  /// is in memory at once.
   /// <para>
   /// Slicing is free and slices share the store, so the engine's subspaces do not multiply the
   /// resident set: a declaration that decomposes a sheet into a hundred regions still holds one
@@ -13,8 +13,8 @@ namespace Unrect.Spreadsheets
   /// </para>
   /// <para>
   /// A view is a value, not a handle. It has no <c>Dispose</c>, no <c>Close</c>: it can be sliced,
-  /// passed to any shape and held as long as the caller likes, and the only thing that invalidates
-  /// it is the <see cref="Workbook"/> it came from being disposed.
+  /// passed to any projection and held as long as the caller likes, and the only thing that
+  /// invalidates it is the <see cref="Workbook"/> it came from being disposed.
   /// </para>
   /// <para>
   /// The extent is the sheet's own, as the workbook settled it: what the reader reported, or — for
@@ -49,9 +49,9 @@ namespace Unrect.Spreadsheets
     {
       get
       {
-        // OutOfBoundsException, not IndexOutOfRangeException: the engine's fault list classifies the
-        // latter as a bug in the reading code — non-absorbable, and rightly so — while running off
-        // the end of a space is an ordinary bounds condition that a declaration is allowed to
+        // OutOfBoundsException, not IndexOutOfRangeException: the engine's fault list classifies
+        // the latter as a bug in the reading code — non-absorbable, and rightly so — while running
+        // off the end of a space is an ordinary bounds condition that a declaration is allowed to
         // recover from. Getting this wrong would make every overrun unrecoverable.
         if (column < 0 || column >= Area.Width)
           throw new OutOfBoundsException();

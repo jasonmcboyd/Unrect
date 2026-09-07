@@ -5,13 +5,13 @@
   <Reference Relative="..\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll</Reference>
   <Namespace>Unrect.Core</Namespace>
   <Namespace>Unrect.Spreadsheets</Namespace>
-  <Namespace>Unrect.Shapes</Namespace>
-  <Namespace>static Unrect.Shapes.Shape</Namespace>
+  <Namespace>Unrect.Projections</Namespace>
+  <Namespace>static Unrect.Projections.Projection</Namespace>
 </Query>
 
 var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\examples\investor-irr.xlsx");
 
-// What this demonstrates: ONE shape declared once and PLACED TWICE, and .Until — the dual of
+// What this demonstrates: ONE projection declared once and PLACED TWICE, and .Until — the dual of
 // .On. The sheet carries the same per-investor blocks twice, under two captions:
 //
 //   Cash Flows Using Transfer Date        <- first series

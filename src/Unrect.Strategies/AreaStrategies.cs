@@ -4,7 +4,7 @@ using static Unrect.Strategies.SizeStrategies;
 
 namespace Unrect.Strategies
 {
-  /// <summary>Factories for <see cref="IAreaStrategy"/> — how a shape's declared extent is found, once its origin is known. Each wraps the <see cref="SizeStrategies"/> twin of the same name.</summary>
+  /// <summary>Factories for <see cref="IAreaStrategy"/> — how a projection's declared extent is found, once its origin is known. Each wraps the <see cref="SizeStrategies"/> twin of the same name.</summary>
   public static class AreaStrategies
   {
     /// <summary>The whole of whatever space is available. See <see cref="SizeStrategies.MaxSize"/>.</summary>

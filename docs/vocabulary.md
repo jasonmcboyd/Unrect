@@ -1,14 +1,15 @@
 # The Unrect Vocabulary
 
-A survey of every operator in the shape layer, grouped by role in the algebra. Everything
-here is available from a single `using static Unrect.Shapes.Shape;` — except the two raw
-lifts noted under Placement (`OffsetStrategies.To`/`Past`), which are an escape hatch by
-design and spelled like one. For semantics in depth, each group cites its governing spec
+A survey of every operator in the projection layer, grouped by role in the algebra. Everything
+here is available from a single `using static Unrect.Projections.Projection;` — except the
+two raw lifts noted under Placement (`OffsetStrategies.To`/`Past`), which are an escape hatch
+by design and spelled like one. For semantics in depth, each group cites its governing spec
 in `docs/design/`.
 
-Current as of 2026-09-05 (post the placement-vocabulary renovation). When this file and a spec
-disagree, the spec is wrong or this file is stale — fix whichever it is; do not let them
-drift silently.
+Current as of 2026-09-06 (post the projection rename: the layer is `Unrect.Projections`, the
+static vocabulary class is `Projection`, and "shape" now means only the geometry of a space).
+When this file and a spec disagree, the spec is wrong or this file is stale — fix whichever it
+is; do not let them drift silently.
 
 ## Leaves — where cells become values
 
@@ -38,7 +39,7 @@ unfamiliar workbook, typed once you commit, lambda only when a column needs logi
 
 | Operator | Claim |
 |---|---|
-| `VerticalFlow(v => ...)` / `HorizontalFlow(v => ...)` | Stacked bands, one per child: each child's band spans the flow's full width, so no sibling ever shares it, even where the child's own content is narrower — but that is a claim on the band, not on what the flow reports consumed. Consumed across the axis is the max over children of their own consumed width (bounding box), not automatically the full width. `v.Next(shape)` declares the next child and returns its value; any arity |
+| `VerticalFlow(v => ...)` / `HorizontalFlow(v => ...)` | Stacked bands, one per child: each child's band spans the flow's full width, so no sibling ever shares it, even where the child's own content is narrower — but that is a claim on the band, not on what the flow reports consumed. Consumed across the axis is the max over children of their own consumed width (bounding box), not automatically the full width. `v.Next(projection)` declares the next child and returns its value; any arity |
 | `Overlay(o => ...)` | One shared band; each child finds its own place by its own placement; no advance between children; consumed = bounding box |
 | `VerticalRepeat(item, separatedBy:, atLeast:)` / `HorizontalRepeat(...)` | N items with separators (`sepBy`). A blank band is a separator, never a terminator — bound the repeat with `.Until` to end it at content. Both axes are marked, like the flows: no substrate's dominant axis is the unmarked normal case |
 | `Choice(a, b, ...)` | The first alternative that fits; an Info per near-miss; a losing branch's diagnostics roll back |
@@ -50,14 +51,14 @@ layout problem.
 
 ## Placement — where things start
 
-**Silence is adjacency.** A shape with no placement modifier starts exactly where the one
+**Silence is adjacency.** A projection with no placement modifier starts exactly where the one
 before it left off. Every operator below is therefore a *declared exception*, and each word
 names the kind of reason it is an exception for — so reading a declaration you never have to
-ask why a shape moved.
+ask why a projection moved.
 
 | Operator | Kind of reason | Meaning |
 |---|---|---|
-| `.On(rowLandmark)` / `.On(columnLandmark)` | a relation | The shape starts AT the match and OWNS that row/column. One word for both axes: occupancy has no direction, and the argument's type carries the axis |
+| `.On(rowLandmark)` / `.On(columnLandmark)` | a relation | The projection starts AT the match and OWNS that row/column. One word for both axes: occupancy has no direction, and the argument's type carries the axis |
 | `.Below(rowLandmark)` | a relation | Starts on the row directly below the match — exactly one beyond, which is the matched row's own height and never a step you chose |
 | `.RightOf(columnLandmark)` | a relation | The column twin of `.Below`. Spelled apart because the direction is part of what is being said, and it is grid-absolute (down the sheet, right along it), not "the next band along whichever way this flow runs" |
 | `.AfterBlankRows()` / `.AfterBlankColumns()` | filler | Step over the blank band in front. Tolerant by nature: no filler means no movement, not a failure |
@@ -66,8 +67,8 @@ ask why a shape moved.
 | `.Sized(area)` | — | Not placement; the extent's own replace (see below) |
 
 The anchors and `.OffsetBy` **REPLACE** the offset (including a default — that is how a `Table`
-is told not to skip its blank rows); the movements **COMPOSE** onto whatever the shape already
-had. A declared area survives all of them.
+is told not to skip its blank rows); the movements **COMPOSE** onto whatever the projection
+already had. A declared area survives all of them.
 
 Absence semantics live in the word, not in a flag: a landmark that matches nothing is **loud**
 (`Optional`/`Else` absorb it; a repeat reads it as having run out of sections), while a
@@ -81,7 +82,7 @@ declaration that it is being reached for:
 | `SkipRows(n)` `SkipColumns(n)` `BlankRows()` `BlankColumns()` | Fixed and blank-skipping offsets |
 | `Then(a, b, ...)` | Sequence offsets; each searches only the space the previous shift left (seek the axis that discards least, first) |
 | `FromRight(w)` / `FromBottom(h)` | From-end anchoring |
-| `OffsetStrategies.To(m)` / `Past(m)` | The lifts `.On` / `.Below` / `.RightOf` are built on. Public in `Unrect.Strategies`, deliberately NOT re-exported on `Shape` — at shape level a landmark is placed by a modifier that names its own relation, and the raw lift is an escape hatch spelled like one |
+| `OffsetStrategies.To(m)` / `Past(m)` | The lifts `.On` / `.Below` / `.RightOf` are built on. Public in `Unrect.Strategies`, deliberately NOT re-exported on `Projection` — at projection level a landmark is placed by a modifier that names its own relation, and the raw lift is an escape hatch spelled like one |
 
 ## Placement — the six laws
 
@@ -150,10 +151,10 @@ start in one and end in another.
 
 | Operator | Meaning |
 |---|---|
-| `.Under(params captions)` | Captions stacked above the shape, in reading order — sugar desugaring to the plain flow, so every caption is a real tree node with a real path segment |
+| `.Under(params captions)` | Captions stacked above the projection, in reading order — sugar desugaring to the plain flow, so every caption is a real tree node with a real path segment |
 | `.Padded(all)` / `(h, v)` / `(l, t, r, b)` | Shrink the inside; consumed includes the border |
-| `.Optional()` | Tolerance boundary: absorbs a failure, yields `default`, records a Warning. Absorbed shapes consume nothing — pair with content-anchored siblings |
-| `.Else(fallbackShape)` / `.Else(value)` | Fallback boundary; Warning carries the primary's failure; the fallback's identifier is captured for its own diagnostics |
+| `.Optional()` | Tolerance boundary: absorbs a failure, yields `default`, records a Warning. Absorbed projections consume nothing — pair with content-anchored siblings |
+| `.Else(fallbackProjection)` / `.Else(value)` | Fallback boundary; Warning carries the primary's failure; the fallback's identifier is captured for its own diagnostics |
 | `.Select(f)` | Transform the value (single-value only) |
 | `.Named(name)` | Explicit name — purely an OVERRIDE now; see the naming ladder below |
 
@@ -161,19 +162,19 @@ start in one and end in another.
 
 | Operator | Returns |
 |---|---|
-| `shape.Map(space)` | `T` (absorbed-tolerance diagnostics discarded) |
-| `shape.MapWithDiagnostics(space)` | `MapResult<T>`: value + `ShapeDiagnostic` list (incl. the unconsumed-space Info — the burn-down meter) |
-| `shape.Apply(space)` | value + offset + consumed |
+| `projection.Map(space)` | `T` (absorbed-tolerance diagnostics discarded) |
+| `projection.MapWithDiagnostics(space)` | `MapResult<T>`: value + `ProjectionDiagnostic` list (incl. the unconsumed-space Info — the burn-down meter) |
+| `projection.Apply(space)` | value + offset + consumed |
 
 All three are usable as method groups — `spaces.Select(report.Map)` — and pinned so
 (`MethodGroupTests`): no optional parameter may ever be added to them.
 
 **Where the `space` comes from.** `SpreadsheetSpace.Create(path, sheet)` (`Unrect.Spreadsheets`)
-reads a whole sheet eagerly, once, before any shape sees it — the simple default. `Workbook.Open(path)`
-(same namespace) is the streaming door: `book.Sheet(name)` vends a lent `ISpace` view over a windowed
-store instead of the whole grid — a value, not a handle, good to slice and pass around until the
-workbook that vended it is disposed. Declare the shape once and apply it to many files with the peak
-bounded per iteration, the idiom `Workbook` exists for:
+reads a whole sheet eagerly, once, before any projection sees it — the simple default.
+`Workbook.Open(path)` (same namespace) is the streaming door: `book.Sheet(name)` vends a lent
+`ISpace` view over a windowed store instead of the whole grid — a value, not a handle, good to
+slice and pass around until the workbook that vended it is disposed. Declare the projection once
+and apply it to many files with the peak bounded per iteration, the idiom `Workbook` exists for:
 
 ```csharp
 var report = VerticalFlow(v => ...);               // one declaration, reused
@@ -194,8 +195,8 @@ extent a declaration holds open at once).
 - **The naming ladder.** A child's diagnostic identity is the first of: its own
   `.Named`; the bare identifier it was written as (captured at `v.Next(x)`, at
   `VerticalRepeat(x, ...)`'s item, and at `.Else(x)`'s fallback — never at `Map`, which is
-  the declaration/infrastructure seam); otherwise `Description#ordinal`. Hoist shapes into
-  well-named locals and let the use site name them; a helper must not name what it
+  the declaration/infrastructure seam); otherwise `Description#ordinal`. Hoist projections
+  into well-named locals and let the use site name them; a helper must not name what it
   returns.
 - **Transparency.** Unnamed wrappers (`Select`, `Padded`, `Until`, boundaries)
   contribute no path segment; naming a wrapper makes it opaque and it claims the segment.
@@ -207,14 +208,14 @@ extent a declaration holds open at once).
 - **Failure discipline.** Kind failures speak kind ("expected Number at B4, found
   Text" — never "expected Decimal"); conversion failures speak conversion ("the Number
   at B4 is not a whole number"); every failure carries subject, declaration path, and
-  an A1 location. Tolerance is declared at the exact shape where it is acceptable, and
+  an A1 location. Tolerance is declared at the exact projection where it is acceptable, and
   a diagnostic is the record of tolerance being exercised — there is no ambient lenient
   mode.
 - **The two design tests.** Does an operator let the user *say what the data looks
   like*, or *say how to walk it*? And could a writer execute the declaration —
   produce the file as well as read it? Declarations run backward; opaque code does not.
 - **IO faults are not tolerance.** A disk failure, or a read against a `Workbook` view
-  after its workbook is disposed, classifies as a fault (`ShapeEngine.IsFault`) rather
+  after its workbook is disposed, classifies as a fault (`ProjectionEngine.IsFault`) rather
   than a disagreement about the data, at every site that could otherwise absorb a
   foreign exception as "section absent" — `.Optional()`, `.Else()`, and `Choice` all let
   it through unchanged. A wrong-kind cell or a missing anchor is still absorbable; the

@@ -16,7 +16,7 @@ dotnet add package Unrect
 dotnet add package Unrect.Spreadsheets
 ```
 
-`Unrect` is the engine — the shape vocabulary, the layout composites, the strategies
+`Unrect` is the engine — the projection vocabulary, the layout composites, the strategies
 that decide boundaries — and works directly over any 2D grid you can adapt to `ISpace`.
 `Unrect.Spreadsheets` adds the adapters that read spreadsheet files — `.xls`/`.xlsx` today — straight into that grid;
 add it when your data lives in a workbook rather than an array you built yourself.
@@ -47,7 +47,7 @@ Cash Flows using inception date
 
 ```csharp
 using Unrect.Spreadsheets;
-using static Unrect.Shapes.Shape;
+using static Unrect.Projections.Projection;
 
 var header = VerticalFlow(v => new
 {
@@ -89,14 +89,14 @@ record CashFlow(string InvestorName, DateTime Date, string Transaction, double I
 
 ## The ideas
 
-- **Shapes are reusable, immutable values.** Declare `report` once, apply it to as many
+- **Projections are reusable, immutable values.** Declare `report` once, apply it to as many
   workbooks as you have — `workbooks.Select(report.Map)`.
 - **Diagnostics carry a declaration path and an A1 cell location** — a failure tells you
-  which shape it came from and exactly where on the sheet it happened.
-- **Names are inferred from your own identifiers.** The local you assign a shape to
+  which projection it came from and exactly where on the sheet it happened.
+- **Names are inferred from your own identifiers.** The local you assign a projection to
   (`series`, `byTransferDate`) is what shows up in its diagnostics — no separate naming
   step.
-- **Tolerance is declared per shape, never ambient.** `.Optional()` and `.Else()` mark
+- **Tolerance is declared per projection, never ambient.** `.Optional()` and `.Else()` mark
   exactly where a missing or malformed region is acceptable; nothing is silently lenient
   everywhere.
 - **Content anchors survive layout drift.** `.On`, `.Below`, `.RightOf`, `Caption`, and
@@ -120,11 +120,11 @@ foreach (var path in monthlyCloseOfFunds)
 }
 ```
 
-Same shapes, same results — the two paths differ only in the shape of their cost. A
+Same projections, same results — the two paths differ only in the shape of their cost. A
 monotone read through `Workbook` costs about 35% more wall time for about 2.7× less live
 memory than `SpreadsheetSpace.Create`; a declaration that reaches backwards or sweeps a
 band wider than its window can cost more than that, which `book.Statistics("Detail")`
-will tell you. Shapes are immutable and workbooks are independent, so
+will tell you. Projections are immutable and workbooks are independent, so
 `Parallel.ForEach(monthlyCloseOfFunds, path => { using var book = ...; })` needs nothing
 added. The full guide, including the sizing law and the statistics to act on: `docs/streaming.md`.
 

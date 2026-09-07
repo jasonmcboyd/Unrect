@@ -4,20 +4,20 @@ namespace Unrect
 {
   /// <summary>
   /// A space that is a <em>chart</em> of another: the same geometry, the same coordinates, a
-  /// different view of it. <see cref="Unrect.Shapes.BoundedSpace"/> is the one in the box — an extent
-  /// whose height is still being discovered — and any wrapper that neither moves the origin nor
-  /// changes what a cell is belongs here too.
+  /// different view of it. <see cref="Unrect.Projections.BoundedSpace"/> is the one in the box — an
+  /// extent whose height is still being discovered — and any wrapper that neither moves the origin
+  /// nor changes what a cell is belongs here too.
   /// <para>
-  /// This is the unwrap protocol behind <see cref="SpaceCapabilities.Capability{TCapability}"/>, and
-  /// the reason a raw <c>space is IFormulaSpace</c> is the wrong question: a wrapper cannot
+  /// This is the unwrap protocol behind <see cref="SpaceCapabilities.Capability{TCapability}"/>,
+  /// and the reason a raw <c>space is IFormulaSpace</c> is the wrong question: a wrapper cannot
   /// statically implement a capability on behalf of whatever it happens to wrap, so through a chart
   /// the type test says <c>false</c> over a sheet that plainly has the capability.
   /// </para>
   /// <para>
   /// <b>Coordinates must not move.</b> A chart that translates its origin would hand back a
   /// capability answering about the wrong cells — <em>worse</em> than reporting absence. A wrapper
-  /// that slices must implement the capability itself, translating as it forwards, which is what the
-  /// slicing law asks of every capable backend anyway.
+  /// that slices must implement the capability itself, translating as it forwards, which is what
+  /// the slicing law asks of every capable backend anyway.
   /// </para>
   /// </summary>
   public interface ISpaceChart

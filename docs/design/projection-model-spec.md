@@ -28,7 +28,18 @@ follows that sentence everywhere it leads.
   on it. `IProjection` does not move to Core for the same reason `IShape` never did:
   no provider implements it.
 
-## 2. The rename
+## 2. The rename — **DONE (2026-09-06, phase 2)**
+
+Landed as specified, plus the namespace: `Unrect.Shapes` → `Unrect.Projections`, directory
+`src/Unrect/Shapes/` → `src/Unrect/Projections/` (and the test suite's folder with it). The
+namespace moved because it is the one place the old word would have kept contradicting the
+model — `Unrect.Shapes.Projection` would have said the shapes namespace contains no shapes —
+and because the churn is identical either way: every consumer file respells that one `using
+static` line regardless. `shape` survives ONLY in its geometric sense ("the shape of the data",
+"the shape of their cost", "a different shape of grid"), which is now precisely the model's
+meaning of the word. Rode along, per owner decision: `Choice` stays doubled (the judgment is
+now recorded on the typed overload); the three explicit-type-argument layout overloads are
+pruned, subsumed by the witness form; `ProjectionBase<T>`'s constructor is `private protected`.
 
 `IShape<T>` → `IProjection<T>`; the `Shape` static class → `Projection`;
 `ShapeEngine`/`ShapeException`/`ShapeContext`/`ShapeDiagnostic`/`ShapeLocation` →
@@ -70,7 +81,7 @@ regardless) and the typed layer waits.
 
 Two entries, not rivals — B is sugar over A's machinery:
 
-- **A. Imports only.** `using static Unrect.Shapes.Projection;` plus the backend's
+- **A. Imports only.** `using static Unrect.Projections.Projection;` plus the backend's
   vocabulary (`using static Unrect.Spreadsheets.SpreadsheetProjections;` brings
   `Formula()`, `RowWithFormula()`, …). Demands climb from leaves by inference; the space
   is named nowhere until `Map`.

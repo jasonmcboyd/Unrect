@@ -5,13 +5,13 @@
   <Reference Relative="..\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll</Reference>
   <Namespace>Unrect.Core</Namespace>
   <Namespace>Unrect.Spreadsheets</Namespace>
-  <Namespace>Unrect.Shapes</Namespace>
-  <Namespace>static Unrect.Shapes.Shape</Namespace>
+  <Namespace>Unrect.Projections</Namespace>
+  <Namespace>static Unrect.Projections.Projection</Namespace>
 </Query>
 
 // NOTE: examples/scrubbed-k1.xlsx is a LOCAL-ONLY fixture (gitignored, never committed).
 //
-// ONE root shape, ZERO hard-coded coordinates. The working style that survives real-world
+// ONE root projection, ZERO hard-coded coordinates. The working style that survives real-world
 // drift (extra rows, moved columns, varying fund counts):
 //   - rows anchor by content matchers (.On(RowContaining(...)));
 //   - the header is an Overlay — independent blocks sharing rows, placement rather than flow —
@@ -22,7 +22,7 @@
 //     announces the section belongs to it instead of being swallowed by an anchor's offset;
 //   - the entity card is a Fields block: labels declared once, extent from the child count, and
 //     the block finds itself by its own first label;
-//   - one `section` shape, declared once and placed twice under two different captions.
+//   - one `section` projection, declared once and placed twice under two different captions.
 var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\examples\scrubbed-k1.xlsx");
 var space = SpreadsheetSpace.Create(path, "Sheet1");
 
@@ -36,7 +36,7 @@ int Find(CellValue[] row, string caption) => Array.FindIndex(row,
 // caption band has gaps. The helper does NOT name what it returns: a name baked in here would call
 // every row the same thing at every use site, and the use site is the only place that knows which
 // row this is.
-IShape<CellValue[]> FullRow(string anchor) =>
+IProjection<CellValue[]> FullRow(string anchor) =>
 	Row(AllColumns(), r => r.ToArray())
 		.On(RowContaining(anchor));
 
@@ -78,7 +78,7 @@ var header = Overlay(o =>
 })
 	.Sized(RowsWhileAnyValue());   // bounded: seeks inside stay unambiguous
 
-// One section shape: rows while any value, wherever it is anchored.
+// One section projection: rows while any value, wherever it is anchored.
 var section = Range(RowsWhileAnyValue(), b => b.Rows.Select(r => r.ToArray()).ToArray());
 
 var k1Lines = section.Under(Caption("K-1 Lines 1-21"));
@@ -133,7 +133,7 @@ var mapped = report.MapWithDiagnostics(space);
 var result = mapped.Value;
 
 // The unconsumed-space Info doubles as the campaign progress meter: as more of the
-// 169 sections get shapes, "rows not described" burns down toward zero.
+// 169 sections get projections, "rows not described" burns down toward zero.
 mapped.Diagnostics.Select(d => d.ToString()).Dump("diagnostics");
 
 // Post-parse validation: the workbook's own semantics, checked from outside.

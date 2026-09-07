@@ -1,16 +1,16 @@
 using BenchmarkDotNet.Attributes;
 
 using Unrect.Core;
-using Unrect.Shapes;
+using Unrect.Projections;
 
-using static Unrect.Shapes.Shape;
+using static Unrect.Projections.Projection;
 
 namespace Unrect.Benchmarks
 {
   /// <summary>
   /// Boundary resolution: the scans that decide where a region starts and stops. Every row here is
-  /// dominated by one strategy walking the grid, with the smallest possible shape wrapped around it
-  /// so the scan is what gets measured.
+  /// dominated by one strategy walking the grid, with the smallest possible projection wrapped
+  /// around it so the scan is what gets measured.
   ///
   /// <para>The seek rows are the family's point. A content anchor is a linear scan, so its cost
   /// depends on how far in the answer is -- and the interesting case is the one that never finds
@@ -22,18 +22,18 @@ namespace Unrect.Benchmarks
   [BenchmarkCategory("Strategies")]
   public class Strategies
   {
-    private static readonly IShape<int> WholeHeight = Range(RowsWhileAnyValue(), b => b.Height);
+    private static readonly IProjection<int> WholeHeight = Range(RowsWhileAnyValue(), b => b.Height);
 
-    private static readonly IShape<int> Seek =
+    private static readonly IProjection<int> Seek =
       Row(r => r.Count).On(RowContaining(CanonicalSpaces.Landmark));
 
     // The miss: absorbed, so the row measures the full-grid scan and not the throw.
-    private static readonly IShape<int> SeekMiss = Seek.Optional();
+    private static readonly IProjection<int> SeekMiss = Seek.Optional();
 
-    private static readonly IShape<int> Bounded =
+    private static readonly IProjection<int> Bounded =
       Range(RowsWhileAnyValue(), b => b.Height).Until(RowContaining(CanonicalSpaces.Landmark));
 
-    private static readonly IShape<int> SkipBlanks = Row(r => r.Count).OffsetBy(BlankRows());
+    private static readonly IProjection<int> SkipBlanks = Row(r => r.Count).OffsetBy(BlankRows());
 
     private ISpace _dense = default!;
     private ISpace _sparse = default!;

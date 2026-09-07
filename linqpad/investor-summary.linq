@@ -5,8 +5,8 @@
   <Reference Relative="..\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll</Reference>
   <Namespace>Unrect.Core</Namespace>
   <Namespace>Unrect.Spreadsheets</Namespace>
-  <Namespace>Unrect.Shapes</Namespace>
-  <Namespace>static Unrect.Shapes.Shape</Namespace>
+  <Namespace>Unrect.Projections</Namespace>
+  <Namespace>static Unrect.Projections.Projection</Namespace>
 </Query>
 
 var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\examples\investor-summary.xlsx");

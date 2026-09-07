@@ -24,7 +24,7 @@ namespace Unrect.Core
     /// <summary>The offset's height — <c>Size.Height</c>, for reading without the hop.</summary>
     public int Height => Size.Height;
 
-    /// <summary>Composes two displacements, e.g. how a <c>ShapeContext</c> accumulates <c>Advance</c> onto <c>Origin</c>.</summary>
+    /// <summary>Composes two displacements, e.g. how a <c>ProjectionContext</c> accumulates <c>Advance</c> onto <c>Origin</c>.</summary>
     public static Offset operator +(Offset first, Offset second)
       => new Offset(first.Size + second.Size);
   }

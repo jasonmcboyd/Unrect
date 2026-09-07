@@ -7,9 +7,9 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 
 using Unrect.Core;
-using Unrect.Shapes;
+using Unrect.Projections;
 
-using static Unrect.Shapes.Shape;
+using static Unrect.Projections.Projection;
 
 namespace Unrect.Benchmarks
 {
@@ -64,19 +64,19 @@ namespace Unrect.Benchmarks
   {
     /// <summary>
     /// BenchmarkDotNet names a row <c>Namespace.Class.Method</c>, and the dashboard splits a row's
-    /// class from its method on the first dot after that prefix. Emitting the same shape is what makes
-    /// these rows read as one more family rather than as a handful of orphans.
+    /// class from its method on the first dot after that prefix. Emitting the same shape is what
+    /// makes these rows read as one more family rather than as a handful of orphans.
     /// </summary>
     private const string RowPrefix = "Unrect.Benchmarks.Retention.";
 
     private const string Unit = "bytes";
 
-    private static readonly IShape<IReadOnlyList<LedgerRow>> Ledger = TableRows<LedgerRow>();
+    private static readonly IProjection<IReadOnlyList<LedgerRow>> Ledger = TableRows<LedgerRow>();
 
     /// <summary>
-    /// The scenarios, in the order a reader should meet them: what the grid costs, what the same grid
-    /// costs when nothing repeats, what the projection off that grid costs, what the projection costs
-    /// with no grid under it at all, and that last one's control.
+    /// The scenarios, in the order a reader should meet them: what the grid costs, what the same
+    /// grid costs when nothing repeats, what the projection off that grid costs, what the
+    /// projection costs with no grid under it at all, and that last one's control.
     /// </summary>
     private static readonly (string Name, bool Unique, string What, Func<int, object> Build)[] Scenarios =
     {
@@ -100,8 +100,8 @@ namespace Unrect.Benchmarks
     };
 
     /// <summary>
-    /// Runs every scenario and writes the results where the workflow stores them from. Throws — and so
-    /// fails the leg — if a scenario measured something other than what it claims to; see
+    /// Runs every scenario and writes the results where the workflow stores them from. Throws — and
+    /// so fails the leg — if a scenario measured something other than what it claims to; see
     /// <see cref="Inspect"/>.
     /// </summary>
     public static void Run(string[] args)
@@ -109,9 +109,9 @@ namespace Unrect.Benchmarks
       var artifacts = Argument(args, "--artifacts") ?? Path.Combine(".", "artifacts", "Retention");
       var repeats = Number(args, "--repeats") ?? 3;
 
-      // A local probing knob only. A reading at any other size is not comparable to the trend line, so
-      // one is printed and deliberately NOT written: there is no way to publish a number this job
-      // itself considers incomparable.
+      // A local probing knob only. A reading at any other size is not comparable to the trend line,
+      // so one is printed and deliberately NOT written: there is no way to publish a number this
+      // job itself considers incomparable.
       var rows = Number(args, "--rows") ?? RetentionSpaces.Rows;
       var publishable = rows == RetentionSpaces.Rows;
 
@@ -175,9 +175,9 @@ namespace Unrect.Benchmarks
     }
 
     /// <summary>
-    /// One reading: baseline with nothing held, then the same measurement with the scenario's result
-    /// and nothing else reachable. Not inlined, so the reference the scenario returns cannot outlive
-    /// this frame in a caller's stack slot and inflate the NEXT scenario's baseline.
+    /// One reading: baseline with nothing held, then the same measurement with the scenario's
+    /// result and nothing else reachable. Not inlined, so the reference the scenario returns cannot
+    /// outlive this frame in a caller's stack slot and inflate the NEXT scenario's baseline.
     /// </summary>
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static long Reading(Func<int, object> build, int rows)
@@ -191,19 +191,19 @@ namespace Unrect.Benchmarks
 
       var after = GC.GetTotalMemory(forceFullCollection: true);
 
-      // The reading is taken while `held` is still reachable; this is what says so to the JIT, which is
-      // otherwise free to consider the local dead the moment `build` returned.
+      // The reading is taken while `held` is still reachable; this is what says so to the JIT,
+      // which is otherwise free to consider the local dead the moment `build` returned.
       GC.KeepAlive(held);
 
       return after - before;
     }
 
     /// <summary>
-    /// A discarded build before the first reading. Two jobs, both load-bearing: it JITs everything a
-    /// measured build will run (a first-call compilation retains its own bytes, and they would land in
-    /// whichever scenario ran first), and it is where the scenario is checked for having produced what
-    /// it claims — the retention analogue of the rig's rule that a new benchmark's OUTPUT is verified
-    /// and not just its number.
+    /// A discarded build before the first reading. Two jobs, both load-bearing: it JITs everything
+    /// a measured build will run (a first-call compilation retains its own bytes, and they would
+    /// land in whichever scenario ran first), and it is where the scenario is checked for having
+    /// produced what it claims — the retention analogue of the rig's rule that a new benchmark's
+    /// OUTPUT is verified and not just its number.
     /// </summary>
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void Warm(string name, bool unique, int rows, Func<int, object> build)
@@ -216,13 +216,14 @@ namespace Unrect.Benchmarks
     }
 
     /// <summary>
-    /// What the scenario actually holds, checked and reported. The check is that the fixture has the
-    /// duplication it is supposed to have — a fixture that quietly stopped repeating would make the
-    /// interning change look like it did nothing, and the number would be perfectly plausible.
+    /// What the scenario actually holds, checked and reported. The check is that the fixture has
+    /// the duplication it is supposed to have — a fixture that quietly stopped repeating would make
+    /// the interning change look like it did nothing, and the number would be perfectly plausible.
     /// <para>
-    /// The instance count is REPORTED and never asserted: it is 250k today because every equal string
-    /// is a separate object, and driving it to the distinct-value count is precisely what the change
-    /// this family exists to judge will do. An assertion on it would fail the moment the change landed.
+    /// The instance count is REPORTED and never asserted: it is 250k today because every equal
+    /// string is a separate object, and driving it to the distinct-value count is precisely what
+    /// the change this family exists to judge will do. An assertion on it would fail the moment the
+    /// change landed.
     /// </para>
     /// </summary>
     private static void Inspect(string name, bool unique, int rows, object held)
@@ -275,16 +276,17 @@ namespace Unrect.Benchmarks
     }
 
     /// <summary>
-    /// The eager door's projection, with the grid released. The grid is a local and its last use is the
-    /// map, so it is unreachable before this returns and certainly before the reading's collection —
-    /// which is the point of the row: what a caller keeps after parsing, not what parsing needed.
+    /// The eager door's projection, with the grid released. The grid is a local and its last use is
+    /// the map, so it is unreachable before this returns and certainly before the reading's
+    /// collection — which is the point of the row: what a caller keeps after parsing, not what
+    /// parsing needed.
     /// </summary>
     private static object EagerResult(bool unique, int rows) =>
       Ledger.Map(RetentionSpaces.EagerSpace(unique, sharedStrings: false, rows));
 
     /// <summary>
-    /// The streaming door's projection, with the pool disposed and the window gone: the same result,
-    /// arrived at without ever materialising the sheet.
+    /// The streaming door's projection, with the pool disposed and the window gone: the same
+    /// result, arrived at without ever materialising the sheet.
     /// </summary>
     private static object StreamingResult(bool unique, int rows)
     {
@@ -294,10 +296,10 @@ namespace Unrect.Benchmarks
     }
 
     /// <summary>
-    /// A forced, blocking, COMPACTING collection of every generation, twice with finalizers drained in
-    /// between — a first pass can queue finalizers that a second pass is needed to actually free.
-    /// Compacting matters because the reading is a heap size and a fragmented heap reports bytes no
-    /// object is using.
+    /// A forced, blocking, COMPACTING collection of every generation, twice with finalizers drained
+    /// in between — a first pass can queue finalizers that a second pass is needed to actually
+    /// free. Compacting matters because the reading is a heap size and a fragmented heap reports
+    /// bytes no object is using.
     /// </summary>
     private static void Collect()
     {
@@ -345,8 +347,8 @@ namespace Unrect.Benchmarks
       (bytes / 1024d / 1024d).ToString("N1", CultureInfo.InvariantCulture);
 
     /// <summary>
-    /// One row of the <c>customSmallerIsBetter</c> document the workflow stores — the same shape every
-    /// family's memory rows are already published in, whose schema is lowercase
+    /// One row of the <c>customSmallerIsBetter</c> document the workflow stores — the same shape
+    /// every family's memory rows are already published in, whose schema is lowercase
     /// (<c>name</c>/<c>unit</c>/<c>value</c>, with <c>range</c> and <c>extra</c> optional). Every
     /// member here is one word, so the camel-case policy at the serializer spells all five exactly.
     /// </summary>

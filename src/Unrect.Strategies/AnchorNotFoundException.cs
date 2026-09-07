@@ -6,10 +6,10 @@ namespace Unrect.Strategies
   /// A required anchor that was not there — a matcher lifted into a placement by <c>To</c> or
   /// <c>Past</c>, finding nothing. It is an <see cref="OutOfBoundsException"/> because a missing
   /// anchor is a placement failure like any other — strict callers report it, and a repeat whose
-  /// item seeks its own anchor simply stops. The extra <see cref="Description"/> lets the shape
-  /// layer say what was sought; it is internal, and visible to the Unrect assembly for that
-  /// purpose alone (see the InternalsVisibleTo item in Unrect.Strategies.csproj), so the public
-  /// surface still shows nothing but <see cref="OutOfBoundsException"/>.
+  /// item seeks its own anchor simply stops. The extra <see cref="Description"/> lets the
+  /// projection layer say what was sought; it is internal, and visible to the Unrect assembly for
+  /// that purpose alone (see the InternalsVisibleTo item in Unrect.Strategies.csproj), so the
+  /// public surface still shows nothing but <see cref="OutOfBoundsException"/>.
   /// </summary>
   internal sealed class AnchorNotFoundException : OutOfBoundsException
   {

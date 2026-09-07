@@ -3,12 +3,12 @@ using System.IO;
 
 using Unrect.Core;
 using Unrect.Spreadsheets;
-using Unrect.Shapes;
+using Unrect.Projections;
 using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Shapes.Shape;
+using static Unrect.Projections.Projection;
 
 namespace Unrect.Tests
 {

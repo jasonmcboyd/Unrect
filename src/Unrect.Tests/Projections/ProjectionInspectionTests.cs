@@ -1,0 +1,267 @@
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+using Unrect.Core;
+using Unrect.Projections;
+
+using Xunit;
+
+using static Unrect.Projections.Projection;
+using static Unrect.Tests.ProjectionTestSpaces;
+
+namespace Unrect.Tests.Projections
+{
+  /// <summary>
+  /// A projection is an inspectable value, not a closure over a file: its name, description and
+  /// placement can all be read without ever handing it a space, and so can its children — except
+  /// for a layout composite, which declares its children by running a lambda and therefore has none
+  /// to show. That one says so rather than passing for a leaf, through <c>IOpaqueComposite</c>.
+  /// <para>
+  /// What is left readable is what makes the wave-3 diagnostics (dry runs, traces, capability
+  /// checks) possible, and it is what makes one projection safe to apply to many spaces at once.
+  /// </para>
+  /// </summary>
+  public class ProjectionInspectionTests
+  {
+    // --- Descriptions ------------------------------------------------------------------------------------
+
+    [Fact]
+    public void LeavesDescribeThemselvesStructurally()
+    {
+      // The typed leaves and the labelled block, described by the factory the user typed.
+      Assert.Equal("Text", Text().Description);
+      Assert.Equal("Decimal", Decimal().Description);
+      Assert.Equal("Integer", Integer().Description);
+      Assert.Equal("Double", Double().Description);
+      Assert.Equal("Date", Date().Description);
+      Assert.Equal("Boolean", Boolean().Description);
+      Assert.Equal("Fields", Fields(Field("EIN")).Description);
+      Assert.Equal("Caption(\"Total\")", Caption("Total").Description);
+
+      Assert.Equal("Cell", Cell(v => v.GetInt()).Description);
+      Assert.Equal("Row", Row(s => s.Count).Description);
+      Assert.Equal("Row(3)", Row(3, s => s.Count).Description);
+      Assert.Equal("Column", Column(s => s.Count).Description);
+      Assert.Equal("Column(4)", Column(4, s => s.Count).Description);
+      Assert.Equal("Range", Range(b => b.Width).Description);
+      Assert.Equal("Range(2, 3)", Range(2, 3, b => b.Width).Description);
+    }
+
+    [Fact]
+    public void CompositesDescribeThemselvesStructurally()
+    {
+      Assert.Equal("VerticalFlow", VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(IntCell())}").Description);
+      Assert.Equal("HorizontalFlow", HorizontalFlow(h => $"{h.Next(IntCell())}{h.Next(IntCell())}").Description);
+      Assert.Equal("Overlay", Overlay(o => $"{o.Next(IntCell())}{o.Next(IntCell())}").Description);
+      Assert.Equal("VerticalRepeat", VerticalRepeat(IntCell()).Description);
+      Assert.Equal("HorizontalRepeat", HorizontalRepeat(IntCell()).Description);
+      Assert.Equal("Select", IntCell().Select(v => v + 1).Description);
+      Assert.Equal("Table", Table(t => t.RowCount).Description);
+      Assert.Equal("TableRows", TableRows(r => r[0]).Description);
+    }
+
+    [Fact]
+    public void ANameDoesNotReplaceTheDescription()
+    {
+      var projection = IntCell().Named("report id");
+
+      Assert.Equal("report id", projection.Name);
+      Assert.Equal("Cell", projection.Description);
+    }
+
+    [Fact]
+    public void AnUnnamedProjectionHasNoName()
+    {
+      Assert.Null(IntCell().Name);
+    }
+
+    // --- Children ----------------------------------------------------------------------------------------
+
+    [Fact]
+    public void LeavesHaveNoChildren()
+    {
+      Assert.Empty(IntCell().Children);
+      Assert.Empty(Row(s => s.Count).Children);
+      Assert.Empty(Table(t => t.RowCount).Children);
+    }
+
+    [Fact]
+    public void ALayoutCompositeHasNoChildrenToExpose()
+    {
+      // The cost of declaring children by calling Next: what a layout declares is knowable only by
+      // running it. An empty Children would read as "leaf" to a renderer, so the marker says why.
+      var flow = VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(IntCell())}");
+      var overlay = Overlay(o => $"{o.Next(IntCell())}{o.Next(IntCell())}");
+
+      Assert.Empty(flow.Children);
+      Assert.Empty(overlay.Children);
+      Assert.Equal(Reason(flow), Reason(overlay));
+      Assert.Equal("declared by a cursor lambda; children are known only while it runs", Reason(flow));
+    }
+
+    [Fact]
+    public void ARepeatExposesItsItem()
+    {
+      var item = IntCell().Named("item");
+
+      Assert.Same(item, Assert.Single(VerticalRepeat(item).Children));
+    }
+
+    [Fact]
+    public void ASelectExposesTheProjectionItWraps()
+    {
+      var inner = IntCell().Named("inner");
+
+      Assert.Same(inner, Assert.Single(inner.Select(v => v + 1).Children));
+    }
+
+    // --- Transparency ---------------------------------------------------------------------------------------
+
+    [Fact]
+    public void OnlyAnUnnamedWrapperIsTransparent()
+    {
+      // A wrapper the user wrote as part of a projection is not a level of the tree — until it is
+      // named, at which point it claims a segment and says what it is.
+      Assert.True(IntCell().Select(v => v + 1).IsTransparent);
+      Assert.True(IntCell().Padded(1).IsTransparent);
+      Assert.True(IntCell().Until(RowContaining("Total")).IsTransparent);
+
+      Assert.False(IntCell().Select(v => v + 1).Named("named").IsTransparent);
+      Assert.False(IntCell().Padded(1).Named("named").IsTransparent);
+      Assert.False(IntCell().Until(RowContaining("Total")).Named("named").IsTransparent);
+
+      // Projections that are levels of the tree in their own right never are.
+      Assert.False(IntCell().IsTransparent);
+      Assert.False(VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(IntCell())}").IsTransparent);
+      Assert.False(VerticalRepeat(IntCell()).IsTransparent);
+    }
+
+    // --- Placement ---------------------------------------------------------------------------------------------
+
+    [Fact]
+    public void LeavesDeclareTheirArea()
+    {
+      Assert.NotNull(IntCell().Placement.Area);
+      Assert.NotNull(Row(s => s.Count).Placement.Area);
+      Assert.NotNull(Table(t => t.RowCount).Placement.Area);
+    }
+
+    [Fact]
+    public void CompositesDeriveTheirArea()
+    {
+      Assert.Null(VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(IntCell())}").Placement.Area);
+      Assert.Null(VerticalRepeat(IntCell()).Placement.Area);
+      Assert.Null(IntCell().Select(v => v).Placement.Area);
+    }
+
+    // --- Walking a whole declaration without a space ---------------------------------------------------------------
+
+    [Fact]
+    public void AProjectionTreeCanBeWalkedWithoutASpaceUntilItMeetsALayout()
+    {
+      // The dry-run traversal in miniature: no ISpace anywhere. It walks the wrappers and the
+      // repeat happily, and stops where a layout composite is — reporting why rather than
+      // pretending the layout is a leaf.
+      var projection = VerticalRepeat(
+        TableRows(r => r[0])
+          .Named("rows")
+          .Until(RowContaining("Total"))
+          .Select(rows => rows.Count)
+          .Named("block"))
+        .Named("blocks");
+
+      Assert.Equal(
+        new[]
+        {
+          "'blocks' (VerticalRepeat)",
+          "  'block' (Select)",
+          "    Until",
+          "      'rows' (TableRows)",
+        },
+        Describe(projection).ToArray());
+    }
+
+    [Fact]
+    public void TheWalkStopsAtALayoutAndSaysWhy()
+    {
+      var projection = VerticalRepeat(VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(IntCell())}").Named("block"));
+
+      Assert.Equal(
+        new[]
+        {
+          "VerticalRepeat",
+          "  'block' (VerticalFlow) [opaque: declared by a cursor lambda; children are known only while it runs]",
+        },
+        Describe(projection).ToArray());
+    }
+
+    private static IEnumerable<string> Describe(IProjection projection, int depth = 0)
+    {
+      var label = projection.Name is null ? projection.Description : $"'{projection.Name}' ({projection.Description})";
+      var reason = Reason(projection);
+
+      yield return new string(' ', depth * 2) + label + (reason is null ? string.Empty : $" [opaque: {reason}]");
+
+      foreach (var child in projection.Children)
+        foreach (var line in Describe(child, depth + 1))
+          yield return line;
+    }
+
+    /// <summary>
+    /// Why a composite's children are missing, or null when it has none to hide. The marker is
+    /// internal to Unrect, which these tests can see; a renderer shipped in another assembly could
+    /// not, and is the reason the marker exists at all rather than a member on <c>IProjection</c>.
+    /// </summary>
+    private static string? Reason(IProjection projection) => (projection as IOpaqueComposite)?.Reason;
+
+    // --- Reuse ---------------------------------------------------------------------------------------------------
+
+    [Fact]
+    public void OneProjectionCanBeAppliedToManyDifferentSpaces()
+    {
+      var projection = VerticalFlow(v => (v.Next(IntCell()), v.Next(VerticalRepeat(IntCell()))));
+
+      Assert.Equal("1:2,3", Read(projection, Grid(new[,] { { 1 }, { 2 }, { 3 } })));
+      Assert.Equal("9:8", Read(projection, Grid(new[,] { { 9 }, { 8 } })));
+      Assert.Equal("4:5,6,7", Read(projection, Grid(new[,] { { 4 }, { 5 }, { 6 }, { 7 } })));
+    }
+
+    [Fact]
+    public void OneProjectionCanBeAppliedToManySpacesConcurrently()
+    {
+      // The context tree is built per Map call, so nothing is shared between concurrent runs.
+      var projection = VerticalFlow(v => (v.Next(IntCell()), v.Next(VerticalRepeat(IntCell()))));
+
+      var spaces = Enumerable.Range(0, 64)
+        .Select(seed => Grid(new[,] { { seed + 1 }, { seed + 2 }, { seed + 3 } }))
+        .ToArray();
+
+      var results = new string[spaces.Length];
+
+      Parallel.For(0, spaces.Length, index => results[index] = Read(projection, spaces[index]));
+
+      for (var index = 0; index < spaces.Length; index++)
+        Assert.Equal($"{index + 1}:{index + 2},{index + 3}", results[index]);
+    }
+
+    [Fact]
+    public void MappingDoesNotMutateTheProjection()
+    {
+      var projection = IntCell().Named("value").Down(1);
+
+      projection.Map(Grid(new[,] { { 1 }, { 2 } }));
+
+      Assert.Equal("value", projection.Name);
+      Assert.NotNull(projection.Placement.Area);
+      Assert.Equal(2, projection.Map(Grid(new[,] { { 1 }, { 2 } })));
+    }
+
+    /// <summary>Renders a result as text so array identity never enters the comparison.</summary>
+    private static string Read(IProjection<(int, IReadOnlyList<int>)> projection, ISpace space)
+    {
+      var (first, rest) = projection.Map(space);
+      return $"{first}:{string.Join(",", rest)}";
+    }
+  }
+}

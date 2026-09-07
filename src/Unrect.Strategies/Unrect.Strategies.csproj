@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Two things are shared: AnchorNotFoundException.Description, which ShapeEngine renders, and
+    <!-- Two things are shared: AnchorNotFoundException.Description, which ProjectionEngine renders, and
          CellMatching, so Caption, Field and the matchers agree on what matching means. (Fields once
          reached for the Predicate*Landmark classes too; RowWhere/ColumnWhere's described overloads
          replaced that.) -->

@@ -10,13 +10,14 @@ using Xunit;
 namespace Unrect.Tests
 {
   /// <summary>
-  /// The Excel adapter on its own: sheet selection, dimensions, blankness, and the cell kinds a real
-  /// file adapts to. Decomposing these same workbooks into typed results is the shape layer's job and
-  /// is covered end to end by <c>Shapes/ShapeExampleTests</c>.
+  /// The Excel adapter on its own: sheet selection, dimensions, blankness, and the cell kinds a
+  /// real file adapts to. Decomposing these same workbooks into typed results is the projection
+  /// layer's job and is covered end to end by <c>Projections/ProjectionExampleTests</c>.
   /// </summary>
   public class SpreadsheetSpaceTests
   {
-    // The workbooks are copied into the test output, so tests never depend on the repository layout.
+    // The workbooks are copied into the test output, so tests never depend on the repository
+    // layout.
     private static string WorkbookPath(string fileName)
       => Path.Combine(AppContext.BaseDirectory, "TestData", fileName);
 
@@ -148,8 +149,8 @@ namespace Unrect.Tests
     {
       // The measured extent is a real extent: it bounds the space the way a declared one does, so a
       // declaration that runs off it gets the ordinary bounds condition rather than blank rows
-      // stretching away past the end of the file. Its two axes fail in different places, so both are
-      // said.
+      // stretching away past the end of the file. Its two axes fail in different places, so both
+      // are said.
       var space = SpreadsheetSpace.Create(WorkbookPath("no-extent.xlsx"), "Undeclared");
 
       // Zero wide means there is no cell to read at all, the first one included — that is the whole
@@ -199,15 +200,15 @@ namespace Unrect.Tests
     public void EqualTextCellsInOneSheetAreGivenOneInstanceOfTheirCharacters()
     {
       // What sharing removes is the duplicate that would have SURVIVED the fill, not the one the
-      // reader made: on a file that spells its text inline the reader hands over a fresh instance per
-      // cell, and on a text-heavy sheet those copies are most of what the grid retains.
+      // reader made: on a file that spells its text inline the reader hands over a fresh instance
+      // per cell, and on a text-heavy sheet those copies are most of what the grid retains.
       var space = RepeatedText();
 
       Assert.Same(space[0, 1].GetString(), space[0, 2].GetString());     // "Alpha Fund", twice
       Assert.Same(space[1, 1].GetString(), space[1, 2].GetString());     // "Capital Call", twice
 
-      // A different value is a different instance, which is the half that says the first assertion is
-      // about identity rather than about the adapter handing back one string for everything.
+      // A different value is a different instance, which is the half that says the first assertion
+      // is about identity rather than about the adapter handing back one string for everything.
       Assert.NotSame(space[0, 1].GetString(), space[0, 3].GetString());
       Assert.Equal("Alpha Fund", space[0, 2].GetString());
       Assert.Equal("Beta Fund", space[0, 3].GetString());
@@ -216,9 +217,9 @@ namespace Unrect.Tests
     [Fact]
     public void TextIsSharedAcrossEverySheetOfOneCreateCall()
     {
-      // The table is scoped to the call, not to a sheet: captions, codes and categories repeat across
-      // the sheets of a workbook, so a caller enumerating several of them gets one instance per
-      // distinct value across all of them.
+      // The table is scoped to the call, not to a sheet: captions, codes and categories repeat
+      // across the sheets of a workbook, so a caller enumerating several of them gets one instance
+      // per distinct value across all of them.
       var sheets = SpreadsheetSpace.Create(WorkbookPath("repeated-text.xlsx"), _ => true).ToArray();
       var ledger = sheets[0];
       var notes = sheets[1];
@@ -226,18 +227,19 @@ namespace Unrect.Tests
       Assert.Same(ledger[0, 0].GetString(), notes[0, 0].GetString());    // "Fund"
       Assert.Same(ledger[0, 1].GetString(), notes[0, 1].GetString());    // "Alpha Fund"
 
-      // ...and the scope is the call. A second call reads the file again and builds its own table, so
-      // nothing here is a process-wide intern pool that would outlive the grid it was made for.
+      // ...and the scope is the call. A second call reads the file again and builds its own table,
+      // so nothing here is a process-wide intern pool that would outlive the grid it was made for.
       Assert.NotSame(ledger[0, 1].GetString(), RepeatedText()[0, 1].GetString());
     }
 
     [Fact]
     public void AStringAtTheLengthGuardIsSharedAndOneCharacterLongerIsNot()
     {
-      // The eager door applies the same guard as the streaming one, at the same boundary, so the two
-      // doors share exactly the same values and a caller cannot tell which one produced a grid. Long
-      // text in a spreadsheet is a memo or a free-text note — nearly always unique, so it would
-      // occupy an entry that never scores a hit while pinning the most bytes of anything in the table.
+      // The eager door applies the same guard as the streaming one, at the same boundary, so the
+      // two doors share exactly the same values and a caller cannot tell which one produced a grid.
+      // Long text in a spreadsheet is a memo or a free-text note — nearly always unique, so it
+      // would occupy an entry that never scores a hit while pinning the most bytes of anything in
+      // the table.
       var space = RepeatedText();
 
       Assert.Equal(256, space[2, 1].GetString().Length);

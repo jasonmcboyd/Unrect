@@ -5,7 +5,7 @@ using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Tests.ShapeTestSpaces;
+using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests
 {
@@ -15,10 +15,10 @@ namespace Unrect.Tests
   /// tests pin the two halves of that claim.
   /// <para>
   /// The first half is the <em>fold identity</em>: a strategy's eager answer is the fold of its own
-  /// scan to exhaustion, on every shape of grid. The interfaces make this true by construction — the
-  /// eager method is a default implementation written as the fold — so what is under test is that no
-  /// implementation quietly supplies its own eager loop that says something else, and that the scans
-  /// themselves mean what they claim to.
+  /// scan to exhaustion, on every shape of grid. The interfaces make this true by construction —
+  /// the eager method is a default implementation written as the fold — so what is under test is
+  /// that no implementation quietly supplies its own eager loop that says something else, and that
+  /// the scans themselves mean what they claim to.
   /// </para>
   /// <para>
   /// The identity is claimed at three widths: a row rule's count, a size's width-and-height, and —
@@ -27,10 +27,11 @@ namespace Unrect.Tests
   /// </para>
   /// <para>
   /// The second half is the <em>census</em>: which factories hand back an incremental strategy and
-  /// which deliberately do not. A strategy that reads no cells has nothing to defer, and an explicit
-  /// count's <see cref="OutOfBoundsException"/> on overrun is a promise about the available height —
-  /// which a scan is never told. Those are pinned as hard negatives so that a later, helpful
-  /// implementation of incrementality on one of them has to come and argue with a failing test.
+  /// which deliberately do not. A strategy that reads no cells has nothing to defer, and an
+  /// explicit count's <see cref="OutOfBoundsException"/> on overrun is a promise about the
+  /// available height — which a scan is never told. Those are pinned as hard negatives so that a
+  /// later, helpful implementation of incrementality on one of them has to come and argue with a
+  /// failing test.
   /// </para>
   /// </summary>
   public class IncrementalStrategyTests
@@ -73,8 +74,8 @@ namespace Unrect.Tests
       // --- and three more, for the interleave, where WHEN a column answer settles is the point -----
 
       // One value per row, each a column further right: the case the interleave exists to be honest
-      // about. An "any" rule cannot know its width until the third row, so the walk that decides the
-      // width consumes the whole band — and the height that follows is then already known.
+      // about. An "any" rule cannot know its width until the third row, so the walk that decides
+      // the width consumes the whole band — and the height that follows is then already known.
       "staircase" => Grid(new[,]
       {
         { 1, 0, 0 },
@@ -91,8 +92,9 @@ namespace Unrect.Tests
         { 5, 6, 7 },
       }),
 
-      // A full first row and a hole in the last column of the second: the "any" answer settles on row
-      // 0 and the "all" answer needs row 1, so one grid separates the two rules by when they settle.
+      // A full first row and a hole in the last column of the second: the "any" answer settles on
+      // row 0 and the "all" answer needs row 1, so one grid separates the two rules by when they
+      // settle.
       "gap" => Grid(new[,]
       {
         { 1, 2, 3 },
@@ -271,7 +273,8 @@ namespace Unrect.Tests
     [Theory]
     // The "any" rule, whose answer only grows: settled at the full width, on row 0 wherever the
     // first row is dense. Sparse gives 1 because column 1 carries nothing in the two-row band, and
-    // the run has to be contiguous from 0 — the value at column 2 is behind a gap and never counted.
+    // the run has to be contiguous from 0 — the value at column 2 is behind a gap and never
+    // counted.
     [InlineData("TakeColumnsWhileAnyValue", "dense", 3, 4)]
     [InlineData("TakeColumnsWhileAnyValue", "sparse", 1, 2)]
     [InlineData("TakeColumnsWhileAnyValue", "empty", 0, 0)]
@@ -337,7 +340,8 @@ namespace Unrect.Tests
       // A width is not a cursor. The contract lets deciding it consume leading rows — a width
       // measured inside the discovered band would have to — but it must never consume rows the
       // height alone would not, and reading the property a second time must not consume at all.
-      // Here the width is the whole of what is available, so the honest count of cells read is zero.
+      // Here the width is the whole of what is available, so the honest count of cells read is
+      // zero.
       var space = new CountingSpace(Space("sparse"));
       var strategy = Assert.IsAssignableFrom<IIncrementalSizeStrategy>(SizeStrategies.RowsWhileAnyValue());
 
@@ -364,7 +368,8 @@ namespace Unrect.Tests
     public void TheWidthIsTheSpaceTheScanWasBegunOn()
     {
       // Not the space it is folded over and not the strategy's own idea of a width: BeginSize takes
-      // the available space and the answer comes from it, so a narrower band gives a narrower extent.
+      // the available space and the answer comes from it, so a narrower band gives a narrower
+      // extent.
       var band = Space("dense").GetSubspace(default, new Area(2, 4));
       var strategy = Assert.IsAssignableFrom<IIncrementalSizeStrategy>(SizeStrategies.RowsWhileAnyValue());
 
@@ -419,7 +424,8 @@ namespace Unrect.Tests
     public void AStatelessScanHasNothingToLeak()
     {
       // The other side of the same coin: a rule that carries nothing from row to row may hand back
-      // one instance for every scan of it, and folding through that instance twice is folding twice.
+      // one instance for every scan of it, and folding through that instance twice is folding
+      // twice.
       var incremental = Assert.IsAssignableFrom<IIncrementalRowStrategy>(RowStrategies.TakeRowsWhileAnyValue());
 
       var space = Space("sparse");
@@ -459,8 +465,8 @@ namespace Unrect.Tests
     {
       // And must not become one, however per-row it looks. TakeRows(n) reads no cells, so deferring
       // it buys nothing; and it throws when n does not fit, which is a promise about the AVAILABLE
-      // height. A scan is never told the available height, so the promise is not expressible one row
-      // at a time — it would silently become "as many of the n rows as there turned out to be".
+      // height. A scan is never told the available height, so the promise is not expressible one
+      // row at a time — it would silently become "as many of the n rows as there turned out to be".
       Assert.IsNotAssignableFrom<IIncrementalRowStrategy>(RowStrategies.TakeRows(3));
     }
 
@@ -472,11 +478,11 @@ namespace Unrect.Tests
     [InlineData("SelectSize")]
     public void ASizeThatIsNotAPerRowRuleIsNotIncremental(string strategy)
     {
-      // Each for its own reason. The first three read no cells at all, so there is nothing to defer.
-      // ColumnsWhileAny reads down the full height of a column to decide a width, which is the one
-      // shape of question a lazily bounded space cannot answer without resolving itself. SelectSize
-      // is the escape hatch: an opaque function of the whole space, which is exactly what a scan is
-      // not. The area lift must not invent incrementality for any of them either.
+      // Each for its own reason. The first three read no cells at all, so there is nothing to
+      // defer. ColumnsWhileAny reads down the full height of a column to decide a width, which is
+      // the one shape of question a lazily bounded space cannot answer without resolving itself.
+      // SelectSize is the escape hatch: an opaque function of the whole space, which is exactly
+      // what a scan is not. The area lift must not invent incrementality for any of them either.
       ISizeStrategy size = strategy switch
       {
         "MaxSize" => SizeStrategies.MaxSize(),
@@ -513,9 +519,10 @@ namespace Unrect.Tests
     public void AWidthMeasuredInsideTheDiscoveredBandIsIncremental(string columns)
     {
       // Rows first, then columns within them: the width depends on the row bound, so one forward
-      // walk serves both scans before the area is handed out. This was pinned as a negative until the
-      // interleave landed, and is the census entry that says it did — Table's default placement is
-      // this extent, so it is the one that decides whether an undecorated declaration can stream.
+      // walk serves both scans before the area is handed out. This was pinned as a negative until
+      // the interleave landed, and is the census entry that says it did — Table's default placement
+      // is this extent, so it is the one that decides whether an undecorated declaration can
+      // stream.
       Assert.IsAssignableFrom<IIncrementalAreaStrategy>(RowsThenColumns(columns));
     }
 
@@ -540,9 +547,10 @@ namespace Unrect.Tests
       // Which is why the choice is made once, in the factory. A column rule spelled as a predicate
       // over (space, column) may read its column down the whole height — the same reading
       // ColumnsThenRows is refused for — so rows-then-columns falls back to two passes rather than
-      // claiming a discoverable bound it cannot deliver. The row half is refused for its own reason,
-      // given above on AnExplicitRowCountIsNotIncremental: an explicit count promises something about
-      // the available height, and a walk that stopped early would quietly weaken the promise.
+      // claiming a discoverable bound it cannot deliver. The row half is refused for its own
+      // reason, given above on AnExplicitRowCountIsNotIncremental: an explicit count promises
+      // something about the available height, and a walk that stopped early would quietly weaken
+      // the promise.
       Assert.IsNotAssignableFrom<IIncrementalAreaStrategy>(AreaStrategies.RowsThenColumns(
         RowStrategies.TakeRowsWhileAnyValue(),
         ColumnStrategies.TakeColumnsWhile((space, column) => space[column, 0].HasValue)));
