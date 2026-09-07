@@ -23,16 +23,25 @@ namespace Unrect.Projections
   /// </summary>
   internal sealed class TypedCellProjection<T> : ProjectionBase<T>
   {
-    public TypedCellProjection(CellKind kind, string description, CellReader<T> read, Placement placement)
+    public TypedCellProjection(CellKind kind, string description, CellReader<T> read, Placement placement, bool blankIsNull)
       : base(placement)
     {
       Kind = kind;
       Description = description;
       Read = read;
+      BlankIsNull = blankIsNull;
     }
 
     private CellKind Kind { get; }
     private CellReader<T> Read { get; }
+
+    /// <summary>
+    /// Whether a blank cell reads as null instead of failing — what <c>OrBlank</c> declares. It
+    /// tolerates a blank and nothing else: a cell of the wrong kind still fails exactly as loudly,
+    /// because a missing value says something about the data and a wrong kind says something about
+    /// the format.
+    /// </summary>
+    private bool BlankIsNull { get; }
 
     public override string Description { get; }
 
@@ -45,6 +54,12 @@ namespace Unrect.Projections
 
       var cell = extent[0, 0];
 
+      // Quietly: the declaration said this cell may be absent, so its absence is the answer rather
+      // than something to report. That is the whole difference from Optional, which absorbs a
+      // failure and says so with a Warning.
+      if (BlankIsNull && cell.IsBlank)
+        return new ProjectionResult<T>(default!, size);
+
       string At() => context.Locate(extent).A1;
 
       if (cell.Kind != Kind)
@@ -54,6 +69,34 @@ namespace Unrect.Projections
         throw context.Failure(conversion!, extent);
 
       return new ProjectionResult<T>(value, size);
+    }
+
+    /// <summary>
+    /// The same reading, tolerating a blank cell — <c>OrBlank</c>. The kind, the accessor and the
+    /// placement are this leaf's own, so <c>Decimal().Right(6).OrBlank()</c> and
+    /// <c>Decimal().OrBlank().Right(6)</c> declare the same thing; only the result type changes,
+    /// which is why <paramref name="asNullable"/> comes from the caller — C# cannot say "this same
+    /// reading, of <typeparamref name="TValue"/>" on its own.
+    /// </summary>
+    /// <typeparam name="TValue">The nullable form of <typeparamref name="T"/>.</typeparam>
+    /// <param name="asNullable">The widening, which is the identity conversion at run time.</param>
+    internal IProjection<TValue> Tolerating<TValue>(Func<T, TValue> asNullable)
+    {
+      bool Tolerant(CellValue cell, Func<string> at, out TValue value, out string? conversion)
+      {
+        if (!Read(cell, at, out var raw, out conversion))
+        {
+          value = default!;
+          return false;
+        }
+
+        value = asNullable(raw);
+        return true;
+      }
+
+      var tolerant = new TypedCellProjection<TValue>(Kind, Description + "?", Tolerant, Placement, blankIsNull: true);
+
+      return Name is null ? tolerant : tolerant.WithName(Name);
     }
   }
 }

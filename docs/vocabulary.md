@@ -16,6 +16,7 @@ is; do not let them drift silently.
 | Operator | Yields | Notes |
 |---|---|---|
 | `Text()` `Decimal()` `Integer()` `Double()` `Date()` `Boolean()` | typed value | One cell; asserts its `CellKind`, applies the canonical accessor. The family is CLOSED over `CellValue`'s accessor set and never leads it — no `Long()`, ever; conversions beyond the set are `Select` territory (typed-leaves-and-tables-spec §2, "the firewall") |
+| `Text().OrBlank()` `Decimal().OrBlank()` … | `T?` | The same reading, tolerating a BLANK cell: null, quietly, with no diagnostic — where `.Optional()` absorbs a failure and records a Warning. A wrong kind still fails loudly, because blankness is about the data and a kind is about the format. The standalone spelling of a nullable table member's tolerance; belongs to the typed leaves only (anywhere else it is a declaration error at construction) |
 | `Cell(v => ...)` | `T` | One cell, arbitrary projection — the escape hatch |
 | `Row(r => ...)` / `Row(width, r => ...)` / `Row(IColumnStrategy, r => ...)` | from `CellStrip` | One row; width discovered (`while any value`), explicit count, or by column strategy (explicit counts are for structurally fixed regions only) |
 | `Column(c => ...)` / `Column(height, c => ...)` / `Column(IRowStrategy, c => ...)` | from `CellStrip` | One column; height discovered (`while any value`), explicit count, or by row strategy (explicit counts are for structurally fixed regions only) |
@@ -29,6 +30,7 @@ is; do not let them drift silently.
 |---|---|---|
 | `TableRows()` | rows as caption-keyed dictionaries of `CellValue` | Exploratory: keys discovered from the file, looked up under the binding comparer; duplicate captions are a loud failure |
 | `TableRows<T>()` / `TableRows<T>(bind => ...)` | `IReadOnlyList<T>` | Typed: captions bound to properties by `CaptionComparer` (case- and whitespace-insensitive), kinds inferred from property types (the closed set: `string`, `decimal`, `double`, `int`, `DateTime`, `bool`, their `Nullable<>` forms, and `CellValue`), `Nullable<>` AND an annotated `string?` both mean per-column blank tolerance, strict by default with `bind.Ignore(t => t.X)`; overrides `bind.Column(t => t.X, "caption")` |
+| `Table(headerRows:, eachRow:)` | `IReadOnlyList<T>` | The row slot: every body row is handed to a PROJECTION as its own one-row extent, so the row is inspectable, reusable, and says in its own type what it demands (a row reading `Formula()` makes the table demanding). `HorizontalFlow` of leaves for adjacent columns, `Overlay` + `.Right(n)` + `.OrBlank()` for sparse ones. A failure inside a record reads `Table[3] -> 'eachRow' -> …`, counting records from zero as a repeat does. A header is consumed, not read — binding captions to a row projection is the bind, not yet built |
 | `TableRows(r => ...)` | `IReadOnlyList<T>` (`T` per row) | Full control: hand-written per-row projection with `r["Caption"]` / `r[i]` |
 | `Table(t => ...)` | `T` for the whole table | Full control: one hand-written projection over the `TableView`, for tables that don't decompose row-by-row |
 

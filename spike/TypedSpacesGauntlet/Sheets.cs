@@ -40,6 +40,55 @@ namespace TypedSpacesGauntlet
 
     /// <summary>The same sheet as a plain grid — what a unit test builds, and what scenario 5 is about.</summary>
     public static GridSpace Plain() => new GridSpace(Values());
+
+    // A second sheet, shaped like the buying-power export the row-projection slot was designed for:
+    // no header the records can be bound by, values in columns 1, 6 and 9, and a last record that
+    // carries a fund and nothing else.
+    //
+    // c0        c1      c6         c9
+    // r0  PCTCAL2 BUYING POWER
+    // r1  (blank)
+    // r2  ACCOUNT   FUND    PRIMARY    FEP
+    // r3            ABC     1250.75    300.00
+    // r4            DEF      980.50    <fep>
+    // r5            GHI     (blank)    (blank)     <- fund only
+    // r6  (blank)
+    // r7  TOTAL             2231.25
+    private static CellValue[,] BuyingPowerValues(CellValue fepOfSecondRecord)
+    {
+      var cells = new CellValue[8, 11];
+
+      cells[0, 0] = CellValue.Of("PCTCAL2 BUYING POWER");
+
+      cells[2, 0] = CellValue.Of("ACCOUNT");
+      cells[2, 1] = CellValue.Of("FUND");
+      cells[2, 6] = CellValue.Of("PRIMARY");
+      cells[2, 9] = CellValue.Of("FEP");
+
+      cells[3, 1] = CellValue.Of("ABC");
+      cells[3, 6] = CellValue.Of(1250.75m);
+      cells[3, 9] = CellValue.Of(300.00m);
+
+      cells[4, 1] = CellValue.Of("DEF");
+      cells[4, 6] = CellValue.Of(980.50m);
+      cells[4, 9] = fepOfSecondRecord;
+
+      cells[5, 1] = CellValue.Of("GHI");
+
+      cells[7, 0] = CellValue.Of("TOTAL");
+      cells[7, 6] = CellValue.Of(2231.25m);
+
+      return cells;
+    }
+
+    /// <summary>The buying-power sheet: sparse columns, and a last record that is a fund and two blanks.</summary>
+    public static GridSpace BuyingPower() => new GridSpace(BuyingPowerValues(CellValue.Blank));
+
+    /// <summary>
+    /// The same sheet with text where a number belongs. <c>OrBlank</c> tolerates a blank and nothing
+    /// else, so this must still fail — and name the record it failed in.
+    /// </summary>
+    public static GridSpace BuyingPowerWithText() => new GridSpace(BuyingPowerValues(CellValue.Of("n/a")));
   }
 
   public sealed record Allocation(string Account, string Symbol, decimal Weight);
@@ -54,4 +103,6 @@ namespace TypedSpacesGauntlet
     string? TotalFormula);
 
   public sealed record Probe(bool RawTypeTest, bool ThroughSeam, string? Formula);
+
+  public sealed record BuyingPowerRow(string FundCode, decimal? Primary, decimal? Fep);
 }

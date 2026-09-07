@@ -69,6 +69,19 @@ namespace Unrect.Projections
       where TSpace : class, ISpace
       => over is null ? throw new ArgumentNullException(nameof(over)) : projection;
 
+    /// <inheritdoc cref="Table{T}(int, IProjection{T}, string)"/>
+    /// <typeparam name="TSpace">The space the row is declared over, and therefore the table.</typeparam>
+    /// <typeparam name="T">What one record reads.</typeparam>
+    /// <param name="headerRows">How many rows to consume as the header, 0 or 1.</param>
+    /// <param name="eachRow">The projection applied to each body row.</param>
+    /// <param name="declared">Supplied by the compiler as the text of the <paramref name="eachRow"/> argument.</param>
+    public static IProjection<TSpace, IReadOnlyList<T>> Table<TSpace, T>(
+      int headerRows,
+      IProjection<TSpace, T> eachRow,
+      [CallerArgumentExpression("eachRow")] string? declared = null)
+      where TSpace : class, ISpace
+      => Table(headerRows, ProjectionExtensions.Plain(eachRow), declared);
+
     /// <inheritdoc cref="VerticalRepeat{T}"/>
     /// <typeparam name="TSpace">The space the item is declared over, and therefore the repeat.</typeparam>
     /// <typeparam name="T">What one occurrence reads.</typeparam>

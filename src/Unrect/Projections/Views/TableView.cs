@@ -94,8 +94,33 @@ namespace Unrect.Projections
     /// </summary>
     public IEnumerable<TableRow> StreamRows()
     {
-      for (var index = 0; BoundedSpace.HasRow(Space, HeaderRows + index); index++)
-        yield return RowAt(index);
+      var index = 0;
+
+      foreach (var band in StreamBands(1))
+        yield return new TableRow(this, index++, new CellStrip(band.Space, Orientation.Horizontal, band.Context.Origin), band.Context);
+    }
+
+    /// <summary>
+    /// The body as bands of <paramref name="bandHeight"/> rows, each with the context to project it
+    /// in — what a row projection is applied to, and what <see cref="StreamRows"/> wraps in a
+    /// <see cref="TableRow"/>. Forward-only in the same way: each step asks whether the band's last
+    /// row is there and stops when it is not, so an extent still being discovered is consumed in
+    /// step with the reading.
+    /// <para>
+    /// The height is a parameter because a record is not always one row tall. Everything above it
+    /// counts in bands rather than rows, so a table that ever slices taller records needs a
+    /// different argument here and nothing else; a trailing part-band is not a record and is left
+    /// undescribed.
+    /// </para>
+    /// </summary>
+    internal IEnumerable<(ISpace Space, ProjectionContext Context)> StreamBands(int bandHeight)
+    {
+      for (var row = HeaderRows; BoundedSpace.HasRow(Space, row + bandHeight - 1); row += bandHeight)
+      {
+        var offset = new Offset(0, row);
+
+        yield return (Space.GetSubspace(offset, new Area(ColumnCount, bandHeight)), Context.Advance(offset));
+      }
     }
 
     private int HeaderRows { get; }
@@ -142,15 +167,6 @@ namespace Unrect.Projections
         rows.Add(row);
 
       return rows;
-    }
-
-    private TableRow RowAt(int index)
-    {
-      var offset = new Offset(0, HeaderRows + index);
-      var rowContext = Context.Advance(offset);
-      var strip = new CellStrip(Space.GetSubspace(offset, new Area(ColumnCount, 1)), Orientation.Horizontal, rowContext.Origin);
-
-      return new TableRow(this, index, strip, rowContext);
     }
 
     private Dictionary<string, List<int>> BuildColumnsByName()

@@ -384,6 +384,49 @@ namespace Unrect.Projections
       => new BoundaryProjection<T?>(NotNull(projection).Select(value => (T?)value), null, default, Placement.Default, "Optional");
 
     /// <summary>
+    /// Reads a blank cell as null, quietly — the leaf's way of saying "this field may be absent".
+    /// <para>
+    /// It is not tolerance and it records nothing: an expected blank is a value the declaration
+    /// allowed for, where <see cref="Optional{T}"/> absorbs a <em>failure</em> and says so with a
+    /// <c>Warning</c>. Everything else about the leaf is unchanged — a cell of the wrong kind fails
+    /// exactly as loudly, and a number that will not fit still fails as a conversion. Blankness is
+    /// about the data; a kind is about the format, and no format tolerates the wrong one.
+    /// </para>
+    /// <para>
+    /// This is the standalone spelling of what a nullable member already gets inside
+    /// <c>TableRows&lt;T&gt;()</c>, so the two say the same thing about the same cell:
+    /// <code>
+    /// Overlay(o =&gt; new Allocation(
+    ///   Fund:    o.Next(Text().Right(1)),
+    ///   Primary: o.Next(Decimal().OrBlank().Right(6))))
+    /// </code>
+    /// </para>
+    /// <para>
+    /// It belongs to the typed cell leaves — <c>Text</c>, <c>Decimal</c>, <c>Integer</c>,
+    /// <c>Double</c>, <c>Date</c>, <c>Boolean</c> — because a blank is only a value in a reading
+    /// that asserts a kind; on anything else it is a declaration error, raised where the projection
+    /// is built rather than per file. The modifiers commute with it: <c>Decimal().Right(6)
+    /// .OrBlank()</c> and <c>Decimal().OrBlank().Right(6)</c> are the same declaration.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">What the leaf reads.</typeparam>
+    /// <param name="projection">The typed cell leaf.</param>
+    public static IProjection<T?> OrBlank<T>(this IProjection<T> projection)
+      where T : struct
+      => Leaf(projection).Tolerating<T?>(value => value);
+
+    /// <inheritdoc cref="OrBlank{T}(IProjection{T})"/>
+    /// <param name="projection">The <c>Text</c> leaf.</param>
+    /// <remarks>
+    /// The reference-typed half of the family, and there is exactly one leaf in it. A backend's
+    /// <c>Formula()</c> is deliberately not reachable here: its null already means <em>that cell is
+    /// not computed</em>, and a second null meaning <em>that cell is empty</em> would put two
+    /// answers behind one spelling.
+    /// </remarks>
+    public static IProjection<string?> OrBlank(this IProjection<string> projection)
+      => Leaf(projection).Tolerating<string?>(value => value);
+
+    /// <summary>
     /// Passes this projection's result through <paramref name="selector"/>. The wrapper is a
     /// projection like any other, so <c>Named</c> and the placement modifiers work on either side
     /// of it.
@@ -594,6 +637,19 @@ namespace Unrect.Projections
     private static TProjection Bound<TProjection>(TProjection projection, Landmark landmark, bool orEnd)
       where TProjection : class, IProjection
       => Wrapped<TProjection>(Base(projection).BoundedBy(landmark, orEnd));
+
+    /// <summary>
+    /// The receiver as the typed cell leaf <c>OrBlank</c> needs it to be. A leaf keeps its own class
+    /// through every clone-returning modifier, so this recognises a placed and named one as well as
+    /// a bare one; anything else never asserted a kind, and reading a blank as null there would be
+    /// inventing a meaning the declaration never stated.
+    /// </summary>
+    private static TypedCellProjection<T> Leaf<T>(IProjection<T> projection)
+      => NotNull(projection) as TypedCellProjection<T>
+        ?? throw new ArgumentException(
+          $"OrBlank reads a blank cell as null, so it belongs on a cell leaf that declares a kind — "
+          + $"Text, Decimal, Integer, Double, Date or Boolean. {ProjectionContext.Describe(projection)} is not one.",
+          nameof(projection));
 
     /// <summary>The projection as this library builds them, which is the only kind a modifier can modify.</summary>
     private static ProjectionBase Base<TProjection>(TProjection projection)

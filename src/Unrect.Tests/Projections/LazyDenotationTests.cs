@@ -244,6 +244,42 @@ namespace Unrect.Tests.Projections
         TableRows().Sized(RowsWhileAnyValue()).Select(rows => rows.Select(row => $"{row["Client"]}/{row["Amount"]}").ToList()),
         Headered()),
 
+      // The row-projection slot, which reads its body through TableView.StreamBands — the surface
+      // StreamRows is now written over, and therefore the one a forcing regression would show up on
+      // first. Three shapes of record: a whole band read by a flow, a band read in part, and a
+      // headered table whose header is consumed rather than projected.
+      "table with a row projection" => Scenario.Of(
+        Table(0, eachRow: HorizontalFlow(h => $"{h.Next(IntCell())}/{h.Next(IntCell())}")).Sized(RowsWhileAnyValue()),
+        Sheet()),
+      "row projection reading part of its band" => Scenario.Of(
+        Table(0, eachRow: IntCell()).Sized(RowsWhileAnyValue()),
+        Sheet()),
+      "row projection under a consumed header" => Scenario.Of(
+        Table(1, eachRow: IntCell()).Sized(RowsWhileAnyValue()),
+        Sheet()),
+
+      // A hundred records of which each reads one cell: the slot form of the case the whole feature
+      // is for, and the one where the two runs read the most different amounts of the sheet.
+      "tall table of records" => Scenario.Of(
+        Table(0, eachRow: IntCell()).Sized(RowsWhileAnyValue()).Select(records => records.Count),
+        TallSheet()),
+
+      // A record that cannot be described, and the same record tolerated. Eagerly the bound is
+      // settled before the first record is reached; lazily the failure arrives mid-walk. Same
+      // failure, same path, same cell — including the record index in it.
+      "record that fails" => Scenario.Of(
+        Table(0, eachRow: Text()).Sized(RowsWhileAnyValue()),
+        Sheet()),
+      "record that fails, tolerated" => Scenario.Of(
+        Table(0, eachRow: Text()).Sized(RowsWhileAnyValue()).Optional(),
+        Sheet()),
+
+      // The undecorated slot form, which is the one people write: a discovered block, deferred since
+      // the width/height interleave landed.
+      "table with a row projection, default placement" => Scenario.Of(
+        Table(0, eachRow: HorizontalFlow(h => $"{h.Next(IntCell())}/{h.Next(IntCell())}")),
+        Sheet()),
+
       // The table view reached directly, where the projection asks for the dimension query the
       // three rungs are written to avoid — so the forcing read has to denote what the streaming one
       // does.
@@ -319,6 +355,13 @@ namespace Unrect.Tests.Projections
     [InlineData("table rows, dictionaries")]
     [InlineData("table, rows materialised")]
     [InlineData("table, first row only")]
+    [InlineData("table with a row projection")]
+    [InlineData("row projection reading part of its band")]
+    [InlineData("row projection under a consumed header")]
+    [InlineData("tall table of records")]
+    [InlineData("record that fails")]
+    [InlineData("record that fails, tolerated")]
+    [InlineData("table with a row projection, default placement")]
     [InlineData("block, default placement")]
     [InlineData("block, default placement, unread")]
     [InlineData("table rows typed, default placement")]
@@ -400,6 +443,8 @@ namespace Unrect.Tests.Projections
     [InlineData("TableRows<T>()")]
     [InlineData("TableRows()")]
     [InlineData("Table(lambda)")]
+    [InlineData("Table(0, eachRow)")]
+    [InlineData("Table(1, eachRow)")]
     public void TheTableDeclarationsThisSuiteSweepsDoTakeTheDeferredBranch(string rung)
     {
       // The table half of the census. The probe is structural rather than observational because two
@@ -416,6 +461,8 @@ namespace Unrect.Tests.Projections
         "TableRows<T>()" => Probe(TableRows<Entry>()),
         "TableRows()" => Probe(TableRows()),
         "Table(lambda)" => Probe(Table(table => table.RowCount)),
+        "Table(0, eachRow)" => Probe(Table(0, IntCell())),
+        "Table(1, eachRow)" => Probe(Table(1, IntCell())),
 
         _ => throw new ArgumentOutOfRangeException(nameof(rung), rung, "No such rung."),
       };
@@ -426,6 +473,44 @@ namespace Unrect.Tests.Projections
       // one, rather than walked for) and not whether the height can be discovered.
       Assert.IsAssignableFrom<IIncrementalAreaStrategy>(declared.Placement.Area);
       Assert.IsAssignableFrom<IIncrementalAreaStrategy>(sized.Placement.Area);
+    }
+
+    [Theory]
+    [InlineData(false, 1)]
+    [InlineData(true, 4)]
+    public void TheRowProjectionSlotGivesTheTableCensusSomewhereToStand(bool eager, int rowsRead)
+    {
+      // The structural probe above is what the lambda rungs allow, because they project the whole
+      // body themselves. A record projection is handed one band at a time, so the observational
+      // reading is available here for the first time inside a table: deferred, the first record
+      // projects having read its own row and nothing else; eagerly, the four rows it costs to find
+      // where the values stop are all behind it. If these two ever agree, the branch is gone.
+      var counter = new CountingSpace(Sheet());
+      var observations = new List<int>();
+
+      var table = Table(
+        // A fixed 3x1 record so nothing about the RECORD's placement is being measured here.
+        0,
+        eachRow: Range(3, 1, _ =>
+        {
+          observations.Add(counter.RowsTouched);
+
+          return 0;
+        }))
+        .Sized(RowsWhileAnyValue());
+
+      if (eager)
+      {
+        using (ProjectionEngine.ForceEager())
+          table.Apply(counter);
+      }
+      else
+      {
+        table.Apply(counter);
+      }
+
+      Assert.Equal(3, observations.Count);
+      Assert.Equal(rowsRead, observations[0]);
     }
 
     [Theory]

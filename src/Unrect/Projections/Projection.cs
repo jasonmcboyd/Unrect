@@ -74,7 +74,7 @@ namespace Unrect.Projections
       => Typed<bool>(CellKind.Boolean, "Boolean", CellReading.ReadBoolean);
 
     private static IProjection<T> Typed<T>(CellKind kind, string description, CellReader<T> read)
-      => new TypedCellProjection<T>(kind, description, read, Placement.Of(ExplicitArea(1, 1)));
+      => new TypedCellProjection<T>(kind, description, read, Placement.Of(ExplicitArea(1, 1)), blankIsNull: false);
 
     /// <summary>One row, as wide as the leading columns that carry values.</summary>
     public static IProjection<T> Row<T>(Func<CellStrip, T> project)
@@ -158,6 +158,74 @@ namespace Unrect.Projections
     /// </summary>
     public static IProjection<T> Table<T>(int headerRows, Func<TableView, T> project)
       => new TableProjection<T>(ValidateHeaderRows(headerRows), project, TablePlacement(), "Table");
+
+    /// <summary>
+    /// A table whose records are read by a <em>projection</em> rather than by a lambda:
+    /// <paramref name="headerRows"/> rows are consumed as the header, and every body row is handed
+    /// to <paramref name="eachRow"/> as its own one-row extent.
+    /// <para>
+    /// The row is a declaration like any other, so it is inspectable, reusable, and says in its own
+    /// type what it demands of the space. Two shapes of row cover almost everything, and which one
+    /// you write says how the columns are found:
+    /// <code>
+    /// // Adjacent columns, no coordinates anywhere: silence is adjacency, as in any flow.
+    /// Table(headerRows: 1, eachRow: HorizontalFlow(h =&gt; new Allocation(
+    ///   Account: h.Next(Text()),
+    ///   Symbol:  h.Next(Text()),
+    ///   Weight:  h.Next(Decimal()))))
+    ///
+    /// // Sparse, structurally-fixed columns: an overlay hands every child the whole row.
+    /// Table(headerRows: 0, eachRow: Overlay(o =&gt; new Allocation(
+    ///   Fund:    o.Next(Text().Right(1)),
+    ///   Primary: o.Next(Decimal().OrBlank().Right(6)))))
+    ///   .Below(RowContaining("ACCOUNT"))
+    ///   .Sized(RowsWhileAnyValue())
+    /// </code>
+    /// A flow full of <c>Right(n)</c>, or an overlay with none, is worth a second look: flows are
+    /// relative and overlays are grid-absolute, and reading both value and formula out of one cell
+    /// is an overlay's job because a flow would step past it.
+    /// </para>
+    /// <para>
+    /// The extent is the table's, not the row's: placement, the discovered block and the blank gap
+    /// in front of it are as they are for every other table, and the row projection is applied
+    /// inside the band it is handed and consumes as much or as little of it as it likes. A failure
+    /// inside a row names the record it happened in — <c>Table[3] -&gt; 'eachRow'</c>, counting body
+    /// records from zero, the same way a repeat indexes its occurrences.
+    /// </para>
+    /// <para>
+    /// A header is consumed here rather than read: the columns a caption names are the bind's
+    /// business, and until that exists a headered table with a row projection means "skip that row".
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">What one record reads.</typeparam>
+    /// <param name="headerRows">How many rows to consume as the header, 0 or 1.</param>
+    /// <param name="eachRow">The projection applied to each body row.</param>
+    /// <param name="declared">
+    /// Supplied by the compiler as the text of the <paramref name="eachRow"/> argument, so a row
+    /// hoisted into a local labels every record — <c>Table(0, allocation)</c> reads as
+    /// <c>Table[3] -&gt; 'allocation'</c>. Pass <c>.Named(…)</c> to choose a name instead.
+    /// </param>
+    public static IProjection<IReadOnlyList<T>> Table<T>(
+      int headerRows,
+      IProjection<T> eachRow,
+      [CallerArgumentExpression("eachRow")] string? declared = null)
+    {
+      if (eachRow is null)
+        throw new ArgumentNullException(nameof(eachRow));
+
+      var site = UseSite.From(declared, null);
+      var rows = ValidateHeaderRows(headerRows);
+
+      // bandHeight: one row per record, which is what a table is until it is told otherwise. The
+      // walk beneath this counts bands rather than rows, so slicing taller records is this argument
+      // and nothing else.
+      return new TableProjection<IReadOnlyList<T>>(
+        rows,
+        table => ProjectBands(table, eachRow, site, bandHeight: 1),
+        TablePlacement(),
+        "Table",
+        eachRow);
+    }
 
     /// <summary>A table with one header row, projected row by row.</summary>
     public static IProjection<IReadOnlyList<T>> TableRows<T>(Func<TableRow, T> project) => TableRows(1, project);
@@ -450,6 +518,31 @@ namespace Unrect.Projections
     }
 
     // --- Shared construction ------------------------------------------------------------------
+
+    /// <summary>
+    /// Applies a record projection to every band of a table's body, through the engine — so a
+    /// record's own placement is resolved exactly once, where every other placement is, and a
+    /// failure inside one carries the path and the cell.
+    /// </summary>
+    private static IReadOnlyList<T> ProjectBands<T>(TableView table, IProjection<T> eachRow, UseSite site, int bandHeight)
+    {
+      // Grown rather than pre-sized, as the other row rungs are: asking how many records there are
+      // is the forcing question streaming exists to avoid.
+      var records = new List<T>();
+
+      foreach (var band in table.StreamBands(bandHeight))
+      {
+        // The index belongs to the table's own segment and the label to the record's, exactly as a
+        // repeat labels its occurrences.
+        var scope = band.Context.WithIndex(records.Count).WithUseSite(site);
+
+        records.Add(ProjectionEngine.Apply(eachRow, band.Space, scope).Value);
+      }
+
+      records.TrimExcess();
+
+      return records;
+    }
 
     private static IProjection<T> Strip<T>(Orientation orientation, Func<CellStrip, T> project, IAreaStrategy area, string description)
       => new StripProjection<T>(orientation, project, Placement.Of(area), description);

@@ -283,6 +283,68 @@ namespace Unrect.Tests.Streaming
       Assert.Equal(eager.Rows, streamed.Rows);
     }
 
+    // --- The row-projection slot ----------------------------------------------------------------------------
+    //
+    // Table(0, eachRow) reads its body through TableView.StreamBands, which is the walk the whole
+    // streaming door is sized around: one band open at a time, each band the row after the last. So
+    // the slot form is the declaration most worth reading through a window that cannot hold the
+    // sheet, and the counters are where the claim is — a monotone walk must not reload a chunk,
+    // whatever the window is set to.
+
+    private sealed record LedgerEntry(int Entry, int Amount, string Category);
+
+    private static IProjection<IReadOnlyList<LedgerEntry>> Ledger()
+    {
+      var ledgerEntry = HorizontalFlow(h => new LedgerEntry(
+        Entry: h.Next(Integer()),
+        Amount: h.Next(Integer()),
+        Category: h.Next(Text())));
+
+      return Table(headerRows: 0, eachRow: ledgerEntry).Below(RowContaining("Entry"));
+    }
+
+    [Fact]
+    public void ATableOfRecordProjectionsReadsTheSameThroughAWindow()
+    {
+      var declaration = Ledger();
+
+      var eager = declaration.Map(SpreadsheetSpace.Create(Path("tall-ledger.xlsx"), "Ledger"));
+
+      using var book = Workbook.Open(Path("tall-ledger.xlsx"), new WorkbookOptions { WarmReaders = false });
+      var streamed = declaration.Map(book.Sheet("Ledger"));
+
+      Assert.Equal(1200, eager.Count);
+      Assert.Equal(eager, streamed);
+    }
+
+    [Fact]
+    public void AndCostsNoRereadingEvenThroughAWindowFourRowsTall()
+    {
+      // One row per chunk, floored to the four-chunk minimum: a window two orders of magnitude
+      // smaller than the sheet, and 1,200 records read through it. ChunkReloads is the cost meter
+      // and it must be zero — a record projection is handed one band at a time and never reaches
+      // back, so nothing the window dropped is ever wanted again.
+      var declaration = Ledger();
+
+      using var book = Workbook.Open(
+        Path("tall-ledger.xlsx"),
+        new WorkbookOptions { WarmReaders = false, ChunkRows = 1, WindowRows = 1 });
+
+      var streamed = declaration.Map(book.Sheet("Ledger"));
+
+      var stats = book.Statistics("Ledger")!.Value;
+
+      Assert.Equal(1200, streamed.Count);
+      Assert.Equal(0, stats.ChunkReloads);
+      Assert.Equal(1201, stats.RowsMaterialised);      // every row once, and not one of them twice
+
+      // The overruns are the documented monotone-tall-sheet reading and nothing beyond it: a view
+      // hands its extent down with every cell, and the extents open here — the whole sheet, and the
+      // table's own discovered band — are both taller than four rows. Two bands that did not fit,
+      // costing nothing, which is exactly the pair StreamingStatistics says to read together.
+      Assert.Equal(2, stats.WindowOverruns);
+    }
+
     // --- Failures are identical too -----------------------------------------------------------------------
 
     [Fact]

@@ -13,8 +13,10 @@ namespace TypedSpacesGauntlet
 {
   /// <summary>
   /// SPIKE. The seven scenarios of `docs/design/typed-spaces-experiment.md` §6, written the way a
-  /// user would write them. Every explicit type argument in this file is part of the annotation tax
-  /// and is marked TAX.
+  /// user would write them, and one scenario per phase of `projection-model-spec.md` since: 8 is
+  /// phase 1's one-modifier-two-demands question, 9 is phase 4's row-projection slot and the
+  /// four-scenario matrix of its §6. Every explicit type argument in this file is part of the
+  /// annotation tax and is marked TAX.
   /// </summary>
   public static class Gauntlet
   {
@@ -281,6 +283,120 @@ namespace TypedSpacesGauntlet
     public static string LiftsRaiseWhatTheyTouch()
       => DeclaredType(Text().Named("cell").Until(RowWithFormula()));
 
+    // =============================================================================================
+    // Scenario 9 — the row-projection slot, §6's four-scenario matrix. (Added 2026-09-08, phase 4.)
+    // =============================================================================================
+    //
+    // Matrix cell 3 — NO HEADERS + DENSE. Zero coordinates: every leaf consumes its own cell and
+    // the next one starts where it stopped, so adjacency does all the work. (Written here with a
+    // header row, which the table consumes and the record never sees; binding to captions is the
+    // bind, and that is phase 5.)
+    public static IReadOnlyList<Allocation> DenseRows(ISpace sheet)
+    {
+      var allocation = HorizontalFlow(h => new Allocation(
+        Account: h.Next(Text()),
+        Symbol: h.Next(Text()),
+        Weight: h.Next(Decimal())));
+
+      var table = Table(headerRows: 1, eachRow: allocation).On(RowContaining("Account"));
+
+      return table.Map(sheet);
+    }
+
+    // Matrix cell 4 — NO HEADERS + SPARSE/INCOMPLETE, spelled as §6 writes it. The overlay hands
+    // every child the whole row, `Right(n)` says which column each one is, and `OrBlank` says which
+    // of them a record may omit. The declaration IS the completeness contract, per field.
+    public static IReadOnlyList<BuyingPowerRow> SparseRows(ISpace sheet)
+    {
+      var allocation = Overlay(o => new BuyingPowerRow(
+        FundCode: o.Next(Text().Right(1)),
+        Primary: o.Next(Decimal().OrBlank().Right(6)),
+        Fep: o.Next(Decimal().OrBlank().Right(9))));
+
+      var table = Table(headerRows: 0, eachRow: allocation)
+        .Below(RowContaining("ACCOUNT"))
+        .Sized(RowsWhileAnyValue());
+
+      return table.Map(sheet);
+    }
+
+    // The demand flows through the slot: a row that reads a formula makes the TABLE demanding, with
+    // nothing annotated but the overlay's own witness. Value and formula out of one cell is an
+    // overlay's job, as it always was.
+    public static IProjection<IFormulaSpace, IReadOnlyList<SourcedAllocation>> SourcedRecords()
+    {
+      var allocation = Overlay(Formulas, o => new SourcedAllocation(
+        Account: o.Next(Text()),
+        Formula: o.Next(Formula().Right(2))));
+
+      return Table(headerRows: 1, eachRow: allocation).On(RowContaining("Account"));
+    }
+
+    /// <summary>A failure inside a record names the record it happened in, and the cell.</summary>
+    public static string FailureInsideARecord()
+    {
+      try
+      {
+        _ = SparseRows(Sheets.BuyingPowerWithText());
+
+        return "NO FAILURE (bad)";
+      }
+      catch (ProjectionException failure)
+      {
+        return $"{failure.Path} @ {failure.Location.A1} : {Head(First(failure.Message))}";
+      }
+    }
+
+    /// <summary>
+    /// OrBlank tolerates a blank and nothing else — a cell of the wrong kind still fails, in the
+    /// document's own vocabulary.
+    /// </summary>
+    public static string OrBlankStillFailsOnKind()
+    {
+      try
+      {
+        _ = Decimal().OrBlank().Map(new GridSpace(new[,] { { CellValue.Of("n/a") } }));
+
+        return "NO FAILURE (bad)";
+      }
+      catch (ProjectionException failure)
+      {
+        return First(failure.Message);
+      }
+    }
+
+    /// <summary>
+    /// And it belongs to a leaf that declares a kind: anywhere else the blank has no meaning to
+    /// read, so it is a declaration error, raised where the projection is built rather than per file.
+    /// </summary>
+    public static string OrBlankIsForLeaves()
+    {
+      try
+      {
+        _ = Row(cells => cells[0].GetString()).OrBlank();
+
+        return "NO FAILURE (bad)";
+      }
+      catch (System.ArgumentException problem)
+      {
+        return Head(problem.Message);
+      }
+    }
+
+    /// <summary>
+    /// The walk is monotone: the table's own bound is discovered a row at a time and each record is
+    /// projected as its row is reached, so nothing reads behind the furthest row already read. The
+    /// answer a windowed reader cares about is the second number.
+    /// </summary>
+    public static string SparseRowsAreReadForwardOnly()
+    {
+      var watched = new WatermarkSpace(Sheets.BuyingPower());
+
+      var records = SparseRows(watched);
+
+      return $"{records.Count} records; high-water row {watched.HighWaterMark}; deepest backward reach {watched.BackwardReach} rows";
+    }
+
     public static void Run()
     {
       var formulaSheet = Sheets.WithFormulas();
@@ -302,6 +418,14 @@ namespace TypedSpacesGauntlet
       Show("7  hoisted generic helper        ", DeclaredType(Sections(SourcedRow())));
       Show("8  one modifier chain, two types ", ModifiersPreserveWhatTheyAreGiven());
       Show("8  a lift raises the demand      ", LiftsRaiseWhatTheyTouch());
+      Show("9  dense row (flow, no coords)   ", JoinAll(DenseRows(plainSheet)));
+      Show("9  sparse row (overlay, OrBlank) ", JoinAll(SparseRows(Sheets.BuyingPower())));
+      Show("9  a record's demand is the table", DeclaredType(SourcedRecords()));
+      Show("9  ... and it reads the formulas ", Join(SourcedRecords().Map(formulaSheet)));
+      Show("9  failure names the record      ", FailureInsideARecord());
+      Show("9  OrBlank vs a wrong kind       ", OrBlankStillFailsOnKind());
+      Show("9  OrBlank vs a non-leaf         ", OrBlankIsForLeaves());
+      Show("9  forward-only walk             ", SparseRowsAreReadForwardOnly());
 
       // The runtime-fault design, priced: what the typed layer makes unreachable.
       try
@@ -323,6 +447,10 @@ namespace TypedSpacesGauntlet
     private static string Join(IReadOnlyList<SourcedAllocation> rows)
       => string.Join(" | ", System.Linq.Enumerable.Select(rows, r => $"{r.Account}={r.Formula ?? "<none>"}"));
 
+    /// <summary>Records as the record type prints them — nulls included, which is the point.</summary>
+    private static string JoinAll<T>(IReadOnlyList<T> records)
+      => string.Join(" | ", records);
+
     /// <summary>The STATIC type of the expression — what a tooltip shows over a hoisted local.</summary>
     private static string DeclaredType<T>(T _) => Render(typeof(T));
 
@@ -336,6 +464,10 @@ namespace TypedSpacesGauntlet
 
       return $"{name}<{string.Join(", ", arguments)}>";
     }
+
+    /// <summary>The first line of a failure message — the subject and the problem, without the path and cell beneath them.</summary>
+    private static string First(string message)
+      => message.Split('\n')[0].TrimEnd('\r');
 
     private static string Head(string message)
       => message.Length <= 90 ? message : message.Substring(0, 90) + "...";

@@ -109,6 +109,65 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
+    public void ATableExposesItsRowProjection()
+    {
+      // The slot form is a composite in the same sense a repeat is — it applies one declaration to
+      // each band — so it shows the declaration, and a renderer can walk into a record without
+      // running anything.
+      var row = IntCell().Named("row");
+
+      Assert.Same(row, Assert.Single(Table(0, row).Children));
+      Assert.Same(row, Assert.Single(Table(1, row).Children));
+    }
+
+    [Theory]
+    [InlineData("Table")]
+    [InlineData("TableRows")]
+    [InlineData("TableRows<T>")]
+    [InlineData("TableRows()")]
+    public void ButTheLambdaRungsHaveNoneToShow(string rung)
+    {
+      // What a lambda rung reads is knowable only by running it, so it is a leaf to tooling — as it
+      // has always been. This is the contrast that gives the fact above its meaning: the two forms
+      // of table differ in exactly this, and nothing else.
+      IProjection projection = rung switch
+      {
+        "Table" => Table(table => table.RowCount),
+        "TableRows" => TableRows(row => row.Index),
+        "TableRows<T>" => TableRows<Entry>(),
+        "TableRows()" => TableRows(),
+
+        _ => throw new System.ArgumentOutOfRangeException(nameof(rung), rung, "No such rung."),
+      };
+
+      Assert.Empty(projection.Children);
+
+      // ...and unlike a layout composite, a table does not claim to be hiding anything: it has no
+      // opacity marker, because with a lambda in the slot there was never a child to declare.
+      Assert.Null(Reason(projection));
+    }
+
+    /// <summary>What the typed rung binds a row to — a shape for the theory above and nothing more.</summary>
+    public record Entry(string Client, int Amount);
+
+    [Fact]
+    public void ATableWithARowProjectionCanBeWalkedIntoWithoutASpace()
+    {
+      // The dry-run traversal, one level deeper than it could go before: the walk enters the record
+      // and stops where the record's own layout is, reporting why rather than pretending it is a
+      // leaf.
+      var allocation = Overlay(o => $"{o.Next(IntCell())}{o.Next(IntCell())}").Named("allocation");
+
+      Assert.Equal(
+        new[]
+        {
+          "Table",
+          "  'allocation' (Overlay) [opaque: declared by a cursor lambda; children are known only while it runs]",
+        },
+        Describe(Table(0, allocation)).ToArray());
+    }
+
+    [Fact]
     public void ASelectExposesTheProjectionItWraps()
     {
       var inner = IntCell().Named("inner");
