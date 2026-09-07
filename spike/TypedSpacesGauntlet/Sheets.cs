@@ -149,4 +149,17 @@ namespace TypedSpacesGauntlet
   public sealed record CashFlow(DateTime Date, decimal Amount);
 
   public sealed record InvestorBlock(string Name, System.Collections.Generic.IReadOnlyList<CashFlow> CashFlows);
+
+  /// <summary>One line of the audited ledger — the cell's value and the formula behind it.</summary>
+  public sealed record AuditedLine(string Item, int Qty, double Total, string? Formula);
+
+  public sealed record AuditedLedger(
+    System.Collections.Generic.IReadOnlyList<AuditedLine> Lines,
+    string? TotalFormula);
+
+  /// <summary>
+  /// Two captions, and nothing said about the columns around them — which is what lets one
+  /// declaration read two differently-shaped workbooks in the streaming loop.
+  /// </summary>
+  public sealed record FundAmount(string Fund, decimal Amount);
 }

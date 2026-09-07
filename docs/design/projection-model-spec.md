@@ -108,6 +108,82 @@ recorded here.
 implement `ISpreadsheetSpace`; the concrete type goes internal or dies. This resolves
 the 2026-09-06 shell finding.
 
+### 4.1 As built (phase 6, 2026-09-10)
+
+Both entries ship, and the audit that was supposed to be a formality produced the phase's
+sharpest finding.
+
+**The scope is `ProjectionScope<TSpace>`, and it holds eight members.** `Projection.Over<TSpace>()`
+is the door and the struct is what it opens — a `readonly struct` with no state, so `default` is as
+good as the factory and no member of it can fail on the scope itself. The census was decided by a
+survey rather than by symmetry (probe recorded below): **only the three layouts genuinely need a
+scope for inference.** `Table`'s two composing rungs, both repeats and `Choice` all infer their
+demand from their arguments today and need neither witness nor scope. They are in the scope anyway,
+under a rule that can be stated in one sentence — *the scope carries the factories that take
+projections and build one* — because the alternative is a door that opens onto three members and
+leaves a scoped declaration switching spellings halfway through. Everything else in the vocabulary
+(every leaf, matcher, extent, offset, and all of `ProjectionExtensions`) is indifferent to the space
+and composes in by variance, so it has no scoped spelling and needs none.
+
+**The scope fixes the worst message in the taxonomy.** §3 recorded that a demanding child inside a
+plain flow reports `CS0411` on `Next`, says nothing about capabilities, and points nowhere near the
+fix — "the experiment's sharpest ergonomic finding". Inside a scope the cursor's space is already
+fixed, so the same mistake is a failed *argument conversion* instead of a failed inference:
+
+```
+CS1503: Argument 1: cannot convert from 'IProjection<IFormulaSpace, string?>'
+                                     to 'IProjection<Unrect.Core.ISpace, string>'
+```
+
+Both types named, at the child that raised the demand. That was not why entry B was specified, and
+it is now the strongest argument for it: **scoping a declaration buys diagnosis, not just brevity.**
+
+**A scope raises the demand of everything built through it**, whether the children needed it or not,
+which is exactly the split §4 already drew: application code says `Over<ISpreadsheetSpace>()` because
+"this parser is for spreadsheets" is the honest requirement, and a hoisted library projection must
+*not* be written through a bundle scope, because it would demand more than it reads. The guidance is
+in the type's own documentation rather than only here.
+
+**`MapWorkbook` (in `Unrect.Spreadsheets`) is the streaming loop's body as one expression**, with
+`MapWorkbookWithDiagnostics` beside it — the pairing `Map` has everywhere else, and a run over a
+directory is precisely where nobody is watching. Four decisions, each recorded because each could
+have gone the other way:
+
+1. **Options are an optional parameter, not a second overload** (two methods, not four), matching the
+   package's own `Create(path, sheet, caseSensitive:, isBlank:)` style.
+2. **The demanding variant does not exist.** A streamed sheet reads values only, so a
+   formula-demanding declaration has no capable space to be applied to; the receiver type is
+   `IProjection<TResult>` and the compiler refuses `formulaProjection.MapWorkbook(…)` outright. The
+   message is CS1061 with a misleading tail ("are you missing a using directive?") — recorded as the
+   cost of the honest spelling, against alternatives that were a run-time fault or a file's formulas
+   silently read as absent.
+3. **No `MapSpreadsheet` sibling over the eager door.** The sugar exists to hide a *lifetime*; the
+   eager door has none, and `projection.Map(SpreadsheetSpace.Create(path, sheet))` is already one
+   expression with nothing to dispose. A sibling would only import the blankness and formula
+   parameters into an overload set that had no reason for them.
+4. **It lives in `SpreadsheetProjectionExtensions`, not in `SpreadsheetProjections`.** The projection
+   layer already splits what a declaration *says* from what is *done* to it, and this is the second
+   half of that split for spreadsheets. The cost is one namespace import — the same rule that makes
+   `Map` itself need `using Unrect.Projections;`.
+
+**The import audit passes, with one correction to how §4 says it.** Compiled with *exactly* the two
+`using static` lines and nothing else, every vocabulary member is reachable: both layers' leaves,
+matchers, extents, offsets, the `Formulas` witness, the layouts (witnessed and scoped), the repeats,
+`Choice` and the whole `Table` family — including lambdas over `CellValue` and `CellBlock`, whose
+types are inferred and so never named. What is *not* reachable that way is every modifier and every
+application (`.Named`, `.On`, `.Demanding`, `.Map`), because they are extension methods: a
+declaration file needs `using Unrect.Projections;` as well, and that is the standing rule at both
+layers rather than a gap in the backend's story. Naming a capability — which entry B does by
+construction (`Over<ISpreadsheetSpace>()`) — needs `using Unrect.Spreadsheets;` too, which is what
+saying the requirement out loud costs.
+
+**Inference survey, recorded** (probe: a demanding leaf composed by each factory with no witness and
+no scope, assigned to the demanding type). Fails: `VerticalFlow`/`HorizontalFlow`/`Overlay` (CS0411 at
+`Next`, whether the layout is all-demanding or mixed). Succeeds: `Table(headerRows:, eachRow:
+projection)`, `Table(headerRows:, eachRow: bind)` — including a bind returning a *plain* projection
+through a scope — `VerticalRepeat`, `HorizontalRepeat`, `Choice` (all-demanding and mixed alike), and
+every plain composite assigned to a demanding type.
+
 ## 5. The capability stack (ships in every outcome — independent of the typed layer)
 
 Everything in this section was designed in the formula conversation and validated by
@@ -378,7 +454,7 @@ Why the bind wins, on the record:
 | 3 | Capability stack (§5): seam, transport, slicing-law conformance theory, `Formula()` leaf + xlsx reader + fixture, `ISpreadsheetSpace`, shell retirement | capabilities ship even if everything later stops |
 | 4 | `OrBlank()`; row projections: `Table(headerRows, row)` slot; positional rung | the ladder's rung 3; positional binder subsumed |
 | 5 | The bind + `CaptionMap`; `Table<T>()` as the reflection desugarer — **DONE (2026-09-09)**, desugar recorded as conceptual only (§6.1) | rungs 1–3; `TableRows*` retired into the `Table` family |
-| 6 | Entry B (`Over<T>()` scope), backend vocabulary statics, `MapWorkbook` sugar | the announced-demand ergonomics |
+| 6 | Entry B (`Over<T>()` scope), backend vocabulary statics, `MapWorkbook` sugar — **DONE (2026-09-10)**, as built in §4.1 | the announced-demand ergonomics |
 | 7 | Gauntlet rerun as acceptance + the work-Claude parser in final form | the judgment evidence |
 
 ## 9. Open questions

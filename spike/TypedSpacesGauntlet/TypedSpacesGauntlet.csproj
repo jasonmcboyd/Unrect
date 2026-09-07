@@ -13,6 +13,15 @@
     <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
 
+  <!-- Scenario 11 reads real files. The committed fixtures are LINKED from the suite rather than
+       copied here: the spike must not fork the corpus, and a fixture that drifts from the one the
+       tests pin would make this evidence say something no test says. -->
+  <ItemGroup>
+    <Content Include="..\..\src\Unrect.Tests\TestData\formulas.xlsx" Link="TestData\formulas.xlsx" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\src\Unrect.Tests\TestData\multi-sheet.xlsx" Link="TestData\multi-sheet.xlsx" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\src\Unrect.Tests\TestData\repeated-text.xlsx" Link="TestData\repeated-text.xlsx" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\Unrect\Unrect.csproj" />
     <ProjectReference Include="..\..\src\Unrect.Core\Unrect.Core.csproj" />

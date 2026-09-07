@@ -401,3 +401,7 @@ FodyWeavers.xsd
 examples/scrubbed-k1.xlsx
 big-spreadsheet.png
 linqpad/import-k1.cs
+
+# Local working notes and scratch material — never committed (drafts, exploration docs,
+# generated analyses). The committed record is docs/; this folder is the workbench.
+/local/

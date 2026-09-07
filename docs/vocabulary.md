@@ -6,9 +6,11 @@ two raw lifts noted under Placement (`OffsetStrategies.To`/`Past`), which are an
 by design and spelled like one. For semantics in depth, each group cites its governing spec
 in `docs/design/`.
 
-Current as of 2026-09-09 (post the projection rename: the layer is `Unrect.Projections`, the
+Current as of 2026-09-10 (post the projection rename: the layer is `Unrect.Projections`, the
 static vocabulary class is `Projection`, and "shape" now means only the geometry of a space;
-post phase 5: the table ladder is one `Table` family and `TableRows*` is gone).
+post phase 5: the table ladder is one `Table` family and `TableRows*` is gone; post phase 6:
+`Projection.Over<T>()` scopes a declaration to a space and `MapWorkbook` is the streaming
+loop's one-liner).
 When this file and a spec disagree, the spec is wrong or this file is stale — fix whichever it
 is; do not let them drift silently.
 
@@ -226,6 +228,7 @@ and the vocabulary that reads it, and a declaration imports that vocabulary besi
 | `Formula()` | One cell, read as the formula behind it — the file's own expression without the `=`, null where the cell is a plain value. A cell has a value *and* a formula, so reading both is an `Overlay`, never a flow |
 | `RowWithFormula()` / `RowWithFormula(containing)` and the column twins | Matchers over formulas. `containing` is a **substring, case-insensitively** — deliberately not the whole-cell content rule, because a formula is an expression and the useful question is whether it mentions something |
 | `Formulas` | The demand witness, for the two places inference cannot reach: `VerticalFlow(Formulas, v => …)` and `projection.Demanding(Formulas)` |
+| `projection.MapWorkbook(path, sheet)` / `MapWorkbookWithDiagnostics` | The streaming loop's body as one expression: open, read one sheet, close. Sugar over `Workbook`, and only that — several sheets from one open, a warm second map, or the statistics all mean opening the book yourself. Values only: the workbook is gone when it returns. There is no overload for a formula-reading declaration, because a streamed sheet carries no formulas (read those through `CreateWithFormulas` + `Map`) |
 | `IFormulaSpace` / `ISpreadsheetSpace` | The capability, and the bundle a declaration written over "a spreadsheet" demands. Library projections should demand the narrowest capability they use |
 | `space.Capability<T>()` / `space.RequiredCapability<T>(demandedBy)` | The transport seam (`Unrect`), which walks `ISpaceChart` wrappers. A raw `space is IFormulaSpace` is the wrong question: through a discovered extent it answers false over a sheet that plainly has the capability |
 
@@ -234,6 +237,25 @@ factory rather than a flag on the first, because the two answers differ in their
 what comes back is an `ISpreadsheetSpace`, and the plain `Create` hands back a space that
 does not implement the capability at all. `.xls` and the streaming door read no formulas and
 say so by absence; asking a `.xls` for them throws rather than answering null.
+
+**Two ways to say what a declaration is written over**, and they are the same machinery:
+
+| Entry | Spelling | When |
+|---|---|---|
+| The witness | `VerticalFlow(Formulas, v => …)`, `projection.Demanding(Formulas)` | One factory needs telling. The only place inference genuinely fails is a **layout**, because a lambda's body cannot drive it — `Table`, both repeats and `Choice` all read the demand off their arguments and need nothing |
+| The scope | `Projection.Over<ISpreadsheetSpace>()`, then `p.VerticalFlow(…)` / `p.Table(…)` / `p.VerticalRepeat(…)` / `p.Choice(…)` | A whole declaration is written over one kind of space. The requirement in prose position, said once |
+
+The scope carries exactly the factories that *take* projections and build one; everything else —
+leaves, matchers, extents, offsets, every modifier — is indifferent to the space and composes in
+by variance, so it is written exactly as always. Two things to know:
+
+- **A scope raises the demand of everything built through it**, needed or not. That is right for
+  application code ("this parser is for spreadsheets") and wrong for a hoisted library projection,
+  which should demand the narrowest capability it actually uses so it composes with anything able
+  to answer.
+- **A scope diagnoses better.** A demanding child in a plain flow reports `CS0411` at `Next` and
+  never says the word capability; the same mistake in a scope is an argument conversion —
+  `cannot convert from 'IProjection<IFormulaSpace, string?>' to 'IProjection<ISpace, string>'`.
 
 **The three laws they obey:**
 

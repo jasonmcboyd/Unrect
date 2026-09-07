@@ -15,7 +15,9 @@ namespace TypedSpacesGauntlet
   /// SPIKE. The seven scenarios of `docs/design/typed-spaces-experiment.md` §6, written the way a
   /// user would write them, and one scenario per phase of `projection-model-spec.md` since: 8 is
   /// phase 1's one-modifier-two-demands question, 9 is phase 4's row-projection slot and cells 3-4
-  /// of the four-scenario matrix of its §6, 10 is phase 5's bind and cells 1-2. Every explicit type
+  /// of the four-scenario matrix of its §6, 10 is phase 5's bind and cells 1-2, 11 is phase 6's
+  /// scoped entry and workbook sugar — the first scenario that reads real files rather than
+  /// hand-built grids, because a door onto a file is what it is about. Every explicit type
   /// argument in this file is part of the annotation tax and is marked TAX.
   /// </summary>
   public static class Gauntlet
@@ -488,6 +490,117 @@ namespace TypedSpacesGauntlet
       return investor.Map(sheet);
     }
 
+    // =============================================================================================
+    // Scenario 11 — the scoped entry and the workbook sugar. (Added 2026-09-10, phase 6.)
+    // =============================================================================================
+    //
+    // Entry B: the demand answered ONCE, in prose position, for a whole declaration. Every member of
+    // a scope is generic only in what it reads, so the result types are still inferred from the
+    // lambdas — no type argument is written anywhere below, and no witness either.
+    //
+    // Read it against scenario 4, which says the same thing one factory at a time: `Formulas` tells
+    // one layout what it is declared over, and a scope tells the declaration. Neither is a rival —
+    // every scope member forwards to the witness form.
+    //
+    // The refusals are in MustNotCompile.cs as (k)-(n); messages recorded verbatim from
+    // `dotnet build -p:DefineConstants=MUST_NOT_COMPILE`, 2026-09-10:
+    //
+    //   (k) ScopedAuditedLedger(Sheets.Plain())            [a scoped declaration, plain grid]
+    //       CS1503: Argument 1: cannot convert from 'Unrect.GridSpace' to
+    //               'Unrect.Spreadsheets.ISpreadsheetSpace'
+    //
+    //   (l) scoped.Map<ISpreadsheetSpace, ...>(plain)      [the same, stated, at Map]
+    //       CS1503: Argument 2: cannot convert from 'Unrect.Core.ISpace' to
+    //               'Unrect.Spreadsheets.ISpreadsheetSpace'
+    //
+    //   (m) Over<ISpace>().VerticalFlow(v => v.Next(Formula()))   [demanding child, PLAIN scope]
+    //       CS1503: Argument 1: cannot convert from 'IProjection<IFormulaSpace, string?>' to
+    //               'IProjection<Unrect.Core.ISpace, string>'
+    //       — and this is the sharpest result of the phase. The unscoped twin of exactly this
+    //         mistake is (e), whose message is CS0411 on `Next` and never says the word formula.
+    //         Fixing the space on the CURSOR turns the worst message in the taxonomy into one of
+    //         the best: the refusal lands on the argument, so both types are named.
+    //
+    //   (n) Formula().MapWorkbook(path, "Data")            [the streaming door has no formulas]
+    //       CS1061: 'IProjection<IFormulaSpace, string?>' does not contain a definition for
+    //               'MapWorkbook' and no accessible extension method ... (are you missing a using
+    //               directive or an assembly reference?)
+    //       — correct refusal, misleading tail: no import would help, because the overload is
+    //         absent on purpose. The absence is the honest spelling all the same; the alternative
+    //         is a run-time fault or a file's formulas read as absent.
+    public static AuditedLedger ScopedAuditedLedger(ISpreadsheetSpace sheet)
+    {
+      var p = Projection.Over<ISpreadsheetSpace>();
+
+      // A cell has a value AND a formula, so reading both is an overlay's job, as ever.
+      var line = p.Overlay(o => new AuditedLine(
+        Item: o.Next(Text()),
+        Qty: o.Next(Integer().Right(1)),
+        Total: o.Next(Double().Right(3)),
+        Formula: o.Next(Formula().Right(3))));
+
+      var lines = p.Table(headerRows: 1, eachRow: line);
+      var total = Formula().On(RowContaining("Total")).Right(3);
+
+      var ledger = p.VerticalFlow(v => new AuditedLedger(
+        Lines: v.Next(lines),
+        TotalFormula: v.Next(total)));
+
+      return ledger.Map(sheet);
+    }
+
+    /// <summary>
+    /// The weakest-demand guidance, made visible: a hoisted row demands the narrowest capability it
+    /// uses (<c>IFormulaSpace</c>) and composes into a declaration scoped to the whole bundle, which
+    /// is what application code wants. Written the other way round — the helper scoped to the bundle
+    /// — it would demand formatting it never reads.
+    /// </summary>
+    public static string AScopeRaisesWhatAHelperDoesNot()
+    {
+      var narrow = Projection.Over<IFormulaSpace>().Overlay(o => new SourcedAllocation(
+        Account: o.Next(Text()),
+        Formula: o.Next(Formula().Right(3))));
+
+      var wide = Projection.Over<ISpreadsheetSpace>().VerticalRepeat(narrow);
+
+      return $"{DeclaredType(narrow)} composes into {DeclaredType(wide)}";
+    }
+
+    /// <summary>
+    /// The streaming loop's body as one expression, over two workbooks that agree about nothing but
+    /// the two captions this declaration binds — the strict-one-way rule earning its keep, and the
+    /// reason the declaration is a value rather than a script.
+    /// </summary>
+    public static string EachWorkbookInTurn()
+    {
+      var funds = Table<FundAmount>();
+
+      var sheets = new[] { ("multi-sheet.xlsx", "Detail"), ("repeated-text.xlsx", "Ledger") };
+
+      var readings = System.Linq.Enumerable.Select(
+        sheets,
+        s => $"{s.Item1}: {Total(funds.MapWorkbook(TestData(s.Item1), s.Item2))}");
+
+      return string.Join(" | ", readings);
+    }
+
+    /// <summary>
+    /// And with the diagnostics, which is what a run nobody watches wants: the same open, the same
+    /// close, plus everything the decomposition noticed.
+    /// </summary>
+    public static string OneWorkbookWithDiagnostics()
+    {
+      var read = Table<FundAmount>().MapWorkbookWithDiagnostics(TestData("multi-sheet.xlsx"), "Detail");
+
+      return $"{Total(read.Value)}; {read.Diagnostics.Count} diagnostics";
+    }
+
+    private static string Total(IReadOnlyList<FundAmount> rows)
+      => $"{rows.Count} rows, {System.Linq.Enumerable.Sum(rows, r => r.Amount)} total";
+
+    private static string TestData(string file)
+      => System.IO.Path.Combine(AppContext.BaseDirectory, "TestData", file);
+
     public static void Run()
     {
       var formulaSheet = Sheets.WithFormulas();
@@ -527,6 +640,14 @@ namespace TypedSpacesGauntlet
       var investor = TypedTableInAFlow(Sheets.Investor());
 
       Show("10 typed table inside a flow     ", $"{investor.Name}: {JoinAll(investor.CashFlows)}");
+
+      var ledger = ScopedAuditedLedger(
+        SpreadsheetSpace.CreateWithFormulas(TestData("formulas.xlsx"), "Formulas"));
+
+      Show("11 scoped ledger (entry B)       ", $"{JoinAll(ledger.Lines)} => {ledger.TotalFormula}");
+      Show("11 a scope raises, a helper does not", AScopeRaisesWhatAHelperDoesNot());
+      Show("11 one declaration, two workbooks", EachWorkbookInTurn());
+      Show("11 ... with diagnostics          ", OneWorkbookWithDiagnostics());
 
       // The runtime-fault design, priced: what the typed layer makes unreachable.
       try

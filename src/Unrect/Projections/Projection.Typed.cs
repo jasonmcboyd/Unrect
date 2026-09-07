@@ -25,6 +25,12 @@ namespace Unrect.Projections
   /// not their item's, and a type parameter standing for the whole projection cannot be re-pointed
   /// at a new result. That is the residual doubling, and it is a language limit.
   /// </para>
+  /// <para>
+  /// Saying it once for a whole declaration instead of once per factory is
+  /// <see cref="Over{TSpace}"/> and the <see cref="ProjectionScope{TSpace}"/> it opens. That is a
+  /// second spelling rather than a second mechanism: every member of a scope forwards to a witness
+  /// form here.
+  /// </para>
   /// </summary>
   public static partial class Projection
   {
@@ -80,7 +86,7 @@ namespace Unrect.Projections
       IProjection<TSpace, T> eachRow,
       [CallerArgumentExpression("eachRow")] string? declared = null)
       where TSpace : class, ISpace
-      => Table(headerRows, ProjectionExtensions.Plain(eachRow), declared);
+      => Table(headerRows, ProjectionExtensions.Plain(NotNull(eachRow, nameof(eachRow))), declared);
 
     /// <inheritdoc cref="Table{T}(int, Func{CaptionMap, IProjection{T}}, string)"/>
     /// <typeparam name="TSpace">The space the bound row is declared over, and therefore the table.</typeparam>
@@ -110,7 +116,7 @@ namespace Unrect.Projections
       int atLeast = 0,
       [CallerArgumentExpression("item")] string? declared = null)
       where TSpace : class, ISpace
-      => Repeat(Orientation.Vertical, ProjectionExtensions.Plain(item), separatedBy, atLeast, declared);
+      => Repeat(Orientation.Vertical, ProjectionExtensions.Plain(NotNull(item, nameof(item))), separatedBy, atLeast, declared);
 
     /// <inheritdoc cref="VerticalRepeat{TSpace, T}"/>
     /// <typeparam name="TSpace">The space the item is declared over, and therefore the repeat.</typeparam>
@@ -125,7 +131,7 @@ namespace Unrect.Projections
       int atLeast = 0,
       [CallerArgumentExpression("item")] string? declared = null)
       where TSpace : class, ISpace
-      => Repeat(Orientation.Horizontal, ProjectionExtensions.Plain(item), separatedBy, atLeast, declared);
+      => Repeat(Orientation.Horizontal, ProjectionExtensions.Plain(NotNull(item, nameof(item))), separatedBy, atLeast, declared);
 
     /// <summary>
     /// <see cref="Choice{T}"/> over a space offering at least <typeparamref name="TSpace"/>.
@@ -177,6 +183,13 @@ namespace Unrect.Projections
 
         return row is null ? null! : ProjectionExtensions.Plain(row);
       };
+
+    /// <summary>The typed factories guard their own parameters before delegating through
+    /// <see cref="ProjectionExtensions.Plain{TSpace, T}"/>, whose cast guard would otherwise see a null
+    /// first and answer in the wrong words ("projection" where the caller wrote "eachRow").</summary>
+    private static IProjection<TSpace, T> NotNull<TSpace, T>(IProjection<TSpace, T> projection, string parameter)
+      where TSpace : class, ISpace
+      => projection ?? throw new ArgumentNullException(parameter);
 
     private static Layout<TSpace, T> NotNull<TSpace, T>(Layout<TSpace, T> build, string parameter)
       where TSpace : class, ISpace

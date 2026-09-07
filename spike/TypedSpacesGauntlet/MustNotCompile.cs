@@ -78,6 +78,29 @@ namespace TypedSpacesGauntlet
 
       return report.Map(Sheets.Plain());
     }
+
+    // (k) a SCOPED declaration applied to a plain grid — entry B's refusal, phase 6
+    public static AuditedLedger K() => Gauntlet.ScopedAuditedLedger(Sheets.Plain());
+
+    // (l) the same at Map, through an ISpace-typed variable, with the type arguments stated
+    public static IReadOnlyList<string?> L()
+    {
+      var p = Projection.Over<ISpreadsheetSpace>();
+      var scoped = p.VerticalRepeat(p.Overlay(o => o.Next(Formula())));
+
+      ISpace plain = Sheets.Plain();
+
+      return scoped.Map<ISpreadsheetSpace, IReadOnlyList<string?>>(plain);
+    }
+
+    // (m) a demanding child in a PLAIN SCOPE — the scoped twin of (e), which is where the scope
+    // pays for itself: the refusal lands on the argument rather than on inference.
+    public static IProjection<ISpace, string?> M()
+      => Projection.Over<ISpace>().VerticalFlow(v => v.Next(Formula()));
+
+    // (n) the workbook sugar over a formula-reading declaration: there is no overload, because a
+    // streamed sheet carries no formulas and the honest absence is stated by the receiver type.
+    public static string? N() => Formula().MapWorkbook("book.xlsx", "Data");
 #endif
   }
 }
