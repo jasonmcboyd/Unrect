@@ -14,7 +14,7 @@ using static Unrect.Tests.ProjectionTestSpaces;
 namespace Unrect.Tests.Projections
 {
   /// <summary>
-  /// <c>TableRows&lt;T&gt;()</c>: a table read into a type, with the captions bound to the members
+  /// <c>Table&lt;T&gt;()</c>: a table read into a type, with the captions bound to the members
   /// by name. The binding matrix below is the spine of the feature — what binds freely, what needs
   /// declaring, what is rejected, and where each failure is reported.
   /// <para>
@@ -137,7 +137,7 @@ namespace Unrect.Tests.Projections
     {
       // "Investor Name" ↔ InvestorName, "Transaction Date" ↔ TransactionDate: the same name written
       // for two audiences, and neither had to say so.
-      var rows = TableRows<Txn>().Map(Free());
+      var rows = Table<Txn>().Map(Free());
 
       Assert.Equal(2, rows.Count);
       Assert.Equal("Acme", rows[0].InvestorName);
@@ -155,7 +155,7 @@ namespace Unrect.Tests.Projections
         { "hello", 1.5m, 0.25, 42, new DateTime(2026, 6, 30), true, "anything" },
       });
 
-      var row = TableRows<Every>().Map(space).Single();
+      var row = Table<Every>().Map(space).Single();
 
       Assert.Equal("hello", row.Text);
       Assert.Equal(1.5m, row.Money);
@@ -178,7 +178,7 @@ namespace Unrect.Tests.Projections
         { 5m, "Beta" },
       });
 
-      var rows = TableRows<Kinds>().Map(space);
+      var rows = Table<Kinds>().Map(space);
 
       Assert.Equal(CellKind.Text, rows[0].Any.Kind);
       Assert.Equal(CellKind.Number, rows[1].Any.Kind);
@@ -189,7 +189,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void APositionalRecordIsBuiltThroughItsConstructor()
     {
-      Assert.Equal("Acme", TableRows<Txn>().Map(Free())[0].InvestorName);
+      Assert.Equal("Acme", Table<Txn>().Map(Free())[0].InvestorName);
     }
 
     [Fact]
@@ -197,7 +197,7 @@ namespace Unrect.Tests.Projections
     {
       var space = Mixed(new object?[,] { { "Client", "Amount" }, { "Acme", 1m } });
 
-      var row = TableRows<Settable>().Map(space).Single();
+      var row = Table<Settable>().Map(space).Single();
 
       Assert.Equal("Acme", row.Client);
       Assert.Equal(1m, row.Amount);
@@ -210,7 +210,7 @@ namespace Unrect.Tests.Projections
       // written the modern way needs no constructor.
       var space = Mixed(new object?[,] { { "Client", "Amount" }, { "Acme", 1m } });
 
-      var row = TableRows<Inits>().Map(space).Single();
+      var row = Table<Inits>().Map(space).Single();
 
       Assert.Equal("Acme", row.Client);
       Assert.Equal(1m, row.Amount);
@@ -221,7 +221,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AColumnOverrideNamesTheCaptionTheComparerWouldNotHaveFound()
     {
-      var row = TableRows<Wide>(bind => bind
+      var row = Table<Wide>(bind => bind
         .Column(t => t.Date, "Transaction Date")
         .Column(t => t.Type, "Transaction Type"))
         .Map(Captioned())
@@ -244,7 +244,7 @@ namespace Unrect.Tests.Projections
         { "Acme", new DateTime(2026, 3, 4), "Capital Call", 10m },
       });
 
-      var row = TableRows<Wide>(bind => bind
+      var row = Table<Wide>(bind => bind
         .Column(t => t.Date, "Transaction Date")
         .Column(t => t.Type, "Transaction Type"))
         .Map(space)
@@ -258,7 +258,7 @@ namespace Unrect.Tests.Projections
     {
       var space = Mixed(new object?[,] { { "Client" }, { "Acme" } });
 
-      var row = TableRows<Settable>(bind => bind.Ignore(t => t.Amount)).Map(space).Single();
+      var row = Table<Settable>(bind => bind.Ignore(t => t.Amount)).Map(space).Single();
 
       Assert.Equal("Acme", row.Client);
       Assert.Equal(0m, row.Amount);
@@ -269,7 +269,7 @@ namespace Unrect.Tests.Projections
     {
       var space = Mixed(new object?[,] { { "Client" }, { "Acme" } });
 
-      var row = TableRows<Defaulted>(bind => bind.Ignore(t => t.Amount)).Map(space).Single();
+      var row = Table<Defaulted>(bind => bind.Ignore(t => t.Amount)).Map(space).Single();
 
       Assert.Equal("Acme", row.Client);
       Assert.Equal(99m, row.Amount);
@@ -284,7 +284,7 @@ namespace Unrect.Tests.Projections
     {
       var space = Mixed(new object?[,] { { "Client", "Amount" }, { "Acme", null } });
 
-      Assert.Null(TableRows<Optionals>().Map(space).Single().Amount);
+      Assert.Null(Table<Optionals>().Map(space).Single().Amount);
     }
 
     [Fact]
@@ -294,7 +294,7 @@ namespace Unrect.Tests.Projections
       // decimal column says something else entirely.
       var space = Mixed(new object?[,] { { "Client", "Amount" }, { "Acme", "x" } });
 
-      var failure = Assert.Throws<ProjectionException>(() => TableRows<Optionals>().Map(space));
+      var failure = Assert.Throws<ProjectionException>(() => Table<Optionals>().Map(space));
 
       Assert.Contains("column 'Amount': expected Number at B2, found Text", failure.Message);
     }
@@ -308,7 +308,7 @@ namespace Unrect.Tests.Projections
         { "Acme", new DateTime(2026, 1, 1), null },
       });
 
-      var failure = Assert.Throws<ProjectionException>(() => TableRows<Txn>().Map(space));
+      var failure = Assert.Throws<ProjectionException>(() => Table<Txn>().Map(space));
 
       Assert.Contains("column 'Amount': expected Number at C2, found Blank", failure.Message);
     }
@@ -318,7 +318,7 @@ namespace Unrect.Tests.Projections
     {
       // Both members are strings on the same record; the only difference is the annotation, which
       // is exactly what the reader of a #nullable enable file expects to be load-bearing.
-      var tolerated = TableRows<Annotated>().Map(Mixed(new object?[,]
+      var tolerated = Table<Annotated>().Map(Mixed(new object?[,]
       {
         { "Note", "Client" },
         { null, "Acme" },
@@ -327,7 +327,7 @@ namespace Unrect.Tests.Projections
       Assert.Null(tolerated.Single().Note);
       Assert.Equal("Acme", tolerated.Single().Client);
 
-      var failure = Assert.Throws<ProjectionException>(() => TableRows<Annotated>().Map(Mixed(new object?[,]
+      var failure = Assert.Throws<ProjectionException>(() => Table<Annotated>().Map(Mixed(new object?[,]
       {
         { "Note", "Client" },
         { "a note", null },
@@ -343,7 +343,7 @@ namespace Unrect.Tests.Projections
       // constructor rather than annotating each parameter. A reader that only looked at the
       // per-parameter annotations would find none and call all five non-nullable — which is
       // exactly backwards for four of them.
-      var rows = TableRows<MostlyNullable>().Map(Mixed(new object?[,]
+      var rows = Table<MostlyNullable>().Map(Mixed(new object?[,]
       {
         { "A", "B", "C", "D", "Client" },
         { null, null, null, null, "Acme" },
@@ -361,7 +361,7 @@ namespace Unrect.Tests.Projections
     {
       // The other half: the context says "nullable" for the group, and the one parameter that
       // opts out of it is still refused a blank.
-      var failure = Assert.Throws<ProjectionException>(() => TableRows<MostlyNullable>().Map(Mixed(new object?[,]
+      var failure = Assert.Throws<ProjectionException>(() => Table<MostlyNullable>().Map(Mixed(new object?[,]
       {
         { "A", "B", "C", "D", "Client" },
         { "x", "x", "x", "x", null },
@@ -375,7 +375,7 @@ namespace Unrect.Tests.Projections
     {
       // Where nullability was never spoken, silence is not consent: an unannotated string is read
       // strictly, so a #nullable disable file does not quietly gain blank-tolerance everywhere.
-      var failure = Assert.Throws<ProjectionException>(() => TableRows<Oblivious>().Map(Mixed(new object?[,]
+      var failure = Assert.Throws<ProjectionException>(() => Table<Oblivious>().Map(Mixed(new object?[,]
       {
         { "Client", "Note" },
         { "Acme", null },
@@ -389,7 +389,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AnUnsupportedMemberTypeIsRefusedAtTheDeclaration()
     {
-      var failure = Assert.Throws<ArgumentException>(() => TableRows<Longy>());
+      var failure = Assert.Throws<ArgumentException>(() => Table<Longy>());
 
       Assert.Contains("Longy.Quantity is a long, and no cell accessor yields long.", failure.Message);
       Assert.Contains(
@@ -401,8 +401,8 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void EveryUnsupportedTypeIsRefusedTheSameWay()
     {
-      Assert.Contains("Floaty.Ratio is a float", Assert.Throws<ArgumentException>(() => TableRows<Floaty>()).Message);
-      Assert.Contains("Custom.Link is a Uri", Assert.Throws<ArgumentException>(() => TableRows<Custom>()).Message);
+      Assert.Contains("Floaty.Ratio is a float", Assert.Throws<ArgumentException>(() => Table<Floaty>()).Message);
+      Assert.Contains("Custom.Link is a Uri", Assert.Throws<ArgumentException>(() => Table<Custom>()).Message);
     }
 
     [Fact]
@@ -410,11 +410,11 @@ namespace Unrect.Tests.Projections
     {
       Assert.Contains(
         "NoConstructor cannot be constructed: it has no public constructor.",
-        Assert.Throws<ArgumentException>(() => TableRows<NoConstructor>()).Message);
+        Assert.Throws<ArgumentException>(() => Table<NoConstructor>()).Message);
 
       Assert.Contains(
         "ManyConstructors cannot be constructed: it has 2 public constructors and no parameterless one.",
-        Assert.Throws<ArgumentException>(() => TableRows<ManyConstructors>()).Message);
+        Assert.Throws<ArgumentException>(() => Table<ManyConstructors>()).Message);
     }
 
     [Fact]
@@ -422,19 +422,19 @@ namespace Unrect.Tests.Projections
     {
       Assert.Contains(
         "does not select a property of Wide; select a property directly.",
-        Assert.Throws<ArgumentException>(() => TableRows<Wide>(bind => bind.Column(t => t.Date.Year.ToString(), "X"))).Message);
+        Assert.Throws<ArgumentException>(() => Table<Wide>(bind => bind.Column(t => t.Date.Year.ToString(), "X"))).Message);
 
       Assert.Contains(
         "Wide.Date is bound twice.",
-        Assert.Throws<ArgumentException>(() => TableRows<Wide>(bind => bind.Column(t => t.Date, "A").Column(t => t.Date, "B"))).Message);
+        Assert.Throws<ArgumentException>(() => Table<Wide>(bind => bind.Column(t => t.Date, "A").Column(t => t.Date, "B"))).Message);
 
       Assert.Contains(
         "Wide.Date is both bound and ignored.",
-        Assert.Throws<ArgumentException>(() => TableRows<Wide>(bind => bind.Column(t => t.Date, "A").Ignore(t => t.Date))).Message);
+        Assert.Throws<ArgumentException>(() => Table<Wide>(bind => bind.Column(t => t.Date, "A").Ignore(t => t.Date))).Message);
 
       Assert.Contains(
         "A column caption cannot be empty or whitespace.",
-        Assert.Throws<ArgumentException>(() => TableRows<Wide>(bind => bind.Column(t => t.Date, "   "))).Message);
+        Assert.Throws<ArgumentException>(() => Table<Wide>(bind => bind.Column(t => t.Date, "   "))).Message);
     }
 
     [Fact]
@@ -442,7 +442,7 @@ namespace Unrect.Tests.Projections
     {
       Assert.Contains(
         "Wide.Type cannot be ignored: the constructor parameter has no default value.",
-        Assert.Throws<ArgumentException>(() => TableRows<Wide>(bind => bind.Ignore(t => t.Type))).Message);
+        Assert.Throws<ArgumentException>(() => Table<Wide>(bind => bind.Ignore(t => t.Type))).Message);
     }
 
     [Fact]
@@ -450,7 +450,7 @@ namespace Unrect.Tests.Projections
     {
       Assert.Contains(
         "Nothing has no properties to bind.",
-        Assert.Throws<ArgumentException>(() => TableRows<Nothing>()).Message);
+        Assert.Throws<ArgumentException>(() => Table<Nothing>()).Message);
     }
 
     [Fact]
@@ -458,7 +458,7 @@ namespace Unrect.Tests.Projections
     {
       // The guidance has to be the call the user actually wrote, or it reads as a suggestion to
       // fix a line that is not there.
-      var failure = Assert.Throws<ArgumentException>(() => TableRows<Wide>(bind => bind.Ignore(t => t.Date.Year)));
+      var failure = Assert.Throws<ArgumentException>(() => Table<Wide>(bind => bind.Ignore(t => t.Date.Year)));
 
       Assert.Contains("Ignore(t => t.Date.Year) does not select a property of Wide", failure.Message);
       Assert.DoesNotContain("Column(", failure.Message);
@@ -472,8 +472,8 @@ namespace Unrect.Tests.Projections
       // be a declaration with no effect, so it is refused instead.
       foreach (var declaration in new Func<IProjection<IReadOnlyList<ExtraInit>>>[]
       {
-        () => TableRows<ExtraInit>(bind => bind.Column(t => t.Extra, "Extra")),
-        () => TableRows<ExtraInit>(bind => bind.Ignore(t => t.Extra)),
+        () => Table<ExtraInit>(bind => bind.Column(t => t.Extra, "Extra")),
+        () => Table<ExtraInit>(bind => bind.Ignore(t => t.Extra)),
       })
       {
         var failure = Assert.Throws<ArgumentException>(() => declaration());
@@ -489,7 +489,7 @@ namespace Unrect.Tests.Projections
     public void AnUnsupportedNullableTypeIsNamedWithItsQuestionMark()
     {
       // "TimeSpan" would send the reader looking for a TimeSpan member they do not have.
-      var failure = Assert.Throws<ArgumentException>(() => TableRows<Spanny>());
+      var failure = Assert.Throws<ArgumentException>(() => Table<Spanny>());
 
       Assert.Contains("Spanny.Span is a TimeSpan?, and no cell accessor yields TimeSpan?.", failure.Message);
     }
@@ -503,7 +503,7 @@ namespace Unrect.Tests.Projections
     {
       // One failure naming all of them, with the captions that were available — so the reader fixes
       // the declaration once rather than discovering the members one run at a time.
-      var failure = Assert.Throws<ProjectionException>(() => TableRows<Wide>().Map(Captioned()));
+      var failure = Assert.Throws<ProjectionException>(() => Table<Wide>().Map(Captioned()));
 
       Assert.Contains("no column binds Wide.Date or Wide.Type;", failure.Message);
       Assert.Contains(
@@ -525,7 +525,7 @@ namespace Unrect.Tests.Projections
         { "Acme", new DateTime(2026, 3, 4), 10m, "ignore me" },
       });
 
-      Assert.Equal("Acme", TableRows<Txn>().Map(space).Single().InvestorName);
+      Assert.Equal("Acme", Table<Txn>().Map(space).Single().InvestorName);
     }
 
     [Fact]
@@ -537,7 +537,7 @@ namespace Unrect.Tests.Projections
         { "Acme", new DateTime(2026, 1, 1), 1m, 2m },
       });
 
-      var failure = Assert.Throws<ProjectionException>(() => TableRows<Txn>().Map(space));
+      var failure = Assert.Throws<ProjectionException>(() => Table<Txn>().Map(space));
 
       Assert.Contains(
         "Txn.Amount matches the columns at C1 ('Amount') and D1 ('amount'); "
@@ -548,7 +548,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void APerCellFailureCarriesTheColumnAndTheCellsAddress()
     {
-      var kindFailure = Assert.Throws<ProjectionException>(() => TableRows<Txn>().Map(Mixed(new object?[,]
+      var kindFailure = Assert.Throws<ProjectionException>(() => Table<Txn>().Map(Mixed(new object?[,]
       {
         { "Investor Name", "Transaction Date", "Amount" },
         { "Acme", new DateTime(2026, 1, 1), "x" },
@@ -556,7 +556,7 @@ namespace Unrect.Tests.Projections
 
       Assert.Contains("column 'Amount': expected Number at C2, found Text", kindFailure.Message);
 
-      var conversionFailure = Assert.Throws<ProjectionException>(() => TableRows<Counted>().Map(Mixed(new object?[,]
+      var conversionFailure = Assert.Throws<ProjectionException>(() => Table<Counted>().Map(Mixed(new object?[,]
       {
         { "Client", "Count" },
         { "Acme", 1.5 },
@@ -576,7 +576,7 @@ namespace Unrect.Tests.Projections
       // the calls matter in ways nobody wrote down.
       TableBinding<Wide>? captured = null;
 
-      var projection = TableRows<Wide>(bind =>
+      var projection = Table<Wide>(bind =>
       {
         captured = bind;
         return bind.Column(t => t.Date, "Transaction Date").Column(t => t.Type, "Transaction Type");
@@ -586,13 +586,13 @@ namespace Unrect.Tests.Projections
       Assert.Equal("Acme", projection.Map(Captioned()).Single().Client);
 
       // The builder the lambda was handed never learned about those columns.
-      Assert.Throws<ProjectionException>(() => TableRows<Wide>(_ => captured!).Map(Captioned()));
+      Assert.Throws<ProjectionException>(() => Table<Wide>(_ => captured!).Map(Captioned()));
     }
 
     [Fact]
     public void OneTypedTableIsSafeToMapFromManyThreads()
     {
-      var projection = TableRows<Txn>();
+      var projection = Table<Txn>();
 
       var spaces = Enumerable.Range(0, 32)
         .Select(seed => Mixed(new object?[,]
@@ -618,7 +618,7 @@ namespace Unrect.Tests.Projections
     public void MappingTwiceGivesTheSameAnswer()
     {
       // Binding resolves once, when the projection is built; applying it must not disturb it.
-      var projection = TableRows<Txn>();
+      var projection = Table<Txn>();
 
       Assert.Equal(projection.Map(Free())[0].InvestorName, projection.Map(Free())[0].InvestorName);
       Assert.Equal(2, projection.Map(Free()).Count);
@@ -637,8 +637,8 @@ namespace Unrect.Tests.Projections
         { "Beta", new DateTime(2026, 5, 1), 20m },
       });
 
-      var typed = TableRows<Txn>().Apply(space);
-      var projected = TableRows(r => r["Amount"].GetDecimal()).Apply(space);
+      var typed = Table<Txn>().Apply(space);
+      var projected = Table(r => r["Amount"].GetDecimal()).Apply(space);
 
       Assert.Equal(projected.Value, typed.Value.Select(row => row.Amount).ToArray());
       Assert.Equal(projected.Offset.Size.Height, typed.Offset.Size.Height);
@@ -647,16 +647,16 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void AllFiveTableRowsSpellingsResolve()
+    public void AllFiveTableSpellingsResolve()
     {
       // A compile-time pin against the overload set becoming ambiguous.
       var space = Mixed(new object?[,] { { "Client", "Amount" }, { "Acme", 1m } });
 
-      Assert.Single(TableRows(r => r["Client"].GetString()).Map(space));
-      Assert.Equal(2, TableRows(0, r => r[0]).Map(space).Count);   // no header declared, so the caption row is data
-      Assert.Single(TableRows().Map(space));
-      Assert.Single(TableRows<Settable>().Map(space));
-      Assert.Single(TableRows<Settable>(bind => bind.Column(t => t.Amount, "Amount")).Map(space));
+      Assert.Single(Table(r => r["Client"].GetString()).Map(space));
+      Assert.Equal(2, Table(0, r => r[0]).Map(space).Count);   // no header declared, so the caption row is data
+      Assert.Single(Table().Map(space));
+      Assert.Single(Table<Settable>().Map(space));
+      Assert.Single(Table<Settable>(bind => bind.Column(t => t.Amount, "Amount")).Map(space));
     }
   }
 }

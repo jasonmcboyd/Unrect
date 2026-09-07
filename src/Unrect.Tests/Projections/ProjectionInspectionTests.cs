@@ -58,7 +58,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal("HorizontalRepeat", HorizontalRepeat(IntCell()).Description);
       Assert.Equal("Select", IntCell().Select(v => v + 1).Description);
       Assert.Equal("Table", Table(t => t.RowCount).Description);
-      Assert.Equal("TableRows", TableRows(r => r[0]).Description);
+      Assert.Equal("Table", Table(r => r[0]).Description);
     }
 
     [Fact]
@@ -121,10 +121,10 @@ namespace Unrect.Tests.Projections
     }
 
     [Theory]
-    [InlineData("Table")]
-    [InlineData("TableRows")]
-    [InlineData("TableRows<T>")]
-    [InlineData("TableRows()")]
+    [InlineData("Table(view lambda)")]
+    [InlineData("Table(row lambda)")]
+    [InlineData("Table<T>")]
+    [InlineData("Table()")]
     public void ButTheLambdaRungsHaveNoneToShow(string rung)
     {
       // What a lambda rung reads is knowable only by running it, so it is a leaf to tooling — as it
@@ -132,10 +132,10 @@ namespace Unrect.Tests.Projections
       // of table differ in exactly this, and nothing else.
       IProjection projection = rung switch
       {
-        "Table" => Table(table => table.RowCount),
-        "TableRows" => TableRows(row => row.Index),
-        "TableRows<T>" => TableRows<Entry>(),
-        "TableRows()" => TableRows(),
+        "Table(view lambda)" => Table(table => table.RowCount),
+        "Table(row lambda)" => Table(row => row.Index),
+        "Table<T>" => Table<Entry>(),
+        "Table()" => Table(),
 
         _ => throw new System.ArgumentOutOfRangeException(nameof(rung), rung, "No such rung."),
       };
@@ -223,7 +223,7 @@ namespace Unrect.Tests.Projections
       // repeat happily, and stops where a layout composite is — reporting why rather than
       // pretending the layout is a leaf.
       var projection = VerticalRepeat(
-        TableRows(r => r[0])
+        Table(r => r[0])
           .Named("rows")
           .Until(RowContaining("Total"))
           .Select(rows => rows.Count)
@@ -236,7 +236,7 @@ namespace Unrect.Tests.Projections
           "'blocks' (VerticalRepeat)",
           "  'block' (Select)",
           "    Until",
-          "      'rows' (TableRows)",
+          "      'rows' (Table)",
         },
         Describe(projection).ToArray());
     }

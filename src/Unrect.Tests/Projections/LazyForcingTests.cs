@@ -519,7 +519,7 @@ namespace Unrect.Tests.Projections
       var counter = new CountingSpace(sheet ?? TallTable());
       var observations = new List<int>();
 
-      var rows = TableRows(row =>
+      var rows = Table(row =>
       {
         observations.Add(counter.RowsTouched);
 
@@ -532,7 +532,7 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void ATableRowsProjectionIsInterleavedWithTheScanThatFindsItsRows()
+    public void ATableRowLambdaIsInterleavedWithTheScanThatFindsItsRows()
     {
       // The law, and the reason StreamRows exists: the first row projects having read two rows of
       // the sheet — its own and the header — and the last projects having read the hundred and one
@@ -601,7 +601,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal(FirstWideRow + 1, observations[0]);
       Assert.Equal(TableBoundHeight, observations[TableBodyRows - 1]);
 
-      var consumed = TableRows(row => row.Index).Apply(LateWideningTable()).Consumed;
+      var consumed = Table(row => row.Index).Apply(LateWideningTable()).Consumed;
 
       Assert.Equal(2, consumed.Width);
       Assert.Equal(TableBoundHeight, consumed.Height);
@@ -650,7 +650,7 @@ namespace Unrect.Tests.Projections
     {
       // The control. Nothing about StreamRows is conditional on the extent being discovered, so on
       // an ordinary measured table it must read as the same rows in the same order — otherwise the
-      // three TableRows rungs would have changed meaning for every declaration that is not lazy at
+      // three Table rungs would have changed meaning for every declaration that is not lazy at
       // all.
       var space = Mixed(new object?[,]
       {

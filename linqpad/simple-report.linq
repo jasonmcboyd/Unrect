@@ -29,7 +29,7 @@ var reportHeader = VerticalFlow(v => new
 // Captions bind to members by name, ignoring case and whitespace: Client and Amount need nothing
 // said. Date and Type need a caption only because this type chose shorter names than the sheet —
 // naming them TransactionDate/TransactionType would bind free.
-var transactions = TableRows<Transaction>(bind => bind
+var transactions = Table<Transaction>(bind => bind
 	.Column(t => t.Date, "Transaction Date")
 	.Column(t => t.Type, "Transaction Type"));
 

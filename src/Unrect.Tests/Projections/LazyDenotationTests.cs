@@ -235,13 +235,13 @@ namespace Unrect.Tests.Projections
       // streamed body means what an indexed one meant: the same rows, in order, with the same space
       // left over.
       "table rows, lambda" => Scenario.Of(
-        TableRows(row => $"{row["Client"].GetString()}={row["Amount"].GetInt()}").Sized(RowsWhileAnyValue()),
+        Table(row => $"{row["Client"].GetString()}={row["Amount"].GetInt()}").Sized(RowsWhileAnyValue()),
         Headered()),
-      "table rows, typed" => Scenario.Of(TableRows<Entry>().Sized(RowsWhileAnyValue()), Headered()),
+      "table rows, typed" => Scenario.Of(Table<Entry>().Sized(RowsWhileAnyValue()), Headered()),
       // .Sized before .Select on purpose: Select's wrapper is a projection with a placement of its
       // own, so sizing the wrapper would leave the table inside it placed by its own eager default.
       "table rows, dictionaries" => Scenario.Of(
-        TableRows().Sized(RowsWhileAnyValue()).Select(rows => rows.Select(row => $"{row["Client"]}/{row["Amount"]}").ToList()),
+        Table().Sized(RowsWhileAnyValue()).Select(rows => rows.Select(row => $"{row["Client"]}/{row["Amount"]}").ToList()),
         Headered()),
 
       // The row-projection slot, which reads its body through TableView.StreamBands — the surface
@@ -301,9 +301,9 @@ namespace Unrect.Tests.Projections
       // — but these are the spellings most declarations in the corpus are actually written in.
       "block, default placement" => Scenario.Of(Range(b => $"{b.Width}x{b.Height}"), Sheet()),
       "block, default placement, unread" => Scenario.Of(Range(_ => 0), Sheet()),
-      "table rows typed, default placement" => Scenario.Of(TableRows<Entry>(), Headered()),
+      "table rows typed, default placement" => Scenario.Of(Table<Entry>(), Headered()),
       "table rows lambda, default placement" => Scenario.Of(
-        TableRows(row => $"{row["Client"].GetString()}={row["Amount"].GetInt()}"),
+        Table(row => $"{row["Client"].GetString()}={row["Amount"].GetInt()}"),
         Headered()),
 
       // The same default placement over a sheet whose width is NOT settled by its first row: column
@@ -312,7 +312,7 @@ namespace Unrect.Tests.Projections
       // correctly and honestly". What that costs is LazyForcingTests' business; what is under test
       // here is that paying it changes nothing a caller can observe.
       "table whose width settles late" => Scenario.Of(
-        TableRows(row => row.Index).Select(rows => $"{rows.Count}:{rows[0]}..{rows[rows.Count - 1]}"),
+        Table(row => row.Index).Select(rows => $"{rows.Count}:{rows[0]}..{rows[rows.Count - 1]}"),
         LateWideningSheet()),
 
       // A bound inside a wrapper whose own placement reads the sheet to find its landmark.
@@ -439,17 +439,17 @@ namespace Unrect.Tests.Projections
     }
 
     [Theory]
-    [InlineData("TableRows(lambda)")]
-    [InlineData("TableRows<T>()")]
-    [InlineData("TableRows()")]
-    [InlineData("Table(lambda)")]
+    [InlineData("Table(row lambda)")]
+    [InlineData("Table<T>()")]
+    [InlineData("Table()")]
+    [InlineData("Table(view lambda)")]
     [InlineData("Table(0, eachRow)")]
     [InlineData("Table(1, eachRow)")]
     public void TheTableDeclarationsThisSuiteSweepsDoTakeTheDeferredBranch(string rung)
     {
       // The table half of the census. The probe is structural rather than observational because two
       // of the three rungs project the whole body themselves and give a test nowhere to stand; the
-      // observational reading of the same claim is LazyForcingTests, which watches a TableRows
+      // observational reading of the same claim is LazyForcingTests, which watches a Table
       // lambda project its first row having read two rows of the sheet.
       // The rungs project different types, so each is reduced to the pair of placements the claim
       // is actually about before the switch has to agree on one.
@@ -457,10 +457,10 @@ namespace Unrect.Tests.Projections
 
       var (declared, sized) = rung switch
       {
-        "TableRows(lambda)" => Probe(TableRows(row => row.Index)),
-        "TableRows<T>()" => Probe(TableRows<Entry>()),
-        "TableRows()" => Probe(TableRows()),
-        "Table(lambda)" => Probe(Table(table => table.RowCount)),
+        "Table(row lambda)" => Probe(Table(row => row.Index)),
+        "Table<T>()" => Probe(Table<Entry>()),
+        "Table()" => Probe(Table()),
+        "Table(view lambda)" => Probe(Table(table => table.RowCount)),
         "Table(0, eachRow)" => Probe(Table(0, IntCell())),
         "Table(1, eachRow)" => Probe(Table(1, IntCell())),
 

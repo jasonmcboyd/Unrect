@@ -20,7 +20,7 @@ namespace TypedSpacesGauntlet
     private static IProjection<IFormulaSpace, AuditedReport> Report()
     {
       var title = Text();
-      var rows = TableRows<Allocation>();
+      var rows = Table<Allocation>();
       var totalFormula = Formula().On(RowContaining("Total")).Right(2);
 
       return VerticalFlow(Formulas, v => new AuditedReport(
@@ -48,7 +48,7 @@ namespace TypedSpacesGauntlet
     public static IProjection<AuditedReport> E()
     {
       var title = Text();
-      var rows = TableRows<Allocation>();
+      var rows = Table<Allocation>();
       var totalFormula = Formula().On(RowContaining("Total")).Right(2);
 
       return VerticalFlow(v => new AuditedReport(v.Next(title), v.Next(rows), v.Next(totalFormula)));
@@ -70,7 +70,7 @@ namespace TypedSpacesGauntlet
     public static AuditedReport J()
     {
       var title = Text();
-      var rows = TableRows<Allocation>();
+      var rows = Table<Allocation>();
       var totalFormula = Formula().On(RowContaining("Total")).Right(2);
 
       var report = VerticalFlow(Formulas, v => new AuditedReport(

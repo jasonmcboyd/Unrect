@@ -17,7 +17,7 @@ var dealCode = Text();
 
 // Every caption binds free — this is the comparer earning its keep, and why it ignores whitespace
 // rather than demanding an exact match.
-var transactions = TableRows<DealTransaction>();
+var transactions = Table<DealTransaction>();
 
 var deal = VerticalFlow(v => new
 {

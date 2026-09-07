@@ -84,8 +84,8 @@ namespace Unrect.Projections
     /// extent whose height is still being discovered is consumed forward-only, in step with the
     /// reading, and is never measured up front.
     /// <para>
-    /// This is what the built-in row projections — <c>TableRows&lt;T&gt;()</c>, <c>TableRows()</c>
-    /// and <c>TableRows(row =&gt; …)</c> — are written against, and what a projection of your own
+    /// This is what the built-in row readings — <c>Table&lt;T&gt;()</c>, <c>Table()</c>
+    /// and <c>Table(row =&gt; …)</c> — are written against, and what a projection of your own
     /// should use where the sheet is tall. The rows it hands back are the same <see
     /// cref="TableRow"/> views <see cref="Rows"/> holds; unlike <see cref="Rows"/> they are not
     /// cached, so enumerating twice builds them twice — a second enumeration costs no extra rows of
@@ -139,6 +139,12 @@ namespace Unrect.Projections
     internal ProjectionException Failure(string problem) => Context.Failure(problem, Space);
 
     /// <summary>
+    /// The same, for something that broke rather than disagreed — a declaration that cannot mean
+    /// anything, which no tolerance boundary may report as a section that was not there.
+    /// </summary>
+    internal ProjectionException Fault(string problem) => Context.Failure(problem, Space, null, isFault: true);
+
+    /// <summary>
     /// The columns carrying <paramref name="columnName"/>; empty when there is no such column.
     /// Header names are matched trimmed and case-insensitively, so the key is trimmed too.
     /// </summary>
@@ -155,8 +161,8 @@ namespace Unrect.Projections
     /// <summary>
     /// Every body row in one list, sized exactly. A caller of <see cref="Rows"/> is already paying
     /// the dimension query <see cref="RowCount"/> is, so asking it first costs nothing and the list
-    /// is allocated once at the right size instead of doubling its way there. The <c>TableRows</c>
-    /// rungs deliberately do the opposite and grow their lists, because for them asking how many
+    /// is allocated once at the right size instead of doubling its way there. The row rungs
+    /// deliberately do the opposite and grow their lists, because for them asking how many
     /// rows there are is the forcing question streaming exists to avoid.
     /// </summary>
     private List<TableRow> BuildRows()
@@ -223,7 +229,7 @@ namespace Unrect.Projections
     /// <summary>
     /// The cell in the column named <paramref name="columnName"/>, resolved by the content rule —
     /// trimmed and case-insensitively, the same rule matchers and <c>Caption</c> use, not the
-    /// whitespace-stripping <c>CaptionComparer</c> that binds <c>TableRows&lt;T&gt;</c>. An
+    /// whitespace-stripping <c>CaptionComparer</c> that binds <c>Table&lt;T&gt;</c>. An
     /// unknown, ambiguous, or headerless lookup is a declaration error.
     /// </summary>
     public CellValue this[string columnName] => Strip[Resolve(columnName)];

@@ -257,6 +257,60 @@ into the `Table` family):
 resolution, sizing defaults, `StreamRows`, table diagnostics) — the unification that
 work Claude's original `Repeat(Row(…))` parser was reaching for.
 
+### 6.1 As built (phase 5, 2026-09-09)
+
+The ladder is one `Table` family, clean break, no aliases; the five rungs are spelled as
+above, plus `Table()` (the dictionary) and the two rung-5 lambdas
+(`Table(row => …)`, `Table(view => …)`), each with its `headerRows` overload.
+
+**Rung 1 is sugar CONCEPTUALLY, and is implemented directly — for diagnostic identity.**
+The literal desugar was attempted on paper against the regression bar (the existing typed
+table pins) and rejected, on four counts, each of which is a message a user reads today:
+
+1. *The subject.* A bound member's failure says `column 'Amount': expected Number at B4,
+   found Text` — the caption is the subject, because that is what a reader looks for in the
+   file. A desugared `Decimal()` leaf says only `expected Number at B4, found Text`; the
+   column is nowhere in it.
+2. *The path.* Every binding failure is the TABLE's (`Table<Transaction>` at the table's
+   own origin). Through the desugar it becomes `Table[7] -> Overlay -> Decimal#3`, which is
+   a truthful description of a machine nobody declared.
+3. *Aggregation.* One message lists every member that found no column — `no column binds
+   Transaction.Date, Transaction.Type or Transaction.Amount` — because binding resolves all
+   members before reading anything. A per-member `captions[…]` lookup reports the first and
+   hides the rest, and the advice (`Bind one with Column(t => t.Date, "…")`) has no member
+   to name once it is a bare caption lookup.
+4. *Cost.* The most-used rung would go from one compiled materializer per row to an engine
+   `Apply` per member per row (placement resolution, subspace slice, context descend), on
+   the path the `Tables` benchmark family measures.
+
+So `RowBinding` stays the implementation of rungs 1–2, and the bind (rung 3) is added
+beside it. What the two share is the comparer (`CaptionComparer`) and the voice: the
+`CaptionMap`'s miss and duplicate messages are the binder's own, minus the member advice a
+bare caption lookup cannot give. Honesty over forced elegance — the ladder is one
+mechanism in the model and two in the code, and the seam is where the diagnostics live.
+
+**Named by the same capture as everything else.** `CallerArgumentExpression` on the bind
+argument keeps the naming ladder intact without a new rule: a method group
+(`Table(1, AllocationRow)`) is a bare identifier and labels every record
+`'AllocationRow'`; an inline `captions => …` is not, so the record falls back to the
+description of what the bind *returned* (`Overlay`), or to its own `.Named`. A hoisted
+bound row is a factory anyway (§7), so the spelling that is already recommended is the one
+that carries a name.
+
+**One overload cost, recorded.** The two rung-5 lambdas take `TableRow` and `TableView`,
+and a lambda body that touches nothing distinctive (`Table(x => 0)`,
+`Table(x => x.Location.A1)` — both views have a `Location`) is ambiguous between them.
+The compiler names both candidates (CS0121, not the useless CS0411), and typing the
+parameter (`Table((TableRow r) => 0)`) resolves it. Every other shape in the family
+resolves unaided, including the bind against both rung-5 lambdas — the caption map's
+members exist on neither view, so the wrong candidates fail to bind and drop out.
+
+**Rung-5 ambiguity — DECIDED (owner, 2026-09-07): the typed parameter is the answer.**
+A `WholeTable(view => …)` split was proposed to dissolve the CS0121 collision on
+view-agnostic lambda bodies and declined: the collision is rare, the compiler's message is
+good, `Table((TableView t) => t)` self-documents at the site, and a second factory name
+for the same family is the two-spellings wart the vocabulary prunes everywhere else.
+
 ## 7. Captions: the bind and the `CaptionMap` **[owner-decided, after due diligence]**
 
 A caption→column map is not geometry — it is **the result of the table projecting its
@@ -323,7 +377,7 @@ Why the bind wins, on the record:
 | 2 | The rename (§2), whole corpus | the model's language everywhere; no semantics change |
 | 3 | Capability stack (§5): seam, transport, slicing-law conformance theory, `Formula()` leaf + xlsx reader + fixture, `ISpreadsheetSpace`, shell retirement | capabilities ship even if everything later stops |
 | 4 | `OrBlank()`; row projections: `Table(headerRows, row)` slot; positional rung | the ladder's rung 3; positional binder subsumed |
-| 5 | The bind + `CaptionMap`; `Table<T>()` as the reflection desugarer | rungs 1–3; `TableRows*` retires into the `Table` family |
+| 5 | The bind + `CaptionMap`; `Table<T>()` as the reflection desugarer — **DONE (2026-09-09)**, desugar recorded as conceptual only (§6.1) | rungs 1–3; `TableRows*` retired into the `Table` family |
 | 6 | Entry B (`Over<T>()` scope), backend vocabulary statics, `MapWorkbook` sugar | the announced-demand ergonomics |
 | 7 | Gauntlet rerun as acceptance + the work-Claude parser in final form | the judgment evidence |
 
@@ -331,9 +385,11 @@ Why the bind wins, on the record:
 
 1. Phase 1's class-based surface: does it kill the doubling completely, or only mostly —
    and is "mostly" acceptable?
-2. `CaptionMap`'s home and mint: sealed, in `Unrect`, internal constructor — confirm
-   nothing else ever needs to mint one (a test wanting a synthetic map argues for an
-   internal factory reachable via `InternalsVisibleTo`, not a public constructor).
+2. ~~`CaptionMap`'s home and mint~~ — **resolved (phase 5).** Sealed, in
+   `Unrect.Projections` beside the views it is one of, internal constructor taking the
+   `TableView` whose header it reads; `Table` is the only mint. No synthetic-map factory was
+   needed: the bottom rung already vends a real view (`Table(1, table => table)`), so a test
+   mints one from that — a real header, a real context, real failures.
 3. `IFormattingSpace` shape: what the formatting vocabulary is (number format string?
    style id? both?) — deferred to its own short spec when formulas land.
 4. The lambda rungs' documentation: state plainly, once, that everything in a lambda is

@@ -158,7 +158,7 @@ namespace Unrect.Tests.Projections
     public void ATypedTableAndALabelledBlockAreDeclarableFromTheOneImport()
     {
       // The phase C vocabulary, declared with nothing but `using static
-      // Unrect.Projections.Projection`: the typed leaves, TableRows<T>, its binding lambda, Fields
+      // Unrect.Projections.Projection`: the typed leaves, Table<T>, its binding lambda, Fields
       // and Field.
       var card = Mixed(new object?[,]
       {
@@ -171,7 +171,7 @@ namespace Unrect.Tests.Projections
       var report = VerticalFlow(v => new
       {
         Entity = v.Next(Fields(Field("EIN"))),
-        Lines = v.Next(TableRows<Line>(bind => bind.Column(t => t.When, "Transaction Date"))),
+        Lines = v.Next(Table<Line>(bind => bind.Column(t => t.When, "Transaction Date"))),
       }).Map(card);
 
       Assert.Equal("12-3456789", report.Entity["EIN"].GetString());

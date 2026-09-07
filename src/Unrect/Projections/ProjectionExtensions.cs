@@ -394,7 +394,7 @@ namespace Unrect.Projections
     /// </para>
     /// <para>
     /// This is the standalone spelling of what a nullable member already gets inside
-    /// <c>TableRows&lt;T&gt;()</c>, so the two say the same thing about the same cell:
+    /// <c>Table&lt;T&gt;()</c>, so the two say the same thing about the same cell:
     /// <code>
     /// Overlay(o =&gt; new Allocation(
     ///   Fund:    o.Next(Text().Right(1)),

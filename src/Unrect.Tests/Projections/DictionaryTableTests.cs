@@ -13,7 +13,7 @@ using static Unrect.Tests.ProjectionTestSpaces;
 namespace Unrect.Tests.Projections
 {
   /// <summary>
-  /// <c>TableRows()</c> with no projection and no type: each row as a dictionary keyed by the
+  /// <c>Table()</c> with no projection and no type: each row as a dictionary keyed by the
   /// header's captions. It is the exploratory spelling — what a script reaches for before the
   /// record exists — and its one promise is that it reads the sheet without deciding anything.
   /// <para>
@@ -24,14 +24,14 @@ namespace Unrect.Tests.Projections
   /// </summary>
   public class DictionaryTableTests
   {
-    private static ISpace Table() => Mixed(new object?[,]
+    private static ISpace Sheet() => Mixed(new object?[,]
     {
       { "Investor Name", "Transaction Date", "Amount" },
       { "Acme", new DateTime(2026, 3, 4), 10m },
       { "Beta", null, 20m },
     });
 
-    private static IReadOnlyList<IReadOnlyDictionary<string, CellValue>> Rows() => TableRows().Map(Table());
+    private static IReadOnlyList<IReadOnlyDictionary<string, CellValue>> Rows() => Table().Map(Sheet());
 
     // --- Keys and values ---------------------------------------------------------------------------
 
@@ -64,7 +64,7 @@ namespace Unrect.Tests.Projections
         { CellValue.OfError(CellError.DivisionByZero) },
       });
 
-      var cell = TableRows().Map(space)[0]["Amount"];
+      var cell = Table().Map(space)[0]["Amount"];
 
       Assert.Equal(CellKind.Error, cell.Kind);
       Assert.Equal(CellError.DivisionByZero, cell.GetError());
@@ -103,7 +103,7 @@ namespace Unrect.Tests.Projections
         { 1m, 2m },
       });
 
-      var failure = Assert.Throws<ProjectionException>(() => TableRows().Map(space));
+      var failure = Assert.Throws<ProjectionException>(() => Table().Map(space));
 
       Assert.Contains(
         "the columns at A1 ('Net Amount') and B1 ('NetAmount') carry the same caption; "
@@ -120,7 +120,7 @@ namespace Unrect.Tests.Projections
         { 1m, 2m },
       });
 
-      var failure = Assert.Throws<ProjectionException>(() => TableRows().Map(space));
+      var failure = Assert.Throws<ProjectionException>(() => Table().Map(space));
 
       Assert.Contains(
         "the column at B1 has no caption; every column needs one to be read by name",
@@ -131,7 +131,7 @@ namespace Unrect.Tests.Projections
     public void AHeaderDeclaredOverAnEmptyExtent_IsALoudFailure()
     {
       var failure = Assert.Throws<ProjectionException>(() =>
-        TableRows().Map(Mixed(new object?[,] { { null, null }, { null, null } })));
+        Table().Map(Mixed(new object?[,] { { null, null }, { null, null } })));
 
       Assert.Contains("a header row was declared but the table's extent is empty", failure.Message);
     }
@@ -152,7 +152,7 @@ namespace Unrect.Tests.Projections
         { "not part of the table", null },
       });
 
-      var applied = TableRows().Apply(space);
+      var applied = Table().Apply(space);
 
       Assert.Single(applied.Value);
       Assert.Equal("Acme", applied.Value[0]["Investor Name"].GetString());
@@ -163,7 +163,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AHeaderWithNoBodyYieldsNoRows()
     {
-      Assert.Empty(TableRows().Map(Mixed(new object?[,] { { "Investor Name", "Amount" } })));
+      Assert.Empty(Table().Map(Mixed(new object?[,] { { "Investor Name", "Amount" } })));
     }
   }
 }

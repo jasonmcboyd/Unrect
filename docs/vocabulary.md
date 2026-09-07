@@ -6,8 +6,9 @@ two raw lifts noted under Placement (`OffsetStrategies.To`/`Past`), which are an
 by design and spelled like one. For semantics in depth, each group cites its governing spec
 in `docs/design/`.
 
-Current as of 2026-09-06 (post the projection rename: the layer is `Unrect.Projections`, the
-static vocabulary class is `Projection`, and "shape" now means only the geometry of a space).
+Current as of 2026-09-09 (post the projection rename: the layer is `Unrect.Projections`, the
+static vocabulary class is `Projection`, and "shape" now means only the geometry of a space;
+post phase 5: the table ladder is one `Table` family and `TableRows*` is gone).
 When this file and a spec disagree, the spec is wrong or this file is stale — fix whichever it
 is; do not let them drift silently.
 
@@ -26,16 +27,34 @@ is; do not let them drift silently.
 
 ## Tables — the ladder of commitment
 
-| Operator | Yields | Notes |
-|---|---|---|
-| `TableRows()` | rows as caption-keyed dictionaries of `CellValue` | Exploratory: keys discovered from the file, looked up under the binding comparer; duplicate captions are a loud failure |
-| `TableRows<T>()` / `TableRows<T>(bind => ...)` | `IReadOnlyList<T>` | Typed: captions bound to properties by `CaptionComparer` (case- and whitespace-insensitive), kinds inferred from property types (the closed set: `string`, `decimal`, `double`, `int`, `DateTime`, `bool`, their `Nullable<>` forms, and `CellValue`), `Nullable<>` AND an annotated `string?` both mean per-column blank tolerance, strict by default with `bind.Ignore(t => t.X)`; overrides `bind.Column(t => t.X, "caption")` |
-| `Table(headerRows:, eachRow:)` | `IReadOnlyList<T>` | The row slot: every body row is handed to a PROJECTION as its own one-row extent, so the row is inspectable, reusable, and says in its own type what it demands (a row reading `Formula()` makes the table demanding). `HorizontalFlow` of leaves for adjacent columns, `Overlay` + `.Right(n)` + `.OrBlank()` for sparse ones. A failure inside a record reads `Table[3] -> 'eachRow' -> …`, counting records from zero as a repeat does. A header is consumed, not read — binding captions to a row projection is the bind, not yet built |
-| `TableRows(r => ...)` | `IReadOnlyList<T>` (`T` per row) | Full control: hand-written per-row projection with `r["Caption"]` / `r[i]` |
-| `Table(t => ...)` | `T` for the whole table | Full control: one hand-written projection over the `TableView`, for tables that don't decompose row-by-row |
+One name, five rungs — the whole family is `Table`, and what changes from rung to rung is
+how much of the record is declared and how much is written out.
 
-Graduate up the ladder as a table's shape firms: dictionary first to sight-read an
-unfamiliar workbook, typed once you commit, lambda only when a column needs logic.
+| Rung | Operator | Yields | Notes |
+|---|---|---|---|
+| 1 | `Table<T>()` | `IReadOnlyList<T>` | Typed: captions bound to properties by `CaptionComparer` (case- and whitespace-insensitive), kinds inferred from property types (the closed set: `string`, `decimal`, `double`, `int`, `DateTime`, `bool`, their `Nullable<>` forms, and `CellValue`), `Nullable<>` AND an annotated `string?` both mean per-column blank tolerance, strict one way (every member must find a column; an unclaimed column is fine) |
+| 2 | `Table<T>(bind => ...)` | `IReadOnlyList<T>` | The same, adjusted: `bind.Column(t => t.X, "caption")` for a caption the comparer would not find, `bind.Ignore(t => t.X)` for a member this table does not carry |
+| 3 | `Table(headerRows: 1, eachRow: captions => ...)` | `IReadOnlyList<T>` | **The bind**: the header is read, and the captions it carries are handed to a lambda that returns the projection for one record — `Overlay(o => new Row(o.Next(Decimal().Right(captions["Amount"]))))`. The bind runs ONCE PER `Map` (after the header, before any row) and builds a description; the description is applied per row by the engine. Caption positions are absolute, so a reordered export needs no change. A missing or duplicated caption is a loud failure naming the header cells |
+| 4 | `Table(headerRows:, eachRow:)` | `IReadOnlyList<T>` | The row slot: every body row is handed to a PROJECTION as its own one-row extent, so the row is inspectable, reusable, and says in its own type what it demands (a row reading `Formula()` makes the table demanding). `HorizontalFlow` of leaves for adjacent columns, `Overlay` + `.Right(n)` + `.OrBlank()` for sparse ones. A failure inside a record reads `Table[3] -> 'eachRow' -> …`, counting records from zero as a repeat does. A header here is consumed, not read — reading it is rung 3 |
+| — | `Table()` | rows as caption-keyed dictionaries of `CellValue` | Exploratory: keys discovered from the file, looked up under the binding comparer; a column with no caption and two captions that collide are both loud failures |
+| 5 | `Table(r => ...)` / `Table(headerRows, r => ...)` | `IReadOnlyList<T>` (`T` per row) | Full control: hand-written per-row reading with `r["Caption"]` / `r[i]` |
+| 5 | `Table(t => ...)` / `Table(headerRows, t => ...)` | `T` for the whole table | Full control: one hand-written reading over the `TableView`, for tables that don't decompose row-by-row |
+
+Graduate up the ladder as a table's shape firms: `Table()` first to sight-read an
+unfamiliar workbook, `Table<T>()` once you commit, the bind when the columns are this
+file's rather than the format's, and a lambda only when a column needs logic — everything
+inside one is invisible to typing, tooling and inversion alike.
+
+Two notes the overloads earn:
+
+- **A record projection that discovers its own extent measures itself, not the band.**
+  `Row(cells => ...)` as an `eachRow` is "as wide as the leading columns that carry
+  values", which over a sparse export is width 0. `Range(WholeExtent(), ...)`, or an
+  `Overlay` whose children place themselves, reads the band as it was handed over.
+- **A lambda that touches nothing distinctive is ambiguous between the rung-5 pair**
+  (`Table(x => 0)`, `Table(x => x.Location.A1)` — `TableRow` and `TableView` both have a
+  `Location`). The compiler names both candidates; say which by typing the parameter:
+  `Table((TableRow r) => 0)`.
 
 ## Layout composites — the geometry claims
 
@@ -144,8 +163,8 @@ Three matching rules exist in the library and deliberately never unify
 also `TableView`/`TableRow`'s by-caption row access — `row["Caption"]` resolves trimmed
 and case-insensitively, the same rule, so it has consumers beyond matchers and `Caption`
 — literal ↔ cell text), **`LabelEquals`** (`Field` only — content rule plus a trailing
-colon-run ignored), and **`CaptionComparer`** (typed `TableRows<T>` binding and the
-`TableRows()` dictionary's keys — case- and whitespace-insensitive, bridging caption ↔
+colon-run ignored), and **`CaptionComparer`** (typed `Table<T>` binding, the `CaptionMap`
+a bind is handed, and the `Table()` dictionary's keys — case- and whitespace-insensitive, bridging caption ↔
 identifier). Each bridges a different pair of vocabularies; a declaration must never
 start in one and end in another.
 
@@ -238,7 +257,9 @@ say so by absence; asking a `.xls` for them throws rather than answering null.
   `VerticalRepeat(x, ...)`'s item, and at `.Else(x)`'s fallback — never at `Map`, which is
   the declaration/infrastructure seam); otherwise `Description#ordinal`. Hoist projections
   into well-named locals and let the use site name them; a helper must not name what it
-  returns.
+  returns. A bound row is named the same way and by the same capture, which is one more
+  reason to hoist it: `Table(1, AllocationRow)` labels every record `'AllocationRow'`, while
+  an inline `captions => Overlay(…)` has no identifier to borrow and renders as `Overlay`.
 - **Transparency.** Unnamed wrappers (`Select`, `Padded`, `Until`, boundaries)
   contribute no path segment; naming a wrapper makes it opaque and it claims the segment.
 - **Replace vs compose.** Anchors (`.On`, `.Below`, `.RightOf`), `.OffsetBy` and extent

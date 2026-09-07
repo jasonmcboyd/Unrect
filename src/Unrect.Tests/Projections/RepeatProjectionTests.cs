@@ -230,7 +230,7 @@ namespace Unrect.Tests.Projections
       var item = VerticalFlow(v =>
       {
         var code = v.Next(Cell(c => c.GetString()).Named("code"));
-        v.Next(TableRows(r => r["Amount"].GetInt()).Named("rows"));
+        v.Next(Table(r => r["Amount"].GetInt()).Named("rows"));
         return code;
       });
 
@@ -501,7 +501,7 @@ namespace Unrect.Tests.Projections
 
       var block = VerticalFlow(v => (
         Code: v.Next(Cell(c => c.GetString()).Named("code")),
-        Amounts: v.Next(TableRows(r => r["Amount"].GetInt()).Named("amounts"))))
+        Amounts: v.Next(Table(r => r["Amount"].GetInt()).Named("amounts"))))
         .Named("block");
 
       var blocks = VerticalRepeat(block, separatedBy: BlankRows()).Map(space);

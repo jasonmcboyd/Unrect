@@ -253,11 +253,11 @@ namespace Unrect.Tests.Projections
     [InlineData(1)]
     public void TheRowWalkAndTheRecordWalkVisitTheSameBands(int headerRows)
     {
-      // TableRows is written over the same band walk the slot form uses, so the two readings of a
+      // Table is written over the same band walk the slot form uses, so the two readings of a
       // body are one walk asked about twice. Compared over a sheet rather than by construction,
       // because what would go wrong is a band offset drifting by a row — and that is invisible in
       // the shape of the code and obvious in the values.
-      var viaRows = TableRows(headerRows, row => $"{row.Index}:{row[0].TryGetString() ?? "-"}").Map(Allocations());
+      var viaRows = Table(headerRows, row => $"{row.Index}:{row[0].TryGetString() ?? "-"}").Map(Allocations());
       var viaRecords = Table(headerRows, eachRow: Row(cells => cells[0].TryGetString() ?? "-")).Map(Allocations());
 
       Assert.Equal(viaRows.Count, viaRecords.Count);

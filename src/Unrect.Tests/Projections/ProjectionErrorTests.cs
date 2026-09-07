@@ -214,7 +214,7 @@ namespace Unrect.Tests.Projections
       var space = Mixed(new object?[,] { { "Investor" }, { "Acme" } });
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v => $"{string.Join(",", v.Next(TableRows(r => r["Amount"].GetInt())))}|{v.Next(IntCell())}").Map(space));
+        VerticalFlow(v => $"{string.Join(",", v.Next(Table(r => r["Amount"].GetInt())))}|{v.Next(IntCell())}").Map(space));
 
       Assert.Null(failure.InnerException);
       Assert.Equal(1, Occurrences(failure.Message, "  in "));

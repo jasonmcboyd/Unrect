@@ -154,21 +154,21 @@ namespace Unrect.Tests.Streaming
     // --- The flagship declaration ---------------------------------------------------------------------
     //
     // investor-irr.xlsx read by the projection the example tests use: a VerticalFlow of a Column, a
-    // TableRows and two Repeats under captions, one of them Until-bounded. It reaches backwards
+    // Table and two Repeats under captions, one of them Until-bounded. It reaches backwards
     // (the second series anchors on the caption that bounded the first), it makes several passes,
     // and it consumes the whole sheet — which is to say it exercises the pool, the window and the
     // diagnostics in one declaration. If streaming can read this, it can read a report.
 
     private static IProjection<(string Title, IReadOnlyList<string> Summary, IReadOnlyList<IReadOnlyList<string>> ByTransferDate, IReadOnlyList<IReadOnlyList<string>> ByInception)> InvestorIrr()
     {
-      var investorBlock = TableRows(row => row["Investor Name"].GetString()).Named("investor block");
+      var investorBlock = Table(row => row["Investor Name"].GetString()).Named("investor block");
       var series = VerticalRepeat(investorBlock, separatedBy: BlankRows());
 
       const string Inception = "Cash Flows using inception date";
 
       return VerticalFlow(v => (
         Title: v.Next(Column(4, column => column[0].GetString()).Named("report header")),
-        Summary: v.Next(TableRows(row => row["Investors"].GetString()).Named("summary")),
+        Summary: v.Next(Table(row => row["Investors"].GetString()).Named("summary")),
         ByTransferDate: v.Next(series
           .Under(Caption("IRR Details"), Caption("Cash Flows Using Transfer Date"))
           .Until(RowContaining(Inception))),
@@ -253,7 +253,7 @@ namespace Unrect.Tests.Streaming
       var declaration = VerticalRepeat(
         VerticalFlow(v => (
           Deal: v.Next(Cell(cell => cell.GetString())),
-          Rows: v.Next(TableRows(row => row["Name"].GetString())))),
+          Rows: v.Next(Table(row => row["Name"].GetString())))),
         separatedBy: BlankRows());
 
       var eager = declaration.Map(SpreadsheetSpace.Create(Path("investors-by-deal.xlsx"), "Investors"));
@@ -272,7 +272,7 @@ namespace Unrect.Tests.Streaming
     {
       var declaration = VerticalFlow(v => (
         Header: v.Next(Column(4, column => column[0].GetString())),
-        Rows: v.Next(TableRows(row => (row["Client"].GetString(), row["Amount"].GetDecimal())))));
+        Rows: v.Next(Table(row => (row["Client"].GetString(), row["Amount"].GetDecimal())))));
 
       var eager = declaration.Map(SpreadsheetSpace.Create(Path("simple-report.xlsx"), "Report"));
 

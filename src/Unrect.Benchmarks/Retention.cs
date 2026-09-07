@@ -71,7 +71,7 @@ namespace Unrect.Benchmarks
 
     private const string Unit = "bytes";
 
-    private static readonly IProjection<IReadOnlyList<LedgerRow>> Ledger = TableRows<LedgerRow>();
+    private static readonly IProjection<IReadOnlyList<LedgerRow>> Ledger = Table<LedgerRow>();
 
     /// <summary>
     /// The scenarios, in the order a reader should meet them: what the grid costs, what the same
@@ -89,10 +89,10 @@ namespace Unrect.Benchmarks
       ("Eager_SpaceHeld_Shared", false, "CONTROL/TARGET — the same values shared-string encoded, which the reader already dedups",
         rows => RetentionSpaces.EagerSpace(unique: false, sharedStrings: true, rows)),
 
-      ("Eager_ResultHeld", false, "TableRows over the eager grid; result held, grid released",
+      ("Eager_ResultHeld", false, "Table over the eager grid; result held, grid released",
         rows => EagerResult(unique: false, rows)),
 
-      ("Streaming_ResultHeld", false, "TableRows through a window; result held, workbook closed",
+      ("Streaming_ResultHeld", false, "Table through a window; result held, workbook closed",
         rows => StreamingResult(unique: false, rows)),
 
       ("Streaming_ResultHeld_Unique", true, "CONTROL — the same projection, every text distinct",

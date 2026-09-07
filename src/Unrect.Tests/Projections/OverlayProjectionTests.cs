@@ -229,7 +229,7 @@ namespace Unrect.Tests.Projections
 
       var entity = Cell(v => v.GetString());
       var year = Cell(v => v.GetString()).Right(3);
-      var items = TableRows(r => r["Amount"].GetInt());
+      var items = Table(r => r["Amount"].GetInt());
 
       var projection = VerticalFlow(v =>
         $"{v.Next(Overlay(o => $"{o.Next(entity)}/{o.Next(year)}"))}|{string.Join(",", v.Next(items))}");

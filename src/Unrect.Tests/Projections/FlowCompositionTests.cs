@@ -142,7 +142,7 @@ namespace Unrect.Tests.Projections
       });
 
       AssertReads(
-        VerticalFlow(v => $"{v.Next(Cell(c => c.GetString()))}|{string.Join(",", v.Next(TableRows(r => r["Amount"].GetInt())))}"),
+        VerticalFlow(v => $"{v.Next(Cell(c => c.GetString()))}|{string.Join(",", v.Next(Table(r => r["Amount"].GetInt())))}"),
         space,
         "Report|1,2",
         2,

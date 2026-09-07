@@ -12,7 +12,7 @@ namespace Unrect.Projections
   /// over.
   /// <para>
   /// Only the factories that <em>take</em> projections appear here. A leaf demands nothing, so
-  /// <c>Text()</c>, <c>Range</c>, <c>TableRows&lt;T&gt;()</c> and the rest are unchanged and run
+  /// <c>Text()</c>, <c>Range</c>, <c>Table&lt;T&gt;()</c> and the rest are unchanged and run
   /// everywhere by variance; and a modifier is written once and hands its receiver's own type back,
   /// so none of those appear here either.
   /// </para>
@@ -82,6 +82,21 @@ namespace Unrect.Projections
       where TSpace : class, ISpace
       => Table(headerRows, ProjectionExtensions.Plain(eachRow), declared);
 
+    /// <inheritdoc cref="Table{T}(int, Func{CaptionMap, IProjection{T}}, string)"/>
+    /// <typeparam name="TSpace">The space the bound row is declared over, and therefore the table.</typeparam>
+    /// <typeparam name="T">What one record reads.</typeparam>
+    /// <param name="headerRows">How many rows to read as the header; a bind needs 1.</param>
+    /// <param name="eachRow">Given this file's captions, the projection that reads one record.</param>
+    /// <param name="declared">Supplied by the compiler as the text of the <paramref name="eachRow"/> argument.</param>
+    public static IProjection<TSpace, IReadOnlyList<T>> Table<TSpace, T>(
+      int headerRows,
+      Func<CaptionMap, IProjection<TSpace, T>> eachRow,
+      [CallerArgumentExpression("eachRow")] string? declared = null)
+      where TSpace : class, ISpace
+      => eachRow is null
+        ? throw new ArgumentNullException(nameof(eachRow))
+        : Table(headerRows, Adapt(eachRow), declared);
+
     /// <inheritdoc cref="VerticalRepeat{T}"/>
     /// <typeparam name="TSpace">The space the item is declared over, and therefore the repeat.</typeparam>
     /// <typeparam name="T">What one occurrence reads.</typeparam>
@@ -148,6 +163,20 @@ namespace Unrect.Projections
     private static Layout<T> Adapt<TSpace, T>(Layout<TSpace, T> build)
       where TSpace : class, ISpace
       => cursor => build(new LayoutCursor<TSpace>(cursor.State));
+
+    /// <summary>
+    /// The demanding bind as a plain one: the demand lives in the static type, so forgetting it
+    /// here is the identity. A bind that returns null is passed through rather than reported here,
+    /// because that is the plain form's failure to report and one message beats two.
+    /// </summary>
+    private static Func<CaptionMap, IProjection<T>> Adapt<TSpace, T>(Func<CaptionMap, IProjection<TSpace, T>> eachRow)
+      where TSpace : class, ISpace
+      => captions =>
+      {
+        var row = eachRow(captions);
+
+        return row is null ? null! : ProjectionExtensions.Plain(row);
+      };
 
     private static Layout<TSpace, T> NotNull<TSpace, T>(Layout<TSpace, T> build, string parameter)
       where TSpace : class, ISpace

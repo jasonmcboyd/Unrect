@@ -140,7 +140,7 @@ namespace Unrect.Tests.Projections
 
     // --- TableView and TableRow -----------------------------------------------------------------------------
 
-    private static ISpace Table() => Mixed(new object?[,]
+    private static ISpace Sheet() => Mixed(new object?[,]
     {
       { null, null },
       { "Name", "Amount" },
@@ -152,40 +152,40 @@ namespace Unrect.Tests.Projections
     public void ATableKnowsWhereItStartsHeaderIncluded()
     {
       // The blank row above is skipped by the table's default offset, so the table starts at A2.
-      Assert.Equal("A2", Projection.Table(t => t.Location.A1).Map(Table()));
+      Assert.Equal("A2", Projection.Table((TableView t) => t.Location.A1).Map(Sheet()));
     }
 
     [Fact]
     public void ATableRowKnowsWhereItStarts()
     {
-      Assert.Equal(new[] { "A3", "A4" }, TableRows(r => r.Location.A1).Map(Table()));
+      Assert.Equal(new[] { "A3", "A4" }, Table((TableRow r) => r.Location.A1).Map(Sheet()));
     }
 
     [Fact]
     public void ATableRowAddressesItsCellsByIndex()
     {
-      Assert.Equal(new[] { "B3", "B4" }, TableRows(r => r.AddressOf(1).A1).Map(Table()));
+      Assert.Equal(new[] { "B3", "B4" }, Table(r => r.AddressOf(1).A1).Map(Sheet()));
     }
 
     [Fact]
     public void ATableRowAddressesItsCellsByColumnName()
     {
       // The point of the whole feature: "the Amount in row 2 is wrong" can name B4.
-      Assert.Equal(new[] { "B3", "B4" }, TableRows(r => r.AddressOf("Amount").A1).Map(Table()));
-      Assert.Equal(new[] { "B3", "B4" }, TableRows(r => r.AddressOf("  amount  ").A1).Map(Table()));
+      Assert.Equal(new[] { "B3", "B4" }, Table(r => r.AddressOf("Amount").A1).Map(Sheet()));
+      Assert.Equal(new[] { "B3", "B4" }, Table(r => r.AddressOf("  amount  ").A1).Map(Sheet()));
     }
 
     [Fact]
     public void AddressOfName_FollowsTheIndexersResolutionRules()
     {
-      var unknown = Assert.Throws<ProjectionException>(() => TableRows(r => r.AddressOf("Net").A1).Map(Table()));
+      var unknown = Assert.Throws<ProjectionException>(() => Table(r => r.AddressOf("Net").A1).Map(Sheet()));
       Assert.Contains("there is no column named 'Net'; available columns: 'Name', 'Amount'.", unknown.Message);
 
-      var headerless = Assert.Throws<ProjectionException>(() => TableRows(0, r => r.AddressOf("Name").A1).Map(Table()));
+      var headerless = Assert.Throws<ProjectionException>(() => Table(0, r => r.AddressOf("Name").A1).Map(Sheet()));
       Assert.Contains("the table was declared without a header row; use column indices.", headerless.Message);
 
       var ambiguous = Assert.Throws<ProjectionException>(() =>
-        TableRows(r => r.AddressOf("Amount").A1).Map(Mixed(new object?[,]
+        Table(r => r.AddressOf("Amount").A1).Map(Mixed(new object?[,]
         {
           { "Amount", "Amount" },
           { 1, 2 },
@@ -196,7 +196,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AddressOfIndex_FollowsTheIndexersRangeRules()
     {
-      var failure = Assert.Throws<ProjectionException>(() => TableRows(r => r.AddressOf(4).A1).Map(Table()));
+      var failure = Assert.Throws<ProjectionException>(() => Table(r => r.AddressOf(4).A1).Map(Sheet()));
 
       Assert.Contains("column index 4 is out of range; the table has 2 columns.", failure.Message);
     }
@@ -205,7 +205,7 @@ namespace Unrect.Tests.Projections
     public void ATablesAddressesAreAbsoluteWhenItIsNested()
     {
       var caption = Range(2, 1, b => b.Location.A1);
-      var amounts = TableRows(r => r.AddressOf("Amount").A1);
+      var amounts = Table(r => r.AddressOf("Amount").A1);
 
       var address = VerticalFlow(v => $"{v.Next(caption)}|{string.Join(",", v.Next(amounts))}").Map(Mixed(new object?[,]
       {

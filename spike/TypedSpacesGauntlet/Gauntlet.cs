@@ -14,9 +14,9 @@ namespace TypedSpacesGauntlet
   /// <summary>
   /// SPIKE. The seven scenarios of `docs/design/typed-spaces-experiment.md` §6, written the way a
   /// user would write them, and one scenario per phase of `projection-model-spec.md` since: 8 is
-  /// phase 1's one-modifier-two-demands question, 9 is phase 4's row-projection slot and the
-  /// four-scenario matrix of its §6. Every explicit type argument in this file is part of the
-  /// annotation tax and is marked TAX.
+  /// phase 1's one-modifier-two-demands question, 9 is phase 4's row-projection slot and cells 3-4
+  /// of the four-scenario matrix of its §6, 10 is phase 5's bind and cells 1-2. Every explicit type
+  /// argument in this file is part of the annotation tax and is marked TAX.
   /// </summary>
   public static class Gauntlet
   {
@@ -25,11 +25,11 @@ namespace TypedSpacesGauntlet
     // =============================================================================================
     //
     // Verbatim today's vocabulary. The only type arguments are the ones the vocabulary has always
-    // had (TableRows<Allocation>), and nothing here knows the word "space".
+    // had (Table<Allocation>), and nothing here knows the word "space".
     public static Report PlainParser(ISpace sheet)
     {
       var title = Text();
-      var rows = TableRows<Allocation>();
+      var rows = Table<Allocation>();
 
       var report = VerticalFlow(v => new Report(
         Title: v.Next(title),
@@ -43,7 +43,7 @@ namespace TypedSpacesGauntlet
     public static Report PlainParserOverFormulaSheet(FormulaGridSpace sheet)
     {
       var title = Text();
-      var rows = TableRows<Allocation>();
+      var rows = Table<Allocation>();
 
       var report = VerticalFlow(v => new Report(v.Next(title), v.Next(rows)));
 
@@ -60,7 +60,7 @@ namespace TypedSpacesGauntlet
     // is blind here: a lambda's body is not part of its type.
     public static IReadOnlyList<SourcedAllocation> ProjectionUnchecked(ISpace sheet)
     {
-      var rows = TableRows(row => new SourcedAllocation(
+      var rows = Table(row => new SourcedAllocation(
           Account: row["Account"].GetString(),
           Formula: row.FormulaAt(2)))
         .On(RowContaining("Account"));
@@ -74,7 +74,7 @@ namespace TypedSpacesGauntlet
     // downstream but never verifies upstream.
     public static IReadOnlyList<SourcedAllocation> ProjectionAscribed(FormulaGridSpace sheet)
     {
-      var rows = TableRows(row => new SourcedAllocation(row["Account"].GetString(), row.FormulaAt(2)))
+      var rows = Table(row => new SourcedAllocation(row["Account"].GetString(), row.FormulaAt(2)))
         .On(RowContaining("Account"))
         .Demanding(Formulas);                                     // TAX-free spelling (witness)
 
@@ -86,7 +86,7 @@ namespace TypedSpacesGauntlet
     // 2c: the ascription without a witness, for comparison. Both type arguments must be written,
     // including the result type, because C# has no partial type-argument inference.
     public static IProjection<IFormulaSpace, IReadOnlyList<SourcedAllocation>> ProjectionAscribedByTypeArgs()
-      => TableRows(row => new SourcedAllocation(row["Account"].GetString(), row.FormulaAt(2)))
+      => Table(row => new SourcedAllocation(row["Account"].GetString(), row.FormulaAt(2)))
         .On(RowContaining("Account"))
         .Demanding<IFormulaSpace, IReadOnlyList<SourcedAllocation>>();   // TAX x2
 
@@ -128,7 +128,7 @@ namespace TypedSpacesGauntlet
     public static AuditedReport MixedComposite(FormulaGridSpace sheet)
     {
       var title = Text();
-      var rows = TableRows<Allocation>();
+      var rows = Table<Allocation>();
       var totalFormula = Formula().On(RowContaining("Total")).Right(2);
 
       var report = VerticalFlow(Formulas, v => new AuditedReport(
@@ -397,6 +397,97 @@ namespace TypedSpacesGauntlet
       return $"{records.Count} records; high-water row {watched.HighWaterMark}; deepest backward reach {watched.BackwardReach} rows";
     }
 
+    // =============================================================================================
+    // Scenario 10 — the bind, §6's matrix cells 1 and 2. (Added 2026-09-09, phase 5.)
+    // =============================================================================================
+    //
+    // Matrix cell 1 — HEADERS + DENSE, and cell 2 — HEADERS + INCOMPLETE, which are one declaration:
+    // an Overlay whose children say which column they are, addressed by CAPTION rather than by
+    // count, with OrBlank on the field an export may omit. Caption positions are absolute, so the
+    // same declaration reads a file whose columns have been reordered — which is the whole point of
+    // binding to captions rather than to positions, and is asserted below by running this over two
+    // sheets whose column orders differ.
+    //
+    // The bind runs once per Map, after the header is read and before any body row; what it returns
+    // is an ordinary projection, applied to every row by the engine.
+    public static IReadOnlyList<PartialAllocation> BoundRows(ISpace sheet)
+    {
+      var table = Table(headerRows: 1, eachRow: captions => Overlay(o => new PartialAllocation(
+        Account: o.Next(Text().Right(captions["Account"])),
+        Symbol: o.Next(Text().OrBlank().Right(captions["Symbol"])),
+        Weight: o.Next(Decimal().Right(captions["Weight"])))))
+        .On(RowContaining("Account"));
+
+      return table.Map(sheet);
+    }
+
+    // The demanding variant: a Formula() inside a bound row makes the TABLE demand formulas, with
+    // nothing annotated. This is the typing-is-intact claim made real — a lambda RETURNING a
+    // projection exposes its demands in its return type, which is what a value-consuming lambda
+    // (scenario 2a) could never do.
+    public static IProjection<IFormulaSpace, IReadOnlyList<SourcedAllocation>> BoundSourcedRecords()
+      => Table(headerRows: 1, eachRow: captions => Overlay(Formulas, o => new SourcedAllocation(
+        Account: o.Next(Text().Right(captions["Account"])),
+        Formula: o.Next(Formula().Right(captions["Weight"])))))
+        .On(RowContaining("Account"));
+
+    // A hoisted bound row is a FACTORY, with its dependence on the captions in its signature — and
+    // passing the method group is also what names it: every record renders as 'AllocationRow'.
+    private static IProjection<Allocation> AllocationRow(CaptionMap captions)
+      => Overlay(o => new Allocation(
+        Account: o.Next(Text().Right(captions["Account"])),
+        Symbol: o.Next(Text().Right(captions["Symbol"])),
+        Weight: o.Next(Decimal().Right(captions["Weight"]))));
+
+    public static IReadOnlyList<Allocation> BoundByAHoistedFactory(ISpace sheet)
+      => Table(headerRows: 1, eachRow: AllocationRow).On(RowContaining("Account")).Map(sheet);
+
+    /// <summary>A caption the file does not carry fails through the map, listing the ones it does.</summary>
+    public static string ACaptionTheFileDoesNotCarry()
+    {
+      try
+      {
+        _ = Table(headerRows: 1, eachRow: captions => Text().Right(captions["Ticker"]))
+          .On(RowContaining("Account"))
+          .Map(Sheets.Plain());
+
+        return "NO FAILURE (bad)";
+      }
+      catch (ProjectionException failure)
+      {
+        return $"{failure.Path} @ {failure.Location.A1} : {First(failure.Message)}";
+      }
+    }
+
+    /// <summary>And a bind with no header to read is a declaration error, raised where it is written.</summary>
+    public static string ABindWithNoHeader()
+    {
+      try
+      {
+        _ = Table(headerRows: 0, eachRow: captions => Text().Right(captions["Account"]));
+
+        return "NO FAILURE (bad)";
+      }
+      catch (ArgumentOutOfRangeException problem)
+      {
+        return Head(First(problem.Message));
+      }
+    }
+
+    // The friend demo: the whole ladder's top rung inside an ordinary flow. Nothing about the table
+    // is written down — the captions are the record's own member names, and the kinds are its
+    // members' own types.
+    public static InvestorBlock TypedTableInAFlow(ISpace sheet)
+    {
+      var cashFlows = Table<CashFlow>();
+
+      var investor = VerticalFlow(v => new InvestorBlock(
+        Name: v.Next(Text()),
+        CashFlows: v.Next(cashFlows)));
+
+      return investor.Map(sheet);
+    }
+
     public static void Run()
     {
       var formulaSheet = Sheets.WithFormulas();
@@ -426,6 +517,16 @@ namespace TypedSpacesGauntlet
       Show("9  OrBlank vs a wrong kind       ", OrBlankStillFailsOnKind());
       Show("9  OrBlank vs a non-leaf         ", OrBlankIsForLeaves());
       Show("9  forward-only walk             ", SparseRowsAreReadForwardOnly());
+      Show("10 bound rows (captions)         ", JoinAll(BoundRows(plainSheet)));
+      Show("10 ... same bind, columns moved  ", JoinAll(BoundRows(Sheets.Reordered())));
+      Show("10 a bound row's demand          ", DeclaredType(BoundSourcedRecords()));
+      Show("10 ... and it reads the formulas ", Join(BoundSourcedRecords().Map(formulaSheet)));
+      Show("10 hoisted bind, method group    ", JoinAll(BoundByAHoistedFactory(plainSheet)));
+      Show("10 a caption the file lacks      ", ACaptionTheFileDoesNotCarry());
+      Show("10 a bind with no header         ", ABindWithNoHeader());
+      var investor = TypedTableInAFlow(Sheets.Investor());
+
+      Show("10 typed table inside a flow     ", $"{investor.Name}: {JoinAll(investor.CashFlows)}");
 
       // The runtime-fault design, priced: what the typed layer makes unreachable.
       try

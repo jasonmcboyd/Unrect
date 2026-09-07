@@ -87,7 +87,7 @@ namespace Unrect.Tests.Projections
 
       var space = Mixed(new object?[,] { { "Amount", "   " }, { 1, 2 } });
 
-      Assert.Throws<ProjectionException>(() => TableRows().Map(space));
+      Assert.Throws<ProjectionException>(() => Table().Map(space));
     }
 
     [Fact]

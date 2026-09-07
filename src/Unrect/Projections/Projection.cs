@@ -143,21 +143,123 @@ namespace Unrect.Projections
         NotEmpty(text, nameof(text)),
         new Placement(OffsetStrategies.To(RowLandmarks.RowContaining(text)), FullRow()));
 
-    // --- Tables -------------------------------------------------------------------------------
+    // --- Tables — one mechanism at five degrees of declaredness ---------------------------------
+    //
+    // Every rung below is the same table: a header consumed, then body bands, each read as one
+    // record. What changes is how much of the reading is declared and how much is written out —
+    // reflection writes the row (1), you adjust what it writes (2), you write the row against this
+    // file's captions (3) or against fixed positions (4), or you take the cells and do it yourself
+    // (5). Graduate up as a table's shape firms, and reach for rung 1 first.
 
     /// <summary>
-    /// A table with one header row: past any blank rows, then rows and columns while they carry
-    /// values. Column names come from the header, so rows can be read by name as well as by index.
+    /// Every body row as a <typeparamref name="T"/>, with each member filled from the column whose
+    /// caption matches its name and read as the member's own type declares.
+    /// <para>
+    /// Captions bind to members by <see cref="CaptionComparer"/> — case and whitespace are ignored,
+    /// so <c>"Contribution ITD"</c> fills <c>ContributionItd</c> with nothing declared. The
+    /// member's type chooses the kind to assert and the accessor to use, from the same closed set
+    /// the typed leaves cover: <c>string</c>, <c>decimal</c>, <c>double</c>, <c>int</c>,
+    /// <c>DateTime</c>, <c>bool</c>, <c>CellValue</c>, and the nullable forms. A nullable member
+    /// tolerates a <em>blank</em> cell and still fails on the wrong kind — tolerating a blank says
+    /// something about the data, tolerating a kind would say something about the format, and no
+    /// real format has that.
+    /// </para>
+    /// <para>
+    /// <typeparamref name="T"/> is built through its single parameterized constructor when it has
+    /// one and no parameterless constructor (the positional-record case), otherwise through a
+    /// parameterless constructor and its settable properties. Everything reflective is resolved
+    /// once, when the projection is built; a bad type is an error at that point, not per file.
+    /// </para>
+    /// <para>
+    /// Binding is strict in one direction: every member must find a column, and one that does not
+    /// is a loud failure listing the table's captions. A column no member claims is fine — real
+    /// reports carry columns a consumer does not want.
+    /// </para>
     /// </summary>
-    public static IProjection<T> Table<T>(Func<TableView, T> project) => Table(1, project);
+    public static IProjection<IReadOnlyList<T>> Table<T>() => TypedRows<T>(null);
 
     /// <summary>
-    /// A table with <paramref name="headerRows"/> header rows, which must be 0 or 1 — multi-row
-    /// headers are not supported in this release. With 0, every row is a body row and columns can
-    /// only be read by index.
+    /// <see cref="Table{T}()"/> with per-member declarations: <c>Column</c> for a caption the
+    /// comparer would not have found, <c>Ignore</c> for a member this table does not carry.
+    /// <code>
+    /// Table&lt;Transaction&gt;(bind =&gt; bind
+    ///   .Column(t =&gt; t.Date, "Transaction Date")
+    ///   .Column(t =&gt; t.Type, "Transaction Type"))
+    /// </code>
     /// </summary>
-    public static IProjection<T> Table<T>(int headerRows, Func<TableView, T> project)
-      => new TableProjection<T>(ValidateHeaderRows(headerRows), project, TablePlacement(), "Table");
+    public static IProjection<IReadOnlyList<T>> Table<T>(Func<TableBinding<T>, TableBinding<T>> bind)
+      => TypedRows((bind ?? throw new ArgumentNullException(nameof(bind)))(new TableBinding<T>())
+        ?? throw new ArgumentException("The binding lambda returned null.", nameof(bind)));
+
+    /// <summary>
+    /// A table whose record projection is written against <em>this file's</em> captions:
+    /// <paramref name="headerRows"/> rows are read as the header, the captions they carry are
+    /// handed to <paramref name="eachRow"/>, and the projection it returns is applied to every body
+    /// row.
+    /// <code>
+    /// Table(headerRows: 1, eachRow: captions =&gt; Overlay(o =&gt; new Allocation(
+    ///   Account: o.Next(Text().Right(captions["Account"])),
+    ///   Weight:  o.Next(Decimal().OrBlank().Right(captions["Weight"])))))
+    /// </code>
+    /// <para>
+    /// Two arrows, two moments. The bind runs <em>once per application of the table</em> — a table
+    /// inside a repeat binds once per occurrence, each with its own header — after the header is
+    /// read and before any body row — and builds a description; that description is then applied to
+    /// each row by the engine, exactly as a row handed to
+    /// <see cref="Table{T}(int, IProjection{T}, string)"/> is. Captions locate columns once and
+    /// rows then read positionally, which is how the machine has always worked; the bind is what
+    /// makes those two phases visible.
+    /// </para>
+    /// <para>
+    /// An <c>Overlay</c> is the layout this rung is written with, because a caption's position is
+    /// absolute: an overlay hands every child the whole row and each one says which column it is,
+    /// so a file that reorders its columns changes nothing but the numbers the map hands back.
+    /// </para>
+    /// <para>
+    /// A caption the file does not carry, or carries twice, fails through the map and names the
+    /// header cells involved (see <see cref="CaptionMap"/>). A bind that reaches a value to decide
+    /// what to declare — <c>captions.Has("Fee") ? a : b</c> — is expressible because the API cannot
+    /// prevent it, discouraged, and nothing here is added to encourage it.
+    /// </para>
+    /// <para>
+    /// A hoisted bind is a factory rather than a value —
+    /// <c>static IProjection&lt;T&gt; AllocationRow(CaptionMap captions) =&gt; …</c> — with the
+    /// dependence stated in its signature, and passing the method group is also what gives the
+    /// record a name: <c>Table(1, AllocationRow)</c> labels every record <c>'AllocationRow'</c>,
+    /// while a lambda has no identifier to borrow and the row renders as whatever it is
+    /// (<c>Overlay</c>), or as its <c>.Named(…)</c>.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">What one record reads.</typeparam>
+    /// <param name="headerRows">
+    /// How many rows to read as the header. A bind needs captions, so this must be 1; a table with
+    /// no header row has none to hand it, and declaring one is an error where it is written.
+    /// </param>
+    /// <param name="eachRow">Given this file's captions, the projection that reads one record.</param>
+    /// <param name="declared">
+    /// Supplied by the compiler as the text of the <paramref name="eachRow"/> argument, so a bind
+    /// passed as a method group labels every record with its name.
+    /// </param>
+    public static IProjection<IReadOnlyList<T>> Table<T>(
+      int headerRows,
+      Func<CaptionMap, IProjection<T>> eachRow,
+      [CallerArgumentExpression("eachRow")] string? declared = null)
+    {
+      if (eachRow is null)
+        throw new ArgumentNullException(nameof(eachRow));
+
+      var site = UseSite.From(declared, null);
+      var rows = ValidateBindHeaderRows(headerRows);
+
+      // The bind runs inside the table's own Project, so a bind that throws is wrapped exactly as
+      // any other user code the engine calls: ProjectionEngine classifies it, and a broken read —
+      // an IO failure, a null bug — is a fault no tolerance boundary can absorb.
+      return new TableProjection<IReadOnlyList<T>>(
+        rows,
+        table => ProjectBands(table, BoundRow(table, eachRow), site, bandHeight: 1),
+        TablePlacement(),
+        "Table");
+    }
 
     /// <summary>
     /// A table whose records are read by a <em>projection</em> rather than by a lambda:
@@ -186,6 +288,14 @@ namespace Unrect.Projections
     /// is an overlay's job because a flow would step past it.
     /// </para>
     /// <para>
+    /// <b>A leaf that measures itself is measuring the wrong thing here.</b> The band is as wide as
+    /// the table; a projection that discovers its own extent measures <em>itself</em> inside that
+    /// band rather than reporting it — <c>Row(cells =&gt; cells.Count)</c> is "as wide as the
+    /// leading columns that carry values", which over a sparse export whose first column is empty
+    /// is zero. To read the band as it was handed over, say so: <c>Range(WholeExtent(), …)</c>, or
+    /// an <c>Overlay</c> whose children place themselves in it.
+    /// </para>
+    /// <para>
     /// The extent is the table's, not the row's: placement, the discovered block and the blank gap
     /// in front of it are as they are for every other table, and the row projection is applied
     /// inside the band it is handed and consumes as much or as little of it as it likes. A failure
@@ -193,8 +303,9 @@ namespace Unrect.Projections
     /// records from zero, the same way a repeat indexes its occurrences.
     /// </para>
     /// <para>
-    /// A header is consumed here rather than read: the columns a caption names are the bind's
-    /// business, and until that exists a headered table with a row projection means "skip that row".
+    /// A header is consumed here rather than read: a row that reads <em>this file's</em> captions is
+    /// the rung above, <see cref="Table{T}(int, Func{CaptionMap, IProjection{T}}, string)"/>, and
+    /// here a headered table means "skip that row".
     /// </para>
     /// </summary>
     /// <typeparam name="T">What one record reads.</typeparam>
@@ -227,64 +338,6 @@ namespace Unrect.Projections
         eachRow);
     }
 
-    /// <summary>A table with one header row, projected row by row.</summary>
-    public static IProjection<IReadOnlyList<T>> TableRows<T>(Func<TableRow, T> project) => TableRows(1, project);
-
-    /// <summary>
-    /// A table with <paramref name="headerRows"/> header rows (0 or 1), projected row by row.
-    /// </summary>
-    public static IProjection<IReadOnlyList<T>> TableRows<T>(int headerRows, Func<TableRow, T> project)
-    {
-      if (project is null)
-        throw new ArgumentNullException(nameof(project));
-
-      return new TableProjection<IReadOnlyList<T>>(
-        ValidateHeaderRows(headerRows),
-        table => (IReadOnlyList<T>)table.StreamRows().Select(project).ToList(),
-        TablePlacement(),
-        "TableRows");
-    }
-
-    /// <summary>
-    /// Every body row as a <typeparamref name="T"/>, with each member filled from the column whose
-    /// caption matches its name and read as the member's own type declares.
-    /// <para>
-    /// Captions bind to members by <see cref="CaptionComparer"/> — case and whitespace are ignored,
-    /// so <c>"Contribution ITD"</c> fills <c>ContributionItd</c> with nothing declared. The
-    /// member's type chooses the kind to assert and the accessor to use, from the same closed set
-    /// the typed leaves cover: <c>string</c>, <c>decimal</c>, <c>double</c>, <c>int</c>,
-    /// <c>DateTime</c>, <c>bool</c>, <c>CellValue</c>, and the nullable forms. A nullable member
-    /// tolerates a <em>blank</em> cell and still fails on the wrong kind — tolerating a blank says
-    /// something about the data, tolerating a kind would say something about the format, and no
-    /// real format has that.
-    /// </para>
-    /// <para>
-    /// <typeparamref name="T"/> is built through its single parameterized constructor when it has
-    /// one and no parameterless constructor (the positional-record case), otherwise through a
-    /// parameterless constructor and its settable properties. Everything reflective is resolved
-    /// once, when the projection is built; a bad type is an error at that point, not per file.
-    /// </para>
-    /// <para>
-    /// Binding is strict in one direction: every member must find a column, and one that does not
-    /// is a loud failure listing the table's captions. A column no member claims is fine — real
-    /// reports carry columns a consumer does not want.
-    /// </para>
-    /// </summary>
-    public static IProjection<IReadOnlyList<T>> TableRows<T>() => TypedRows<T>(null);
-
-    /// <summary>
-    /// <see cref="TableRows{T}()"/> with per-member declarations: <c>Column</c> for a caption the
-    /// comparer would not have found, <c>Ignore</c> for a member this table does not carry.
-    /// <code>
-    /// TableRows&lt;Transaction&gt;(bind =&gt; bind
-    ///   .Column(t =&gt; t.Date, "Transaction Date")
-    ///   .Column(t =&gt; t.Type, "Transaction Type"))
-    /// </code>
-    /// </summary>
-    public static IProjection<IReadOnlyList<T>> TableRows<T>(Func<TableBinding<T>, TableBinding<T>> bind)
-      => TypedRows((bind ?? throw new ArgumentNullException(nameof(bind)))(new TableBinding<T>())
-        ?? throw new ArgumentException("The binding lambda returned null.", nameof(bind)));
-
     private static IProjection<IReadOnlyList<T>> TypedRows<T>(TableBinding<T>? binding)
     {
       var plan = RowBinding<T>.Create(binding);
@@ -293,7 +346,7 @@ namespace Unrect.Projections
         1,
         table => BindRows(table, plan),
         TablePlacement(),
-        $"TableRows<{typeof(T).Name}>");
+        $"Table<{typeof(T).Name}>");
     }
 
     /// <summary>
@@ -304,7 +357,7 @@ namespace Unrect.Projections
     /// <c>"Contribution ITD"</c>.
     /// <para>
     /// The idiom: open an unfamiliar sheet with this, look at the captions and kinds, then graduate
-    /// to <c>TableRows&lt;T&gt;()</c> once the columns are known.
+    /// to <c>Table&lt;T&gt;()</c> once the columns are known.
     /// </para>
     /// <para>
     /// It promises one entry per column, so it is strict about the things that would break that
@@ -312,12 +365,51 @@ namespace Unrect.Projections
     /// both loud failures naming the cells involved.
     /// </para>
     /// </summary>
-    public static IProjection<IReadOnlyList<IReadOnlyDictionary<string, CellValue>>> TableRows()
+    public static IProjection<IReadOnlyList<IReadOnlyDictionary<string, CellValue>>> Table()
       => new TableProjection<IReadOnlyList<IReadOnlyDictionary<string, CellValue>>>(
         1,
         DictionaryRows,
         TablePlacement(),
-        "TableRows");
+        "Table");
+
+    /// <summary>
+    /// A table with one header row, projected row by row — the bottom rung, where the cells are
+    /// handed over and the reading is yours. What a lambda does is invisible to the type system, to
+    /// tooling and to any analysis of the declaration; that is the standing trade, and this is
+    /// where it is paid.
+    /// </summary>
+    public static IProjection<IReadOnlyList<T>> Table<T>(Func<TableRow, T> project) => Table(1, project);
+
+    /// <inheritdoc cref="Table{T}(Func{TableRow, T})"/>
+    /// <typeparam name="T">What one row reads.</typeparam>
+    /// <param name="headerRows">How many rows to consume as the header, 0 or 1.</param>
+    /// <param name="project">The reading applied to each body row.</param>
+    public static IProjection<IReadOnlyList<T>> Table<T>(int headerRows, Func<TableRow, T> project)
+    {
+      if (project is null)
+        throw new ArgumentNullException(nameof(project));
+
+      return new TableProjection<IReadOnlyList<T>>(
+        ValidateHeaderRows(headerRows),
+        table => (IReadOnlyList<T>)table.StreamRows().Select(project).ToList(),
+        TablePlacement(),
+        "Table");
+    }
+
+    /// <summary>
+    /// A table with one header row, read as a whole: past any blank rows, then rows and columns
+    /// while they carry values. Column names come from the header, so rows can be read by name as
+    /// well as by index. For the table that does not decompose row by row.
+    /// </summary>
+    public static IProjection<T> Table<T>(Func<TableView, T> project) => Table(1, project);
+
+    /// <summary>
+    /// A table with <paramref name="headerRows"/> header rows, which must be 0 or 1 — multi-row
+    /// headers are not supported in this release. With 0, every row is a body row and columns can
+    /// only be read by index.
+    /// </summary>
+    public static IProjection<T> Table<T>(int headerRows, Func<TableView, T> project)
+      => new TableProjection<T>(ValidateHeaderRows(headerRows), project, TablePlacement(), "Table");
 
     // --- Labelled pairs -------------------------------------------------------------------------
 
@@ -544,6 +636,17 @@ namespace Unrect.Projections
       return records;
     }
 
+    /// <summary>
+    /// Runs a row bind: once per application of the table, after the header has been read and before any body
+    /// row, which is the moment the caption map exists and the only moment the description is
+    /// built. A bind that throws is not caught here — the engine wraps every foreign exception a
+    /// projection raises and classifies it, so a broken read stays a fault and a disagreement with
+    /// the data stays absorbable.
+    /// </summary>
+    private static IProjection<T> BoundRow<T>(TableView table, Func<CaptionMap, IProjection<T>> eachRow)
+      => eachRow(new CaptionMap(table))
+        ?? throw table.Fault("the row bind returned null; it must return the projection that reads one record");
+
     private static IProjection<T> Strip<T>(Orientation orientation, Func<CellStrip, T> project, IAreaStrategy area, string description)
       => new StripProjection<T>(orientation, project, Placement.Of(area), description);
 
@@ -595,5 +698,15 @@ namespace Unrect.Projections
       => headerRows == 0 || headerRows == 1
         ? headerRows
         : throw new ArgumentOutOfRangeException(nameof(headerRows), headerRows, "A table has either 0 or 1 header rows; multi-row headers are not supported in this release.");
+
+    /// <summary>
+    /// A bind is handed the captions, so there have to be some. A table declared with no header row
+    /// has none, which is a declaration that cannot mean anything rather than a file that
+    /// disagrees — so it fails where it is written, not per file.
+    /// </summary>
+    private static int ValidateBindHeaderRows(int headerRows)
+      => headerRows == 0
+        ? throw new ArgumentOutOfRangeException(nameof(headerRows), headerRows, "A table whose rows are declared from its captions needs a header row to read them from; headerRows must be 1.")
+        : ValidateHeaderRows(headerRows);
   }
 }

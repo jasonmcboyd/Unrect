@@ -24,7 +24,7 @@ namespace Unrect.Benchmarks
   /// the interesting number is the ratio between them, and a ratio is only trustworthy when both
   /// rows ran on the same machine in the same run.
   ///
-  /// <para>The construction row is the odd one and the deliberate one. <c>TableRows&lt;T&gt;()</c>
+  /// <para>The construction row is the odd one and the deliberate one. <c>Table&lt;T&gt;()</c>
   /// resolves its members reflectively and compiles a materializer when the SHAPE is built, not per
   /// map -- a cost paid once per declaration and then never again. It is measured separately so
   /// that a change making binding cheaper per row at the cost of a slower declaration (or the
@@ -35,12 +35,12 @@ namespace Unrect.Benchmarks
   public class Tables
   {
     private static readonly IProjection<IReadOnlyList<decimal>> Projected =
-      TableRows(r => r["Contribution"].GetDecimal());
+      Table(r => r["Contribution"].GetDecimal());
 
-    private static readonly IProjection<IReadOnlyList<TabularRow>> Bound = TableRows<TabularRow>();
+    private static readonly IProjection<IReadOnlyList<TabularRow>> Bound = Table<TabularRow>();
 
     private static readonly IProjection<IReadOnlyList<IReadOnlyDictionary<string, CellValue>>> Dictionaries =
-      TableRows();
+      Table();
 
     private ISpace _large = default!;
     private ISpace _mega = default!;
@@ -77,6 +77,6 @@ namespace Unrect.Benchmarks
     /// times, which measures a loop rather than a declaration.
     /// </summary>
     [Benchmark]
-    public object Bound_ProjectionConstruction() => TableRows<TabularRow>();
+    public object Bound_ProjectionConstruction() => Table<TabularRow>();
   }
 }

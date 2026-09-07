@@ -33,10 +33,10 @@ var reportHeader = VerticalFlow(v => new
 // Five of six captions bind with nothing said: the comparer ignores case and whitespace, so
 // "Contribution ITD" fills ContributionItd. Only Investors needs a caption, and only because the
 // sheet's heading is plural where the row is singular.
-var summary = TableRows<SummaryRow>(bind => bind.Column(r => r.Investor, "Investors"));
+var summary = Table<SummaryRow>(bind => bind.Column(r => r.Investor, "Investors"));
 
 // All four bind free.
-var investorBlock = TableRows<CashFlow>();
+var investorBlock = Table<CashFlow>();
 
 // The caption that both ends the first series and begins the second. One literal, so the bound
 // and the caption cannot drift apart — both go through the same matching rule.

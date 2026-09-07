@@ -21,7 +21,7 @@ namespace Unrect.Projections
   /// character this stripped would be a character two captions could collide on.
   /// </para>
   /// <para>
-  /// It is public because the dictionaries <c>TableRows()</c> and <c>Fields</c> hand back are built
+  /// It is public because the dictionaries <c>Table()</c> and <c>Fields</c> hand back are built
   /// with it: a consumer who copies one, or builds a lookup beside one, needs to be able to say so.
   /// </para>
   /// </summary>

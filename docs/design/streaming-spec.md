@@ -1,5 +1,11 @@
 # Spec: Streaming (the `Workbook` owner, the windowed store, the reader pool, lazy extents)
 
+> **Superseded spellings (2026-09-09):** this spec was written against `Unrect.Shapes` and the
+> `TableRows*` factories. The layer is now `Unrect.Projections` (`IShape<T>` → `IProjection<T>`,
+> `Shape` → `Projection`) and the table ladder is one `Table` family (`TableRows<T>()` →
+> `Table<T>()`, `TableRows()` → `Table()`, `TableRows(row => …)` → `Table(row => …)`). Names
+> only; every measurement and every semantic here still holds.
+
 **Status:** Part 1 IMPLEMENTED (2026-09-03) — the `Workbook` owner, `IRowSource` seam,
 `SheetStore`, `ReaderPool` with adaptive warming and `BorrowAnywhere` catalogue walks, the
 IO fault discipline, the `Streaming` benchmark family, and a 159-test suite; four defects
@@ -58,6 +64,33 @@ after any of its steps without leaving the tree in a half-state (§10.2).
 and any change to the eager path's semantics.
 
 ---
+
+## 0.5 The cost model's theory, in one paragraph *(added 2026-09-07, after the fact — every measured law below is an instance of it)*
+
+A declaration is a hierarchical spatial structure evaluated through a **fixed
+linearization** (the file's row-major order — we do not get to choose it), and memory is
+determined by **the topology crossing the traversal frontier**. The frontier of a
+row-major walk is a staircase cut through the grid; the state that must stay alive is
+every declared region with cells on both sides of it — in graph terms, the *cutwidth of
+the region/cell hypergraph under the fixed linear order*. Three quantities separate what
+string parsing collapses into one: **containment depth** (the declaration tree's height —
+carried by `ProjectionContext`, a stack, cheap), **frontier width** (the maximum number of
+simultaneously live regions — what `WindowRows` must cover; a vertical stack has width
+one chunk, a horizontal band has width the whole band), and **span/delay** (how long a
+region stays unresolved — what lazy extents defer and what a backward reach pays).
+The medium delivers breadth-first (row-major = level order over the region tree drawn
+depth-down); the engine consumes depth-first (a child completes before its sibling
+begins); the window is nothing but the buffer adapting the one order to the other, and
+the two coincide — no buffer beyond a chunk — exactly when the layout is vertical.
+Unrect adds a second currency the classical model lacks: a backward crossing can be paid
+in **memory** (window) or in **a lagging monotone cursor** (a reader), and
+`Reopens = passes − readers` is the bill when the cursors run out. Reading a
+declaration's cost by inspection: the widest thing crossing reading order is your
+window; the crossings no lagging cursor can serve are your reopens. (For the literature:
+picture-language *returning automata* are the one-pass ideal of this model; streaming-
+XPath *concurrency/delay* are frontier width and span by other names; XML gets a stack
+where we need an active set because a nested word survives linearization and a 2-D
+containment hierarchy does not.)
 
 ## 1. The measurements, as law
 

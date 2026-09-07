@@ -68,8 +68,8 @@ sheet determines whether streaming is cheap, free, or a bad idea:
   sized by a per-row rule — `Range(RowsWhileAnyValue(), …)`, a `Range` or a `Table` left on
   its default placement, and `.Sized(RowsWhileAnyValue())` applied *directly to one of
   those* — its height is discovered *as the projection consumes it* rather than measured
-  first, so the rows pass the window once. The three built-in table projections
-  (`TableRows<T>()`, `TableRows()`, `TableRows(row => …)`) are written against that reading,
+  first, so the rows pass the window once. The built-in table readings
+  (`Table<T>()`, `Table()`, `Table(row => …)`) are written against that reading,
   through `TableView.StreamRows()`, and so is a block read by `Row(i)` or
   `block[column, row]`. A **dimension query** asks how far the extent goes and settles it
   there and then: `TableView.Rows`, `.RowCount`, `.Location`, `CellBlock.Height`, `.Rows`,

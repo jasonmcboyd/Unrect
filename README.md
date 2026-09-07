@@ -57,9 +57,9 @@ var header = VerticalFlow(v => new
 });
 
 // Captions bind to record properties by name (case- and whitespace-insensitive).
-var summary = TableRows<SummaryRow>(bind => bind.Column(r => r.Investor, "Investors"));
+var summary = Table<SummaryRow>(bind => bind.Column(r => r.Investor, "Investors"));
 
-var investorBlock = TableRows<CashFlow>();
+var investorBlock = Table<CashFlow>();
 
 // Declared once, placed twice — .Until bounds the first series so it stops at the
 // second caption instead of trying to parse it as another investor block.

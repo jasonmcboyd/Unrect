@@ -550,7 +550,7 @@ namespace Unrect.Tests.Streaming
       var summary = book.Sheet("Summary");
       var detail = book.Sheet("Detail");
 
-      var declaration = TableRows(row => row[0].GetString());
+      var declaration = Table(row => row[0].GetString());
 
       var serial = new[] { declaration.Map(summary), declaration.Map(detail) };
 

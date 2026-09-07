@@ -1,3 +1,5 @@
+using System;
+
 using Unrect;
 using Unrect.Core;
 
@@ -84,6 +86,41 @@ namespace TypedSpacesGauntlet
     /// <summary>The buying-power sheet: sparse columns, and a last record that is a fund and two blanks.</summary>
     public static GridSpace BuyingPower() => new GridSpace(BuyingPowerValues(CellValue.Blank));
 
+    // A third sheet: the same allocation table with its COLUMNS IN A DIFFERENT ORDER, and one
+    // record that omits its symbol. Caption positions are absolute, so the bind that reads Plain()
+    // reads this one too, unchanged — and the omission is what OrBlank is for.
+    //
+    // r0  Buying Power Allocation
+    // r1  (blank)
+    // r2  Weight | Account | Symbol
+    // r3  0.25   | A-1     | SPY
+    // r4  0.75   | A-2     | (blank)
+    public static GridSpace Reordered() => new GridSpace(new[,]
+    {
+      { CellValue.Of("Buying Power Allocation"), CellValue.Blank,           CellValue.Blank },
+      { CellValue.Blank,                         CellValue.Blank,           CellValue.Blank },
+      { CellValue.Of("Weight"),                  CellValue.Of("Account"),   CellValue.Of("Symbol") },
+      { CellValue.Of(0.25m),                     CellValue.Of("A-1"),       CellValue.Of("SPY") },
+      { CellValue.Of(0.75m),                     CellValue.Of("A-2"),       CellValue.Blank },
+    });
+
+    // A fourth: one investor's block, the shape the friend demo reads — a name, a gap, and a table
+    // whose captions are the record's own member names.
+    //
+    // r0  Acme LP
+    // r1  (blank)
+    // r2  Date       | Amount
+    // r3  2024-01-15 | 1000.00
+    // r4  2024-02-15 | -250.00
+    public static GridSpace Investor() => new GridSpace(new[,]
+    {
+      { CellValue.Of("Acme LP"),               CellValue.Blank },
+      { CellValue.Blank,                       CellValue.Blank },
+      { CellValue.Of("Date"),                  CellValue.Of("Amount") },
+      { CellValue.Of(new DateTime(2024, 1, 15)), CellValue.Of(1000.00m) },
+      { CellValue.Of(new DateTime(2024, 2, 15)), CellValue.Of(-250.00m) },
+    });
+
     /// <summary>
     /// The same sheet with text where a number belongs. <c>OrBlank</c> tolerates a blank and nothing
     /// else, so this must still fail — and name the record it failed in.
@@ -105,4 +142,11 @@ namespace TypedSpacesGauntlet
   public sealed record Probe(bool RawTypeTest, bool ThroughSeam, string? Formula);
 
   public sealed record BuyingPowerRow(string FundCode, decimal? Primary, decimal? Fep);
+
+  /// <summary>An allocation whose symbol some exports leave out — matrix cell 2.</summary>
+  public sealed record PartialAllocation(string Account, string? Symbol, decimal Weight);
+
+  public sealed record CashFlow(DateTime Date, decimal Amount);
+
+  public sealed record InvestorBlock(string Name, System.Collections.Generic.IReadOnlyList<CashFlow> CashFlows);
 }

@@ -46,9 +46,9 @@ namespace Unrect.Benchmarks
     // Five of six captions bind with nothing said; only Investor needs one, because the sheet's
     // heading is plural where the member is singular.
     private static readonly IProjection<IReadOnlyList<SummaryRow>> Summary =
-      TableRows<SummaryRow>(bind => bind.Column(r => r.Investor, "Investors"));
+      Table<SummaryRow>(bind => bind.Column(r => r.Investor, "Investors"));
 
-    private static readonly IProjection<IReadOnlyList<CashFlow>> InvestorBlock = TableRows<CashFlow>();
+    private static readonly IProjection<IReadOnlyList<CashFlow>> InvestorBlock = Table<CashFlow>();
 
     private static readonly IProjection<IReadOnlyList<IReadOnlyList<CashFlow>>> Series =
       VerticalRepeat(InvestorBlock, separatedBy: BlankRows());

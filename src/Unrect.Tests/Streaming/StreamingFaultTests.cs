@@ -82,7 +82,7 @@ namespace Unrect.Tests.Streaming
     [MemberData(nameof(Faults))]
     public void AFailureInAProjectionIsAFault(string fault)
     {
-      AssertSurfacedAsAFault(fault, space => TableRows(row => row["Amount"].GetInt()).Map(space));
+      AssertSurfacedAsAFault(fault, space => Table(row => row["Amount"].GetInt()).Map(space));
     }
 
     [Theory]
@@ -138,7 +138,7 @@ namespace Unrect.Tests.Streaming
     [MemberData(nameof(Faults))]
     public void OptionalDoesNotAbsorbAFault(string fault)
     {
-      AssertSurfacedAsAFault(fault, space => TableRows(row => row["Amount"].GetInt()).Optional().Map(space));
+      AssertSurfacedAsAFault(fault, space => Table(row => row["Amount"].GetInt()).Optional().Map(space));
     }
 
     [Theory]
@@ -147,7 +147,7 @@ namespace Unrect.Tests.Streaming
     {
       AssertSurfacedAsAFault(
         fault,
-        space => TableRows(row => row["Amount"].GetInt()).Else((IReadOnlyList<int>)new[] { 0 }).Map(space));
+        space => Table(row => row["Amount"].GetInt()).Else((IReadOnlyList<int>)new[] { 0 }).Map(space));
     }
 
     [Theory]
@@ -156,7 +156,7 @@ namespace Unrect.Tests.Streaming
     {
       AssertSurfacedAsAFault(
         fault,
-        space => TableRows(row => row["Amount"].GetInt())
+        space => Table(row => row["Amount"].GetInt())
           .Else(Range(block => (IReadOnlyList<int>)new[] { block.Height }))
           .Map(space));
     }
@@ -171,7 +171,7 @@ namespace Unrect.Tests.Streaming
       AssertSurfacedAsAFault(
         fault,
         space => Choice(
-          TableRows(row => row["Amount"].GetInt()),
+          Table(row => row["Amount"].GetInt()),
           Range(block => (IReadOnlyList<int>)new[] { block.Height })).Map(space));
     }
 
@@ -201,7 +201,7 @@ namespace Unrect.Tests.Streaming
       // MapWithDiagnostics is where an absorbed failure would show up as a Warning saying the
       // section was absent. It must throw instead: there is no diagnostic that can honestly
       // describe a sheet nobody could read.
-      var declaration = TableRows(row => row["Amount"].GetInt()).Named("amounts").Optional();
+      var declaration = Table(row => row["Amount"].GetInt()).Named("amounts").Optional();
 
       Assert.Throws<ProjectionException>(() => declaration.MapWithDiagnostics(Faulting("io")));
     }
@@ -213,7 +213,7 @@ namespace Unrect.Tests.Streaming
       // reading and where. "The disk failed" without that is a stack trace; with it, it is a bug
       // report.
       var failure = Assert.Throws<ProjectionException>(
-        () => TableRows(row => row["Amount"].GetInt()).Named("amounts").Map(Faulting("io")));
+        () => Table(row => row["Amount"].GetInt()).Named("amounts").Map(Faulting("io")));
 
       Assert.Contains("'amounts'", failure.Message);
       Assert.Contains("IOException", failure.Message);

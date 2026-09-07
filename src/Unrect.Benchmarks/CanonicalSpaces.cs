@@ -262,7 +262,7 @@ namespace Unrect.Benchmarks
     private static CellValue[,] TabularCells(int rows)
     {
       // One header row, then rows that bind to SummaryRow: text, four decimals, a double. The
-      // captions are what TableRows<T>() matches members against.
+      // captions are what Table<T>() matches members against.
       var cells = new CellValue[rows + 1, 6];
 
       cells[0, 0] = CellValue.Of("Investor");

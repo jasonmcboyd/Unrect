@@ -39,7 +39,7 @@ namespace Unrect.Tests.Projections
           Id: h.Next(Text())))
           .Named("report header")),
         // Two captions the comparer would not have found; the other two bind free.
-        Transactions: v.Next(TableRows<Transaction>(bind => bind
+        Transactions: v.Next(Table<Transaction>(bind => bind
           .Column(t => t.Date, "Transaction Date")
           .Column(t => t.Type, "Transaction Type"))
           .Named("transactions"))));
@@ -107,7 +107,7 @@ namespace Unrect.Tests.Projections
         VerticalFlow(v => new Deal(
           Code: v.Next(Cell(c => c.GetString()).Named("deal code")),
           // Every caption binds free: AccountKey to "Account Key", TransferDate to "Transfer Date".
-          Transactions: v.Next(TableRows<DealTransaction>().Named("transactions"))))
+          Transactions: v.Next(Table<DealTransaction>().Named("transactions"))))
           .Named("deal block");
 
       return VerticalRepeat(deal, separatedBy: BlankRows());
@@ -163,7 +163,7 @@ namespace Unrect.Tests.Projections
       var detail =
         VerticalFlow(v => new Detail(
           Investor: v.Next(Cell(c => c.GetString()).Named("investor name")),
-          Transactions: v.Next(TableRows(r => new DetailTransaction(
+          Transactions: v.Next(Table(r => new DetailTransaction(
             r["Date"].GetDateTime(),
             r["Transaction Type"].GetString(),
             r["Amount"].GetDecimal()))
@@ -173,7 +173,7 @@ namespace Unrect.Tests.Projections
       return VerticalFlow(v => new Report(
         Header: v.Next(Column(c => new SummaryHeader(c[0].GetString(), c[1].GetDateTime(), c[2].GetString()))
           .Named("report header")),
-        Summary: v.Next(TableRows(r => new SummaryRow(
+        Summary: v.Next(Table(r => new SummaryRow(
           r["Investor"].GetString(),
           r["Contributions"].GetDecimal(),
           r["Distributions"].GetDecimal(),
@@ -281,7 +281,7 @@ namespace Unrect.Tests.Projections
 
     private static IProjection<IrrReport> InvestorIrr()
     {
-      var investorBlock = TableRows(r => r["Investor Name"].GetString()).Named("investor block");
+      var investorBlock = Table(r => r["Investor Name"].GetString()).Named("investor block");
 
       // Declared once, placed twice: the same series of blocks read from two different anchors.
       var series = VerticalRepeat(investorBlock, separatedBy: BlankRows());
@@ -293,7 +293,7 @@ namespace Unrect.Tests.Projections
       // absorbed into an offset nobody can see.
       return VerticalFlow(v => new IrrReport(
         Title: v.Next(Column(4, c => c[0].GetString()).Named("report header")),
-        Summary: v.Next(TableRows(r => r["Investors"].GetString()).Named("summary")),
+        Summary: v.Next(Table(r => r["Investors"].GetString()).Named("summary")),
         ByTransferDate: v.Next(series
           .Under(Caption("IRR Details"), Caption("Cash Flows Using Transfer Date"))
           .Until(RowContaining(Inception))),
@@ -363,7 +363,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void CaptionedSections_AreReadByTheCaptionsTheySitUnder()
     {
-      var lines = TableRows(0, r => r[0].GetString());
+      var lines = Table(0, r => r[0].GetString());
 
       var report = VerticalFlow(v => new
       {
@@ -380,7 +380,7 @@ namespace Unrect.Tests.Projections
     {
       // The regression pin for "the caption stopped being smuggled": neither section's rows contain
       // the caption that introduced it, and neither contains the other section's caption either.
-      var lines = TableRows(0, r => r[0].GetString());
+      var lines = Table(0, r => r[0].GetString());
 
       var report = VerticalFlow(v => new
       {
@@ -398,7 +398,7 @@ namespace Unrect.Tests.Projections
     {
       // ...and the meter did not move: every row of the sheet is accounted for, including the two
       // caption rows and the blank one the second section's seek crossed.
-      var lines = TableRows(0, r => r[0].GetString());
+      var lines = Table(0, r => r[0].GetString());
 
       var report = VerticalFlow(v => new
       {
@@ -418,7 +418,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void OneGridReadBothWays_GivesTheSameValuesAndTheSameExtent()
     {
-      // The regression pin for the whole phase: TableRows<T>() is the projecting spelling with the
+      // The regression pin for the whole phase: Table<T>() is the projecting spelling with the
       // lambda moved into the type. Same placement, same extent, same numbers — only the code that
       // says what a column means has moved.
       var space = Mixed(new object?[,]
@@ -429,9 +429,9 @@ namespace Unrect.Tests.Projections
         { "Beta", new DateTime(2026, 5, 17), 175500.5m },
       });
 
-      var typed = TableRows<Line>().Apply(space);
+      var typed = Table<Line>().Apply(space);
 
-      var projected = TableRows(r => new Line(
+      var projected = Table(r => new Line(
         r["Client"].GetString(),
         r["Transaction Date"].GetDateTime(),
         r["Amount"].GetDecimal()))
