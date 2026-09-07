@@ -85,12 +85,9 @@ namespace TypedSpacesGauntlet
       return declared.Map(sheet);
     }
 
-    // 2c: the ascription without a witness, for comparison. Both type arguments must be written,
-    // including the result type, because C# has no partial type-argument inference.
-    public static IProjection<IFormulaSpace, IReadOnlyList<SourcedAllocation>> ProjectionAscribedByTypeArgs()
-      => Table(row => new SourcedAllocation(row["Account"].GetString(), row.FormulaAt(2)))
-        .On(RowContaining("Account"))
-        .Demanding<IFormulaSpace, IReadOnlyList<SourcedAllocation>>();   // TAX x2
+    // 2c was the same ascription written with type arguments instead of a witness — TAX x2, one of
+    // them the result type, since C# has no partial type-argument inference. That overload is gone:
+    // the witness form says the same thing for nothing, so the tax it measured cannot be paid.
 
     // 2d: the CHECKED reading — a leaf that is itself formula-shaped. No ascription, no annotation:
     // the demand is in the leaf's type and travels by composition.
@@ -263,7 +260,7 @@ namespace TypedSpacesGauntlet
     // Scenario 8 — the phase-1 question: ONE modifier definition, both demands. (Added 2026-09-08.)
     // =============================================================================================
     //
-    // Every modifier is now generic in the SHAPE's own type and hands that type straight back, so
+    // Every modifier is now generic in the PROJECTION's own type and hands that type straight back, so
     // the same six-call chain below is written once in the library and typed twice at the use site.
     // Read the two declared types: the plain chain stays IProjection<T> — which is what makes every
     // existing test and every hoisted `IProjection<T> Helper() => …` in the corpus keep compiling — and

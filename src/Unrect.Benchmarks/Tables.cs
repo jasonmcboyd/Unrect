@@ -25,7 +25,7 @@ namespace Unrect.Benchmarks
   /// rows ran on the same machine in the same run.
   ///
   /// <para>The construction row is the odd one and the deliberate one. <c>Table&lt;T&gt;()</c>
-  /// resolves its members reflectively and compiles a materializer when the SHAPE is built, not per
+  /// resolves its members reflectively and compiles a materializer when the PROJECTION is built, not per
   /// map -- a cost paid once per declaration and then never again. It is measured separately so
   /// that a change making binding cheaper per row at the cost of a slower declaration (or the
   /// reverse) is visible as the trade it is, rather than averaged into one number.</para>

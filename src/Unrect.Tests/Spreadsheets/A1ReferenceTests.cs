@@ -2,7 +2,7 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-namespace Unrect.Tests
+namespace Unrect.Tests.Spreadsheets
 {
   /// <summary>
   /// The one place the file's 1-based, letter-columned coordinates become a space's 0-based ones —

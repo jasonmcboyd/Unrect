@@ -8,6 +8,12 @@
     <LangVersion>Latest</LangVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 
+    <!-- Code-style analysis runs as part of the build, not just in the IDE. The rule this exists
+         for is IDE0005 (unused using): TreatWarningsAsErrors cannot catch it on its own, because
+         the compiler does not report it — the style analyzer does, and only when asked. Severities
+         are set in .editorconfig; anything raised there is a build error like any other warning. -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
     <!-- A no-build pack must resolve project references from their EXISTING outputs instead of
          building them: Unrect's BundleReferencedProjects re-runs ResolveReferences during pack,
          and without this the reference walk invokes Build on Core/Strategies, which NoBuild turns
@@ -16,7 +22,7 @@
     <BuildProjectReferences Condition="'$(NoBuild)' == 'true'">false</BuildProjectReferences>
   </PropertyGroup>
 
-  <!-- Packaging. Nothing ships unless it opts in: Unrect and Unrect.Excel set IsPackable, and
+  <!-- Packaging. Nothing ships unless it opts in: Unrect and Unrect.Spreadsheets set IsPackable, and
        Unrect bundles the assemblies a consumer would otherwise have to reference one by one. -->
   <PropertyGroup>
     <IsPackable>false</IsPackable>

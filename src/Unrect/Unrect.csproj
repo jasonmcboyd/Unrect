@@ -11,16 +11,16 @@
     <PackageTags>excel;spreadsheet;xlsx;parsing;declarative;etl;data-extraction;table;csv;projection</PackageTags>
   </PropertyGroup>
 
-  <!-- One package, three assemblies. A consumer installs "Unrect" and has the whole vocabulary;
-       splitting Core and Strategies into their own packages would publish three version numbers
-       that must always match. PrivateAssets stops them appearing as dependencies, and the target
-       below puts their build output in the package instead. -->
   <ItemGroup>
     <!-- So the tests can reach IOpaqueComposite, which marks a composite whose children exist only
          while it runs; asserting that through reflection was the alternative. -->
     <InternalsVisibleTo Include="Unrect.Tests" />
   </ItemGroup>
 
+  <!-- One package, three assemblies. A consumer installs "Unrect" and has the whole vocabulary;
+       splitting Core and Strategies into their own packages would publish three version numbers
+       that must always match. PrivateAssets stops them appearing as dependencies, and the target
+       below puts their build output in the package instead. -->
   <ItemGroup>
     <ProjectReference Include="..\Unrect.Core\Unrect.Core.csproj" PrivateAssets="all" />
     <ProjectReference Include="..\Unrect.Strategies\Unrect.Strategies.csproj" PrivateAssets="all" />

@@ -10,7 +10,7 @@ using Xunit;
 
 using static Unrect.Projections.Projection;
 
-namespace Unrect.Tests
+namespace Unrect.Tests.Spreadsheets
 {
   /// <summary>
   /// The awkward cells: formula errors, and text that looks empty but is not. Both are adapter

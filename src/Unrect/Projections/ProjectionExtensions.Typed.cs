@@ -139,18 +139,13 @@ namespace Unrect.Projections
     /// declaring its own vocabulary once (<c>Formula()</c> is written with it), not to a
     /// declaration's author.
     /// </para>
-    /// </summary>
-    /// <typeparam name="TSpace">The demand being stated.</typeparam>
-    /// <typeparam name="T">What the projection reads.</typeparam>
-    /// <param name="projection">The declaration.</param>
-    public static IProjection<TSpace, T> Demanding<TSpace, T>(this IProjection<T> projection)
-      where TSpace : class, ISpace
-      => projection ?? throw new ArgumentNullException(nameof(projection));
-
-    /// <summary>
-    /// <see cref="Demanding{TSpace, T}(IProjection{T})"/> stated with a witness rather than with
-    /// type arguments — <c>projection.Demanding(Formulas)</c> — so the result type is still
-    /// inferred. Same promise, same lack of proof; only the spelling is better.
+    /// <para>
+    /// The demand is carried by a <em>witness</em> — <c>projection.Demanding(Formulas)</c> — rather
+    /// than by type arguments, so the result type is still inferred and nothing is written twice.
+    /// There is no type-argument spelling: it said the same thing with one argument of requirement
+    /// and one of pure ceremony, and any capability can witness itself through
+    /// <see cref="Demand{TSpace}.Instance"/> without its package publishing a name for it.
+    /// </para>
     /// </summary>
     /// <typeparam name="TSpace">The demand being stated, inferred from <paramref name="demand"/>.</typeparam>
     /// <typeparam name="T">What the projection reads.</typeparam>

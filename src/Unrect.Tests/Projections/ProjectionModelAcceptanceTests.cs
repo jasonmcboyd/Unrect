@@ -25,7 +25,7 @@ namespace Unrect.Tests.Projections
   /// <see cref="RowProjectionTableTests"/> the <c>eachRow</c> slot over this same sparse export,
   /// <see cref="BoundRowTableTests"/> the bind and the reordered-columns reading,
   /// <see cref="ProjectionScopeTests"/> every member of the scope against its witness twin,
-  /// <see cref="Unrect.Tests.FormulaCapabilityTests"/> the capability end to end over a real file,
+  /// <see cref="Unrect.Tests.Spreadsheets.FormulaCapabilityTests"/> the capability end to end over a real file,
   /// and <see cref="Unrect.Tests.Streaming.MapWorkbookTests"/> the streaming sugar. What those
   /// cannot say is whether the parts still add up to a parser somebody would write, which is the
   /// only question left at the end of a campaign.

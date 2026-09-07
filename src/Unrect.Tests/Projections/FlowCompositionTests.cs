@@ -2,7 +2,6 @@ using System;
 
 using Unrect.Core;
 using Unrect.Projections;
-using Unrect.Strategies;
 
 using Xunit;
 

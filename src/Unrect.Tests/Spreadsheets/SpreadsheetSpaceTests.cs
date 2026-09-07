@@ -7,7 +7,7 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-namespace Unrect.Tests
+namespace Unrect.Tests.Spreadsheets
 {
   /// <summary>
   /// The Excel adapter on its own: sheet selection, dimensions, blankness, and the cell kinds a

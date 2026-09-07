@@ -13,7 +13,7 @@ using Xunit;
 
 using static Unrect.Projections.Projection;
 
-namespace Unrect.Tests
+namespace Unrect.Tests.Spreadsheets
 {
   /// <summary>
   /// Where formulas cannot be read, and what the reader says instead. The honest-absence rule has

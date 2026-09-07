@@ -7,7 +7,7 @@ using Xunit;
 
 using static Unrect.Tests.ProjectionTestSpaces;
 
-namespace Unrect.Tests
+namespace Unrect.Tests.Strategies
 {
   /// <summary>
   /// The two content-driven column strategies used to be column-major: for each column, scan down

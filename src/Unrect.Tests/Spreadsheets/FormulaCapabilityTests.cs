@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 
 using Unrect.Core;
 using Unrect.Projections;
@@ -10,7 +9,7 @@ using Xunit;
 using static Unrect.Projections.Projection;
 using static Unrect.Spreadsheets.SpreadsheetProjections;
 
-namespace Unrect.Tests
+namespace Unrect.Tests.Spreadsheets
 {
   /// <summary>
   /// The formula capability, wired end to end over the committed fixture: the eager door's opt-in

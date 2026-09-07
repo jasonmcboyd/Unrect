@@ -8,7 +8,7 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-namespace Unrect.Tests
+namespace Unrect.Tests.Spreadsheets
 {
   /// <summary>
   /// Elapsed-time cells, end to end through the Excel adapter.

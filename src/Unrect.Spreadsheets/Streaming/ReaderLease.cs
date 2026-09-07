@@ -58,13 +58,6 @@ namespace Unrect.Spreadsheets
     internal bool IsOpen => Cursor is not null;
 
     /// <summary>
-    /// Whether this lease stands at or behind <paramref name="sheetIndex"/>, <paramref name="row"/>
-    /// — that is, whether it can reach the target by moving forward.
-    /// </summary>
-    internal bool IsAtOrBehind(int sheetIndex, int row) =>
-      SheetIndex < sheetIndex || (SheetIndex == sheetIndex && CursorRow <= row);
-
-    /// <summary>
     /// Whether this lease stands strictly further along than <paramref name="other"/>. The
     /// comparison a "furthest along but still behind the target" search is built from.
     /// </summary>

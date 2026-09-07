@@ -1,6 +1,18 @@
 # Experiment: Typed Spaces — capability requirements checked by the compiler
 
-**Status:** EXPERIMENT, on branch `experiment/typed-spaces`. Not adopted, not a decision.
+**Status:** CONCLUDED. The gauntlet below (§6) ran, was read as a user would read it, and
+the verdict at the time was "do not adopt" — the finding recorded in §7's judgment
+criteria and repeated in `projection-model-spec.md` §3: a projection lambda's body is
+invisible to the type system, so the site that motivated typing (capability use inside a
+row-reading lambda) stayed unprotected. That verdict was reversed, not by this experiment
+being re-run, but by a change to the host model: `projection-model-spec.md` moves rows onto
+*projections* rather than lambdas (§6 of that spec), which removes the exact site this
+document's spike could not protect. The typed layer was adopted on that basis — see
+`projection-model-spec.md` §3 for the reversal and §10 for the acceptance judgment against
+this document's own §7 criteria, item by item. This document is preserved as the
+experiment's original record and is not itself updated; treat every claim below as dated
+to the spike, not to the shipped system.
+
 Sparked by the formula-capability design conversation of 2026-09-06: a declaration that
 probes formulas applied to a space that cannot carry them should fail as early as
 possible — and the owner's instinct is *compile time*: "If we create a projection in

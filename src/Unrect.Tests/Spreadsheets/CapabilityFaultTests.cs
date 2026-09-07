@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 
 using Unrect.Core;
 using Unrect.Projections;
@@ -10,7 +9,7 @@ using Xunit;
 using static Unrect.Projections.Projection;
 using static Unrect.Spreadsheets.SpreadsheetProjections;
 
-namespace Unrect.Tests
+namespace Unrect.Tests.Spreadsheets
 {
   /// <summary>
   /// The boundary half of the absence rule, at every place a failure can be forgiven.

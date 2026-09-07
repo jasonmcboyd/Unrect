@@ -4,9 +4,9 @@ namespace Unrect.Projections
 {
   /// <summary>
   /// The witness a capability's package publishes so an ascription can
-  /// be written without type arguments — <c>rows.Demanding(Formulas)</c> instead of
-  /// <c>rows.Demanding&lt;IFormulaSpace, IReadOnlyList&lt;Allocation&gt;&gt;()</c>. It carries no
-  /// data and does nothing; its whole job is to give inference something to read the demand off.
+  /// be written without type arguments — <c>rows.Demanding(Formulas)</c>, where the result type is
+  /// still inferred from the receiver. It carries no data and does nothing; its whole job is to give
+  /// inference something to read the demand off.
   /// </summary>
   /// <typeparam name="TSpace">The capability being demanded.</typeparam>
   public sealed class Demand<TSpace>

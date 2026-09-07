@@ -2,7 +2,7 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-namespace Unrect.Tests
+namespace Unrect.Tests.Spreadsheets
 {
   /// <summary>
   /// The shifter behind a shared formula's follower, asserted directly rather than through a file.

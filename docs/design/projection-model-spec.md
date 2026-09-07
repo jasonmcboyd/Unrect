@@ -1,10 +1,11 @@
 # Spec: The Projection Model — spaces are the shapes; projections read them
 
-**Status:** DRAFT for owner review, on branch `experiment/typed-spaces`. Nothing here is
-implemented except what the typed-spaces spike proved (see
-`typed-spaces-experiment.md`, whose gauntlet and recorded compiler behaviour this spec
-builds on). This is the deepest cut since wave 2; it ships in phases, each leaving a
-coherent system, hardest last and droppable.
+**Status:** COMPLETE. All seven phases (§8) shipped and are recorded as built (§2, §4.1,
+§5.1, §6.1) and accepted (§10); the acceptance suite and the refusals ledger
+(`projection-model-refusals.md`) are both re-verified against the finished tree. What
+began as the typed-spaces spike (see `typed-spaces-experiment.md`, whose gauntlet and
+recorded compiler behaviour this spec builds on) is now the shipped model. See the closing
+note at the end of §10 for the pre-merge documentation pass that followed acceptance.
 
 Owner direction (2026-09-06/07): "What we've been calling Shape is a projection. The
 space and its subspaces are the shapes; we're just projecting those spaces." The model
@@ -449,13 +450,17 @@ Why the bind wins, on the record:
 
 | # | Phase | Value if stopped here |
 |---|---|---|
-| 1 | Kill the doubling: class-based fluent surface for `IProjection<in TSpace, T>`; scenario-1 gauntlet green | the typed layer is viable (or dead, with §5 as the remainder) |
-| 2 | The rename (§2), whole corpus | the model's language everywhere; no semantics change |
-| 3 | Capability stack (§5): seam, transport, slicing-law conformance theory, `Formula()` leaf + xlsx reader + fixture, `ISpreadsheetSpace`, shell retirement | capabilities ship even if everything later stops |
-| 4 | `OrBlank()`; row projections: `Table(headerRows, row)` slot; positional rung | the ladder's rung 3; positional binder subsumed |
+| 1 | Kill the doubling: class-based fluent surface for `IProjection<in TSpace, T>`; scenario-1 gauntlet green — **DONE**, the doubling census (43 → 6) is recorded in §10 ("The doubling") | the typed layer is viable (or dead, with §5 as the remainder) |
+| 2 | The rename (§2), whole corpus — **DONE (2026-09-06)**, as recorded in §2 | the model's language everywhere; no semantics change |
+| 3 | Capability stack (§5): seam, transport, slicing-law conformance theory, `Formula()` leaf + xlsx reader + fixture, `ISpreadsheetSpace`, shell retirement — **DONE (2026-09-07)**, as built in §5.1 | capabilities ship even if everything later stops |
+| 4 | `OrBlank()`; row projections: `Table(headerRows, row)` slot; positional rung — **DONE**, folded into the ladder recorded in §6.1 | the ladder's rung 3; positional binder subsumed |
 | 5 | The bind + `CaptionMap`; `Table<T>()` as the reflection desugarer — **DONE (2026-09-09)**, desugar recorded as conceptual only (§6.1) | rungs 1–3; `TableRows*` retired into the `Table` family |
 | 6 | Entry B (`Over<T>()` scope), backend vocabulary statics, `MapWorkbook` sugar — **DONE (2026-09-10)**, as built in §4.1 | the announced-demand ergonomics |
 | 7 | Gauntlet rerun as acceptance + the work-Claude parser in final form — **DONE**, judged in §10 | the judgment evidence |
+
+All seven phases are DONE. The campaign's numbers table (end of §10) is the receipt: the
+suite grew from the 1,439-test checkpoint to 1,700 at phase 7 acceptance, both TFMs at
+0 warnings under `--no-incremental` at every phase including the last.
 
 ## 9. Open questions
 
@@ -519,9 +524,10 @@ type argument written to appease inference:
 | A hoisted *generic* helper (`Sections<TSpace, T>`) | the parameter, its `where TSpace : class, ISpace` constraint, and — recorded at phase 7 — its plain instantiation is `IProjection<ISpace, T>`, which does **not** convert to `IProjection<T>` (the latter derives from the former; the conversion runs one way) | appeasing the compiler. This is the tax's whole remaining balance |
 
 Scenario 2's original tax (`.Demanding<IFormulaSpace, IReadOnlyList<T>>()`, two type arguments of
-which one was pure ceremony) is not paid by anyone, because the reach-through spelling it existed
-for was never shipped: `Formula()` is a leaf (§5), and the witness form `.Demanding(Formulas)`
-writes no type argument at all.
+which one was pure ceremony) cannot be paid by anyone: the reach-through spelling it existed for was
+never shipped — `Formula()` is a leaf (§5) — and the witness form `.Demanding(Formulas)` writes no
+type argument at all, so the type-argument overload was deleted with gauntlet scenario 2c in the
+post-campaign cleanup. `Demanding` has one spelling.
 
 Verdict: **PASS.** The one site that reads as appeasement is the generic helper, it costs a
 constraint and a base-form return type, and it is the rarest shape in the vocabulary.
@@ -593,3 +599,18 @@ rather than silent.
 | 7 — acceptance | **1,700** | +16, plus the refusals ledger (14 recorded refusals, re-verified) |
 
 Both TFMs 0 warnings, `--no-incremental`, at every phase including this one.
+
+### Closing note: the pre-merge documentation pass
+
+After phase 7 acceptance, a three-sweep cleanup (plus a QA round) went over the whole
+tree on `experiment/typed-spaces` before merge: sweep 1 deleted what the campaign left
+dead — unused usings and the vestigial members this spec already recorded as gone (among
+them `Demanding<TSpace, T>()`'s type-argument spelling), with `EnforceCodeStyleInBuild`
+turned on to keep them out; sweep 2 was structural — the `git mv` renames that foldered
+`Unrect.Spreadsheets` and the test tree and split the strategy tests, under the
+conventions "libraries folder with flat namespaces; tests folder = namespace"; sweep 3
+(this pass) brought every status header, including this one, into agreement with the
+finished campaign, verified every doc path and operator claim against the settled tree,
+and re-verified the refusals ledger and the acceptance suite. The suite stood at 1,709 tests green, both TFMs at 0 warnings, when sweep 3 closed —
+the 9-test difference from the 1,700 recorded above is the QA round's regression coverage
+added after phase 7, not a phase this spec tracks.

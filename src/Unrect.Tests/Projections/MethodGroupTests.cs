@@ -86,6 +86,12 @@ namespace Unrect.Tests.Projections
       Func<ISpace, AppliedResult<int>> apply = report.Apply;
       Func<ISpace, MapResult<int>> diagnose = report.MapWithDiagnostics;
 
+      // The delegate route is pinned against the direct route, which is the contrast the class doc
+      // draws: an added optional parameter breaks `report.Map` as a method group while
+      // `report.Map(space)` keeps compiling. Reading the declaration both ways in one test is what
+      // makes that divergence visible here rather than in someone's script.
+      Assert.Equal(report.Map(space), map(space));
+
       Assert.Equal(map(space), apply(space).Value);
       Assert.Equal(map(space), diagnose(space).Value);
     }

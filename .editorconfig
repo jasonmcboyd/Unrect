@@ -14,7 +14,22 @@ indent_style = space
 indent_size = 2
 csharp_new_line_before_open_brace = all
 
-# The projection layer's folders group by role (Composites, Primitives, Views, Binding, Diagnostics)
-# while the namespace stays flat at Unrect.Projections — one import for the whole vocabulary.
-[src/Unrect/Projections/**.cs]
+# An unused using is dead code, and the compiler never says so — only the style analyzer does, and
+# only at a severity the build can see. EnforceCodeStyleInBuild (Directory.Build.props) runs the
+# analyzer; this line is what makes its finding an error under TreatWarningsAsErrors. IDE0005's own
+# default is "suggestion", which is invisible outside an editor.
+dotnet_diagnostic.IDE0005.severity = warning
+# Dead assignments fail the gate too (added once the tree was clean, 2026-09-08). Known Roslyn
+# quirk, probed and recorded in MethodGroupTests: an extension-method group conversion is not
+# counted as a read of its receiver, so a local read ONLY that way trips this falsely — give it
+# one ordinary read rather than a suppression.
+dotnet_diagnostic.IDE0059.severity = warning
+
+# A foldered library groups its files by role or subsystem while its namespace stays FLAT: the
+# projection layer (Composites, Primitives, Views, Binding, Diagnostics), the strategies (by axis)
+# and the spreadsheets package (Streaming, Formulas). One import gets the whole vocabulary, so a
+# folder here is navigation and never an API boundary — moving a file cannot break a consumer.
+# The tests are deliberately the other way round: their folders DO name their namespaces, because a
+# test namespace is nobody's import and folder-matching is the cheaper convention to check.
+[src/{Unrect/Projections,Unrect.Strategies,Unrect.Spreadsheets}/**.cs]
 dotnet_diagnostic.IDE0130.severity = none

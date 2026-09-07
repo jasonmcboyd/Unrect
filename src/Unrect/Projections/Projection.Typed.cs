@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 using Unrect.Core;
-using Unrect.Strategies;
 
 namespace Unrect.Projections
 {

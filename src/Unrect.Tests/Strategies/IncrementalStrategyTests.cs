@@ -7,7 +7,7 @@ using Xunit;
 
 using static Unrect.Tests.ProjectionTestSpaces;
 
-namespace Unrect.Tests
+namespace Unrect.Tests.Strategies
 {
   /// <summary>
   /// A strategy that is genuinely a per-row rule can be read one row at a time, so a bound can be

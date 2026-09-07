@@ -76,5 +76,5 @@ brevity* — the strongest single argument for the scoped entry, and it was not 
    `Formula()` ships as a leaf rather than as a reach-through extension (§5).
 3. **`Landmark` drops the demand at the seam.** The untyped lift is still reachable, deliberately,
    so the runtime fault has to stay correct: a boundary that cannot look FAULTS, and no tolerance
-   absorbs it (`src/Unrect.Tests/CapabilityFaultTests.cs`). The typed layer makes that fault
+   absorbs it (`src/Unrect.Tests/Spreadsheets/CapabilityFaultTests.cs`). The typed layer makes that fault
    unreachable in well-typed code; it does not delete it.

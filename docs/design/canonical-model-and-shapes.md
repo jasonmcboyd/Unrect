@@ -5,9 +5,16 @@ Core, full de-generification, adapter-owned blankness, review-hardened. Wave 2 (
 fused shape layer (`Unrect.Shapes`) per `wave2-shapes-spec.md` — applicative
 shape+projection fusion, `Table` tiers 1+2, `sepBy` `Repeat`, named shapes,
 `ShapeException` diagnostics. Wave 3 part 1 (2026-09-01, `diagnostics-and-choice-spec.md`):
-`Choice`, tolerance boundaries, and unconsumed-space warnings shipped; the decomposition
-trace, dry-run renderer, and capability seams remain proposed. (Original design session
-2026-08-31.)
+`Choice`, tolerance boundaries, and unconsumed-space warnings shipped. Of this roadmap's
+remaining items, **capability seams have since shipped** — `projection-model-spec.md` §5
+(2026-09-07) implements the interface-per-capability recipe this document called for
+(`IFormulaSpace`, discovered through a transport seam, demanded by the projections that use
+it, discharged by the backend at `Map`; nothing in Core names one), superseding the
+narrower preview in `capability-seam-notes.md`. The decomposition trace and the dry-run
+renderer remain proposed; no code implements either. The layer this document calls
+`Unrect.Shapes` was later renamed `Unrect.Projections` (`projection-model-spec.md` §2);
+read every `Shape`/`IShape<T>` mention below as that era's name for what is now
+`Projection`/`IProjection<T>`. (Original design session 2026-08-31.)
 **Drives:** the developer-ergonomics overhaul and the de-generification of the core
 
 This document captures a connected set of design decisions arrived at while reviewing
