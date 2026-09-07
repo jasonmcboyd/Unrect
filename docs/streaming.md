@@ -1,12 +1,12 @@
 # Streaming: Reading a Workbook a Window at a Time
 
 `SpreadsheetSpace.Create` reads a sheet whole: one file open, one pass, the whole grid
-resident before any shape sees it. `Workbook`, in the same `Unrect.Spreadsheets` package,
-reads the same files a *window* at a time — a bounded band of rows held in memory, refilled
-from the file as a shape's reads move past it. Same shapes, same results; the two doors
-differ only in the shape of their cost. This is the user-facing guide to that door: when to
-reach for it, the lifecycle rules, the sizing law, the statistics vocabulary, and the
-limits that are honestly still limits.
+resident before any projection sees it. `Workbook`, in the same `Unrect.Spreadsheets`
+package, reads the same files a *window* at a time — a bounded band of rows held in memory,
+refilled from the file as a projection's reads move past it. Same projections, same results;
+the two doors differ only in the shape of their cost. This is the user-facing guide to that
+door: when to reach for it, the lifecycle rules, the sizing law, the statistics vocabulary,
+and the limits that are honestly still limits.
 
 For the mechanics behind every claim here — the load loop, the reader pool's selection
 policy, the lock ordering — see `docs/design/streaming-spec.md`, the implementer's document.
@@ -68,8 +68,8 @@ sheet determines whether streaming is cheap, free, or a bad idea:
   sized by a per-row rule — `Range(RowsWhileAnyValue(), …)`, a `Range` or a `Table` left on
   its default placement, and `.Sized(RowsWhileAnyValue())` applied *directly to one of
   those* — its height is discovered *as the projection consumes it* rather than measured
-  first, so the rows pass the window once. The three built-in table projections
-  (`TableRows<T>()`, `TableRows()`, `TableRows(row => …)`) are written against that reading,
+  first, so the rows pass the window once. The built-in table readings
+  (`Table<T>()`, `Table()`, `Table(row => …)`) are written against that reading,
   through `TableView.StreamRows()`, and so is a block read by `Row(i)` or
   `block[column, row]`. A **dimension query** asks how far the extent goes and settles it
   there and then: `TableView.Rows`, `.RowCount`, `.Location`, `CellBlock.Height`, `.Rows`,
@@ -109,7 +109,7 @@ var result = projection.Map(book.Sheet("Data"));    // Sheet(name) vends a lent 
   tasks, and every sheet's chunk store.
 - **A vended view is a value, not a handle.** `Sheet(name)` returns an `ISpace` with no
   `Dispose` of its own. It can be sliced (`GetSubspace` returns another view over the same
-  store, at no extra memory cost), passed to any shape, and held as long as the caller
+  store, at no extra memory cost), passed to any projection, and held as long as the caller
   likes. The only thing that invalidates it is the `Workbook` it came from being disposed.
 - **`Sheet(name)` is idempotent.** Repeated calls for the same name return views over one
   store — this is the warm-reuse property the cost model above depends on. Resolution
@@ -121,8 +121,8 @@ var result = projection.Map(book.Sheet("Data"));    // Sheet(name) vends a lent 
   This exception is a **fault** (see [IO errors are faults](#io-errors-are-faults)): no
   tolerance boundary may absorb it as "section absent".
 - **Disposing while a map is running is a caller error, not corruption.** The running map
-  fails with `ObjectDisposedException`, wrapped by the engine as a `ShapeException` naming
-  the shape and the cell it was reading.
+  fails with `ObjectDisposedException`, wrapped by the engine as a `ProjectionException` naming
+  the projection and the cell it was reading.
 - **`Dispose` is idempotent and never blocks on a background warm.** A warm reader that is
   mid-open when `Dispose` runs finishes its open and then discovers the workbook is gone,
   disposing what it just opened rather than parking it — so returning promptly still
@@ -146,7 +146,7 @@ foreach (var path in monthlyCloseOfFunds)
 }
 ```
 
-Shapes are immutable and thread-safe, and workbooks are independent of each other, so this
+Projections are immutable and thread-safe, and workbooks are independent of each other, so this
 loop parallelises with nothing added:
 
 ```csharp

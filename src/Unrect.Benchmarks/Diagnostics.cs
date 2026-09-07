@@ -1,11 +1,9 @@
-using System.Collections.Generic;
-
 using BenchmarkDotNet.Attributes;
 
 using Unrect.Core;
-using Unrect.Shapes;
+using Unrect.Projections;
 
-using static Unrect.Shapes.Shape;
+using static Unrect.Projections.Projection;
 
 namespace Unrect.Benchmarks
 {
@@ -34,15 +32,15 @@ namespace Unrect.Benchmarks
   [BenchmarkCategory("Diagnostics")]
   public class Diagnostics
   {
-    private static readonly IShape<int> Section = Range(RowsWhileAnyValue(), b => b.Height);
+    private static readonly IProjection<int> Section = Range(RowsWhileAnyValue(), b => b.Height);
 
     // The loser goes first: a caption that is not in the document, so the choice pays for a full
     // failed attempt before the second alternative succeeds.
-    private static readonly IShape<int> FirstAlternativeLoses = Choice(
+    private static readonly IProjection<int> FirstAlternativeLoses = Choice(
       Section.Under(Caption("No Such Caption Exists Here")),
       Section.Under(Caption(CanonicalSpaces.DetailsCaption)));
 
-    private static readonly IShape<int> AbsorbedFailure =
+    private static readonly IProjection<int> AbsorbedFailure =
       Section.Under(Caption("No Such Caption Exists Here")).Optional();
 
     private ISpace _document = default!;
@@ -50,15 +48,15 @@ namespace Unrect.Benchmarks
     [GlobalSetup]
     public void Setup() => _document = CanonicalSpaces.SmallDocument;
 
-    /// <summary>The baseline the next row is measured against. Same shape, same document.</summary>
+    /// <summary>The baseline the next row is measured against. Same projection, same document.</summary>
     [Benchmark(Baseline = true)]
-    public int Map_Plain() => IrrReport.Shape.Map(_document).Summary.Count;
+    public int Map_Plain() => IrrReport.Projection.Map(_document).Summary.Count;
 
     /// <summary>The same parse with the diagnostic channel collecting.</summary>
     [Benchmark]
     public int Map_WithDiagnostics()
     {
-      var result = IrrReport.Shape.MapWithDiagnostics(_document);
+      var result = IrrReport.Projection.MapWithDiagnostics(_document);
 
       return result.Value.Summary.Count + result.Diagnostics.Count;
     }
@@ -77,13 +75,13 @@ namespace Unrect.Benchmarks
     /// <para>
     /// Read it against <c>Map_Plain</c>, not on its own: the failure is the report's LAST child, so
     /// this row parses the header, the summary and the first series before anything goes wrong. It
-    /// measures a failing parse end to end, which is what a user actually waits for -- isolating the
-    /// render alone would mean failing at the first child, and that would stop measuring the deep
-    /// path that makes a path expensive to build.
+    /// measures a failing parse end to end, which is what a user actually waits for -- isolating
+    /// the render alone would mean failing at the first child, and that would stop measuring the
+    /// deep path that makes a path expensive to build.
     /// </para>
     /// </summary>
     [Benchmark]
-    public int ShapeException_Render()
+    public int ProjectionException_Render()
     {
       try
       {
@@ -91,7 +89,7 @@ namespace Unrect.Benchmarks
 
         return 0;
       }
-      catch (ShapeException failure)
+      catch (ProjectionException failure)
       {
         return failure.Message.Length + failure.Path.Length + failure.Location.ToString().Length;
       }

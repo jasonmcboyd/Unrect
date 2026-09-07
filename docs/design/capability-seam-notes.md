@@ -1,10 +1,25 @@
 # Capability Seam — pre-tag verification (2026-09-02)
 
-**Status:** verification note, written before the first NuGet tag. The capability seam
+**Status:** verification note, written before the first NuGet tag, when the capability seam
 (canonical-model-and-shapes.md's deferred roadmap item: backend extras like formatting and
-native value types, under the rule that nothing in Core may require a capability) is NOT
-implemented — this note verifies that the v1 contract leaves it fully implementable
-**additively**, and records the recipe so future capability work follows one pattern.
+native value types, under the rule that nothing in Core may require a capability) was NOT
+yet implemented. This note verified that the v1 contract left it fully implementable
+**additively**, and recorded a recipe: a raw type-test at the surfaces that already exist
+(`view.Space is T`).
+
+**The seam has since shipped, and the recipe changed under it** (`projection-model-spec.md`
+§5, 2026-09-07, for `IFormulaSpace`). The raw type-test this note recommended turned out to
+be insufficient on its own: `BoundedSpace`, the engine's lazy-extent wrapper, defeats it —
+`space is IFormulaSpace` answers false through a deferred extent even when the space it
+wraps is formula-bearing, because the wrapper itself does not implement the capability. The
+shipped seam is therefore `space.Capability<T>()`, an unwrapping walk over a public
+`ISpaceChart { ISpace Underlying { get; } }` protocol that coordinate-preserving wrappers
+implement — the recipe this note's item 1 gestured at ("both boundary logic and projections
+can type-test") without anticipating a wrapper that could not answer for its inner space.
+Items 2–4 below (capability survival through slicing, additive interfaces on a sealed
+class, the withdrawn default-interface-member idea) held as written. See
+`projection-model-spec.md` §5 for the shipped design and `docs/vocabulary.md`'s
+"Capabilities" section for the user-facing vocabulary this note predates.
 
 ## The question
 

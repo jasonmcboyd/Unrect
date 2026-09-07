@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 
@@ -51,8 +50,8 @@ namespace Unrect.Tests.Streaming
     internal int Closes => Volatile.Read(ref _closes);
 
     /// <summary>
-    /// Held closed, every <see cref="Open"/> blocks on it. The way a warming race is arranged rather
-    /// than timed: the test decides exactly when the background open is allowed to finish.
+    /// Held closed, every <see cref="Open"/> blocks on it. The way a warming race is arranged
+    /// rather than timed: the test decides exactly when the background open is allowed to finish.
     /// </summary>
     internal ManualResetEventSlim? OpenGate { get; set; }
 
@@ -181,7 +180,7 @@ namespace Unrect.Tests.Streaming
       _cell = cell;
     }
 
-    /// <summary>A sheet spelled out row by row, for the shapes that need real content.</summary>
+    /// <summary>A sheet spelled out row by row, for the projections that need real content.</summary>
     internal static FakeSheet Of(string name, params object?[][] rows)
     {
       var columns = rows.Max(row => row.Length);
@@ -191,7 +190,7 @@ namespace Unrect.Tests.Streaming
         name,
         rows.Length,
         columns,
-        (column, row) => column < cells[row].Length ? ShapeTestSpaces.Adapt(cells[row][column]) : CellValue.Blank);
+        (column, row) => column < cells[row].Length ? ProjectionTestSpaces.Adapt(cells[row][column]) : CellValue.Blank);
     }
 
     internal string Name { get; }
@@ -206,8 +205,8 @@ namespace Unrect.Tests.Streaming
 
     /// <summary>
     /// Whether the cursor will say how big this sheet is. False models the xlsx files that carry no
-    /// <c>dimension</c> element: the sheet is exactly as big as it says here, and the reader reports
-    /// none of it until rows have gone past.
+    /// <c>dimension</c> element: the sheet is exactly as big as it says here, and the reader
+    /// reports none of it until rows have gone past.
     /// </summary>
     internal bool ReportsDimension { get; set; } = true;
 

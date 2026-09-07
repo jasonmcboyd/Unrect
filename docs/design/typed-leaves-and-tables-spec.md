@@ -5,6 +5,15 @@
 > `.On(m)`/`.Below(m)`/`.RightOf(m)`, `.OffsetBy(strategy)`, and
 > `VerticalRepeat`/`HorizontalRepeat` — see `docs/vocabulary.md`. The semantics described
 > here are unchanged.
+>
+> **Superseded spellings (2026-09-09):** the ladder this spec built as `TableRows*` is now
+> one `Table` family — `TableRows<T>()` → `Table<T>()`, `TableRows<T>(bind => …)` →
+> `Table<T>(bind => …)`, `TableRows()` → `Table()`, `TableRows(row => …)` →
+> `Table(row => …)` — and the layer is `Unrect.Projections` (`IShape<T>` → `IProjection<T>`,
+> `Shape` → `Projection`). Names only; every semantic in this spec still holds, and the
+> binding implementation described here is still the one that runs (see
+> `projection-model-spec.md` §6.1 for why the reflection rung is not literally desugared to
+> the caption bind).
 
 **Status:** IMPLEMENTED (2026-09-02, branch `experiment/combined-select`). All eight steps of §9 are done and the suite is green. Every §7 failure text and every §11 script expectation was reproduced, including the flat K-1 burn-down (92 of 2772), the entity card's keys and its 2x5 footprint at J2, and the accessor counts 53 → 22. The new test suites (§10) are QA's.
 

@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 
-using Unrect.Shapes;
+using Unrect.Projections;
 
-using static Unrect.Shapes.Shape;
+using static Unrect.Projections.Projection;
 
 namespace Unrect.Benchmarks
 {
@@ -26,9 +26,9 @@ namespace Unrect.Benchmarks
     IReadOnlyList<IReadOnlyList<CashFlow>> ByInception);
 
   /// <summary>
-  /// The reference document shape, lifted verbatim from <c>linqpad/investor-irr.linq</c>: a typed
-  /// header, a bound summary table, and one repeating block shape declared once and placed twice
-  /// under two captions, the first bounded by the caption that begins the second.
+  /// The reference document projection, lifted verbatim from <c>linqpad/investor-irr.linq</c>: a
+  /// typed header, a bound summary table, and one repeating block projection declared once and
+  /// placed twice under two captions, the first bounded by the caption that begins the second.
   ///
   /// <para>It is shared by the EndToEnd and Diagnostics families on purpose. EndToEnd measures what
   /// it costs to parse; Diagnostics measures what the same parse costs with the diagnostic channel
@@ -37,7 +37,7 @@ namespace Unrect.Benchmarks
   /// </summary>
   internal static class IrrReport
   {
-    private static readonly IShape<IrrReportHeader> Header = VerticalFlow(v => new IrrReportHeader(
+    private static readonly IProjection<IrrReportHeader> Header = VerticalFlow(v => new IrrReportHeader(
       Title: v.Next(Text()),
       Fund: v.Next(Text()),
       ReportDate: v.Next(Date()),
@@ -45,22 +45,22 @@ namespace Unrect.Benchmarks
 
     // Five of six captions bind with nothing said; only Investor needs one, because the sheet's
     // heading is plural where the member is singular.
-    private static readonly IShape<IReadOnlyList<SummaryRow>> Summary =
-      TableRows<SummaryRow>(bind => bind.Column(r => r.Investor, "Investors"));
+    private static readonly IProjection<IReadOnlyList<SummaryRow>> Summary =
+      Table<SummaryRow>(bind => bind.Column(r => r.Investor, "Investors"));
 
-    private static readonly IShape<IReadOnlyList<CashFlow>> InvestorBlock = TableRows<CashFlow>();
+    private static readonly IProjection<IReadOnlyList<CashFlow>> InvestorBlock = Table<CashFlow>();
 
-    private static readonly IShape<IReadOnlyList<IReadOnlyList<CashFlow>>> Series =
+    private static readonly IProjection<IReadOnlyList<IReadOnlyList<CashFlow>>> Series =
       VerticalRepeat(InvestorBlock, separatedBy: BlankRows());
 
-    private static readonly IShape<IReadOnlyList<IReadOnlyList<CashFlow>>> ByTransferDate = Series
+    private static readonly IProjection<IReadOnlyList<IReadOnlyList<CashFlow>>> ByTransferDate = Series
       .Under(Caption(CanonicalSpaces.DetailsCaption), Caption(CanonicalSpaces.TransferDateCaption))
       .Until(RowContaining(CanonicalSpaces.InceptionCaption));
 
-    private static readonly IShape<IReadOnlyList<IReadOnlyList<CashFlow>>> ByInception =
+    private static readonly IProjection<IReadOnlyList<IReadOnlyList<CashFlow>>> ByInception =
       Series.Under(Caption(CanonicalSpaces.InceptionCaption));
 
-    public static readonly IShape<Report> Shape = VerticalFlow(v => new Report(
+    public static readonly IProjection<Report> Projection = VerticalFlow(v => new Report(
       ReportHeader: v.Next(Header),
       Summary: v.Next(Summary),
       ByTransferDate: v.Next(ByTransferDate),
@@ -71,7 +71,7 @@ namespace Unrect.Benchmarks
     /// fails deep -- inside a section, inside the flow -- so the measured cost is a real path, not
     /// a root-level throw.
     /// </summary>
-    public static readonly IShape<Report> WithMissingSection = VerticalFlow(v => new Report(
+    public static readonly IProjection<Report> WithMissingSection = VerticalFlow(v => new Report(
       ReportHeader: v.Next(Header),
       Summary: v.Next(Summary),
       ByTransferDate: v.Next(ByTransferDate),

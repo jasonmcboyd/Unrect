@@ -168,7 +168,7 @@ number is deterministic; CI's run is what goes on the trend line.
 
 - `Map_WithDiagnostics / Map_Plain ≈ 0.98` at rig-build time: the diagnostics channel is
   free on a clean parse.
-- `ShapeException_Render` measures a realistic failing parse (header + summary + first
+- `ProjectionException_Render` measures a realistic failing parse (header + summary + first
   series parse before the failure), not isolated render cost — read it against
   `Map_Plain`.
 - `Values.Create_FromInts` allocating ~96 MB/op (class-`CellValue` era) is the number the

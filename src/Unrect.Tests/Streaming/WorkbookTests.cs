@@ -1,17 +1,16 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
 using Unrect.Core;
-using Unrect.Shapes;
+using Unrect.Projections;
 using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Shapes.Shape;
+using static Unrect.Projections.Projection;
 
 namespace Unrect.Tests.Streaming
 {
@@ -102,9 +101,10 @@ namespace Unrect.Tests.Streaming
     [Fact]
     public void AnIndexPastTheEndOfAViewIsABoundsCondition()
     {
-      // OutOfBoundsException and not IndexOutOfRangeException, deliberately: the engine's fault list
-      // classifies the latter as a bug in the reading code, non-absorbable — while running off the
-      // end of a space is an ordinary bounds condition a declaration is allowed to recover from.
+      // OutOfBoundsException and not IndexOutOfRangeException, deliberately: the engine's fault
+      // list classifies the latter as a bug in the reading code, non-absorbable — while running off
+      // the end of a space is an ordinary bounds condition a declaration is allowed to recover
+      // from.
       using var book = Workbook.Open(Path("simple-report.xlsx"), Cold());
       var space = book.Sheet("Report");
 
@@ -170,8 +170,8 @@ namespace Unrect.Tests.Streaming
     public void WalkingOnToALaterSheetIsServedByTheReadersRatherThanByAnewOne()
     {
       // The walk is an ordinary forward read: the reader already parked in the workbook does it.
-      // Vending a second sheet therefore costs no open at all, and what the reading afterwards costs
-      // is one reach backwards — to Summary, which the walk to Detail has now moved past.
+      // Vending a second sheet therefore costs no open at all, and what the reading afterwards
+      // costs is one reach backwards — to Summary, which the walk to Detail has now moved past.
       using var book = Workbook.Open(Path("multi-sheet.xlsx"), Cold());
 
       var summary = book.Sheet("Summary");
@@ -208,8 +208,8 @@ namespace Unrect.Tests.Streaming
     public void EverySheetOfAWorkbookCanBeReadInAnyOrder()
     {
       // The general statement, over all six orders of three sheets: whichever way a caller names
-      // them, every one vends and reads the same cells. One order failing out of six was the shape
-      // of the bug, so the pin is the permutation rather than a case of it.
+      // them, every one vends and reads the same cells. One order failing out of six was the
+      // projection of the bug, so the pin is the permutation rather than a case of it.
       var sheets = new[] { "Cover", "Summary", "Detail" };
       var heights = new Dictionary<string, int> { ["Cover"] = 2, ["Summary"] = 4, ["Detail"] = 6 };
 
@@ -284,8 +284,8 @@ namespace Unrect.Tests.Streaming
     public void OpeningAndReadingOneSheetCostsOneReader()
     {
       // The lazy catalogue's whole purpose. Open parks a reader at sheet 0; Sheet(name) walks it to
-      // the sheet asked for, recording what it passes, and then ADOPTS it — already open, already in
-      // the right place. Walking the whole catalogue eagerly would give better errors and a free
+      // the sheet asked for, recording what it passes, and then ADOPTS it — already open, already
+      // in the right place. Walking the whole catalogue eagerly would give better errors and a free
       // SheetNames at the cost of a second multi-second open in the single-sheet case that is most
       // usage, which is the trade this number represents.
       using var book = Workbook.Open(Path("simple-report.xlsx"), Cold());
@@ -326,8 +326,8 @@ namespace Unrect.Tests.Streaming
     [Fact]
     public void TheReaderThatWalksOnToALaterSheetIsTheOneThatThenReadsIt()
     {
-      // Cross-sheet reuse, at the workbook level. Naming a sheet beyond the catalogue's edge walks a
-      // reader forward to find it, and that reader is left standing exactly where the reading is
+      // Cross-sheet reuse, at the workbook level. Naming a sheet beyond the catalogue's edge walks
+      // a reader forward to find it, and that reader is left standing exactly where the reading is
       // about to begin — so the rows of the second sheet cost nothing beyond the walk itself. This
       // is the argument for owning the readers at the book rather than at the sheet: a position is
       // a place in a WORKBOOK, and moving on to the next sheet is a forward move like any other.
@@ -358,9 +358,9 @@ namespace Unrect.Tests.Streaming
     public void AWalkDownATallSheetEvictsAsItGoesAndReadsEveryRowOnce()
     {
       // The window doing its job on a real workbook. 1,201 rows in 64-row chunks is nineteen loads;
-      // a four-chunk budget means fifteen of them are dropped again on the way down; and not one row
-      // is read twice. This is the shape of every monotone parse, and the reason streaming costs
-      // about a third more time for about a third of the memory.
+      // a four-chunk budget means fifteen of them are dropped again on the way down; and not one
+      // row is read twice. This is the shape of every monotone parse, and the reason streaming
+      // costs about a third more time for about a third of the memory.
       using var book = Workbook.Open(Path("tall-ledger.xlsx"), Cold(windowRows: 256, chunkRows: 64));
       var space = book.Sheet("Ledger");
 
@@ -396,7 +396,8 @@ namespace Unrect.Tests.Streaming
       // semantics. The counter says a band did not fit; ChunkReloads says what not fitting cost.
       // One overrun with zero reloads is the honest reading of a monotone walk: the root extent
       // could not be held, and because nothing ever swept it twice, holding it would have bought
-      // nothing. The pair is the diagnostic — overruns WITH reloads is the collapse worth acting on.
+      // nothing. The pair is the diagnostic — overruns WITH reloads is the collapse worth acting
+      // on.
       using var book = Workbook.Open(Path("tall-ledger.xlsx"), Cold(windowRows: 256, chunkRows: 64));
       var space = book.Sheet("Ledger");
 
@@ -501,10 +502,10 @@ namespace Unrect.Tests.Streaming
 
       var declaration = Column(4, c => c[0].GetString()).Named("header");
 
-      var direct = Assert.Throws<ShapeException>(() => declaration.Map(space));
+      var direct = Assert.Throws<ProjectionException>(() => declaration.Map(space));
       Assert.IsType<ObjectDisposedException>(direct.GetBaseException());
 
-      var tolerated = Assert.Throws<ShapeException>(() => declaration.Optional().Map(space));
+      var tolerated = Assert.Throws<ProjectionException>(() => declaration.Optional().Map(space));
       Assert.IsType<ObjectDisposedException>(tolerated.GetBaseException());
     }
 
@@ -548,7 +549,7 @@ namespace Unrect.Tests.Streaming
       var summary = book.Sheet("Summary");
       var detail = book.Sheet("Detail");
 
-      var declaration = TableRows(row => row[0].GetString());
+      var declaration = Table(row => row[0].GetString());
 
       var serial = new[] { declaration.Map(summary), declaration.Map(detail) };
 

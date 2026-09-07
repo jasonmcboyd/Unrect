@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 
 using Unrect.Core;
 using Unrect.Spreadsheets;
@@ -181,9 +180,13 @@ namespace Unrect.Tests
     [Fact]
     public void TheEagerSpreadsheetDoorKeepsTheSameBoundsContract()
     {
-      // The third implementation, which has to be reached through a file because that is the only
-      // way it can be built. Same rule, stated against a real workbook so the delegation the eager
-      // reader is made of cannot quietly swallow it.
+      // The third implementation, reached through a file because that is the only way this door can
+      // be entered. What comes back today is the GridSpace the reader filled — the delegation shell
+      // that used to sit in front of it retired when the eager door became a factory — so this fact
+      // is now a statement about the door's PRODUCT rather than about a wrapper's forwarding. It
+      // stays because the door is free to hand back something else tomorrow (it already does when
+      // formulas are asked for, and that space is a wrapper), and this is where such a change would
+      // have to keep the bounds contract.
       var space = SpreadsheetSpace.Create(
         System.IO.Path.Combine(AppContext.BaseDirectory, "TestData", "simple-report.xlsx"),
         "Report");
@@ -222,6 +225,197 @@ namespace Unrect.Tests
 
       Assert.Throws<OutOfBoundsException>(() => { _ = eager[0, 0]; });
       Assert.Throws<OutOfBoundsException>(() => { _ = streamed[0, 0]; });
+    }
+
+    // --- The slicing law ----------------------------------------------------------------------------
+    //
+    // "Slicing never changes the geometry. A capable space's subspaces are capable, coordinates
+    // translated; a slice may never invent capability its parent lacked nor shed what it had.
+    // Forgetting is always safe (contravariance licenses it); inventing is the sin."
+    //   — the projection-model spec, §5.
+    //
+    // It is stated as a theory over every capable backend for the same reason the bounds rules above
+    // are: a declaration cannot see which door it was handed, so a law kept by one implementation and
+    // not another is not a law. Two implementations are the minimum that makes the difference between
+    // a law and a habit visible, and the second one (FormulaGridSpace, beside this file) is written
+    // from the interface's documented obligations alone — which is all an implementor outside this
+    // repository has.
+    //
+    // Everything here asks through Capability<T>() rather than by type test, because that is how a
+    // declaration asks: a raw `space is IFormulaSpace` answers about whichever wrapper the engine
+    // happens to be holding, and is documented as the wrong question.
+
+    /// <summary>The doors that carry formulas: the eager reader over the fixture, and the double.</summary>
+    public static TheoryData<string> CapableDoors => new TheoryData<string> { "xlsx", "double" };
+
+    /// <summary>
+    /// The rectangles the law is sampled at: the whole space, a column band, a row band that spans
+    /// two unrelated formula groups, and an off-origin corner. Every one of them holds at least one
+    /// formula in both doors, which is what the non-vacuity guard below insists on — a theory that
+    /// compared null to null everywhere would pass over a space that had lost its formulas entirely.
+    /// </summary>
+    private static readonly (Offset At, Area Of)[] Samples =
+    {
+      (new Offset(0, 0), new Area(4, 10)),
+      (new Offset(3, 1), new Area(1, 4)),
+      (new Offset(1, 6), new Area(3, 3)),
+      (new Offset(1, 1), new Area(3, 8)),
+    };
+
+    /// <summary>
+    /// A capable space, at least 4x10 so every sample fits and both doors are sampled at the same
+    /// coordinates. Both put formulas in the same places (a shared column at D2:D5, a total at D7, a
+    /// column-shifted group across B9:D9) so that one sample list can be non-vacuous for both; the
+    /// TEXT of the formulas is deliberately unalike, because nothing in the law is about the text.
+    /// </summary>
+    private static IFormulaSpace CapableDoor(string door)
+    {
+      if (door == "xlsx")
+        return SpreadsheetSpace.CreateWithFormulas(
+          System.IO.Path.Combine(AppContext.BaseDirectory, "TestData", "formulas.xlsx"),
+          "Formulas");
+
+      var values = new CellValue[10, 4];
+      var formulas = new string?[10, 4];
+
+      for (var row = 0; row < 10; row++)
+        for (var column = 0; column < 4; column++)
+          values[row, column] = CellValue.Of($"{column},{row}");
+
+      for (var row = 1; row <= 4; row++)
+        formulas[row, 3] = $"B{row + 1}*C{row + 1}";
+
+      formulas[6, 3] = "SUM(D2:D5)";
+      formulas[8, 1] = "LOG10(B8)+B8";
+      formulas[8, 2] = "LOG10(C8)+C8";
+      formulas[8, 3] = "LOG10(D8)+D8";
+
+      return new FormulaGridSpace(values, formulas);
+    }
+
+    [Theory]
+    [MemberData(nameof(CapableDoors))]
+    public void EverySubspaceOfACapableSpaceIsStillCapable(string door)
+    {
+      // Shedding is the failure this forbids. A slice that handed back a plain space would tell a
+      // declaration the file has no formulas — and it would say it in the one voice a declaration
+      // cannot argue with, because absence at a projection site is a fact about the cell.
+      ISpace space = CapableDoor(door);
+
+      Assert.True(space.Area.Width >= 4 && space.Area.Height >= 10, "the samples need a 4x10 space");
+
+      foreach (var sample in Samples)
+      {
+        var slice = space.GetSubspace(sample.At, sample.Of);
+
+        Assert.NotNull(slice.Capability<IFormulaSpace>());
+
+        // ...and a slice of a slice, and a slice of THAT: the property has to survive depth, which
+        // is what a nested declaration does to a space on the way down.
+        var inner = slice.GetSubspace(new Offset(0, 0), new Area(1, 1)).GetSubspace(new Offset(0, 0));
+
+        Assert.NotNull(inner.Capability<IFormulaSpace>());
+      }
+    }
+
+    [Theory]
+    [MemberData(nameof(CapableDoors))]
+    public void ASliceAnswersAboutItsOwnCellsAtTranslatedCoordinates(string door)
+    {
+      // The half that is worse than shedding when it is wrong: a slice that forwarded without
+      // translating would answer about the parent's cells and look entirely plausible doing it.
+      var parent = CapableDoor(door);
+      var formulasSeen = 0;
+
+      foreach (var sample in Samples)
+      {
+        var slice = Assert.IsAssignableFrom<IFormulaSpace>(parent.GetSubspace(sample.At, sample.Of));
+
+        for (var row = 0; row < sample.Of.Height; row++)
+          for (var column = 0; column < sample.Of.Width; column++)
+          {
+            var expected = parent.FormulaAt(sample.At.Width + column, sample.At.Height + row);
+
+            Assert.Equal(expected, slice.FormulaAt(column, row));
+
+            if (expected is not null)
+              formulasSeen++;
+          }
+      }
+
+      // Non-vacuity: comparing null to null proves nothing, so the samples have to have found some.
+      Assert.True(formulasSeen > 0, $"the samples found no formulas at all in the '{door}' door");
+    }
+
+    [Theory]
+    [MemberData(nameof(CapableDoors))]
+    public void ANestedSliceTranslatesOnceForEachSlice(string door)
+    {
+      // Two offsets composed, which is where a translating wrapper that added its origin twice — or
+      // handed the inner space back through ISpaceChart, which is what that interface forbids — would
+      // finally show up.
+      var parent = CapableDoor(door);
+
+      var band = parent.GetSubspace(new Offset(1, 1), new Area(3, 8));      // B2:D9
+      var corner = band.GetSubspace(new Offset(1, 5), new Area(2, 3));                // C7:D9
+
+      var formulas = Assert.IsAssignableFrom<IFormulaSpace>(corner);
+
+      Assert.Equal(parent.FormulaAt(2, 6), formulas.FormulaAt(0, 0));
+      Assert.Equal(parent.FormulaAt(3, 6), formulas.FormulaAt(1, 0));
+      Assert.Equal(parent.FormulaAt(3, 8), formulas.FormulaAt(1, 2));
+
+      // The one the coordinates are actually about: D7 carries a formula and C7 does not, so a
+      // slice that had translated by the wrong amount could not produce this pair.
+      Assert.Null(formulas.FormulaAt(0, 0));
+      Assert.NotNull(formulas.FormulaAt(1, 0));
+    }
+
+    [Theory]
+    [MemberData(nameof(CapableDoors))]
+    public void ACapableSliceRefusesCoordinatesOutsideItself(string door)
+    {
+      // A capability answers about the cells the slice addresses, so it has the slice's edges and not
+      // its parent's — the same bounds contract the indexer keeps, for the same reason. Without this
+      // a slice could read a formula off a cell it does not contain.
+      var slice = Assert.IsAssignableFrom<IFormulaSpace>(
+        CapableDoor(door).GetSubspace(new Offset(3, 1), new Area(1, 4)));
+
+      Assert.Throws<OutOfBoundsException>(() => slice.FormulaAt(-1, 0));
+      Assert.Throws<OutOfBoundsException>(() => slice.FormulaAt(1, 0));
+      Assert.Throws<OutOfBoundsException>(() => slice.FormulaAt(0, -1));
+      Assert.Throws<OutOfBoundsException>(() => slice.FormulaAt(0, 4));
+    }
+
+    [Theory]
+    [MemberData(nameof(Doors))]
+    public void NoSliceOfAnIncapableSpaceInventsACapability(string door)
+    {
+      // Inventing is the sin, and it is the one a convenience would commit: a slice that answered
+      // FormulaAt with null over a grid built in memory would be reporting, cell by cell, that a
+      // file nobody read has no formulas in it.
+      var space = Door(door);
+
+      Assert.Null(space.Capability<IFormulaSpace>());
+
+      var slice = space.GetSubspace(new Offset(1, 0), new Area(2, 2));
+
+      Assert.False(slice is IFormulaSpace);
+      Assert.Null(slice.Capability<IFormulaSpace>());
+      Assert.Null(slice.GetSubspace(new Offset(1, 1)).Capability<IFormulaSpace>());
+    }
+
+    [Fact]
+    public void ThePlainSpreadsheetDoorSlicesAsIncapablyAsItReads()
+    {
+      // The door that COULD have carried formulas and was not asked to. Its slices must stay as
+      // silent as it is, or the opt-in would be undone one subspace down.
+      var space = SpreadsheetSpace.Create(
+        System.IO.Path.Combine(AppContext.BaseDirectory, "TestData", "formulas.xlsx"),
+        "Formulas");
+
+      Assert.Null(space.Capability<IFormulaSpace>());
+      Assert.Null(space.GetSubspace(new Offset(1, 1), new Area(2, 2)).Capability<IFormulaSpace>());
     }
 
     [Fact]

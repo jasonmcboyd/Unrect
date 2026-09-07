@@ -1,20 +1,25 @@
 # The Unrect Vocabulary
 
-A survey of every operator in the shape layer, grouped by role in the algebra. Everything
-here is available from a single `using static Unrect.Shapes.Shape;` — except the two raw
-lifts noted under Placement (`OffsetStrategies.To`/`Past`), which are an escape hatch by
-design and spelled like one. For semantics in depth, each group cites its governing spec
+A survey of every operator in the projection layer, grouped by role in the algebra. Everything
+here is available from a single `using static Unrect.Projections.Projection;` — except the
+two raw lifts noted under Placement (`OffsetStrategies.To`/`Past`), which are an escape hatch
+by design and spelled like one. For semantics in depth, each group cites its governing spec
 in `docs/design/`.
 
-Current as of 2026-09-05 (post the placement-vocabulary renovation). When this file and a spec
-disagree, the spec is wrong or this file is stale — fix whichever it is; do not let them
-drift silently.
+Current as of 2026-09-10 (post the projection rename: the layer is `Unrect.Projections`, the
+static vocabulary class is `Projection`, and "shape" now means only the geometry of a space;
+post phase 5: the table ladder is one `Table` family and `TableRows*` is gone; post phase 6:
+`Projection.Over<T>()` scopes a declaration to a space and `MapWorkbook` is the streaming
+loop's one-liner).
+When this file and a spec disagree, the spec is wrong or this file is stale — fix whichever it
+is; do not let them drift silently.
 
 ## Leaves — where cells become values
 
 | Operator | Yields | Notes |
 |---|---|---|
 | `Text()` `Decimal()` `Integer()` `Double()` `Date()` `Boolean()` | typed value | One cell; asserts its `CellKind`, applies the canonical accessor. The family is CLOSED over `CellValue`'s accessor set and never leads it — no `Long()`, ever; conversions beyond the set are `Select` territory (typed-leaves-and-tables-spec §2, "the firewall") |
+| `Text().OrBlank()` `Decimal().OrBlank()` … | `T?` | The same reading, tolerating a BLANK cell: null, quietly, with no diagnostic — where `.Optional()` absorbs a failure and records a Warning. A wrong kind still fails loudly, because blankness is about the data and a kind is about the format. The standalone spelling of a nullable table member's tolerance; belongs to the typed leaves only (anywhere else it is a declaration error at construction) |
 | `Cell(v => ...)` | `T` | One cell, arbitrary projection — the escape hatch |
 | `Row(r => ...)` / `Row(width, r => ...)` / `Row(IColumnStrategy, r => ...)` | from `CellStrip` | One row; width discovered (`while any value`), explicit count, or by column strategy (explicit counts are for structurally fixed regions only) |
 | `Column(c => ...)` / `Column(height, c => ...)` / `Column(IRowStrategy, c => ...)` | from `CellStrip` | One column; height discovered (`while any value`), explicit count, or by row strategy (explicit counts are for structurally fixed regions only) |
@@ -24,21 +29,40 @@ drift silently.
 
 ## Tables — the ladder of commitment
 
-| Operator | Yields | Notes |
-|---|---|---|
-| `TableRows()` | rows as caption-keyed dictionaries of `CellValue` | Exploratory: keys discovered from the file, looked up under the binding comparer; duplicate captions are a loud failure |
-| `TableRows<T>()` / `TableRows<T>(bind => ...)` | `IReadOnlyList<T>` | Typed: captions bound to properties by `CaptionComparer` (case- and whitespace-insensitive), kinds inferred from property types (the closed set: `string`, `decimal`, `double`, `int`, `DateTime`, `bool`, their `Nullable<>` forms, and `CellValue`), `Nullable<>` AND an annotated `string?` both mean per-column blank tolerance, strict by default with `bind.Ignore(t => t.X)`; overrides `bind.Column(t => t.X, "caption")` |
-| `TableRows(r => ...)` | `IReadOnlyList<T>` (`T` per row) | Full control: hand-written per-row projection with `r["Caption"]` / `r[i]` |
-| `Table(t => ...)` | `T` for the whole table | Full control: one hand-written projection over the `TableView`, for tables that don't decompose row-by-row |
+One name, five rungs — the whole family is `Table`, and what changes from rung to rung is
+how much of the record is declared and how much is written out.
 
-Graduate up the ladder as a table's shape firms: dictionary first to sight-read an
-unfamiliar workbook, typed once you commit, lambda only when a column needs logic.
+| Rung | Operator | Yields | Notes |
+|---|---|---|---|
+| 1 | `Table<T>()` | `IReadOnlyList<T>` | Typed: captions bound to properties by `CaptionComparer` (case- and whitespace-insensitive), kinds inferred from property types (the closed set: `string`, `decimal`, `double`, `int`, `DateTime`, `bool`, their `Nullable<>` forms, and `CellValue`), `Nullable<>` AND an annotated `string?` both mean per-column blank tolerance, strict one way (every member must find a column; an unclaimed column is fine) |
+| 2 | `Table<T>(bind => ...)` | `IReadOnlyList<T>` | The same, adjusted: `bind.Column(t => t.X, "caption")` for a caption the comparer would not find, `bind.Ignore(t => t.X)` for a member this table does not carry |
+| 3 | `Table(headerRows: 1, eachRow: captions => ...)` | `IReadOnlyList<T>` | **The bind**: the header is read, and the captions it carries are handed to a lambda that returns the projection for one record — `Overlay(o => new Row(o.Next(Decimal().Right(captions["Amount"]))))`. The bind runs ONCE PER `Map` (after the header, before any row) and builds a description; the description is applied per row by the engine. Caption positions are absolute, so a reordered export needs no change. A missing or duplicated caption is a loud failure naming the header cells |
+| 4 | `Table(headerRows:, eachRow:)` | `IReadOnlyList<T>` | The row slot: every body row is handed to a PROJECTION as its own one-row extent, so the row is inspectable, reusable, and says in its own type what it demands (a row reading `Formula()` makes the table demanding). `HorizontalFlow` of leaves for adjacent columns, `Overlay` + `.Right(n)` + `.OrBlank()` for sparse ones. A failure inside a record reads `Table[3] -> 'eachRow' -> …`, counting records from zero as a repeat does. A header here is consumed, not read — reading it is rung 3 |
+| — | `Table()` | rows as caption-keyed dictionaries of `CellValue` | Exploratory: keys discovered from the file, looked up under the binding comparer; a column with no caption and two captions that collide are both loud failures |
+| 5 | `Table(r => ...)` / `Table(headerRows, r => ...)` | `IReadOnlyList<T>` (`T` per row) | Full control: hand-written per-row reading with `r["Caption"]` / `r[i]` |
+| 5 | `Table(t => ...)` / `Table(headerRows, t => ...)` | `T` for the whole table | Full control: one hand-written reading over the `TableView`, for tables that don't decompose row-by-row |
+
+Graduate up the ladder as a table's shape firms: `Table()` first to sight-read an
+unfamiliar workbook, `Table<T>()` once you commit, the bind when the columns are this
+file's rather than the format's, and a lambda only when a column needs logic — everything
+inside one is invisible to typing, tooling and inversion alike.
+
+Two notes the overloads earn:
+
+- **A record projection that discovers its own extent measures itself, not the band.**
+  `Row(cells => ...)` as an `eachRow` is "as wide as the leading columns that carry
+  values", which over a sparse export is width 0. `Range(WholeExtent(), ...)`, or an
+  `Overlay` whose children place themselves, reads the band as it was handed over.
+- **A lambda that touches nothing distinctive is ambiguous between the rung-5 pair**
+  (`Table(x => 0)`, `Table(x => x.Location.A1)` — `TableRow` and `TableView` both have a
+  `Location`). The compiler names both candidates; say which by typing the parameter:
+  `Table((TableRow r) => 0)`.
 
 ## Layout composites — the geometry claims
 
 | Operator | Claim |
 |---|---|
-| `VerticalFlow(v => ...)` / `HorizontalFlow(v => ...)` | Stacked bands, one per child: each child's band spans the flow's full width, so no sibling ever shares it, even where the child's own content is narrower — but that is a claim on the band, not on what the flow reports consumed. Consumed across the axis is the max over children of their own consumed width (bounding box), not automatically the full width. `v.Next(shape)` declares the next child and returns its value; any arity |
+| `VerticalFlow(v => ...)` / `HorizontalFlow(v => ...)` | Stacked bands, one per child: each child's band spans the flow's full width, so no sibling ever shares it, even where the child's own content is narrower — but that is a claim on the band, not on what the flow reports consumed. Consumed across the axis is the max over children of their own consumed width (bounding box), not automatically the full width. `v.Next(projection)` declares the next child and returns its value; any arity |
 | `Overlay(o => ...)` | One shared band; each child finds its own place by its own placement; no advance between children; consumed = bounding box |
 | `VerticalRepeat(item, separatedBy:, atLeast:)` / `HorizontalRepeat(...)` | N items with separators (`sepBy`). A blank band is a separator, never a terminator — bound the repeat with `.Until` to end it at content. Both axes are marked, like the flows: no substrate's dominant axis is the unmarked normal case |
 | `Choice(a, b, ...)` | The first alternative that fits; an Info per near-miss; a losing branch's diagnostics roll back |
@@ -50,14 +74,14 @@ layout problem.
 
 ## Placement — where things start
 
-**Silence is adjacency.** A shape with no placement modifier starts exactly where the one
+**Silence is adjacency.** A projection with no placement modifier starts exactly where the one
 before it left off. Every operator below is therefore a *declared exception*, and each word
 names the kind of reason it is an exception for — so reading a declaration you never have to
-ask why a shape moved.
+ask why a projection moved.
 
 | Operator | Kind of reason | Meaning |
 |---|---|---|
-| `.On(rowLandmark)` / `.On(columnLandmark)` | a relation | The shape starts AT the match and OWNS that row/column. One word for both axes: occupancy has no direction, and the argument's type carries the axis |
+| `.On(rowLandmark)` / `.On(columnLandmark)` | a relation | The projection starts AT the match and OWNS that row/column. One word for both axes: occupancy has no direction, and the argument's type carries the axis |
 | `.Below(rowLandmark)` | a relation | Starts on the row directly below the match — exactly one beyond, which is the matched row's own height and never a step you chose |
 | `.RightOf(columnLandmark)` | a relation | The column twin of `.Below`. Spelled apart because the direction is part of what is being said, and it is grid-absolute (down the sheet, right along it), not "the next band along whichever way this flow runs" |
 | `.AfterBlankRows()` / `.AfterBlankColumns()` | filler | Step over the blank band in front. Tolerant by nature: no filler means no movement, not a failure |
@@ -66,8 +90,8 @@ ask why a shape moved.
 | `.Sized(area)` | — | Not placement; the extent's own replace (see below) |
 
 The anchors and `.OffsetBy` **REPLACE** the offset (including a default — that is how a `Table`
-is told not to skip its blank rows); the movements **COMPOSE** onto whatever the shape already
-had. A declared area survives all of them.
+is told not to skip its blank rows); the movements **COMPOSE** onto whatever the projection
+already had. A declared area survives all of them.
 
 Absence semantics live in the word, not in a flag: a landmark that matches nothing is **loud**
 (`Optional`/`Else` absorb it; a repeat reads it as having run out of sections), while a
@@ -81,7 +105,7 @@ declaration that it is being reached for:
 | `SkipRows(n)` `SkipColumns(n)` `BlankRows()` `BlankColumns()` | Fixed and blank-skipping offsets |
 | `Then(a, b, ...)` | Sequence offsets; each searches only the space the previous shift left (seek the axis that discards least, first) |
 | `FromRight(w)` / `FromBottom(h)` | From-end anchoring |
-| `OffsetStrategies.To(m)` / `Past(m)` | The lifts `.On` / `.Below` / `.RightOf` are built on. Public in `Unrect.Strategies`, deliberately NOT re-exported on `Shape` — at shape level a landmark is placed by a modifier that names its own relation, and the raw lift is an escape hatch spelled like one |
+| `OffsetStrategies.To(m)` / `Past(m)` | The lifts `.On` / `.Below` / `.RightOf` are built on. Public in `Unrect.Strategies`, deliberately NOT re-exported on `Projection` — at projection level a landmark is placed by a modifier that names its own relation, and the raw lift is an escape hatch spelled like one |
 
 ## Placement — the six laws
 
@@ -141,8 +165,8 @@ Three matching rules exist in the library and deliberately never unify
 also `TableView`/`TableRow`'s by-caption row access — `row["Caption"]` resolves trimmed
 and case-insensitively, the same rule, so it has consumers beyond matchers and `Caption`
 — literal ↔ cell text), **`LabelEquals`** (`Field` only — content rule plus a trailing
-colon-run ignored), and **`CaptionComparer`** (typed `TableRows<T>` binding and the
-`TableRows()` dictionary's keys — case- and whitespace-insensitive, bridging caption ↔
+colon-run ignored), and **`CaptionComparer`** (typed `Table<T>` binding, the `CaptionMap`
+a bind is handed, and the `Table()` dictionary's keys — case- and whitespace-insensitive, bridging caption ↔
 identifier). Each bridges a different pair of vocabularies; a declaration must never
 start in one and end in another.
 
@@ -150,10 +174,10 @@ start in one and end in another.
 
 | Operator | Meaning |
 |---|---|
-| `.Under(params captions)` | Captions stacked above the shape, in reading order — sugar desugaring to the plain flow, so every caption is a real tree node with a real path segment |
+| `.Under(params captions)` | Captions stacked above the projection, in reading order — sugar desugaring to the plain flow, so every caption is a real tree node with a real path segment |
 | `.Padded(all)` / `(h, v)` / `(l, t, r, b)` | Shrink the inside; consumed includes the border |
-| `.Optional()` | Tolerance boundary: absorbs a failure, yields `default`, records a Warning. Absorbed shapes consume nothing — pair with content-anchored siblings |
-| `.Else(fallbackShape)` / `.Else(value)` | Fallback boundary; Warning carries the primary's failure; the fallback's identifier is captured for its own diagnostics |
+| `.Optional()` | Tolerance boundary: absorbs a failure, yields `default`, records a Warning. Absorbed projections consume nothing — pair with content-anchored siblings |
+| `.Else(fallbackProjection)` / `.Else(value)` | Fallback boundary; Warning carries the primary's failure; the fallback's identifier is captured for its own diagnostics |
 | `.Select(f)` | Transform the value (single-value only) |
 | `.Named(name)` | Explicit name — purely an OVERRIDE now; see the naming ladder below |
 
@@ -161,19 +185,19 @@ start in one and end in another.
 
 | Operator | Returns |
 |---|---|
-| `shape.Map(space)` | `T` (absorbed-tolerance diagnostics discarded) |
-| `shape.MapWithDiagnostics(space)` | `MapResult<T>`: value + `ShapeDiagnostic` list (incl. the unconsumed-space Info — the burn-down meter) |
-| `shape.Apply(space)` | value + offset + consumed |
+| `projection.Map(space)` | `T` (absorbed-tolerance diagnostics discarded) |
+| `projection.MapWithDiagnostics(space)` | `MapResult<T>`: value + `ProjectionDiagnostic` list (incl. the unconsumed-space Info — the burn-down meter) |
+| `projection.Apply(space)` | value + offset + consumed |
 
 All three are usable as method groups — `spaces.Select(report.Map)` — and pinned so
 (`MethodGroupTests`): no optional parameter may ever be added to them.
 
 **Where the `space` comes from.** `SpreadsheetSpace.Create(path, sheet)` (`Unrect.Spreadsheets`)
-reads a whole sheet eagerly, once, before any shape sees it — the simple default. `Workbook.Open(path)`
-(same namespace) is the streaming door: `book.Sheet(name)` vends a lent `ISpace` view over a windowed
-store instead of the whole grid — a value, not a handle, good to slice and pass around until the
-workbook that vended it is disposed. Declare the shape once and apply it to many files with the peak
-bounded per iteration, the idiom `Workbook` exists for:
+reads a whole sheet eagerly, once, before any projection sees it — the simple default.
+`Workbook.Open(path)` (same namespace) is the streaming door: `book.Sheet(name)` vends a lent
+`ISpace` view over a windowed store instead of the whole grid — a value, not a handle, good to
+slice and pass around until the workbook that vended it is disposed. Declare the projection once
+and apply it to many files with the peak bounded per iteration, the idiom `Workbook` exists for:
 
 ```csharp
 var report = VerticalFlow(v => ...);               // one declaration, reused
@@ -189,14 +213,75 @@ Streaming's cost is declaration-shaped, not a flat tax — see `docs/design/stre
 for the full cost model and the sizing law (the window must be at least as tall as the tallest
 extent a declaration holds open at once).
 
+## Capabilities — what a backend adds to the vocabulary
+
+A **capability** is what a class of spaces can do beyond `ISpace`: an interface the space
+implements, demanded by the projections that use it, discharged by the backend at `Map`.
+Nothing in `Unrect.Core` or `Unrect` names one; a backend package ships both the capability
+and the vocabulary that reads it, and a declaration imports that vocabulary beside
+`Projection`.
+
+`Unrect.Spreadsheets` ships one today (`using static Unrect.Spreadsheets.SpreadsheetProjections;`):
+
+| Operator | Meaning |
+|---|---|
+| `Formula()` | One cell, read as the formula behind it — the file's own expression without the `=`, null where the cell is a plain value. A cell has a value *and* a formula, so reading both is an `Overlay`, never a flow |
+| `RowWithFormula()` / `RowWithFormula(containing)` and the column twins | Matchers over formulas. `containing` is a **substring, case-insensitively** — deliberately not the whole-cell content rule, because a formula is an expression and the useful question is whether it mentions something |
+| `Formulas` | The demand witness, for the two places inference cannot reach: `VerticalFlow(Formulas, v => …)` and `projection.Demanding(Formulas)` |
+| `projection.MapWorkbook(path, sheet)` / `MapWorkbookWithDiagnostics` | The streaming loop's body as one expression: open, read one sheet, close. Sugar over `Workbook`, and only that — several sheets from one open, a warm second map, or the statistics all mean opening the book yourself. Values only: the workbook is gone when it returns. There is no overload for a formula-reading declaration, because a streamed sheet carries no formulas (read those through `CreateWithFormulas` + `Map`) |
+| `IFormulaSpace` / `ISpreadsheetSpace` | The capability, and the bundle a declaration written over "a spreadsheet" demands. Library projections should demand the narrowest capability they use |
+| `space.Capability<T>()` / `space.RequiredCapability<T>(demandedBy)` | The transport seam (`Unrect`), which walks `ISpaceChart` wrappers. A raw `space is IFormulaSpace` is the wrong question: through a discovered extent it answers false over a sheet that plainly has the capability |
+
+**Where they come from.** `SpreadsheetSpace.CreateWithFormulas(path, sheet)` is a second
+factory rather than a flag on the first, because the two answers differ in their *type*:
+what comes back is an `ISpreadsheetSpace`, and the plain `Create` hands back a space that
+does not implement the capability at all. `.xls` and the streaming door read no formulas and
+say so by absence; asking a `.xls` for them throws rather than answering null.
+
+**Two ways to say what a declaration is written over**, and they are the same machinery:
+
+| Entry | Spelling | When |
+|---|---|---|
+| The witness | `VerticalFlow(Formulas, v => …)`, `projection.Demanding(Formulas)` | One factory needs telling. The only place inference genuinely fails is a **layout**, because a lambda's body cannot drive it — `Table`, both repeats and `Choice` all read the demand off their arguments and need nothing |
+| The scope | `Projection.Over<ISpreadsheetSpace>()`, then `p.VerticalFlow(…)` / `p.Table(…)` / `p.VerticalRepeat(…)` / `p.Choice(…)` | A whole declaration is written over one kind of space. The requirement in prose position, said once |
+
+The scope carries exactly the factories that *take* projections and build one; everything else —
+leaves, matchers, extents, offsets, every modifier — is indifferent to the space and composes in
+by variance, so it is written exactly as always. Two things to know:
+
+- **A scope raises the demand of everything built through it**, needed or not. That is right for
+  application code ("this parser is for spreadsheets") and wrong for a hoisted library projection,
+  which should demand the narrowest capability it actually uses so it composes with anything able
+  to answer.
+- **A scope diagnoses better.** A demanding child in a plain flow reports `CS0411` at `Next` and
+  never says the word capability; the same mistake in a scope is an argument conversion —
+  `cannot convert from 'IProjection<IFormulaSpace, string?>' to 'IProjection<ISpace, string>'`.
+
+**The three laws they obey:**
+
+- **Slicing never changes geometry.** A capable space's subspaces are capable, with
+  coordinates translated; a slice may never invent a capability its parent lacked nor shed
+  one it had. `ISpaceChart` is for coordinate-*preserving* wrappers only — a wrapper that
+  translates must implement the capability itself, because handing back the inner space
+  would answer about the wrong cells.
+- **Absence means two different things.** At a projection site it is null, an honest
+  per-cell answer. At a boundary — a matcher — it is a `MissingCapabilityException`, classed
+  as a fault: "I could not look" and "I looked and it is not there" never share a spelling,
+  so no `.Optional()` can report a wrong backend as an absent section.
+- **A capability is spelled as a leaf, never as a reach-through.** `row.FormulaAt(2)` would
+  compile against any table and raise no demand — the trapped-knowledge shape. The leaf is
+  what makes composition carry the requirement.
+
 ## The cross-cutting laws
 
 - **The naming ladder.** A child's diagnostic identity is the first of: its own
   `.Named`; the bare identifier it was written as (captured at `v.Next(x)`, at
   `VerticalRepeat(x, ...)`'s item, and at `.Else(x)`'s fallback — never at `Map`, which is
-  the declaration/infrastructure seam); otherwise `Description#ordinal`. Hoist shapes into
-  well-named locals and let the use site name them; a helper must not name what it
-  returns.
+  the declaration/infrastructure seam); otherwise `Description#ordinal`. Hoist projections
+  into well-named locals and let the use site name them; a helper must not name what it
+  returns. A bound row is named the same way and by the same capture, which is one more
+  reason to hoist it: `Table(1, AllocationRow)` labels every record `'AllocationRow'`, while
+  an inline `captions => Overlay(…)` has no identifier to borrow and renders as `Overlay`.
 - **Transparency.** Unnamed wrappers (`Select`, `Padded`, `Until`, boundaries)
   contribute no path segment; naming a wrapper makes it opaque and it claims the segment.
 - **Replace vs compose.** Anchors (`.On`, `.Below`, `.RightOf`), `.OffsetBy` and extent
@@ -207,14 +292,14 @@ extent a declaration holds open at once).
 - **Failure discipline.** Kind failures speak kind ("expected Number at B4, found
   Text" — never "expected Decimal"); conversion failures speak conversion ("the Number
   at B4 is not a whole number"); every failure carries subject, declaration path, and
-  an A1 location. Tolerance is declared at the exact shape where it is acceptable, and
+  an A1 location. Tolerance is declared at the exact projection where it is acceptable, and
   a diagnostic is the record of tolerance being exercised — there is no ambient lenient
   mode.
 - **The two design tests.** Does an operator let the user *say what the data looks
   like*, or *say how to walk it*? And could a writer execute the declaration —
   produce the file as well as read it? Declarations run backward; opaque code does not.
 - **IO faults are not tolerance.** A disk failure, or a read against a `Workbook` view
-  after its workbook is disposed, classifies as a fault (`ShapeEngine.IsFault`) rather
+  after its workbook is disposed, classifies as a fault (`ProjectionEngine.IsFault`) rather
   than a disagreement about the data, at every site that could otherwise absorb a
   foreign exception as "section absent" — `.Optional()`, `.Else()`, and `Choice` all let
   it through unchanged. A wrong-kind cell or a missing anchor is still absorbable; the

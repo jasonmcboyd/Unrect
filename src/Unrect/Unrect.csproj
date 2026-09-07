@@ -7,20 +7,20 @@
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <PackageId>Unrect</PackageId>
-    <Description>Declarative 2D spatial decomposition for spreadsheet-shaped data. Describe the shape of a sheet once — a header, a table, repeating blocks, a section under a caption — and Unrect decomposes the grid along that description and projects each part into typed objects. No cursors, no row loops, no index arithmetic: the shape is a value you can reuse across workbooks, and a failure names the declaration that failed and the cell it failed on. Includes the in-memory adapter for tests and scripts.</Description>
-    <PackageTags>excel;spreadsheet;xlsx;parsing;declarative;etl;data-extraction;table;csv;shape</PackageTags>
+    <Description>Declarative 2D spatial decomposition for spreadsheet-shaped data. Describe the shape of a sheet once — a header, a table, repeating blocks, a section under a caption — and Unrect decomposes the grid along that description and projects each part into typed objects. No cursors, no row loops, no index arithmetic: the projection is a value you can reuse across workbooks, and a failure names the declaration that failed and the cell it failed on. Includes the in-memory adapter for tests and scripts.</Description>
+    <PackageTags>excel;spreadsheet;xlsx;parsing;declarative;etl;data-extraction;table;csv;projection</PackageTags>
   </PropertyGroup>
 
-  <!-- One package, three assemblies. A consumer installs "Unrect" and has the whole vocabulary;
-       splitting Core and Strategies into their own packages would publish three version numbers
-       that must always match. PrivateAssets stops them appearing as dependencies, and the target
-       below puts their build output in the package instead. -->
   <ItemGroup>
     <!-- So the tests can reach IOpaqueComposite, which marks a composite whose children exist only
          while it runs; asserting that through reflection was the alternative. -->
     <InternalsVisibleTo Include="Unrect.Tests" />
   </ItemGroup>
 
+  <!-- One package, three assemblies. A consumer installs "Unrect" and has the whole vocabulary;
+       splitting Core and Strategies into their own packages would publish three version numbers
+       that must always match. PrivateAssets stops them appearing as dependencies, and the target
+       below puts their build output in the package instead. -->
   <ItemGroup>
     <ProjectReference Include="..\Unrect.Core\Unrect.Core.csproj" PrivateAssets="all" />
     <ProjectReference Include="..\Unrect.Strategies\Unrect.Strategies.csproj" PrivateAssets="all" />

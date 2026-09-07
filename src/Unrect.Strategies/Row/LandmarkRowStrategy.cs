@@ -4,9 +4,9 @@ namespace Unrect.Strategies
 {
   /// <summary>
   /// Selects the rows before a landmark, so an offset lifted from this strategy lands a region ON
-  /// the match — or one row past it, which is what a shape that does not want to own the row asks
-  /// for. Anchoring on presence rather than absence is what survives junk inserted above the thing
-  /// being looked for.
+  /// the match — or one row past it, which is what a projection that does not want to own the row
+  /// asks for. Anchoring on presence rather than absence is what survives junk inserted above the
+  /// thing being looked for.
   /// <para>
   /// The landmark reports absence rather than throwing; deciding what absence means is the lift's
   /// job, and an offset's answer is that the anchor was required. Because that surfaces as an

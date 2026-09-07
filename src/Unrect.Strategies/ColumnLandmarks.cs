@@ -9,8 +9,8 @@ namespace Unrect.Strategies
   {
     /// <summary>
     /// A matcher that says what it was looking for. The description is the negative noun phrase a
-    /// failure renders — "no column with the label 'EIN'" — so a shape that anchors on something
-    /// other than a caption can still fail in the vocabulary's own voice.
+    /// failure renders — "no column with the label 'EIN'" — so a projection that anchors on
+    /// something other than a caption can still fail in the vocabulary's own voice.
     /// </summary>
     public static IColumnLandmark ColumnWhere(Func<ISpace, int, bool> predicate, string description)
       => new PredicateColumnLandmark(NotNull(predicate, nameof(predicate)), NotNull(description, nameof(description)));

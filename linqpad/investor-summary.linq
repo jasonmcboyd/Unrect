@@ -5,8 +5,8 @@
   <Reference Relative="..\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll</Reference>
   <Namespace>Unrect.Core</Namespace>
   <Namespace>Unrect.Spreadsheets</Namespace>
-  <Namespace>Unrect.Shapes</Namespace>
-  <Namespace>static Unrect.Shapes.Shape</Namespace>
+  <Namespace>Unrect.Projections</Namespace>
+  <Namespace>static Unrect.Projections.Projection</Namespace>
 </Query>
 
 var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\examples\investor-summary.xlsx");
@@ -16,7 +16,7 @@ var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\exam
 // the escape hatch that survives for columns whose kind varies or whose value needs a Try*.
 var investorName = Text();
 
-var detailTransactions = TableRows(r => new
+var detailTransactions = Table(r => new
 {
 	Date = r["Date"].GetDateTime(),
 	Type = r["Transaction Type"].GetString(),
@@ -36,7 +36,7 @@ var reportHeader = Column(c => new
 	ReportId = c[2].GetString(),
 });
 
-var summary = TableRows(r => new
+var summary = Table(r => new
 {
 	Investor = r["Investor"].GetString(),
 	Contributions = r["Contributions"].GetDecimal(),

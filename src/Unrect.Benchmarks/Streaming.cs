@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using BenchmarkDotNet.Attributes;
 
 using Unrect.Core;
-using Unrect.Shapes;
+using Unrect.Projections;
 using Unrect.Spreadsheets;
 
-using static Unrect.Shapes.Shape;
+using static Unrect.Projections.Projection;
 
 namespace Unrect.Benchmarks
 {
@@ -40,16 +40,16 @@ namespace Unrect.Benchmarks
   [BenchmarkCategory("Streaming")]
   public class Streaming
   {
-    private static readonly IShape<IReadOnlyList<StreamedRow>> Table = TableRows<StreamedRow>();
+    private static readonly IProjection<IReadOnlyList<StreamedRow>> Rows = Table<StreamedRow>();
 
     // One range over a band, swept five times — once per column read. Each sweep walks the band
-    // end to end, so the whole band is open across all five: the access pattern the window has to be
-    // sized for, and the one a HorizontalFlow of five children over a band produces.
+    // end to end, so the whole band is open across all five: the access pattern the window has to
+    // be sized for, and the one a HorizontalFlow of five children over a band produces.
     //
     // A flow is not used here because its children would have to divide the band's WIDTH between
     // them, which changes what is being measured; five passes over one extent is the same demand on
     // the window with nothing else in the way.
-    private static readonly IShape<long> Band = Range(Extent(StreamingSpaces.Columns, StreamingSpaces.BandRows), block =>
+    private static readonly IProjection<long> Band = Range(Extent(StreamingSpaces.Columns, StreamingSpaces.BandRows), block =>
     {
       long sum = 0;
 
@@ -70,11 +70,11 @@ namespace Unrect.Benchmarks
       _grid = StreamingSpaces.Grid();
 
       // A window large enough to hold the whole sheet, read once here: the warm-reuse row measures
-      // what a second declaration over an already-open sheet costs, which is the property that makes
-      // holding a workbook open worth doing.
+      // what a second declaration over an already-open sheet costs, which is the property that
+      // makes holding a workbook open worth doing.
       _residentPool = StreamingSpaces.Pool();
       _resident = StreamingSpaces.Windowed(_residentPool, windowRows: StreamingSpaces.Rows + 1);
-      Table.Map(_resident);
+      Rows.Map(_resident);
     }
 
     [GlobalCleanup]
@@ -82,7 +82,7 @@ namespace Unrect.Benchmarks
 
     /// <summary>The baseline: the whole sheet in memory, read as an array.</summary>
     [Benchmark(Baseline = true)]
-    public int Monotone_Eager() => Table.Map(_grid).Count;
+    public int Monotone_Eager() => Rows.Map(_grid).Count;
 
     /// <summary>
     /// The headline. The same declaration through a window that holds a fraction of the sheet, with
@@ -93,7 +93,7 @@ namespace Unrect.Benchmarks
     {
       using var pool = StreamingSpaces.Pool();
 
-      return Table.Map(StreamingSpaces.Windowed(pool)).Count;
+      return Rows.Map(StreamingSpaces.Windowed(pool)).Count;
     }
 
     /// <summary>
@@ -102,7 +102,7 @@ namespace Unrect.Benchmarks
     /// <c>Workbook.Sheet(name)</c> idempotent worth relying on.
     /// </summary>
     [Benchmark]
-    public int Monotone_Resident() => Table.Map(_resident).Count;
+    public int Monotone_Resident() => Rows.Map(_resident).Count;
 
     /// <summary>
     /// Five children sweeping a band that fits inside the window: every chunk loads once, whatever
@@ -137,8 +137,9 @@ namespace Unrect.Benchmarks
     public long Adversarial_OneReader() => ReachBack(maxReaders: 1);
 
     /// <summary>
-    /// The same reaches with a pool that can leave a reader parked at each end. Measured: 24 reopens
-    /// and 6.7 million rows skipped, with 44 of the reaches served cheaply by a parked reader.
+    /// The same reaches with a pool that can leave a reader parked at each end. Measured: 24
+    /// reopens and 6.7 million rows skipped, with 44 of the reaches served cheaply by a parked
+    /// reader.
     /// </summary>
     [Benchmark]
     public long Adversarial_Pooled() => ReachBack(maxReaders: 3);

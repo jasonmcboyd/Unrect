@@ -1,7 +1,7 @@
 using BenchmarkDotNet.Attributes;
 
 using Unrect.Core;
-using Unrect.Shapes;
+using Unrect.Projections;
 
 namespace Unrect.Benchmarks
 {
@@ -10,9 +10,10 @@ namespace Unrect.Benchmarks
   /// "how long does my report take". Everything the other families measure in isolation is in here
   /// at once: seeks, table binding, a repeat, two captioned sections and a landmark bound.
   ///
-  /// <para>The two sizes are the family's point: a shape's cost should track the cells it reads, and
-  /// two points on the same declaration are what would show it stopped doing so. They are the same
-  /// document, not two documents -- only the investor count differs, by a factor of ten.</para>
+  /// <para>The two sizes are the family's point: a projection's cost should track the cells it
+  /// reads, and two points on the same declaration are what would show it stopped doing so. They
+  /// are the same document, not two documents -- only the investor count differs, by a factor of
+  /// ten.</para>
   /// </summary>
   [MemoryDiagnoser]
   [BenchmarkCategory("EndToEnd")]
@@ -29,9 +30,9 @@ namespace Unrect.Benchmarks
     }
 
     [Benchmark]
-    public int Document_400Investors() => IrrReport.Shape.Map(_small).Summary.Count;
+    public int Document_400Investors() => IrrReport.Projection.Map(_small).Summary.Count;
 
     [Benchmark]
-    public int Document_4000Investors() => IrrReport.Shape.Map(_large).Summary.Count;
+    public int Document_4000Investors() => IrrReport.Projection.Map(_large).Summary.Count;
   }
 }

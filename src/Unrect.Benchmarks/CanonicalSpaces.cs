@@ -17,7 +17,7 @@ namespace Unrect.Benchmarks
   /// same tier are directly comparable.</para>
   ///
   /// <para><b>The tiers are cell counts, because cells are what the engine touches.</b> A space is
-  /// <c>rows x columns</c>; a shape's cost tracks the cells it reads, not the rows alone. Ten
+  /// <c>rows x columns</c>; a projection's cost tracks the cells it reads, not the rows alone. Ten
   /// columns is the standard width -- wide enough that a row is not a degenerate single cell,
   /// narrow enough that a Mega grid stays under a gigabyte.</para>
   /// <list type="bullet">
@@ -110,11 +110,11 @@ namespace Unrect.Benchmarks
     /// <summary>
     /// The smaller of the two end-to-end sizes, at roughly 2 ms a parse.
     /// <para>
-    /// It is not the real workbook's size. Three investors -- what <c>examples/investor-irr.xlsx</c>
-    /// actually holds -- measured 18 us, fifty times under the noise floor, where a regression could
-    /// never surface through the run-to-run spread. Nothing physical forced that size, so the rule
-    /// wins over the anecdote: both document rows clear the floor, and the pair still answers the
-    /// scaling question a single size could not.
+    /// It is not the real workbook's size. Three investors -- what
+    /// <c>examples/investor-irr.xlsx</c> actually holds -- measured 18 us, fifty times under the
+    /// noise floor, where a regression could never surface through the run-to-run spread. Nothing
+    /// physical forced that size, so the rule wins over the anecdote: both document rows clear the
+    /// floor, and the pair still answers the scaling question a single size could not.
     /// </para>
     /// </summary>
     public const int SmallDocumentInvestors = 400;
@@ -262,7 +262,7 @@ namespace Unrect.Benchmarks
     private static CellValue[,] TabularCells(int rows)
     {
       // One header row, then rows that bind to SummaryRow: text, four decimals, a double. The
-      // captions are what TableRows<T>() matches members against.
+      // captions are what Table<T>() matches members against.
       var cells = new CellValue[rows + 1, 6];
 
       cells[0, 0] = CellValue.Of("Investor");

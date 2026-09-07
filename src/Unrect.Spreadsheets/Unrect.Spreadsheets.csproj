@@ -7,7 +7,7 @@
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <PackageId>Unrect.Spreadsheets</PackageId>
-    <Description>The file-format adapters for Unrect. Reads spreadsheet files — .xls and .xlsx today — and presents each sheet as an Unrect space, so a declared shape can be applied to a real workbook. Blankness is decided here, at the point data enters the system.</Description>
+    <Description>The file-format adapters for Unrect. Reads spreadsheet files — .xls and .xlsx today — and presents each sheet as an Unrect space, so a declared projection can be applied to a real workbook. Blankness is decided here, at the point data enters the system.</Description>
     <PackageTags>excel;spreadsheet;xlsx;xls;parsing;declarative;unrect</PackageTags>
   </PropertyGroup>
 

@@ -5,8 +5,8 @@
   <Reference Relative="..\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll</Reference>
   <Namespace>Unrect.Core</Namespace>
   <Namespace>Unrect.Spreadsheets</Namespace>
-  <Namespace>Unrect.Shapes</Namespace>
-  <Namespace>static Unrect.Shapes.Shape</Namespace>
+  <Namespace>Unrect.Projections</Namespace>
+  <Namespace>static Unrect.Projections.Projection</Namespace>
 </Query>
 
 var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\examples\edge-cases.xlsx");
@@ -56,10 +56,10 @@ new
 // 5. Typed leaves speak the document's vocabulary: kinds for a kind mismatch, conversions for a
 // number that will not fit. Note that the error cell is reported as the Error it is, never as
 // "blank" — and that the sentence changes entirely when the number is genuinely there.
-string Message<T>(IShape<T> shape)
+string Message<T>(IProjection<T> projection)
 {
-	try { shape.Map(defaultSpace); return "no failure"; }
-	catch (ShapeException failure) { return failure.Message.Split('\n')[0].TrimEnd('\r'); }
+	try { projection.Map(defaultSpace); return "no failure"; }
+	catch (ProjectionException failure) { return failure.Message.Split('\n')[0].TrimEnd('\r'); }
 }
 
 new

@@ -8,8 +8,9 @@ namespace Unrect
   /// <para>
   /// In the <c>Unrect</c> namespace beside <c>GridSpace</c>, because that is where it
   /// belongs to a reader, but compiled into <c>Unrect.Strategies</c>, because that is the lowest
-  /// assembly every caller can see: the strategies use it and so does the shape layer above them.
-  /// Both ship in the one <c>Unrect</c> package, so the split is invisible to anyone installing it.
+  /// assembly every caller can see: the strategies use it and so does the projection layer above
+  /// them. Both ship in the one <c>Unrect</c> package, so the split is invisible to anyone
+  /// installing it.
   /// </para>
   /// </summary>
   public static class SpaceExtensions
@@ -27,7 +28,8 @@ namespace Unrect
       // produces a negative extent, and Area's own validation reports that as an
       // ArgumentOutOfRangeException — a different exception from the one the two-argument form
       // throws for the same mistake, and the wrong kind besides: running off the edge of a space is
-      // a bounds condition a declaration may recover from, which is what OutOfBoundsException means.
+      // a bounds condition a declaration may recover from, which is what OutOfBoundsException
+      // means.
       if (offset.Width > space.Area.Width || offset.Height > space.Area.Height)
         throw new OutOfBoundsException();
 

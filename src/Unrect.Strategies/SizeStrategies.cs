@@ -3,7 +3,7 @@ using Unrect.Core;
 
 namespace Unrect.Strategies
 {
-  /// <summary>Factories for <see cref="ISizeStrategy"/> — how a shape's extent is discovered or declared.</summary>
+  /// <summary>Factories for <see cref="ISizeStrategy"/> — how a projection's extent is discovered or declared.</summary>
   public static class SizeStrategies
   {
     /// <summary>The whole of whatever space is available.</summary>

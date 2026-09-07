@@ -5,13 +5,13 @@
   <Reference Relative="..\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll</Reference>
   <Namespace>Unrect.Core</Namespace>
   <Namespace>Unrect.Spreadsheets</Namespace>
-  <Namespace>Unrect.Shapes</Namespace>
-  <Namespace>static Unrect.Shapes.Shape</Namespace>
+  <Namespace>Unrect.Projections</Namespace>
+  <Namespace>static Unrect.Projections.Projection</Namespace>
 </Query>
 
 var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\examples\investor-irr.xlsx");
 
-// What this demonstrates: ONE shape declared once and PLACED TWICE, and .Until — the dual of
+// What this demonstrates: ONE projection declared once and PLACED TWICE, and .Until — the dual of
 // .On. The sheet carries the same per-investor blocks twice, under two captions:
 //
 //   Cash Flows Using Transfer Date        <- first series
@@ -33,10 +33,10 @@ var reportHeader = VerticalFlow(v => new
 // Five of six captions bind with nothing said: the comparer ignores case and whitespace, so
 // "Contribution ITD" fills ContributionItd. Only Investors needs a caption, and only because the
 // sheet's heading is plural where the row is singular.
-var summary = TableRows<SummaryRow>(bind => bind.Column(r => r.Investor, "Investors"));
+var summary = Table<SummaryRow>(bind => bind.Column(r => r.Investor, "Investors"));
 
 // All four bind free.
-var investorBlock = TableRows<CashFlow>();
+var investorBlock = Table<CashFlow>();
 
 // The caption that both ends the first series and begins the second. One literal, so the bound
 // and the caption cannot drift apart — both go through the same matching rule.

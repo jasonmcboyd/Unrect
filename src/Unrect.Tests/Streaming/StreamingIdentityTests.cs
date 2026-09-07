@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 
 using Unrect.Core;
-using Unrect.Shapes;
+using Unrect.Projections;
 using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Shapes.Shape;
+using static Unrect.Projections.Projection;
 
 namespace Unrect.Tests.Streaming
 {
@@ -106,14 +106,14 @@ namespace Unrect.Tests.Streaming
     [MemberData(nameof(Workbooks))]
     public void EveryWorkbookSharesItsRepeatedTextTheSameWayThroughAWindow(string file, string sheet)
     {
-      // The differential form applied to identity rather than to value. Each door is asked, for every
-      // text cell of a sheet, which earlier cell it shares its characters with — and the two answers
-      // must be the same list. That is the strongest form of "the doors differ in nothing a caller can
-      // observe": it is not enough that the cells are equal, because a caller who holds a grid pays
-      // for the instances, and the two doors keep separate tables with separate guards that could
-      // drift apart. repeated-text.xlsx is the case with something to say (its 256- and 257-character
-      // neighbours land on opposite sides of the guard, and both doors must put them there); the rest
-      // are the control.
+      // The differential form applied to identity rather than to value. Each door is asked, for
+      // every text cell of a sheet, which earlier cell it shares its characters with — and the two
+      // answers must be the same list. That is the strongest form of "the doors differ in nothing a
+      // caller can observe": it is not enough that the cells are equal, because a caller who holds
+      // a grid pays for the instances, and the two doors keep separate tables with separate guards
+      // that could drift apart. repeated-text.xlsx is the case with something to say (its 256- and
+      // 257-character neighbours land on opposite sides of the guard, and both doors must put them
+      // there); the rest are the control.
       var eager = SpreadsheetSpace.Create(Path(file), sheet);
       using var book = Workbook.Open(Path(file), new WorkbookOptions { WarmReaders = false });
       var streamed = book.Sheet(sheet);
@@ -123,8 +123,8 @@ namespace Unrect.Tests.Streaming
 
     /// <summary>
     /// For each cell in reading order, the position of the first cell holding the same string
-    /// INSTANCE — itself for a first sighting, and -1 for a cell that is not text at all. Two spaces
-    /// with the same pattern share exactly the same values as each other.
+    /// INSTANCE — itself for a first sighting, and -1 for a cell that is not text at all. Two
+    /// spaces with the same pattern share exactly the same values as each other.
     /// </summary>
     private static IReadOnlyList<int> SharingPattern(ISpace space)
     {
@@ -153,22 +153,22 @@ namespace Unrect.Tests.Streaming
 
     // --- The flagship declaration ---------------------------------------------------------------------
     //
-    // investor-irr.xlsx read by the shape the example tests use: a VerticalFlow of a Column, a
-    // TableRows and two Repeats under captions, one of them Until-bounded. It reaches backwards
+    // investor-irr.xlsx read by the projection the example tests use: a VerticalFlow of a Column, a
+    // Table and two Repeats under captions, one of them Until-bounded. It reaches backwards
     // (the second series anchors on the caption that bounded the first), it makes several passes,
     // and it consumes the whole sheet — which is to say it exercises the pool, the window and the
     // diagnostics in one declaration. If streaming can read this, it can read a report.
 
-    private static IShape<(string Title, IReadOnlyList<string> Summary, IReadOnlyList<IReadOnlyList<string>> ByTransferDate, IReadOnlyList<IReadOnlyList<string>> ByInception)> InvestorIrr()
+    private static IProjection<(string Title, IReadOnlyList<string> Summary, IReadOnlyList<IReadOnlyList<string>> ByTransferDate, IReadOnlyList<IReadOnlyList<string>> ByInception)> InvestorIrr()
     {
-      var investorBlock = TableRows(row => row["Investor Name"].GetString()).Named("investor block");
+      var investorBlock = Table(row => row["Investor Name"].GetString()).Named("investor block");
       var series = VerticalRepeat(investorBlock, separatedBy: BlankRows());
 
       const string Inception = "Cash Flows using inception date";
 
       return VerticalFlow(v => (
         Title: v.Next(Column(4, column => column[0].GetString()).Named("report header")),
-        Summary: v.Next(TableRows(row => row["Investors"].GetString()).Named("summary")),
+        Summary: v.Next(Table(row => row["Investors"].GetString()).Named("summary")),
         ByTransferDate: v.Next(series
           .Under(Caption("IRR Details"), Caption("Cash Flows Using Transfer Date"))
           .Until(RowContaining(Inception))),
@@ -221,8 +221,8 @@ namespace Unrect.Tests.Streaming
     [Fact]
     public void TheFlagshipDeclarationIsUnchangedByAWindowSmallerThanTheSheet()
     {
-      // The backward-reaching, multi-pass shape against a window that cannot hold what it sweeps.
-      // The counters move — that is the cost model working — and the answer does not.
+      // The backward-reaching, multi-pass projection against a window that cannot hold what it
+      // sweeps. The counters move — that is the cost model working — and the answer does not.
       var declaration = InvestorIrr();
 
       var eager = declaration.Map(SpreadsheetSpace.Create(Path("investor-irr.xlsx"), "IRR"));
@@ -248,12 +248,12 @@ namespace Unrect.Tests.Streaming
     [Fact]
     public void ADeclarationOverRepeatedBlocksReadsTheSameThroughAWindow()
     {
-      // investors-by-deal: repeating blocks separated by blank bands, which is the shape whose
+      // investors-by-deal: repeating blocks separated by blank bands, which is the projection whose
       // termination depends on reading past the end of one block and into the next.
       var declaration = VerticalRepeat(
         VerticalFlow(v => (
           Deal: v.Next(Cell(cell => cell.GetString())),
-          Rows: v.Next(TableRows(row => row["Name"].GetString())))),
+          Rows: v.Next(Table(row => row["Name"].GetString())))),
         separatedBy: BlankRows());
 
       var eager = declaration.Map(SpreadsheetSpace.Create(Path("investors-by-deal.xlsx"), "Investors"));
@@ -272,7 +272,7 @@ namespace Unrect.Tests.Streaming
     {
       var declaration = VerticalFlow(v => (
         Header: v.Next(Column(4, column => column[0].GetString())),
-        Rows: v.Next(TableRows(row => (row["Client"].GetString(), row["Amount"].GetDecimal())))));
+        Rows: v.Next(Table(row => (row["Client"].GetString(), row["Amount"].GetDecimal())))));
 
       var eager = declaration.Map(SpreadsheetSpace.Create(Path("simple-report.xlsx"), "Report"));
 
@@ -281,6 +281,68 @@ namespace Unrect.Tests.Streaming
 
       Assert.Equal(eager.Header, streamed.Header);
       Assert.Equal(eager.Rows, streamed.Rows);
+    }
+
+    // --- The row-projection slot ----------------------------------------------------------------------------
+    //
+    // Table(0, eachRow) reads its body through TableView.StreamBands, which is the walk the whole
+    // streaming door is sized around: one band open at a time, each band the row after the last. So
+    // the slot form is the declaration most worth reading through a window that cannot hold the
+    // sheet, and the counters are where the claim is — a monotone walk must not reload a chunk,
+    // whatever the window is set to.
+
+    private sealed record LedgerEntry(int Entry, int Amount, string Category);
+
+    private static IProjection<IReadOnlyList<LedgerEntry>> Ledger()
+    {
+      var ledgerEntry = HorizontalFlow(h => new LedgerEntry(
+        Entry: h.Next(Integer()),
+        Amount: h.Next(Integer()),
+        Category: h.Next(Text())));
+
+      return Table(headerRows: 0, eachRow: ledgerEntry).Below(RowContaining("Entry"));
+    }
+
+    [Fact]
+    public void ATableOfRecordProjectionsReadsTheSameThroughAWindow()
+    {
+      var declaration = Ledger();
+
+      var eager = declaration.Map(SpreadsheetSpace.Create(Path("tall-ledger.xlsx"), "Ledger"));
+
+      using var book = Workbook.Open(Path("tall-ledger.xlsx"), new WorkbookOptions { WarmReaders = false });
+      var streamed = declaration.Map(book.Sheet("Ledger"));
+
+      Assert.Equal(1200, eager.Count);
+      Assert.Equal(eager, streamed);
+    }
+
+    [Fact]
+    public void AndCostsNoRereadingEvenThroughAWindowFourRowsTall()
+    {
+      // One row per chunk, floored to the four-chunk minimum: a window two orders of magnitude
+      // smaller than the sheet, and 1,200 records read through it. ChunkReloads is the cost meter
+      // and it must be zero — a record projection is handed one band at a time and never reaches
+      // back, so nothing the window dropped is ever wanted again.
+      var declaration = Ledger();
+
+      using var book = Workbook.Open(
+        Path("tall-ledger.xlsx"),
+        new WorkbookOptions { WarmReaders = false, ChunkRows = 1, WindowRows = 1 });
+
+      var streamed = declaration.Map(book.Sheet("Ledger"));
+
+      var stats = book.Statistics("Ledger")!.Value;
+
+      Assert.Equal(1200, streamed.Count);
+      Assert.Equal(0, stats.ChunkReloads);
+      Assert.Equal(1201, stats.RowsMaterialised);      // every row once, and not one of them twice
+
+      // The overruns are the documented monotone-tall-sheet reading and nothing beyond it: a view
+      // hands its extent down with every cell, and the extents open here — the whole sheet, and the
+      // table's own discovered band — are both taller than four rows. Two bands that did not fit,
+      // costing nothing, which is exactly the pair StreamingStatistics says to read together.
+      Assert.Equal(2, stats.WindowOverruns);
     }
 
     // --- Failures are identical too -----------------------------------------------------------------------
@@ -293,11 +355,11 @@ namespace Unrect.Tests.Streaming
       // rather than the reader.
       var declaration = Cell(cell => cell.GetInt()).Named("a number");
 
-      var eager = Assert.Throws<ShapeException>(
+      var eager = Assert.Throws<ProjectionException>(
         () => declaration.Map(SpreadsheetSpace.Create(Path("edge-cases.xlsx"), "Edges")));
 
       using var book = Workbook.Open(Path("edge-cases.xlsx"), new WorkbookOptions { WarmReaders = false });
-      var streamed = Assert.Throws<ShapeException>(() => declaration.Map(book.Sheet("Edges")));
+      var streamed = Assert.Throws<ProjectionException>(() => declaration.Map(book.Sheet("Edges")));
 
       Assert.Equal(eager.Message, streamed.Message);
       Assert.Equal(eager.Location.ToString(), streamed.Location.ToString());
@@ -318,7 +380,7 @@ namespace Unrect.Tests.Streaming
       Assert.False(streamed[0, 1].IsBlank);
     }
 
-    private static string Describe(IReadOnlyList<ShapeDiagnostic> diagnostics) =>
+    private static string Describe(IReadOnlyList<ProjectionDiagnostic> diagnostics) =>
       string.Join(
         Environment.NewLine,
         diagnostics.Select(d => $"{d.Severity}|{d.Subject}|{d.Message}|{d.Path}|{d.Location}"));

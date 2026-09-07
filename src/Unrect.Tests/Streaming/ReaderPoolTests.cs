@@ -436,7 +436,7 @@ namespace Unrect.Tests.Streaming
       Assert.Equal(stats.Opens, source.Opens);      // and started no open of its own
     }
 
-    // --- Failure and contention: the shapes that used to hang -----------------------------------------
+    // --- Failure and contention: the projections that used to hang -----------------------------------------
     //
     // Everything below is a regression pin with a hard timeout, and the timeouts are the point. Each
     // of these bugs presented as a permanent block rather than as a wrong answer, and a test that
@@ -479,9 +479,10 @@ namespace Unrect.Tests.Streaming
       // The worst of the concurrency bugs, because of how it presented. A borrow does its expensive
       // work — waiting on a warmer, opening, skipping rows — with the pool's gate RELEASED, and any
       // of it can throw; a disk failing part-way through an advance is an ordinary thing for a disk
-      // to do. A lease abandoned while checked out never comes back, and once every lease has leaked
-      // that way selection returns null forever and every later borrow parks in Monitor.Wait with
-      // nobody left to wake it. One failed read turned every subsequent read into a permanent hang.
+      // to do. A lease abandoned while checked out never comes back, and once every lease has
+      // leaked that way selection returns null forever and every later borrow parks in Monitor.Wait
+      // with nobody left to wake it. One failed read turned every subsequent read into a permanent
+      // hang.
       var source = Sheet(rows: 5000);
       using var pool = new ReaderPool(source, 1, warmReaders: false);
 
@@ -541,9 +542,9 @@ namespace Unrect.Tests.Streaming
     [Fact]
     public async Task AWarmNeverLandsInASlotABorrowerIsFilling()
     {
-      // Arranged rather than hoped for. Holding the gate closed keeps every open in flight until the
-      // test says otherwise, so a warm and a Fill are provably overlapping when the interleaving
-      // matters — which beats running a parallel burst a dozen times and hoping.
+      // Arranged rather than hoped for. Holding the gate closed keeps every open in flight until
+      // the test says otherwise, so a warm and a Fill are provably overlapping when the
+      // interleaving matters — which beats running a parallel burst a dozen times and hoping.
       //
       // The race: claiming a cold slot raises the warm target, which starts warmers; a warmer
       // landing in the very slot the borrower is about to fill would have its cursor overwritten.
@@ -601,9 +602,9 @@ namespace Unrect.Tests.Streaming
     [Fact]
     public async Task WaitingForABusyReaderIsNotEvidenceOfPoolPressure()
     {
-      // Contention is not pressure, and the difference decides whether a reader gets opened. A reach
-      // that no parked reader could serve means the pool was one reader SHORT — evidence worth
-      // growing on. A reach that simply found every reader busy means the pool was one reader
+      // Contention is not pressure, and the difference decides whether a reader gets opened. A
+      // reach that no parked reader could serve means the pool was one reader SHORT — evidence
+      // worth growing on. A reach that simply found every reader busy means the pool was one reader
       // BUSY — evidence of nothing, and treating it as pressure would open readers in response to
       // ordinary traffic, which is how a memory knob turns into a memory leak.
       var source = Sheet(rows: 4000);

@@ -8,8 +8,9 @@ using Xunit;
 namespace Unrect.Tests
 {
   /// <summary>
-  /// The canonical value model (docs/design/canonical-model-and-shapes.md section 2): a small closed
-  /// set of kinds, granular checked accessors, and blankness decided by the adapter — not by Core.
+  /// The canonical value model (docs/design/canonical-model-and-projections.md section 2): a small
+  /// closed set of kinds, granular checked accessors, and blankness decided by the adapter — not by
+  /// Core.
   /// </summary>
   public class CellValueTests
   {
@@ -47,7 +48,8 @@ namespace Unrect.Tests
     public void Of_NullString_ReturnsBlank()
     {
       // Was Assert.Same on the blank singleton: CellValue is a value type, so what is asserted is
-      // that a null string produces the blank value, which is the whole of what the singleton meant.
+      // that a null string produces the blank value, which is the whole of what the singleton
+      // meant.
       Assert.Equal(CellValue.Blank, CellValue.Of((string?)null));
     }
 
@@ -213,7 +215,8 @@ namespace Unrect.Tests
     [Fact]
     public void TryGetDate_TruncatesTheTimeOfDay()
     {
-      // The Try twin of GetDate, so a caller reading an optional date need not reach for exceptions.
+      // The Try twin of GetDate, so a caller reading an optional date need not reach for
+      // exceptions.
       var moment = new DateTime(2026, 6, 30, 13, 45, 0);
 
       Assert.Equal(new DateTime(2026, 6, 30), CellValue.Of(moment).TryGetDate());

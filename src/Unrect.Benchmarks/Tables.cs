@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using BenchmarkDotNet.Attributes;
 
 using Unrect.Core;
-using Unrect.Shapes;
+using Unrect.Projections;
 
-using static Unrect.Shapes.Shape;
+using static Unrect.Projections.Projection;
 
 namespace Unrect.Benchmarks
 {
@@ -24,8 +24,8 @@ namespace Unrect.Benchmarks
   /// the interesting number is the ratio between them, and a ratio is only trustworthy when both
   /// rows ran on the same machine in the same run.
   ///
-  /// <para>The construction row is the odd one and the deliberate one. <c>TableRows&lt;T&gt;()</c>
-  /// resolves its members reflectively and compiles a materializer when the SHAPE is built, not per
+  /// <para>The construction row is the odd one and the deliberate one. <c>Table&lt;T&gt;()</c>
+  /// resolves its members reflectively and compiles a materializer when the PROJECTION is built, not per
   /// map -- a cost paid once per declaration and then never again. It is measured separately so
   /// that a change making binding cheaper per row at the cost of a slower declaration (or the
   /// reverse) is visible as the trade it is, rather than averaged into one number.</para>
@@ -34,13 +34,13 @@ namespace Unrect.Benchmarks
   [BenchmarkCategory("Tables")]
   public class Tables
   {
-    private static readonly IShape<IReadOnlyList<decimal>> Projected =
-      TableRows(r => r["Contribution"].GetDecimal());
+    private static readonly IProjection<IReadOnlyList<decimal>> Projected =
+      Table(r => r["Contribution"].GetDecimal());
 
-    private static readonly IShape<IReadOnlyList<TabularRow>> Bound = TableRows<TabularRow>();
+    private static readonly IProjection<IReadOnlyList<TabularRow>> Bound = Table<TabularRow>();
 
-    private static readonly IShape<IReadOnlyList<IReadOnlyDictionary<string, CellValue>>> Dictionaries =
-      TableRows();
+    private static readonly IProjection<IReadOnlyList<IReadOnlyDictionary<string, CellValue>>> Dictionaries =
+      Table();
 
     private ISpace _large = default!;
     private ISpace _mega = default!;
@@ -72,11 +72,11 @@ namespace Unrect.Benchmarks
 
     /// <summary>
     /// Declaration only: member resolution, nullability reading and materializer compilation, with
-    /// no grid in sight. Sub-millisecond by design -- it is the one row in the suite exempt from the
-    /// noise floor, because inflating it would mean declaring the same shape a thousand times,
-    /// which measures a loop rather than a declaration.
+    /// no grid in sight. Sub-millisecond by design -- it is the one row in the suite exempt from
+    /// the noise floor, because inflating it would mean declaring the same projection a thousand
+    /// times, which measures a loop rather than a declaration.
     /// </summary>
     [Benchmark]
-    public object Bound_ShapeConstruction() => TableRows<TabularRow>();
+    public object Bound_ProjectionConstruction() => Table<TabularRow>();
   }
 }

@@ -4,7 +4,7 @@ using Unrect.Core;
 
 namespace Unrect.Strategies
 {
-  /// <summary>Factories for <see cref="IRowStrategy"/> — how many of a space's leading rows a shape claims.</summary>
+  /// <summary>Factories for <see cref="IRowStrategy"/> — how many of a space's leading rows a projection claims.</summary>
   public static class RowStrategies
   {
     /// <summary>Leading rows for which <paramref name="predicate"/> holds; stops at the first row it does not, keeping the match out.</summary>
@@ -40,8 +40,8 @@ namespace Unrect.Strategies
       => TakeRowsWhileAny(v => v.HasValue);
 
     /// <summary>
-    /// Every row of the available space. The declared spelling of "the full height", which otherwise
-    /// has to be written as the opaque constant predicate <c>(s, r) =&gt; true</c>.
+    /// Every row of the available space. The declared spelling of "the full height", which
+    /// otherwise has to be written as the opaque constant predicate <c>(s, r) =&gt; true</c>.
     /// </summary>
     public static IRowStrategy AllRows() => TakeRowsWhile((_, _) => true);
 

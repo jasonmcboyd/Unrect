@@ -4,12 +4,12 @@ using System.IO;
 using System.Linq;
 
 using Unrect.Core;
-using Unrect.Shapes;
+using Unrect.Projections;
 using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Shapes.Shape;
+using static Unrect.Projections.Projection;
 
 namespace Unrect.Tests.Streaming
 {
@@ -42,9 +42,9 @@ namespace Unrect.Tests.Streaming
     /// Six rows of readable data whose row <paramref name="faultRow"/> cannot be read.
     /// <para>
     /// One chunk per row, so the failure happens exactly when a declaration reaches that row and
-    /// not a moment earlier — which is what makes "this shape got that far" a fact rather than an
-    /// inference. A fresh space per call, because the failure is in the load and a store that has
-    /// already failed would fail differently the second time.
+    /// not a moment earlier — which is what makes "this projection got that far" a fact rather than
+    /// an inference. A fresh space per call, because the failure is in the load and a store that
+    /// has already failed would fail differently the second time.
     /// </para>
     /// </summary>
     private static ISpace Faulting(string fault, int faultRow = 4)
@@ -69,7 +69,7 @@ namespace Unrect.Tests.Streaming
 
     private static void AssertSurfacedAsAFault(string fault, Func<ISpace, object?> map)
     {
-      var failure = Assert.Throws<ShapeException>(() => { _ = map(Faulting(fault)); });
+      var failure = Assert.Throws<ProjectionException>(() => { _ = map(Faulting(fault)); });
 
       // The original is reachable, so a caller can tell a disk from a disposed workbook and decide
       // whether to retry — which is the whole reason it is wrapped rather than replaced.
@@ -82,7 +82,7 @@ namespace Unrect.Tests.Streaming
     [MemberData(nameof(Faults))]
     public void AFailureInAProjectionIsAFault(string fault)
     {
-      AssertSurfacedAsAFault(fault, space => TableRows(row => row["Amount"].GetInt()).Map(space));
+      AssertSurfacedAsAFault(fault, space => Table(row => row["Amount"].GetInt()).Map(space));
     }
 
     [Theory]
@@ -90,7 +90,8 @@ namespace Unrect.Tests.Streaming
     public void AFailureInAnExtentStrategyIsAFault(string fault)
     {
       // The site the old code got wrong. RowsWhileAnyValue scans rows to decide how tall the region
-      // is — reading cells to make a PLACEMENT decision, which the fault flag did not used to cover.
+      // is — reading cells to make a PLACEMENT decision, which the fault flag did not used to
+      // cover.
       AssertSurfacedAsAFault(fault, space => Range(block => block.Height).Sized(RowsWhileAnyValue()).Map(space));
     }
 
@@ -137,7 +138,7 @@ namespace Unrect.Tests.Streaming
     [MemberData(nameof(Faults))]
     public void OptionalDoesNotAbsorbAFault(string fault)
     {
-      AssertSurfacedAsAFault(fault, space => TableRows(row => row["Amount"].GetInt()).Optional().Map(space));
+      AssertSurfacedAsAFault(fault, space => Table(row => row["Amount"].GetInt()).Optional().Map(space));
     }
 
     [Theory]
@@ -146,16 +147,16 @@ namespace Unrect.Tests.Streaming
     {
       AssertSurfacedAsAFault(
         fault,
-        space => TableRows(row => row["Amount"].GetInt()).Else((IReadOnlyList<int>)new[] { 0 }).Map(space));
+        space => Table(row => row["Amount"].GetInt()).Else((IReadOnlyList<int>)new[] { 0 }).Map(space));
     }
 
     [Theory]
     [MemberData(nameof(Faults))]
-    public void ElseAFallbackShapeDoesNotAbsorbAFault(string fault)
+    public void ElseAFallbackProjectionDoesNotAbsorbAFault(string fault)
     {
       AssertSurfacedAsAFault(
         fault,
-        space => TableRows(row => row["Amount"].GetInt())
+        space => Table(row => row["Amount"].GetInt())
           .Else(Range(block => (IReadOnlyList<int>)new[] { block.Height }))
           .Map(space));
     }
@@ -165,12 +166,12 @@ namespace Unrect.Tests.Streaming
     public void ChoiceDoesNotAbsorbAFault(string fault)
     {
       // A Choice tries its alternatives in turn, rolling back what a failed one consumed. A fault
-      // stops the whole thing: the later alternatives are not "what the data might be instead", they
-      // are declarations that would read the same broken sheet.
+      // stops the whole thing: the later alternatives are not "what the data might be instead",
+      // they are declarations that would read the same broken sheet.
       AssertSurfacedAsAFault(
         fault,
         space => Choice(
-          TableRows(row => row["Amount"].GetInt()),
+          Table(row => row["Amount"].GetInt()),
           Range(block => (IReadOnlyList<int>)new[] { block.Height })).Map(space));
     }
 
@@ -198,20 +199,21 @@ namespace Unrect.Tests.Streaming
     public void AFaultIsNotReportedAsADiagnostic()
     {
       // MapWithDiagnostics is where an absorbed failure would show up as a Warning saying the
-      // section was absent. It must throw instead: there is no diagnostic that can honestly describe
-      // a sheet nobody could read.
-      var declaration = TableRows(row => row["Amount"].GetInt()).Named("amounts").Optional();
+      // section was absent. It must throw instead: there is no diagnostic that can honestly
+      // describe a sheet nobody could read.
+      var declaration = Table(row => row["Amount"].GetInt()).Named("amounts").Optional();
 
-      Assert.Throws<ShapeException>(() => declaration.MapWithDiagnostics(Faulting("io")));
+      Assert.Throws<ProjectionException>(() => declaration.MapWithDiagnostics(Faulting("io")));
     }
 
     [Fact]
-    public void AFaultNamesTheShapeAndTheCell()
+    public void AFaultNamesTheProjectionAndTheCell()
     {
-      // A fault is still a ShapeException, which means it still says which declaration was reading
-      // and where. "The disk failed" without that is a stack trace; with it, it is a bug report.
-      var failure = Assert.Throws<ShapeException>(
-        () => TableRows(row => row["Amount"].GetInt()).Named("amounts").Map(Faulting("io")));
+      // A fault is still a ProjectionException, which means it still says which declaration was
+      // reading and where. "The disk failed" without that is a stack trace; with it, it is a bug
+      // report.
+      var failure = Assert.Throws<ProjectionException>(
+        () => Table(row => row["Amount"].GetInt()).Named("amounts").Map(Faulting("io")));
 
       Assert.Contains("'amounts'", failure.Message);
       Assert.Contains("IOException", failure.Message);
@@ -220,7 +222,7 @@ namespace Unrect.Tests.Streaming
 
     // --- The controls: what a boundary IS still for --------------------------------------------------
 
-    private static ISpace Sound() => ShapeTestSpaces.Mixed(new object?[,]
+    private static ISpace Sound() => ProjectionTestSpaces.Mixed(new object?[,]
     {
       { "Name", "Amount" },
       { "a", 1 },
