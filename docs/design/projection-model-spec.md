@@ -143,6 +143,52 @@ the spike; it is correct under runtime faults alone and under the typed layer al
   trapped-knowledge category, the trace's opacity, the spike's blind spot, all the same
   wall. The backend ships the leaf; the extension is not built.
 
+### 5.1 As built (phase 3, 2026-09-07)
+
+Everything in §5 shipped. Four decisions were taken while building it; each is recorded here
+because each could reasonably have gone the other way.
+
+**Shared formulas: reconstructed, not approximated.** An xlsx writes a filled column once, as
+a master carrying the text and a `ref` range, with the rest of the group as empty followers
+carrying only `si`. The three candidate answers for a follower were the master's text, null,
+and the shifted text. The evidence decided it: the corpus's one real Excel workbook
+(`examples/scrubbed-k1.xlsx`, local-only) carries **35,089 formula cells — 14,734 written out,
+706 masters, 19,452 followers, 197 array anchors**. Followers are 55% of every formula in a
+file nobody edited to be difficult, so the master's text would misreport nearly all of them
+and null would report them as plain values, which is what null already means. The shifter is a
+reference *finder* rather than a formula parser — it steps over quoted strings, quoted sheet
+names and bracketed structured/external references, then judges each remaining run, rejecting
+one followed by `(`, `!` or `[` (which is what keeps `LOG10` from being column LOG row 10) —
+and all 19,452 followers were cross-checked against openpyxl's `Translator`, an independent
+implementation in another language, **with zero differences**. Stated boundaries: an
+`<f t="array">` is spelled at its anchor and the cells it spills into carry no formula in the
+file and answer null (the alternative needs a legacy-CSE-vs-dynamic-array distinction the bytes
+do not reliably carry); `<f t="dataTable">` carries no expression and answers null; a follower
+whose master is absent is a malformed file and throws.
+
+**The eager door: a second factory, not a flag.** `CreateWithFormulas` rather than
+`Create(..., withFormulas: true)`, because the two answers differ in their *type* — the
+honest-absence rule forbids returning a space that implements `IFormulaSpace` and answers null
+everywhere, and a bool cannot vary a return type. `Create` returns `ISpace`,
+`CreateWithFormulas` returns `ISpreadsheetSpace`, which is also the statically-typed door the
+typed layer wants.
+
+**The shell retired completely.** `SpreadsheetSpace` is now a static factory class; the
+delegation-shell instance type is gone, and the plain door hands back the `GridSpace` it always
+built. Alpha break, source-compatible with everything in the tree (every call site was `var`).
+
+**The boundary fault has a type.** `MissingCapabilityException` (in `Unrect`, beside the seam)
+and `space.RequiredCapability<T>(demandedBy)` as its throwing door, added to
+`ProjectionEngine.IsFault` alongside the IO failures. Without it the matcher's
+`InvalidOperationException` would have been *absorbable* by `.Optional()` — the exact swap §5
+forbids. Verified through the runtime path (`.On(RowWithFormula().Landmark)` over a grid).
+
+One cost is worn openly rather than fixed: `Formula()` uses `.Named("Formula")`, because
+`ProjectionBase`'s constructor is `private protected` and a backend package therefore cannot
+author a projection class — its leaf inherits the description of whatever public factory built
+it (`Range(1, 1)`). A description seam for backend-authored leaves is the fix if this recurs;
+it was not worth expanding `Unrect`'s public surface inside a capability phase.
+
 ## 6. Row projections — the table ladder becomes one mechanism
 
 `Table(headerRows:, eachRow:)` takes a **projection** for its row slot, applied by the

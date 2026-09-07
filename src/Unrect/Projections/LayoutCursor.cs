@@ -67,7 +67,7 @@ namespace Unrect.Projections
   }
 
   /// <summary>
-  /// EXPERIMENT (typed-spaces): the cursor form of <see cref="Layout{TSpace, TResult}"/>. Identical
+  /// The cursor form of <see cref="Layout{TSpace, TResult}"/>. Identical
   /// to <see cref="LayoutCursor"/> in every respect but one — <see cref="Next{T}"/> accepts a child
   /// demanding at most <typeparamref name="TSpace"/>, which is what makes a layout's demand the
   /// union of its children's, checked as each is declared rather than when the parse runs.
@@ -103,7 +103,7 @@ namespace Unrect.Projections
   }
 
   /// <summary>
-  /// EXPERIMENT (typed-spaces): a layout over a space offering at least <typeparamref
+  /// A layout over a space offering at least <typeparamref
   /// name="TSpace"/>. The demanding twin of <see cref="Layout{TResult}"/>;
   /// <c>VerticalFlow&lt;TSpace, TResult&gt;</c> and its siblings take one of these.
   /// </summary>

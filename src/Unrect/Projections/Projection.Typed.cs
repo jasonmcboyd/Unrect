@@ -8,7 +8,7 @@ using Unrect.Strategies;
 namespace Unrect.Projections
 {
   /// <summary>
-  /// EXPERIMENT (typed-spaces): the composing factories that have to be told what they are declared
+  /// The composing factories that have to be told what they are declared
   /// over.
   /// <para>
   /// Only the factories that <em>take</em> projections appear here. A leaf demands nothing, so

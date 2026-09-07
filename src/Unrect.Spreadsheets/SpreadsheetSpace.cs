@@ -8,9 +8,28 @@ using Unrect.Core;
 namespace Unrect.Spreadsheets
 {
   /// <summary>
-  /// One worksheet of a spreadsheet file, as a space. Reads <c>.xls</c> and <c>.xlsx</c> through
-  /// ExcelDataReader and adapts each cell to a <see cref="CellValue"/> — which is where
-  /// <em>blankness is decided</em>, the one question the grid itself cannot answer.
+  /// The eager door onto a spreadsheet file: one worksheet, read whole, as a space. Reads
+  /// <c>.xls</c> and <c>.xlsx</c> through ExcelDataReader and adapts each cell to a
+  /// <see cref="CellValue"/> — which is where <em>blankness is decided</em>, the one question the
+  /// grid itself cannot answer.
+  /// <para>
+  /// This is a factory and not a type. What comes back is an <see cref="ISpace"/>, or an
+  /// <see cref="ISpreadsheetSpace"/> where formulas were asked for: the domain's face is the
+  /// interface, because the eager door, the streaming door and a test double are three different
+  /// objects and a declaration should not be written against any one of them. (The delegation shell
+  /// this class used to be — a space that forwarded every member to the grid inside it — is gone
+  /// with the same reasoning.)
+  /// </para>
+  /// <para>
+  /// <b>Formulas are opt-in, by a second factory rather than a flag.</b>
+  /// <see cref="CreateWithFormulas(string, string, bool, Func{CellValue, bool})"/> costs a second
+  /// pass over the file's own bytes and hands back a space that carries formulas; the plain
+  /// <see cref="Create(string, string, bool, Func{CellValue, bool})"/> pays nothing and hands back
+  /// one that does not <em>implement</em> the capability at all. A flag could not do this: the two
+  /// answers differ in their type, and a space that implemented <see cref="IFormulaSpace"/> and
+  /// answered null everywhere would tell every caller the file has no formulas when the truth is
+  /// that nobody looked.
+  /// </para>
   /// <para>
   /// <b>Known limitation: the modern Excel errors arrive as blank on the .xlsx path.</b>
   /// ExcelDataReader's XML reader returns null for an error literal it does not recognise <em>and</em>
@@ -27,23 +46,8 @@ namespace Unrect.Spreadsheets
   /// <c>docs/design/vendor-type-survey.md</c> §8.4.
   /// </para>
   /// </summary>
-  public class SpreadsheetSpace : ISpace
+  public static class SpreadsheetSpace
   {
-    private SpreadsheetSpace(ISpace innerSpace)
-    {
-      InnerSpace = innerSpace;
-    }
-
-    private ISpace InnerSpace { get; }
-    /// <inheritdoc/>
-    public CellValue this[int column, int row] => InnerSpace[column, row];
-
-    /// <inheritdoc/>
-    public Area Area => InnerSpace.Area;
-
-    /// <inheritdoc/>
-    public ISpace GetSubspace(Offset offset, Area size) => new SpreadsheetSpace(InnerSpace.GetSubspace(offset, size));
-
     private static readonly Func<CellValue, bool> WhitespaceIsBlank =
       value => value.TryGetString() is string text && string.IsNullOrWhiteSpace(text);
 
@@ -51,19 +55,12 @@ namespace Unrect.Spreadsheets
     /// The named sheet of <paramref name="path"/>, with blankness decided by
     /// <paramref name="isBlank"/> — see the sibling overload for what the default does.
     /// </summary>
-    public static SpreadsheetSpace Create(
+    public static ISpace Create(
       string path,
       string sheetName,
       bool caseSensitive = false,
-      Func<CellValue, bool>? isBlank = null) =>
-      Create(
-        path,
-        c => caseSensitive ? sheetName == c.Name : sheetName.Equals(c.Name, StringComparison.OrdinalIgnoreCase),
-        isBlank)
-      .FirstOrDefault()
-      // Named, because "sequence contains no elements" tells a caller nothing about the workbook
-      // they opened or the name they asked for.
-      ?? throw new ArgumentException($"No sheet named '{sheetName}' in '{path}'.", nameof(sheetName));
+      Func<CellValue, bool>? isBlank = null)
+      => Sheet(path, sheetName, caseSensitive, isBlank, withFormulas: false);
 
     /// <summary>
     /// Every sheet of <paramref name="path"/> matching <paramref name="predicate"/>.
@@ -87,10 +84,82 @@ namespace Unrect.Spreadsheets
     /// grid is built, and only for such a sheet.
     /// </para>
     /// </summary>
-    public static IEnumerable<SpreadsheetSpace> Create(
+    public static IEnumerable<ISpace> Create(
       string path,
       Func<SpreadsheetContext, bool> predicate,
       Func<CellValue, bool>? isBlank = null)
+      => Read(path, predicate, isBlank, withFormulas: false);
+
+    /// <summary>
+    /// The named sheet of <paramref name="path"/>, carrying the formula behind each cell as well as
+    /// its value — <c>.xlsx</c> only.
+    /// <para>
+    /// The formulas are read from the file's own bytes in a second pass (ExcelDataReader parses the
+    /// formula element and drops it, with no public seam to reach the text through), so this costs
+    /// one more read of the sheet's XML and one string per formula cell. The plain factory pays
+    /// none of it.
+    /// </para>
+    /// <para>
+    /// <b>What a cell answers.</b> The file's own expression, without the leading <c>=</c>, and
+    /// null where the cell is a plain value. A <em>shared</em> formula — the master-and-followers
+    /// form Excel writes for a filled column, and 55% of the formula cells in this project's
+    /// real-workbook corpus — is reconstructed per cell: the master's text with its relative
+    /// references shifted to where the follower sits, its absolute ones left alone. An
+    /// <em>array</em> formula is spelled once, at its anchor, and the cells it spills into carry no
+    /// formula in the file and answer null; a data table carries no expression at all and answers
+    /// null likewise. See <c>SharedFormulas</c> for why the two cheaper answers to the shared case
+    /// (the master's text everywhere, or null) were both rejected as misreporting.
+    /// </para>
+    /// <para>
+    /// A workbook whose formulas cannot be read fails here rather than coming back silently empty:
+    /// a <c>.xls</c> stores formulas as BIFF token streams, which this package does not decompile,
+    /// and asking for them throws <see cref="NotSupportedException"/>.
+    /// </para>
+    /// </summary>
+    /// <exception cref="NotSupportedException"><paramref name="path"/> is not an xlsx.</exception>
+    public static ISpreadsheetSpace CreateWithFormulas(
+      string path,
+      string sheetName,
+      bool caseSensitive = false,
+      Func<CellValue, bool>? isBlank = null)
+      => (ISpreadsheetSpace)Sheet(path, sheetName, caseSensitive, isBlank, withFormulas: true);
+
+    /// <summary>
+    /// Every sheet of <paramref name="path"/> matching <paramref name="predicate"/>, carrying
+    /// formulas — see <see cref="CreateWithFormulas(string, string, bool, Func{CellValue, bool})"/>
+    /// for what is read and <see cref="Create(string, Func{SpreadsheetContext, bool}, Func{CellValue, bool})"/>
+    /// for what <paramref name="isBlank"/> decides.
+    /// </summary>
+    /// <exception cref="NotSupportedException"><paramref name="path"/> is not an xlsx.</exception>
+    public static IEnumerable<ISpreadsheetSpace> CreateWithFormulas(
+      string path,
+      Func<SpreadsheetContext, bool> predicate,
+      Func<CellValue, bool>? isBlank = null)
+      // Every space this enumeration yields was built with a formula grid, so the cast is a
+      // statement of what the overload above already decided rather than a hope about the elements.
+      => Read(path, predicate, isBlank, withFormulas: true).Cast<ISpreadsheetSpace>();
+
+    private static ISpace Sheet(
+      string path,
+      string sheetName,
+      bool caseSensitive,
+      Func<CellValue, bool>? isBlank,
+      bool withFormulas)
+      => Read(
+        path,
+        c => caseSensitive ? sheetName == c.Name : sheetName.Equals(c.Name, StringComparison.OrdinalIgnoreCase),
+        isBlank,
+        withFormulas)
+      .FirstOrDefault()
+      // Named, because "sequence contains no elements" tells a caller nothing about the workbook
+      // they opened or the name they asked for.
+      ?? throw new ArgumentException($"No sheet named '{sheetName}' in '{path}'.", nameof(sheetName));
+
+    private static IEnumerable<ISpace> Read(
+      string path,
+      Func<SpreadsheetContext, bool> predicate,
+      Func<CellValue, bool>? isBlank,
+      bool withFormulas)
     {
       SpreadsheetEncodings.Register();
 
@@ -111,6 +180,9 @@ namespace Unrect.Spreadsheets
       //  - Binary Excel files (2.0-2003 format; *.xls)
       //  - OpenXml Excel files (2007 format; *.xlsx, *.xlsb)
       using var reader = ExcelReaderFactory.CreateReader(stream);
+      // A second handle on the same file, and only when formulas were asked for: the value reader
+      // consumes its stream forwards, and the formulas live in a different part of the zip.
+      using var formulas = withFormulas ? XlsxFormulas.Open(path) : null;
 
       var sheetIndex = -1;
       do
@@ -127,7 +199,13 @@ namespace Unrect.Spreadsheets
           ? ReadDeclared(reader, blank, texts)
           : ReadMeasured(reader, blank, texts);
 
-        yield return new SpreadsheetSpace(new GridSpace(cells));
+        var values = new GridSpace(cells);
+
+        yield return formulas is null
+          ? values
+          : new SpreadsheetGridSpace(
+            values,
+            formulas.ReadSheet(reader.Name, sheetIndex, cells.GetLength(1), cells.GetLength(0)));
 
       } while (reader.NextResult());
     }

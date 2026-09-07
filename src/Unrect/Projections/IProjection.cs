@@ -37,7 +37,7 @@ namespace Unrect.Projections
   }
 
   /// <summary>
-  /// EXPERIMENT (typed-spaces): a projection together with the <em>demand</em> it makes of the
+  /// A projection together with the <em>demand</em> it makes of the
   /// space it is applied to. <typeparamref name="TSpace"/> names the least capable space this
   /// declaration can run on; it appears in no member, so it is a phantom — the whole of its job is
   /// to be checked at the composition sites and at <c>Map</c>.
@@ -51,7 +51,7 @@ namespace Unrect.Projections
   /// than a fault.
   /// </para>
   /// <para>
-  /// <typeparamref name="TResult"/> is invariant, unlike the <c>out T</c> of the experiment note:
+  /// <typeparamref name="TResult"/> is invariant, unlike the <c>out T</c> the typed-spaces note sketched:
   /// it is returned inside <see cref="ProjectionResult{TResult}"/>, which is an ordinary invariant
   /// type. That is what a projection has always been, so nothing is lost.
   /// </para>

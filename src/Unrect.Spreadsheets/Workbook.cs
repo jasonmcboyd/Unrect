@@ -52,6 +52,16 @@ namespace Unrect.Spreadsheets
   /// file, but on a text-heavy sheet what remains can still dominate. What streaming removes is the
   /// materialised grid, not the parser.</para>
   ///
+  /// <para><b>No formulas, said out loud.</b> <see cref="Sheet"/> hands back a plain
+  /// <see cref="ISpace"/>: a streamed sheet does not implement <see cref="IFormulaSpace"/>, so
+  /// <c>Capability&lt;IFormulaSpace&gt;()</c> over one answers null and a formula-demanding
+  /// declaration will not compile against it. That is the honest absence, not an oversight — a
+  /// space that implemented the capability and answered null everywhere would report a file full of
+  /// formulas as having none. What would justify building it: a declaration that must read formulas
+  /// from a file too large to hold eagerly. The work is a second windowed reader over the sheet's
+  /// XML advancing in step with the value reader, and a shared-formula master that stays resident
+  /// after its window has been evicted, since a follower thirty rows later is spelled from it.</para>
+  ///
   /// <para><b>Lifetime.</b> The workbook owns every file handle, reader and chunk store. A view from
   /// <see cref="Sheet"/> is a value, not a handle: it has no <c>Dispose</c>, it can be sliced and
   /// held freely, and the only thing that invalidates it is this workbook being disposed — after

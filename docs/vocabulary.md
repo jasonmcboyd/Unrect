@@ -190,6 +190,45 @@ Streaming's cost is declaration-shaped, not a flat tax — see `docs/design/stre
 for the full cost model and the sizing law (the window must be at least as tall as the tallest
 extent a declaration holds open at once).
 
+## Capabilities — what a backend adds to the vocabulary
+
+A **capability** is what a class of spaces can do beyond `ISpace`: an interface the space
+implements, demanded by the projections that use it, discharged by the backend at `Map`.
+Nothing in `Unrect.Core` or `Unrect` names one; a backend package ships both the capability
+and the vocabulary that reads it, and a declaration imports that vocabulary beside
+`Projection`.
+
+`Unrect.Spreadsheets` ships one today (`using static Unrect.Spreadsheets.SpreadsheetProjections;`):
+
+| Operator | Meaning |
+|---|---|
+| `Formula()` | One cell, read as the formula behind it — the file's own expression without the `=`, null where the cell is a plain value. A cell has a value *and* a formula, so reading both is an `Overlay`, never a flow |
+| `RowWithFormula()` / `RowWithFormula(containing)` and the column twins | Matchers over formulas. `containing` is a **substring, case-insensitively** — deliberately not the whole-cell content rule, because a formula is an expression and the useful question is whether it mentions something |
+| `Formulas` | The demand witness, for the two places inference cannot reach: `VerticalFlow(Formulas, v => …)` and `projection.Demanding(Formulas)` |
+| `IFormulaSpace` / `ISpreadsheetSpace` | The capability, and the bundle a declaration written over "a spreadsheet" demands. Library projections should demand the narrowest capability they use |
+| `space.Capability<T>()` / `space.RequiredCapability<T>(demandedBy)` | The transport seam (`Unrect`), which walks `ISpaceChart` wrappers. A raw `space is IFormulaSpace` is the wrong question: through a discovered extent it answers false over a sheet that plainly has the capability |
+
+**Where they come from.** `SpreadsheetSpace.CreateWithFormulas(path, sheet)` is a second
+factory rather than a flag on the first, because the two answers differ in their *type*:
+what comes back is an `ISpreadsheetSpace`, and the plain `Create` hands back a space that
+does not implement the capability at all. `.xls` and the streaming door read no formulas and
+say so by absence; asking a `.xls` for them throws rather than answering null.
+
+**The three laws they obey:**
+
+- **Slicing never changes geometry.** A capable space's subspaces are capable, with
+  coordinates translated; a slice may never invent a capability its parent lacked nor shed
+  one it had. `ISpaceChart` is for coordinate-*preserving* wrappers only — a wrapper that
+  translates must implement the capability itself, because handing back the inner space
+  would answer about the wrong cells.
+- **Absence means two different things.** At a projection site it is null, an honest
+  per-cell answer. At a boundary — a matcher — it is a `MissingCapabilityException`, classed
+  as a fault: "I could not look" and "I looked and it is not there" never share a spelling,
+  so no `.Optional()` can report a wrong backend as an absent section.
+- **A capability is spelled as a leaf, never as a reach-through.** `row.FormulaAt(2)` would
+  compile against any table and raise no demand — the trapped-knowledge shape. The leaf is
+  what makes composition carry the requirement.
+
 ## The cross-cutting laws
 
 - **The naming ladder.** A child's diagnostic identity is the first of: its own

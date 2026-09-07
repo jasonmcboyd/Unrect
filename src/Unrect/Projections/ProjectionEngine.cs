@@ -261,6 +261,9 @@ namespace Unrect.Projections
     /// from <see cref="IOException"/> and are covered. <see cref="ObjectDisposedException"/>
     /// derives from <see cref="InvalidOperationException"/>, which is <em>not</em> listed and must
     /// not be — parse helpers throw that for data reasons — so it is named explicitly.
+    /// <see cref="MissingCapabilityException"/> derives from it too and is listed for the same
+    /// reason and to the same end: a boundary that could not look has said nothing about the
+    /// document, and reporting it as an absent section is exactly the swap this list prevents.
     /// <see cref="ArgumentException"/> itself stays absorbable, for the same reason.
     /// <see cref="OutOfBoundsException"/> is not here at all: running out of room is how a
     /// repeat stops, and no IO condition produces it.
@@ -273,6 +276,7 @@ namespace Unrect.Projections
         or ArgumentNullException
         or IOException                 // the disk, the network share, the workbook replaced mid-read
         or ObjectDisposedException     // a view outliving its Workbook
+        or MissingCapabilityException  // a boundary that could not look; never "not there"
         or OutOfMemoryException;       // never a statement about the data
 
     // A note on the last one: under a genuine out-of-memory condition the wrap itself may fail to

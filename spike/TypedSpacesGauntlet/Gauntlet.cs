@@ -7,7 +7,7 @@ using Unrect.Projections;
 using Unrect.Spreadsheets;
 
 using static Unrect.Projections.Projection;
-using static Unrect.Spreadsheets.FormulaProjections;
+using static Unrect.Spreadsheets.SpreadsheetProjections;
 
 namespace TypedSpacesGauntlet
 {

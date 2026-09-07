@@ -5,7 +5,7 @@ using Unrect.Core;
 namespace Unrect.Projections
 {
   /// <summary>
-  /// EXPERIMENT (typed-spaces): the members that exist <em>because</em> a declaration can demand
+  /// The members that exist <em>because</em> a declaration can demand
   /// more of a space than <see cref="ISpace"/> — and only those.
   /// <para>
   /// A modifier does not appear here. Every modifier is written once, generic in the projection's
@@ -129,7 +129,7 @@ namespace Unrect.Projections
     // --- Ascription -------------------------------------------------------------------------------
 
     /// <summary>
-    /// EXPERIMENT (typed-spaces): states that <paramref name="projection"/> needs a
+    /// States that <paramref name="projection"/> needs a
     /// <typeparamref name="TSpace"/>, where nothing about the declaration says so — a projection
     /// lambda that reaches through to a capability, which the type system cannot see into.
     /// <para>

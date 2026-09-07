@@ -3,12 +3,12 @@ using Unrect.Core;
 namespace Unrect.Projections
 {
   /// <summary>
-  /// EXPERIMENT (typed-spaces): a row matcher that can only look at a space offering at least
+  /// A row matcher that can only look at a space offering at least
   /// <typeparamref name="TSpace"/> — <c>RowWithFormula()</c> and its kind.
   /// <para>
   /// It deliberately does <em>not</em> derive from <see cref="IRowLandmark"/>. If it did, every
   /// plain lift (<c>On</c>, <c>Below</c>, <c>Until</c>) would still accept it and the demand would
-  /// be lost at the one site the experiment exists to protect; keeping the two families apart is
+  /// be lost at the one site the typed layer exists to protect; keeping the two families apart is
   /// what lets <c>projection.On(RowWithFormula())</c> <em>infer</em> the demand and hand back a
   /// demanding projection with nothing annotated. The lowering is how the strategy calculus, which
   /// knows nothing of capabilities, still runs it.
@@ -28,7 +28,7 @@ namespace Unrect.Projections
   }
 
   /// <summary>
-  /// EXPERIMENT (typed-spaces): the column twin of <see cref="IRowLandmark{TSpace}"/>.
+  /// The column twin of <see cref="IRowLandmark{TSpace}"/>.
   /// </summary>
   /// <typeparam name="TSpace">The space this matcher must be able to look at.</typeparam>
   public interface IColumnLandmark<in TSpace>

@@ -12,6 +12,11 @@
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+    <!-- ZipArchive, for the test that builds an OPC package whose parts are binary (FormulaAbsenceTests).
+         The SDK's implicit .NET Framework references stop at System.IO.Compression.FileSystem, and a
+         dependency of a reference is not itself a reference to the compiler, so on this leg the type
+         has to be asked for by name. It is inbox on net48; nothing is added to the package graph. -->
+    <Reference Include="System.IO.Compression" />
   </ItemGroup>
 
   <ItemGroup>
@@ -102,6 +107,49 @@
   -->
   <ItemGroup>
     <Content Include="TestData\repeated-text.xlsx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <!--
+    The formula fixture, and the one file here whose sheetData is hand-written: openpyxl spells
+    every formula out in full, which is exactly the case that needs no reconstruction. What is
+    load-bearing, and what a regenerated file must keep:
+      1. D2:D5 is a SHARED group whose master text exercises every rule the shifter has —
+         IF(B2>0,ROUND(B2*$C$2,2)+SUM($B$2:B2),"B2"): a relative reference that must move, two
+         absolute ones that must not, a "B2" inside a string literal that must not, and three
+         function names, since a name followed by ( is never a reference.
+      2. B9:D9 is a second shared group shifting COLUMNS rather than rows, and its text is
+         LOG10(B8)+B8 — LOG10 is the classic false reference (column LOG, row 10).
+      3. B12 is an ARRAY anchor over B12:C12 whose spilled cell C12 carries a value and no <f>,
+         which is what the reader must report as null.
+      4. B14 is =TEXT(6*7,"0") cached as the STRING "42": the cell's kind and its formula's shape
+         disagree, so a test can tell reading a formula from reading a value.
+    The generator is docs-only scratchpad work; the file is the artefact.
+  -->
+  <ItemGroup>
+    <Content Include="TestData\formulas.xlsx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <!--
+    The legacy workbook: the only .xls in the tree, and the only file that can state the .xls
+    absence — that asking a BIFF workbook for its formulas fails loudly rather than reading none.
+    What is load-bearing:
+      1. It is a real BIFF8 file (written by xlwt), not an .xlsx under another extension. The
+         refusal it triggers comes from the file NOT being a zip, so a renamed xlsx would take a
+         different path and prove nothing.
+      2. B3 carries a genuine =SUM(B1:B2), so the refusal is about a capability this reader does
+         not have rather than about a file with nothing to read.
+      3. Its two data rows are ordinary text and numbers, because the other half of the pin is that
+         the plain door reads this file perfectly well.
+    Recorded because it is surprising: B3's VALUE reads Blank, since the writer stores no cached
+    result for its formula and ExcelDataReader has none to report. That is the fixture's property,
+    not the adapter's, and no test asserts on that cell.
+  -->
+  <ItemGroup>
+    <Content Include="TestData\legacy.xls">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
