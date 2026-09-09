@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1788969081654,
+  "lastUpdate": 1788969081916,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -10186,6 +10186,72 @@ window.BENCHMARK_DATA = {
             "value": 29628847.777083334,
             "unit": "ns",
             "range": "± 162355.24621556172"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "4a44b787ac6b8b6fa5c487623e316bfe0e364292",
+          "message": "Presence semantics and three hygiene fixes: the zero disambiguated\n\nThe algebra's highest-priority open problem (v0.4 §7/§14.1): geometric\nzero carried four meanings. The internal Presence { Read, Empty,\nAbsorbed } now rides beside Consumed on the engine's results — stamped\nat tolerance boundaries (Absorbed), settled-at-zero extents (Empty, read\noff the SETTLED extent so evaluation order and doors agree by\nconstruction), joined through layouts (Read if any child Read, else\nEmpty), defaulting Read. The internal epsilon (NothingProjection) makes\nthe flow-unit law stateable: VerticalFlow is a monoid at L3 for\nsuccessful readings, boundaries pinned.\n\nThe law, earned the hard way: presence explains a stop; the extent\ndecides one. The first implementation let presence decide the repeat\nguard; the law-tests caught a real L1/L2 change on\nVerticalRepeat(item.Optional().Sized(...)) — an Absorbed boundary under\na declared area legitimately consumes it and always kept the run going.\nThe guard is byte-identical to before; presence powers only the new\nteaching Info when a run ends at an absorbed item (D2), and the caught\nshape is pinned as the compatibility-law section of PresenceLawTests.\n\nDesign record: docs/design/presence-and-unit-spec.md (DECIDED, with the\nD5 amendment trail).\n\nAlso, with pins: ChoiceProjection.Summarise renders nested aggregates\ndepth-indented with one location per line; MinOffset() is one canonical\ninstance (HasDeclaredOffset correct by construction); the content-\nmatching rule reduced to one implementation (CellMatching primitives,\nTableView's dictionary keyed on TextComparer; CaptionComparer's\ndeliberate divergence untouched). spike/Phase1Probe removed (a husk).\n\nSuite 1,820 -> 1,862 green; both library TFMs 0 warnings.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016BvUBicaVLLYkdp7iqFZNo",
+          "timestamp": "2026-09-09T15:34:18Z",
+          "tree_id": "883452644caa55f06a0f9c2d530ee9c0cece2b92",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/4a44b787ac6b8b6fa5c487623e316bfe0e364292"
+        },
+        "date": 1788969081862,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Streaming.Monotone_Eager",
+            "value": 192030600.33333334,
+            "unit": "ns",
+            "range": "± 3528392.372001955"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Monotone_Windowed",
+            "value": 471817003.73333335,
+            "unit": "ns",
+            "range": "± 6036952.9888978815"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Monotone_Resident",
+            "value": 220306560.2,
+            "unit": "ns",
+            "range": "± 1338058.0195536688"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Band_WindowFits",
+            "value": 46143849.55244755,
+            "unit": "ns",
+            "range": "± 262706.45358144457"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Band_WindowTooSmall",
+            "value": 139632413.0357143,
+            "unit": "ns",
+            "range": "± 595770.8072643069"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Adversarial_OneReader",
+            "value": 53068574.741666675,
+            "unit": "ns",
+            "range": "± 167240.47539898677"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Adversarial_Pooled",
+            "value": 29488005.035416666,
+            "unit": "ns",
+            "range": "± 206801.27075713742"
           }
         ]
       }
