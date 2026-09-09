@@ -127,14 +127,18 @@ namespace Unrect.Projections
       => new PadProjection<TResult>(this, left, top, right, bottom, Placement.Default);
 
     /// <summary>
-    /// Replaces an existing bound rather than nesting inside it, so <c>Until(A).Until(B)</c> ends
-    /// at B: a projection has one end. The axis comes with the landmark, so this is also how a row
-    /// bound is replaced by a column one.
+    /// Refuses a second end rather than replacing the first, so <c>Until(A).Until(B)</c> is not a
+    /// declaration at all: a projection has one end, and the axis comes with the landmark, so a
+    /// column bound over a row bound is a second end too. A wrapper in between makes the outer bound
+    /// nest, which is a different declaration and a legal one.
     /// </summary>
     internal sealed override IProjection BoundedBy(Landmark landmark, bool orEnd)
-      => this is UntilProjection<TResult> bounded
-        ? bounded.WithLandmark(landmark, orEnd)
-        : new UntilProjection<TResult>(this, landmark, orEnd, Placement.Default);
+    {
+      if (this is UntilProjection<TResult> bounded)
+        throw bounded.AlreadyEnded(landmark);
+
+      return new UntilProjection<TResult>(this, landmark, orEnd, Placement.Default);
+    }
 
     internal sealed override IProjection Beneath(IProjection<string>[] captions)
       => new FlowProjection<TResult>(

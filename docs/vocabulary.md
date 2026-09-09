@@ -89,9 +89,12 @@ ask why a projection moved.
 | `.OffsetBy(offsetStrategy)` | delegated | *My start is where that resolves to* — an assignment, and the one marked crossing from the cell-model surface into the interval-model strategy calculus |
 | `.Sized(area)` | — | Not placement; the extent's own replace (see below) |
 
-The anchors and `.OffsetBy` **REPLACE** the offset (including a default — that is how a `Table`
-is told not to skip its blank rows); the movements **COMPOSE** onto whatever the projection
-already had. A declared area survives all of them.
+The anchors and `.OffsetBy` **REPLACE a default** offset (that is how a `Table` is told not to
+skip its blank rows) and **REFUSE a declared one** (`ArgumentException` at construction, since
+2026-09-09): two positions on one projection contradict each other, and a contradiction has no
+denotation — to search inside a region another landmark found, place the region and place this
+projection within it. The movements **COMPOSE** onto whatever the projection already had. A
+declared area survives all of them.
 
 Absence semantics live in the word, not in a flag: a landmark that matches nothing is **loud**
 (`Optional`/`Else` absorb it; a repeat reads it as having run out of sections), while a
@@ -142,7 +145,7 @@ operator has to pass; an operator that cannot be justified by one of them does n
 
 | Operator | Meaning |
 |---|---|
-| `.Sized(area)` | Declared extent, consumed in full (REPLACES) |
+| `.Sized(area)` | Declared extent, consumed in full; replaces a shape's own default extent, refuses a second `.Sized` (a declared extent does not stack) |
 | `.Until(matcher)` / `.Until(matcher, orEnd: true)` / `.UntilColumn(...)` | Extent ends just BEFORE a forward landmark; the bound is consumed in full so the next sibling starts AT the landmark (its own `.On` finds it at distance zero). Strict by default; `orEnd` runs to the end of space and records an Info when exercised |
 | `Extent(w, h)` `WholeExtent()` `NoExtent()` `RowsWhileAnyValue()` `RowsWhileAny(p)` `ColumnsWhileAnyValue()` `ColumnsWhileAny(p)` | The area vocabulary, mirrored on both axes |
 | `TakeRows(n)` `TakeColumns(n)` `AllRows()` `AllColumns()` | Axis selectors, not area strategies — they return `IRowStrategy`/`IColumnStrategy`, for `Row(AllColumns(), ...)` / `Column(TakeRows(3), ...)` and for composing an extent from its two axes; not for `.Sized` (`.Sized(TakeRows(3))` does not compile) |
@@ -284,11 +287,13 @@ by variance, so it is written exactly as always. Two things to know:
   an inline `captions => Overlay(…)` has no identifier to borrow and renders as `Overlay`.
 - **Transparency.** Unnamed wrappers (`Select`, `Padded`, `Until`, boundaries)
   contribute no path segment; naming a wrapper makes it opaque and it claims the segment.
-- **Replace vs compose.** Anchors (`.On`, `.Below`, `.RightOf`), `.OffsetBy` and extent
-  (`.Sized`) replace; movements (`.Down`, `.Right`, `.AfterBlankRows`,
-  `.AfterBlankColumns`) compose, and strategy-level offsets compose via `Then`; `Until`
-  replaces only when applied directly to another `Until` (through a wrapper it nests, both
-  bounds in force); wrappers nest.
+- **Replace vs compose vs refuse.** Anchors (`.On`, `.Below`, `.RightOf`), `.OffsetBy` and
+  extent (`.Sized`) replace a shape's own *default* and **refuse** a *declared* one — a
+  contradiction has no quiet meaning (owner decision 2026-09-09; the record is
+  `docs/design/modifier-congruence-survey.md` §5). Movements (`.Down`, `.Right`,
+  `.AfterBlankRows`, `.AfterBlankColumns`) compose, and strategy-level offsets compose via
+  `Then`. A second `Until` applied directly to another `Until` refuses for the same reason;
+  through a wrapper it nests, both bounds in force. Wrappers nest.
 - **Failure discipline.** Kind failures speak kind ("expected Number at B4, found
   Text" — never "expected Decimal"); conversion failures speak conversion ("the Number
   at B4 is not a whole number"); every failure carries subject, declaration path, and

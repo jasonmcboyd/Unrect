@@ -16,8 +16,9 @@ namespace Unrect.Tests.Projections
   /// starts by naming something in the grid rather than a distance to it. They are one-liners over
   /// <c>OffsetStrategies.To</c>/<c>Past</c>, so what is worth pinning is not new machinery but the
   /// four claims the words make: which cell you land on, that the step past a match is exactly one,
-  /// that an anchor <em>replaces</em> the offset while a movement composes onto it, and that a
-  /// landmark that matches nothing is loud in the same words whichever spelling reached it.
+  /// that an anchor <em>replaces a default</em> offset while a movement composes onto it and a
+  /// second declared position is refused outright, and that a landmark that matches nothing is loud
+  /// in the same words whichever spelling reached it.
   /// <para>
   /// The axis is carried by the argument's type and enforced by overload resolution:
   /// <c>.Below</c> takes an <c>IRowLandmark</c> and <c>.RightOf</c> an <c>IColumnLandmark</c>, so
@@ -140,28 +141,55 @@ namespace Unrect.Tests.Projections
       Assert.Equal("a|b", VerticalFlow(v => $"{v.Next(Text())}|{v.Next(right)}").Map(space));
     }
 
-    // --- Replace, like all placement --------------------------------------------------------------------
+    // --- Replace a default, refuse a declaration ---------------------------------------------------------
 
     [Fact]
-    public void AnAnchorReplacesWhateverOffsetTheProjectionAlreadyHad()
+    public void AnAnchorRefusesAnOffsetTheProjectionAlreadyDeclared()
     {
-      // A position stated as a relation to a thing owes nothing to wherever the cursor had got to.
-      // Were Down(2) composed with the anchor, the search would start below the landmark and fail.
-      Assert.Equal("a", Text().Down(2).Below(Detail()).Map(Rows()));
-      Assert.Equal("Detail", Text().Down(2).On(Detail()).Map(Rows()));
+      // Was AnAnchorReplacesWhateverOffsetTheProjectionAlreadyHad, and what it pinned is worth
+      // remembering: .Down(2).Below(m) read the row under the landmark and .Down(2).On(m) the
+      // landmark itself, the movement erased without a word and never evaluated
+      // (docs/design/modifier-congruence-survey.md §5, hazard 3). Since 2026-09-09 that erasure is
+      // refused where it is written — a projection that has already said where it starts cannot be
+      // told again, because the library could only answer by dropping one of the two statements.
+      var below = Assert.Throws<ArgumentException>(() => Text().Down(2).Below(Detail()));
 
-      // ...and a movement written after one carries on from the anchor, as movements always do.
+      Assert.Equal("projection", below.ParamName);
+      Assert.Contains("already declares where it starts, and Below would replace that", below.Message);
+      Assert.Contains("Place it once", below.Message);
+
+      var on = Assert.Throws<ArgumentException>(() => Text().Down(2).On(Detail()));
+
+      Assert.Equal("projection", on.ParamName);
+      Assert.Contains("already declares where it starts, and On would replace that", on.Message);
+    }
+
+    [Fact]
+    public void AMovementWrittenAfterAnAnchorCarriesOnFromIt()
+    {
+      // The half of the old replacement pin that survives the refusal, and the vocabulary's answer
+      // to "start there, then go on a bit": movements compose, so the anchor remains the
+      // projection's one statement of where it starts and the step is measured from it.
       Assert.Equal("b", Text().Below(Detail()).Down(1).Map(Rows()));
       Assert.Equal("a", Text().On(Detail()).Down(1).Map(Rows()));
     }
 
     [Fact]
-    public void ALaterPlacementReplacesAnAnchor()
+    public void ALaterPlacementIsRefusedOverAnAnchor()
     {
-      // The other direction of the same rule, and the one that says an anchor is not privileged:
-      // .OffsetBy replaces it exactly as it replaces anything else, so the last one written wins.
-      Assert.Equal("junk", Text().Below(Detail()).OffsetBy(SkipRows(0)).Map(Rows()));
-      Assert.Equal("b", Text().On(Detail()).OffsetBy(SkipRows(3)).Map(Rows()));
+      // Was ALaterPlacementReplacesAnAnchor: .OffsetBy used to overwrite an anchor as it overwrote
+      // anything else, so .Below(Detail()).OffsetBy(SkipRows(0)) read "junk" and the landmark went
+      // unsought. The rule it stated still holds — an anchor is not privileged — but the direction
+      // it holds in is now symmetric: neither declared position may overwrite the other.
+      var failure = Assert.Throws<ArgumentException>(() => Text().Below(Detail()).OffsetBy(SkipRows(0)));
+
+      Assert.Equal("projection", failure.ParamName);
+      Assert.Contains("already declares where it starts, and OffsetBy would replace that", failure.Message);
+      Assert.Contains("Place it once", failure.Message);
+
+      Assert.Equal(
+        "projection",
+        Assert.Throws<ArgumentException>(() => Text().On(Detail()).OffsetBy(SkipRows(3))).ParamName);
     }
 
     [Fact]
@@ -169,6 +197,9 @@ namespace Unrect.Tests.Projections
     {
       // Replacing is also how a default is thrown away: a Table skips the blank rows in front of it
       // unless something says otherwise, and an anchor is one of the things that can say otherwise.
+      // This is the offset family's default-path guard — the discriminator the refusals above turn
+      // on is whether a MODIFIER put the offset there, so a shape's own definition is replaceable
+      // and silent, exactly as it always was.
       var space = Mixed(new object?[,]
       {
         { null, null },

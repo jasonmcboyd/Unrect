@@ -173,10 +173,13 @@ namespace Unrect.Tests.Projections
       Assert.Equal("bumped", projection.Name);
     }
 
-    // --- Movements compose; OffsetBy, the anchors and Sized replace -----------------------------------
+    // --- Movements compose; OffsetBy, the anchors and Sized replace a DEFAULT and refuse a declaration ---
     //
     // The anchors' half of the rule lives in AnchorModifierTests, beside what they anchor on; this
     // file pins the rule itself, through the modifier that states it with nothing else attached.
+    // What a placement replaces is the projection's own definition — a Table's skipped blank rows, a
+    // Range's constructor extent — never a second modifier; that is refused at construction (owner
+    // decision, 2026-09-09; docs/design/modifier-congruence-survey.md §5).
 
     [Fact]
     public void RepeatedOffsetModifiers_Compose()
@@ -195,13 +198,22 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void OffsetBy_ReplacesAnyMovementsAlreadyApplied()
+    public void OffsetBy_IsRefusedOverMovementsAlreadyApplied()
     {
-      // OffsetBy is the "my start is where that resolves to" spelling: an assignment, so it
-      // discards what came before rather than adding to it, which is also how a projection is told
-      // to ignore an offset it defaults to.
-      Assert.Equal(21, IntCell().Down(1).OffsetBy(SkipRows(2)).Map(CoordinateGrid(width: 1)));
-      Assert.Equal(1, IntCell().Down(3).OffsetBy(SkipRows(0)).Map(CoordinateGrid(width: 1)));
+      // Was OffsetBy_ReplacesAnyMovementsAlreadyApplied, and the readings it pinned are the reason
+      // this flipped: .Down(1).OffsetBy(SkipRows(2)) read row 2 and .Down(3).OffsetBy(SkipRows(0))
+      // row 0 — the steps in front of the assignment erased without a word. A movement declares a
+      // position too, so a second statement of one is refused where it is written (owner decision,
+      // 2026-09-09; docs/design/modifier-congruence-survey.md §5). What OffsetBy still replaces is a
+      // DEFAULT, which AMovementComposesWithAProjectionsDefaultOffset pins.
+      var failure = Assert.Throws<ArgumentException>(() => IntCell().Down(1).OffsetBy(SkipRows(2)));
+
+      Assert.Equal("projection", failure.ParamName);
+      Assert.Contains("already declares where it starts, and OffsetBy would replace that", failure.Message);
+      Assert.Contains("Place it once", failure.Message);
+
+      // ...and the composing spelling of the same distance is unaffected.
+      Assert.Equal(21, IntCell().Down(2).Map(CoordinateGrid(width: 1)));
     }
 
     [Fact]
@@ -298,13 +310,37 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void RepeatedSizeModifiers_KeepOnlyTheLast()
+    public void RepeatedSizeModifiers_AreRefused()
     {
-      var projection = Range(b => (b.Width, b.Height))
+      // Was RepeatedSizeModifiers_KeepOnlyTheLast: 3x3 then 2x1 read 2x1, the first extent erased
+      // rather than narrowed. Extents do not stack, so two of them are a contradiction and are
+      // refused where they are written (owner decision, 2026-09-09;
+      // docs/design/modifier-congruence-survey.md §5).
+      var failure = Assert.Throws<ArgumentException>(() => Range(b => (b.Width, b.Height))
         .Sized(AreaStrategies.ExplicitArea(3, 3))
-        .Sized(AreaStrategies.ExplicitArea(2, 1));
+        .Sized(AreaStrategies.ExplicitArea(2, 1)));
 
-      Assert.Equal((2, 1), projection.Map(CoordinateGrid()));
+      Assert.Equal("projection", failure.ParamName);
+      Assert.Contains("already declares its extent, and Sized would replace that", failure.Message);
+      Assert.Contains("Size once", failure.Message);
+    }
+
+    [Fact]
+    public void Sized_ReplacesAShapesOwnExtentWithoutAWord()
+    {
+      // The extent family's default-path guard, and the discriminator the refusal above turns on: an
+      // extent a shape states in its own constructor is part of its definition, not a statement
+      // about this use of it, so .Sized is free to replace it and says nothing. Only a second
+      // .Sized — a modifier over a modifier — is the contradiction.
+      Assert.Equal((3, 1), Range(3, 1, b => (b.Width, b.Height)).Map(CoordinateGrid()));
+      Assert.Equal(
+        (1, 2),
+        Range(3, 1, b => (b.Width, b.Height)).Sized(AreaStrategies.ExplicitArea(1, 2)).Map(CoordinateGrid()));
+
+      // ...and a derived extent likewise: FlowProjectionTests.Sized_OverridesWhatTheFlowDerived and
+      // OverlayProjectionTests.Sized_OverridesTheBoundingBox are the composite half of the same
+      // claim.
+      Assert.Equal((2, 1), Range(b => (b.Width, b.Height)).Sized(AreaStrategies.ExplicitArea(2, 1)).Map(CoordinateGrid()));
     }
 
     [Fact]

@@ -29,6 +29,15 @@ namespace Unrect.Projections
   /// too, since extents do not stack.
   /// </para>
   /// <para>
+  /// <b>What they replace is a default, never another declaration.</b> A projection that already
+  /// says where it starts, how big it is, or where it ends refuses a second one at construction
+  /// time: <c>x.On(a).Below(b)</c> and <c>x.Until(a).Until(b)</c> state two of a thing a projection
+  /// has one of, and the library used to answer by dropping one silently — without even looking for
+  /// the landmark it dropped. A contradiction has no reading, so it has no spelling. Nesting is how
+  /// a search is narrowed by another, and the movements still compose, so <c>.On(m).Down(1)</c>
+  /// remains exactly what it always was.
+  /// </para>
+  /// <para>
   /// <b>A modifier keeps the demand it is applied to.</b> Each one is generic in the
   /// <em>projection's own type</em> and hands that type back, so <c>Text().Named("t")</c> is an
   /// <c>IProjection&lt;string&gt;</c> exactly as it always was, and the same modifier on a
@@ -162,7 +171,9 @@ namespace Unrect.Projections
     /// is this same word.
     /// </para>
     /// <para>
-    /// Anchoring <em>replaces</em> the projection's offset, including a default. A landmark that
+    /// Anchoring <em>replaces</em> the projection's offset, and only ever a default one: a
+    /// projection that has already been told where it starts refuses to be told again, since two
+    /// positions cannot both be where it is. A landmark that
     /// matches nothing is loud, because it means the section the declaration describes is not the
     /// section in the file. That is a disagreement about the data rather than a broken projection,
     /// so <c>Optional</c> and <c>Else</c> absorb it — and a <c>VerticalRepeat</c> reads it as
@@ -172,9 +183,10 @@ namespace Unrect.Projections
     /// <typeparam name="TProjection">The projection's own type, handed back unchanged.</typeparam>
     /// <param name="projection">The declaration.</param>
     /// <param name="landmark">The row to sit on.</param>
+    /// <exception cref="ArgumentException">The projection already declares where it starts.</exception>
     public static TProjection On<TProjection>(this TProjection projection, IRowLandmark landmark)
       where TProjection : class, IProjection
-      => projection.OffsetBy(OffsetStrategies.To(landmark));
+      => DeclareOffset(projection, OffsetStrategies.To(landmark), nameof(On));
 
     /// <inheritdoc cref="On{TProjection}(TProjection, IRowLandmark)"/>
     /// <typeparam name="TProjection">The projection's own type, handed back unchanged.</typeparam>
@@ -182,7 +194,7 @@ namespace Unrect.Projections
     /// <param name="landmark">The column to sit on.</param>
     public static TProjection On<TProjection>(this TProjection projection, IColumnLandmark landmark)
       where TProjection : class, IProjection
-      => projection.OffsetBy(OffsetStrategies.To(landmark));
+      => DeclareOffset(projection, OffsetStrategies.To(landmark), nameof(On));
 
     /// <summary>
     /// Starts the projection on the row directly below the one <paramref name="landmark"/> matches
@@ -203,9 +215,10 @@ namespace Unrect.Projections
     /// <typeparam name="TProjection">The projection's own type, handed back unchanged.</typeparam>
     /// <param name="projection">The declaration.</param>
     /// <param name="landmark">The row to sit below.</param>
+    /// <exception cref="ArgumentException">The projection already declares where it starts.</exception>
     public static TProjection Below<TProjection>(this TProjection projection, IRowLandmark landmark)
       where TProjection : class, IProjection
-      => projection.OffsetBy(OffsetStrategies.Past(landmark));
+      => DeclareOffset(projection, OffsetStrategies.Past(landmark), nameof(Below));
 
     /// <summary>
     /// Starts the projection on the column directly right of the one <paramref name="landmark"/>
@@ -215,9 +228,10 @@ namespace Unrect.Projections
     /// <typeparam name="TProjection">The projection's own type, handed back unchanged.</typeparam>
     /// <param name="projection">The declaration.</param>
     /// <param name="landmark">The column to sit right of.</param>
+    /// <exception cref="ArgumentException">The projection already declares where it starts.</exception>
     public static TProjection RightOf<TProjection>(this TProjection projection, IColumnLandmark landmark)
       where TProjection : class, IProjection
-      => projection.OffsetBy(OffsetStrategies.Past(landmark));
+      => DeclareOffset(projection, OffsetStrategies.Past(landmark), nameof(RightOf));
 
     /// <summary>
     /// Starts the projection wherever <paramref name="offset"/> ends — an assignment rather than a
@@ -236,9 +250,10 @@ namespace Unrect.Projections
     /// <typeparam name="TProjection">The projection's own type, handed back unchanged.</typeparam>
     /// <param name="projection">The declaration.</param>
     /// <param name="offset">Where the projection starts.</param>
+    /// <exception cref="ArgumentException">The projection already declares where it starts.</exception>
     public static TProjection OffsetBy<TProjection>(this TProjection projection, IOffsetStrategy offset)
       where TProjection : class, IProjection
-      => Cloned<TProjection>(Base(projection).Replaced(projection.Placement.WithOffset(offset)));
+      => DeclareOffset(projection, offset, nameof(OffsetBy));
 
     /// <summary>
     /// Moves the projection on past the blank rows in front of it.
@@ -285,14 +300,28 @@ namespace Unrect.Projections
 
     /// <summary>
     /// Declares the projection's extent, replacing whatever it had — including a derived one, after
-    /// which the extent is consumed in full whether the projection reads all of it or not.
+    /// which the extent is consumed in full whether the projection reads all of it or not. What it
+    /// replaces is the projection's own extent, never a second <c>Sized</c>: extents do not stack,
+    /// so two of them are a contradiction and are refused where they are written.
     /// </summary>
     /// <typeparam name="TProjection">The projection's own type, handed back unchanged.</typeparam>
     /// <param name="projection">The declaration.</param>
     /// <param name="area">The extent.</param>
+    /// <exception cref="ArgumentException">The projection already declares its extent.</exception>
     public static TProjection Sized<TProjection>(this TProjection projection, IAreaStrategy area)
       where TProjection : class, IProjection
-      => Cloned<TProjection>(Base(projection).Replaced(projection.Placement.WithArea(area)));
+    {
+      var placement = NotNull(projection).Placement;
+
+      if (placement.AreaWasDeclared)
+        throw new ArgumentException(
+          $"{ProjectionContext.Describe(projection)} already declares its extent, and Sized would replace that — "
+          + "extents do not stack, so the first one is erased rather than narrowed. Size once: to read part of a "
+          + "region, declare the region's extent and place a projection inside it.",
+          nameof(projection));
+
+      return Placed<TProjection>(projection, placement.WithArea(area));
+    }
 
     /// <summary>
     /// Falls back to <paramref name="fallback"/> when this projection fails, recording a
@@ -515,11 +544,14 @@ namespace Unrect.Projections
     /// section was open-ended.
     /// </para>
     /// <para>
-    /// Applied straight to an already-bounded projection, a second <c>Until</c> replaces the first
-    /// rather than nesting — a projection has one end. Through a wrapper it does not:
+    /// Applied straight to an already-bounded projection — or to one a clone modifier has been
+    /// written on since — a second <c>Until</c> is refused where it is written: a projection has one
+    /// end, and replacing the first would erase a landmark the declaration named without ever
+    /// looking for it. Through a wrapper it nests instead, and is legal:
     /// <c>x.Until(A).Select(f)</c> then <c>.Until(B)</c> bounds the <c>Select</c>, so B applies
-    /// outside A and both are in force. (Unlike <c>Sized</c>, which replaces whatever it is applied
-    /// to, because a placement belongs to one projection and a bound is a wrapper around one.)
+    /// outside A and both are in force. That is also the spelling for bounding both axes at once,
+    /// which <c>x.Until(row).UntilColumn(column)</c> never was — the axis a bound cuts comes with
+    /// its landmark, so a second bound of either kind is still a second end.
     /// </para>
     /// <para>
     /// It belongs on the section, not on the thing repeated inside it. A bound applies its inner
@@ -533,6 +565,7 @@ namespace Unrect.Projections
     /// <param name="projection">The declaration.</param>
     /// <param name="landmark">The row the extent stops before.</param>
     /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
+    /// <exception cref="ArgumentException">The projection already ends at a landmark.</exception>
     public static TProjection Until<TProjection>(this TProjection projection, IRowLandmark landmark, bool orEnd = false)
       where TProjection : class, IProjection
       => Bound(projection, Landmark.Of(NotNull(landmark, nameof(landmark))), orEnd);
@@ -547,6 +580,7 @@ namespace Unrect.Projections
     /// <param name="projection">The declaration.</param>
     /// <param name="landmark">The column the extent stops before.</param>
     /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
+    /// <exception cref="ArgumentException">The projection already ends at a landmark, on either axis.</exception>
     public static TProjection UntilColumn<TProjection>(this TProjection projection, IColumnLandmark landmark, bool orEnd = false)
       where TProjection : class, IProjection
       => Bound(projection, Landmark.Of(NotNull(landmark, nameof(landmark))), orEnd);
@@ -616,19 +650,50 @@ namespace Unrect.Projections
       => projection as IProjection<T> ?? throw NotOurs(projection, nameof(projection));
 
     /// <summary>
+    /// Places the projection where <paramref name="offset"/> resolves to, refusing to write over a
+    /// position the declaration has already stated. What an offset replaces is the projection's own
+    /// default — a <c>Table</c>'s skipped blank rows, a bare leaf's nothing at all — since a shape's
+    /// definition is not a statement about this use of it. Two statements are a contradiction: the
+    /// library could only drop one of them, and it would drop it without even looking for its
+    /// landmark.
+    /// </summary>
+    /// <param name="projection">The declaration.</param>
+    /// <param name="offset">Where the projection starts.</param>
+    /// <param name="modifier">The word the caller wrote, so the refusal can name it.</param>
+    private static TProjection DeclareOffset<TProjection>(TProjection projection, IOffsetStrategy offset, string modifier)
+      where TProjection : class, IProjection
+    {
+      var placement = NotNull(projection).Placement;
+
+      if (placement.OffsetWasDeclared)
+        throw new ArgumentException(
+          $"{ProjectionContext.Describe(projection)} already declares where it starts, and {modifier} would replace "
+          + "that — two positions on one projection contradict each other, and the replaced one is never even sought. "
+          + "Place it once: to search inside a region another landmark found, place the region and place this "
+          + "projection within it; to carry on from a position, use Down or Right, which compose onto it.",
+          nameof(projection));
+
+      return Placed<TProjection>(projection, placement.WithOffset(offset));
+    }
+
+    /// <summary>
     /// Carries the projection on from wherever it already sits, so movements read cumulatively. A
     /// projection that has not been placed yet has nothing to carry on from and simply takes the
-    /// new offset.
+    /// new offset. Movements add to a position rather than answering it a second time, so this is
+    /// the one way an offset is written that never refuses.
     /// </summary>
     private static TProjection Move<TProjection>(TProjection projection, IOffsetStrategy offset)
       where TProjection : class, IProjection
     {
       var placement = NotNull(projection).Placement;
+      var moved = placement.HasDeclaredOffset ? OffsetStrategies.Then(placement.Offset, offset) : offset;
 
-      return projection.OffsetBy(placement.HasDeclaredOffset
-        ? OffsetStrategies.Then(placement.Offset, offset)
-        : offset);
+      return Placed<TProjection>(projection, placement.WithOffset(moved));
     }
+
+    private static TProjection Placed<TProjection>(TProjection projection, Placement placement)
+      where TProjection : class, IProjection
+      => Cloned<TProjection>(Base(projection).Replaced(placement));
 
     private static TProjection Pad<TProjection>(TProjection projection, int left, int top, int right, int bottom)
       where TProjection : class, IProjection
