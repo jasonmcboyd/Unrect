@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1788969080579,
+  "lastUpdate": 1788969080847,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -2806,6 +2806,72 @@ window.BENCHMARK_DATA = {
             "value": 228360.5376953125,
             "unit": "ns",
             "range": "± 2005.704880274489"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "4a44b787ac6b8b6fa5c487623e316bfe0e364292",
+          "message": "Presence semantics and three hygiene fixes: the zero disambiguated\n\nThe algebra's highest-priority open problem (v0.4 §7/§14.1): geometric\nzero carried four meanings. The internal Presence { Read, Empty,\nAbsorbed } now rides beside Consumed on the engine's results — stamped\nat tolerance boundaries (Absorbed), settled-at-zero extents (Empty, read\noff the SETTLED extent so evaluation order and doors agree by\nconstruction), joined through layouts (Read if any child Read, else\nEmpty), defaulting Read. The internal epsilon (NothingProjection) makes\nthe flow-unit law stateable: VerticalFlow is a monoid at L3 for\nsuccessful readings, boundaries pinned.\n\nThe law, earned the hard way: presence explains a stop; the extent\ndecides one. The first implementation let presence decide the repeat\nguard; the law-tests caught a real L1/L2 change on\nVerticalRepeat(item.Optional().Sized(...)) — an Absorbed boundary under\na declared area legitimately consumes it and always kept the run going.\nThe guard is byte-identical to before; presence powers only the new\nteaching Info when a run ends at an absorbed item (D2), and the caught\nshape is pinned as the compatibility-law section of PresenceLawTests.\n\nDesign record: docs/design/presence-and-unit-spec.md (DECIDED, with the\nD5 amendment trail).\n\nAlso, with pins: ChoiceProjection.Summarise renders nested aggregates\ndepth-indented with one location per line; MinOffset() is one canonical\ninstance (HasDeclaredOffset correct by construction); the content-\nmatching rule reduced to one implementation (CellMatching primitives,\nTableView's dictionary keyed on TextComparer; CaptionComparer's\ndeliberate divergence untouched). spike/Phase1Probe removed (a husk).\n\nSuite 1,820 -> 1,862 green; both library TFMs 0 warnings.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016BvUBicaVLLYkdp7iqFZNo",
+          "timestamp": "2026-09-09T15:34:18Z",
+          "tree_id": "883452644caa55f06a0f9c2d530ee9c0cece2b92",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/4a44b787ac6b8b6fa5c487623e316bfe0e364292"
+        },
+        "date": 1788969080794,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Tables.Lambda_10k",
+            "value": 1580735.281640625,
+            "unit": "ns",
+            "range": "± 9678.151511985403"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Lambda_100k",
+            "value": 17485293.585416667,
+            "unit": "ns",
+            "range": "± 109682.0749769822"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Bound_10k",
+            "value": 6631656.333333333,
+            "unit": "ns",
+            "range": "± 61310.80736729679"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Bound_100k",
+            "value": 69556702.3,
+            "unit": "ns",
+            "range": "± 642225.0978607185"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Dictionary_10k",
+            "value": 10434338.959918479,
+            "unit": "ns",
+            "range": "± 261146.31543949601"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Dictionary_100k",
+            "value": 126478246.53333333,
+            "unit": "ns",
+            "range": "± 2223308.587232241"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Bound_ProjectionConstruction",
+            "value": 338125.8026216947,
+            "unit": "ns",
+            "range": "± 1366.823720197043"
           }
         ]
       }
