@@ -121,6 +121,28 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
+    public void TheBindingComparerDoesNotLeakIntoAColumnLookupEither()
+    {
+      // The other half of the divergence TypedTableTests.AnOverrideStillGoesThroughTheComparer
+      // pins: on this very header the binder's override binds, because binding ignores whitespace
+      // everywhere. A column lookup is content matching — the same rule as RowContaining — so the
+      // doubled interior space is a different name and the lookup says so.
+      var space = Mixed(new object?[,]
+      {
+        { "Client", "Transaction  Date" },
+        { "Acme", "2026-03-04" },
+      });
+
+      var failure = Assert.Throws<ProjectionException>(() =>
+        Table(r => r["Transaction Date"].GetString()).Map(space));
+
+      Assert.Contains("there is no column named 'Transaction Date'", failure.Message);
+
+      // ...and the binding comparer would have said yes, which is the point of keeping them apart.
+      Assert.True(Same("Transaction  Date", "Transaction Date"));
+    }
+
+    [Fact]
     public void ACaptionDoesNotAbsorbATrailingColonTheWayAFieldLabelDoes()
     {
       // Colon-tolerance is LabelEquals, and LabelEquals is Fields-only: a caption is a whole cell

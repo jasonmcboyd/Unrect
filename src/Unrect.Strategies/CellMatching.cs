@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 using Unrect.Core;
 
@@ -11,6 +12,8 @@ namespace Unrect.Strategies
   /// <see cref="TextEquals"/> is <b>content matching</b>: a cell against a literal the declaration
   /// wrote. Every caller of it must agree, or a section would assert one thing and be bounded by
   /// another — <c>Caption("Total")</c> and <c>RowContaining("Total")</c> have to find the same row.
+  /// <see cref="TextComparer"/> is that same rule as a lookup key comparer, for a caller who needs
+  /// it by the tableful; agreement between the two is by construction, not by resemblance.
   /// </para>
   /// <para>
   /// <see cref="LabelEquals"/> is <b>label matching</b>: the same question, narrowed for the one
@@ -60,14 +63,13 @@ namespace Unrect.Strategies
     {
       var needle = TrimLabel(label);
 
-      return cell => cell.TryGetString() is string value
-        && TrimLabel(value).Equals(needle, StringComparison.OrdinalIgnoreCase);
+      return cell => cell.TryGetString() is string value && Comparison.Equals(TrimLabel(value), needle);
     }
 
     /// <summary>Strips a trailing run of colons and whitespace, so "EIN: :" reduces to "EIN".</summary>
     private static string TrimLabel(string text)
     {
-      var trimmed = text.Trim();
+      var trimmed = Trimmed(text);
 
       while (trimmed.Length > 0 && (trimmed[trimmed.Length - 1] == ':' || char.IsWhiteSpace(trimmed[trimmed.Length - 1])))
         trimmed = trimmed.Substring(0, trimmed.Length - 1);
@@ -81,10 +83,36 @@ namespace Unrect.Strategies
     /// </summary>
     public static Func<CellValue, bool> TextEquals(string text)
     {
-      var needle = text.Trim();
+      var needle = Trimmed(text);
 
-      return cell => cell.TryGetString() is string value
-        && value.Trim().Equals(needle, StringComparison.OrdinalIgnoreCase);
+      return cell => cell.TryGetString() is string value && Comparison.Equals(Trimmed(value), needle);
+    }
+
+    /// <summary>The trim both rules here begin with — what a cell's edges are allowed to carry.</summary>
+    private static string Trimmed(string text) => text.Trim();
+
+    /// <summary>How both rules compare two texts once they are trimmed — the case policy, in one place.</summary>
+    private static readonly StringComparer Comparison = StringComparer.OrdinalIgnoreCase;
+
+    /// <summary>
+    /// The content rule as a lookup key comparer, for a caller that answers the question with a
+    /// table rather than a scan — a table of header text, say. A dictionary cannot consult a
+    /// predicate, so it consults the two halves the predicate is built from and the rule stays one
+    /// implementation. Declared after the halves it reads, so initialization order can never be a
+    /// question.
+    /// </summary>
+    public static IEqualityComparer<string> TextComparer { get; } = new ContentComparer();
+
+    /// <summary>A null has nothing to trim, so the comparison answers for it: two nulls are equal, one is not.</summary>
+    private sealed class ContentComparer : IEqualityComparer<string>
+    {
+      public bool Equals(string? x, string? y)
+        => x is null || y is null
+          ? Comparison.Equals(x, y)
+          : Comparison.Equals(Trimmed(x), Trimmed(y));
+
+      public int GetHashCode(string obj)
+        => Comparison.GetHashCode(Trimmed(obj ?? throw new ArgumentNullException(nameof(obj))));
     }
   }
 }

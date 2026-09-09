@@ -54,7 +54,7 @@ namespace Unrect.Projections
       if (state.Count == 0)
         throw context.Failure(this, state.DeclaredNothing, extent, null, null, isFault: true);
 
-      return new ProjectionResult<T>(value, state.Consumed);
+      return new ProjectionResult<T>(value, state.Consumed, state.Presence);
     }
   }
 }

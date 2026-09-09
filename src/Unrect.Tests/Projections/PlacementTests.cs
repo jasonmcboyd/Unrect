@@ -224,6 +224,69 @@ namespace Unrect.Tests.Projections
       Assert.Equal(new[] { "Investor", "Amount" }, Table(t => t.ColumnNames).OffsetBy(SkipRows(1)).Map(space));
     }
 
+    // --- Saying "no movement" out loud says nothing -----------------------------------------------------
+    //
+    // A projection that has not been placed takes a movement rather than composing with a phantom
+    // no-op, and the test for "has not been placed" is a reference test against one canonical
+    // no-movement. So MinOffset has to BE that value: two spellings of nothing would make
+    // .OffsetBy(MinOffset()) a declared offset, and every later movement would compose onto it.
+    //
+    // What a naive probe cannot see: on a sheet where the movement fits, both spellings read the
+    // same cell — a composite of "nothing, then one row down" resolves to one row down. The
+    // difference is operational and diagnostic, so it is pinned as the mechanism (the shared
+    // instance, the reference test) and at the one place it surfaces in an answer: the sentence a
+    // movement that does not fit produces. A simplifier who weakens this to "reads the same cell"
+    // has pinned nothing.
+
+    [Fact]
+    public void MinOffset_IsOneCanonicalNoMovement()
+    {
+      Assert.Same(OffsetStrategies.MinOffset(), OffsetStrategies.MinOffset());
+      Assert.Same(OffsetStrategies.MinOffset(), Placement.Default.Offset);
+    }
+
+    [Fact]
+    public void OffsetByMinOffset_DeclaresNoOffset()
+    {
+      Assert.False(IntCell().OffsetBy(OffsetStrategies.MinOffset()).Placement.HasDeclaredOffset);
+
+      // ...while a second way of writing zero movement is a declared offset, because the rule is
+      // about the canonical value and not about what an offset happens to resolve to.
+      Assert.True(IntCell().OffsetBy(OffsetStrategies.ExplicitOffset(0, 0)).Placement.HasDeclaredOffset);
+    }
+
+    [Fact]
+    public void AMovementAfterMinOffset_ReplacesItRatherThanComposingOntoIt()
+    {
+      // Composed, the movement would resolve inside a composite, and an offset that does not fit
+      // would be reported by the composite's own bounds check — "ran past", with no extent named —
+      // instead of by the engine, which says what was asked for. The value is the same either way;
+      // the sentence is not, which is why this is the pin.
+      var stated = Assert.Throws<ProjectionException>(() =>
+        IntCell().OffsetBy(OffsetStrategies.MinOffset()).Down(5).Map(CoordinateGrid()));
+      var bare = Assert.Throws<ProjectionException>(() => IntCell().Down(5).Map(CoordinateGrid()));
+
+      Assert.Equal(bare.Message, stated.Message);
+      Assert.Contains("an offset of 0x5 does not fit the available space", stated.Message);
+
+      // The composing spelling, for contrast: the same movement, reported by the composite.
+      var composed = Assert.Throws<ProjectionException>(() =>
+        IntCell().OffsetBy(OffsetStrategies.ExplicitOffset(0, 0)).Down(5).Map(CoordinateGrid()));
+
+      Assert.Contains("its offset ran past the available space", composed.Message);
+    }
+
+    [Fact]
+    public void AMovementAfterARealOffset_StillComposes()
+    {
+      // The guard on the fix: canonicalising nothing must not turn every OffsetBy into a
+      // replacement. A declared skip still carries the movement on from where it left off.
+      var space = Grid(new[,] { { 0 }, { 0 }, { 1 }, { 2 } });
+
+      Assert.Equal(1, IntCell().OffsetBy(OffsetStrategies.SkipBlankRows()).Map(space));
+      Assert.Equal(2, IntCell().OffsetBy(OffsetStrategies.SkipBlankRows()).Down(1).Map(space));
+    }
+
     [Fact]
     public void AMovementOnAnUnplacedProjection_SimplyTakesTheOffset()
     {

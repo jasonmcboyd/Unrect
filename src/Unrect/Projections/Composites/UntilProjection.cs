@@ -77,7 +77,7 @@ namespace Unrect.Projections
       // declared area is: that is what puts the next sibling ON the landmark rather than somewhere
       // before it. Across the axis, only what the inner projection reached — bounding rows must not
       // claim columns.
-      return new ProjectionResult<TResult>(applied.Value, Consumed(limit, applied.Advance));
+      return new ProjectionResult<TResult>(applied.Value, Consumed(limit, applied.Advance), applied.Presence);
     }
 
     private Area Bound(int limit, Size size)

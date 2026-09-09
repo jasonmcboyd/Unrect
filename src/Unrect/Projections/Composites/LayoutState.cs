@@ -25,6 +25,7 @@ namespace Unrect.Projections
     internal const string LayoutReturned = Outside + "; this one was used after its layout returned.";
 
     private bool _closed;
+    private bool _read;
 
     protected LayoutState(IProjection owner, ISpace extent, ProjectionContext context)
     {
@@ -38,10 +39,22 @@ namespace Unrect.Projections
     protected ProjectionContext Context { get; }
 
     /// <summary>How many children the layout has taken.</summary>
-    public int Count { get; protected set; }
+    public int Count { get; private set; }
 
     /// <summary>How much of its extent the layout used.</summary>
     public abstract Size Consumed { get; }
+
+    /// <summary>
+    /// The join of the children's presences: <see cref="Presence.Read"/> if any child read content,
+    /// otherwise <see cref="Presence.Empty"/> — a layout none of whose children read anything read
+    /// nothing itself. <see cref="Presence.Absorbed"/> is deliberately not among the answers: only a
+    /// tolerance boundary can say it did not look, and a layout did look, through every child it
+    /// declared.
+    /// <para>
+    /// A layout that took no children never gets this far; declaring nothing stays a fault.
+    /// </para>
+    /// </summary>
+    public Presence Presence => _read ? Presence.Read : Presence.Empty;
 
     /// <summary>
     /// What to say when the lambda never called <c>Next</c>; each layout supplies its own noun.
@@ -56,6 +69,16 @@ namespace Unrect.Projections
 
     /// <summary>Ends the layout, after which no cursor may add to it.</summary>
     public void Close() => _closed = true;
+
+    /// <summary>
+    /// Records a child the layout has just taken, and what it made of its own extent. Counting and
+    /// joining happen together so a subclass cannot do one and forget the other.
+    /// </summary>
+    protected void Took(Presence presence)
+    {
+      _read |= presence == Presence.Read;
+      Count++;
+    }
 
     /// <summary>
     /// Lets a child into the layout, <paramref name="at"/> being where it is about to go. Both

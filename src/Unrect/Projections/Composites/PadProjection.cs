@@ -61,7 +61,8 @@ namespace Unrect.Projections
 
       return new ProjectionResult<TResult>(
         applied.Value,
-        applied.Advance + new Size(Left + Right, Top + Bottom));
+        applied.Advance + new Size(Left + Right, Top + Bottom),
+        applied.Presence);
     }
   }
 }

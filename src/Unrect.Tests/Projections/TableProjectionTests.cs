@@ -301,6 +301,28 @@ namespace Unrect.Tests.Projections
       Assert.Equal(new[] { "Acme" }, values);
     }
 
+    [Theory]
+    [InlineData("Amount")]
+    [InlineData(" amount ")]
+    [InlineData("AMOUNT")]
+    [InlineData("  AMOUNT  ")]
+    public void ColumnNameLookup_HashesAKeyTheWayItComparesIt(string key)
+    {
+      // The half a lookup test usually leaves implicit. A dictionary asks for the hash before it
+      // asks about equality, so a comparer that trimmed and case-folded only in Equals would send
+      // " amount " to a bucket "Amount" is not in and answer "no such column" — with the two
+      // halves of the rule disagreeing and neither of them wrong on its own. The comparer itself is
+      // internal to Unrect.Strategies, so the table's own dictionary is where the agreement is
+      // observable, and it is also the place it matters.
+      var space = Mixed(new object?[,]
+      {
+        { "Investor", "Amount" },
+        { "Acme", 10 },
+      });
+
+      Assert.Equal(new[] { 10 }, Table(r => r[key].GetInt()).Map(space));
+    }
+
     [Fact]
     public void HeaderNamesDifferingOnlyByCase_AreAmbiguous()
     {

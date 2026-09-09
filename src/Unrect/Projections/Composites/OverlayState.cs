@@ -38,7 +38,7 @@ namespace Unrect.Projections
 
       _width = Math.Max(_width, applied.Advance.Width);
       _height = Math.Max(_height, applied.Advance.Height);
-      Count++;
+      Took(applied.Presence);
 
       return applied.Value;
     }

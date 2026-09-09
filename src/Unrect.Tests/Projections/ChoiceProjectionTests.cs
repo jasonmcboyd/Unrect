@@ -169,6 +169,86 @@ namespace Unrect.Tests.Projections
       Assert.DoesNotContain("no alternative matched", failure.Message);
     }
 
+    // --- The aggregate's layout ---------------------------------------------------------------------------
+    //
+    // Byte-for-byte pins, because the tally is read by a person: the indent says which choice an
+    // alternative belongs to, and the location says where that alternative gave up. Both are
+    // claims about the shape of the text, so nothing weaker than the text itself pins them.
+    // AlternationLawProbeTests deliberately asserts no layout — this is the file it defers to.
+
+    /// <summary>A typed leaf, named — one clause of a problem, so a tally's line is predictable.</summary>
+    private static IProjection<int> Number(string name) => Integer().Named(name);
+
+    private static ISpace OneText() => Mixed(new object?[,] { { "text" } });
+
+    private const string Wrong = "expected Number at A1, found Text";
+
+    private const string At = " at row 1, column 1 (A1)";
+
+    [Fact]
+    public void AnAggregate_IsOneIndentedLinePerAlternative()
+    {
+      var failure = Assert.Throws<ProjectionException>(() =>
+        Choice(Number("a"), Number("b")).Map(OneText()));
+
+      Assert.Equal(
+        "no alternative matched" + Environment.NewLine
+        + $"    alternative 1 ('a'): {Wrong}{At}" + Environment.NewLine
+        + $"    alternative 2 ('b'): {Wrong}{At}",
+        failure.Problem);
+    }
+
+    [Fact]
+    public void ANestedAggregate_SitsOneIndentDeeperUnderTheAlternativeThatCarriesIt()
+    {
+      // The inner choice arrives with a tally of its own. Its lines belong to it, so they are
+      // pushed one level in, and the line naming it keeps its own location rather than letting the
+      // inner block's last line and the outer location end up back to back.
+      var inner = Choice(Number("a"), Number("b")).Named("inner");
+
+      var failure = Assert.Throws<ProjectionException>(() => Choice(inner, Number("c")).Map(OneText()));
+
+      Assert.Equal(
+        "no alternative matched" + Environment.NewLine
+        + $"    alternative 1 ('inner'): no alternative matched{At}" + Environment.NewLine
+        + $"        alternative 1 ('a'): {Wrong}{At}" + Environment.NewLine
+        + $"        alternative 2 ('b'): {Wrong}{At}" + Environment.NewLine
+        + $"    alternative 2 ('c'): {Wrong}{At}",
+        failure.Problem);
+    }
+
+    [Fact]
+    public void EveryLineOfAnAggregate_CarriesExactlyOneLocation()
+    {
+      // The law behind the two byte pins, stated so a third level of nesting cannot quietly break
+      // it: a line says where once. A doubled trailing location — the inner tally's last line
+      // followed by the outer's, on the same line — is what this refuses.
+      var inner = Choice(Number("a"), Number("b")).Named("inner");
+      var deeper = Choice(inner, Number("c")).Named("deeper");
+
+      var failure = Assert.Throws<ProjectionException>(() => Choice(deeper, Number("d")).Map(OneText()));
+
+      var lines = failure.Problem.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+
+      Assert.Equal("no alternative matched", lines[0]);
+      Assert.All(lines.Skip(1), line => Assert.Equal(1, Occurrences(line, At)));
+      Assert.All(lines.Skip(1), line => Assert.EndsWith(At, line));
+      // Three choices deep: 'deeper' and 'd' at this level, 'inner' and 'c' one in, 'a' and 'b' two.
+      Assert.Equal(new[] { 4, 8, 12, 12, 8, 4 }, lines.Skip(1).Select(Indent));
+    }
+
+    private static int Occurrences(string line, string needle)
+    {
+      var count = 0;
+
+      for (var index = line.IndexOf(needle, StringComparison.Ordinal); index >= 0; index = line.IndexOf(needle, index + 1, StringComparison.Ordinal))
+        count++;
+
+      return count;
+    }
+
+    private static int Indent(string line) => line.Length - line.TrimStart(' ').Length;
+
     // --- The aggregate as a diagnostic --------------------------------------------------------------------
 
     [Fact]

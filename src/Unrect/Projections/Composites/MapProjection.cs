@@ -31,7 +31,7 @@ namespace Unrect.Projections
     public override ProjectionResult<TResult> Project(ISpace extent, ProjectionContext context)
     {
       var applied = ProjectionEngine.Apply(Inner, extent, context);
-      return new ProjectionResult<TResult>(Selector(applied.Value), applied.Advance);
+      return new ProjectionResult<TResult>(Selector(applied.Value), applied.Advance, applied.Presence);
     }
   }
 }

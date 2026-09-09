@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 using Unrect.Core;
+using Unrect.Strategies;
 
 namespace Unrect.Projections
 {
@@ -146,14 +147,14 @@ namespace Unrect.Projections
 
     /// <summary>
     /// The columns carrying <paramref name="columnName"/>; empty when there is no such column.
-    /// Header names are matched trimmed and case-insensitively, so the key is trimmed too.
+    /// Header names are matched by the content rule, applied to the key as well as to the header.
     /// </summary>
     internal IReadOnlyList<int> IndicesOf(string columnName)
     {
       if (columnName is null)
         throw new ArgumentNullException(nameof(columnName));
 
-      return (_columnsByName ??= BuildColumnsByName()).TryGetValue(columnName.Trim(), out var indices)
+      return (_columnsByName ??= BuildColumnsByName()).TryGetValue(columnName, out var indices)
         ? indices
         : Array.Empty<int>();
     }
@@ -175,9 +176,14 @@ namespace Unrect.Projections
       return rows;
     }
 
+    /// <summary>
+    /// Header text to the columns carrying it, keyed by the content rule itself rather than by a
+    /// comparer that happens to agree with it — a lookup here and a <c>RowContaining</c> elsewhere
+    /// find a caption on the same terms, and go on doing so if those terms change.
+    /// </summary>
     private Dictionary<string, List<int>> BuildColumnsByName()
     {
-      var columns = new Dictionary<string, List<int>>(StringComparer.OrdinalIgnoreCase);
+      var columns = new Dictionary<string, List<int>>(CellMatching.TextComparer);
 
       for (var index = 0; index < ColumnNames.Count; index++)
       {

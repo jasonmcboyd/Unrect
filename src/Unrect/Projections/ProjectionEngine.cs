@@ -224,8 +224,24 @@ namespace Unrect.Projections
         ? placed.Bound?.ForceResolved() ?? placed.Extent.Area.Size
         : result.Consumed;
 
-      return new AppliedResult<TResult>(result.Value, placed.Offset, consumed);
+      return new AppliedResult<TResult>(result.Value, placed.Offset, consumed, Settled(result.Presence, placed.HasDeclaredArea, consumed));
     }
+
+    /// <summary>
+    /// A declared extent that settled at nothing — <c>Range(RowsWhileAnyValue(), …)</c> over a band
+    /// with no valued row — looked and found zero, which is <see cref="Presence.Empty"/> rather than
+    /// the <see cref="Presence.Read"/> a projection over an empty region reports by saying nothing.
+    /// It is read off the settled extent rather than off the strategy, so the two doors and the two
+    /// forcing modes cannot disagree about it.
+    /// <para>
+    /// A projection that already said what it was — a boundary's <see cref="Presence.Absorbed"/>, a
+    /// repetition's own <see cref="Presence.Empty"/> — outranks this, because it knows why.
+    /// </para>
+    /// </summary>
+    private static Presence Settled(Presence presence, bool hasDeclaredArea, Size consumed)
+      => presence == Presence.Read && hasDeclaredArea && (consumed.Width == 0 || consumed.Height == 0)
+        ? Presence.Empty
+        : presence;
 
     /// <summary>
     /// How a declared extent's failure is reported: a strategy that ran out of room says so, and

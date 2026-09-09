@@ -44,7 +44,7 @@ namespace Unrect.Projections
         try
         {
           var applied = ProjectionEngine.Apply(Alternatives[index], extent, context);
-          return new ProjectionResult<T>(applied.Value, applied.Advance);
+          return new ProjectionResult<T>(applied.Value, applied.Advance, applied.Presence);
         }
         // A projection that broke rather than disagreed is a bug in the reading code; trying the
         // next alternative would only bury it.
@@ -66,16 +66,36 @@ namespace Unrect.Projections
       throw context.Failure(this, Summarise(failures!), extent, null, failures![failures.Length - 1]);
     }
 
+    private static readonly string[] LineBreaks = { "\r\n", "\n" };
+
+    private const string Indent = "    ";
+
+    /// <summary>
+    /// One indented line per alternative: what it was, what it made of the space, and where. A
+    /// problem that arrives in more than one line — a nested choice's tally, most often, though a
+    /// quoted foreign exception can do it too — has its continuation lines pushed one level deeper,
+    /// and this level's location stays on the line that names the alternative — otherwise the
+    /// nested block reads as this one's and two locations end up back to back at the bottom of it.
+    /// A single-line problem is the same sentence either way.
+    /// </summary>
     private string Summarise(ProjectionException[] failures)
     {
       var summary = new StringBuilder("no alternative matched");
 
       for (var index = 0; index < failures.Length; index++)
+      {
+        var problem = failures[index].Problem.Split(LineBreaks, StringSplitOptions.None);
+
         summary
           .Append(Environment.NewLine)
-          .Append($"    alternative {index + 1} ({ProjectionContext.DescribeThrough(Alternatives[index])}): ")
-          .Append(failures[index].Problem)
+          .Append(Indent)
+          .Append($"alternative {index + 1} ({ProjectionContext.DescribeThrough(Alternatives[index])}): ")
+          .Append(problem[0])
           .Append($" at {failures[index].Location}");
+
+        for (var line = 1; line < problem.Length; line++)
+          summary.Append(Environment.NewLine).Append(Indent).Append(problem[line]);
+      }
 
       return summary.ToString();
     }

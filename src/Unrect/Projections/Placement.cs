@@ -12,8 +12,10 @@ namespace Unrect.Projections
   /// </summary>
   public sealed class Placement
   {
-    // The one shared "no offset declared yet" strategy, so HasDeclaredOffset is a reference test.
-    // Declared first because the static initializers below run in textual order.
+    // The "no offset declared yet" strategy, so HasDeclaredOffset is a reference test. MinOffset
+    // hands back one canonical no-movement, so a caller who declares one by name lands on this same
+    // value rather than on a second way of saying nothing. Declared first because the static
+    // initializers below run in textual order.
     private static readonly IOffsetStrategy NoOffset = OffsetStrategies.MinOffset();
 
     /// <summary>Creates a placement from an explicit offset and area; <paramref name="area"/> may be null (derived extent).</summary>
@@ -45,6 +47,8 @@ namespace Unrect.Projections
     /// False while the projection simply sits where it is handed. Offset modifiers compose onto an
     /// offset the projection already declared; until one exists there is nothing to compose with,
     /// and composing with a no-op would only blur the diagnostics when the new offset does not fit.
+    /// Saying so out loud says nothing: <c>OffsetBy(MinOffset())</c> leaves the projection where it
+    /// was handed, so a movement after it still replaces.
     /// </summary>
     internal bool HasDeclaredOffset => !ReferenceEquals(Offset, NoOffset);
 

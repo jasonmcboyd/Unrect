@@ -7,10 +7,15 @@ namespace Unrect.Strategies
   /// <summary>Factories for <see cref="IOffsetStrategy"/> — how a projection's origin is found within the space it is handed.</summary>
   public static class OffsetStrategies
   {
+    // "No movement" is one value rather than one per call: a placement recognises it to decide
+    // whether a later movement composes onto a declared offset or replaces an undeclared one, so
+    // two spellings of nothing must not be two different offsets. The strategy is immutable, so
+    // there is nothing to share but the answer.
+    private static readonly IOffsetStrategy NoMovement = MinSize().ToOffsetStrategy();
 
     /// <summary>No movement — the origin the projection was handed.</summary>
     public static IOffsetStrategy MinOffset()
-      => MinSize().ToOffsetStrategy();
+      => NoMovement;
 
     /// <summary>A fixed displacement of <paramref name="width"/> columns and <paramref name="height"/> rows.</summary>
     public static IOffsetStrategy ExplicitOffset(int width, int height)

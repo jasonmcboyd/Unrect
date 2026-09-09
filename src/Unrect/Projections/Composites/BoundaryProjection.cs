@@ -54,7 +54,7 @@ namespace Unrect.Projections
       try
       {
         var applied = ProjectionEngine.Apply(Inner, extent, context);
-        return new ProjectionResult<T>(applied.Value, applied.Advance);
+        return new ProjectionResult<T>(applied.Value, applied.Advance, applied.Presence);
       }
       // A projection that broke rather than disagreed is a bug in the reading code, not a
       // projection of data to tolerate, so it passes straight through with its location intact.
@@ -66,13 +66,20 @@ namespace Unrect.Projections
         context.Report(DiagnosticSeverity.Warning, failure);
 
         if (Fallback is null)
-          // Nothing was read, so nothing was consumed: a following sibling starts where this began.
-          return new ProjectionResult<T>(FallbackValue, new Size(0, 0));
+          // Nothing was read, so the boundary itself consumes nothing and a following sibling
+          // starts where this began — unless the placement declared an area or a padding, which is
+          // consumed in full whatever the projection made of it. Absorbed therefore travels with a
+          // non-zero extent perfectly legitimately, and that is exactly why it is carried beside
+          // the number rather than inferred from it: the extent says how much room the declaration
+          // claimed, the presence says nobody looked inside it.
+          return new ProjectionResult<T>(FallbackValue, new Size(0, 0), Presence.Absorbed);
 
         try
         {
+          // A fallback that ran is a projection like any other, so the presence is its own: what
+          // stood in was read, or was itself empty, and the boundary has no better answer.
           var applied = ProjectionEngine.Apply(Fallback, extent, context.WithUseSite(FallbackSite));
-          return new ProjectionResult<T>(applied.Value, applied.Advance);
+          return new ProjectionResult<T>(applied.Value, applied.Advance, applied.Presence);
         }
         catch (ProjectionException fallbackFailure)
         {

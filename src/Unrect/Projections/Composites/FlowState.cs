@@ -11,6 +11,12 @@ namespace Unrect.Projections
   /// </summary>
   internal sealed class FlowState : LayoutState
   {
+    // The spec's §3.4 wanted this sentence to say WHICH kind of nothing the sibling was — absent
+    // because a boundary absorbed it, or an empty region genuinely read. It stays one sentence, and
+    // deliberately: the rule is about consumption, not about absorption, which is what
+    // BoundaryProjectionTests.TheNoteIsAboutConsumptionRatherThanAboutAbsorption pins. Splitting the
+    // wording would make the note claim a cause it does not test for. The presence needed to do it
+    // now reaches here, so the change is a decision rather than a missing seam.
     private const string SiblingNote = "the preceding sibling consumed nothing at this position";
 
     private int _along;
@@ -62,7 +68,7 @@ namespace Unrect.Projections
         throw failure.WithNote(SiblingNote);
       }
 
-      Advance(applied.Advance);
+      Advance(applied.Advance, applied.Presence);
       return applied.Value;
     }
 
@@ -81,12 +87,12 @@ namespace Unrect.Projections
     private bool FollowsAnEmptySibling(ProjectionException failure, Offset cursor)
       => Count > 0 && _previous == 0 && failure.Location.IsAt(Context.Origin + cursor);
 
-    private void Advance(Size advance)
+    private void Advance(Size advance, Presence presence)
     {
       _previous = Along(advance);
       _along += _previous;
       _across = Math.Max(_across, Across(advance));
-      Count++;
+      Took(presence);
     }
 
     private int Along(Size size) => Orientation == Orientation.Vertical ? size.Height : size.Width;
