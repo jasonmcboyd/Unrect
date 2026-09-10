@@ -171,6 +171,13 @@ namespace PlacementGauntlet.Staged
       => new UnderStage(Steps.Before(Step.Under(captions)));
 
     /// <summary>
+    /// The heading transition — <c>On(mark).Heading("Region A").Of(lines)</c>. Ruling 1's canonical
+    /// order: anchors and offsets, then bounds and sizes, then headings, then the subject.
+    /// </summary>
+    /// <inheritdoc cref="HeadingStage"/>
+    public HeadingStage Heading(string text) => new HeadingStage(Steps, Headings.One(text));
+
+    /// <summary>
     /// The bound as a PIPELINE STAGE — <c>Below(m).Until(next).VerticalFlow(…)</c>.
     /// <para>
     /// <b>SUPERSEDED (the geography law, 2026-09-09).</b> An operator sits on the side of its
@@ -228,12 +235,22 @@ namespace PlacementGauntlet.Staged
     }
   }
 
-  /// <summary>Bounded: the extent's end is declared, so only a terminal can follow.</summary>
+  /// <summary>
+  /// Bounded: the extent's end is declared, so only a heading or a terminal can follow.
+  /// <para>
+  /// The heading transition is what ruling 1's canonical order asks for — bounds before headings —
+  /// and it is the one thing a bound stage gained in the Heading trial. Nothing else was added: a
+  /// second bound, a size and every anchor stay unspellable.
+  /// </para>
+  /// </summary>
   public sealed class BoundStage : PlacementStage
   {
     internal BoundStage(Steps steps) : base(steps)
     {
     }
+
+    /// <inheritdoc cref="UnboundedStage.Heading(string)"/>
+    public HeadingStage Heading(string text) => new HeadingStage(Steps, Headings.One(text));
   }
 
   /// <summary>

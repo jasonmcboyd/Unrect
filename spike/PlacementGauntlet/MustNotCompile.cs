@@ -181,6 +181,41 @@ namespace PlacementGauntlet
     //     say so — it is commented out rather than deleted so the ledger stays a build.
     //     (Under(Caption("Detail")).Of(Table<Position>()).Until(Mark) — compiles, and is the
     //      recommended spelling.)
+
+    // --- The Heading trial's additions (2026-09-10) -------------------------------------------------
+
+    // (v) AN ANCHOR AFTER A HEADING. The Under-entry precedent, inherited word for word: a heading
+    //     already locates the section, so a second locator to its right is the same statement twice
+    //     or a contradiction. Refused with a teaching message rather than by absence.
+    //     CS0619: 'HeadingStage.On(IRowLandmark)' is obsolete: 'a section announced by a heading is
+    //             already located by it: Heading finds the row by content, asserts the text and
+    //             consumes it. If the section needs an anchor as well — the repeat-stop recipe, where
+    //             the anchor must sit on the heading-and-content flow — declare it as the pipeline's
+    //             entry, which reads first because it is furthest up the sheet:
+    //             On(mark).Heading("…").Of(section).'
+    public static object V() => Heading("Detail").On(Mark).Of(Table<Position>());
+
+    // (w) A BOUND AFTER A HEADING — ruling 1's canonical order (anchors/offsets, then bounds/sizes,
+    //     then headings, then the subject) enforced by the grammar in the one direction it runs.
+    //     Refused BY ABSENCE, so the message is the constraint-babble (h) exists to contrast with;
+    //     the same fix applies if this is ever more than a spike.
+    //     NOTE the asymmetry this measures: postfix .Until AFTER the subject compiles and is the
+    //     geography law's spelling — Heading("Detail").Of(x).Until(Mark) — and scenario H pins the
+    //     two orders as one declaration. What is refused here is only the mid-pipeline position.
+    //     CS0311: The type 'PlacementGauntlet.Staged.HeadingStage' cannot be used as type parameter
+    //             'TProjection' in the generic type or method
+    //             'ProjectionExtensions.Until<TProjection>(TProjection, IRowLandmark, bool)'. There is
+    //             no implicit reference conversion from 'PlacementGauntlet.Staged.HeadingStage' to
+    //             'Unrect.Projections.IProjection'.
+    public static object W() => Heading("Detail").Until(Mark).Of(Table<Position>());
+
+    // (x) A DISCOVERED HEADING. Heading takes the TEXT — that is the cure, and it is also the limit:
+    //     the corpus's repeat-stop recipe consumes a row whose text VARIES per occurrence, read
+    //     rather than asserted. That is a third use of Under (consume-without-asserting) beside
+    //     assert-and-discard and capture, and Heading refuses it by type. Scenario H reads the
+    //     surviving spelling live: On(regionMark).Under(regionName).Of(lines).
+    //     CS1503: Argument 1: cannot convert from 'Unrect.Projections.IProjection<string>' to 'string'
+    public static object X() => Heading(Row(cells => cells[0].GetString())).Of(Table<Position>());
 #endif
   }
 }

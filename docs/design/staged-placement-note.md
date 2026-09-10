@@ -371,6 +371,50 @@ should not ship without it. VERDICT: Entry C carries the whole prefix half alone
 declaration files (the owner's 99%); A/B remain for helper libraries and the
 theorem's illegitimate-mixed fallback.
 
+## 5.6 The fossil diagnosis and the Heading trial (owner + evaluator, 2026-09-10)
+
+The owner named `Under` and `Caption` outlier operators, and the history confirms the
+diagnosis: **they are fossils of a missing category.** `Under` was born in phase B as
+the replacement for a placement modifier (`.After(Past(...))`) and inherited its seat —
+postfix, subject-first, modifier grammar — even though its type changed from geometry
+to content; the reverse reading the owner hated was never chosen, it was inherited.
+`Caption` was shoehorned into value-yielding-leaf because the algebra had no category
+for "located, consumed, asserted structure that yields nothing" — hence its vestigial
+payload, discarded by `Under` at every corpus site but one. **The stage calculus is
+the missing category**, and `Heading(text)` — one stage word: locate, assert, consume,
+document order — is the two refugees repatriated. Consequences if the trial holds:
+`Under` retires entirely (postfix AND the just-built entry — spikes are scaffolding);
+`Caption` shrinks to its one honest value-capturing use (the K-1 `KSection` case);
+ruling 2 (double-`Under`) evaporates unasked — layering is `Heading(outer).Of(section)`
+nesting. Trial dispatched with differential acceptance reads, the repeat-stop recipe,
+and the surviving-Caption coexistence read.
+
+**TRIAL RESULT + FINAL RULING (owner, 2026-09-10): the third act is a dissolved
+category, and `Under` retires outright — both forms, nothing left behind.** The trial
+held at L3 on the flagship reads (structural reason: a heading contributes no node —
+it mints the same Caption leaves, so failures speak the leaf's words) but surfaced a
+third use hiding in `Under`: consume-without-asserting (the varying region-title row).
+The owner's resolution: that case decomposes into existing honest words — location is
+by SHAPE, not text (`RowWhere` over the row's structure: first cell text, neighbor
+blank — a structural landmark for titles that vary per file), the name is CAPTURED as
+a flow child (ignorable by the caller), and pure don't-care is geometry. The locked
+taxonomy: **`Heading` asserts · `Caption` captures · geometry skips · matchers
+locate.** No `Heading(IProjection<string>)` overload (would reinstate the fossil); no
+third stage word (no document has demonstrated validate-but-discard; mint it if one
+ever does). Also from the trial: ruling 1 is pure reading preference (both bound
+positions pinned as ONE declaration — semantics never forked); Entry C's completeness
+is an ongoing covenant (the closed class inherits every vocabulary move — `Until`'s
+revival broke the Entry C read until re-exported; the parity suite is the guard).
+
+## 5.7 The IDE gate (owner, 2026-09-10): PASSED
+
+The one risk the Linux environment could not measure — Visual Studio tooling over
+`using static` of a closed generic class — checked by the owner against the spike's
+zero-prefix files: completion, tooltips, go-to-definition, error presentation,
+signature help. Verdict: "it seems to work incredibly well." Entry C is IDE-safe;
+the known-inarticulate errors (CS0121/CS0411) remain the analyzer's assignment as
+planned. ALL DESIGN GATES ARE NOW CLEARED — the renovation spec is the next artifact.
+
 ## 6. Reprice triggers
 
 - **Matcher combinators** (compound landmarks) — they renovate the anchor surface

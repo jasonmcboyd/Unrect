@@ -90,6 +90,13 @@ namespace PlacementGauntlet.Staged
     public static UnderStage Under(params IProjection<string>[] captions)
       => new UnderStage(Steps.None.Before(Step.Under(captions)));
 
+    /// <summary>
+    /// The heading entry — <c>Heading("IRR Details").Of(details)</c>. Self-anchoring: a heading
+    /// locates its own section by content, so it needs nothing to its left.
+    /// </summary>
+    /// <inheritdoc cref="HeadingStage"/>
+    public static HeadingStage Heading(string text) => new HeadingStage(Steps.None, Headings.One(text));
+
     // --- Bound entries ----------------------------------------------------------------------------
     //
     // SUPERSEDED by the geography law (2026-09-09): a bound's landmark sits BELOW the section it
@@ -165,6 +172,9 @@ namespace PlacementGauntlet.Staged
     /// <inheritdoc cref="UnboundedStage.Under(IProjection{string}[])"/>
     public UnderStage<TSpace> Under(params IProjection<string>[] captions)
       => new UnderStage<TSpace>(Steps.None.Before(Step.Under(captions)));
+
+    /// <inheritdoc cref="Place.Heading(string)"/>
+    public HeadingStage<TSpace> Heading(string text) => new HeadingStage<TSpace>(Steps.None, Headings.One(text));
 
     /// <inheritdoc cref="Place.Until(IRowLandmark, bool)"/>
     public BoundStage<TSpace> Until(IRowLandmark landmark, bool orEnd = false)

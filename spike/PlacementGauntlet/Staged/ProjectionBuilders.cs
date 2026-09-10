@@ -274,6 +274,23 @@ namespace PlacementGauntlet.Staged
 
     /// <inheritdoc cref="UnboundedStage.Under(IProjection{string}[])"/>
     public static UnderStage<TSpace> Under(params IProjection<string>[] captions) => Placement.Under(captions);
+
+    /// <inheritdoc cref="Place.Heading(string)"/>
+    public static HeadingStage<TSpace> Heading(string text) => Placement.Heading(text);
+
+    /// <summary>
+    /// The bound as a leading stage, per ruling 1's canonical order.
+    /// <para>
+    /// <b>Added by the Heading trial, and the reason is a finding.</b> It was left out when this
+    /// class was written, deliberately: the geography law had superseded the bound stage, so
+    /// postfix <c>.Until</c> was the spelling and postfix operators arrive as extensions. Ruling 1's
+    /// canonical order — bounds before headings — put it back in the grammar, and a zero-prefix file
+    /// then could not spell it (CS0103). <b>The completeness obligation is not a one-time wall: the
+    /// closed class inherits every unsettled position in the vocabulary, and an operator that moves
+    /// moves here too.</b>
+    /// </para>
+    /// </summary>
+    public static BoundStage<TSpace> Until(IRowLandmark landmark, bool orEnd = false) => Placement.Until(landmark, orEnd);
   }
 
   /// <summary>

@@ -19,6 +19,7 @@ namespace PlacementGauntlet
       Scenario5.Run();
       ScenarioG.Run();
       ScenarioC.Run();
+      ScenarioH.Run();
       Intermediates();
 
       Console.WriteLine();

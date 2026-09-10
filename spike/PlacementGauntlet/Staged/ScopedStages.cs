@@ -121,6 +121,9 @@ namespace PlacementGauntlet.Staged
     public UnderStage<TSpace> Under(params IProjection<string>[] captions)
       => new UnderStage<TSpace>(Steps.Before(Step.Under(captions)));
 
+    /// <inheritdoc cref="UnboundedStage.Heading(string)"/>
+    public HeadingStage<TSpace> Heading(string text) => new HeadingStage<TSpace>(Steps, Headings.One(text));
+
     /// <inheritdoc cref="UnboundedStage.Until(IRowLandmark, bool)"/>
     public BoundStage<TSpace> Until(IRowLandmark landmark, bool orEnd = false)
       => new BoundStage<TSpace>(Steps.Then(Step.UntilRow(landmark, orEnd)));
@@ -194,6 +197,9 @@ namespace PlacementGauntlet.Staged
     internal BoundStage(Steps steps) : base(steps)
     {
     }
+
+    /// <inheritdoc cref="UnboundedStage.Heading(string)"/>
+    public HeadingStage<TSpace> Heading(string text) => new HeadingStage<TSpace>(Steps, Headings.One(text));
   }
 
   /// <summary>The scoped twin of <see cref="UnderStage"/>, refusals and all.</summary>

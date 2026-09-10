@@ -554,3 +554,179 @@ CS0104: 'Table' is an ambiguous reference between
 
 Both spellings are built (`ProjectionBuilders<TSpace>`, `SplitRungs<TSpace>`) and read the same
 document in `ScenarioC.SplitTypeTrick`.
+
+---
+
+# Heading — the fossil pair dissolved
+
+> **The diagnosis.** `Under` inherited postfix modifier grammar from the placement modifier it
+> replaced — its type changed to content, its seat did not. `Caption` was shoehorned into
+> value-yielding-leaf because no category existed for *located, consumed, asserted structure that
+> yields nothing*. The stage calculus **is** that missing category.
+
+`Heading(string text)` is one stage word in place of the pair. It takes the TEXT, not a `Caption`
+leaf — that is the cure, not a convenience: a leaf argument would keep the fossil alive as a value
+constructed only to be discarded. It is self-anchoring (an entry), and a transition from the anchor,
+offset, bound and size stages in ruling 1's canonical order. Multiple headings chain in document
+order and accumulate into **one** replayed call.
+
+All five reads are compiled and executed in `ScenarioH_Heading.cs` and `ScenarioH_EntryC.cs`.
+**Every one agrees at L3** — value, geometry, diagnostics verbatim, and provoked failures' path,
+subject and sentence.
+
+### Read 1 — the investor-irr series, both halves
+
+```csharp
+// today — a postfix modifier taking leaves built to be thrown away
+irrDetails
+    .Under(Caption("IRR Details"), Caption("Cash Flows Using Transfer Date"))
+    .Until(RowContaining(Inception));
+
+irrDetails.Under(Caption(Inception));
+
+// Heading — ruling 1's canonical order: bound, then headings in document order, then subject
+Until(RowContaining(Inception))
+    .Heading("IRR Details")
+    .Heading("Cash Flows Using Transfer Date")
+    .Of(irrDetails);
+
+Heading(Inception).Of(irrDetails);
+```
+
+**L3, and by construction rather than by luck.** The stage holds text and mints the `Caption` leaves
+at replay time, so a failure prints the leaf's own description — identical to a hand-written
+`Under`'s. Two pins hold it: a wrong *second* heading and a wrong *first* heading each fail with the
+same path and sentence either way. **The description-naming question the trial anticipated never
+arises: a heading contributes no node of its own, only the captions it mints.**
+
+Chaining had to accumulate rather than nest — `Heading(a).Heading(b)` is `Under(Caption(a),
+Caption(b))`, one flow, not two — which is why the stage keeps the placement it was handed separate
+from its headings and recomposes the step on each call.
+
+### Read 2 — the repeat-stop recipe survives
+
+```csharp
+// today
+lines.Under(Caption("Region A")).On(regionMark);
+
+// Heading — one word less, same reading
+On(regionMark).Heading("Region A").Of(lines);
+```
+
+L2 identical. The negative holds too: anchoring the *content* instead of the flow is still a
+different declaration (`FAILS: Table<Line>#2: no row containing 'Region A' exists in the available
+space`), so the innermost-prepend is as load-bearing for `Heading` as it was for `Under`.
+
+### Read 3 — the surviving `Caption` case
+
+`Caption`-the-leaf's one remaining home is a section that **captures** its heading's text as data.
+It is unchanged, and it sits beside a `Heading` sibling that discards the text — in one document:
+
+```csharp
+// CAPTURES — Caption is a leaf here because the record wants what it read. Untouched.
+VerticalFlow(v => new KSection(
+        Caption: v.Next(Caption("K-1 Lines 1-21")),
+        Lines:   v.Next(kLines)))
+    .On(RowContaining("K-1 Lines 1-21"))
+    .Until(RowContaining("Portfolio Income"));
+
+// DISCARDS — no field for the text, so the fossil was visible. This half becomes a Heading.
+On(RowContaining("Portfolio Income"))
+    .Until(RowContaining("Totals"))
+    .Heading("Portfolio Income")
+    .Of(kLines);
+```
+
+Read together they yield `Lines.Caption == "K-1 Lines 1-21"` and a portfolio section with no caption
+anywhere in its type. **They coexist coherently because they are the same machinery** — `Caption`
+locates, asserts and consumes in both; the only difference is whether a cursor takes what it
+yielded.
+
+### Read 4 — layered composition, and the double-`Under` question evaporating
+
+```csharp
+var section  = Heading("Portfolio Income").Of(kLines);
+var document = Heading("Partner K-1").Of(section);
+```
+
+L2 identical to today's `kLines.Under(Caption("Portfolio Income")).Under(Caption("Partner K-1"))`.
+Ledger entry (n) had recorded stacked `Under` as "unusual but not contradictory" and the pipeline
+refused it. Here the question **dissolves rather than being answered**: chaining is one layer's
+headings in document order, nesting is two layers, and the two cannot be confused because one is
+dots and the other is parentheses — the grammar law, holding.
+
+### Read 5 — a zero-prefix file, with no `Caption` in it at all
+
+```csharp
+using System;
+using System.Collections.Generic;
+
+using Unrect.Core;
+using Unrect.Projections;
+
+using static PlacementGauntlet.Staged.ProjectionBuilders<Unrect.Core.ISpace>;
+
+…
+
+var byTransferDate = Heading("IRR Details")
+    .Heading("Cash Flows Using Transfer Date")
+    .Of(irrDetails)
+    .Until(RowContaining(Inception));
+
+var byInception = Heading(Inception).Of(irrDetails);
+```
+
+L3 identical to `ScenarioC_Plain.cs`'s `Under(Caption(…))` spelling of the same script. `Caption` is
+neither imported nor written: the leaf that existed only to be discarded is gone from the
+declaration surface entirely.
+
+**And the bound's position is measured rather than argued.** `Until(l).Heading(a).Heading(b).Of(x)`
+and `Heading(a).Heading(b).Of(x).Until(l)` are pinned as **the same declaration** — both replay
+Under-then-Until. Ruling 1's canonical order and the geography law's postfix `.Until` are a reading
+preference here, not a semantic difference. Evidence for the open owner call, not a position taken.
+
+### The refusals, verbatim
+
+```
+(v) CS0619: 'HeadingStage.On(IRowLandmark)' is obsolete: 'a section announced by a heading is
+            already located by it: Heading finds the row by content, asserts the text and consumes
+            it. If the section needs an anchor as well — the repeat-stop recipe, where the anchor
+            must sit on the heading-and-content flow — declare it as the pipeline's entry, which
+            reads first because it is furthest up the sheet: On(mark).Heading("…").Of(section).'
+
+(w) CS0311: The type 'PlacementGauntlet.Staged.HeadingStage' cannot be used as type parameter
+            'TProjection' in the generic type or method
+            'ProjectionExtensions.Until<TProjection>(TProjection, IRowLandmark, bool)'. …
+
+(x) CS1503: Argument 1: cannot convert from 'Unrect.Projections.IProjection<string>' to 'string'
+```
+
+(v) inherits the `Under` entry's teaching message word for word. (w) is refused by absence and gets
+the constraint-babble (h) exists to contrast with — the mid-pipeline bound only; postfix `.Until`
+after the subject compiles and is read 5's spelling. (x) is the finding below, refused by type.
+
+### Where the dissolution fights back
+
+**1. `Heading` cannot spell a DISCOVERED heading — and the corpus uses one.** The real repeat-stop
+recipe reads a region name that varies per occurrence:
+
+```csharp
+On(regionMark).Under(regionName).Of(lines)     // regionName = Row(cells => cells[0].GetString())
+```
+
+The row is consumed **without being asserted**. That is a *third* use of `Under`, beside
+assert-and-discard (which `Heading` takes) and capture (which `Caption` keeps). `Heading(string)`
+refuses it by type, so **retiring the `Under` entry outright would delete a spelling that works
+today.** Two exits, neither free: a `Heading` overload taking a projection — which reinstates the
+fossil argument the trial removed — or a separate word for consume-without-asserting. The trial does
+not choose; it records that the choice exists.
+
+**2. Which word to write is decided by the RESULT type, not by the document.** Two identical-looking
+heading rows spell differently — `Heading("X")` or `v.Next(Caption("X"))` — and only whether the
+record wants the text says which. That is coherent, and it is a thing to teach.
+
+**3. The completeness obligation is not a one-time wall.** `Until` had never been re-exported on
+`ProjectionBuilders<TSpace>` because the geography law had superseded the bound *stage*; ruling 1's
+canonical order put it back in the grammar and read 5 stopped compiling (`CS0103: The name 'Until'
+does not exist in the current context`). **The closed class inherits every unsettled position in the
+vocabulary — an operator that moves, moves here too.**

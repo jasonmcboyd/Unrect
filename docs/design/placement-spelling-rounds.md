@@ -61,7 +61,35 @@ Both satisfy the never-backwards bar by their own logic: A's order is the INTENT
 (state the region's whole address, then its occupant); B's is the PAGE's. The round
 asks only: read aloud, which one do you stop noticing?
 
-**Ruling:** (awaiting owner)
+**Ruling (owner, 2026-09-10): VARIANT A — the bound is a stage; all geometry precedes
+the subject.** The owner's reasons: (1) no chained projections — under B, postfix
+`.Until` would be the sole surviving postfix geometric operator, a lone exception to
+"everything about the region precedes it"; (2) the argument-form correspondence —
+`Offset().Size().Projection()` linearizes exactly to `Placed(offset, size, content)`,
+so the fluent surface and the canonical (IR) representation state their parts in the
+same order. The geography law is DEMOTED to a special case: it survives as the reason
+captions precede content (above and pre-content agree), while the bound follows
+FUNCTION (extent specification) over coordinates. The resulting total grammar:
+**stages, then the subject, then nothing geometric** — remaining postfix operators
+(`.Named`, `.Optional`, `.OrBlank`, `.Select`) are about the value or its reading,
+never geometry.
+
+Corollary settled with the ruling — the canonical stage order (the trial's
+`UnderStage`-offers-only-terminals finding): **anchors/offsets → bounds/sizes →
+`Under` → subject** (locate, bound, headings, content). This section's Variant A
+snippet has `Under` before `Until` — superseded by the corollary; the canonical
+spelling is:
+
+```csharp
+var byTransferDate =
+    Until(RowContaining(Inception))
+    .Under(Caption("IRR Details"), Caption("Cash Flows Using Transfer Date"))
+    .Of(irrDetails);
+```
+
+Build consequences: the `Until` stage un-supersedes (built, differentially verified);
+bound-only entries return for hoisted reuse; postfix `.Until` retirement joins postfix
+`.Under`'s in the deferred phase-5 decisions.
 
 ---
 
