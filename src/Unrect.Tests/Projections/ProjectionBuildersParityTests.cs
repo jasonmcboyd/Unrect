@@ -39,25 +39,25 @@ namespace Unrect.Tests.Projections
   /// instead of the caller's, and a factory that is added to the vocabulary and never re-exported.
   /// There is a section for each.
   /// <para>
-  /// <b>Section 1 — value parity, mechanically.</b> Three theories cover all 77 members: one for the
+  /// <b>Section 1 — value parity, mechanically.</b> Three theories cover all 78 members: one for the
   /// 33 that return a projection, read through the <see cref="Observations"/> harness at L3 over
   /// three grids (a well-formed ledger, one whose kinds are all wrong, and a sparse one); one
   /// for the 25 that hand back a strategy, a landmark or a <see cref="Unrect.Projections.Field"/>, compared at the
   /// strategy level — the selection, offset or area each computes over the same grids; and one for
-  /// the 19 placement-pipeline entries, which hand back a <em>stage</em>. Failure
+  /// the 20 placement-pipeline entries, which hand back a <em>stage</em>. Failure
   /// parity is not a separate list: the hostile and sparse grids make most of these declarations
   /// fail, and a failure compared at L3 is compared down to its path, its subject and its
   /// diagnostics.
   /// </para>
   /// <para>
-  /// <b>What a stage entry is compared against.</b> Not the same entry on <see cref="Projection"/>
-  /// — that would compare a forwarder with a forwarder and pin nothing about placement. A stage is
-  /// closed with a terminal and read against the <em>postfix</em> spelling of the same declaration:
-  /// <c>B.On(mark).Text()</c> against <c>Text().On(mark)</c>, <c>B.Heading(t).Range(…)</c> against
-  /// <c>Range(…).Under(Caption(t))</c>. So the entry's re-export and the pipeline's replay are pinned
-  /// in one comparison, and the law that the pipeline is a spelling rather than a semantics is
-  /// stated 19 times over three grids. The pipeline's own laws — chained headings, the canonical
-  /// order, the refusals — live in <see cref="PlacementPipelineLawTests"/>.
+  /// <b>What a stage entry is compared against.</b> Geometry is now spelled only through the pipeline,
+  /// so there is no postfix twin left to compare against: a stage is closed with a terminal and read
+  /// against the SAME entry on <see cref="Projection"/> — <c>B.On(mark).Text()</c> against
+  /// <c>On(mark).Text()</c>, <c>B.Heading(t).Range(…)</c> against <c>Heading(t).Range(…)</c>. This is a
+  /// re-export parity pin: the builders entry forwards through the scope, the plain entry enters the
+  /// pipeline directly, and the two paths must resolve the same placement. The pipeline's own laws —
+  /// chained headings, the canonical order, the refusals — live in
+  /// <see cref="PlacementPipelineLawTests"/>.
   /// </para>
   /// <para>
   /// <b>Section 2 — name capture, per site.</b> The four members that forward a
@@ -116,13 +116,10 @@ namespace Unrect.Tests.Projections
     public record Pair(string Fund, decimal Amount);
 
     /// <summary>A bind as a method group — the spelling the table rung recommends.</summary>
-    private static IProjection<decimal> AmountByCaption(CaptionMap captions) => Decimal().Right(captions["Amount"]);
+    private static IProjection<decimal> AmountByCaption(CaptionMap captions) => Right(captions["Amount"]).Of(Decimal());
 
     /// <summary>The same bind pointed at the column of fund names, so every record fails.</summary>
-    private static IProjection<decimal> FundColumnAsANumber(CaptionMap captions) => Decimal().Right(captions["Fund"]);
-
-    /// <summary>A region read as its own measurements, so a bound or a heading shows up as geometry.</summary>
-    private static IProjection<string> Block() => Range(block => $"{block.Width}x{block.Height}");
+    private static IProjection<decimal> FundColumnAsANumber(CaptionMap captions) => Right(captions["Fund"]).Of(Decimal());
 
     // A matcher demanding nothing beyond ISpace. The published demanding matchers all demand a
     // capability (`RowWithFormula` demands IFormulaSpace) and IRowLandmark<in TSpace> is
@@ -184,8 +181,8 @@ namespace Unrect.Tests.Projections
           () => { var cell = Text(); return HorizontalRepeat(cell, separatedBy: BlankColumns(), atLeast: 1); }),
         ["Integer()"] = Reading(() => B.Integer(), () => Integer()),
         ["Overlay<T>(Layout<TSpace, T>)"] = Reading(
-          () => B.Overlay(o => $"{o.Next(Text())}/{o.Next(Text().Right(1))}"),
-          () => Overlay(o => $"{o.Next(Text())}/{o.Next(Text().Right(1))}")),
+          () => B.Overlay(o => $"{o.Next(Text())}/{o.Next(Right(1).Of(Text()))}"),
+          () => Overlay(o => $"{o.Next(Text())}/{o.Next(Right(1).Of(Text()))}")),
         ["Range<T>(Func<CellBlock, T>)"] = Reading(
           () => B.Range(b => b.Width * 100 + b.Height),
           () => Range(b => b.Width * 100 + b.Height)),
@@ -219,8 +216,8 @@ namespace Unrect.Tests.Projections
           () => B.Table(headerRows: 1, eachRow: AmountByCaption),
           () => Table(headerRows: 1, eachRow: AmountByCaption)),
         ["Table<T>(int, IProjection<TSpace, T>, string)"] = Reading(
-          () => { var amountRow = Decimal().Right(1); return B.Table(headerRows: 1, eachRow: amountRow); },
-          () => { var amountRow = Decimal().Right(1); return Table(headerRows: 1, eachRow: amountRow); }),
+          () => { var amountRow = Right(1).Of(Decimal()); return B.Table(headerRows: 1, eachRow: amountRow); },
+          () => { var amountRow = Right(1).Of(Decimal()); return Table(headerRows: 1, eachRow: amountRow); }),
         ["Text()"] = Reading(() => B.Text(), () => Text()),
         ["VerticalFlow<T>(Layout<TSpace, T>)"] = Reading(
           () => B.VerticalFlow(v => $"{v.Next(Text())}/{v.Next(Text())}"),
@@ -285,75 +282,85 @@ namespace Unrect.Tests.Projections
         ["WholeExtent()"] = Strategy(s => B.WholeExtent().GetArea(s), s => WholeExtent().GetArea(s)),
       };
 
-    // --- 1c. The 19 placement-pipeline entries -----------------------------------------------------
+    // --- 1c. The 20 placement-pipeline entries -----------------------------------------------------
     //
     // A stage is not a value anyone reads, so each entry is closed with a terminal and compared
-    // against the postfix modifier it replays. Two things are pinned at once and deliberately: the
-    // re-export forwards to the scope, and the replay writes the modifier the author wrote — so a
-    // stage that composed strategies itself instead of replaying (the one defect the Steps
-    // documentation says makes Down(2).Table<T>() stop meaning Table<T>().Down(2)) fails here.
+    // against the SAME entry on Projection — geometry is spelled only through the pipeline now, so the
+    // postfix twin is gone. What this pins is the re-export: the builders entry forwards through the
+    // scope, the plain entry enters the pipeline directly, and the two must resolve the same
+    // placement over every grid.
     //
-    // The subject is Text() wherever the entry moves the section and Block() wherever it changes the
-    // extent, because a bound written on a leaf that reads one cell has nothing to show for itself.
+    // The subject is Text() wherever the entry moves the section and a region read as its own
+    // measurements wherever it changes the extent, because a bound written on a leaf that reads one
+    // cell has nothing to show for itself.
 
     private static readonly IReadOnlyDictionary<string, Func<ISpace, bool>> StageTwins =
       new Dictionary<string, Func<ISpace, bool>>(StringComparer.Ordinal)
       {
-        ["AfterBlankColumns()"] = Reading(() => B.AfterBlankColumns().Text(), () => Text().AfterBlankColumns()),
-        ["AfterBlankRows()"] = Reading(() => B.AfterBlankRows().Text(), () => Text().AfterBlankRows()),
+        ["AfterBlankColumns()"] = Reading(() => B.AfterBlankColumns().Text(), () => AfterBlankColumns().Text()),
+        ["AfterBlankRows()"] = Reading(() => B.AfterBlankRows().Text(), () => AfterBlankRows().Text()),
         ["Below(IRowLandmark)"] = Reading(
           () => B.Below(RowContaining("Fund")).Text(),
-          () => Text().Below(RowContaining("Fund"))),
+          () => Below(RowContaining("Fund")).Text()),
         ["Below(IRowLandmark<TSpace>)"] = Raised(
           () => B.Below(Demanding(RowContaining("Fund"))).Text(),
-          () => Text().Below(Demanding(RowContaining("Fund")))),
-        ["Down(int)"] = Reading(() => B.Down(1).Text(), () => Text().Down(1)),
+          () => Below(Demanding(RowContaining("Fund"))).Text()),
+        ["Down(int)"] = Reading(() => B.Down(1).Text(), () => Down(1).Text()),
 
-        // The one entry whose postfix twin is spelled with a different WORD: a heading is a caption
-        // the library mints and a vertical flow it replays, which is the whole of the L3-by-
+        // The one entry spelled with a different WORD from the leaf it announces: a heading is a
+        // caption the library mints and a vertical flow it builds, which is the whole of the L3-by-
         // construction claim in PlacementPipelineLawTests, said here as a value.
-        ["Heading(string)"] = Reading(() => B.Heading("Fund").Range(b => $"{b.Width}x{b.Height}"), () => Block().Under(Caption("Fund"))),
+        ["Heading(string)"] = Reading(
+          () => B.Heading("Fund").Range(b => $"{b.Width}x{b.Height}"),
+          () => Heading("Fund").Range(b => $"{b.Width}x{b.Height}")),
 
         ["OffsetBy(IOffsetStrategy)"] = Reading(
           () => B.OffsetBy(SkipRows(1)).Text(),
-          () => Text().OffsetBy(SkipRows(1))),
+          () => OffsetBy(SkipRows(1)).Text()),
         ["On(IColumnLandmark)"] = Reading(
           () => B.On(ColumnContaining("Amount")).Text(),
-          () => Text().On(ColumnContaining("Amount"))),
+          () => On(ColumnContaining("Amount")).Text()),
         ["On(IColumnLandmark<TSpace>)"] = Raised(
           () => B.On(Demanding(ColumnContaining("Amount"))).Text(),
-          () => Text().On(Demanding(ColumnContaining("Amount")))),
-        ["On(IRowLandmark)"] = Reading(() => B.On(RowContaining("Beta")).Text(), () => Text().On(RowContaining("Beta"))),
+          () => On(Demanding(ColumnContaining("Amount"))).Text()),
+        ["On(IRowLandmark)"] = Reading(() => B.On(RowContaining("Beta")).Text(), () => On(RowContaining("Beta")).Text()),
         ["On(IRowLandmark<TSpace>)"] = Raised(
           () => B.On(Demanding(RowContaining("Beta"))).Text(),
-          () => Text().On(Demanding(RowContaining("Beta")))),
-        ["Right(int)"] = Reading(() => B.Right(1).Text(), () => Text().Right(1)),
+          () => On(Demanding(RowContaining("Beta"))).Text()),
+        ["Right(int)"] = Reading(() => B.Right(1).Text(), () => Right(1).Text()),
         ["RightOf(IColumnLandmark)"] = Reading(
           () => B.RightOf(ColumnContaining("Fund")).Text(),
-          () => Text().RightOf(ColumnContaining("Fund"))),
+          () => RightOf(ColumnContaining("Fund")).Text()),
         ["RightOf(IColumnLandmark<TSpace>)"] = Raised(
           () => B.RightOf(Demanding(ColumnContaining("Fund"))).Text(),
-          () => Text().RightOf(Demanding(ColumnContaining("Fund")))),
+          () => RightOf(Demanding(ColumnContaining("Fund"))).Text()),
+
+        // The size-only entry, added when postfix geometry was retired — a region sized to an extent
+        // and placed at adjacency. No postfix twin exists to compare against; this is a direct pin of
+        // the re-export against the plain Projection factory, read as geometry over a region.
+        ["Sized(IAreaStrategy)"] = Reading(
+          () => B.Sized(Extent(2, 2)).Range(b => $"{b.Width}x{b.Height}"),
+          () => Sized(Extent(2, 2)).Range(b => $"{b.Width}x{b.Height}")),
 
         // The one-word entry for the instinct the default refuses, against the two words it stands
-        // for. Its twin is therefore a COMPOSITION rather than a single modifier — which is exactly
-        // the claim the sugar makes.
+        // for. Its twin is therefore a COMPOSITION rather than a single entry — which is exactly the
+        // claim the sugar makes.
         ["SkipEmptyRowsAndColumns()"] = Reading(
           () => B.SkipEmptyRowsAndColumns().Text(),
-          () => Text().AfterBlankRows().AfterBlankColumns()),
+          () => AfterBlankRows().AfterBlankColumns().Text()),
 
         ["Until(IRowLandmark, bool)"] = Reading(
           () => B.Until(RowContaining("Beta")).Range(b => $"{b.Width}x{b.Height}"),
-          () => Block().Until(RowContaining("Beta"))),
+          () => Until(RowContaining("Beta")).Range(b => $"{b.Width}x{b.Height}")),
         ["Until(IRowLandmark<TSpace>, bool)"] = Raised(
           () => B.Until(Demanding(RowContaining("Beta"))).Range(b => $"{b.Width}x{b.Height}"),
-          () => Block().Until(Demanding(RowContaining("Beta")))),
+          () => Until(Demanding(RowContaining("Beta"))).Range(b => $"{b.Width}x{b.Height}")),
         ["UntilColumn(IColumnLandmark, bool)"] = Reading(
           () => B.UntilColumn(ColumnContaining("Amount")).Range(b => $"{b.Width}x{b.Height}"),
-          () => Block().UntilColumn(ColumnContaining("Amount"))),
+          () => UntilColumn(ColumnContaining("Amount")).Range(b => $"{b.Width}x{b.Height}")),
         ["UntilColumn(IColumnLandmark<TSpace>, bool)"] = Raised(
           () => B.UntilColumn(Demanding(ColumnContaining("Amount"))).Range(b => $"{b.Width}x{b.Height}"),
-          () => Block().UntilColumn(Demanding(ColumnContaining("Amount")))),
+          () => UntilColumn(Demanding(ColumnContaining("Amount"))).Range(b => $"{b.Width}x{b.Height}")),
       };
 
     public static TheoryData<string> TheProjectionReturningMembers => Keys(ProjectionTwins);
@@ -400,7 +407,7 @@ namespace Unrect.Tests.Projections
       // looked at, which is most of what the pipeline could get wrong. The hostile grid has no
       // "Fund" and no "Amount", so every matcher-taking entry misses on it; the sparse grid has the
       // rows but blanks where the leaf expects text. Floors under the counts observed when this was
-      // written (17 of the 19 entries fail on at least one grid, 26 of the 57 readings).
+      // written (of the 20 entries, most fail on at least one grid).
       var failing = StageTwins.Values.Select(OverEveryGrid).ToList();
 
       Assert.True(failing.Count(count => count > 0) >= 15, $"only {failing.Count(count => count > 0)} entries ever fail");

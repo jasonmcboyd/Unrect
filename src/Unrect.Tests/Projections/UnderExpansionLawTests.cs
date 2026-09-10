@@ -13,15 +13,15 @@ using static Unrect.Tests.ProjectionTestSpaces;
 namespace Unrect.Tests.Projections
 {
   /// <summary>
-  /// The law: <c>x.Under(a, b)</c> IS the vertical flow that reads <c>a</c>, then <c>b</c>, then
-  /// <c>x</c> — and the pin says at which level. The docs state it as an unqualified equation
-  /// ("sugar for a vertical flow and nothing else"); the implementation is that expansion plus two
-  /// deliberate diagnostic choices, so the equation is true of values and consumption and false of
-  /// paths.
+  /// The law: <c>Heading(a).Heading(b).Of(x)</c> IS the vertical flow that reads <c>a</c>, then
+  /// <c>b</c>, then <c>x</c> — and the pin says at which level. The docs state it as an unqualified
+  /// equation ("sugar for a vertical flow and nothing else"); the implementation is that expansion
+  /// plus two deliberate diagnostic choices, so the equation is true of values and consumption and
+  /// false of paths.
   /// <para>
   /// <strong>The law holds at L2 and first fails at L3</strong>, in exactly two ways, both
   /// deliberate and both pinned below with their direction: the sugar's flow describes itself as
-  /// <c>Under</c> rather than <c>VerticalFlow</c>, and it passes <c>declared: null</c> to every
+  /// <c>Heading</c> rather than <c>VerticalFlow</c>, and it passes <c>declared: null</c> to every
   /// <c>Next</c> so no identifier from inside the helper reaches a user's diagnostics — where a
   /// hand-written expansion borrows the locals the user wrote.
   /// </para>
@@ -74,7 +74,7 @@ namespace Unrect.Tests.Projections
     public void TheSugarAndItsExpansionProjectAndConsumeIdentically()
     {
       // Value, offset, consumed extent, advance — everything a parent could see of either spelling.
-      var sugar = Lines().Under(Caption("Detail"));
+      var sugar = Heading("Detail").Of(Lines());
       var expansion = Expansion(Lines(), Caption("Detail"));
 
       AssertL2(Observe(expansion, Sheet()), Observe(sugar, Sheet()));
@@ -85,7 +85,7 @@ namespace Unrect.Tests.Projections
     {
       // The captions are a params array on both sides, and the flow reads them in declaration order
       // with each seeking from where the last left off.
-      var sugar = Lines().Under(Caption("Cap1"), Caption("Cap2"));
+      var sugar = Heading("Cap1").Heading("Cap2").Of(Lines());
       var expansion = Expansion(Lines(), Caption("Cap1"), Caption("Cap2"));
 
       AssertL2(Observe(expansion, TwoCaptionSheet()), Observe(sugar, TwoCaptionSheet()));
@@ -97,7 +97,7 @@ namespace Unrect.Tests.Projections
       // Same problem, same cell, same fault classification — the failure's L1 identity, which is
       // what a tolerance boundary above either spelling would have to act on. The path is the one
       // thing that differs, and it is pinned separately below.
-      var sugar = Lines().Under(Caption("Nope"));
+      var sugar = Heading("Nope").Of(Lines());
       var expansion = Expansion(Lines(), Caption("Nope"));
 
       AssertL2(Observe(expansion, Sheet()), Observe(sugar, Sheet()));
@@ -108,7 +108,7 @@ namespace Unrect.Tests.Projections
     {
       // The section absorbs a kind mismatch, so both spellings produce a Warning and carry on. What
       // is under test is that tolerating it consumed the same space either way.
-      var sugar = Tolerated().Under(Caption("Detail"));
+      var sugar = Heading("Detail").Of(Tolerated());
       var expansion = Expansion(Tolerated(), Caption("Detail"));
 
       AssertL2(Observe(expansion, Sheet()), Observe(sugar, Sheet()));
@@ -117,18 +117,18 @@ namespace Unrect.Tests.Projections
     // --- L3: the two differences, each pinned in its own direction ---------------------------------
 
     [Fact]
-    public void TheSugarSaysUnderWhereTheExpansionSaysVerticalFlow()
+    public void TheSugarSaysHeadingWhereTheExpansionSaysVerticalFlow()
     {
       // A path segment should be greppable back to the line that produced it, and the line says
-      // .Under. Both directions asserted: neither spelling may quietly start rendering as the other.
-      var sugar = Assert.Throws<ProjectionException>(() => Lines().Under(Caption("Nope")).Map(Sheet()));
+      // Heading. Both directions asserted: neither spelling may quietly start rendering as the other.
+      var sugar = Assert.Throws<ProjectionException>(() => Heading("Nope").Of(Lines()).Map(Sheet()));
       var expansion = Assert.Throws<ProjectionException>(() => Expansion(Lines(), Caption("Nope")).Map(Sheet()));
 
-      Assert.StartsWith("Under -> ", sugar.Path);
+      Assert.StartsWith("Heading -> ", sugar.Path);
       Assert.DoesNotContain("VerticalFlow", sugar.Path);
 
       Assert.StartsWith("VerticalFlow -> ", expansion.Path);
-      Assert.DoesNotContain("Under", expansion.Path);
+      Assert.DoesNotContain("Heading", expansion.Path);
     }
 
     [Fact]
@@ -138,7 +138,7 @@ namespace Unrect.Tests.Projections
       // argument text from inside the helper and label every caption in the codebase 'caption'; the
       // sugar therefore opts out and falls to rung 3, the description and the ordinal. A
       // hand-written flow has no such problem and keeps rung 2.
-      var sugar = Assert.Throws<ProjectionException>(() => Lines().Under(Caption("Nope")).Map(Sheet()));
+      var sugar = Assert.Throws<ProjectionException>(() => Heading("Nope").Of(Lines()).Map(Sheet()));
       var expansion = Assert.Throws<ProjectionException>(() => Expansion(Lines(), Caption("Nope")).Map(Sheet()));
 
       Assert.Equal("Caption(\"Nope\")#1", sugar.Subject);
@@ -154,7 +154,7 @@ namespace Unrect.Tests.Projections
       // The other end of the same choice: the projection the section is for falls to its ordinal in
       // the sugar and borrows the expansion's local in the hand-written flow.
       var sugar = Assert.Throws<ProjectionException>(() =>
-        Cell(c => c.GetInt()).Under(Caption("Detail")).Map(Sheet()));
+        Heading("Detail").Of(Cell(c => c.GetInt())).Map(Sheet()));
 
       var expansion = Assert.Throws<ProjectionException>(() =>
         Expansion(Cell(c => c.GetInt()), Caption("Detail")).Map(Sheet()));
@@ -170,7 +170,7 @@ namespace Unrect.Tests.Projections
       // the sugar deliberately changes — and the diagnostics of the two spellings are the same list
       // in the same order, severity, cell and sentence alike. Without this the L3 negatives above
       // would leave room for a third, unnoticed divergence.
-      var sugar = Tolerated().Under(Caption("Detail")).MapWithDiagnostics(Sheet());
+      var sugar = Heading("Detail").Of(Tolerated()).MapWithDiagnostics(Sheet());
       var expansion = Expansion(Tolerated(), Caption("Detail")).MapWithDiagnostics(Sheet());
 
       Assert.NotEmpty(sugar.Diagnostics);

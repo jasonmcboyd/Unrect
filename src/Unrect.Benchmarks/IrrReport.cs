@@ -53,12 +53,14 @@ namespace Unrect.Benchmarks
     private static readonly IProjection<IReadOnlyList<IReadOnlyList<CashFlow>>> Series =
       VerticalRepeat(InvestorBlock, separatedBy: BlankRows());
 
-    private static readonly IProjection<IReadOnlyList<IReadOnlyList<CashFlow>>> ByTransferDate = Series
-      .Under(Caption(CanonicalSpaces.DetailsCaption), Caption(CanonicalSpaces.TransferDateCaption))
-      .Until(RowContaining(CanonicalSpaces.InceptionCaption));
+    private static readonly IProjection<IReadOnlyList<IReadOnlyList<CashFlow>>> ByTransferDate =
+      Until(RowContaining(CanonicalSpaces.InceptionCaption))
+        .Heading(CanonicalSpaces.DetailsCaption)
+        .Heading(CanonicalSpaces.TransferDateCaption)
+        .Of(Series);
 
     private static readonly IProjection<IReadOnlyList<IReadOnlyList<CashFlow>>> ByInception =
-      Series.Under(Caption(CanonicalSpaces.InceptionCaption));
+      Heading(CanonicalSpaces.InceptionCaption).Of(Series);
 
     public static readonly IProjection<Report> Projection = VerticalFlow(v => new Report(
       ReportHeader: v.Next(Header),
@@ -75,6 +77,6 @@ namespace Unrect.Benchmarks
       ReportHeader: v.Next(Header),
       Summary: v.Next(Summary),
       ByTransferDate: v.Next(ByTransferDate),
-      ByInception: v.Next(Series.Under(Caption("No Such Caption Exists Here")))));
+      ByInception: v.Next(Heading("No Such Caption Exists Here").Of(Series))));
   }
 }

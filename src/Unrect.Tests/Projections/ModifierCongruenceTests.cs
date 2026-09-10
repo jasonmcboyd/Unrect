@@ -40,7 +40,7 @@ namespace Unrect.Tests.Projections
   /// placement across a non-frame-shifting wrapper (<c>Optional</c>, <c>Else</c>, <c>Padded</c>,
   /// <c>Select</c>) preserves the value and the ADVANCE and only re-splits offset against consumed —
   /// so it is invisible to a parent flow and visible to <c>Apply</c>. It fails for the two wrappers
-  /// that search their own extent for content (<c>Until</c>, <c>Under</c>), and it fails whenever a
+  /// that search their own extent for content (<c>Until</c>, <c>Heading</c>), and it fails whenever a
   /// tolerance boundary actually absorbs.
   /// </para>
   /// <para>
@@ -48,8 +48,9 @@ namespace Unrect.Tests.Projections
   /// <c>BoundaryProjectionTests.ABoundaryInsideTheAnchor_AbsorbsAMissingAnchor</c> and its twin;
   /// <c>Until</c>×<c>Sized</c> at L2 is <c>UntilProjectionTests.SizedAfterUntil_IsWhatTheParentSees</c>
   /// and its twin (this file adds the L1 half those do not reach); <c>Sized</c>×<c>Sized</c> refused
-  /// and <c>Named</c>×<c>Named</c> last-wins are <c>PlacementTests.RepeatedSizeModifiers_AreRefused</c>
-  /// and <c>.RepeatedNames_KeepOnlyTheLast</c>; <c>Down</c>×<c>Right</c> at L1 is
+  /// is now a compile-time refusal in <c>spike/PlacementGauntlet/MustNotCompilePipeline.cs</c> (AB),
+  /// and <c>Named</c>×<c>Named</c> last-wins is <c>PlacementTests.RepeatedNames_KeepOnlyTheLast</c>;
+  /// <c>Down</c>×<c>Right</c> at L1 is
   /// <c>PlacementTests.CrossAxisModifiers_ComposeIntoADiagonalAnchor</c>; <c>OrBlank</c>×placement
   /// at value level is <c>OrBlankTests.ItCommutesWithPlacement</c>; the alternation operators'
   /// associativity and idempotence are <c>AlternationLawProbeTests</c>.
@@ -127,22 +128,27 @@ namespace Unrect.Tests.Projections
     private static string Describe(CellValue cell)
       => cell.IsBlank ? "_" : cell.Kind == CellKind.Text ? cell.GetString() : cell.Kind.ToString();
 
-    /// <summary>One modifier, by name — so a theory can name a pair rather than carry two lambdas.</summary>
+    /// <summary>
+    /// One modifier, by name — so a theory can name a pair rather than carry two lambdas. The
+    /// geometry names are the pipeline entries hoisted through <c>.Of</c>, which is the only spelling
+    /// of geometry now; <c>Entry.Of(x)</c> writes the same placement field the retired postfix
+    /// modifier wrote, so <c>With(b, With(a, x))</c> still reads as "a inside, b outside".
+    /// </summary>
     private static IProjection<string> With(string modifier, IProjection<string> projection) => modifier switch
     {
       "Named" => projection.Named("n"),
-      "Sized" => projection.Sized(Extent(2, 2)),
-      "OffsetBy" => projection.OffsetBy(SkipRows(1)),
-      "On" => projection.On(Mark()),
-      "Below" => projection.Below(Mark()),
-      "Down" => projection.Down(1),
-      "Right" => projection.Right(1),
+      "Sized" => Sized(Extent(2, 2)).Of(projection),
+      "OffsetBy" => OffsetBy(SkipRows(1)).Of(projection),
+      "On" => On(Mark()).Of(projection),
+      "Below" => Below(Mark()).Of(projection),
+      "Down" => Down(1).Of(projection),
+      "Right" => Right(1).Of(projection),
       "Optional" => projection.Optional()!,
       "Else" => projection.Else("z"),
-      "Until" => projection.Until(Mark()),
+      "Until" => Until(Mark()).Of(projection),
       "Padded" => projection.Padded(0, 1, 0, 0),
       "Select" => projection.Select(value => value + "!"),
-      "Under" => projection.Under(Caption("Mark")),
+      "Heading" => Heading("Mark").Of(projection),
       _ => throw new ArgumentOutOfRangeException(nameof(modifier), modifier, "No such modifier."),
     };
 
@@ -201,12 +207,12 @@ namespace Unrect.Tests.Projections
       var space = Rows();
 
       AssertL3(
-        Observe(Block().Down(1).Right(1), space),
-        Observe(Block().Right(1).Down(1), space));
+        Observe(Down(1).Right(1).Of(Block()), space),
+        Observe(Right(1).Down(1).Of(Block()), space));
 
       AssertL3(
-        Observe(Block().Down(1).Down(2), space),
-        Observe(Block().Down(2).Down(1), space));
+        Observe(Down(1).Down(2).Of(Block()), space),
+        Observe(Down(2).Down(1).Of(Block()), space));
     }
 
     // --- Two writes to one field: refused where they are written --------------------------------------
@@ -223,20 +229,15 @@ namespace Unrect.Tests.Projections
     // exists for either landmark to be sought in.
 
     [Fact]
-    public void AnAnchorIsRefusedOverAMovementWrittenBeforeIt()
+    public void AMovementComposesOntoAnAnchorRatherThanRestatingThePosition()
     {
-      // Hazard 3. It was pinned here as ≡L3: .Down(2).On(m) was not "two rows down from the
-      // landmark" and not "the landmark, then two rows" — it was the landmark, exactly as if the
-      // movement had never been written, at every level a reader can observe.
-      var failure = Assert.Throws<ArgumentException>(() => Text().Down(2).On(Mark()));
-
-      Assert.Equal("projection", failure.ParamName);
-      Assert.Contains("already declares where it starts, and On would replace that", failure.Message);
-      Assert.Contains("Place it once", failure.Message);
-
-      // The other order is what the vocabulary offers instead, and is unchanged: a movement composes
-      // onto the anchor rather than answering the same question a second time.
-      Assert.Equal("c0", Text().On(Mark()).Down(1).Map(Rows()));
+      // Hazard 3, the runtime half of which is gone: Down(2).On(m) — an anchor after a movement — was
+      // a construction-time ArgumentException while placement rode postfix modifiers, and is now a
+      // COMPILE-time refusal (an anchor is an entry, not a stage), pinned in
+      // spike/PlacementGauntlet/MustNotCompilePipeline.cs (Z). What survives, and is what the
+      // vocabulary offers instead: a movement composes onto the anchor rather than answering the same
+      // question a second time.
+      Assert.Equal("c0", On(Mark()).Down(1).Of(Text()).Map(Rows()));
     }
 
     [Fact]
@@ -244,42 +245,29 @@ namespace Unrect.Tests.Projections
     {
       // Hazard 1, the sharpest silent discard in the vocabulary. It was pinned as
       // .On(missing).Below(m) ≡L3 .Below(m): the replaced anchor was a strategy that was DROPPED,
-      // not a search that failed, so a landmark existing nowhere in the file cost nothing — while
-      // the same pair written the other way round was a hard failure naming the very landmark the
-      // first spelling ignored. Refusing both orders is what makes "never sought" unreachable.
+      // not a search that failed, so a landmark existing nowhere in the file cost nothing. That
+      // refusal is now a COMPILE-time one — a second anchor over the first is unspellable through the
+      // pipeline (MustNotCompilePipeline.cs Y/AY) — so "never sought" is unreachable by construction.
+      // What survives at run time: one anchor reads, and one missing landmark is still loud at Map.
       var space = Rows();
 
-      var refused = Assert.Throws<ArgumentException>(() => Text().On(Missing()).Below(Mark()));
-
-      Assert.Equal("projection", refused.ParamName);
-      Assert.Contains("already declares where it starts, and Below would replace that", refused.Message);
-      Assert.Contains("the replaced one is never even sought", refused.Message);
-
-      Assert.Equal(
-        "projection",
-        Assert.Throws<ArgumentException>(() => Text().Below(Mark()).On(Missing())).ParamName);
-
-      // Non-vacuity: one anchor still reads, and one missing landmark is still loud at Map time.
-      Assert.Equal("c0", Text().Below(Mark()).Map(space));
+      Assert.Equal("c0", Below(Mark()).Of(Text()).Map(space));
       Assert.Contains(
         "no row containing 'Nope' exists in the available space",
-        Assert.Throws<ProjectionException>(() => Text().On(Missing()).Map(space)).Message);
+        Assert.Throws<ProjectionException>(() => On(Missing()).Of(Text()).Map(space)).Message);
     }
 
     [Fact]
-    public void TwoAnchorsAreRefusedInEitherOrder()
+    public void EachAnchorAloneLandsWhereItAlwaysDid()
     {
-      // Was TwoAnchorsAreLastWinsAndLandOnDifferentRows: .On(m).Below(m) read "c0" and
-      // .Below(m).On(m) read "Mark" — one declaration answering "where does this start?" twice, with
-      // the library picking silently. Anchors still do not compose with each other; they now say so.
-      Assert.Equal("projection", Assert.Throws<ArgumentException>(() => Text().On(Mark()).Below(Mark())).ParamName);
-      Assert.Equal("projection", Assert.Throws<ArgumentException>(() => Text().Below(Mark()).On(Mark())).ParamName);
-
-      // Each anchor alone lands where it always did, one row apart.
+      // Was TwoAnchorsAreLastWinsAndLandOnDifferentRows, then TwoAnchorsAreRefusedInEitherOrder: two
+      // anchors on one section answered "where does this start?" twice, and the runtime refusal that
+      // replaced the last-wins reading is now a compile-time one (MustNotCompilePipeline.cs Y). What
+      // remains to pin is that each anchor alone lands where it always did, one row apart.
       var space = Rows();
 
-      Assert.Equal("Mark", Text().On(Mark()).Map(space));
-      Assert.Equal("c0", Text().Below(Mark()).Map(space));
+      Assert.Equal("Mark", On(Mark()).Of(Text()).Map(space));
+      Assert.Equal("c0", Below(Mark()).Of(Text()).Map(space));
     }
 
     [Fact]
@@ -291,7 +279,10 @@ namespace Unrect.Tests.Projections
       // loudly. A projection has one end, and now says so where the second one is written.
       var space = Rows();
 
-      var refused = Assert.Throws<ArgumentException>(() => Block().Until(Missing()).Until(Mark()));
+      // The chained spelling is now a compile-time refusal (BoundStage.Until, MustNotCompilePipeline.cs
+      // AD); the runtime guard survives on the nested spelling, where the outer bound meets an
+      // already-bounded projection and refuses to replace its end.
+      var refused = Assert.Throws<ArgumentException>(() => Until(Mark()).Of(Until(Missing()).Of(Block())));
 
       Assert.Equal("projection", refused.ParamName);
       Assert.Contains("already ends at a landmark, and Until would replace that end", refused.Message);
@@ -299,13 +290,13 @@ namespace Unrect.Tests.Projections
 
       Assert.Equal(
         "projection",
-        Assert.Throws<ArgumentException>(() => Block().Until(Mark()).Until(Missing())).ParamName);
+        Assert.Throws<ArgumentException>(() => Until(Missing()).Of(Until(Mark()).Of(Block()))).ParamName);
 
       // Non-vacuity, as above: one bound reads, and a missing one is still loud at Map time.
-      Assert.Equal("(2x2:a0,a1,b0,b1)", Block().Until(Mark()).Map(space));
+      Assert.Equal("(2x2:a0,a1,b0,b1)", Until(Mark()).Of(Block()).Map(space));
       Assert.Contains(
         "no row containing 'Nope' exists to end this projection",
-        Assert.Throws<ProjectionException>(() => Block().Until(Missing()).Map(space)).Message);
+        Assert.Throws<ProjectionException>(() => Until(Missing()).Of(Block()).Map(space)).Message);
     }
 
     // --- The movements are not one commuting group ----------------------------------------------------
@@ -320,9 +311,9 @@ namespace Unrect.Tests.Projections
       // the other spelling stepped past.
       var space = Ragged();
 
-      Assert.Equal("b1", Text().Right(1).AfterBlankRows().Map(space));
+      Assert.Equal("b1", Right(1).AfterBlankRows().Of(Text()).Map(space));
 
-      var failure = Assert.Throws<ProjectionException>(() => Text().AfterBlankRows().Right(1).Map(space));
+      var failure = Assert.Throws<ProjectionException>(() => AfterBlankRows().Right(1).Of(Text()).Map(space));
 
       Assert.Equal("expected Text at B1, found Blank", Problem(failure));
     }
@@ -334,8 +325,8 @@ namespace Unrect.Tests.Projections
       // declarations, and only the first is what a reader of a gap-then-section sheet means.
       var space = BlankLead();
 
-      Assert.Equal("Mark", Text().AfterBlankRows().Down(1).Map(space));
-      Assert.Equal("b0", Text().Down(1).AfterBlankRows().Map(space));
+      Assert.Equal("Mark", AfterBlankRows().Down(1).Of(Text()).Map(space));
+      Assert.Equal("b0", Down(1).AfterBlankRows().Of(Text()).Map(space));
     }
 
     // --- A clone crossing a wrapper: which layer it lands on -------------------------------------------
@@ -346,7 +337,7 @@ namespace Unrect.Tests.Projections
     [InlineData("Until")]
     [InlineData("Padded")]
     [InlineData("Select")]
-    [InlineData("Under")]
+    [InlineData("Heading")]
     public void NamingCommutesWithEveryWrapperAtL2AndNoHigher(string wrapper)
     {
       // A name is never geometry, so it cannot move a reading whichever layer it is written on. That
@@ -387,8 +378,8 @@ namespace Unrect.Tests.Projections
       // (UntilProjectionTests.ANamedBoundSpeaksForItself pins the outer spelling alone.)
       var space = Rows();
 
-      var inside = Assert.Throws<ProjectionException>(() => Text().Named("n").Until(Missing()).Map(space));
-      var outside = Assert.Throws<ProjectionException>(() => Text().Until(Missing()).Named("n").Map(space));
+      var inside = Assert.Throws<ProjectionException>(() => Until(Missing()).Of(Text().Named("n")).Map(space));
+      var outside = Assert.Throws<ProjectionException>(() => Until(Missing()).Of(Text()).Named("n").Map(space));
 
       Assert.Equal("'n'", inside.Subject);
       Assert.Equal("'n' (Text)", inside.Path);
@@ -424,23 +415,23 @@ namespace Unrect.Tests.Projections
       // extent is not found at all and a working declaration becomes a hard failure.
       var space = Rows();
 
-      Assert.Equal("(2x2:a0,a1,b0,b1)", Block().Sized(Extent(2, 2)).Until(Mark()).Map(space));
+      Assert.Equal("(2x2:a0,a1,b0,b1)", Sized(Extent(2, 2)).Until(Mark()).Of(Block()).Map(space));
 
-      var failure = Assert.Throws<ProjectionException>(() => Block().Until(Mark()).Sized(Extent(2, 2)).Map(space));
+      var failure = Assert.Throws<ProjectionException>(() => Sized(Extent(2, 2)).Of(Until(Mark()).Of(Block())).Map(space));
 
       Assert.Equal("no row containing 'Mark' exists to end this projection", Problem(failure));
     }
 
     [Fact]
-    public void AnExtentDeclaredOutsideAnUnderIsTheFrameTheCaptionIsSoughtIn()
+    public void AnExtentDeclaredOutsideAHeadingIsTheFrameTheCaptionIsSoughtIn()
     {
-      // The same law for the other content-searching wrapper. .Under is a flow, and a flow's
+      // The same law for the other content-searching wrapper. Heading is a flow, and a flow's
       // declared extent is what its first child — the caption — gets to look in.
       var space = Rows();
 
-      Assert.Equal("(2x1:c0,c1)", Block().Sized(Extent(2, 1)).Under(Caption("Mark")).Map(space));
+      Assert.Equal("(2x1:c0,c1)", Heading("Mark").Of(Sized(Extent(2, 1)).Of(Block())).Map(space));
 
-      var failure = Assert.Throws<ProjectionException>(() => Block().Under(Caption("Mark")).Sized(Extent(2, 1)).Map(space));
+      var failure = Assert.Throws<ProjectionException>(() => Sized(Extent(2, 1)).Of(Heading("Mark").Of(Block())).Map(space));
 
       Assert.Contains("no row containing 'Mark' exists in the available space", failure.Message);
     }
@@ -460,8 +451,8 @@ namespace Unrect.Tests.Projections
       // false of Until and Under, which search the extent the offset moved.
       var space = Rows();
 
-      var inside = Observe(With(wrapper, Block().Down(1)), space);
-      var outside = Observe(With(wrapper, Block()).Down(1), space);
+      var inside = Observe(With(wrapper, Down(1).Of(Block())), space);
+      var outside = Observe(Down(1).Of(With(wrapper, Block())), space);
 
       AssertL1(inside, outside);
       Assert.Equal(inside.Advance, outside.Advance);
@@ -484,8 +475,8 @@ namespace Unrect.Tests.Projections
     {
       var space = Numbers();
 
-      var inside = Observe(Text().Sized(Extent(1, 1)).Optional()!, space);
-      var outside = Observe(Text().Optional().Sized(Extent(1, 1))!, space);
+      var inside = Observe(Sized(Extent(1, 1)).Of(Text()).Optional()!, space);
+      var outside = Observe(Sized(Extent(1, 1)).Of(Text().Optional())!, space);
 
       AssertL1(inside, outside);
 
@@ -515,8 +506,8 @@ namespace Unrect.Tests.Projections
       // in a different place.
       var space = Numbers();
 
-      var inside = Observe(Text().Down(1).Optional()!, space);
-      var outside = Observe(Text().Optional().Down(1)!, space);
+      var inside = Observe(Down(1).Of(Text()).Optional()!, space);
+      var outside = Observe(Down(1).Of(Text().Optional())!, space);
 
       AssertL1(inside, outside);
 
@@ -532,9 +523,9 @@ namespace Unrect.Tests.Projections
       // written outside it, the bound included.
       var space = Rows();
 
-      Assert.Null(Text().Until(Missing()).Optional().Map(space));
+      Assert.Null(Until(Missing()).Of(Text()).Optional().Map(space));
 
-      var failure = Assert.Throws<ProjectionException>(() => Text().Optional().Until(Missing()).Map(space));
+      var failure = Assert.Throws<ProjectionException>(() => Until(Missing()).Of(Text().Optional()).Map(space));
 
       Assert.Equal("no row containing 'Nope' exists to end this projection", Problem(failure));
     }
@@ -542,14 +533,13 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ACaptionSoughtOutsideABoundaryIsNotAbsorbedEither()
     {
-      // .Under is sugar for a flow, and a flow written outside the boundary puts its caption search
-      // outside too. So "the section may be absent" has to be written outside .Under, not inside it.
+      // Heading is sugar for a flow, and a flow written outside the boundary puts its caption search
+      // outside too. So "the section may be absent" has to be written outside the Heading, not inside.
       var space = Rows();
-      var caption = Caption("Nope");
 
-      Assert.Null(Text().Under(caption).Optional().Map(space));
+      Assert.Null(Heading("Nope").Of(Text()).Optional().Map(space));
 
-      var failure = Assert.Throws<ProjectionException>(() => Text().Optional().Under(caption).Map(space));
+      var failure = Assert.Throws<ProjectionException>(() => Heading("Nope").Of(Text().Optional()).Map(space));
 
       Assert.Contains("no row containing 'Nope' exists in the available space", failure.Message);
     }
@@ -578,10 +568,10 @@ namespace Unrect.Tests.Projections
       // primary alone. Both spellings read the same primary cell and disagree about where the
       // fallback then looks — which is the quietest of the order hazards, because both succeed.
       var space = BlankLead();
-      var fallback = Text().Down(1).Named("fb");
+      var fallback = Down(1).Of(Text()).Named("fb");
 
-      Assert.Equal("b0", Text().Right(1).Else(fallback).Map(space));
-      Assert.Equal("b1", Text().Else(fallback).Right(1).Map(space));
+      Assert.Equal("b0", Right(1).Of(Text()).Else(fallback).Map(space));
+      Assert.Equal("b1", Right(1).Of(Text().Else(fallback)).Map(space));
     }
 
     [Fact]
@@ -613,25 +603,26 @@ namespace Unrect.Tests.Projections
       // therefore still real and no longer quiet.
       var space = Rows();
 
-      // Clones do not separate, so all three state two ends for one projection.
-      Assert.Throws<ArgumentException>(() => Block().Until(Missing()).Until(Mark()));
-      Assert.Throws<ArgumentException>(() => Block().Until(Missing()).Named("n").Until(Mark()));
-      Assert.Throws<ArgumentException>(() => Block().Until(Missing()).Down(0).Until(Mark()));
+      // Clones do not separate, so all three state two ends for one projection — the second bound
+      // still meets the bound wrapper itself, whichever clone sits between them.
+      Assert.Throws<ArgumentException>(() => Until(Mark()).Of(Until(Missing()).Of(Block())));
+      Assert.Throws<ArgumentException>(() => Until(Mark()).Of(Until(Missing()).Of(Block()).Named("n")));
+      Assert.Throws<ArgumentException>(() => Until(Mark()).Of(Down(0).Of(Until(Missing()).Of(Block()))));
 
       // Wrappers do: the inner bound is still in force, and still fails — at Map, not where written.
       Assert.Equal(
         "no row containing 'Nope' exists to end this projection",
-        Problem(Assert.Throws<ProjectionException>(() => Block().Until(Missing()).Padded(0).Until(Mark()).Map(space))));
+        Problem(Assert.Throws<ProjectionException>(() => Until(Mark()).Of(Until(Missing()).Of(Block()).Padded(0)).Map(space))));
 
       Assert.Equal(
         "no row containing 'Nope' exists to end this projection",
-        Problem(Assert.Throws<ProjectionException>(() => Block().Until(Missing()).Select(value => value).Until(Mark()).Map(space))));
+        Problem(Assert.Throws<ProjectionException>(() => Until(Mark()).Of(Until(Missing()).Of(Block()).Select(value => value)).Map(space))));
 
       // Non-vacuity for the nesting half: two bounds that both exist both apply, the outer one
       // framing the search for the inner. The outer leaves rows 0-1; the inner stops before "b0".
       Assert.Equal(
         "(2x1:a0,a1)",
-        Block().Until(RowContaining("b0")).Select(value => value).Until(Mark()).Map(space));
+        Until(Mark()).Of(Until(RowContaining("b0")).Of(Block()).Select(value => value)).Map(space));
     }
 
     [Fact]
@@ -652,21 +643,20 @@ namespace Unrect.Tests.Projections
         { "x", "bottom" },
       });
 
-      // Adjacent, the two anchors are a contradiction...
-      Assert.Throws<ArgumentException>(() => Row(strip => strip[1].GetString()).On(RowContaining("x")).On(Mark()));
+      // Adjacent, the two anchors are a contradiction — now a compile-time refusal
+      // (MustNotCompilePipeline.cs Y), where it used to be a runtime one...
 
       // ...and through a wrapper they are a search inside a search: the outer anchor frames rows
       // 2-3, and the inner one finds the SECOND "x" in what is left. Were the outer one dropped the
       // reading would be "top"; were the inner one dropped it would be "m1".
       Assert.Equal(
         "bottom",
-        Row(strip => strip[1].GetString()).On(RowContaining("x")).Select(value => value).On(Mark()).Map(twice));
+        On(Mark()).Of(On(RowContaining("x")).Of(Row(strip => strip[1].GetString())).Select(value => value)).Map(twice));
 
       // The extent family says the same thing one field over, and needs Apply to show it: the inner
-      // extent is what the block reads, the outer is what the parent steps past.
-      Assert.Throws<ArgumentException>(() => Block().Sized(Extent(1, 1)).Sized(Extent(2, 2)));
-
-      var applied = Block().Sized(Extent(1, 1)).Padded(0).Sized(Extent(2, 2)).Apply(Rows());
+      // extent is what the block reads, the outer is what the parent steps past. Adjacent, two extents
+      // are a compile-time refusal too (MustNotCompilePipeline.cs AB); through a wrapper they nest.
+      var applied = Sized(Extent(2, 2)).Of(Sized(Extent(1, 1)).Of(Block()).Padded(0)).Apply(Rows());
 
       Assert.Equal("(1x1:a0)", applied.Value);
       Assert.Equal(2, applied.Consumed.Width);
@@ -681,8 +671,8 @@ namespace Unrect.Tests.Projections
       // leaves the pad nothing to inset. Two failures, and neither declaration is the other.
       var space = MarkFirst();
 
-      var boundOutside = Assert.Throws<ProjectionException>(() => Block().Padded(0, 1, 0, 0).Until(Mark()).Map(space));
-      var padOutside = Assert.Throws<ProjectionException>(() => Block().Until(Mark()).Padded(0, 1, 0, 0).Map(space));
+      var boundOutside = Assert.Throws<ProjectionException>(() => Until(Mark()).Of(Block().Padded(0, 1, 0, 0)).Map(space));
+      var padOutside = Assert.Throws<ProjectionException>(() => Until(Mark()).Of(Block()).Padded(0, 1, 0, 0).Map(space));
 
       Assert.Equal(
         "a padding of 0 left, 1 top, 0 right, 0 bottom does not fit an extent of 2x0",
@@ -709,7 +699,7 @@ namespace Unrect.Tests.Projections
     [Theory]
     [InlineData("Padded")]
     [InlineData("Until")]
-    [InlineData("Under")]
+    [InlineData("Heading")]
     [InlineData("Optional")]
     public void SelectCommutesWithEveryOtherWrapperAtL3WhileNothingIsAbsorbed(string wrapper)
     {
@@ -767,7 +757,7 @@ namespace Unrect.Tests.Projections
       // is a type-level one: its receiver must be an IProjection<T>, so OrBlank and a second
       // Demanding must be written before it, not after. (CS1929 at the use site; there is nothing to
       // observe, so nothing to pin beyond this identity.)
-      var projection = Text().Down(1);
+      var projection = Down(1).Of(Text());
 
       Assert.Same(projection, projection.Demanding(Demand<ISpace>.Instance));
     }

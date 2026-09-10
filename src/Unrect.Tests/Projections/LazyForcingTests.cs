@@ -407,13 +407,13 @@ namespace Unrect.Tests.Projections
       var counter = new CountingSpace(TallTable());
       var observed = -1;
 
-      var applied = Table(table =>
+      var applied = Sized(RowsWhileAnyValue()).Of(Table(table =>
       {
         read(table);
         observed = counter.RowsTouched;
 
         return 0;
-      }).Sized(RowsWhileAnyValue()).Apply(counter);
+      })).Apply(counter);
 
       Assert.Equal(TableRowsToExhaustion, counter.RowsTouched);
 
@@ -526,7 +526,7 @@ namespace Unrect.Tests.Projections
         return row.Index;
       });
 
-      (sized ? rows.Sized(RowsWhileAnyValue()) : rows).Apply(counter);
+      (sized ? Sized(RowsWhileAnyValue()).Of(rows) : rows).Apply(counter);
 
       return observations;
     }

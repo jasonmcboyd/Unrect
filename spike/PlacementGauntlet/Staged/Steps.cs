@@ -129,23 +129,47 @@ namespace PlacementGauntlet.Staged
       return new Step(StepKind.Under, (IProjection<string>[])captions.Clone());
     }
 
+    /// <summary>
+    /// Replays this step onto <paramref name="projection"/> through the LIBRARY's shipped pipeline —
+    /// each retired postfix modifier the façade was first written against is now spelled
+    /// <c>Entry(…).Of(projection)</c>. The library's own <c>Steps.ApplyTo</c> folds its steps one at a
+    /// time exactly as this loop does, so a single-step entry closed with <c>.Of</c> reproduces the
+    /// old modifier's composition (a movement onto a declared offset, an anchor replacing it) by
+    /// construction. <c>Under</c> has no library entry — it never had library semantics beyond being
+    /// vertical-flow sugar — so it is replayed as the flow it always desugared to.
+    /// </summary>
     internal IProjection<T> ApplyTo<T>(IProjection<T> projection) => _kind switch
     {
-      StepKind.OnRow => projection.On((IRowLandmark)_subject!),
-      StepKind.OnColumn => projection.On((IColumnLandmark)_subject!),
-      StepKind.Below => projection.Below((IRowLandmark)_subject!),
-      StepKind.RightOf => projection.RightOf((IColumnLandmark)_subject!),
-      StepKind.OffsetBy => projection.OffsetBy((IOffsetStrategy)_subject!),
-      StepKind.Down => projection.Down(_count),
-      StepKind.Right => projection.Right(_count),
-      StepKind.AfterBlankRows => projection.AfterBlankRows(),
-      StepKind.AfterBlankColumns => projection.AfterBlankColumns(),
-      StepKind.Sized => projection.Sized((IAreaStrategy)_subject!),
-      StepKind.UntilRow => projection.Until((IRowLandmark)_subject!, _orEnd),
-      StepKind.UntilColumn => projection.UntilColumn((IColumnLandmark)_subject!, _orEnd),
-      StepKind.Under => projection.Under((IProjection<string>[])_subject!),
+      StepKind.OnRow => Projection.On((IRowLandmark)_subject!).Of(projection),
+      StepKind.OnColumn => Projection.On((IColumnLandmark)_subject!).Of(projection),
+      StepKind.Below => Projection.Below((IRowLandmark)_subject!).Of(projection),
+      StepKind.RightOf => Projection.RightOf((IColumnLandmark)_subject!).Of(projection),
+      StepKind.OffsetBy => Projection.OffsetBy((IOffsetStrategy)_subject!).Of(projection),
+      StepKind.Down => Projection.Down(_count).Of(projection),
+      StepKind.Right => Projection.Right(_count).Of(projection),
+      StepKind.AfterBlankRows => Projection.AfterBlankRows().Of(projection),
+      StepKind.AfterBlankColumns => Projection.AfterBlankColumns().Of(projection),
+      StepKind.Sized => Projection.Sized((IAreaStrategy)_subject!).Of(projection),
+      StepKind.UntilRow => Projection.Until((IRowLandmark)_subject!, _orEnd).Of(projection),
+      StepKind.UntilColumn => Projection.UntilColumn((IColumnLandmark)_subject!, _orEnd).Of(projection),
+      StepKind.Under => Underneath((IProjection<string>[])_subject!, projection),
       _ => throw new InvalidOperationException($"Unknown step {_kind}."),
     };
+
+    /// <summary>
+    /// <c>x.Under(a, b)</c> as it always desugared: a vertical flow of the captions above the section,
+    /// yielding the section's value. Kept here because the façade's <c>Under</c> takes caption
+    /// projections (the fossil the library's <c>Heading</c> replaced), which the string-taking library
+    /// entry cannot spell.
+    /// </summary>
+    private static IProjection<T> Underneath<T>(IProjection<string>[] captions, IProjection<T> section)
+      => Projection.VerticalFlow<T>(v =>
+      {
+        foreach (var caption in captions)
+          v.Next(caption);
+
+        return v.Next(section);
+      });
 
     public override string ToString() => _kind switch
     {

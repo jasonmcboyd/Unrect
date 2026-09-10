@@ -160,14 +160,14 @@ namespace Unrect.Tests.Projections
         Sheet()),
 
       // The other spelling of the same extent: .Sized replaces a projection's own area outright.
-      "sized" => Scenario.Of(Range(b => b.Height).Sized(RowsWhileAnyValue()), Sheet()),
-      "sized, unread" => Scenario.Of(Range(_ => 0).Sized(RowsWhileAnyValue()), Sheet()),
+      "sized" => Scenario.Of(Sized(RowsWhileAnyValue()).Of(Range(b => b.Height)), Sheet()),
+      "sized, unread" => Scenario.Of(Sized(RowsWhileAnyValue()).Of(Range(_ => 0)), Sheet()),
 
       // The one declaration already in the suite that goes through this branch, lifted verbatim
       // from ProjectionReExportTests: the grid has a blank column, so the discovered extent is the
       // full width over both rows and the projection is a string rather than a number.
       "the re-export suite's .Sized declaration" => Scenario.Of(
-        Range(b => $"{b.Width}x{b.Height}").Sized(RowsWhileAnyValue()),
+        Sized(RowsWhileAnyValue()).Of(Range(b => $"{b.Width}x{b.Height}")),
         Grid(new[,] { { 1, 0, 3 }, { 2, 0, 4 } })),
 
       // Reads that force through the view rather than through the space: the block's own members
@@ -235,13 +235,13 @@ namespace Unrect.Tests.Projections
       // streamed body means what an indexed one meant: the same rows, in order, with the same space
       // left over.
       "table rows, lambda" => Scenario.Of(
-        Table(row => $"{row["Client"].GetString()}={row["Amount"].GetInt()}").Sized(RowsWhileAnyValue()),
+        Sized(RowsWhileAnyValue()).Of(Table(row => $"{row["Client"].GetString()}={row["Amount"].GetInt()}")),
         Headered()),
-      "table rows, typed" => Scenario.Of(Table<Entry>().Sized(RowsWhileAnyValue()), Headered()),
+      "table rows, typed" => Scenario.Of(Sized(RowsWhileAnyValue()).Of(Table<Entry>()), Headered()),
       // .Sized before .Select on purpose: Select's wrapper is a projection with a placement of its
       // own, so sizing the wrapper would leave the table inside it placed by its own eager default.
       "table rows, dictionaries" => Scenario.Of(
-        Table().Sized(RowsWhileAnyValue()).Select(rows => rows.Select(row => $"{row["Client"]}/{row["Amount"]}").ToList()),
+        Sized(RowsWhileAnyValue()).Of(Table()).Select(rows => rows.Select(row => $"{row["Client"]}/{row["Amount"]}").ToList()),
         Headered()),
 
       // The row-projection slot, which reads its body through TableView.StreamBands — the surface
@@ -249,29 +249,29 @@ namespace Unrect.Tests.Projections
       // first. Three shapes of record: a whole band read by a flow, a band read in part, and a
       // headered table whose header is consumed rather than projected.
       "table with a row projection" => Scenario.Of(
-        Table(0, eachRow: HorizontalFlow(h => $"{h.Next(IntCell())}/{h.Next(IntCell())}")).Sized(RowsWhileAnyValue()),
+        Sized(RowsWhileAnyValue()).Of(Table(0, eachRow: HorizontalFlow(h => $"{h.Next(IntCell())}/{h.Next(IntCell())}"))),
         Sheet()),
       "row projection reading part of its band" => Scenario.Of(
-        Table(0, eachRow: IntCell()).Sized(RowsWhileAnyValue()),
+        Sized(RowsWhileAnyValue()).Of(Table(0, eachRow: IntCell())),
         Sheet()),
       "row projection under a consumed header" => Scenario.Of(
-        Table(1, eachRow: IntCell()).Sized(RowsWhileAnyValue()),
+        Sized(RowsWhileAnyValue()).Of(Table(1, eachRow: IntCell())),
         Sheet()),
 
       // A hundred records of which each reads one cell: the slot form of the case the whole feature
       // is for, and the one where the two runs read the most different amounts of the sheet.
       "tall table of records" => Scenario.Of(
-        Table(0, eachRow: IntCell()).Sized(RowsWhileAnyValue()).Select(records => records.Count),
+        Sized(RowsWhileAnyValue()).Of(Table(0, eachRow: IntCell())).Select(records => records.Count),
         TallSheet()),
 
       // A record that cannot be described, and the same record tolerated. Eagerly the bound is
       // settled before the first record is reached; lazily the failure arrives mid-walk. Same
       // failure, same path, same cell — including the record index in it.
       "record that fails" => Scenario.Of(
-        Table(0, eachRow: Text()).Sized(RowsWhileAnyValue()),
+        Sized(RowsWhileAnyValue()).Of(Table(0, eachRow: Text())),
         Sheet()),
       "record that fails, tolerated" => Scenario.Of(
-        Table(0, eachRow: Text()).Sized(RowsWhileAnyValue()).Optional(),
+        Sized(RowsWhileAnyValue()).Of(Table(0, eachRow: Text())).Optional(),
         Sheet()),
 
       // The undecorated slot form, which is the one people write: a discovered block, deferred since
@@ -284,14 +284,14 @@ namespace Unrect.Tests.Projections
       // three rungs are written to avoid — so the forcing read has to denote what the streaming one
       // does.
       "table, rows materialised" => Scenario.Of(
-        Table(table => $"{table.RowCount}x{table.ColumnCount}").Sized(RowsWhileAnyValue()),
+        Sized(RowsWhileAnyValue()).Of(Table(table => $"{table.RowCount}x{table.ColumnCount}")),
         Headered()),
 
       // A body read in part: the case where the two runs read the most different amounts of a
       // table, and the one where a cached Rows and an uncached StreamRows could most easily
       // disagree.
       "table, first row only" => Scenario.Of(
-        Table(table => table.StreamRows().First()["Client"].GetString()).Sized(RowsWhileAnyValue()),
+        Sized(RowsWhileAnyValue()).Of(Table(table => table.StreamRows().First()["Client"].GetString())),
         Headered()),
 
       // The declarations nobody decorates, which the width/height interleave brought onto the
@@ -317,7 +317,7 @@ namespace Unrect.Tests.Projections
 
       // A bound inside a wrapper whose own placement reads the sheet to find its landmark.
       "discovered extent under Until" => Scenario.Of(
-        Range(RowsWhileAnyValue(), b => b.Height).Until(RowWhere((space, row) => space[0, row].IsBlank), orEnd: true),
+        Until(RowWhere((space, row) => space[0, row].IsBlank), orEnd: true).Of(Range(RowsWhileAnyValue(), b => b.Height)),
         Sheet()),
 
       _ => throw new ArgumentOutOfRangeException(nameof(name), name, "No such case."),
@@ -424,7 +424,7 @@ namespace Unrect.Tests.Projections
       Func<Func<CellBlock, int>, IProjection<int>> declare = spelling switch
       {
         "Range(strategy)" => project => Range(RowsWhileAnyValue(), project),
-        "Sized" => project => Range(project).Sized(RowsWhileAnyValue()),
+        "Sized" => project => Sized(RowsWhileAnyValue()).Of(Range(project)),
         "inside a flow" => project => VerticalFlow(v => v.Next(Range(RowsWhileAnyValue(), project))),
         "under Optional" => project => Range(RowsWhileAnyValue(), project).Optional(),
 
@@ -453,7 +453,7 @@ namespace Unrect.Tests.Projections
       // lambda project its first row having read two rows of the sheet.
       // The rungs project different types, so each is reduced to the pair of placements the claim
       // is actually about before the switch has to agree on one.
-      static (IProjection Declared, IProjection Sized) Probe<T>(IProjection<T> projection) => (projection, projection.Sized(RowsWhileAnyValue()));
+      static (IProjection Declared, IProjection Sized) Probe<T>(IProjection<T> projection) => (projection, Sized(RowsWhileAnyValue()).Of(projection));
 
       var (declared, sized) = rung switch
       {
@@ -488,7 +488,7 @@ namespace Unrect.Tests.Projections
       var counter = new CountingSpace(Sheet());
       var observations = new List<int>();
 
-      var table = Table(
+      var table = Sized(RowsWhileAnyValue()).Of(Table(
         // A fixed 3x1 record so nothing about the RECORD's placement is being measured here.
         0,
         eachRow: Range(3, 1, _ =>
@@ -496,8 +496,7 @@ namespace Unrect.Tests.Projections
           observations.Add(counter.RowsTouched);
 
           return 0;
-        }))
-        .Sized(RowsWhileAnyValue());
+        })));
 
       if (eager)
       {
@@ -565,9 +564,9 @@ namespace Unrect.Tests.Projections
       {
         // A fixed 3x1 child so the child's own placement has nothing to discover: what is measured
         // here is the parent's bound being settled, not the child's.
-        "VerticalFlow" => project => VerticalFlow(v => v.Next(Range(3, 1, project))).Sized(RowsWhileAnyValue()),
-        "HorizontalFlow" => project => HorizontalFlow(h => h.Next(Range(3, 1, project))).Sized(RowsWhileAnyValue()),
-        "Overlay" => project => Overlay(o => o.Next(Range(3, 1, project))).Sized(RowsWhileAnyValue()),
+        "VerticalFlow" => project => Sized(RowsWhileAnyValue()).Of(VerticalFlow(v => v.Next(Range(3, 1, project)))),
+        "HorizontalFlow" => project => Sized(RowsWhileAnyValue()).Of(HorizontalFlow(h => h.Next(Range(3, 1, project)))),
+        "Overlay" => project => Sized(RowsWhileAnyValue()).Of(Overlay(o => o.Next(Range(3, 1, project)))),
 
         _ => throw new ArgumentOutOfRangeException(nameof(layout), layout, "No such layout."),
       };

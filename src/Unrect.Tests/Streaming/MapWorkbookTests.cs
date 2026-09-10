@@ -150,7 +150,7 @@ namespace Unrect.Tests.Streaming
       // Blankness belongs to the adapter, and through this door the adapter is configured by the
       // options argument: the same cell reads as an absence under the default and as its own two
       // spaces under strict fidelity.
-      var cell = Cell(value => value.TryGetString() ?? "<blank>").Down(2);
+      var cell = Down(2).Of(Cell(value => value.TryGetString() ?? "<blank>"));
 
       Assert.Equal("<blank>", cell.MapWorkbook(Path("edge-cases.xlsx"), "Edges"));
       Assert.Equal(

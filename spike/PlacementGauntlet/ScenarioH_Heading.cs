@@ -51,20 +51,20 @@ namespace PlacementGauntlet
         ScenarioCPlain.Report.MapWithDiagnostics(sheet).Diagnostics.Select(d => d.ToString()).ToList(),
         ScenarioHEntryC.Report.MapWithDiagnostics(sheet).Diagnostics.Select(d => d.ToString()).ToList());
 
-      // The bound leading (ruling 1's canonical order) against the bound postfix (the geography law).
-      // Both replay the same two calls in the same order, so they are one declaration spelled twice.
-      var postfix = Place.Heading("IRR Details")
+      // Phase 5 retired postfix `.Until`, so the geography law's postfix bound is superseded: the
+      // bound is now a leading stage on both sides, and this pin becomes a plain check that two
+      // façade spellings of the bound-leading declaration agree.
+      var boundLeading = Place.Until(RowContaining(Inception))
+        .Heading("IRR Details")
         .Heading("Cash Flows Using Transfer Date")
-        .Of(VerticalRepeat(Table<CashFlow>(), separatedBy: BlankRows()))
-        .Until(RowContaining(Inception));
+        .Of(VerticalRepeat(Table<CashFlow>(), separatedBy: BlankRows()));
 
-      Judge.SameL2("read 5 — bound LEADING and bound POSTFIX are the same declaration",
-        postfix.Apply(sheet), ScenarioHEntryC.BoundLeading.Apply(sheet));
+      Judge.SameL2("read 5 — the bound-leading declaration, two façade spellings agree",
+        boundLeading.Apply(sheet), ScenarioHEntryC.BoundLeading.Apply(sheet));
 
-      Judge.Note("So Heading-as-entry composes with Until either way round, and ruling 1's canonical order is a"
-        + " READING preference rather than a semantic one: Until(l).Heading(a).Heading(b).Of(x) and"
-        + " Heading(a).Heading(b).Of(x).Until(l) replay Under-then-Until identically. Evidence for the open"
-        + " owner call on where a bound sits, not a position taken.");
+      Judge.Note("Under phase 5 the bound is a leading stage: Until(l).Heading(a).Heading(b).Of(x). The geography"
+        + " law's postfix `.Until` is retired, so 'bound leading vs bound postfix' is no longer a live contrast —"
+        + " both spell the bound ahead of the subject.");
       Judge.Note("The Entry C file imports no Caption and writes none — the discarded leaf is gone from the"
         + " declaration surface entirely, which is what the dissolution was for.");
     }
@@ -78,12 +78,12 @@ namespace PlacementGauntlet
       var investorBlock = Table<CashFlow>();
       var irrDetails = VerticalRepeat(investorBlock, separatedBy: BlankRows());
 
-      // TODAY — the fossil pair: a postfix modifier taking leaves built to be discarded.
-      var todayBounded = irrDetails
-        .Under(Caption("IRR Details"), Caption("Cash Flows Using Transfer Date"))
-        .Until(RowContaining(Inception));
+      // TODAY — the fossil pair, spelled through the façade's caption entry (retired postfix
+      // `.Under`/`.Until` are gone). It desugars to the same vertical flow the Heading side replays.
+      var todayBounded = Place.Until(RowContaining(Inception))
+        .Of(Under(Caption("IRR Details"), Caption("Cash Flows Using Transfer Date")).Of(irrDetails));
 
-      var todayUnbounded = irrDetails.Under(Caption(Inception));
+      var todayUnbounded = Under(Caption(Inception)).Of(irrDetails);
 
       // HEADING — ruling 1's canonical order: bound, then headings in document order, then subject.
       var headingBounded = Place.Until(RowContaining(Inception))
@@ -102,14 +102,14 @@ namespace PlacementGauntlet
       // L3, the account-of-itself half. Two headings chained must accumulate into ONE replayed
       // Under call: nesting them would build two flows and say so in the path, which is the
       // difference this pin exists to catch.
-      var todayBroken = irrDetails.Under(Caption("IRR Details"), Caption("Nope")).Until(RowContaining(Inception));
+      var todayBroken = Place.Until(RowContaining(Inception)).Of(Under(Caption("IRR Details"), Caption("Nope")).Of(irrDetails));
       var headingBroken = Place.Until(RowContaining(Inception)).Heading("IRR Details").Heading("Nope").Of(irrDetails);
 
       Judge.SameFailure("read 1 at L3 — a wrong second heading fails with the same path and sentence",
         () => todayBroken.Map(sheet), () => headingBroken.Map(sheet));
 
       Judge.SameFailure("read 1 at L3 — a wrong FIRST heading fails with the same path and sentence",
-        () => irrDetails.Under(Caption("Nope"), Caption("Cash Flows Using Transfer Date")).Map(sheet),
+        () => Under(Caption("Nope"), Caption("Cash Flows Using Transfer Date")).Of(irrDetails).Map(sheet),
         () => Place.Heading("Nope").Heading("Cash Flows Using Transfer Date").Of(irrDetails).Map(sheet));
 
       // And the whole script, diagnostics included.
@@ -163,14 +163,14 @@ namespace PlacementGauntlet
       var regionMark = RowContaining("Region A");
       var lines = Table<Line>();
 
-      var today = lines.Under(Caption("Region A")).On(regionMark);
+      var today = Place.On(regionMark).Under(Caption("Region A")).Of(lines);
       var heading = Place.On(regionMark).Heading("Region A").Of(lines);
 
       Judge.SameL2("read 2 — the recipe: anchor on the flow, either spelling", today.Apply(sheet), heading.Apply(sheet));
 
       // The negative: anchoring the CONTENT instead of the flow is a different declaration, and the
       // pipeline still cannot spell it — the prepend is as load-bearing for Heading as for Under.
-      var anchoredInside = lines.On(regionMark).Under(Caption("Region A"));
+      var anchoredInside = Place.Under(Caption("Region A")).Of(Place.On(regionMark).Of(lines));
 
       Judge.Different("read 2's negative — anchoring the content instead of the flow reads differently",
         Attempt(() => heading.Map(sheet)), Attempt(() => anchoredInside.Map(sheet)));
@@ -195,23 +195,20 @@ namespace PlacementGauntlet
       var sheet = Sheets.K1();
 
       var kLines = Table(headerRows: 1, eachRow: captions => Overlay(o => new KLine(
-        Code: o.Next(Text().Right(captions["Line"])),
-        Amount: o.Next(Decimal().Right(captions["Amount"])))));
+        Code: o.Next(Projection.Right(captions["Line"]).Text()),
+        Amount: o.Next(Projection.Right(captions["Amount"]).Decimal()))));
 
       // CAPTURES the text: Caption is a leaf here because the record wants what it read. Unchanged
       // by the dissolution — not grandfathered, but because this is what a value-yielding leaf IS.
-      var capturing = VerticalFlow(v => new KSection(
+      var capturing = Projection.On(RowContaining("K-1 Lines 1-21")).Until(RowContaining("Portfolio Income"))
+        .VerticalFlow(v => new KSection(
           Caption: v.Next(Caption("K-1 Lines 1-21")),
-          Lines: v.Next(kLines)))
-        .On(RowContaining("K-1 Lines 1-21"))
-        .Until(RowContaining("Portfolio Income"));
+          Lines: v.Next(kLines)));
 
       // DISCARDS the text: no record field for it, so the fossil is visible — a Caption built to be
-      // thrown away. This is the half Heading replaces.
-      var discardingToday = kLines
-        .Under(Caption("Portfolio Income"))
-        .On(RowContaining("Portfolio Income"))
-        .Until(RowContaining("Totals"));
+      // thrown away, spelled through the façade's caption entry. This is the half Heading replaces.
+      var discardingToday = Place.Until(RowContaining("Totals"))
+        .Of(Place.On(RowContaining("Portfolio Income")).Under(Caption("Portfolio Income")).Of(kLines));
 
       var discardingHeading = Place.On(RowContaining("Portfolio Income"))
         .Until(RowContaining("Totals"))
@@ -250,13 +247,13 @@ namespace PlacementGauntlet
       var sheet = Sheets.K1();
 
       var kLines = Table(headerRows: 1, eachRow: captions => Overlay(o => new KLine(
-        Code: o.Next(Text().Right(captions["Line"])),
-        Amount: o.Next(Decimal().Right(captions["Amount"])))));
+        Code: o.Next(Projection.Right(captions["Line"]).Text()),
+        Amount: o.Next(Projection.Right(captions["Amount"]).Decimal()))));
 
       var section = Place.Heading("Portfolio Income").Of(kLines);
       var document = Place.Heading("Partner K-1").Of(section);
 
-      var today = kLines.Under(Caption("Portfolio Income")).Under(Caption("Partner K-1"));
+      var today = Under(Caption("Partner K-1")).Of(Under(Caption("Portfolio Income")).Of(kLines));
 
       Judge.SameL2("read 4 — headings at two layers: value and geometry", today.Apply(sheet), document.Apply(sheet));
 

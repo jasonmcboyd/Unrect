@@ -65,10 +65,9 @@ namespace PlacementGauntlet
       var investorBlock = Table<CashFlow>();
       var irrDetails    = VerticalRepeat(investorBlock, separatedBy: BlankRows());
 
-      // The geography law, in a scoped file: captions before the subject, the bound after it.
-      var byTransferDate = Under(Caption("IRR Details"), Caption("Cash Flows Using Transfer Date"))
-        .Of(irrDetails)
-        .Until(RowContaining(Inception));
+      // Phase 5 retired postfix `.Until`, so the bound is a leading stage over the captioned section.
+      var byTransferDate = Until(RowContaining(Inception))
+        .Of(Under(Caption("IRR Details"), Caption("Cash Flows Using Transfer Date")).Of(irrDetails));
 
       var byInception = Under(Caption(Inception)).Of(irrDetails);
 

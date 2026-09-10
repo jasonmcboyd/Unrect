@@ -76,8 +76,12 @@ namespace Unrect.Projections
     /// <summary>This projection bounded at <paramref name="landmark"/> — the wrapper <c>Until</c> declares.</summary>
     internal abstract IProjection BoundedBy(Landmark landmark, bool orEnd);
 
-    /// <summary>This projection below <paramref name="captions"/> — the flow <c>Under</c> declares.</summary>
-    internal abstract IProjection Beneath(IProjection<string>[] captions);
+    /// <summary>
+    /// This projection below <paramref name="captions"/>, as one vertical flow — the structure a
+    /// <c>Heading</c> stage builds directly. The captions are the heading rows, read and discarded;
+    /// this projection is the section they announce.
+    /// </summary>
+    internal abstract IProjection WithHeadings(IProjection<string>[] captions);
 
     /// <summary>
     /// This projection with <paramref name="fallback"/> to stand in for it — the boundary
@@ -140,7 +144,7 @@ namespace Unrect.Projections
       return new UntilProjection<TResult>(this, landmark, orEnd, Placement.Default);
     }
 
-    internal sealed override IProjection Beneath(IProjection<string>[] captions)
+    internal sealed override IProjection WithHeadings(IProjection<string>[] captions)
       => new FlowProjection<TResult>(
         Orientation.Vertical,
         cursor =>
@@ -155,7 +159,7 @@ namespace Unrect.Projections
           return cursor.Next(this, declared: null);
         },
         Placement.Default,
-        description: "Under");
+        description: "Heading");
 
     internal sealed override IProjection Otherwise(IProjection fallback, string? declared)
       => new BoundaryProjection<TResult>(

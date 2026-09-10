@@ -11,13 +11,15 @@ using static Unrect.Tests.ProjectionTestSpaces;
 namespace Unrect.Tests.Projections
 {
   /// <summary>
-  /// <c>projection.Under(a, b)</c> is sugar for a vertical flow that reads the captions and then
-  /// the projection, and it is sugar in the strongest sense: it desugars to a real flow with real
+  /// <c>Heading(a).Heading(b).Of(projection)</c> — the successor to <c>.Under</c> now that geometry is
+  /// spelled only through the pipeline — is sugar for a vertical flow that reads the caption rows and
+  /// then the projection, and it is sugar in the strongest sense: it builds a real flow with real
   /// children, so every caption is a node the engine places, the naming ladder labels, <c>Until</c>
   /// bounds, <c>Optional</c> tolerates, and the consumed-space meter counts.
   /// <para>
   /// The tests below are mostly about that claim. Nothing here is new machinery — what is worth
-  /// pinning is that nothing had to be.
+  /// pinning is that nothing had to be. (The suite keeps its name from the retired modifier; the
+  /// behaviour it pins is <c>Heading</c>'s.)
   /// </para>
   /// </summary>
   public class UnderTests
@@ -36,21 +38,21 @@ namespace Unrect.Tests.Projections
     // --- The desugared tree ---------------------------------------------------------------------------
 
     [Fact]
-    public void UnderIsAFlowThatDescribesItselfByWhatTheUserTyped()
+    public void HeadingIsAFlowThatDescribesItselfAsHeading()
     {
       // Not "VerticalFlow": a path segment should be greppable back to the line that produced it,
-      // and the line says .Under.
-      var section = Lines().Under(Caption("Detail"));
+      // and the line says Heading.
+      var section = Heading("Detail").Of(Lines());
 
-      Assert.Equal("Under", section.Description);
+      Assert.Equal("Heading", section.Description);
       Assert.False(section.IsTransparent);
       Assert.Null(section.Placement.Area);
     }
 
     [Fact]
-    public void UnderIsOpaqueLikeEveryOtherCursorComposite()
+    public void HeadingIsOpaqueLikeEveryOtherCursorComposite()
     {
-      var section = Lines().Under(Caption("Detail"));
+      var section = Heading("Detail").Of(Lines());
 
       var marker = Assert.IsAssignableFrom<IOpaqueComposite>(section);
 
@@ -63,9 +65,9 @@ namespace Unrect.Tests.Projections
     {
       // The whole point of desugaring rather than carrying the caption as an attribute: a caption
       // that cannot be found is reported as the child it is, at its own ordinal.
-      var failure = Assert.Throws<ProjectionException>(() => Lines().Under(Caption("Nope")).Map(Sheet()));
+      var failure = Assert.Throws<ProjectionException>(() => Heading("Nope").Of(Lines()).Map(Sheet()));
 
-      Assert.Equal("Under -> Caption(\"Nope\")#1", failure.Path);
+      Assert.Equal("Heading -> Caption(\"Nope\")#1", failure.Path);
       Assert.Equal("Caption(\"Nope\")#1", failure.Subject);
     }
 
@@ -73,9 +75,9 @@ namespace Unrect.Tests.Projections
     public void TheSectionIsTheChildAfterTheCaptions()
     {
       var failure = Assert.Throws<ProjectionException>(() =>
-        Cell(c => c.GetInt()).Under(Caption("Detail")).Map(Sheet()));
+        Heading("Detail").Of(Cell(c => c.GetInt())).Map(Sheet()));
 
-      Assert.Equal("Under -> Cell#2", failure.Path);
+      Assert.Equal("Heading -> Cell#2", failure.Path);
     }
 
     // --- Value and extent ------------------------------------------------------------------------------
@@ -85,7 +87,7 @@ namespace Unrect.Tests.Projections
     {
       // The captions are read — they must be, or nothing would be verified — but their text is not
       // what the section is for.
-      Assert.Equal(2, Lines().Under(Caption("Detail")).Map(Sheet()));
+      Assert.Equal(2, Heading("Detail").Of(Lines()).Map(Sheet()));
     }
 
     [Fact]
@@ -94,7 +96,7 @@ namespace Unrect.Tests.Projections
       // Flow arithmetic, unchanged: along the axis the sum of the children's advances, and a
       // caption's advance includes the offset it seeked over. The junk row, the caption row and the
       // two data rows are all described.
-      var applied = Lines().Under(Caption("Detail")).Apply(Sheet());
+      var applied = Heading("Detail").Of(Lines()).Apply(Sheet());
 
       Assert.Equal(2, applied.Consumed.Width);
       Assert.Equal(4, applied.Consumed.Height);
@@ -105,7 +107,7 @@ namespace Unrect.Tests.Projections
     {
       var space = Mixed(new object?[,] { { "Cap1" }, { "Cap2" }, { "a" }, { "b" } });
 
-      Assert.Equal(2, Lines().Under(Caption("Cap1"), Caption("Cap2")).Map(space));
+      Assert.Equal(2, Heading("Cap1").Heading("Cap2").Of(Lines()).Map(space));
     }
 
     [Fact]
@@ -115,7 +117,7 @@ namespace Unrect.Tests.Projections
       // second one's own seek rather than needing a modifier.
       var space = Mixed(new object?[,] { { "Cap1" }, { null }, { "Cap2" }, { "a" } });
 
-      Assert.Equal(1, Lines().Under(Caption("Cap1"), Caption("Cap2")).Map(space));
+      Assert.Equal(1, Heading("Cap1").Heading("Cap2").Of(Lines()).Map(space));
     }
 
     // --- Labels ------------------------------------------------------------------------------------------
@@ -123,7 +125,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void TheUseSiteLabelLandsOnTheFlow()
     {
-      var section = Lines().Under(Caption("Nope"));
+      var section = Heading("Nope").Of(Lines());
 
       var failure = Assert.Throws<ProjectionException>(() =>
         VerticalFlow(v => v.Next(section)).Map(Sheet()));
@@ -135,7 +137,7 @@ namespace Unrect.Tests.Projections
     public void NamingTheResultNamesTheFlow()
     {
       var failure = Assert.Throws<ProjectionException>(() =>
-        Lines().Under(Caption("Nope")).Named("details").Map(Sheet()));
+        Heading("Nope").Of(Lines()).Named("details").Map(Sheet()));
 
       Assert.Equal("'details' -> Caption(\"Nope\")#1", failure.Path);
     }
@@ -143,13 +145,13 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void NoChildEverCarriesAnIdentifierFromInsideTheHelper()
     {
-      // The helper-leak pin. .Under builds its flow from a loop over `caption` and a parameter
-      // called `projection`; without an explicit opt-out the naming ladder would capture those and
-      // label every section in every declaration 'caption' and 'projection' — identifiers no user
+      // The helper-leak pin. Heading builds its flow from a loop over the minted captions and the
+      // section itself; without an explicit opt-out the naming ladder would capture identifiers from
+      // inside the library and label every section in every declaration by them — identifiers no user
       // ever wrote.
-      var captionMiss = Assert.Throws<ProjectionException>(() => Lines().Under(Caption("Nope")).Map(Sheet()));
+      var captionMiss = Assert.Throws<ProjectionException>(() => Heading("Nope").Of(Lines()).Map(Sheet()));
       var sectionMiss = Assert.Throws<ProjectionException>(() =>
-        Cell(c => c.GetInt()).Under(Caption("Detail")).Map(Sheet()));
+        Heading("Detail").Of(Cell(c => c.GetInt())).Map(Sheet()));
 
       Assert.DoesNotContain("'caption'", captionMiss.Path);
       Assert.DoesNotContain("'projection'", sectionMiss.Path);
@@ -167,7 +169,7 @@ namespace Unrect.Tests.Projections
       var space = Mixed(new object?[,] { { "Detail" }, { "x" }, { "Detail" }, { "a" }, { "b" } });
 
       // Skipping the first two rows puts the second caption in range and the first out of it.
-      Assert.Equal(2, Lines().Under(Caption("Detail")).Down(2).Map(space));
+      Assert.Equal(2, Down(2).Heading("Detail").Of(Lines()).Map(space));
     }
 
     [Fact]
@@ -184,7 +186,7 @@ namespace Unrect.Tests.Projections
         { "c" },
       });
 
-      var section = Lines().Under(Caption("Detail")).Until(RowContaining("Next Section"));
+      var section = Until(RowContaining("Next Section")).Heading("Detail").Of(Lines());
 
       Assert.Equal(2, section.Map(space));
     }
@@ -192,66 +194,52 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void OptionalAbsorbsAMissingCaptionAsAnAbsentSection()
     {
-      var result = Lines().Under(Caption("Nope")).Optional().MapWithDiagnostics(Sheet());
+      var result = Heading("Nope").Of(Lines()).Optional().MapWithDiagnostics(Sheet());
 
       Assert.Equal(0, result.Value);
 
       var warning = Assert.Single(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Warning);
 
       Assert.Equal("Caption(\"Nope\")#1", warning.Subject);
-      Assert.Equal("Under -> Caption(\"Nope\")#1", warning.Path);
+      Assert.Equal("Heading -> Caption(\"Nope\")#1", warning.Path);
       Assert.Equal("A1", warning.Location.A1);
     }
 
     [Fact]
     public void AnAbsorbedSectionConsumesNothing()
     {
-      var applied = Lines().Under(Caption("Nope")).Optional().Apply(Sheet());
+      var applied = Heading("Nope").Of(Lines()).Optional().Apply(Sheet());
 
       Assert.Equal(0, applied.Consumed.Width);
       Assert.Equal(0, applied.Consumed.Height);
     }
 
     [Fact]
-    public void UnderNestsWithTheOuterCaptionAbove()
+    public void HeadingNestsWithTheOuterCaptionAbove()
     {
-      // Like Padded: no merge is attempted, and reading order is preserved.
+      // Like Padded: no merge is attempted, and reading order is preserved. Two ends are two
+      // sections, so two headings above one section is spelled by nesting rather than chaining.
       var space = Mixed(new object?[,] { { "Outer" }, { "Inner" }, { "a" } });
 
-      Assert.Equal(1, Lines().Under(Caption("Inner")).Under(Caption("Outer")).Map(space));
+      Assert.Equal(1, Heading("Outer").Of(Heading("Inner").Of(Lines())).Map(space));
     }
 
     // --- Guards ---------------------------------------------------------------------------------------------
 
     [Fact]
-    public void UnderRejectsADeclarationItCannotHonour()
+    public void HeadingRejectsABlankOrNullString()
     {
-      var captions = new IProjection<string>[] { Caption("a") };
+      // A heading takes the text a section announces itself by, so blank or null is not a heading.
+      // (The old .Under guards — a null projection, a null or empty caption array — retired with the
+      // postfix form; a heading is a string, and this is that string's whole contract. Whitespace is
+      // blank too, so all three forms report the same ArgumentException on the text parameter.)
+      Assert.Equal("text", Assert.Throws<ArgumentException>(() => Heading(null!)).ParamName);
 
-      Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjection<int>)null!).Under(captions)).ParamName);
-      Assert.Equal("captions", Assert.Throws<ArgumentNullException>(() => Lines().Under(null!)).ParamName);
+      var empty = Assert.Throws<ArgumentException>(() => Heading(""));
+      Assert.Equal("text", empty.ParamName);
+      Assert.Contains("cannot be blank", empty.Message);
 
-      var empty = Assert.Throws<ArgumentException>(() => Lines().Under());
-      Assert.Equal("captions", empty.ParamName);
-      Assert.Contains("at least one caption", empty.Message);
-
-      var missing = Assert.Throws<ArgumentException>(() => Lines().Under(Caption("a"), null!));
-      Assert.Equal("captions", missing.ParamName);
-      Assert.Contains("Caption 2 is null", missing.Message);
-    }
-
-    [Fact]
-    public void UnderCopiesTheArrayItWasHanded()
-    {
-      // params may hand us the caller's own array, and the lambda is captured for every future
-      // application. A projection that could change underneath its user is not a declaration.
-      var captions = new[] { Caption("Detail") };
-
-      var section = Lines().Under(captions);
-
-      captions[0] = Caption("Nope");
-
-      Assert.Equal(2, section.Map(Sheet()));
+      Assert.Equal("text", Assert.Throws<ArgumentException>(() => Heading("   ")).ParamName);
     }
   }
 }

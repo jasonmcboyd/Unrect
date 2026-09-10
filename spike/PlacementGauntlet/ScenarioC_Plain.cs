@@ -53,9 +53,8 @@ namespace PlacementGauntlet
       var investorBlock = Table<CashFlow>();
       var irrDetails    = VerticalRepeat(investorBlock, separatedBy: BlankRows());
 
-      var byTransferDate = Under(Caption("IRR Details"), Caption("Cash Flows Using Transfer Date"))
-        .Of(irrDetails)
-        .Until(RowContaining(ScenarioCAudited.Inception));
+      var byTransferDate = Until(RowContaining(ScenarioCAudited.Inception))
+        .Of(Under(Caption("IRR Details"), Caption("Cash Flows Using Transfer Date")).Of(irrDetails));
 
       var byInception = Under(Caption(ScenarioCAudited.Inception)).Of(irrDetails);
 
@@ -80,11 +79,10 @@ namespace PlacementGauntlet
     {
       var kLines = Table(headerRows: 1, eachRow: KLineRow);
 
-      return On(RowContaining("Nope"))
+      return On(RowContaining("Nope")).Until(RowContaining(Portfolio))
         .VerticalFlow(v => new KSection(
           Caption: v.Next(Caption("Nope")),
-          Lines: v.Next(kLines)))
-        .Until(RowContaining(Portfolio));
+          Lines: v.Next(kLines)));
     }
 
     private static IProjection<ISpace, K1Report> DeclareK1()
@@ -95,17 +93,15 @@ namespace PlacementGauntlet
 
       var kLines = Table(headerRows: 1, eachRow: kLine);
 
-      var lines = On(RowContaining(KLines))
+      var lines = On(RowContaining(KLines)).Until(RowContaining(Portfolio))
         .VerticalFlow(v => new KSection(
           Caption: v.Next(Caption(KLines)),
-          Lines:   v.Next(kLines)))
-        .Until(RowContaining(Portfolio));
+          Lines:   v.Next(kLines)));
 
-      var portfolio = On(RowContaining(Portfolio))
+      var portfolio = On(RowContaining(Portfolio)).Until(RowContaining(Totals))
         .VerticalFlow(v => new KSection(
           Caption: v.Next(Caption(Portfolio)),
-          Lines:   v.Next(kLines)))
-        .Until(RowContaining(Totals));
+          Lines:   v.Next(kLines)));
 
       var title = Text();
 

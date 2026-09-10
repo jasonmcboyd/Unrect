@@ -22,15 +22,22 @@ namespace Unrect.Projections
   {
     // --- Anchors: a position stated as a relation to something in the grid -------------------------
 
-    /// <inheritdoc cref="ProjectionExtensions.On{TProjection}(TProjection, IRowLandmark)"/>
+    /// <summary>
+    /// Opens a pipeline whose section sits <em>on</em> the row <paramref name="landmark"/> matches: it
+    /// starts at that row and owns it, so a caption is content the section reads rather than a gap it
+    /// steps over. A position is a relation to a thing, never a distance arrived at. Occupancy has no
+    /// direction, so the word names none — the argument's type carries the axis, and the column form is
+    /// this same word. A landmark that matches nothing is loud, absorbable by <c>Optional</c> and
+    /// <c>Else</c>, and read by a <c>VerticalRepeat</c> as having run out of sections.
+    /// </summary>
     /// <param name="landmark">The row to sit on.</param>
     public static OffsetStage On(IRowLandmark landmark) => Enter(Step.OnRow(landmark));
 
-    /// <inheritdoc cref="ProjectionExtensions.On{TProjection}(TProjection, IColumnLandmark)"/>
+    /// <inheritdoc cref="On(IRowLandmark)"/>
     /// <param name="landmark">The column to sit on.</param>
     public static OffsetStage On(IColumnLandmark landmark) => Enter(Step.OnColumn(landmark));
 
-    /// <inheritdoc cref="ProjectionExtensions.On{TProjection}(TProjection, IRowLandmark)"/>
+    /// <inheritdoc cref="On(IRowLandmark)"/>
     /// <remarks>
     /// A demanding matcher opens a demanding pipeline with nothing annotated: the demand is in the
     /// matcher's type, and every stage after this one carries it out to the terminal.
@@ -48,7 +55,13 @@ namespace Unrect.Projections
       where TSpace : class, ISpace
       => EnterDemanding<TSpace>(Step.OnColumn(Required(landmark).Landmark));
 
-    /// <inheritdoc cref="ProjectionExtensions.Below{TProjection}"/>
+    /// <summary>
+    /// Opens a pipeline whose section starts on the row directly below the one <paramref
+    /// name="landmark"/> matches — for a section under a caption another projection describes, or one
+    /// nothing does. Exactly one row beyond the match, the matched row's own height and never a step
+    /// you chose; unlike <c>On</c> the concept has a direction, so the word carries one. A missing
+    /// landmark is loud, absorbable by <c>Optional</c>/<c>Else</c> and read by a repeat as its end.
+    /// </summary>
     /// <param name="landmark">The row to sit below.</param>
     public static OffsetStage Below(IRowLandmark landmark) => Enter(Step.Below(landmark));
 
@@ -59,7 +72,11 @@ namespace Unrect.Projections
       where TSpace : class, ISpace
       => EnterDemanding<TSpace>(Step.Below(Required(landmark).Landmark));
 
-    /// <inheritdoc cref="ProjectionExtensions.RightOf{TProjection}"/>
+    /// <summary>
+    /// Opens a pipeline whose section starts on the column directly right of the one <paramref
+    /// name="landmark"/> matches — the column twin of <see cref="Below(IRowLandmark)"/>, spelled
+    /// distinctly because the direction is part of what is being said.
+    /// </summary>
     /// <param name="landmark">The column to sit right of.</param>
     public static OffsetStage RightOf(IColumnLandmark landmark) => Enter(Step.RightOf(landmark));
 
@@ -72,14 +89,24 @@ namespace Unrect.Projections
 
     // --- The strategy door, the filler-steppers and the counted movements --------------------------
 
-    /// <inheritdoc cref="ProjectionExtensions.OffsetBy{TProjection}"/>
+    /// <summary>
+    /// Opens a pipeline whose section starts wherever <paramref name="offset"/> resolves to — an
+    /// assignment, not a movement: <em>my start is where that resolves to</em>. This is the door onto
+    /// the strategy calculus, the one marked crossing from the cell-model vocabulary into offsets over
+    /// intervals; reach for it when no anchor says what you mean, and prefer an anchor when one does.
+    /// </summary>
     /// <param name="offset">Where the section starts.</param>
     public static OffsetStage OffsetBy(IOffsetStrategy offset) => Enter(Step.OffsetBy(offset));
 
-    /// <inheritdoc cref="ProjectionExtensions.AfterBlankRows{TProjection}"/>
+    /// <summary>
+    /// Opens a pipeline whose section starts past the blank rows in front of it. One of the two
+    /// operators that keep the word <em>after</em>: filler is the one thing that genuinely has an
+    /// after, and neither takes an argument, so nothing reads as a distance. Tolerant by nature — no
+    /// blank rows in front means no movement, not a failure.
+    /// </summary>
     public static OffsetStage AfterBlankRows() => Enter(Step.AfterBlankRows());
 
-    /// <inheritdoc cref="ProjectionExtensions.AfterBlankColumns{TProjection}"/>
+    /// <inheritdoc cref="AfterBlankRows()"/>
     public static OffsetStage AfterBlankColumns() => Enter(Step.AfterBlankColumns());
 
     /// <summary>
@@ -94,13 +121,33 @@ namespace Unrect.Projections
     /// </summary>
     public static OffsetStage SkipEmptyRowsAndColumns() => AfterBlankRows().AfterBlankColumns();
 
-    /// <inheritdoc cref="ProjectionExtensions.Down{TProjection}"/>
+    /// <summary>
+    /// Opens a pipeline whose section starts <paramref name="rows"/> rows down. Movements compose onto
+    /// whatever offset follows, so <c>Down(1).On(mark)</c> is refused (an anchor is a root) but
+    /// <c>On(mark).Down(1)</c> and <c>Down(2).Table&lt;T&gt;()</c> — past the table's blank rows, then
+    /// two more — read cumulatively.
+    /// </summary>
     /// <param name="rows">How far down.</param>
     public static OffsetStage Down(int rows) => Enter(Step.Down(rows));
 
-    /// <inheritdoc cref="ProjectionExtensions.Right{TProjection}"/>
+    /// <summary>
+    /// Opens a pipeline whose section starts <paramref name="columns"/> columns right — the column
+    /// twin of <see cref="Down(int)"/>, composing the same way.
+    /// </summary>
     /// <param name="columns">How far right.</param>
     public static OffsetStage Right(int columns) => Enter(Step.Right(columns));
+
+    // --- The extent -------------------------------------------------------------------------------
+
+    /// <summary>
+    /// Opens a pipeline sized to <paramref name="area"/> and placed at adjacency — the size-only
+    /// pipeline start, for a region sized to its content but not moved
+    /// (<c>Sized(RowsWhileAnyValue()).Of(header)</c>). To also move it, lead with an offset entry:
+    /// <c>On(mark).Sized(area)</c>, <c>Down(1).Sized(area)</c>.
+    /// </summary>
+    /// <param name="area">The extent.</param>
+    public static OffsetAndSizeStage Sized(IAreaStrategy area)
+      => new OffsetAndSizeStage(Steps.None.Then(Step.Sized(area)));
 
     // --- Bounds -----------------------------------------------------------------------------------
 

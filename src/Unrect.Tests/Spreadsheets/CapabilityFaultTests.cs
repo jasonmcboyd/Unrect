@@ -42,10 +42,10 @@ namespace Unrect.Tests.Spreadsheets
     /// is reached this way, which is the only way it can be reached at all.
     /// </para>
     /// </summary>
-    private static IProjection<string> CannotLook() => Text().On(RowWithFormula().Landmark);
+    private static IProjection<string> CannotLook() => On(RowWithFormula().Landmark).Of(Text());
 
     /// <summary>Its well-typed twin: a boundary that can look, and does not find what it wants.</summary>
-    private static IProjection<string> LooksAndFindsNothing() => Text().On(RowContaining("no such caption"));
+    private static IProjection<string> LooksAndFindsNothing() => On(RowContaining("no such caption")).Of(Text());
 
     private static ProjectionException Faults<T>(IProjection<T> projection)
     {
@@ -98,7 +98,7 @@ namespace Unrect.Tests.Spreadsheets
       // The other lift, and the other strategy slot: Until bounds an extent rather than placing it,
       // so the demand is made from the area strategy instead of the offset strategy. Two code paths
       // wrap a foreign exception, and the fault list is consulted at both.
-      var failure = Faults(VerticalFlow(v => v.Next(Text())).Until(RowWithFormula().Landmark).Optional());
+      var failure = Faults(Until(RowWithFormula().Landmark).Of(VerticalFlow(v => v.Next(Text()))).Optional());
 
       Assert.Contains("IFormulaSpace", failure.Message, StringComparison.Ordinal);
     }
@@ -117,7 +117,7 @@ namespace Unrect.Tests.Spreadsheets
       // produced them.
       IProjection<string> projection = lift == "on"
         ? CannotLook()
-        : VerticalFlow(v => v.Next(Text())).Until(RowWithFormula().Landmark);
+        : Until(RowWithFormula().Landmark).Of(VerticalFlow(v => v.Next(Text())));
 
       var deferred = Assert.Throws<ProjectionException>(() => projection.MapWithDiagnostics(Plain()));
 

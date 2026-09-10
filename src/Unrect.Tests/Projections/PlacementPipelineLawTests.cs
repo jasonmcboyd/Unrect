@@ -15,26 +15,28 @@ using static Unrect.Tests.ProjectionTestSpaces;
 namespace Unrect.Tests.Projections
 {
   /// <summary>
-  /// The placement pipeline's laws: <c>Below(mark).Of(section)</c> and <c>section.Below(mark)</c> are
-  /// one declaration, said two ways.
+  /// The placement pipeline's laws. Geometry is spelled only through the pipeline now — the postfix
+  /// modifiers that once gave a second spelling are retired — so what once were pipeline-vs-postfix
+  /// differentials are DIRECT pins of the pipeline's reading, and the arms that compared two pipeline
+  /// spellings (the sugar against its expansion, the terminal against <c>.Of</c>) remain comparisons.
   /// <para>
   /// <strong>Why this is a law suite and not a feature suite.</strong> The pipeline ships no
-  /// semantics of its own — a stage records the modifier the author wrote and replays it once, in
+  /// semantics of its own — a stage records the geometry the author wrote and applies it once, in
   /// declaration order, onto whatever the terminal builds. That is a claim about EVERY declaration,
   /// not about the ones anyone thought to write down, and it is the claim that would break silently
-  /// if a stage ever started composing strategies itself instead of replaying: a movement
+  /// if a stage ever started composing strategies itself instead of applying them plainly: a movement
   /// <em>composes</em> onto a shape's own default offset where <c>OffsetBy</c> <em>replaces</em> it,
   /// so a pipeline that flattened both into one strategy would quietly change every declaration that
   /// relies on the difference and none of the ones a smoke test looks at.
   /// </para>
   /// <para>
-  /// <strong>Sections.</strong> (1) The denotation sweep — the twelve comparisons the phase-2 smoke
+  /// <strong>Sections.</strong> (1) The denotation sweep — the comparisons the phase-2 smoke
   /// ran against <c>examples/investor-irr.xlsx</c>, restated over an in-memory grid and promoted to
-  /// committed L3 pins. (2) Name capture through a terminal, per site and per hierarchy: the four
+  /// committed pins. (2) Name capture through a terminal, per site and per hierarchy: the four
   /// factories that forward a <c>CallerArgumentExpression</c> are terminals here too, and a terminal
   /// that dropped the argument would label every occurrence with its own parameter name. (3)
-  /// <c>Heading</c>'s L3-by-construction property — it contributes no node, so it can only ever fail
-  /// in the caption's words. (4) The construction guards, including the one that matters most: the
+  /// <c>Heading</c>'s L3-by-construction property — it mints real caption leaves, so it can only ever
+  /// fail in the caption's words. (4) The construction guards, including the one that matters most: the
   /// declared-over-declared refusal is UNREACHABLE from inside a pipeline. (5) The teaching stubs,
   /// present and speaking the library's words.
   /// </para>
@@ -102,59 +104,54 @@ namespace Unrect.Tests.Projections
     // diagnostics in order, and the failure's sentence with its path and its subject.
 
     [Fact]
-    public void TheBoundedSeriesReadsTheSameThroughEitherSpelling()
+    public void TheBoundedSeriesReadsThroughThePipeline()
     {
+      // Geometry is spelled only through the pipeline now, so the bound leads and the headings follow:
+      // the bound is geometry and the canonical stage order puts it ahead of the headings. (The retired
+      // postfix twin this used to be compared against is gone; this is the direct pin of the reading.)
       var space = Report();
       var series = Series();
 
-      var postfix = series.Under(Caption("IRR Details"), Caption(Transfer)).Until(RowContaining(Inception));
-
-      var pipeline = Heading("IRR Details").Heading(Transfer).Of(series).Until(RowContaining(Inception));
-
-      AssertL3(Observe(postfix, space), Observe(pipeline, space));
+      var pipeline = Until(RowContaining(Inception)).Heading("IRR Details").Heading(Transfer).Of(series);
 
       // Non-vacuity: the declaration really does read the first series and stop before the second.
-      Assert.Equal(new[] { "Alphax2", "Beaconx1" }, postfix.Map(space));
+      Assert.Equal(new[] { "Alphax2", "Beaconx1" }, pipeline.Map(space));
     }
 
     [Fact]
-    public void TheUnboundedSeriesReadsTheSameThroughEitherSpelling()
+    public void TheUnboundedSeriesReadsThroughThePipeline()
     {
       var space = Report();
       var series = Series();
 
-      var postfix = series.Under(Caption(Inception));
       var pipeline = Heading(Inception).Of(series);
-
-      AssertL3(Observe(postfix, space), Observe(pipeline, space));
 
       Assert.Equal(new[] { "Alphax1", "Beaconx1" }, pipeline.Map(space));
     }
 
     [Fact]
-    public void ABoundWrittenLeadingAndABoundWrittenPostfixAreOneDeclaration()
+    public void TheBoundLeadsAndTheHeadingsFollowInTheCanonicalOrder()
     {
-      // The geography law's one genuine ambiguity: the bound's landmark sits BELOW the section, so
-      // postfix reads well — and the bound is geometry, so the canonical stage order puts it ahead of
-      // the headings. Both are spellable, and this is the pin that says they are the same words.
+      // The geography law's one genuine ambiguity: the bound's landmark sits BELOW the section, and the
+      // bound is geometry, so the canonical stage order puts it ahead of the headings —
+      // Until(...).Heading(...).Heading(...).Of(series). This pins that spelling reads the bounded
+      // series; the retired postfix-Until twin it used to be compared against is gone.
       var space = Report();
       var series = Series();
 
       var leading = Until(RowContaining(Inception)).Heading("IRR Details").Heading(Transfer).Of(series);
-      var postfix = Heading("IRR Details").Heading(Transfer).Of(series).Until(RowContaining(Inception));
 
-      AssertL3(Observe(leading, space), Observe(postfix, space));
+      Assert.Equal(new[] { "Alphax2", "Beaconx1" }, leading.Map(space));
     }
 
     [Fact]
     public void AndTheGeometryIsTheSameAndNotOnlyTheValue()
     {
-      // AssertL3 already compares the three, so this pin exists to write the numbers down: a
-      // comparison of two spellings that both drifted the same way would still pass, and a reader
-      // has no way to tell from the sweep above what the placement actually resolved to.
+      // The numbers written down: a reading whose value looked right could still have resolved its
+      // placement wrong, and the value pin above would not catch it.
       var space = Report();
 
-      var pipeline = Heading("IRR Details").Heading(Transfer).Of(Series()).Until(RowContaining(Inception));
+      var pipeline = Until(RowContaining(Inception)).Heading("IRR Details").Heading(Transfer).Of(Series());
       var applied = pipeline.Apply(space);
 
       Assert.Equal("0x0", $"{applied.Offset.Size.Width}x{applied.Offset.Size.Height}");
@@ -163,56 +160,39 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void AWrongSecondHeadingFailsWithTheSamePathAndSentence()
+    public void AWrongSecondHeadingFailsInTheCaptionsWords()
     {
       var space = Report();
       var series = Series();
-
-      AssertL3(
-        Observe(series.Under(Caption("IRR Details"), Caption("Nope")), space),
-        Observe(Heading("IRR Details").Heading("Nope").Of(series), space));
 
       var failure = Assert.Throws<ProjectionException>(() => Heading("IRR Details").Heading("Nope").Of(series).Map(space));
 
-      Assert.Equal("Under -> Caption(\"Nope\")#2", failure.Path);
+      Assert.Equal("Heading -> Caption(\"Nope\")#2", failure.Path);
     }
 
     [Fact]
-    public void AWrongFirstHeadingFailsWithTheSamePathAndSentence()
+    public void AWrongFirstHeadingFailsInTheCaptionsWords()
     {
       var space = Report();
       var series = Series();
-
-      AssertL3(
-        Observe(series.Under(Caption("Nope"), Caption(Transfer)), space),
-        Observe(Heading("Nope").Heading(Transfer).Of(series), space));
 
       var failure = Assert.Throws<ProjectionException>(() => Heading("Nope").Heading(Transfer).Of(series).Map(space));
 
-      Assert.Equal("Under -> Caption(\"Nope\")#1", failure.Path);
+      Assert.Equal("Heading -> Caption(\"Nope\")#1", failure.Path);
     }
 
     [Fact]
-    public void TheWholeReportReadsIdenticallyThroughEitherSpelling()
+    public void TheWholeReportReadsThroughThePipeline()
     {
       var space = Report();
       var series = Series();
-
-      var postfixReport = VerticalFlow(v => new
-      {
-        Title = v.Next(Text()),
-        ByTransferDate = v.Next(series.Under(Caption("IRR Details"), Caption(Transfer)).Until(RowContaining(Inception))),
-        ByInception = v.Next(series.Under(Caption(Inception))),
-      });
 
       var pipelineReport = VerticalFlow(v => new
       {
         Title = v.Next(Text()),
-        ByTransferDate = v.Next(Heading("IRR Details").Heading(Transfer).Of(series).Until(RowContaining(Inception))),
+        ByTransferDate = v.Next(Until(RowContaining(Inception)).Heading("IRR Details").Heading(Transfer).Of(series)),
         ByInception = v.Next(Heading(Inception).Of(series)),
       });
-
-      AssertL3(Observe(postfixReport, space), Observe(pipelineReport, space));
 
       var read = pipelineReport.Map(space);
 
@@ -222,24 +202,20 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void AndItsDiagnosticsAreTheSameOnesInTheSameOrder()
+    public void AndItLeavesTheTrailingRowsOverAndSaysSo()
     {
-      // A reading that leaves something over, so the comparison has diagnostics to compare: the
-      // bounded series read at the ROOT accounts for rows 1-7 and says so about the rest. Verbatim,
-      // because a diagnostic is a sentence a user reads and the pipeline must not reword it.
+      // A reading that leaves something over: the bounded series read at the ROOT accounts for rows 1-7
+      // and says so about the rest. (The retired postfix twin this used to compare its diagnostics
+      // against is gone; what survives is that the pipeline still raises the unconsumed-space
+      // diagnostic rather than swallowing it.)
       var space = Report();
       var series = Series();
 
-      var postfix = series.Under(Caption("IRR Details"), Caption(Transfer)).Until(RowContaining(Inception));
-      var pipeline = Heading("IRR Details").Heading(Transfer).Of(series).Until(RowContaining(Inception));
+      var pipeline = Until(RowContaining(Inception)).Heading("IRR Details").Heading(Transfer).Of(series);
 
-      var left = postfix.MapWithDiagnostics(space);
-      var right = pipeline.MapWithDiagnostics(space);
+      var mapped = pipeline.MapWithDiagnostics(space);
 
-      Assert.NotEmpty(left.Diagnostics);
-      Assert.Equal(
-        left.Diagnostics.Select(diagnostic => diagnostic.ToString()),
-        right.Diagnostics.Select(diagnostic => diagnostic.ToString()));
+      Assert.NotEmpty(mapped.Diagnostics);
     }
 
     [Fact]
@@ -247,33 +223,34 @@ namespace Unrect.Tests.Projections
     {
       // The documented recipe: the anchor goes on the heading-and-content FLOW, so that running out
       // of headings ends the repetition. In the pipeline the anchor is the entry, which reads first
-      // because it is furthest up the sheet — and the replay has to put it OUTSIDE the Under it
+      // because it is furthest up the sheet — and the pipeline has to put it OUTSIDE the Heading it
       // reads before, which is what Steps.Before exists for.
       var space = Report();
       var block = InvestorBlock();
       var mark = RowContaining("IRR Details");
 
-      var postfixSection = block.Under(Caption("IRR Details")).On(mark);
+      // The anchor leads, so it lands on the heading-and-content FLOW: On(mark).Heading(...).Of(block).
       var pipelineSection = On(mark).Heading("IRR Details").Of(block);
 
-      AssertL3(
-        Observe(VerticalRepeat(postfixSection, separatedBy: BlankRows()), space),
-        Observe(VerticalRepeat(pipelineSection, separatedBy: BlankRows()), space));
+      Assert.Equal(
+        new[] { "Cash Flows Using Transfer Datex3" },
+        VerticalRepeat(pipelineSection, separatedBy: BlankRows()).Map(space));
     }
 
     [Fact]
-    public void AndAnchoringTheContentInsteadOfTheFlowIsADifferentDeclarationThePipelineCannotSpell()
+    public void AndAnchoringTheContentInsteadOfTheFlowIsADifferentDeclaration()
     {
-      // The negative half, stated as the specific difference: the wrong order anchors the CONTENT,
-      // the flow's own placement always fits, and the repeat therefore fails loudly where the recipe
-      // stops quietly. The pipeline cannot spell it — an anchor after a heading is refused — which is
-      // the whole reason the prepend is load-bearing rather than a detail of the replay.
+      // The negative half, stated as the specific difference: leading with the anchor lands it on the
+      // flow (the recipe); NESTING it inside the heading anchors the CONTENT instead, the flow's own
+      // placement always fits, and the repeat therefore fails loudly where the recipe stops quietly.
+      // The flat pipeline cannot anchor the content — an anchor after a heading is refused — so the
+      // content-anchored spelling is only reachable by nesting the anchor inside the heading.
       var space = Report();
       var block = InvestorBlock();
       var mark = RowContaining("IRR Details");
 
-      var recipe = VerticalRepeat(block.Under(Caption("IRR Details")).On(mark), separatedBy: BlankRows());
-      var inside = VerticalRepeat(block.On(mark).Under(Caption("IRR Details")), separatedBy: BlankRows());
+      var recipe = VerticalRepeat(On(mark).Heading("IRR Details").Of(block), separatedBy: BlankRows());
+      var inside = VerticalRepeat(Heading("IRR Details").Of(On(mark).Of(block)), separatedBy: BlankRows());
 
       // One occurrence: the caption owns r1, the block runs to the first blank row, and the next
       // iteration finds no second "IRR Details" to anchor on and stops — quietly, which is the recipe.
@@ -284,7 +261,7 @@ namespace Unrect.Tests.Projections
       // Loudly, and inside the FIRST occurrence: the caption has already consumed the anchor row, so
       // the content's own anchor finds nothing below it and the flow's placement — which always fits
       // — never gets the chance to end the repetition.
-      Assert.Equal("VerticalRepeat[0] -> Under -> Range#2", failure.Path);
+      Assert.Equal("VerticalRepeat[0] -> Heading -> Range#2", failure.Path);
       Assert.Contains("no row containing 'IRR Details' exists", failure.Message);
     }
 
@@ -298,22 +275,12 @@ namespace Unrect.Tests.Projections
       var series = Series();
 
       AssertL3(
-        Observe(series.AfterBlankRows().AfterBlankColumns(), space),
+        Observe(AfterBlankRows().AfterBlankColumns().Of(series), space),
         Observe(SkipEmptyRowsAndColumns().Of(series), space));
     }
 
     [Fact]
-    public void AHoistedProjectionPlacedByOfIsThePostfixModifier()
-    {
-      var space = Report();
-      var series = Series();
-      var mark = RowContaining(Transfer);
-
-      AssertL3(Observe(series.On(mark), space), Observe(On(mark).Of(series), space));
-    }
-
-    [Fact]
-    public void AndSoIsTheSameDeclarationSpelledOutAtTheTerminal()
+    public void AHoistedProjectionPlacedByOfReadsAsItsDeclaration()
     {
       // .Of places something already declared; a terminal declares it in place. Same words, same
       // reading — which is what lets a declaration move between the two spellings freely.
@@ -322,7 +289,7 @@ namespace Unrect.Tests.Projections
       var mark = RowContaining(Transfer);
 
       AssertL3(
-        Observe(VerticalRepeat(block, separatedBy: BlankRows()).On(mark), space),
+        Observe(On(mark).Of(VerticalRepeat(block, separatedBy: BlankRows())), space),
         Observe(On(mark).VerticalRepeat(block, separatedBy: BlankRows()), space));
     }
 
@@ -345,7 +312,7 @@ namespace Unrect.Tests.Projections
     private static IRowLandmark Header() => RowContaining("Fund");
 
     /// <summary>A bind pointed at the column of fund names, so every record fails.</summary>
-    private static IProjection<decimal> FundColumnAsANumber(CaptionMap captions) => Decimal().Right(captions["Fund"]);
+    private static IProjection<decimal> FundColumnAsANumber(CaptionMap captions) => Right(captions["Fund"]).Of(Decimal());
 
     [Fact]
     public void AVerticalRepeatTerminalKeepsTheIdentifierItsItemWasWrittenAs()
@@ -355,12 +322,7 @@ namespace Unrect.Tests.Projections
       var throughPipeline = Assert.Throws<ProjectionException>(
         () => On(Header()).VerticalRepeat(investorDetail).Map(Ledger()));
 
-      var postfix = Assert.Throws<ProjectionException>(
-        () => VerticalRepeat(investorDetail).On(Header()).Map(Ledger()));
-
       Assert.Equal("VerticalRepeat[0] -> 'investorDetail' (Decimal)", throughPipeline.Path);
-      Assert.Equal(postfix.Path, throughPipeline.Path);
-      Assert.Equal(postfix.Message, throughPipeline.Message);
     }
 
     [Fact]
@@ -371,12 +333,7 @@ namespace Unrect.Tests.Projections
       var throughPipeline = Assert.Throws<ProjectionException>(
         () => On(Header()).HorizontalRepeat(quarterlyColumn).Map(Ledger()));
 
-      var postfix = Assert.Throws<ProjectionException>(
-        () => HorizontalRepeat(quarterlyColumn).On(Header()).Map(Ledger()));
-
       Assert.Equal("HorizontalRepeat[0] -> 'quarterlyColumn' (Decimal)", throughPipeline.Path);
-      Assert.Equal(postfix.Path, throughPipeline.Path);
-      Assert.Equal(postfix.Message, throughPipeline.Message);
     }
 
     [Fact]
@@ -387,12 +344,7 @@ namespace Unrect.Tests.Projections
       var throughPipeline = Assert.Throws<ProjectionException>(
         () => On(Header()).Table(headerRows: 1, eachRow: allocationRow).Map(Ledger()));
 
-      var postfix = Assert.Throws<ProjectionException>(
-        () => Table(headerRows: 1, eachRow: allocationRow).On(Header()).Map(Ledger()));
-
       Assert.Equal("Table[0] -> 'allocationRow' (Decimal)", throughPipeline.Path);
-      Assert.Equal(postfix.Path, throughPipeline.Path);
-      Assert.Equal(postfix.Message, throughPipeline.Message);
     }
 
     [Fact]
@@ -401,12 +353,7 @@ namespace Unrect.Tests.Projections
       var throughPipeline = Assert.Throws<ProjectionException>(
         () => On(Header()).Table(headerRows: 1, eachRow: FundColumnAsANumber).Map(Ledger()));
 
-      var postfix = Assert.Throws<ProjectionException>(
-        () => Table(headerRows: 1, eachRow: FundColumnAsANumber).On(Header()).Map(Ledger()));
-
       Assert.Equal("Table[0] -> 'FundColumnAsANumber' (Decimal)", throughPipeline.Path);
-      Assert.Equal(postfix.Path, throughPipeline.Path);
-      Assert.Equal(postfix.Message, throughPipeline.Message);
     }
 
     [Fact]
@@ -456,23 +403,23 @@ namespace Unrect.Tests.Projections
 
     /// <summary>The scoped bind's method group — a bind returning a demanding projection.</summary>
     private static IProjection<ISpace, decimal> ScopedFundColumnAsANumber(CaptionMap captions)
-      => Decimal().Right(captions["Fund"]);
+      => Over<ISpace>().Right(captions["Fund"]).Of(Decimal());
 
     // --- 3. Heading is L3-by-construction ------------------------------------------------------------
 
     [Fact]
-    public void AHeadingContributesNoNodeSoItFailsInTheCaptionsOwnWords()
+    public void AHeadingFailsInTheCaptionsOwnWords()
     {
-      // The word Heading appears nowhere a user can see it: the terminal mints the Caption leaves the
-      // replay hands to Under, so the path, the subject and the sentence are the hand-written
-      // declaration's exactly. This is what "structure, not a value" costs and what it buys.
+      // A heading mints real Caption leaves, so a missing heading fails as the caption it is — the
+      // subject and the sentence are the hand-written declaration's exactly, and the flow's own path
+      // node is "Heading". This is what "structure, not a value" buys.
       var space = Report();
 
       var failure = Assert.Throws<ProjectionException>(() => Heading("Nope").Of(Series()).Map(space));
 
-      Assert.Equal("Under -> Caption(\"Nope\")#1", failure.Path);
+      Assert.Equal("Heading -> Caption(\"Nope\")#1", failure.Path);
       Assert.Equal("Caption(\"Nope\")#1", failure.Subject);
-      Assert.DoesNotContain("Heading", failure.Message, StringComparison.Ordinal);
+      Assert.Contains("no row containing 'Nope' exists", failure.Message);
       Assert.False(failure.IsFault);
     }
 
@@ -480,36 +427,31 @@ namespace Unrect.Tests.Projections
     public void ChainedHeadingsAccumulateIntoOneFlowRatherThanNestedOnes()
     {
       // Two headings above one section are one statement. The path is where that is observable: one
-      // Under segment, two captions numbered within it.
+      // Heading segment, two captions numbered within it.
       var space = Report();
 
       var failure = Assert.Throws<ProjectionException>(
         () => Heading("IRR Details").Heading("Nope").Of(Series()).Map(space));
 
-      Assert.Equal(1, Occurrences(failure.Path, "Under"));
-      Assert.Equal("Under -> Caption(\"Nope\")#2", failure.Path);
-
-      // ...and it is the same declaration as the one Under with both captions in it.
-      AssertL3(
-        Observe(Series().Under(Caption("IRR Details"), Caption(Transfer)), space),
-        Observe(Heading("IRR Details").Heading(Transfer).Of(Series()), space));
+      Assert.Equal(1, Occurrences(failure.Path, "Heading"));
+      Assert.Equal("Heading -> Caption(\"Nope\")#2", failure.Path);
     }
 
     [Fact]
     public void WhereasLayeringIsNestingAndIsSpelledAsNesting()
     {
       // The negative pin, as the SPECIFIC difference: a heading over a heading-and-section is two
-      // flows, and the second Under in the path is where the reader sees it.
+      // flows, and the second Heading in the path is where the reader sees it.
       var space = Report();
 
       var nested = Assert.Throws<ProjectionException>(
         () => Heading("IRR Details").Of(Heading("Nope").Of(Series())).Map(space));
 
-      // Two Under segments, and the inner one carries an ordinal because it is a CHILD of the outer
+      // Two Heading segments, and the inner one carries an ordinal because it is a CHILD of the outer
       // flow — which is precisely the difference: a chained heading is a sibling caption, a layered
       // one is a section inside a section.
-      Assert.Equal(2, Occurrences(nested.Path, "Under"));
-      Assert.Equal("Under -> Under#2 -> Caption(\"Nope\")#1", nested.Path);
+      Assert.Equal(2, Occurrences(nested.Path, "Heading"));
+      Assert.Equal("Heading -> Heading#2 -> Caption(\"Nope\")#1", nested.Path);
     }
 
     // --- 4. The construction guards ------------------------------------------------------------------
@@ -556,30 +498,13 @@ namespace Unrect.Tests.Projections
         .Heading(Transfer)
         .Of(series);
 
-      var postfix = series
-        .Under(Caption(Transfer))
-        .On(mark)
-        .Down(1)
-        .Sized(Extent(3, 5))
-        .Until(RowContaining("Nowhere"), orEnd: true);
-
-      AssertL3(Observe(postfix, space), Observe(pipeline, space));
-
       Assert.Equal(new[] { "Alphax2", "Beaconx1" }, pipeline.Map(space));
     }
 
-    [Fact]
-    public void AndTheRefusalItCannotReachIsStillReal()
-    {
-      // The other half, so the pin above is not merely asserting that nothing happens: written
-      // postfix, a second position on one projection is refused at construction, in the words the
-      // pipeline's SecondAnchor stub echoes.
-      var refusal = Assert.Throws<ArgumentException>(
-        () => Series().On(RowContaining("IRR Details")).On(RowContaining(Inception)));
-
-      Assert.Equal("projection", refusal.ParamName);
-      Assert.Contains("already declares where it starts", refusal.Message);
-    }
+    // The other half — a second position on one projection refused at construction — is now a
+    // COMPILE-time refusal, since the postfix modifier that used to carry it is gone: On(a).On(b) does
+    // not compile (the SecondAnchor stub), pinned in spike/PlacementGauntlet/MustNotCompilePipeline.cs
+    // (Y). There is no runtime refusal left to reach, which is exactly what the pipeline above relies on.
 
     // --- 5. The teaching stubs -----------------------------------------------------------------------
 

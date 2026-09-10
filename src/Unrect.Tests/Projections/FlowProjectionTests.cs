@@ -41,13 +41,13 @@ namespace Unrect.Tests.Projections
     public void AFlowAdvancesAlongItsOwnAxisOnly()
     {
       // The first child is inset one column; the second starts back at column 0, one row down.
-      Assert.Equal("2|3", VerticalFlow(v => $"{v.Next(IntCell().Right(1))}|{v.Next(IntCell())}").Map(Grid(new[,] { { 1, 2 }, { 3, 4 } })));
+      Assert.Equal("2|3", VerticalFlow(v => $"{v.Next(Right(1).Of(IntCell()))}|{v.Next(IntCell())}").Map(Grid(new[,] { { 1, 2 }, { 3, 4 } })));
     }
 
     [Fact]
     public void AHorizontalFlowAdvancesAcrossOnly()
     {
-      Assert.Equal("3|2", HorizontalFlow(v => $"{v.Next(IntCell().Down(1))}|{v.Next(IntCell())}").Map(Grid(new[,] { { 1, 2 }, { 3, 4 } })));
+      Assert.Equal("3|2", HorizontalFlow(v => $"{v.Next(Down(1).Of(IntCell()))}|{v.Next(IntCell())}").Map(Grid(new[,] { { 1, 2 }, { 3, 4 } })));
     }
 
     [Fact]
@@ -69,8 +69,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void Sized_OverridesWhatTheFlowDerived()
     {
-      var applied = VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(IntCell())}")
-        .Sized(AreaStrategies.ExplicitArea(1, 3))
+      var applied = Sized(AreaStrategies.ExplicitArea(1, 3)).Of(VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(IntCell())}"))
         .Apply(Ladder());
 
       Assert.Equal(1, applied.Consumed.Width);
@@ -81,7 +80,7 @@ namespace Unrect.Tests.Projections
     public void ASingleNextCallIsALegalFlow()
     {
       // One child is a Select with a placement, which is a useful thing to declare.
-      var applied = VerticalFlow(v => v.Next(IntCell())).Down(1).Apply(Ladder());
+      var applied = Down(1).Of(VerticalFlow(v => v.Next(IntCell()))).Apply(Ladder());
 
       Assert.Equal(2, applied.Value);
       Assert.Equal(1, applied.Consumed.Height);
@@ -116,7 +115,7 @@ namespace Unrect.Tests.Projections
     {
       // The first child sits one row down, and that row is part of what the flow took: a following
       // sibling of the flow must clear the gap the flow's own child opened.
-      var applied = VerticalFlow(v => $"{v.Next(IntCell().Down(1))}|{v.Next(IntCell())}")
+      var applied = VerticalFlow(v => $"{v.Next(Down(1).Of(IntCell()))}|{v.Next(IntCell())}")
         .Apply(Grid(new[,] { { 0 }, { 1 }, { 2 } }));
 
       Assert.Equal("1|2", applied.Value);
@@ -138,7 +137,7 @@ namespace Unrect.Tests.Projections
     {
       // Declared three rows tall while reading only two, so the next child starts after the third.
       var projection = VerticalFlow(v =>
-        $"{v.Next(VerticalFlow(w => $"({w.Next(IntCell())},{w.Next(IntCell())})").Sized(AreaStrategies.ExplicitArea(1, 3)))}|{v.Next(IntCell())}");
+        $"{v.Next(Sized(AreaStrategies.ExplicitArea(1, 3)).Of(VerticalFlow(w => $"({w.Next(IntCell())},{w.Next(IntCell())})")))}|{v.Next(IntCell())}");
 
       Assert.Equal("(1,2)|4", projection.Map(Ladder(4)));
     }
@@ -180,7 +179,7 @@ namespace Unrect.Tests.Projections
       var space = Mixed(new object?[,] { { "x" }, { null }, { null }, { 5 }, { 6 } });
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v => $"{v.Next(IntCell().Optional())}|{v.Next(StringCell().OffsetBy(BlankRows()).Down(2))}").Map(space));
+        VerticalFlow(v => $"{v.Next(IntCell().Optional())}|{v.Next(OffsetBy(BlankRows()).Down(2).Of(StringCell()))}").Map(space));
 
       Assert.DoesNotContain("note:", failure.Message);
       Assert.Equal("A3", failure.Location.A1);
@@ -448,7 +447,7 @@ namespace Unrect.Tests.Projections
     {
       var space = Grid(new[,] { { 0 }, { 1 }, { 2 } });
 
-      var projection = VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(IntCell())}").AfterBlankRows().Named("block");
+      var projection = AfterBlankRows().Of(VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(IntCell())}")).Named("block");
 
       Assert.Equal("1|2", projection.Map(space));
       Assert.Equal("block", projection.Name);

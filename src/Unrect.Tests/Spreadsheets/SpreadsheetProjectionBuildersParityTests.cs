@@ -80,13 +80,13 @@ namespace Unrect.Tests.Spreadsheets
       // the parse noticed would show as well as one in the text.
       var sheet = Sheet();
 
-      var throughBuilders = (IProjection<string?>)Formula().Down(1);
-      var plain = (IProjection<string?>)SpreadsheetProjections.Formula().Down(1);
+      var throughBuilders = (IProjection<string?>)Down(1).Of(Formula());
+      var plain = (IProjection<string?>)Down(1).Of(SpreadsheetProjections.Formula());
 
       Observations.AssertL3(Observations.Observe(plain, sheet), Observations.Observe(throughBuilders, sheet));
 
       // ...and it really reads the formula rather than the value.
-      Assert.Equal("SUM(A1:A1)", Formula().Down(1).Map(sheet));
+      Assert.Equal("SUM(A1:A1)", Down(1).Of(Formula()).Map(sheet));
     }
 
     [Fact]
@@ -152,11 +152,11 @@ namespace Unrect.Tests.Spreadsheets
       // a leaf from each class, one space named nowhere in the declaration, and a demand answered by
       // the file's own import.
       var value = Decimal();
-      var formula = Formula().Right(1);
+      var formula = Right(1).Of(Formula());
 
       var line = Overlay(o => (Value: o.Next(value), Formula: o.Next(formula)));
 
-      var read = line.Down(1).Map(Sheet());
+      var read = Down(1).Of(line).Map(Sheet());
 
       Assert.Equal(100m, read.Value);
       Assert.Null(read.Formula);

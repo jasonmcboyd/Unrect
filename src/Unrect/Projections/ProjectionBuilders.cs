@@ -431,6 +431,10 @@ namespace Unrect.Projections
     /// <param name="columns">How far right.</param>
     public static OffsetStage<TSpace> Right(int columns) => Scope.Right(columns);
 
+    /// <inheritdoc cref="Projection.Sized(IAreaStrategy)"/>
+    /// <param name="area">The extent.</param>
+    public static OffsetAndSizeStage<TSpace> Sized(IAreaStrategy area) => Scope.Sized(area);
+
     /// <inheritdoc cref="Projection.Until(IRowLandmark, bool)"/>
     /// <param name="landmark">The row the extent stops before.</param>
     /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>

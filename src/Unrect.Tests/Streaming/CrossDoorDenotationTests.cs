@@ -246,7 +246,7 @@ namespace Unrect.Tests.Streaming
 
     /// <summary>The tall ledger, anchored on its caption and bounded by its terminator.</summary>
     private static IProjection<IReadOnlyList<Ledger>> TallLedger() =>
-      Table<Ledger>().Below(RowContaining("Ledger")).Until(RowContaining("End"));
+      Below(RowContaining("Ledger")).Until(RowContaining("End")).Of(Table<Ledger>());
 
     // --- The matrix ----------------------------------------------------------------------------------
 
@@ -262,37 +262,34 @@ namespace Unrect.Tests.Streaming
       // An overlay whose second child places itself three rows down and one across: an extent far
       // taller than a row, which is the shape the window sizing law is written about.
       "an overlay reaching down and across" => Scenario.Of(
-        Overlay(o => $"{o.Next(Text())}|{o.Next(Decimal().Down(3).Right(1))}"),
+        Overlay(o => $"{o.Next(Text())}|{o.Next(Down(3).Right(1).Of(Decimal()))}"),
         "report"),
 
       // The table ladder, the four rungs a declaration is normally written at (the view lambda is the
       // escape hatch and reads nothing new here), each anchored on the report's own caption so the
       // placement crosses a blank row on the way.
       "a typed table under its caption" => Scenario.Of(
-        Table<Entry>().Under(Caption("Quarterly Report")),
+        Heading("Quarterly Report").Of(Table<Entry>()),
         "report"),
       "the bind rung" => Scenario.Of(
-        Table(
+        Heading("Quarterly Report").Of(Table(
           headerRows: 1,
-          eachRow: captions => Overlay(o => $"{o.Next(Text().Right(captions["Client"]))}={o.Next(Decimal().Right(captions["Amount"]))}"))
-          .Under(Caption("Quarterly Report")),
+          eachRow: captions => Overlay(o => $"{o.Next(Right(captions["Client"]).Of(Text()))}={o.Next(Right(captions["Amount"]).Of(Decimal()))}"))),
         "report"),
       "the record-projection rung" => Scenario.Of(
-        Table(headerRows: 1, eachRow: HorizontalFlow(h => $"{h.Next(Text())}/{h.Next(Decimal())}"))
-          .Under(Caption("Quarterly Report")),
+        Heading("Quarterly Report").Of(Table(headerRows: 1, eachRow: HorizontalFlow(h => $"{h.Next(Text())}/{h.Next(Decimal())}"))),
         "report"),
       // .Under before .Select on purpose: Select's wrapper is a projection with a placement of its
       // own, so anchoring the wrapper would leave the table inside it placed by its own default.
       "the dictionary rung" => Scenario.Of(
-        Table()
-          .Under(Caption("Quarterly Report"))
+        Heading("Quarterly Report").Of(Table())
           .Select(rows => rows.Select(row => $"{row["Client"]}/{row["Amount"]}").ToList()),
         "report"),
 
       // A table bounded by a landmark that is really there: the bound is consumed in full, so what
       // is left over is the totals row and nothing else.
       "a table bounded by a landmark" => Scenario.Of(
-        Table<Entry>().Under(Caption("Quarterly Report")).Until(RowContaining("Totals")),
+        Until(RowContaining("Totals")).Heading("Quarterly Report").Of(Table<Entry>()),
         "report"),
 
       // Repetition: two blocks with a blank separator between them, and a memo column the
@@ -303,7 +300,7 @@ namespace Unrect.Tests.Streaming
       // The same repeat bounded by a landmark that is not in the file: an Info, and a reading that
       // runs to the end of the space instead of failing.
       "a repeat bounded by an absent landmark" => Scenario.Of(
-        VerticalRepeat(DealBlock(), separatedBy: BlankRows()).Until(RowContaining("Nowhere"), orEnd: true),
+        Until(RowContaining("Nowhere"), orEnd: true).Of(VerticalRepeat(DealBlock(), separatedBy: BlankRows())),
         "blocks"),
       // The repeat's own rule, which is the sharpest failure path in the matrix: only the item's
       // PLACEMENT ends a repetition, so a third occurrence whose first row reads and whose header
@@ -314,7 +311,7 @@ namespace Unrect.Tests.Streaming
         "drift"),
 
       // The three tolerance boundaries, each absorbing a real failure and saying so.
-      "a choice absorbing its losing alternative" => Scenario.Of(Choice(Text().Down(1), Text()), "report"),
+      "a choice absorbing its losing alternative" => Scenario.Of(Choice(Down(1).Of(Text()), Text()), "report"),
       "optional absorbing a failure" => Scenario.Of(Integer().Optional(), "report"),
       "else absorbing a failure" => Scenario.Of(Integer().Else(-1), "report"),
 
@@ -322,13 +319,12 @@ namespace Unrect.Tests.Streaming
       // mismatch reported by the binder instead, and a leaf placed off the end of the sheet.
       "a caption that is not there" => Scenario.Of(Caption("Annual Report"), "report"),
       "a kind mismatch inside a table record" => Scenario.Of(
-        Table(headerRows: 1, eachRow: HorizontalFlow(h => $"{h.Next(Text())}/{h.Next(Text())}"))
-          .Under(Caption("Quarterly Report")),
+        Heading("Quarterly Report").Of(Table(headerRows: 1, eachRow: HorizontalFlow(h => $"{h.Next(Text())}/{h.Next(Text())}"))),
         "report"),
       "a binder that asks for the wrong kind" => Scenario.Of(
-        Table<Mistyped>().Under(Caption("Quarterly Report")),
+        Heading("Quarterly Report").Of(Table<Mistyped>()),
         "report"),
-      "a leaf past the end of the sheet" => Scenario.Of(Text().Down(20), "report"),
+      "a leaf past the end of the sheet" => Scenario.Of(Down(20).Of(Text()), "report"),
 
       // Blankness, which is the adapter's decision and therefore the one most easily made twice: the
       // row-wise rule must stop above the whitespace-only cell through either door.
@@ -566,7 +562,7 @@ namespace Unrect.Tests.Streaming
       // facets — the offset and the extent consumed — are not observable through it at all. What the
       // sugar can carry is the value and what the parse noticed, and those are compared in full.
       var path = Fixture("report");
-      var declaration = Table<Entry>().Under(Caption("Quarterly Report"));
+      var declaration = Heading("Quarterly Report").Of(Table<Entry>());
 
       var viaSugar = declaration.MapWorkbookWithDiagnostics(path, SheetName, Cold());
 

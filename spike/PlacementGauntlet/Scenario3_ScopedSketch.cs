@@ -65,13 +65,13 @@ namespace PlacementGauntlet
 
       var oldLine = q.Overlay(o => new AuditedLine(
         Item: o.Next(Text()),
-        Qty: o.Next(Integer().Right(1)),
-        Total: o.Next(Double().Right(3)),
-        Formula: o.Next(Formula().Right(3))));
+        Qty: o.Next(Projection.Right(1).Integer()),
+        Total: o.Next(Projection.Right(3).Double()),
+        Formula: o.Next(Projection.Right(3).Of(Formula()))));
 
       var oldLedger = q.VerticalFlow(v => new AuditedLedger(
         Lines: v.Next(q.Table(headerRows: 1, eachRow: oldLine)),
-        TotalFormula: v.Next(Formula().On(RowContaining("Total")).Right(3))));
+        TotalFormula: v.Next(Projection.On(RowContaining("Total")).Right(3).Of(Formula()))));
 
       // NEW — the placement scope vends the entries; the demand rides the stages to the terminal.
       var p = Place.Over<ISpreadsheetSpace>();
@@ -96,7 +96,7 @@ namespace PlacementGauntlet
       var terminalTotal = Place.On(RowContaining("Total")).Right(3).Formula();
 
       Judge.Same("a backend-supplied terminal reads as .Of(Formula())",
-        Formula().On(RowContaining("Total")).Right(3).Map(sheet),
+        Projection.On(RowContaining("Total")).Right(3).Of(Formula()).Map(sheet),
         terminalTotal.Map(sheet));
     }
 
@@ -111,7 +111,7 @@ namespace PlacementGauntlet
       // it does today.
       var line = Projection.Over<IFormulaSpace>().Overlay(o => new SourcedAllocation(
         Account: o.Next(Text()),
-        Formula: o.Next(Formula().Right(3))));
+        Formula: o.Next(Projection.Right(3).Of(Formula()))));
 
       var climbed = Offset().Table(headerRows: 1, eachRow: line);
 
@@ -128,7 +128,7 @@ namespace PlacementGauntlet
       IProjection<IFormulaSpace, string> alsoStated = firstFormulaRow;
 
       Judge.Same("a demanding matcher as an ENTRY raises the whole pipeline",
-        Projection.Row(cells => cells[0].GetString()).On(RowWithFormula()).Map(sheet),
+        Projection.On(RowWithFormula()).Row(cells => cells[0].GetString()).Map(sheet),
         alsoStated.Map(sheet));
       Judge.Note("Both climbs work, and neither needed a word. What does NOT climb is a demand inside a layout LAMBDA:"
         + " the inversion does not remove that wall, it only moves the message (see MustNotCompile (j)).");

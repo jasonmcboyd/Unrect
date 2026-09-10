@@ -37,11 +37,11 @@ namespace Unrect.Benchmarks
     // The loser goes first: a caption that is not in the document, so the choice pays for a full
     // failed attempt before the second alternative succeeds.
     private static readonly IProjection<int> FirstAlternativeLoses = Choice(
-      Section.Under(Caption("No Such Caption Exists Here")),
-      Section.Under(Caption(CanonicalSpaces.DetailsCaption)));
+      Heading("No Such Caption Exists Here").Of(Section),
+      Heading(CanonicalSpaces.DetailsCaption).Of(Section));
 
     private static readonly IProjection<int> AbsorbedFailure =
-      Section.Under(Caption("No Such Caption Exists Here")).Optional();
+      Heading("No Such Caption Exists Here").Of(Section).Optional();
 
     private ISpace _document = default!;
 

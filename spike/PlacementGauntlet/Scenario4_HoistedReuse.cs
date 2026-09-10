@@ -33,11 +33,11 @@ namespace PlacementGauntlet
         Name: v.Next(Text()),
         Lines: v.Next(lines)));
 
-      // OLD — the placement is a postfix on the reused value.
+      // OLD — the library's shipped pipeline (the retired postfix on the reused value is gone).
       var oldReport = VerticalFlow(v => new
       {
-        A = v.Next(section.On(RowContaining("Region A"))),
-        B = v.Next(section.On(RowContaining("Region B"))),
+        A = v.Next(Projection.On(RowContaining("Region A")).Of(section)),
+        B = v.Next(Projection.On(RowContaining("Region B")).Of(section)),
       });
 
       // NEW — the placement leads and the reused value terminates it.
@@ -51,7 +51,7 @@ namespace PlacementGauntlet
 
       // The same, bounded at the use site — the investor-irr pattern, which is the reason .Until had
       // to stay composable after a projection as well as being a stage.
-      var oldBounded = section.On(RowContaining("Region A")).Until(RowContaining("Region B"));
+      var oldBounded = Projection.On(RowContaining("Region A")).Until(RowContaining("Region B")).Of(section);
       var newBounded = Place.On(RowContaining("Region A")).Until(RowContaining("Region B")).Of(section);
 
       Judge.Same("bounded at the use site: stage order and postfix order agree",
@@ -60,11 +60,15 @@ namespace PlacementGauntlet
         + " On(a).Of(section).Until(b) — anchor before the subject because a landmark above it locates it, bound"
         + " after because the landmark that ends it is below. Kept here as the first trial's record.");
 
-      // A placement declared at the use site over a HOISTED projection that already declares one is
-      // still refused — by the shipped runtime guard, because a terminal hands back a plain
-      // projection and the pipeline's types end there. This is the intended hybrid of §5.0.
-      Judge.Refused("re-placing an already-placed section is still a construction-time refusal",
-        () => Place.On(RowContaining("Region B")).Of(section.On(RowContaining("Region A"))));
+      // SUPERSEDED by phase 5: the declared-over-declared RUNTIME refusal was retired along with the
+      // postfix modifiers. The pipeline makes double-placement unspellable through its stage TYPES
+      // instead, so a second offset written mid-pipeline is a compile error — but placing an already
+      // placed projection through `.Of` no longer throws at construction; it simply replaces the
+      // offset. Kept as a note rather than a runtime assertion, because the premise (a runtime guard)
+      // is gone.
+      Judge.Note("re-placing an already-placed section is no longer a runtime refusal: phase 5 moved the"
+        + " declared-over-declared discipline into the pipeline's stage types, where a second offset is a"
+        + " compile error, and `.Of` over an already-placed projection now silently replaces the offset.");
 
       ScopedPlacement();
     }

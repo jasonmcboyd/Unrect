@@ -95,13 +95,11 @@ namespace Unrect.Tests.Projections
     private static IProjection<IReadOnlyList<BuyingPowerRow>> SparseTable()
     {
       var allocation = Overlay(o => new BuyingPowerRow(
-        FundCode: o.Next(Text().Right(1)),
-        Primary: o.Next(Decimal().OrBlank().Right(6)),
-        Fep: o.Next(Decimal().OrBlank().Right(9))));
+        FundCode: o.Next(Right(1).Of(Text())),
+        Primary: o.Next(Right(6).Of(Decimal().OrBlank())),
+        Fep: o.Next(Right(9).Of(Decimal().OrBlank()))));
 
-      return Table(headerRows: 0, eachRow: allocation)
-        .Below(RowContaining("ACCOUNT"))
-        .Sized(RowsWhileAnyValue());
+      return Below(RowContaining("ACCOUNT")).Sized(RowsWhileAnyValue()).Of(Table(headerRows: 0, eachRow: allocation));
     }
 
     // --- Matrix cell 4: no headers, sparse, incomplete ---------------------------------------------
@@ -151,14 +149,12 @@ namespace Unrect.Tests.Projections
     {
       // The other side of the same contract. Take OrBlank off the fund code and the last row is no
       // longer describable — which is the point of stating tolerance per field rather than per row.
-      var strict = Table(
+      var strict = Below(RowContaining("ACCOUNT")).Sized(RowsWhileAnyValue()).Of(Table(
         headerRows: 0,
         eachRow: Overlay(o => new BuyingPowerRow(
-          FundCode: o.Next(Text().Right(1)),
-          Primary: o.Next(Decimal().Right(6)),
-          Fep: o.Next(Decimal().OrBlank().Right(9)))))
-        .Below(RowContaining("ACCOUNT"))
-        .Sized(RowsWhileAnyValue());
+          FundCode: o.Next(Right(1).Of(Text())),
+          Primary: o.Next(Right(6).Of(Decimal())),
+          Fep: o.Next(Right(9).Of(Decimal().OrBlank()))))));
 
       var failure = Assert.Throws<ProjectionException>(() => strict.Map(BuyingPower()));
 
@@ -239,8 +235,7 @@ namespace Unrect.Tests.Projections
       // nothing in it has described everything it was asked to describe.
       var blank = Mixed(new object?[2, 2]);
 
-      var read = Table(headerRows: 0, eachRow: Row(cells => cells.Count))
-        .Sized(RowsWhileAnyValue())
+      var read = Sized(RowsWhileAnyValue()).Of(Table(headerRows: 0, eachRow: Row(cells => cells.Count)))
         .MapWithDiagnostics(blank);
 
       Assert.Empty(read.Value);
@@ -277,9 +272,7 @@ namespace Unrect.Tests.Projections
       // own ("as wide as the leading columns that carry values"), so over this fixture it would
       // measure ITSELF at zero — column 0 is empty in every body row — and say nothing about the
       // band it was handed.
-      var bands = Table(headerRows: 0, eachRow: Range(WholeExtent(), block => $"{block.Width}x{block.Height}"))
-        .Below(RowContaining("ACCOUNT"))
-        .Sized(RowsWhileAnyValue())
+      var bands = Below(RowContaining("ACCOUNT")).Sized(RowsWhileAnyValue()).Of(Table(headerRows: 0, eachRow: Range(WholeExtent(), block => $"{block.Width}x{block.Height}")))
         .Map(BuyingPower());
 
       Assert.Equal(new[] { "11x1", "11x1", "11x1" }, bands);
@@ -305,14 +298,12 @@ namespace Unrect.Tests.Projections
       // The index belongs to the table's own segment and the label to the record's — the same
       // division a repeat makes. A hoisted row therefore labels every occurrence of itself.
       var buyingPowerRow = Overlay(o => new BuyingPowerRow(
-        FundCode: o.Next(Text().Right(1)),
-        Primary: o.Next(Decimal().Right(6)),
-        Fep: o.Next(Decimal().OrBlank().Right(9))));
+        FundCode: o.Next(Right(1).Of(Text())),
+        Primary: o.Next(Right(6).Of(Decimal())),
+        Fep: o.Next(Right(9).Of(Decimal().OrBlank()))));
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        Table(headerRows: 0, eachRow: buyingPowerRow)
-          .Below(RowContaining("ACCOUNT"))
-          .Sized(RowsWhileAnyValue())
+        Below(RowContaining("ACCOUNT")).Sized(RowsWhileAnyValue()).Of(Table(headerRows: 0, eachRow: buyingPowerRow))
           .Map(BuyingPower()));
 
       Assert.Equal("Table[2] -> 'buyingPowerRow' -> Decimal#2", failure.Path);
@@ -324,14 +315,12 @@ namespace Unrect.Tests.Projections
       // An inline row has no identifier to borrow, so it renders as what it is. The index is still
       // the table's, which is the half that has to survive either way.
       var failure = Assert.Throws<ProjectionException>(() =>
-        Table(
+        Below(RowContaining("ACCOUNT")).Sized(RowsWhileAnyValue()).Of(Table(
           headerRows: 0,
           eachRow: Overlay(o => new BuyingPowerRow(
-            FundCode: o.Next(Text().Right(1)),
-            Primary: o.Next(Decimal().Right(6)),
-            Fep: o.Next(Decimal().OrBlank().Right(9)))))
-          .Below(RowContaining("ACCOUNT"))
-          .Sized(RowsWhileAnyValue())
+            FundCode: o.Next(Right(1).Of(Text())),
+            Primary: o.Next(Right(6).Of(Decimal())),
+            Fep: o.Next(Right(9).Of(Decimal().OrBlank()))))))
           .Map(BuyingPower()));
 
       Assert.Equal("Table[2] -> Overlay -> Decimal#2", failure.Path);
@@ -341,14 +330,12 @@ namespace Unrect.Tests.Projections
     public void AndANamedRowOutranksBoth()
     {
       var failure = Assert.Throws<ProjectionException>(() =>
-        Table(
+        Below(RowContaining("ACCOUNT")).Sized(RowsWhileAnyValue()).Of(Table(
           headerRows: 0,
           eachRow: Overlay(o => new BuyingPowerRow(
-            FundCode: o.Next(Text().Right(1)),
-            Primary: o.Next(Decimal().Right(6)),
-            Fep: o.Next(Decimal().OrBlank().Right(9)))).Named("allocation line"))
-          .Below(RowContaining("ACCOUNT"))
-          .Sized(RowsWhileAnyValue())
+            FundCode: o.Next(Right(1).Of(Text())),
+            Primary: o.Next(Right(6).Of(Decimal())),
+            Fep: o.Next(Right(9).Of(Decimal().OrBlank())))).Named("allocation line")))
           .Map(BuyingPower()));
 
       Assert.Equal("Table[2] -> 'allocation line' -> Decimal#2", failure.Path);
@@ -422,7 +409,7 @@ namespace Unrect.Tests.Projections
         headerRows: 1,
         eachRow: Overlay(Formulas, o => new SourcedRow(
           Account: o.Next(Text()),
-          Formula: o.Next(Formula().Right(2)))));
+          Formula: o.Next(Right(2).Of(Formula())))));
 
       Assert.Equal(
         new[] { new SourcedRow("Acme", "B2*3"), new SourcedRow("Beta", "B3*3") },

@@ -61,20 +61,19 @@ namespace PlacementGauntlet
       // an inline lambda would make the two declarations differ at L3 for a reason that is about
       // this comparison rather than about Entry C.
       Func<CaptionMap, IProjection<ISpreadsheetSpace, AuditedSummaryRow>> auditedRow = captions => q.Overlay(o => new AuditedSummaryRow(
-        Investor: o.Next(Text().Right(captions["Investors"])),
-        EndBalance: o.Next(Decimal().Right(captions["End Balance"])),
-        AmountFormula: o.Next(Formula().Right(captions["End Balance"]))));
+        Investor: o.Next(Projection.Right(captions["Investors"]).Text()),
+        EndBalance: o.Next(Projection.Right(captions["End Balance"]).Decimal()),
+        AmountFormula: o.Next(Projection.Right(captions["End Balance"]).Of(Formula()))));
 
       var summary = q.Table(headerRows: 1, eachRow: auditedRow);
 
       var investorBlock = Table<CashFlow>();
       var irrDetails = VerticalRepeat(investorBlock, separatedBy: BlankRows());
 
-      var byTransferDate = irrDetails
-        .Under(Caption("IRR Details"), Caption("Cash Flows Using Transfer Date"))
-        .Until(RowContaining(Inception));
+      var byTransferDate = Place.Until(RowContaining(Inception))
+        .Of(Under(Caption("IRR Details"), Caption("Cash Flows Using Transfer Date")).Of(irrDetails));
 
-      var byInception = irrDetails.Under(Caption(Inception));
+      var byInception = Under(Caption(Inception)).Of(irrDetails);
 
       var today = q.VerticalFlow(v => new AuditedIrrReport(
         Header: v.Next(reportHeader),
@@ -122,19 +121,18 @@ namespace PlacementGauntlet
         ReportId: v.Next(Text())));
 
       Func<CaptionMap, IProjection<PlainSummaryRow>> plainRow = captions => Projection.Overlay(o => new PlainSummaryRow(
-        Investor: o.Next(Text().Right(captions["Investors"])),
-        EndBalance: o.Next(Decimal().Right(captions["End Balance"]))));
+        Investor: o.Next(Projection.Right(captions["Investors"]).Text()),
+        EndBalance: o.Next(Projection.Right(captions["End Balance"]).Decimal())));
 
       var summary = Projection.Table(headerRows: 1, eachRow: plainRow);
 
       var investorBlock = Table<CashFlow>();
       var irrDetails = VerticalRepeat(investorBlock, separatedBy: BlankRows());
 
-      var byTransferDate = irrDetails
-        .Under(Caption("IRR Details"), Caption("Cash Flows Using Transfer Date"))
-        .Until(RowContaining(Inception));
+      var byTransferDate = Place.Until(RowContaining(Inception))
+        .Of(Under(Caption("IRR Details"), Caption("Cash Flows Using Transfer Date")).Of(irrDetails));
 
-      var byInception = irrDetails.Under(Caption(Inception));
+      var byInception = Under(Caption(Inception)).Of(irrDetails);
 
       var today = VerticalFlow(v => new PlainIrrReport(
         Header: v.Next(reportHeader),
@@ -167,22 +165,20 @@ namespace PlacementGauntlet
       var sheet = Sheets.K1();
 
       Func<CaptionMap, IProjection<KLine>> kLine = captions => Projection.Overlay(o => new KLine(
-        Code: o.Next(Text().Right(captions["Line"])),
-        Amount: o.Next(Decimal().Right(captions["Amount"]))));
+        Code: o.Next(Projection.Right(captions["Line"]).Text()),
+        Amount: o.Next(Projection.Right(captions["Amount"]).Decimal())));
 
       var kLines = Projection.Table(headerRows: 1, eachRow: kLine);
 
-      var lines = VerticalFlow(v => new KSection(
+      var lines = Projection.On(RowContaining(ScenarioCPlain.KLines)).Until(RowContaining(ScenarioCPlain.Portfolio))
+        .VerticalFlow(v => new KSection(
           Caption: v.Next(Caption(ScenarioCPlain.KLines)),
-          Lines: v.Next(kLines)))
-        .On(RowContaining(ScenarioCPlain.KLines))
-        .Until(RowContaining(ScenarioCPlain.Portfolio));
+          Lines: v.Next(kLines)));
 
-      var portfolio = VerticalFlow(v => new KSection(
+      var portfolio = Projection.On(RowContaining(ScenarioCPlain.Portfolio)).Until(RowContaining(ScenarioCPlain.Totals))
+        .VerticalFlow(v => new KSection(
           Caption: v.Next(Caption(ScenarioCPlain.Portfolio)),
-          Lines: v.Next(kLines)))
-        .On(RowContaining(ScenarioCPlain.Portfolio))
-        .Until(RowContaining(ScenarioCPlain.Totals));
+          Lines: v.Next(kLines)));
 
       var title = Text();
 
@@ -200,8 +196,8 @@ namespace PlacementGauntlet
         entryC.MapWithDiagnostics(sheet).Diagnostics.Select(d => d.ToString()).ToList());
 
       Judge.SameFailure("read 3 at L3 — a missing anchor fails with the same path and sentence",
-        () => VerticalFlow(v => new KSection(v.Next(Caption("Nope")), v.Next(kLines)))
-          .On(RowContaining("Nope")).Until(RowContaining(ScenarioCPlain.Portfolio)).Map(sheet),
+        () => Projection.On(RowContaining("Nope")).Until(RowContaining(ScenarioCPlain.Portfolio))
+          .VerticalFlow(v => new KSection(v.Next(Caption("Nope")), v.Next(kLines))).Map(sheet),
         () => ScenarioCPlain.MissingAnchor.Map(sheet));
 
       Judge.Note("Read 3 lives in the PLAIN file, deliberately: the K-1 sections read text and decimals, and"

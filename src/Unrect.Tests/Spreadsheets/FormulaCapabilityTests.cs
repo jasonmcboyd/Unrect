@@ -89,9 +89,7 @@ namespace Unrect.Tests.Spreadsheets
     public void TheLeafReadsAFormulaWhereTheCellReadsAValue()
     {
       // A cell has both, so reading both is an overlay's job: the same cell, twice.
-      var cell = Overlay(Formulas, o => (Value: o.Next(Text()), Formula: o.Next(Formula())))
-        .On(RowContaining("Text"))
-        .Right(1);
+      var cell = On(RowContaining("Text")).Right(1).Of(Overlay(Formulas, o => (Value: o.Next(Text()), Formula: o.Next(Formula()))));
 
       var read = cell.Map(Sheet());
 
@@ -104,8 +102,7 @@ namespace Unrect.Tests.Spreadsheets
     {
       // .Sized hands the projection a bound whose height is still being discovered — a chart, not
       // the sheet — so a raw type test inside the lambda would answer false over this very file.
-      var scaled = Range(RowsWhileAnyValue(), block => block.Space.Capability<IFormulaSpace>()?.FormulaAt(1, 0))
-        .On(RowContaining("Scaled"))
+      var scaled = On(RowContaining("Scaled")).Of(Range(RowsWhileAnyValue(), block => block.Space.Capability<IFormulaSpace>()?.FormulaAt(1, 0)))
         .Demanding(Formulas);
 
       Assert.Equal("LOG10(B8)+B8", scaled.Map(Sheet()));
@@ -116,7 +113,7 @@ namespace Unrect.Tests.Spreadsheets
     {
       // The runtime path the typed layer cannot close: the plain lift, reached through Landmark,
       // over a space that carries no formulas.
-      var plain = Text().On(RowWithFormula().Landmark);
+      var plain = On(RowWithFormula().Landmark).Of(Text());
 
       var failure = Assert.Throws<ProjectionException>(() => plain.Map(GridSpace.Create(new[,] { { "a" } })));
 

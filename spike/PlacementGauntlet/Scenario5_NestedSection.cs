@@ -34,23 +34,21 @@ namespace PlacementGauntlet
         Amount: o.Next(Place.Right(captions["Amount"]).Decimal()))));
 
       var oldLines = Table(headerRows: 1, eachRow: captions => Overlay(o => new KLine(
-        Code: o.Next(Text().Right(captions["Line"])),
-        Amount: o.Next(Decimal().Right(captions["Amount"])))));
+        Code: o.Next(Projection.Right(captions["Line"]).Text()),
+        Amount: o.Next(Projection.Right(captions["Amount"]).Decimal()))));
 
       var title = Text();
 
-      // OLD — anchor and bound as postfix modifiers on the section.
-      var oldK1Section = VerticalFlow(v => new KSection(
+      // OLD — the library's shipped pipeline: anchor and bound lead the section they place.
+      var oldK1Section = Projection.On(RowContaining("K-1 Lines 1-21")).Until(RowContaining("Portfolio Income"))
+        .VerticalFlow(v => new KSection(
           Caption: v.Next(Caption("K-1 Lines 1-21")),
-          Lines: v.Next(oldLines)))
-        .On(RowContaining("K-1 Lines 1-21"))
-        .Until(RowContaining("Portfolio Income"));
+          Lines: v.Next(oldLines)));
 
-      var oldPortfolio = VerticalFlow(v => new KSection(
+      var oldPortfolio = Projection.On(RowContaining("Portfolio Income")).Until(RowContaining("Totals"))
+        .VerticalFlow(v => new KSection(
           Caption: v.Next(Caption("Portfolio Income")),
-          Lines: v.Next(oldLines)))
-        .On(RowContaining("Portfolio Income"))
-        .Until(RowContaining("Totals"));
+          Lines: v.Next(oldLines)));
 
       var oldReport = VerticalFlow(v => new K1Report(
         Title: v.Next(title),
@@ -95,20 +93,23 @@ namespace PlacementGauntlet
         Caption: v.Next(Caption("K-1 Lines 1-21")),
         Lines: v.Next(Table<KLine>().Named("lines"))));
 
-      var sized = section.On(RowContaining("K-1 Lines 1-21")).Sized(Extent(3, 4)).Until(RowContaining("Portfolio Income"));
-      var framed = section.On(RowContaining("K-1 Lines 1-21")).Until(RowContaining("Portfolio Income")).Sized(Extent(3, 4));
+      // Good order — extent INSIDE the bound — spelled through the library's shipped pipeline.
+      var sized = Projection.On(RowContaining("K-1 Lines 1-21")).Sized(Extent(3, 4)).Until(RowContaining("Portfolio Income")).Of(section);
 
       var piped = Place.On(RowContaining("K-1 Lines 1-21")).Sized(Extent(3, 4)).Until(RowContaining("Portfolio Income"))
         .VerticalFlow(v => new KSection(
           Caption: v.Next(Caption("K-1 Lines 1-21")),
           Lines: v.Next(Table<KLine>().Named("lines"))));
 
-      Judge.Same("extent inside the bound: the pipeline's only order agrees with today's good order",
+      Judge.Same("extent inside the bound: the pipeline's only order agrees with the good order",
         Safely(() => sized.Map(sheet)), Safely(() => piped.Map(sheet)));
 
-      Console.WriteLine($"  - the other order today: {Safely(() => framed.Map(sheet))}");
-      Judge.Note("That order is unspellable in the pipeline: a BoundStage has no Sized, so the extent cannot"
-        + " become the frame a landmark is sought in. Hazard 4 dissolves into a grammar rule.");
+      // The BAD order — extent declared OUTSIDE the bound, framing the landmark search — was the retired
+      // postfix form's hazard. It is now UNSPELLABLE in either the library pipeline or the façade: a
+      // BoundStage has no Sized. Hazard 4 dissolves into a grammar rule, so there is no "other order"
+      // left to print.
+      Judge.Note("The extent-outside-the-bound order is unspellable in the pipeline: a BoundStage has no Sized, so"
+        + " the extent cannot become the frame a landmark is sought in. Hazard 4 dissolves into a grammar rule.");
     }
 
     private static string Safely(Func<object> read)

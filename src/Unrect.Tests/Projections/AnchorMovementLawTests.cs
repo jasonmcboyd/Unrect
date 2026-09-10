@@ -67,8 +67,8 @@ namespace Unrect.Tests.Projections
       var space = RowsWithLandmarkAt(landmark);
 
       AssertL3(
-        Observe(Text().Below(Detail()), space),
-        Observe(Text().On(Detail()).Down(1), space));
+        Observe(Below(Detail()).Of(Text()), space),
+        Observe(On(Detail()).Down(1).Of(Text()), space));
     }
 
     [Theory]
@@ -80,8 +80,8 @@ namespace Unrect.Tests.Projections
       var space = ColumnsWithLandmarkAt(landmark);
 
       AssertL3(
-        Observe(Text().RightOf(DetailColumn()), space),
-        Observe(Text().On(DetailColumn()).Right(1), space));
+        Observe(RightOf(DetailColumn()).Of(Text()), space),
+        Observe(On(DetailColumn()).Right(1).Of(Text()), space));
     }
 
     // --- The two edges the analysis was least sure of -------------------------------------------------
@@ -96,10 +96,10 @@ namespace Unrect.Tests.Projections
       var space = RowsWithLandmarkAt(3);
 
       AssertL3(
-        Observe(Text().Below(Detail()), space),
-        Observe(Text().On(Detail()).Down(1), space));
+        Observe(Below(Detail()).Of(Text()), space),
+        Observe(On(Detail()).Down(1).Of(Text()), space));
 
-      var failure = Assert.Throws<ProjectionException>(() => Text().Below(Detail()).Map(space));
+      var failure = Assert.Throws<ProjectionException>(() => Below(Detail()).Of(Text()).Map(space));
 
       Assert.Contains("an extent of 1x1 does not fit here", failure.Message);
       Assert.Equal("A5", failure.Location.A1);
@@ -115,10 +115,10 @@ namespace Unrect.Tests.Projections
       var missing = RowContaining("Nope");
 
       AssertL3(
-        Observe(Text().Below(missing), space),
-        Observe(Text().On(missing).Down(1), space));
+        Observe(Below(missing).Of(Text()), space),
+        Observe(On(missing).Down(1).Of(Text()), space));
 
-      var failure = Assert.Throws<ProjectionException>(() => Text().On(missing).Down(1).Map(space));
+      var failure = Assert.Throws<ProjectionException>(() => On(missing).Down(1).Of(Text()).Map(space));
 
       Assert.Contains("no row containing 'Nope' exists in the available space", failure.Message);
       Assert.False(failure.IsFault);
@@ -133,13 +133,13 @@ namespace Unrect.Tests.Projections
       // that declared its own extent keeps it — and keeps the same one — wherever the landmark puts
       // it. A composite offset that leaked into the area would show up here first.
       var space = RowsWithLandmarkAt(1);
-      var sized = Range(b => $"{b.Width}x{b.Height}").Sized(Extent(1, 2));
+      var sized = Sized(Extent(1, 2)).Of(Range(b => $"{b.Width}x{b.Height}"));
 
       AssertL3(
-        Observe(sized.Below(Detail()), space),
-        Observe(sized.On(Detail()).Down(1), space));
+        Observe(Below(Detail()).Of(sized), space),
+        Observe(On(Detail()).Down(1).Of(sized), space));
 
-      Assert.Equal("1x2", sized.Below(Detail()).Map(space));
+      Assert.Equal("1x2", Below(Detail()).Of(sized).Map(space));
     }
   }
 }

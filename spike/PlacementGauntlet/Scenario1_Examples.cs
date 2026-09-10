@@ -62,7 +62,7 @@ namespace PlacementGauntlet
 
       var eachRow = Row(cells => cells[0].GetString());
 
-      var oldMoved = Table(headerRows: 0, eachRow: eachRow).Down(1);
+      var oldMoved = Projection.Down(1).Table(headerRows: 0, eachRow: eachRow);
       var newMoved = Place.Down(1).Table(headerRows: 0, eachRow: eachRow);
 
       Judge.Same("Down(1) as an entry still composes onto the table's own blank-row skip",
@@ -198,10 +198,10 @@ namespace PlacementGauntlet
         Net = r["Net"].GetDecimal(),
       });
 
-      // OLD: subject first, placement last.
-      var oldDetails = VerticalRepeat(investorDetail, separatedBy: BlankRows(), atLeast: 1).AfterBlankRows();
+      // OLD: the library's shipped pipeline, placement first.
+      var oldDetails = Projection.AfterBlankRows().VerticalRepeat(investorDetail, separatedBy: BlankRows(), atLeast: 1);
 
-      // NEW: placement first, projection last.
+      // NEW: the façade, placement first.
       var newDetails = Place.AfterBlankRows().VerticalRepeat(investorDetail, separatedBy: BlankRows(), atLeast: 1);
 
       var oldReport = VerticalFlow(v => new
@@ -247,16 +247,18 @@ namespace PlacementGauntlet
       var investorBlock = Table<CashFlow>();
       var irrDetails = VerticalRepeat(investorBlock, separatedBy: BlankRows());
 
-      // OLD — .Until as a post-terminal wrapper.
-      var oldByTransferDate = irrDetails
-        .Under(Caption("IRR Details"), Caption("Cash Flows Using Transfer Date"))
-        .Until(RowContaining(Inception));
+      // OLD — the library's shipped pipeline: bound, then headings in document order, then subject.
+      // (`Heading` is the library's dissolution of `.Under(Caption(...))`.)
+      var oldByTransferDate = Projection.Until(RowContaining(Inception))
+        .Heading("IRR Details")
+        .Heading("Cash Flows Using Transfer Date")
+        .Of(irrDetails);
 
-      // NEW — .Until as a pipeline STAGE, over a projection declared elsewhere.
+      // NEW — the façade's caption entry, bound by the postfix-superseding Until stage.
       var newByTransferDate = Place.Until(RowContaining(Inception))
-        .Of(irrDetails.Under(Caption("IRR Details"), Caption("Cash Flows Using Transfer Date")));
+        .Of(Place.Under(Caption("IRR Details"), Caption("Cash Flows Using Transfer Date")).Of(irrDetails));
 
-      var byInception = irrDetails.Under(Caption(Inception));
+      var byInception = Place.Under(Caption(Inception)).Of(irrDetails);
 
       var oldReport = VerticalFlow(v => new
       {

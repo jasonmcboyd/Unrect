@@ -134,7 +134,7 @@ namespace Unrect.Tests.Projections
       // not a wrapper segment followed by an anonymous child.
       var selected = Text().Select(s => s);
       var padded = Text().Padded(0);
-      var bounded = Text().Until(RowContaining("Nothing here"), orEnd: true);
+      var bounded = Until(RowContaining("Nothing here"), orEnd: true).Of(Text());
 
       Assert.Equal("VerticalFlow -> 'selected' (Cell)", Failure(VerticalFlow(v => v.Next(selected))).Path);
       Assert.Equal("VerticalFlow -> 'padded' (Cell)", Failure(VerticalFlow(v => v.Next(padded))).Path);
@@ -211,7 +211,7 @@ namespace Unrect.Tests.Projections
 
       Assert.Equal("VerticalRepeat[0] -> Cell", Failure(VerticalRepeat(Cell(c => c.GetString()))).Path);
       Assert.Equal("VerticalRepeat[0] -> Cell", Failure(VerticalRepeat(MakeBlock())).Path);
-      Assert.Equal("VerticalRepeat[0] -> Cell", Failure(VerticalRepeat(block.Down(1))).Path);
+      Assert.Equal("VerticalRepeat[0] -> Cell", Failure(VerticalRepeat(Down(1).Of(block))).Path);
     }
 
     [Fact]

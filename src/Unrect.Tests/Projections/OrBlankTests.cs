@@ -139,8 +139,8 @@ namespace Unrect.Tests.Projections
       // Decimal().Right(6).OrBlank() and Decimal().OrBlank().Right(6) are the same declaration: the
       // kind, the accessor and the placement are the leaf's own, and tolerance changes only what a
       // blank means. Compared on everything a caller can observe rather than on one reading.
-      var placedThenTolerant = Decimal().Right(6).OrBlank();
-      var tolerantThenPlaced = Decimal().OrBlank().Right(6);
+      var placedThenTolerant = Right(6).Of(Decimal()).OrBlank();
+      var tolerantThenPlaced = Right(6).Of(Decimal().OrBlank());
 
       Assert.Equal(1250.75m, placedThenTolerant.Map(Sparse(1250.75m)));
       Assert.Equal(1250.75m, tolerantThenPlaced.Map(Sparse(1250.75m)));

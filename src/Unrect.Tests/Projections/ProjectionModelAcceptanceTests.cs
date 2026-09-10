@@ -170,11 +170,11 @@ namespace Unrect.Tests.Projections
       // The phase-1 result, read as a user reads it: the SAME chain of modifiers, each written once
       // in the library and typed twice at the use site. The two annotated locals are the assertion;
       // that each of them reads its sheet is the proof the type is not the only thing that survived.
-      IProjection<decimal> plain = Decimal()
-        .Named("total").On(RowContaining("Total")).Right(2);
+      IProjection<decimal> plain = On(RowContaining("Total")).Right(2).Of(Decimal()
+        .Named("total"));
 
-      IProjection<IFormulaSpace, string?> demanding = Formula()
-        .Named("total formula").On(RowContaining("Total")).Right(2);
+      IProjection<IFormulaSpace, string?> demanding = On(RowContaining("Total")).Right(2).Of(Formula()
+        .Named("total formula"));
 
       Assert.Equal(1.00m, plain.Map(PlainAllocations()));
       Assert.Equal("SUM(C4:C5)", demanding.Map(CapableAllocations()));
@@ -193,7 +193,7 @@ namespace Unrect.Tests.Projections
       // and the receiver's are unified by inference. Written plain, read demanding, annotated
       // nowhere — the annotation on the local is what the compiler already inferred.
       IProjection<IFormulaSpace, string> firstFormulaRow =
-        Row(cells => cells[0].GetString()).On(RowWithFormula());
+        On(RowWithFormula()).Of(Row(cells => cells[0].GetString()));
 
       Assert.Equal("A-1", firstFormulaRow.Map(CapableAllocations()));
     }
@@ -222,7 +222,7 @@ namespace Unrect.Tests.Projections
     private static IProjection<IFormulaSpace, SourcedAllocation> SourcedRow()
       => Overlay(Formulas, o => new SourcedAllocation(
         Account: o.Next(Text()),
-        Formula: o.Next(Formula().Right(2))));
+        Formula: o.Next(Right(2).Of(Formula()))));
 
     /// <summary>A helper generic in whatever its caller demands — the one shape that needs the parameter.</summary>
     private static IProjection<TSpace, IReadOnlyList<T>> Sections<TSpace, T>(IProjection<TSpace, T> item)
@@ -245,13 +245,13 @@ namespace Unrect.Tests.Projections
 
       // Both read the same capable sheet — the plain one because variance lets it, the demanding one
       // because the sheet answers what it asks.
-      var rows = AllocationRow().On(RowContaining("A-1")).Map(CapableAllocations());
+      var rows = On(RowContaining("A-1")).Of(AllocationRow()).Map(CapableAllocations());
 
       Assert.Equal(new Allocation("A-1", "SPY", 0.25m), rows);
       Assert.Equal("VerticalRepeat", plainSections.Description);
       Assert.Equal("VerticalRepeat", demandingSections.Description);
 
-      var sourced = SourcedRow().On(RowContaining("A-1")).Map(CapableAllocations());
+      var sourced = On(RowContaining("A-1")).Of(SourcedRow()).Map(CapableAllocations());
 
       Assert.Equal(new SourcedAllocation("A-1", "D4/$D$8"), sourced);
     }
@@ -315,18 +315,16 @@ namespace Unrect.Tests.Projections
     private static IProjection<BuyingPowerAllocation> BuyingPowerParser()
     {
       var allocation = Overlay(o => new BuyingPowerRow(
-        FundCode: o.Next(Text().Right(1)),
-        Primary: o.Next(Decimal().OrBlank().Right(6)),
-        Fep: o.Next(Decimal().OrBlank().Right(9))));
+        FundCode: o.Next(Right(1).Of(Text())),
+        Primary: o.Next(Right(6).Of(Decimal().OrBlank())),
+        Fep: o.Next(Right(9).Of(Decimal().OrBlank()))));
 
-      var allocations = Table(headerRows: 0, eachRow: allocation)
-        .Below(RowContaining("ACCOUNT"))
-        .Sized(RowsWhileAnyValue());
+      var allocations = Below(RowContaining("ACCOUNT")).Sized(RowsWhileAnyValue()).Of(Table(headerRows: 0, eachRow: allocation));
 
       return VerticalFlow(v => new BuyingPowerAllocation(
         Title: v.Next(Text()),
         Allocations: v.Next(allocations),
-        Total: v.Next(Decimal().On(RowContaining("TOTAL")).Right(6))));
+        Total: v.Next(On(RowContaining("TOTAL")).Right(6).Of(Decimal()))));
     }
 
     [Fact]
@@ -413,7 +411,7 @@ namespace Unrect.Tests.Projections
     // ProjectionExampleTests reads this same workbook through the lambda table rung, which is what
     // the shipped script says and what the corpus has pinned since wave 2. This is the same document
     // at the TOP of the ladder: every column bound by the member it fills, nothing written about any
-    // of them, and the same .Under/.Until placement carrying a typed table instead of a lambda.
+    // of them, and the same Heading/Until placement carrying a typed table instead of a lambda.
     // Extended rather than duplicated: what is asserted here is the record content the lambda
     // spelling never had, plus the two facts that must agree between the spellings (the block
     // counts, and full consumption of the sheet).
@@ -438,11 +436,8 @@ namespace Unrect.Tests.Projections
           AsOf: h.Next(Date()),
           Id: h.Next(Text()))).Named("report header")),
         Summary: v.Next(Table<InvestorSummary>().Named("summary")),
-        ByTransferDate: v.Next(series
-          .Under(Caption("IRR Details"), Caption("Cash Flows Using Transfer Date"))
-          .Until(RowContaining(Inception))),
-        ByInception: v.Next(series
-          .Under(Caption(Inception)))));
+        ByTransferDate: v.Next(Until(RowContaining(Inception)).Heading("IRR Details").Heading("Cash Flows Using Transfer Date").Of(series)),
+        ByInception: v.Next(Heading(Inception).Of(series))));
     }
 
     [Fact]
@@ -553,12 +548,12 @@ namespace Unrect.Tests.Projections
       // A cell has a value and a formula, so reading both is an overlay's job, as ever.
       var line = p.Overlay(o => new AuditedLine(
         Item: o.Next(Text()),
-        Qty: o.Next(Integer().Right(1)),
-        Total: o.Next(Double().Right(3)),
-        Formula: o.Next(Formula().Right(3))));
+        Qty: o.Next(Right(1).Of(Integer())),
+        Total: o.Next(Right(3).Of(Double())),
+        Formula: o.Next(Right(3).Of(Formula()))));
 
       var lines = p.Table(headerRows: 1, eachRow: line);
-      var total = Formula().On(RowContaining("Total")).Right(3);
+      var total = On(RowContaining("Total")).Right(3).Of(Formula());
 
       return p.VerticalFlow(v => new AuditedLedger(
         Lines: v.Next(lines),
@@ -597,13 +592,13 @@ namespace Unrect.Tests.Projections
       // says member by member.
       var line = Overlay(Spreadsheets, o => new AuditedLine(
         Item: o.Next(Text()),
-        Qty: o.Next(Integer().Right(1)),
-        Total: o.Next(Double().Right(3)),
-        Formula: o.Next(Formula().Right(3))));
+        Qty: o.Next(Right(1).Of(Integer())),
+        Total: o.Next(Right(3).Of(Double())),
+        Formula: o.Next(Right(3).Of(Formula()))));
 
       var witnessed = VerticalFlow(Spreadsheets, v => new AuditedLedger(
         Lines: v.Next(Table(headerRows: 1, eachRow: line)),
-        TotalFormula: v.Next(Formula().On(RowContaining("Total")).Right(3))));
+        TotalFormula: v.Next(On(RowContaining("Total")).Right(3).Of(Formula()))));
 
       var sheet = SpreadsheetSpace.CreateWithFormulas(TestData("formulas.xlsx"), "Formulas");
 

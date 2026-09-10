@@ -54,10 +54,11 @@ namespace PlacementGauntlet
       var investorBlock = Table<CashFlow>();
       var irrDetails    = VerticalRepeat(investorBlock, separatedBy: BlankRows());
 
-      var byTransferDate = Heading("IRR Details")
+      // Phase 5 retired postfix `.Until`, so the bound leads, per ruling 1's canonical order.
+      var byTransferDate = Until(RowContaining(Inception))
+        .Heading("IRR Details")
         .Heading("Cash Flows Using Transfer Date")
-        .Of(irrDetails)
-        .Until(RowContaining(Inception));
+        .Of(irrDetails);
 
       var byInception = Heading(Inception).Of(irrDetails);
 

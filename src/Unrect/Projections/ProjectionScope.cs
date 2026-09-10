@@ -229,6 +229,11 @@ namespace Unrect.Projections
     /// <param name="columns">How far right.</param>
     public OffsetStage<TSpace> Right(int columns) => Enter(Step.Right(columns));
 
+    /// <inheritdoc cref="Projection.Sized(IAreaStrategy)"/>
+    /// <param name="area">The extent.</param>
+    public OffsetAndSizeStage<TSpace> Sized(IAreaStrategy area)
+      => new OffsetAndSizeStage<TSpace>(Steps.None.Then(Step.Sized(area)));
+
     /// <inheritdoc cref="Projection.Until(IRowLandmark, bool)"/>
     /// <param name="landmark">The row the extent stops before.</param>
     /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>

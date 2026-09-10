@@ -1,6 +1,7 @@
 using System;
 
 using Unrect.Core;
+using Unrect.Strategies;
 
 namespace Unrect.Projections
 {
@@ -116,9 +117,9 @@ namespace Unrect.Projections
 
     internal static Step OffsetBy(IOffsetStrategy offset) => new Step(StepKind.OffsetBy, NotNull(offset, "offset"));
 
-    internal static Step Down(int rows) => new Step(StepKind.Down, count: rows);
+    internal static Step Down(int rows) => new Step(StepKind.Down, count: NotNegative(rows, nameof(rows)));
 
-    internal static Step Right(int columns) => new Step(StepKind.Right, count: columns);
+    internal static Step Right(int columns) => new Step(StepKind.Right, count: NotNegative(columns, nameof(columns)));
 
     internal static Step AfterBlankRows() => new Step(StepKind.AfterBlankRows);
 
@@ -131,28 +132,65 @@ namespace Unrect.Projections
     internal static Step UntilColumn(IColumnLandmark landmark, bool orEnd) => new Step(StepKind.UntilColumn, NotNull(landmark), orEnd: orEnd);
 
     /// <summary>
-    /// The headings a section announces itself by, as the caption leaves the replay hands to
-    /// <c>Under</c>. The array is the stage's own and is never handed out, so it is safe to hold.
+    /// The headings a section announces itself by, as the caption leaves the replay folds into one
+    /// vertical flow. The array is the stage's own and is never handed out, so it is safe to hold.
     /// </summary>
     internal static Step Headings(IProjection<string>[] captions) => new Step(StepKind.Headings, captions);
 
-    internal IProjection<T> ApplyTo<T>(IProjection<T> projection) => _kind switch
+    /// <summary>
+    /// Writes this step onto <paramref name="projection"/> by manipulating its <see cref="Placement"/>
+    /// directly — the offset/area/bound operation the retired postfix modifier used to wrap. There is
+    /// no public modifier to route through, and none is needed: geometry carries no
+    /// <c>CallerArgumentExpression</c> capture, so the modifier surface added nothing the step does
+    /// not. The pipeline stage types write each slot at most once, so the declared-over-declared
+    /// guards the modifiers carried can never fire here and are simply not replayed.
+    /// </summary>
+    internal IProjection<T> ApplyTo<T>(IProjection<T> projection)
     {
-      StepKind.OnRow => projection.On((IRowLandmark)_subject!),
-      StepKind.OnColumn => projection.On((IColumnLandmark)_subject!),
-      StepKind.Below => projection.Below((IRowLandmark)_subject!),
-      StepKind.RightOf => projection.RightOf((IColumnLandmark)_subject!),
-      StepKind.OffsetBy => projection.OffsetBy((IOffsetStrategy)_subject!),
-      StepKind.Down => projection.Down(_count),
-      StepKind.Right => projection.Right(_count),
-      StepKind.AfterBlankRows => projection.AfterBlankRows(),
-      StepKind.AfterBlankColumns => projection.AfterBlankColumns(),
-      StepKind.Sized => projection.Sized((IAreaStrategy)_subject!),
-      StepKind.UntilRow => projection.Until((IRowLandmark)_subject!, _orEnd),
-      StepKind.UntilColumn => projection.UntilColumn((IColumnLandmark)_subject!, _orEnd),
-      StepKind.Headings => projection.Under((IProjection<string>[])_subject!),
-      _ => throw new InvalidOperationException($"Unknown placement step {_kind}."),
-    };
+      var subject = (ProjectionBase)projection;
+
+      return _kind switch
+      {
+        // Anchors and the strategy door replace the offset outright.
+        StepKind.OnRow => Reoffset<T>(subject, OffsetStrategies.To((IRowLandmark)_subject!)),
+        StepKind.OnColumn => Reoffset<T>(subject, OffsetStrategies.To((IColumnLandmark)_subject!)),
+        StepKind.Below => Reoffset<T>(subject, OffsetStrategies.Past((IRowLandmark)_subject!)),
+        StepKind.RightOf => Reoffset<T>(subject, OffsetStrategies.Past((IColumnLandmark)_subject!)),
+        StepKind.OffsetBy => Reoffset<T>(subject, (IOffsetStrategy)_subject!),
+
+        // Movements compose onto whatever offset the projection already carries.
+        StepKind.Down => Move<T>(subject, OffsetStrategies.ExplicitOffset(0, _count)),
+        StepKind.Right => Move<T>(subject, OffsetStrategies.ExplicitOffset(_count, 0)),
+        StepKind.AfterBlankRows => Move<T>(subject, OffsetStrategies.SkipBlankRows()),
+        StepKind.AfterBlankColumns => Move<T>(subject, OffsetStrategies.SkipBlankColumns()),
+
+        // An extent replaces the projection's derived one.
+        StepKind.Sized => (IProjection<T>)subject.Replaced(subject.Placement.WithArea((IAreaStrategy)_subject!)),
+
+        // Bounds and headings wrap rather than reposition.
+        StepKind.UntilRow => (IProjection<T>)subject.BoundedBy(Landmark.Of((IRowLandmark)_subject!), _orEnd),
+        StepKind.UntilColumn => (IProjection<T>)subject.BoundedBy(Landmark.Of((IColumnLandmark)_subject!), _orEnd),
+        StepKind.Headings => (IProjection<T>)subject.WithHeadings((IProjection<string>[])_subject!),
+
+        _ => throw new InvalidOperationException($"Unknown placement step {_kind}."),
+      };
+    }
+
+    /// <summary>Replaces the offset, recording it as declared — the anchors and the strategy door.</summary>
+    private static IProjection<T> Reoffset<T>(ProjectionBase subject, IOffsetStrategy offset)
+      => (IProjection<T>)subject.Replaced(subject.Placement.WithOffset(offset));
+
+    /// <summary>
+    /// Composes <paramref name="offset"/> onto the offset already there, or takes it as the offset if
+    /// there is none yet — the movements, which add to a position rather than answering it.
+    /// </summary>
+    private static IProjection<T> Move<T>(ProjectionBase subject, IOffsetStrategy offset)
+    {
+      var placement = subject.Placement;
+      var moved = placement.HasDeclaredOffset ? OffsetStrategies.Then(placement.Offset, offset) : offset;
+
+      return (IProjection<T>)subject.Replaced(placement.WithOffset(moved));
+    }
 
     public override string ToString() => _kind switch
     {
@@ -172,5 +210,8 @@ namespace Unrect.Projections
 
     private static T NotNull<T>(T value, string parameter = "landmark") where T : class
       => value ?? throw new ArgumentNullException(parameter);
+
+    private static int NotNegative(int distance, string parameter)
+      => distance >= 0 ? distance : throw new ArgumentOutOfRangeException(parameter, distance, "A projection cannot be inset or moved a negative distance.");
   }
 }

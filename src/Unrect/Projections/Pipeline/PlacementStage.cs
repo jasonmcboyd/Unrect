@@ -264,7 +264,8 @@ namespace Unrect.Projections
     /// </summary>
     /// <typeparam name="T">What the projection reads.</typeparam>
     /// <param name="projection">The declaration to place.</param>
-    public IProjection<T> Of<T>(IProjection<T> projection) => Close(projection);
+    public IProjection<T> Of<T>(IProjection<T> projection)
+      => Close(projection ?? throw new ArgumentNullException(nameof(projection)));
 
     /// <inheritdoc cref="Of{T}(IProjection{T})"/>
     /// <typeparam name="TSpace">What the projection demands of the space, carried out to the result.</typeparam>
@@ -272,7 +273,8 @@ namespace Unrect.Projections
     /// <param name="projection">The declaration to place.</param>
     public IProjection<TSpace, T> Of<TSpace, T>(IProjection<TSpace, T> projection)
       where TSpace : class, ISpace
-      => Steps.ApplyTo(ProjectionExtensions.Plain(projection));
+      => Steps.ApplyTo(ProjectionExtensions.Plain(
+        projection ?? throw new ArgumentNullException(nameof(projection))));
 
     private IProjection<T> Close<T>(IProjection<T> projection) => Steps.ApplyTo(projection);
   }
@@ -378,21 +380,26 @@ namespace Unrect.Projections
     {
     }
 
-    /// <inheritdoc cref="ProjectionExtensions.Down{TProjection}"/>
+    /// <inheritdoc cref="Projection.Down(int)"/>
     /// <param name="rows">How far down.</param>
     public OffsetStage Down(int rows) => new OffsetStage(Steps.Then(Step.Down(rows)));
 
-    /// <inheritdoc cref="ProjectionExtensions.Right{TProjection}"/>
+    /// <inheritdoc cref="Projection.Right(int)"/>
     /// <param name="columns">How far right.</param>
     public OffsetStage Right(int columns) => new OffsetStage(Steps.Then(Step.Right(columns)));
 
-    /// <inheritdoc cref="ProjectionExtensions.AfterBlankRows{TProjection}"/>
+    /// <inheritdoc cref="Projection.AfterBlankRows()"/>
     public OffsetStage AfterBlankRows() => new OffsetStage(Steps.Then(Step.AfterBlankRows()));
 
-    /// <inheritdoc cref="ProjectionExtensions.AfterBlankColumns{TProjection}"/>
+    /// <inheritdoc cref="Projection.AfterBlankColumns()"/>
     public OffsetStage AfterBlankColumns() => new OffsetStage(Steps.Then(Step.AfterBlankColumns()));
 
-    /// <inheritdoc cref="ProjectionExtensions.Sized{TProjection}"/>
+    /// <summary>
+    /// Declares the section's extent, replacing the derived one — after which the extent is consumed
+    /// in full whether the section reads all of it or not. Extents do not stack, so a second
+    /// <c>Sized</c> is refused: the pipeline goes on to <see cref="OffsetAndSizeStage"/>, where
+    /// <c>Sized</c> is an <c>[Obsolete(error)]</c> stub.
+    /// </summary>
     /// <param name="area">The extent.</param>
     public OffsetAndSizeStage Sized(IAreaStrategy area) => new OffsetAndSizeStage(Steps.Then(Step.Sized(area)));
 

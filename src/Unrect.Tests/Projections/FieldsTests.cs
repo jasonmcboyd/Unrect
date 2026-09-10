@@ -150,7 +150,7 @@ namespace Unrect.Tests.Projections
       });
 
       // The anchor finds row 0; Down(1) carries on from there to the second card.
-      Assert.Equal("second", Fields(Field("EIN")).Down(1).Map(space).Values.Single().GetString());
+      Assert.Equal("second", Down(1).Of(Fields(Field("EIN"))).Map(space).Values.Single().GetString());
     }
 
     [Fact]
@@ -162,7 +162,7 @@ namespace Unrect.Tests.Projections
         { "EIN:", "12-3456789" },
       });
 
-      Assert.Equal("12-3456789", Fields(Field("EIN")).OffsetBy(SkipRows(1)).Map(space).Values.Single().GetString());
+      Assert.Equal("12-3456789", OffsetBy(SkipRows(1)).Of(Fields(Field("EIN"))).Map(space).Values.Single().GetString());
     }
 
     [Fact]
@@ -205,7 +205,7 @@ namespace Unrect.Tests.Projections
       // one. The failure is the engine's — the field does not fit the extent it was handed — and
       // it names the field that could not be placed.
       var failure = Assert.Throws<ProjectionException>(() =>
-        Fields(Field("EIN")).Sized(Extent(1, 1)).Map(Card()));
+        Sized(Extent(1, 1)).Of(Fields(Field("EIN"))).Map(Card()));
 
       Assert.Contains("an extent of 2x1 does not fit here", failure.Message);
       Assert.Equal("Field(\"EIN\")#1", failure.Subject);

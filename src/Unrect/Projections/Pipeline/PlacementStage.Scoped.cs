@@ -254,7 +254,8 @@ namespace Unrect.Projections
     /// <inheritdoc cref="PlacementStage.Of{T}(IProjection{T})"/>
     /// <typeparam name="T">What the projection reads.</typeparam>
     /// <param name="projection">The declaration to place. A projection demanding less is accepted as it is.</param>
-    public IProjection<TSpace, T> Of<T>(IProjection<TSpace, T> projection) => Close(projection);
+    public IProjection<TSpace, T> Of<T>(IProjection<TSpace, T> projection)
+      => Close(projection ?? throw new ArgumentNullException(nameof(projection)));
 
     private IProjection<TSpace, T> Close<T>(IProjection<T> projection) => Steps.ApplyTo(projection);
 

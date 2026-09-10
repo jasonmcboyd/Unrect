@@ -53,15 +53,19 @@ namespace PlacementGauntlet
       var investorBlock = Table<CashFlow>();
       var irrDetails = VerticalRepeat(investorBlock, separatedBy: BlankRows());
 
-      var oldByTransferDate = irrDetails
-        .Under(Caption("IRR Details"), Caption("Cash Flows Using Transfer Date"))
-        .Until(RowContaining(Inception));
+      // Both sides use the facade's caption entry. The library's own dissolution of `.Under(Caption)`
+      // is `Heading` (a WithHeadings replay), which renders a DIFFERENT L3 path than the facade's
+      // `Under` (a vertical-flow desugar) -- so an old=library/new=facade contrast would diverge on
+      // the failure pins by mechanism rather than by word order. The facade's `Under` and `Heading`
+      // share the desugar and agree; that equivalence is ScenarioH's subject. Here both spellings are
+      // the facade, so the differential holds and the geography law's postfix `.Until` is superseded.
+      var oldByTransferDate = Place.Until(RowContaining(Inception))
+        .Of(Under(Caption("IRR Details"), Caption("Cash Flows Using Transfer Date")).Of(irrDetails));
 
-      var newByTransferDate = Under(Caption("IRR Details"), Caption("Cash Flows Using Transfer Date"))
-        .Of(irrDetails)
-        .Until(RowContaining(Inception));
+      var newByTransferDate = Place.Until(RowContaining(Inception))
+        .Of(Under(Caption("IRR Details"), Caption("Cash Flows Using Transfer Date")).Of(irrDetails));
 
-      var oldByInception = irrDetails.Under(Caption(Inception));
+      var oldByInception = Under(Caption(Inception)).Of(irrDetails);
       var newByInception = Under(Caption(Inception)).Of(irrDetails);
 
       Judge.SameL2("read 1 — the bounded series: value and geometry",
@@ -73,14 +77,14 @@ namespace PlacementGauntlet
       // L3, the account-of-itself half: a failure inside the section carries the path, the subject and
       // the A1 location. Two spellings that render one failure identically render every failure
       // identically, because the entry replays the same call.
-      var oldBroken = VerticalRepeat(Table<Position>()).Under(Caption("IRR Details"), Caption("Nope")).Until(RowContaining(Inception));
-      var newBroken = Under(Caption("IRR Details"), Caption("Nope")).Of(VerticalRepeat(Table<Position>())).Until(RowContaining(Inception));
+      var oldBroken = Place.Until(RowContaining(Inception)).Of(Under(Caption("IRR Details"), Caption("Nope")).Of(VerticalRepeat(Table<Position>())));
+      var newBroken = Place.Until(RowContaining(Inception)).Of(Under(Caption("IRR Details"), Caption("Nope")).Of(VerticalRepeat(Table<Position>())));
 
       Judge.SameFailure("read 1 at L3 — a wrong caption fails with the same path and sentence",
         () => oldBroken.Map(sheet), () => newBroken.Map(sheet));
 
-      var oldInnerBroken = irrDetails.Under(Caption("IRR Details"), Caption("Cash Flows Using Transfer Date")).Until(RowContaining("Nowhere"));
-      var newInnerBroken = Under(Caption("IRR Details"), Caption("Cash Flows Using Transfer Date")).Of(irrDetails).Until(RowContaining("Nowhere"));
+      var oldInnerBroken = Place.Until(RowContaining("Nowhere")).Of(Under(Caption("IRR Details"), Caption("Cash Flows Using Transfer Date")).Of(irrDetails));
+      var newInnerBroken = Place.Until(RowContaining("Nowhere")).Of(Under(Caption("IRR Details"), Caption("Cash Flows Using Transfer Date")).Of(irrDetails));
 
       Judge.SameFailure("read 1 at L3 — a missing bound fails with the same path and sentence",
         () => oldInnerBroken.Map(sheet), () => newInnerBroken.Map(sheet));
@@ -132,45 +136,43 @@ namespace PlacementGauntlet
         Code: o.Next(Place.Right(captions["Line"]).Text()),
         Amount: o.Next(Place.Right(captions["Amount"]).Decimal()))));
 
-      var oldLines = VerticalFlow(v => new KSection(
-          Caption: v.Next(Caption("K-1 Lines 1-21")),
-          Lines: v.Next(kLines)))
-        .On(RowContaining("K-1 Lines 1-21"))
-        .Until(RowContaining("Portfolio Income"));
-
-      var oldPortfolio = VerticalFlow(v => new KSection(
-          Caption: v.Next(Caption("Portfolio Income")),
-          Lines: v.Next(kLines)))
-        .On(RowContaining("Portfolio Income"))
-        .Until(RowContaining("Totals"));
-
-      // Anchor prefix, content, bound postfix — the whole placement read top to bottom.
-      var newLines = Place.On(RowContaining("K-1 Lines 1-21"))
+      // OLD — the library's shipped pipeline; NEW — the façade. Phase 5 retired postfix `.Until`, so
+      // the bound is a stage that leads the terminal on both sides (anchor, bound, then the flow).
+      var oldLines = Projection.On(RowContaining("K-1 Lines 1-21")).Until(RowContaining("Portfolio Income"))
         .VerticalFlow(v => new KSection(
           Caption: v.Next(Caption("K-1 Lines 1-21")),
-          Lines: v.Next(kLines)))
-        .Until(RowContaining("Portfolio Income"));
+          Lines: v.Next(kLines)));
 
-      var newPortfolio = Place.On(RowContaining("Portfolio Income"))
+      var oldPortfolio = Projection.On(RowContaining("Portfolio Income")).Until(RowContaining("Totals"))
         .VerticalFlow(v => new KSection(
           Caption: v.Next(Caption("Portfolio Income")),
-          Lines: v.Next(kLines)))
-        .Until(RowContaining("Totals"));
+          Lines: v.Next(kLines)));
+
+      // Anchor, bound, then content — the whole placement read top to bottom.
+      var newLines = Place.On(RowContaining("K-1 Lines 1-21")).Until(RowContaining("Portfolio Income"))
+        .VerticalFlow(v => new KSection(
+          Caption: v.Next(Caption("K-1 Lines 1-21")),
+          Lines: v.Next(kLines)));
+
+      var newPortfolio = Place.On(RowContaining("Portfolio Income")).Until(RowContaining("Totals"))
+        .VerticalFlow(v => new KSection(
+          Caption: v.Next(Caption("Portfolio Income")),
+          Lines: v.Next(kLines)));
 
       Judge.SameL2("read 3 — the K-1 section: value and geometry", oldLines.Apply(sheet), newLines.Apply(sheet));
       Judge.SameL2("read 3 — the portfolio section: value and geometry", oldPortfolio.Apply(sheet), newPortfolio.Apply(sheet));
 
       // The same section spelled with the caption as an entry rather than as a child of the flow —
       // both rulings in one declaration.
-      var underLines = Place.On(RowContaining("K-1 Lines 1-21"))
-        .Under(Caption("K-1 Lines 1-21"))
-        .Of(kLines)
-        .Until(RowContaining("Portfolio Income"));
+      var underLines = Place.Until(RowContaining("Portfolio Income"))
+        .Of(Place.On(RowContaining("K-1 Lines 1-21"))
+          .Under(Caption("K-1 Lines 1-21"))
+          .Of(kLines));
 
-      var underLinesToday = kLines
-        .Under(Caption("K-1 Lines 1-21"))
-        .On(RowContaining("K-1 Lines 1-21"))
-        .Until(RowContaining("Portfolio Income"));
+      var underLinesToday = Projection.On(RowContaining("K-1 Lines 1-21"))
+        .Until(RowContaining("Portfolio Income"))
+        .Heading("K-1 Lines 1-21")
+        .Of(kLines);
 
       Judge.SameL2("anchor + caption + bound, all three, against today's spelling",
         underLinesToday.Apply(sheet), underLines.Apply(sheet));
@@ -192,11 +194,10 @@ namespace PlacementGauntlet
         newMapped.Diagnostics.Select(d => d.ToString()).ToList());
 
       Judge.SameFailure("read 3 at L3 — a missing anchor fails with the same path and sentence",
-        () => VerticalFlow(v => new KSection(v.Next(Caption("Nope")), v.Next(kLines)))
-          .On(RowContaining("Nope")).Until(RowContaining("Portfolio Income")).Map(sheet),
-        () => Place.On(RowContaining("Nope"))
-          .VerticalFlow(v => new KSection(v.Next(Caption("Nope")), v.Next(kLines)))
-          .Until(RowContaining("Portfolio Income")).Map(sheet));
+        () => Projection.On(RowContaining("Nope")).Until(RowContaining("Portfolio Income"))
+          .VerticalFlow(v => new KSection(v.Next(Caption("Nope")), v.Next(kLines))).Map(sheet),
+        () => Place.On(RowContaining("Nope")).Until(RowContaining("Portfolio Income"))
+          .VerticalFlow(v => new KSection(v.Next(Caption("Nope")), v.Next(kLines))).Map(sheet));
     }
 
     // --- The composition question: does Under compose with an anchor? -------------------------------
@@ -216,7 +217,10 @@ namespace PlacementGauntlet
       var regionName = Row(cells => cells[0].GetString());
       var lines = Table<Line>();
 
-      var oldSection = lines.Under(regionName).On(regionMark);
+      // A DISCOVERED heading (regionName is a Row projection, not a literal Caption): the library's
+      // string-taking Heading cannot spell it, so both spellings are the façade's caption entry. This
+      // is the corner the Heading dissolution recorded as "where it fights back".
+      var oldSection = Place.On(regionMark).Under(regionName).Of(lines);
       var newSection = Place.On(regionMark).Under(regionName).Of(lines);
 
       var oldRegions = VerticalRepeat(oldSection, separatedBy: BlankRows());
@@ -225,8 +229,9 @@ namespace PlacementGauntlet
       Judge.SameL2("the repeat-stop recipe: anchor on the flow, either spelling",
         oldRegions.Apply(sheet), newRegions.Apply(sheet));
 
-      // The negative pin: the other order is a different declaration, and the pipeline cannot spell it.
-      var anchoredInside = lines.On(regionMark).Under(regionName);
+      // The negative pin: the other order anchors the CONTENT, not the flow — a different declaration.
+      // A single pipeline cannot spell it (Under is the innermost prepend); nesting can, and does here.
+      var anchoredInside = Place.Under(regionName).Of(Place.On(regionMark).Of(lines));
 
       Judge.Different("anchoring the CONTENT instead of the flow is a different declaration",
         Attempt(() => VerticalRepeat(oldSection, separatedBy: BlankRows()).Map(sheet)),
@@ -244,7 +249,7 @@ namespace PlacementGauntlet
 
       var irrDetails = VerticalRepeat(Table<CashFlow>(), separatedBy: BlankRows());
 
-      var today = irrDetails.Under(Caption(Inception));
+      var today = Under(Caption(Inception)).Of(irrDetails);
       var scoped = Place.Over<ISpreadsheetSpace>().Under(Caption(Inception)).Of(irrDetails);
 
       IProjection<ISpreadsheetSpace, IReadOnlyList<IReadOnlyList<CashFlow>>> stated = scoped;

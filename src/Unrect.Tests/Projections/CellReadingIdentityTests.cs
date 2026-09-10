@@ -77,7 +77,7 @@ namespace Unrect.Tests.Projections
         { "Acme", offending },
       });
 
-      var byLeaf = Assert.Throws<ProjectionException>(() => leaf.Right(1).Down(1).Map(space));
+      var byLeaf = Assert.Throws<ProjectionException>(() => Right(1).Down(1).Of(leaf).Map(space));
       var byColumn = Assert.Throws<ProjectionException>(() => table.Map(space));
 
       Assert.Equal($"column '{caption}': {Problem(byLeaf)}", Problem(byColumn));
@@ -181,7 +181,7 @@ namespace Unrect.Tests.Projections
         { "Acme", "x" },
       });
 
-      var byLeaf = Assert.Throws<ProjectionException>(() => Decimal().Right(1).Down(1).Map(space));
+      var byLeaf = Assert.Throws<ProjectionException>(() => Right(1).Down(1).Of(Decimal()).Map(space));
       var byColumn = Assert.Throws<ProjectionException>(() => Table<Money>().Map(space));
 
       Assert.Equal("Decimal", byLeaf.Subject);
@@ -194,7 +194,7 @@ namespace Unrect.Tests.Projections
 
       // OrBlank moves the wrapper too — it renames the leaf to "Decimal?" — and leaves the sentence
       // about the cell exactly where it was.
-      var tolerant = Assert.Throws<ProjectionException>(() => Decimal().OrBlank().Right(1).Down(1).Map(space));
+      var tolerant = Assert.Throws<ProjectionException>(() => Right(1).Down(1).Of(Decimal().OrBlank()).Map(space));
 
       Assert.Equal("Decimal?", tolerant.Subject);
       Assert.Equal(Problem(byLeaf), Problem(tolerant));
@@ -211,7 +211,7 @@ namespace Unrect.Tests.Projections
         { "Acme", null },
       });
 
-      var byLeaf = Decimal().OrBlank().Right(1).Down(1).MapWithDiagnostics(space);
+      var byLeaf = Right(1).Down(1).Of(Decimal().OrBlank()).MapWithDiagnostics(space);
       var byColumn = Table<Tolerant>().Map(space);
 
       Assert.Null(byLeaf.Value);
@@ -233,7 +233,7 @@ namespace Unrect.Tests.Projections
         { "Acme", null },
       });
 
-      Assert.Null(Text().OrBlank().Right(1).Down(1).Map(space));
+      Assert.Null(Right(1).Down(1).Of(Text().OrBlank()).Map(space));
       Assert.Null(Table<Annotated>().Map(space).Single().Note);
     }
 

@@ -169,10 +169,8 @@ namespace Unrect.Tests.Streaming
       return VerticalFlow(v => (
         Title: v.Next(Column(4, column => column[0].GetString()).Named("report header")),
         Summary: v.Next(Table(row => row["Investors"].GetString()).Named("summary")),
-        ByTransferDate: v.Next(series
-          .Under(Caption("IRR Details"), Caption("Cash Flows Using Transfer Date"))
-          .Until(RowContaining(Inception))),
-        ByInception: v.Next(series.Under(Caption(Inception)))));
+        ByTransferDate: v.Next(Until(RowContaining(Inception)).Heading("IRR Details").Heading("Cash Flows Using Transfer Date").Of(series)),
+        ByInception: v.Next(Heading(Inception).Of(series))));
     }
 
     [Fact]
@@ -300,7 +298,7 @@ namespace Unrect.Tests.Streaming
         Amount: h.Next(Integer()),
         Category: h.Next(Text())));
 
-      return Table(headerRows: 0, eachRow: ledgerEntry).Below(RowContaining("Entry"));
+      return Below(RowContaining("Entry")).Of(Table(headerRows: 0, eachRow: ledgerEntry));
     }
 
     [Fact]

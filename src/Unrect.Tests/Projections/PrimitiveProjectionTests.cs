@@ -45,7 +45,7 @@ namespace Unrect.Tests.Projections
       var space = Grid(new[,] { { 7, 8 } });
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        Cell(v => v.GetInt()).Sized(AreaStrategies.ExplicitArea(2, 1)).Map(space));
+        Sized(AreaStrategies.ExplicitArea(2, 1)).Of(Cell(v => v.GetInt())).Map(space));
 
       Assert.Contains("a Cell must be exactly one cell; this one is 2x1", failure.Message);
     }
@@ -94,7 +94,7 @@ namespace Unrect.Tests.Projections
       var space = Grid(new[,] { { 1, 2 }, { 3, 4 } });
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        Row(s => s.Count).Sized(AreaStrategies.ExplicitArea(2, 2)).Map(space));
+        Sized(AreaStrategies.ExplicitArea(2, 2)).Of(Row(s => s.Count)).Map(space));
 
       Assert.Contains("a Row must be exactly one row tall; this one is 2 rows tall", failure.Message);
     }
@@ -143,7 +143,7 @@ namespace Unrect.Tests.Projections
       var space = Grid(new[,] { { 1, 2 } });
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        Column(s => s.Count).Sized(AreaStrategies.ExplicitArea(2, 1)).Map(space));
+        Sized(AreaStrategies.ExplicitArea(2, 1)).Of(Column(s => s.Count)).Map(space));
 
       Assert.Contains("a Column must be exactly one column wide; this one is 2 columns wide", failure.Message);
     }

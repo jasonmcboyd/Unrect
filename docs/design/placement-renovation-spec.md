@@ -87,19 +87,67 @@ phase 1–2.
   dichotomy theorem, not a limitation).
 - CLAUDE.md updated by the orchestrator (off-limits to agents, per standing rule).
 
-## Phase 5 — retirements (the breaking phase, each its own owner decision)
+## Phase 5 — retirements: END-STATE (A), pipeline-only geometry (owner, 2026-09-10)
 
-1. Postfix `.Under` and the `Under` entry: RETIRE (ruled — the fossil dissolution;
-   nothing left behind: `Heading` asserts, capture is a flow child, shape-location is
-   `RowWhere`).
-2. Discard-case `Caption` uses: gone by migration; `Caption` the leaf remains, doc'd
-   as the capture word.
-3. Postfix `.Until` vs the bound stage: ruling 1 chose the stage as the canonical
-   spelling; whether postfix retires or remains as an accepted second spelling is the
-   ONE retirement left genuinely open (the trial proved both are the same declaration
-   — the one-spelling discipline argues retire; the migration experience decides).
-4. Version: the retirements are breaking → **v0.4.0-alpha.1** target; phases 1–4 alone
-   are additive and could ship earlier as a minor if desired.
+The owner chose end-state (A): **geometry is expressed only through the pipeline.**
+Rationale — erasure is unspellable at COMPILE time only if the postfix modifiers that
+carry it are gone; a surviving `x.On(a).On(b)` compiles and hits merely the runtime
+guard. Plus the owner's standing values: no second spellings, no inconsistency. So the
+pipeline entries + stages become the SOLE geometry vocabulary.
+
+**Retire from the public surface** (the placement/extent/bound modifiers):
+`.On`/`.Below`/`.RightOf` (anchors), `.OffsetBy`, `.Down`/`.Right`/`.AfterBlankRows`/
+`.AfterBlankColumns` (movements), `.Sized` (extent), `.Until`/`.UntilColumn` (bounds).
+`.Under` is DELETED (not just internalized) once `Heading` is made self-contained
+(builds its flow directly rather than replaying `.Under`); `Caption` stays as the
+capture leaf.
+
+**Keep public** (not geometry): `.Named`, `.OrBlank`, `.Select`, `.Optional`, `.Else`,
+`.Demanding`.
+
+**Mechanism (CORRECTED — owner ruled DELETE, 2026-09-10):** the earlier draft said
+"retire = make internal, not delete"; that was the evaluator's pragmatic call, not a
+ruling, and the owner rejected it. An internalized-but-surviving postfix form is the
+same half-measure as an undocumented-but-public one, one visibility level deeper — and
+`InternalsVisibleTo("Unrect.Tests")` lets the tests keep exercising the retired forms
+through the back door, so they never demonstrate the canonical surface. So: the postfix
+geometry extensions are DELETED outright. The stages become SELF-CONTAINED over
+`Placement` (the pattern already proven on `Heading`: `Step` → `Placement` operation
+directly, no replay through a public-shaped extension — which also simplifies the
+replay). Geometry modifiers carry no `CallerArgumentExpression` capture, so nothing is
+lost in the move. Consequence: the tests are FORCED onto the pipeline (no back door),
+which is correct — the suite should demonstrate the canonical spelling, not the
+retired substrate. No internal ghosts; geometry is the pipeline at every layer.
+
+**Completeness addition — the `Sized` entry (RULED, 2026-09-10, convergent):** the
+deletion exposed that the pipeline could not express size-without-offset — a region
+sized to its content but not moved (the `scrubbed-k1` header, `.Sized(RowsWhileAnyValue())`,
+which the phase-4 migration had kept postfix with a comment noting "no pipeline entry to
+enter by"; deletion broke it). So the pipeline gains a bare `Sized(area)` ENTRY: enter at
+the size stage, adjacency offset by default. Erasure-safe by construction — returns a
+size-set stage, so `Sized(a).Sized(b)` won't compile and `Sized(a).On(m)` is refused
+(offset-after-size violates the canonical order). Not new capability — the completion
+that un-breaks a corpus the campaign already shipped. (The owner independently reached
+the same conclusion stubbing interfaces.) Reads placement-first: `Sized(RowsWhileAnyValue()).Of(header)`.
+
+**Sub-decision, DEFERRED (owner thinking, 2026-09-10):** `.Padded` — extent-geometry but
+it NESTS rather than erases (not an erasure vector). The agent recommended keeping it as
+the lone documented postfix exception; the owner is deliberating and has NOT ruled. So
+`.Padded` is left PUBLIC and UNTOUCHED by the deletion pass — neither retired nor blessed
+as permanent. It remains the one postfix geometry modifier, pending the owner's call
+(keep as exception, or add a `Padded` stage for full uniformity). Recorded as open, not
+resolved.
+
+**Transitional coverage that retires with the forms:** the pipeline≡postfix
+differentials (the parity `StageTwins`, the "both live" acceptance originals, any
+migration twin) existed to prove the new spelling matched the old DURING migration. Once
+the postfix form is gone there is nothing to compare against — so these convert to
+DIRECT pins of the pipeline's behavior (expected values/paths/diagnostics), not
+comparisons against a retired form; coverage is re-expressed, never merely deleted. QA
+spot-checks that re-pinned tests still bite (perturbation).
+
+**Version: NO bump, NO release this round (owner).** Finish the code on the branch; no
+tag, no publish. The v0.4.0-alpha.1 bump waits for whenever release is chosen.
 
 ## Acceptance (the campaign's phase-7 analog)
 

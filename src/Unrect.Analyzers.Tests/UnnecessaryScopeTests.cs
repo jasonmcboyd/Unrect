@@ -144,7 +144,7 @@ namespace Unrect.Analyzers.Tests
         }
         """);
 
-    /// <summary>A placement is not a scope. <c>table.Below(m)</c> raises no demand and is not judged.</summary>
+    /// <summary>A placement is not a scope. <c>Below(m).Of(table)</c> raises no demand and is not judged.</summary>
     [Fact]
     public Task A_postfix_placement_on_a_plain_projection_is_silent()
       => Verify.Silent<UnnecessaryScopeAnalyzer>(
@@ -154,7 +154,7 @@ namespace Unrect.Analyzers.Tests
         class Report
         {
           IProjection<IReadOnlyList<Line>> Lines()
-            => Projection.Table<Line>().Below(Projection.RowContaining("Total"));
+            => Projection.Below(Projection.RowContaining("Total")).Of(Projection.Table<Line>());
         }
         """);
 
