@@ -1,3 +1,5 @@
+using PlacementGauntlet.Staged;
+
 using Unrect.Projections;
 
 using static PlacementGauntlet.Staged.Place;
@@ -35,22 +37,22 @@ namespace PlacementGauntlet
 
       // NEW — placement first: that many columns along, a decimal.
       var newPositions = Table(headerRows: 1, eachRow: captions => Overlay(o => new Position(
-        Symbol: o.Next(Right(captions["Symbol"]).Text()),
-        Quantity: o.Next(Right(captions["Quantity"]).Decimal()),
-        MarketValue: o.Next(Right(captions["Market Value"]).Decimal()),
-        BuyingPower: o.Next(Right(captions["Buying Power"]).Decimal()))));
+        Symbol: o.Next(Place.Right(captions["Symbol"]).Text()),
+        Quantity: o.Next(Place.Right(captions["Quantity"]).Decimal()),
+        MarketValue: o.Next(Place.Right(captions["Market Value"]).Decimal()),
+        BuyingPower: o.Next(Place.Right(captions["Buying Power"]).Decimal()))));
 
       Judge.Same("buying-power bind: the inverted leaf reads what the postfix leaf reads",
         oldPositions.Map(sheet), newPositions.Map(sheet));
 
       // And the whole table placed, to show the hotspot inside a placed region rather than at the root.
       var oldPlaced = oldPositions.Below(RowContaining("Account")).Sized(RowsWhileAnyValue());
-      var newPlaced = Below(RowContaining("Account")).Sized(RowsWhileAnyValue())
+      var newPlaced = Place.Below(RowContaining("Account")).Sized(RowsWhileAnyValue())
         .Table(headerRows: 0, eachRow: Overlay(o => new Position(
-          Symbol: o.Next(Right(1).Text()),
-          Quantity: o.Next(Right(2).Decimal()),
-          MarketValue: o.Next(Right(3).Decimal()),
-          BuyingPower: o.Next(Right(4).Decimal()))));
+          Symbol: o.Next(Place.Right(1).Text()),
+          Quantity: o.Next(Place.Right(2).Decimal()),
+          MarketValue: o.Next(Place.Right(3).Decimal()),
+          BuyingPower: o.Next(Place.Right(4).Decimal()))));
 
       var oldPlacedEquivalent = Table(headerRows: 0, eachRow: Overlay(o => new Position(
           Symbol: o.Next(Text().Right(1)),
@@ -69,7 +71,7 @@ namespace PlacementGauntlet
       // The one thing the hotspot loses: OrBlank, and every other clone modifier, still lands on the
       // TERMINAL's result rather than in the pipeline, so a tolerant leaf reads inside-out.
       var tolerantOld = Decimal().OrBlank().Right(2);
-      var tolerantNew = Right(2).Decimal().OrBlank();
+      var tolerantNew = Place.Right(2).Decimal().OrBlank();
 
       Judge.Same("a tolerant leaf: OrBlank stays postfix on the closed projection",
         Table(headerRows: 1, eachRow: Overlay(o => o.Next(tolerantOld))).Map(sheet),

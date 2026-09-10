@@ -371,5 +371,91 @@ namespace Unrect.Projections
 
     /// <inheritdoc cref="Projection.AllColumns()"/>
     public static IColumnStrategy AllColumns() => Projection.AllColumns();
+
+    // --- The placement pipeline's entries -------------------------------------------------------
+    //
+    // Closed over TSpace like the members that take a projection, and for the same reason: a
+    // pipeline's stages carry the space to whichever terminal closes them, so a scoped file's
+    // Below(mark).VerticalFlow(v => …) hands its lambda a cursor over the space the file named.
+
+    /// <inheritdoc cref="Projection.On(IRowLandmark)"/>
+    /// <param name="landmark">The row to sit on.</param>
+    public static OffsetStage<TSpace> On(IRowLandmark landmark) => Scope.On(landmark);
+
+    /// <inheritdoc cref="Projection.On(IColumnLandmark)"/>
+    /// <param name="landmark">The column to sit on.</param>
+    public static OffsetStage<TSpace> On(IColumnLandmark landmark) => Scope.On(landmark);
+
+    /// <inheritdoc cref="Projection.On{T}(IRowLandmark{T})"/>
+    /// <param name="landmark">The row to sit on. A matcher demanding less is accepted as it is.</param>
+    public static OffsetStage<TSpace> On(IRowLandmark<TSpace> landmark) => Scope.On(landmark);
+
+    /// <inheritdoc cref="Projection.On{T}(IRowLandmark{T})"/>
+    /// <param name="landmark">The column to sit on. A matcher demanding less is accepted as it is.</param>
+    public static OffsetStage<TSpace> On(IColumnLandmark<TSpace> landmark) => Scope.On(landmark);
+
+    /// <inheritdoc cref="Projection.Below(IRowLandmark)"/>
+    /// <param name="landmark">The row to sit below.</param>
+    public static OffsetStage<TSpace> Below(IRowLandmark landmark) => Scope.Below(landmark);
+
+    /// <inheritdoc cref="Projection.Below{T}(IRowLandmark{T})"/>
+    /// <param name="landmark">The row to sit below. A matcher demanding less is accepted as it is.</param>
+    public static OffsetStage<TSpace> Below(IRowLandmark<TSpace> landmark) => Scope.Below(landmark);
+
+    /// <inheritdoc cref="Projection.RightOf(IColumnLandmark)"/>
+    /// <param name="landmark">The column to sit right of.</param>
+    public static OffsetStage<TSpace> RightOf(IColumnLandmark landmark) => Scope.RightOf(landmark);
+
+    /// <inheritdoc cref="Projection.RightOf{T}(IColumnLandmark{T})"/>
+    /// <param name="landmark">The column to sit right of. A matcher demanding less is accepted as it is.</param>
+    public static OffsetStage<TSpace> RightOf(IColumnLandmark<TSpace> landmark) => Scope.RightOf(landmark);
+
+    /// <inheritdoc cref="Projection.OffsetBy(IOffsetStrategy)"/>
+    /// <param name="offset">Where the section starts.</param>
+    public static OffsetStage<TSpace> OffsetBy(IOffsetStrategy offset) => Scope.OffsetBy(offset);
+
+    /// <inheritdoc cref="Projection.AfterBlankRows()"/>
+    public static OffsetStage<TSpace> AfterBlankRows() => Scope.AfterBlankRows();
+
+    /// <inheritdoc cref="Projection.AfterBlankColumns()"/>
+    public static OffsetStage<TSpace> AfterBlankColumns() => Scope.AfterBlankColumns();
+
+    /// <inheritdoc cref="Projection.SkipEmptyRowsAndColumns()"/>
+    public static OffsetStage<TSpace> SkipEmptyRowsAndColumns() => Scope.SkipEmptyRowsAndColumns();
+
+    /// <inheritdoc cref="Projection.Down(int)"/>
+    /// <param name="rows">How far down.</param>
+    public static OffsetStage<TSpace> Down(int rows) => Scope.Down(rows);
+
+    /// <inheritdoc cref="Projection.Right(int)"/>
+    /// <param name="columns">How far right.</param>
+    public static OffsetStage<TSpace> Right(int columns) => Scope.Right(columns);
+
+    /// <inheritdoc cref="Projection.Until(IRowLandmark, bool)"/>
+    /// <param name="landmark">The row the extent stops before.</param>
+    /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
+    public static BoundStage<TSpace> Until(IRowLandmark landmark, bool orEnd = false) => Scope.Until(landmark, orEnd);
+
+    /// <inheritdoc cref="Projection.Until{T}(IRowLandmark{T}, bool)"/>
+    /// <param name="landmark">The row the extent stops before. A matcher demanding less is accepted as it is.</param>
+    /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
+    public static BoundStage<TSpace> Until(IRowLandmark<TSpace> landmark, bool orEnd = false)
+      => Scope.Until(landmark, orEnd);
+
+    /// <inheritdoc cref="Projection.UntilColumn(IColumnLandmark, bool)"/>
+    /// <param name="landmark">The column the extent stops before.</param>
+    /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
+    public static BoundStage<TSpace> UntilColumn(IColumnLandmark landmark, bool orEnd = false)
+      => Scope.UntilColumn(landmark, orEnd);
+
+    /// <inheritdoc cref="Projection.UntilColumn{T}(IColumnLandmark{T}, bool)"/>
+    /// <param name="landmark">The column the extent stops before. A matcher demanding less is accepted as it is.</param>
+    /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
+    public static BoundStage<TSpace> UntilColumn(IColumnLandmark<TSpace> landmark, bool orEnd = false)
+      => Scope.UntilColumn(landmark, orEnd);
+
+    /// <inheritdoc cref="HeadingStage"/>
+    /// <param name="text">What the heading row says.</param>
+    public static HeadingStage<TSpace> Heading(string text) => Scope.Heading(text);
   }
 }

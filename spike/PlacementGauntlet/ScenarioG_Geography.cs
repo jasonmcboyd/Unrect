@@ -129,8 +129,8 @@ namespace PlacementGauntlet
       var sheet = Sheets.K1();
 
       var kLines = Table(headerRows: 1, eachRow: captions => Overlay(o => new KLine(
-        Code: o.Next(Right(captions["Line"]).Text()),
-        Amount: o.Next(Right(captions["Amount"]).Decimal()))));
+        Code: o.Next(Place.Right(captions["Line"]).Text()),
+        Amount: o.Next(Place.Right(captions["Amount"]).Decimal()))));
 
       var oldLines = VerticalFlow(v => new KSection(
           Caption: v.Next(Caption("K-1 Lines 1-21")),
@@ -145,13 +145,13 @@ namespace PlacementGauntlet
         .Until(RowContaining("Totals"));
 
       // Anchor prefix, content, bound postfix — the whole placement read top to bottom.
-      var newLines = On(RowContaining("K-1 Lines 1-21"))
+      var newLines = Place.On(RowContaining("K-1 Lines 1-21"))
         .VerticalFlow(v => new KSection(
           Caption: v.Next(Caption("K-1 Lines 1-21")),
           Lines: v.Next(kLines)))
         .Until(RowContaining("Portfolio Income"));
 
-      var newPortfolio = On(RowContaining("Portfolio Income"))
+      var newPortfolio = Place.On(RowContaining("Portfolio Income"))
         .VerticalFlow(v => new KSection(
           Caption: v.Next(Caption("Portfolio Income")),
           Lines: v.Next(kLines)))
@@ -162,7 +162,7 @@ namespace PlacementGauntlet
 
       // The same section spelled with the caption as an entry rather than as a child of the flow —
       // both rulings in one declaration.
-      var underLines = On(RowContaining("K-1 Lines 1-21"))
+      var underLines = Place.On(RowContaining("K-1 Lines 1-21"))
         .Under(Caption("K-1 Lines 1-21"))
         .Of(kLines)
         .Until(RowContaining("Portfolio Income"));
@@ -194,7 +194,7 @@ namespace PlacementGauntlet
       Judge.SameFailure("read 3 at L3 — a missing anchor fails with the same path and sentence",
         () => VerticalFlow(v => new KSection(v.Next(Caption("Nope")), v.Next(kLines)))
           .On(RowContaining("Nope")).Until(RowContaining("Portfolio Income")).Map(sheet),
-        () => On(RowContaining("Nope"))
+        () => Place.On(RowContaining("Nope"))
           .VerticalFlow(v => new KSection(v.Next(Caption("Nope")), v.Next(kLines)))
           .Until(RowContaining("Portfolio Income")).Map(sheet));
     }
@@ -217,7 +217,7 @@ namespace PlacementGauntlet
       var lines = Table<Line>();
 
       var oldSection = lines.Under(regionName).On(regionMark);
-      var newSection = On(regionMark).Under(regionName).Of(lines);
+      var newSection = Place.On(regionMark).Under(regionName).Of(lines);
 
       var oldRegions = VerticalRepeat(oldSection, separatedBy: BlankRows());
       var newRegions = VerticalRepeat(newSection, separatedBy: BlankRows());

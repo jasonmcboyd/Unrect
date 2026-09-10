@@ -56,7 +56,7 @@ namespace PlacementGauntlet
     //             'ProjectionExtensions.On<TProjection>(TProjection, IRowLandmark)'. There is no
     //             implicit reference conversion from 'PlacementGauntlet.Staged.OffsetStage' to
     //             'Unrect.Projections.IProjection'.
-    public static object A() => Below(Mark).On(Other).Text();
+    public static object A() => Place.Below(Mark).On(Other).Text();
 
     // (b) ANCHOR OVER ANCHOR through the strategy door.
     //     CS0311: The type 'PlacementGauntlet.Staged.OffsetStage' cannot be used as type parameter
@@ -64,7 +64,7 @@ namespace PlacementGauntlet
     //             'ProjectionExtensions.OffsetBy<TProjection>(TProjection, IOffsetStrategy)'. There is
     //             no implicit reference conversion from 'PlacementGauntlet.Staged.OffsetStage' to
     //             'Unrect.Projections.IProjection'.
-    public static object B() => On(Mark).OffsetBy(BlankRows()).Text();
+    public static object B() => Place.On(Mark).OffsetBy(BlankRows()).Text();
 
     // (c) ANCHOR AFTER MOVEMENT — the survey's hazard 3. Movements never lead back to a root.
     //     CS0311: The type 'PlacementGauntlet.Staged.OffsetStage' cannot be used as type parameter
@@ -72,7 +72,7 @@ namespace PlacementGauntlet
     //             'ProjectionExtensions.Below<TProjection>(TProjection, IRowLandmark)'. There is no
     //             implicit reference conversion from 'PlacementGauntlet.Staged.OffsetStage' to
     //             'Unrect.Projections.IProjection'.
-    public static object C() => Down(2).Below(Mark).Text();
+    public static object C() => Place.Down(2).Below(Mark).Text();
 
     // (d) DOUBLE SIZE — extents do not stack.
     //     CS0311: The type 'PlacementGauntlet.Staged.OffsetAndSizeStage' cannot be used as type
@@ -96,7 +96,7 @@ namespace PlacementGauntlet
     //             'ProjectionExtensions.Until<TProjection>(TProjection, IRowLandmark, bool)'. There is
     //             no implicit reference conversion from 'PlacementGauntlet.Staged.BoundStage' to
     //             'Unrect.Projections.IProjection'.
-    public static object F() => Until(Mark).Until(Other).Text();
+    public static object F() => Place.Until(Mark).Until(Other).Text();
 
     // (g) THE FRAME — the survey's hazard 4, which was never a contradiction but IS a trap: an extent
     //     declared outside a bound becomes the frame the landmark is sought in. Unspellable here, and
@@ -106,7 +106,7 @@ namespace PlacementGauntlet
     //             'ProjectionExtensions.Sized<TProjection>(TProjection, IAreaStrategy)'. There is no
     //             implicit reference conversion from 'PlacementGauntlet.Staged.BoundStage' to
     //             'Unrect.Projections.IProjection'.
-    public static object G() => Until(Mark).Sized(Extent(3, 4)).Text();
+    public static object G() => Place.Until(Mark).Sized(Extent(3, 4)).Text();
 
     // (h) THE SAME REFUSAL, TAUGHT. The scoped offset stage carries the four anchors as
     //     [Obsolete(error)] stubs, so the compiler says the library's words instead of its own. This
@@ -140,7 +140,10 @@ namespace PlacementGauntlet
     //     CS1061: 'OffsetStage<ISpace>' does not contain a definition for 'TableExt' and no accessible
     //             extension method 'TableExt' accepting a first argument of type 'OffsetStage<ISpace>'
     //             could be found (are you missing a using directive or an assembly reference?)
-    public static IProjection<TSpace, IReadOnlyList<T>> TableExt<TSpace, T>(this PlacementStage<TSpace> stage)
+    // The stage type is spelled in full: since the pipeline shipped, `PlacementStage<TSpace>` is
+    // ambiguous between the spike's and the library's, and a TYPE ambiguity is a declaration error,
+    // which stops Roslyn binding any body in the compilation — the whole ledger would go silent.
+    public static IProjection<TSpace, IReadOnlyList<T>> TableExt<TSpace, T>(this Staged.PlacementStage<TSpace> stage)
       where TSpace : class, ISpace
       => stage.Table<T>();
 
@@ -193,7 +196,7 @@ namespace PlacementGauntlet
     //             the anchor must sit on the heading-and-content flow — declare it as the pipeline's
     //             entry, which reads first because it is furthest up the sheet:
     //             On(mark).Heading("…").Of(section).'
-    public static object V() => Heading("Detail").On(Mark).Of(Table<Position>());
+    public static object V() => Place.Heading("Detail").On(Mark).Of(Table<Position>());
 
     // (w) A BOUND AFTER A HEADING — ruling 1's canonical order (anchors/offsets, then bounds/sizes,
     //     then headings, then the subject) enforced by the grammar in the one direction it runs.
@@ -207,7 +210,7 @@ namespace PlacementGauntlet
     //             'ProjectionExtensions.Until<TProjection>(TProjection, IRowLandmark, bool)'. There is
     //             no implicit reference conversion from 'PlacementGauntlet.Staged.HeadingStage' to
     //             'Unrect.Projections.IProjection'.
-    public static object W() => Heading("Detail").Until(Mark).Of(Table<Position>());
+    public static object W() => Place.Heading("Detail").Until(Mark).Of(Table<Position>());
 
     // (x) A DISCOVERED HEADING. Heading takes the TEXT — that is the cure, and it is also the limit:
     //     the corpus's repeat-stop recipe consumes a row whose text VARIES per occurrence, read

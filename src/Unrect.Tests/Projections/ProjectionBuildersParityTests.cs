@@ -39,14 +39,25 @@ namespace Unrect.Tests.Projections
   /// instead of the caller's, and a factory that is added to the vocabulary and never re-exported.
   /// There is a section for each.
   /// <para>
-  /// <b>Section 1 — value parity, mechanically.</b> Two theories cover all 58 members: one for the
+  /// <b>Section 1 — value parity, mechanically.</b> Three theories cover all 77 members: one for the
   /// 33 that return a projection, read through the <see cref="Observations"/> harness at L3 over
-  /// three grids (a well-formed ledger, one whose kinds are all wrong, and a sparse one), and one
+  /// three grids (a well-formed ledger, one whose kinds are all wrong, and a sparse one); one
   /// for the 25 that hand back a strategy, a landmark or a <see cref="Unrect.Projections.Field"/>, compared at the
-  /// strategy level — the selection, offset or area each computes over the same grids. Failure
+  /// strategy level — the selection, offset or area each computes over the same grids; and one for
+  /// the 19 placement-pipeline entries, which hand back a <em>stage</em>. Failure
   /// parity is not a separate list: the hostile and sparse grids make most of these declarations
   /// fail, and a failure compared at L3 is compared down to its path, its subject and its
   /// diagnostics.
+  /// </para>
+  /// <para>
+  /// <b>What a stage entry is compared against.</b> Not the same entry on <see cref="Projection"/>
+  /// — that would compare a forwarder with a forwarder and pin nothing about placement. A stage is
+  /// closed with a terminal and read against the <em>postfix</em> spelling of the same declaration:
+  /// <c>B.On(mark).Text()</c> against <c>Text().On(mark)</c>, <c>B.Heading(t).Range(…)</c> against
+  /// <c>Range(…).Under(Caption(t))</c>. So the entry's re-export and the pipeline's replay are pinned
+  /// in one comparison, and the law that the pipeline is a spelling rather than a semantics is
+  /// stated 19 times over three grids. The pipeline's own laws — chained headings, the canonical
+  /// order, the refusals — live in <see cref="PlacementPipelineLawTests"/>.
   /// </para>
   /// <para>
   /// <b>Section 2 — name capture, per site.</b> The four members that forward a
@@ -109,6 +120,34 @@ namespace Unrect.Tests.Projections
 
     /// <summary>The same bind pointed at the column of fund names, so every record fails.</summary>
     private static IProjection<decimal> FundColumnAsANumber(CaptionMap captions) => Decimal().Right(captions["Fund"]);
+
+    /// <summary>A region read as its own measurements, so a bound or a heading shows up as geometry.</summary>
+    private static IProjection<string> Block() => Range(block => $"{block.Width}x{block.Height}");
+
+    // A matcher demanding nothing beyond ISpace. The published demanding matchers all demand a
+    // capability (`RowWithFormula` demands IFormulaSpace) and IRowLandmark<in TSpace> is
+    // contravariant, so none of them can stand where an IRowLandmark<ISpace> is wanted — and this
+    // file's builders are closed over ISpace. The demand is a static-type fact with no run-time
+    // shadow, so the least demanding witness is exactly the right one: it exercises the forwarder's
+    // unwrap (`Required(landmark).Landmark`) and nothing else.
+
+    private sealed class DemandingRow : IRowLandmark<ISpace>
+    {
+      internal DemandingRow(IRowLandmark landmark) => Landmark = landmark;
+
+      public IRowLandmark Landmark { get; }
+    }
+
+    private sealed class DemandingColumn : IColumnLandmark<ISpace>
+    {
+      internal DemandingColumn(IColumnLandmark landmark) => Landmark = landmark;
+
+      public IColumnLandmark Landmark { get; }
+    }
+
+    private static IRowLandmark<ISpace> Demanding(IRowLandmark landmark) => new DemandingRow(landmark);
+
+    private static IColumnLandmark<ISpace> Demanding(IColumnLandmark landmark) => new DemandingColumn(landmark);
 
     // --- 1a. The 33 projection-returning members ---------------------------------------------------
     //
@@ -246,9 +285,82 @@ namespace Unrect.Tests.Projections
         ["WholeExtent()"] = Strategy(s => B.WholeExtent().GetArea(s), s => WholeExtent().GetArea(s)),
       };
 
+    // --- 1c. The 19 placement-pipeline entries -----------------------------------------------------
+    //
+    // A stage is not a value anyone reads, so each entry is closed with a terminal and compared
+    // against the postfix modifier it replays. Two things are pinned at once and deliberately: the
+    // re-export forwards to the scope, and the replay writes the modifier the author wrote — so a
+    // stage that composed strategies itself instead of replaying (the one defect the Steps
+    // documentation says makes Down(2).Table<T>() stop meaning Table<T>().Down(2)) fails here.
+    //
+    // The subject is Text() wherever the entry moves the section and Block() wherever it changes the
+    // extent, because a bound written on a leaf that reads one cell has nothing to show for itself.
+
+    private static readonly IReadOnlyDictionary<string, Func<ISpace, bool>> StageTwins =
+      new Dictionary<string, Func<ISpace, bool>>(StringComparer.Ordinal)
+      {
+        ["AfterBlankColumns()"] = Reading(() => B.AfterBlankColumns().Text(), () => Text().AfterBlankColumns()),
+        ["AfterBlankRows()"] = Reading(() => B.AfterBlankRows().Text(), () => Text().AfterBlankRows()),
+        ["Below(IRowLandmark)"] = Reading(
+          () => B.Below(RowContaining("Fund")).Text(),
+          () => Text().Below(RowContaining("Fund"))),
+        ["Below(IRowLandmark<TSpace>)"] = Raised(
+          () => B.Below(Demanding(RowContaining("Fund"))).Text(),
+          () => Text().Below(Demanding(RowContaining("Fund")))),
+        ["Down(int)"] = Reading(() => B.Down(1).Text(), () => Text().Down(1)),
+
+        // The one entry whose postfix twin is spelled with a different WORD: a heading is a caption
+        // the library mints and a vertical flow it replays, which is the whole of the L3-by-
+        // construction claim in PlacementPipelineLawTests, said here as a value.
+        ["Heading(string)"] = Reading(() => B.Heading("Fund").Range(b => $"{b.Width}x{b.Height}"), () => Block().Under(Caption("Fund"))),
+
+        ["OffsetBy(IOffsetStrategy)"] = Reading(
+          () => B.OffsetBy(SkipRows(1)).Text(),
+          () => Text().OffsetBy(SkipRows(1))),
+        ["On(IColumnLandmark)"] = Reading(
+          () => B.On(ColumnContaining("Amount")).Text(),
+          () => Text().On(ColumnContaining("Amount"))),
+        ["On(IColumnLandmark<TSpace>)"] = Raised(
+          () => B.On(Demanding(ColumnContaining("Amount"))).Text(),
+          () => Text().On(Demanding(ColumnContaining("Amount")))),
+        ["On(IRowLandmark)"] = Reading(() => B.On(RowContaining("Beta")).Text(), () => Text().On(RowContaining("Beta"))),
+        ["On(IRowLandmark<TSpace>)"] = Raised(
+          () => B.On(Demanding(RowContaining("Beta"))).Text(),
+          () => Text().On(Demanding(RowContaining("Beta")))),
+        ["Right(int)"] = Reading(() => B.Right(1).Text(), () => Text().Right(1)),
+        ["RightOf(IColumnLandmark)"] = Reading(
+          () => B.RightOf(ColumnContaining("Fund")).Text(),
+          () => Text().RightOf(ColumnContaining("Fund"))),
+        ["RightOf(IColumnLandmark<TSpace>)"] = Raised(
+          () => B.RightOf(Demanding(ColumnContaining("Fund"))).Text(),
+          () => Text().RightOf(Demanding(ColumnContaining("Fund")))),
+
+        // The one-word entry for the instinct the default refuses, against the two words it stands
+        // for. Its twin is therefore a COMPOSITION rather than a single modifier — which is exactly
+        // the claim the sugar makes.
+        ["SkipEmptyRowsAndColumns()"] = Reading(
+          () => B.SkipEmptyRowsAndColumns().Text(),
+          () => Text().AfterBlankRows().AfterBlankColumns()),
+
+        ["Until(IRowLandmark, bool)"] = Reading(
+          () => B.Until(RowContaining("Beta")).Range(b => $"{b.Width}x{b.Height}"),
+          () => Block().Until(RowContaining("Beta"))),
+        ["Until(IRowLandmark<TSpace>, bool)"] = Raised(
+          () => B.Until(Demanding(RowContaining("Beta"))).Range(b => $"{b.Width}x{b.Height}"),
+          () => Block().Until(Demanding(RowContaining("Beta")))),
+        ["UntilColumn(IColumnLandmark, bool)"] = Reading(
+          () => B.UntilColumn(ColumnContaining("Amount")).Range(b => $"{b.Width}x{b.Height}"),
+          () => Block().UntilColumn(ColumnContaining("Amount"))),
+        ["UntilColumn(IColumnLandmark<TSpace>, bool)"] = Raised(
+          () => B.UntilColumn(Demanding(ColumnContaining("Amount"))).Range(b => $"{b.Width}x{b.Height}"),
+          () => Block().UntilColumn(Demanding(ColumnContaining("Amount")))),
+      };
+
     public static TheoryData<string> TheProjectionReturningMembers => Keys(ProjectionTwins);
 
     public static TheoryData<string> TheStrategyReturningMembers => Keys(StrategyTwins);
+
+    public static TheoryData<string> ThePipelineEntries => Keys(StageTwins);
 
     [Theory]
     [MemberData(nameof(TheProjectionReturningMembers))]
@@ -259,6 +371,11 @@ namespace Unrect.Tests.Projections
     [MemberData(nameof(TheStrategyReturningMembers))]
     public void AStrategyReturningMemberComputesWhatItsPlainTwinComputes(string member)
       => OverEveryGrid(StrategyTwins[member]);
+
+    [Theory]
+    [MemberData(nameof(ThePipelineEntries))]
+    public void APipelineEntryClosedByATerminalReadsAsItsPostfixTwin(string member)
+      => OverEveryGrid(StageTwins[member]);
 
     [Fact]
     public void AndTheTheoryAboveComparesFailuresAndNotOnlySuccesses()
@@ -276,13 +393,31 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void AndTheTwoTablesTogetherCoverEveryMemberOfTheClass()
+    public void AndTheStageTheoryComparesFailuresAndNotOnlySuccesses()
     {
-      // The pin that stops the two theories above from quietly under-covering: a member added to the
-      // builders and left untwinned fails HERE rather than going unread. Together with the covenant
-      // in section 3 this closes the chain — a new Projection factory forces a re-export, and a new
-      // re-export forces a twin.
-      var covered = ProjectionTwins.Keys.Concat(StrategyTwins.Keys).OrderBy(k => k, StringComparer.Ordinal);
+      // The same census for the pipeline entries, and it matters more here than above: a stage twin
+      // that succeeded everywhere would compare two readings whose paths and subjects are never
+      // looked at, which is most of what the pipeline could get wrong. The hostile grid has no
+      // "Fund" and no "Amount", so every matcher-taking entry misses on it; the sparse grid has the
+      // rows but blanks where the leaf expects text. Floors under the counts observed when this was
+      // written (17 of the 19 entries fail on at least one grid, 26 of the 57 readings).
+      var failing = StageTwins.Values.Select(OverEveryGrid).ToList();
+
+      Assert.True(failing.Count(count => count > 0) >= 15, $"only {failing.Count(count => count > 0)} entries ever fail");
+      Assert.True(failing.Sum() >= 22, $"only {failing.Sum()} of the {failing.Count * 3} readings fail");
+    }
+
+    [Fact]
+    public void AndTheThreeTablesTogetherCoverEveryMemberOfTheClass()
+    {
+      // The pin that stops the three theories above from quietly under-covering: a member added to
+      // the builders and left untwinned fails HERE rather than going unread. Together with the
+      // covenant in section 3 this closes the chain — a new Projection factory forces a re-export,
+      // and a new re-export forces a twin.
+      var covered = ProjectionTwins.Keys
+        .Concat(StrategyTwins.Keys)
+        .Concat(StageTwins.Keys)
+        .OrderBy(k => k, StringComparer.Ordinal);
 
       Assert.Equal(Signatures(typeof(ProjectionBuilders<>)).OrderBy(k => k, StringComparer.Ordinal), covered);
     }
@@ -567,6 +702,18 @@ namespace Unrect.Tests.Projections
 
         return plainFault is not null || plain?.Failure is not null;
       };
+
+    /// <summary>
+    /// The same comparison where the postfix twin comes back DEMANDING — which the demand-raising
+    /// lifts all do, since they hand back <c>IProjection&lt;TSpace, T&gt;</c> rather than the
+    /// receiver's own type. The demand lives only in the static type and every projection this
+    /// library makes implements <c>IProjection&lt;T&gt;</c>, so forgetting it here to read the
+    /// declaration is the same cast the typed layer itself makes.
+    /// </summary>
+    private static Func<ISpace, bool> Raised<T>(
+      Func<IProjection<ISpace, T>> throughBuilders,
+      Func<IProjection<ISpace, T>> throughProjection)
+      => Reading(throughBuilders, () => (IProjection<T>)throughProjection());
 
     private static (Observation? Reading, Exception? Fault) Read<T>(Func<IProjection<T>> declare, ISpace space)
     {

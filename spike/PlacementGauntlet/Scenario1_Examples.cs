@@ -1,5 +1,7 @@
 using System.Linq;
 
+using PlacementGauntlet.Staged;
+
 using Unrect.Core;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
@@ -61,7 +63,7 @@ namespace PlacementGauntlet
       var eachRow = Row(cells => cells[0].GetString());
 
       var oldMoved = Table(headerRows: 0, eachRow: eachRow).Down(1);
-      var newMoved = Down(1).Table(headerRows: 0, eachRow: eachRow);
+      var newMoved = Place.Down(1).Table(headerRows: 0, eachRow: eachRow);
 
       Judge.Same("Down(1) as an entry still composes onto the table's own blank-row skip",
         oldMoved.Map(sheet), newMoved.Map(sheet));
@@ -200,7 +202,7 @@ namespace PlacementGauntlet
       var oldDetails = VerticalRepeat(investorDetail, separatedBy: BlankRows(), atLeast: 1).AfterBlankRows();
 
       // NEW: placement first, projection last.
-      var newDetails = AfterBlankRows().VerticalRepeat(investorDetail, separatedBy: BlankRows(), atLeast: 1);
+      var newDetails = Place.AfterBlankRows().VerticalRepeat(investorDetail, separatedBy: BlankRows(), atLeast: 1);
 
       var oldReport = VerticalFlow(v => new
       {
@@ -251,7 +253,7 @@ namespace PlacementGauntlet
         .Until(RowContaining(Inception));
 
       // NEW — .Until as a pipeline STAGE, over a projection declared elsewhere.
-      var newByTransferDate = Until(RowContaining(Inception))
+      var newByTransferDate = Place.Until(RowContaining(Inception))
         .Of(irrDetails.Under(Caption("IRR Details"), Caption("Cash Flows Using Transfer Date")));
 
       var byInception = irrDetails.Under(Caption(Inception));

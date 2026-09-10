@@ -44,11 +44,12 @@ namespace Unrect.Projections
   /// <para>
   /// <b>What is in here, and why so little.</b> Only the factories that <em>take</em> projections
   /// and build one: the three layouts, the two composing <c>Table</c> rungs, the two repeats and
-  /// <c>Choice</c>. Everything else in the vocabulary — every leaf, every matcher, every
-  /// extent and offset, and all of <see cref="ProjectionExtensions"/> — is indifferent to the
-  /// space, so it composes into a scoped declaration by variance with nothing said. Write those
-  /// exactly as you always did; there is no scoped spelling of <c>Text()</c> because there would
-  /// be nothing for it to do.
+  /// <c>Choice</c> — and, beside them, the placement pipeline's entries, which start a pipeline
+  /// whose stages carry <typeparamref name="TSpace"/> from birth and so hand it to every terminal's
+  /// lambda. Everything else in the vocabulary — every leaf, every matcher, every extent and offset,
+  /// and all of <see cref="ProjectionExtensions"/> — is indifferent to the space, so it composes
+  /// into a scoped declaration by variance with nothing said. Write those exactly as you always
+  /// did; there is no scoped spelling of <c>Text()</c> because there would be nothing for it to do.
   /// </para>
   /// <para>
   /// <b>Which entry to reach for.</b> A witness tells one factory what it is declared over
@@ -167,5 +168,99 @@ namespace Unrect.Projections
     /// <param name="alternatives">The alternatives, tried in declaration order.</param>
     public IProjection<TSpace, TResult> Choice<TResult>(params IProjection<TSpace, TResult>[] alternatives)
       => Projection.Choice(alternatives);
+
+    // --- The placement pipeline's entries, with the space already answered -------------------------
+    //
+    // A pipeline entered here carries TSpace from its first word, so the terminal that closes it
+    // hands the demand out and a layout terminal's lambda receives a cursor over the right space —
+    // the same inference wall the three layout members above exist for, met one stage earlier.
+
+    /// <inheritdoc cref="Projection.On(IRowLandmark)"/>
+    /// <param name="landmark">The row to sit on.</param>
+    public OffsetStage<TSpace> On(IRowLandmark landmark) => Enter(Step.OnRow(landmark));
+
+    /// <inheritdoc cref="Projection.On(IColumnLandmark)"/>
+    /// <param name="landmark">The column to sit on.</param>
+    public OffsetStage<TSpace> On(IColumnLandmark landmark) => Enter(Step.OnColumn(landmark));
+
+    /// <inheritdoc cref="Projection.On{T}(IRowLandmark{T})"/>
+    /// <param name="landmark">The row to sit on. A matcher demanding less is accepted as it is.</param>
+    public OffsetStage<TSpace> On(IRowLandmark<TSpace> landmark) => Enter(Step.OnRow(Required(landmark).Landmark));
+
+    /// <inheritdoc cref="Projection.On{T}(IRowLandmark{T})"/>
+    /// <param name="landmark">The column to sit on. A matcher demanding less is accepted as it is.</param>
+    public OffsetStage<TSpace> On(IColumnLandmark<TSpace> landmark) => Enter(Step.OnColumn(Required(landmark).Landmark));
+
+    /// <inheritdoc cref="Projection.Below(IRowLandmark)"/>
+    /// <param name="landmark">The row to sit below.</param>
+    public OffsetStage<TSpace> Below(IRowLandmark landmark) => Enter(Step.Below(landmark));
+
+    /// <inheritdoc cref="Projection.Below{T}(IRowLandmark{T})"/>
+    /// <param name="landmark">The row to sit below. A matcher demanding less is accepted as it is.</param>
+    public OffsetStage<TSpace> Below(IRowLandmark<TSpace> landmark) => Enter(Step.Below(Required(landmark).Landmark));
+
+    /// <inheritdoc cref="Projection.RightOf(IColumnLandmark)"/>
+    /// <param name="landmark">The column to sit right of.</param>
+    public OffsetStage<TSpace> RightOf(IColumnLandmark landmark) => Enter(Step.RightOf(landmark));
+
+    /// <inheritdoc cref="Projection.RightOf{T}(IColumnLandmark{T})"/>
+    /// <param name="landmark">The column to sit right of. A matcher demanding less is accepted as it is.</param>
+    public OffsetStage<TSpace> RightOf(IColumnLandmark<TSpace> landmark)
+      => Enter(Step.RightOf(Required(landmark).Landmark));
+
+    /// <inheritdoc cref="Projection.OffsetBy(IOffsetStrategy)"/>
+    /// <param name="offset">Where the section starts.</param>
+    public OffsetStage<TSpace> OffsetBy(IOffsetStrategy offset) => Enter(Step.OffsetBy(offset));
+
+    /// <inheritdoc cref="Projection.AfterBlankRows()"/>
+    public OffsetStage<TSpace> AfterBlankRows() => Enter(Step.AfterBlankRows());
+
+    /// <inheritdoc cref="Projection.AfterBlankColumns()"/>
+    public OffsetStage<TSpace> AfterBlankColumns() => Enter(Step.AfterBlankColumns());
+
+    /// <inheritdoc cref="Projection.SkipEmptyRowsAndColumns()"/>
+    public OffsetStage<TSpace> SkipEmptyRowsAndColumns() => AfterBlankRows().AfterBlankColumns();
+
+    /// <inheritdoc cref="Projection.Down(int)"/>
+    /// <param name="rows">How far down.</param>
+    public OffsetStage<TSpace> Down(int rows) => Enter(Step.Down(rows));
+
+    /// <inheritdoc cref="Projection.Right(int)"/>
+    /// <param name="columns">How far right.</param>
+    public OffsetStage<TSpace> Right(int columns) => Enter(Step.Right(columns));
+
+    /// <inheritdoc cref="Projection.Until(IRowLandmark, bool)"/>
+    /// <param name="landmark">The row the extent stops before.</param>
+    /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
+    public BoundStage<TSpace> Until(IRowLandmark landmark, bool orEnd = false)
+      => new BoundStage<TSpace>(Steps.None.Then(Step.UntilRow(landmark, orEnd)));
+
+    /// <inheritdoc cref="Projection.Until{T}(IRowLandmark{T}, bool)"/>
+    /// <param name="landmark">The row the extent stops before. A matcher demanding less is accepted as it is.</param>
+    /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
+    public BoundStage<TSpace> Until(IRowLandmark<TSpace> landmark, bool orEnd = false)
+      => new BoundStage<TSpace>(Steps.None.Then(Step.UntilRow(Required(landmark).Landmark, orEnd)));
+
+    /// <inheritdoc cref="Projection.UntilColumn(IColumnLandmark, bool)"/>
+    /// <param name="landmark">The column the extent stops before.</param>
+    /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
+    public BoundStage<TSpace> UntilColumn(IColumnLandmark landmark, bool orEnd = false)
+      => new BoundStage<TSpace>(Steps.None.Then(Step.UntilColumn(landmark, orEnd)));
+
+    /// <inheritdoc cref="Projection.UntilColumn{T}(IColumnLandmark{T}, bool)"/>
+    /// <param name="landmark">The column the extent stops before. A matcher demanding less is accepted as it is.</param>
+    /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
+    public BoundStage<TSpace> UntilColumn(IColumnLandmark<TSpace> landmark, bool orEnd = false)
+      => new BoundStage<TSpace>(Steps.None.Then(Step.UntilColumn(Required(landmark).Landmark, orEnd)));
+
+    /// <inheritdoc cref="HeadingStage"/>
+    /// <param name="text">What the heading row says.</param>
+    public HeadingStage<TSpace> Heading(string text) => new HeadingStage<TSpace>(Steps.None, Headings.One(text));
+
+    private static OffsetStage<TSpace> Enter(Step step) => new OffsetStage<TSpace>(Steps.None.Then(step));
+
+    private static TLandmark Required<TLandmark>(TLandmark landmark)
+      where TLandmark : class
+      => landmark ?? throw new ArgumentNullException(nameof(landmark));
   }
 }

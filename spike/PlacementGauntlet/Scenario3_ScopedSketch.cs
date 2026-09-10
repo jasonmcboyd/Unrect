@@ -78,13 +78,13 @@ namespace PlacementGauntlet
 
       var newLine = p.Offset().Overlay(o => new AuditedLine(
         Item: o.Next(Text()),
-        Qty: o.Next(Right(1).Integer()),
-        Total: o.Next(Right(3).Double()),
-        Formula: o.Next(Right(3).Of(Formula()))));
+        Qty: o.Next(Place.Right(1).Integer()),
+        Total: o.Next(Place.Right(3).Double()),
+        Formula: o.Next(Place.Right(3).Of(Formula()))));
 
       var newLedger = p.Offset().VerticalFlow(v => new AuditedLedger(
         Lines: v.Next(p.Offset().Table(headerRows: 1, eachRow: newLine)),
-        TotalFormula: v.Next(On(RowContaining("Total")).Right(3).Of(Formula()))));
+        TotalFormula: v.Next(Place.On(RowContaining("Total")).Right(3).Of(Formula()))));
 
       Judge.Same("the audited ledger reads identically through the placement scope", oldLedger.Map(sheet), newLedger.Map(sheet));
       Judge.Note("A backend leaf has no terminal of its own: Formula() rides in through .Of(...), because the terminal"
@@ -93,7 +93,7 @@ namespace PlacementGauntlet
 
       // The backend terminal, as Unrect.Spreadsheets would ship it. Two forms, because the demand
       // may come from the stage or from the leaf.
-      var terminalTotal = On(RowContaining("Total")).Right(3).Formula();
+      var terminalTotal = Place.On(RowContaining("Total")).Right(3).Formula();
 
       Judge.Same("a backend-supplied terminal reads as .Of(Formula())",
         Formula().On(RowContaining("Total")).Right(3).Map(sheet),
@@ -123,7 +123,7 @@ namespace PlacementGauntlet
 
       // A demanding MATCHER does the same at the entry — and lands in the scoped hierarchy, so every
       // terminal on it hands the demand out.
-      var firstFormulaRow = On(RowWithFormula()).Row(cells => cells[0].GetString());
+      var firstFormulaRow = Place.On(RowWithFormula()).Row(cells => cells[0].GetString());
 
       IProjection<IFormulaSpace, string> alsoStated = firstFormulaRow;
 

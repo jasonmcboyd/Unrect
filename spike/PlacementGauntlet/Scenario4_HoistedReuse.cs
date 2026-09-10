@@ -43,8 +43,8 @@ namespace PlacementGauntlet
       // NEW — the placement leads and the reused value terminates it.
       var newReport = VerticalFlow(v => new
       {
-        A = v.Next(On(RowContaining("Region A")).Of(section)),
-        B = v.Next(On(RowContaining("Region B")).Of(section)),
+        A = v.Next(Place.On(RowContaining("Region A")).Of(section)),
+        B = v.Next(Place.On(RowContaining("Region B")).Of(section)),
       });
 
       Judge.Same("a section placed twice reads the same either way", oldReport.Map(sheet), newReport.Map(sheet));
@@ -52,7 +52,7 @@ namespace PlacementGauntlet
       // The same, bounded at the use site — the investor-irr pattern, which is the reason .Until had
       // to stay composable after a projection as well as being a stage.
       var oldBounded = section.On(RowContaining("Region A")).Until(RowContaining("Region B"));
-      var newBounded = On(RowContaining("Region A")).Until(RowContaining("Region B")).Of(section);
+      var newBounded = Place.On(RowContaining("Region A")).Until(RowContaining("Region B")).Of(section);
 
       Judge.Same("bounded at the use site: stage order and postfix order agree",
         oldBounded.Map(sheet), newBounded.Map(sheet));
@@ -64,7 +64,7 @@ namespace PlacementGauntlet
       // still refused — by the shipped runtime guard, because a terminal hands back a plain
       // projection and the pipeline's types end there. This is the intended hybrid of §5.0.
       Judge.Refused("re-placing an already-placed section is still a construction-time refusal",
-        () => On(RowContaining("Region B")).Of(section.On(RowContaining("Region A"))));
+        () => Place.On(RowContaining("Region B")).Of(section.On(RowContaining("Region A"))));
 
       ScopedPlacement();
     }

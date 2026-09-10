@@ -1,6 +1,8 @@
 using System;
 using System.Linq;
 
+using PlacementGauntlet.Staged;
+
 using Unrect.Core;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
@@ -51,7 +53,7 @@ namespace PlacementGauntlet
 
       // The bound leading (ruling 1's canonical order) against the bound postfix (the geography law).
       // Both replay the same two calls in the same order, so they are one declaration spelled twice.
-      var postfix = Heading("IRR Details")
+      var postfix = Place.Heading("IRR Details")
         .Heading("Cash Flows Using Transfer Date")
         .Of(VerticalRepeat(Table<CashFlow>(), separatedBy: BlankRows()))
         .Until(RowContaining(Inception));
@@ -84,12 +86,12 @@ namespace PlacementGauntlet
       var todayUnbounded = irrDetails.Under(Caption(Inception));
 
       // HEADING — ruling 1's canonical order: bound, then headings in document order, then subject.
-      var headingBounded = Until(RowContaining(Inception))
+      var headingBounded = Place.Until(RowContaining(Inception))
         .Heading("IRR Details")
         .Heading("Cash Flows Using Transfer Date")
         .Of(irrDetails);
 
-      var headingUnbounded = Heading(Inception).Of(irrDetails);
+      var headingUnbounded = Place.Heading(Inception).Of(irrDetails);
 
       Judge.SameL2("read 1 — the bounded series: value and geometry",
         todayBounded.Apply(sheet), headingBounded.Apply(sheet));
@@ -101,14 +103,14 @@ namespace PlacementGauntlet
       // Under call: nesting them would build two flows and say so in the path, which is the
       // difference this pin exists to catch.
       var todayBroken = irrDetails.Under(Caption("IRR Details"), Caption("Nope")).Until(RowContaining(Inception));
-      var headingBroken = Until(RowContaining(Inception)).Heading("IRR Details").Heading("Nope").Of(irrDetails);
+      var headingBroken = Place.Until(RowContaining(Inception)).Heading("IRR Details").Heading("Nope").Of(irrDetails);
 
       Judge.SameFailure("read 1 at L3 — a wrong second heading fails with the same path and sentence",
         () => todayBroken.Map(sheet), () => headingBroken.Map(sheet));
 
       Judge.SameFailure("read 1 at L3 — a wrong FIRST heading fails with the same path and sentence",
         () => irrDetails.Under(Caption("Nope"), Caption("Cash Flows Using Transfer Date")).Map(sheet),
-        () => Heading("Nope").Heading("Cash Flows Using Transfer Date").Of(irrDetails).Map(sheet));
+        () => Place.Heading("Nope").Heading("Cash Flows Using Transfer Date").Of(irrDetails).Map(sheet));
 
       // And the whole script, diagnostics included.
       var reportHeader = VerticalFlow(v => new IrrHeader(
@@ -162,7 +164,7 @@ namespace PlacementGauntlet
       var lines = Table<Line>();
 
       var today = lines.Under(Caption("Region A")).On(regionMark);
-      var heading = On(regionMark).Heading("Region A").Of(lines);
+      var heading = Place.On(regionMark).Heading("Region A").Of(lines);
 
       Judge.SameL2("read 2 — the recipe: anchor on the flow, either spelling", today.Apply(sheet), heading.Apply(sheet));
 
@@ -178,7 +180,7 @@ namespace PlacementGauntlet
 
       // A heading is the text a section announces itself by, so the empty one is refused at
       // construction — the same class of guard Step.Under's empty-array check already is.
-      Judge.Refused("a blank heading is refused when the declaration is built", () => Heading("   "));
+      Judge.Refused("a blank heading is refused when the declaration is built", () => Place.Heading("   "));
     }
 
     // --- Read 3: the surviving Caption case ---------------------------------------------------------
@@ -211,7 +213,7 @@ namespace PlacementGauntlet
         .On(RowContaining("Portfolio Income"))
         .Until(RowContaining("Totals"));
 
-      var discardingHeading = On(RowContaining("Portfolio Income"))
+      var discardingHeading = Place.On(RowContaining("Portfolio Income"))
         .Until(RowContaining("Totals"))
         .Heading("Portfolio Income")
         .Of(kLines);
@@ -251,8 +253,8 @@ namespace PlacementGauntlet
         Code: o.Next(Text().Right(captions["Line"])),
         Amount: o.Next(Decimal().Right(captions["Amount"])))));
 
-      var section = Heading("Portfolio Income").Of(kLines);
-      var document = Heading("Partner K-1").Of(section);
+      var section = Place.Heading("Portfolio Income").Of(kLines);
+      var document = Place.Heading("Partner K-1").Of(section);
 
       var today = kLines.Under(Caption("Portfolio Income")).Under(Caption("Partner K-1"));
 
@@ -278,7 +280,7 @@ namespace PlacementGauntlet
       var regionMark = RowWithCell(cell => cell.Kind == CellKind.Text && cell.GetString().StartsWith("Region "));
       var regionName = Row(cells => cells[0].GetString());
 
-      var discovered = On(regionMark).Under(regionName).Of(lines);
+      var discovered = Place.On(regionMark).Under(regionName).Of(lines);
       var regions = VerticalRepeat(discovered, separatedBy: BlankRows());
 
       var read = regions.Map(sheet);

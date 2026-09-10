@@ -14,8 +14,11 @@ using static Unrect.Tests.ProjectionTestSpaces;
 namespace Unrect.Tests.Projections
 {
   /// <summary>
-  /// The scoped entry: <c>Projection.Over&lt;TSpace&gt;()</c> and the eight members of the
-  /// <see cref="ProjectionScope{TSpace}"/> it opens. The claim under test is the one the type's own
+  /// The scoped entry: <c>Projection.Over&lt;TSpace&gt;()</c> and the twenty-seven members of the
+  /// <see cref="ProjectionScope{TSpace}"/> it opens — the eight composing factories this suite pins
+  /// one by one, and the nineteen placement-pipeline entries that joined them in phase 2, whose
+  /// parity is pinned as a table in <see cref="ProjectionBuildersParityTests"/> and whose own laws
+  /// are in <see cref="PlacementPipelineLawTests"/>. The claim under test is the one the type's own
   /// documentation makes — <em>the scope is sugar over the witness form, not a second mechanism</em>
   /// — so every member is pinned against its witness twin rather than against a transcript of what
   /// it happens to do.
@@ -110,7 +113,7 @@ namespace Unrect.Tests.Projections
     private static IProjection<IFormulaSpace, decimal> FundColumnAsANumber(CaptionMap captions)
       => Decimal().Right(captions["Fund"]).Demanding(Formulas);
 
-    // --- 1. The eight members, each against its witness twin ---------------------------------------
+    // --- 1. The eight composing members, each against its witness twin -----------------------------
     //
     // One test per member. The two spellings are written side by side and read the same sheet, so a
     // member that stopped forwarding — a placement of its own, a lost separator, a different name —

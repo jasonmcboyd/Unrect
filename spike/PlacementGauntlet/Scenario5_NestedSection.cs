@@ -1,5 +1,7 @@
 using System;
 
+using PlacementGauntlet.Staged;
+
 using Unrect.Projections;
 
 using static PlacementGauntlet.Staged.Place;
@@ -28,8 +30,8 @@ namespace PlacementGauntlet
       // The inner content: a table whose columns are found by THIS file's captions, so every leaf
       // inside is anchored within the section the outer pipeline placed. Nesting, not chaining.
       var kLines = Table(headerRows: 1, eachRow: captions => Overlay(o => new KLine(
-        Code: o.Next(Right(captions["Line"]).Text()),
-        Amount: o.Next(Right(captions["Amount"]).Decimal()))));
+        Code: o.Next(Place.Right(captions["Line"]).Text()),
+        Amount: o.Next(Place.Right(captions["Amount"]).Decimal()))));
 
       var oldLines = Table(headerRows: 1, eachRow: captions => Overlay(o => new KLine(
         Code: o.Next(Text().Right(captions["Line"])),
@@ -56,12 +58,12 @@ namespace PlacementGauntlet
         Portfolio: v.Next(oldPortfolio)));
 
       // NEW — the section's placement leads, and the region it places is where the inner anchors look.
-      var newK1Section = On(RowContaining("K-1 Lines 1-21")).Until(RowContaining("Portfolio Income"))
+      var newK1Section = Place.On(RowContaining("K-1 Lines 1-21")).Until(RowContaining("Portfolio Income"))
         .VerticalFlow(v => new KSection(
           Caption: v.Next(Caption("K-1 Lines 1-21")),
           Lines: v.Next(kLines)));
 
-      var newPortfolio = On(RowContaining("Portfolio Income")).Until(RowContaining("Totals"))
+      var newPortfolio = Place.On(RowContaining("Portfolio Income")).Until(RowContaining("Totals"))
         .VerticalFlow(v => new KSection(
           Caption: v.Next(Caption("Portfolio Income")),
           Lines: v.Next(kLines)));
@@ -96,7 +98,7 @@ namespace PlacementGauntlet
       var sized = section.On(RowContaining("K-1 Lines 1-21")).Sized(Extent(3, 4)).Until(RowContaining("Portfolio Income"));
       var framed = section.On(RowContaining("K-1 Lines 1-21")).Until(RowContaining("Portfolio Income")).Sized(Extent(3, 4));
 
-      var piped = On(RowContaining("K-1 Lines 1-21")).Sized(Extent(3, 4)).Until(RowContaining("Portfolio Income"))
+      var piped = Place.On(RowContaining("K-1 Lines 1-21")).Sized(Extent(3, 4)).Until(RowContaining("Portfolio Income"))
         .VerticalFlow(v => new KSection(
           Caption: v.Next(Caption("K-1 Lines 1-21")),
           Lines: v.Next(Table<KLine>().Named("lines"))));
