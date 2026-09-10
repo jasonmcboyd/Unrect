@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Unrect.Analyzers</RootNamespace>
+  </PropertyGroup>
+
+  <!-- The fixes for UNR001 and for the compiler's own CS1503, in their own assembly for the reason
+       RS1038 gives: they need Microsoft.CodeAnalysis.Workspaces, which the command-line compiler
+       does not provide, and an analyzer must never share an assembly with that reference. Both
+       assemblies ride in the Unrect package at analyzers/dotnet/cs, where a host loads the analyzers
+       always and the fixes only when it has a Workspaces to offer. -->
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.4.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Unrect.Analyzers\Unrect.Analyzers.csproj" />
+  </ItemGroup>
+
+</Project>

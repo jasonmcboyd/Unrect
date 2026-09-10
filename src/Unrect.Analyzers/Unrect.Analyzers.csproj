@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Unrect.Analyzers</RootNamespace>
+  </PropertyGroup>
+
+  <!-- This assembly is NOT a package of its own: it rides inside the Unrect package at
+       analyzers/dotnet/cs (see Unrect.csproj's BundleAnalyzers), the same "one package, every
+       assembly" rule the bundled libraries follow. netstandard2.0 is not a choice — it is what a
+       compiler extension must be, so that the analyzer loads in every host that can build Unrect's
+       consumers, .NET Framework msbuild included.
+
+       The code fixes are a SEPARATE assembly (Unrect.Analyzers.CodeFixes) because a fix needs
+       Microsoft.CodeAnalysis.Workspaces and the command-line compiler does not provide it: an
+       analyzer sharing an assembly with that reference can fail to load in exactly the scenario it
+       exists to serve. RS1038 says so and is enforced here rather than suppressed. -->
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+  </PropertyGroup>
+
+  <!-- Roslyn 4.4 is deliberately older than the SDK in play: an analyzer compiled against version N
+       loads in every host at N or later, so the floor is what decides which consumers get the
+       diagnostics rather than which ones get a warning instead. 4.4 is VS 17.4 / SDK 6.0.4xx, and
+       nothing here uses an API newer than that. -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.4.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- The rules' identifiers, categories and severities, tracked as an API: RS2000 fails the build
+       when a descriptor here is not in one of these files. -->
+  <ItemGroup>
+    <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
+    <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The fixes read the same symbols and the same notion of a scoped factory the analyzers do;
+         publishing that as API would publish an implementation detail of two rules. -->
+    <InternalsVisibleTo Include="Unrect.Analyzers.CodeFixes" />
+    <InternalsVisibleTo Include="Unrect.Analyzers.Tests" />
+  </ItemGroup>
+
+</Project>
