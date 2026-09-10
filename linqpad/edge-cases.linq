@@ -6,9 +6,11 @@
   <Namespace>Unrect.Core</Namespace>
   <Namespace>Unrect.Spreadsheets</Namespace>
   <Namespace>Unrect.Projections</Namespace>
-  <Namespace>static Unrect.Projections.Projection</Namespace>
+  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Core.ISpace&gt;</Namespace>
 </Query>
 
+// The space is named once, in the query's namespace imports:
+// `using static Unrect.Projections.ProjectionBuilders<Unrect.Core.ISpace>`.
 var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\examples\edge-cases.xlsx");
 
 // The corner-case fixture (distilled from the real K-1 workbook):
@@ -56,15 +58,17 @@ new
 // 5. Typed leaves speak the document's vocabulary: kinds for a kind mismatch, conversions for a
 // number that will not fit. Note that the error cell is reported as the Error it is, never as
 // "blank" — and that the sentence changes entirely when the number is genuinely there.
-string Message<T>(IProjection<T> projection)
+string Message<T>(IProjection<ISpace, T> projection)
 {
 	try { projection.Map(defaultSpace); return "no failure"; }
 	catch (ProjectionException failure) { return failure.Message.Split('\n')[0].TrimEnd('\r'); }
 }
 
+// Where the cell is, then what to read there: OffsetBy is the pipeline's strategy door, and the
+// leaf that closes it is the subject of the sentence.
 new
 {
-	DecimalOverAnError = Message(Decimal().OffsetBy(SkipRows(1))),      // A2 is #VALUE!
-	TextOverANumber = Message(Text().OffsetBy(SkipColumns(1))),         // B1 is 42
-	IntegerOverAFraction = Message(Integer().OffsetBy(SkipColumns(2))), // C1 is 3.14
+	DecimalOverAnError = Message(OffsetBy(SkipRows(1)).Decimal()),      // A2 is #VALUE!
+	TextOverANumber = Message(OffsetBy(SkipColumns(1)).Text()),         // B1 is 42
+	IntegerOverAFraction = Message(OffsetBy(SkipColumns(2)).Integer()), // C1 is 3.14
 }.Dump("typed-leaf diagnostics");

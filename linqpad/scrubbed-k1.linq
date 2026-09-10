@@ -1,28 +1,31 @@
 <Query Kind="Statements">
-  <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Core.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Core.dll</Reference>
-  <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll</Reference>
+  <Reference Relative="..\src\Unrect.Core\bin\Debug\netstandard2.1\Unrect.Core.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Core\bin\Debug\netstandard2.1\Unrect.Core.dll</Reference>
   <Reference Relative="..\src\Unrect\bin\Debug\netstandard2.1\Unrect.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect\bin\Debug\netstandard2.1\Unrect.dll</Reference>
+  <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll</Reference>
   <Reference Relative="..\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll</Reference>
+  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Core.ISpace&gt;</Namespace>
   <Namespace>Unrect.Core</Namespace>
-  <Namespace>Unrect.Spreadsheets</Namespace>
   <Namespace>Unrect.Projections</Namespace>
-  <Namespace>static Unrect.Projections.Projection</Namespace>
+  <Namespace>Unrect.Spreadsheets</Namespace>
 </Query>
 
 // NOTE: examples/scrubbed-k1.xlsx is a LOCAL-ONLY fixture (gitignored, never committed).
 //
-// ONE root projection, ZERO hard-coded coordinates. The working style that survives real-world
-// drift (extra rows, moved columns, varying fund counts):
-//   - rows anchor by content matchers (.On(RowContaining(...)));
+// ONE root projection, ZERO hard-coded coordinates. The space is named once, in the query's
+// namespace imports: `using static Unrect.Projections.ProjectionBuilders<Unrect.Core.ISpace>` —
+// this file reads text and numbers, so it is an ISpace file, whatever the workbook can do.
+// The working style that survives real-world drift (extra rows, moved columns, varying fund
+// counts):
+//   - rows anchor by content matchers, written as the pipeline's entry: On(RowContaining(...));
 //   - the header is an Overlay — independent blocks sharing rows, placement rather than flow —
 //     bounded with .Sized so every seek inside it is unambiguous;
 //   - each layout lambda DIGESTS ITSELF: the header resolves its own columns from content and
 //     hands back what the rest of the declaration needs, so no raw rows travel any further;
-//   - a section's caption is declared with Caption and placed with Under, so the row that
-//     announces the section belongs to it instead of being swallowed by an anchor's offset;
+//   - a section announces itself with Heading, which finds the row, asserts the text and consumes
+//     it — the row belongs to the section instead of being swallowed by an anchor's offset;
 //   - the entity card is a Fields block: labels declared once, extent from the child count, and
 //     the block finds itself by its own first label;
-//   - one `section` projection, declared once and placed twice under two different captions.
+//   - one `section` projection, declared once and placed twice under two different headings.
 var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\examples\scrubbed-k1.xlsx");
 var space = SpreadsheetSpace.Create(path, "Sheet1");
 
@@ -36,9 +39,9 @@ int Find(CellValue[] row, string caption) => Array.FindIndex(row,
 // caption band has gaps. The helper does NOT name what it returns: a name baked in here would call
 // every row the same thing at every use site, and the use site is the only place that knows which
 // row this is.
-IProjection<CellValue[]> FullRow(string anchor) =>
-	Row(AllColumns(), r => r.ToArray())
-		.On(RowContaining(anchor));
+IProjection<ISpace, CellValue[]> FullRow(string anchor) =>
+	On(RowContaining(anchor))
+		.Row(AllColumns(), r => r.ToArray());
 
 // The entity card: five labels, and nothing else. The block's extent comes from the child count
 // (no 2, 5 to get wrong), it anchors itself on its first label instead of repeating that literal in
@@ -53,7 +56,10 @@ var entity = Fields(
 
 var captionRow = FullRow("ATAX");
 var fundNameRow = FullRow("Fund Short Name");
-var ownershipRow = FullRow("Fund Short Name").Down(4);
+
+// Four rows below the same anchor. .Of places a declaration made elsewhere, so the movement reads
+// before the row it moves, and the helper stays the one place the anchoring is written.
+var ownershipRow = Down(4).Of(FullRow("Fund Short Name"));
 
 // The header reads four independent blocks off the same band of rows and resolves the sheet's
 // column layout from them, so what leaves here is the answer, not the evidence.
@@ -76,17 +82,19 @@ var header = Overlay(o =>
 
 	return new { Entity = entityFields, AtaxColumn = Find(captions, "ATAX"), Columns = columns };
 })
-	.Sized(RowsWhileAnyValue());   // bounded: seeks inside stay unambiguous
+	// Bounded, so every seek inside stays unambiguous. An extent with nothing to its left is the
+	// one placement with no pipeline entry to enter by, so it keeps the postfix spelling.
+	.Sized(RowsWhileAnyValue());
 
 // One section projection: rows while any value, wherever it is anchored.
 var section = Range(RowsWhileAnyValue(), b => b.Rows.Select(r => r.ToArray()).ToArray());
 
-var k1Lines = section.Under(Caption("K-1 Lines 1-21"));
+var k1Lines = Heading("K-1 Lines 1-21").Of(section);
 
 // The production posture: this section is best-effort. On a clean file Optional changes nothing;
 // on a broken one the import survives with null here and a Warning in the diagnostics citing
 // exactly where and why the section failed.
-var portfolio = section.Under(Caption("Portfolio Income")).Optional();
+var portfolio = Heading("Portfolio Income").Of(section).Optional();
 
 var report = VerticalFlow(v =>
 {

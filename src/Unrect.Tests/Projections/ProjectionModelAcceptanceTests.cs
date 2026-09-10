@@ -45,7 +45,7 @@ namespace Unrect.Tests.Projections
   /// variance that produces them, and that is below.
   /// </para>
   /// </summary>
-  public class ProjectionModelAcceptanceTests
+  public partial class ProjectionModelAcceptanceTests
   {
     private static string TestData(string file) => Path.Combine(AppContext.BaseDirectory, "TestData", file);
 

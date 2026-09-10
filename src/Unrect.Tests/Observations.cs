@@ -3,6 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 
 using Unrect.Core;
 using Unrect.Projections;
@@ -54,7 +56,11 @@ namespace Unrect.Tests
       FailurePath = failurePath;
     }
 
-    /// <summary>The projected value, rendered deeply so a list is compared by its elements.</summary>
+    /// <summary>
+    /// The projected value, rendered deeply — a list by its elements and a record by its properties,
+    /// all the way down, so a difference anywhere inside a result is a difference in this facet. See
+    /// <see cref="Observations.RenderValue(object?)"/> for why the second half is not optional.
+    /// </summary>
     public string Value { get; }
 
     /// <summary>How much of its own extent the projection used, as "WxH".</summary>
@@ -176,13 +182,183 @@ namespace Unrect.Tests
 
     private static string Render(Size size) => $"{size.Width}x{size.Height}";
 
-    private static string RenderValue(object? value) => value switch
+    /// <summary>
+    /// A value spelled out far enough that the value facet can see a difference anywhere inside it.
+    /// <para>
+    /// <strong>Why this is not just <c>ToString</c>.</strong> A record's compiler-written
+    /// <c>ToString</c> prints each member through that member's own <c>ToString</c>, so a record whose
+    /// field is a list prints the list as its type name — <c>Rows = System.Collections.Generic.List`1[…]</c>
+    /// — and two readings whose rows differ compare EQUAL. That was found by perturbation, not by
+    /// reading: a twin declaration built with <c>Right(5)</c> where the original had <c>Right(6)</c>
+    /// passed an L3 comparison of the acceptance corpus's records. So a value that is not a sequence
+    /// and does not speak for itself is rendered from its own public readable properties, recursively.
+    /// </para>
+    /// <para>
+    /// <strong>What still speaks for itself.</strong> A type carrying a HAND-WRITTEN
+    /// <c>ToString</c> override keeps it, because that override is nearly always more informative than
+    /// its properties are: <c>CellValue</c> prints the number in the cell, while its three public
+    /// properties (<c>Kind</c>, <c>IsBlank</c>, <c>HasValue</c>) would print everything about it except
+    /// the value. The line between the two is drawn at <see cref="CompilerGeneratedAttribute"/>, which
+    /// is exactly what a record's synthesized <c>ToString</c> and an anonymous type both carry, so the
+    /// rule is: nobody wrote a sentence for this type, therefore spell out its parts.
+    /// </para>
+    /// </summary>
+    private static string RenderValue(object? value) => RenderValue(value, new Ancestry(), 0);
+
+    /// <summary>The maximum object nesting rendered before the renderer says so and stops.</summary>
+    private const int MaxDepth = 12;
+
+    private static string RenderValue(object? value, Ancestry ancestors, int depth) => value switch
     {
       null => "<null>",
       string text => text,
-      IEnumerable items => "[" + string.Join(", ", items.Cast<object?>().Select(RenderValue)) + "]",
-      _ => Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty,
+      IEnumerable items => RenderSequence(items, ancestors, depth),
+      IConvertible => Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty,
+      _ when SpeaksForItself(value.GetType()) => Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty,
+      _ => RenderObject(value, ancestors, depth),
     };
+
+    private static string RenderSequence(IEnumerable items, Ancestry ancestors, int depth)
+    {
+      if (!ancestors.Enter(items, depth, out var refusal))
+      {
+        return refusal;
+      }
+
+      try
+      {
+        return "[" + string.Join(", ", items.Cast<object?>().Select(item => RenderValue(item, ancestors, depth + 1))) + "]";
+      }
+      finally
+      {
+        ancestors.Leave(items);
+      }
+    }
+
+    /// <summary>
+    /// <c>TypeName { Prop = …, … }</c> over the public readable instance properties, in declaration
+    /// order (metadata order, which is stable for a given build — the two sides of a comparison are
+    /// always the same type read twice, so ordering is a readability choice, not a correctness one).
+    /// An anonymous type drops the compiler's name and renders as a bare <c>{ … }</c>.
+    /// </summary>
+    private static string RenderObject(object value, Ancestry ancestors, int depth)
+    {
+      if (!ancestors.Enter(value, depth, out var refusal))
+      {
+        return refusal;
+      }
+
+      try
+      {
+        var type = value.GetType();
+
+        var properties = type
+          .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+          .Where(property => property.CanRead && property.GetIndexParameters().Length == 0)
+          .OrderBy(property => property.MetadataToken)
+          .Select(property => $"{property.Name} = {RenderProperty(property, value, ancestors, depth)}")
+          .ToList();
+
+        var name = IsAnonymous(type) ? string.Empty : FriendlyName(type) + " ";
+
+        return properties.Count == 0
+          ? name + "{ }"
+          : name + "{ " + string.Join(", ", properties) + " }";
+      }
+      finally
+      {
+        ancestors.Leave(value);
+      }
+    }
+
+    /// <summary>
+    /// A getter that throws is reported as having thrown rather than being allowed to fail the
+    /// comparison from inside the renderer — the harness's job is to describe a reading, not to add a
+    /// second way for one to fail.
+    /// </summary>
+    private static string RenderProperty(PropertyInfo property, object value, Ancestry ancestors, int depth)
+    {
+      try
+      {
+        return RenderValue(property.GetValue(value), ancestors, depth + 1);
+      }
+      catch (Exception thrown)
+      {
+        return $"<threw {(thrown as TargetInvocationException)?.InnerException?.GetType().Name ?? thrown.GetType().Name}>";
+      }
+    }
+
+    /// <summary>
+    /// Whether the type carries a <c>ToString</c> a human wrote. <see cref="object"/>'s and <see
+    /// cref="ValueType"/>'s do not count (they print the type name), and neither does a synthesized
+    /// one — a record's, or an anonymous type's.
+    /// </summary>
+    private static bool SpeaksForItself(Type type)
+    {
+      var toString = type.GetMethod(nameof(ToString), BindingFlags.Public | BindingFlags.Instance, binder: null, types: Type.EmptyTypes, modifiers: null);
+
+      return toString is not null
+        && toString.DeclaringType != typeof(object)
+        && toString.DeclaringType != typeof(ValueType)
+        && !toString.IsDefined(typeof(CompilerGeneratedAttribute), inherit: false)
+        && !IsAnonymous(type);
+    }
+
+    private static bool IsAnonymous(Type type)
+      => type.IsDefined(typeof(CompilerGeneratedAttribute), inherit: false)
+      && type.IsGenericType
+      && type.Name.Contains("AnonymousType");
+
+    private static string FriendlyName(Type type)
+    {
+      if (!type.IsGenericType)
+      {
+        return type.Name;
+      }
+
+      var name = type.Name.Substring(0, type.Name.IndexOf('`'));
+
+      return $"{name}<{string.Join(", ", type.GetGenericArguments().Select(FriendlyName))}>";
+    }
+
+    /// <summary>
+    /// The chain of values currently being rendered, so a value that contains itself renders as
+    /// <c>&lt;cycle&gt;</c> instead of recursing forever. Ancestry, not history: a value is removed
+    /// when its rendering finishes, so the SAME object appearing twice as siblings renders twice.
+    /// </summary>
+    private sealed class Ancestry
+    {
+      private readonly HashSet<object> _open = new HashSet<object>(ReferenceComparer.Instance);
+
+      public bool Enter(object value, int depth, out string refusal)
+      {
+        if (depth >= MaxDepth)
+        {
+          refusal = "<depth>";
+          return false;
+        }
+
+        if (!_open.Add(value))
+        {
+          refusal = "<cycle>";
+          return false;
+        }
+
+        refusal = string.Empty;
+        return true;
+      }
+
+      public void Leave(object value) => _open.Remove(value);
+
+      private sealed class ReferenceComparer : IEqualityComparer<object>
+      {
+        public static readonly ReferenceComparer Instance = new ReferenceComparer();
+
+        public new bool Equals(object? first, object? second) => ReferenceEquals(first, second);
+
+        public int GetHashCode(object value) => RuntimeHelpers.GetHashCode(value);
+      }
+    }
 
     private static string Describe(ProjectionDiagnostic diagnostic)
       => $"{diagnostic.Severity} {diagnostic.Subject} at {diagnostic.Location.A1} in {diagnostic.Path}: {diagnostic.Message}";
