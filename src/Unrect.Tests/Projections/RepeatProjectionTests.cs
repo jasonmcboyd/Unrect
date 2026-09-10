@@ -52,7 +52,7 @@ namespace Unrect.Tests.Projections
     {
       var space = Grid(new[,] { { 0 }, { 1 }, { 0 }, { 2 } });
 
-      var items = VerticalRepeat(IntCell(), separatedBy: BlankRows()).AfterBlankRows().Map(space);
+      var items = AfterBlankRows().Of(VerticalRepeat(IntCell(), separatedBy: BlankRows())).Map(space);
 
       Assert.Equal(new[] { 1, 2 }, items);
     }
@@ -262,11 +262,11 @@ namespace Unrect.Tests.Projections
         { "with no section label", null },
       });
 
-      var section = VerticalFlow(v =>
+      var section = On(RowContaining("Section")).Of(VerticalFlow(v =>
       {
         v.Next(Cell(c => c.GetString()).Named("label"));
-        return v.Next(Cell(c => c.GetInt()).Right(1).Named("amount"));
-      }).On(RowContaining("Section"));
+        return v.Next(Right(1).Of(Cell(c => c.GetInt())).Named("amount"));
+      }));
 
       var amounts = VerticalRepeat(section).Map(space);
 
@@ -288,11 +288,11 @@ namespace Unrect.Tests.Projections
         { "b", 2 },
       });
 
-      var section = VerticalFlow(v =>
+      var section = On(RowContaining("Section")).Of(VerticalFlow(v =>
       {
         v.Next(Cell(c => c.GetString()).Named("label"));
-        return v.Next(Cell(c => c.GetInt()).Right(1).Named("amount"));
-      }).On(RowContaining("Section"));
+        return v.Next(Right(1).Of(Cell(c => c.GetInt())).Named("amount"));
+      }));
 
       Assert.Equal(new[] { 1, 2 }, VerticalRepeat(section).Map(space));
     }
@@ -302,7 +302,7 @@ namespace Unrect.Tests.Projections
     {
       var space = Mixed(new object?[,] { { "nothing", null }, { "here", null } });
 
-      var section = Cell(v => v.GetString()).On(RowContaining("Section"));
+      var section = On(RowContaining("Section")).Of(Cell(v => v.GetString()));
 
       Assert.Empty(VerticalRepeat(section).Map(space));
     }
@@ -315,7 +315,7 @@ namespace Unrect.Tests.Projections
       var space = Mixed(new object?[,] { { "nothing", null }, { "here", null } });
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        Cell(v => v.GetString()).On(RowContaining("Section")).Map(space));
+        On(RowContaining("Section")).Of(Cell(v => v.GetString())).Map(space));
 
       Assert.Contains("no row containing 'Section' exists in the available space", failure.Message);
     }
@@ -344,7 +344,7 @@ namespace Unrect.Tests.Projections
     {
       // The trap. The iteration past the last section finds no caption, and because the anchor is
       // inside the item rather than on it, that is drift rather than exhaustion.
-      var section = Range(b => b.Height).Under(Caption("Detail"));
+      var section = Heading("Detail").Of(Range(b => b.Height));
 
       var hoisted = Assert.Throws<ProjectionException>(() =>
         VerticalRepeat(section, separatedBy: BlankRows()).Map(CaptionedSections()));
@@ -356,9 +356,9 @@ namespace Unrect.Tests.Projections
 
       // Written inline there is no identifier to capture, and the flow renders by its description.
       var inline = Assert.Throws<ProjectionException>(() =>
-        VerticalRepeat(Range(b => b.Height).Under(Caption("Detail")), separatedBy: BlankRows()).Map(CaptionedSections()));
+        VerticalRepeat(Heading("Detail").Of(Range(b => b.Height)), separatedBy: BlankRows()).Map(CaptionedSections()));
 
-      Assert.Equal("VerticalRepeat[2] -> Under -> Caption(\"Detail\")#1", inline.Path);
+      Assert.Equal("VerticalRepeat[2] -> Heading -> Caption(\"Detail\")#1", inline.Path);
     }
 
     [Fact]
@@ -368,7 +368,7 @@ namespace Unrect.Tests.Projections
       // idempotent — the flow lands ON the caption row and the caption inside finds it at distance
       // zero — so the item's own placement is what runs out, which is a stop.
       var detail = RowContaining("Detail");
-      var section = Range(b => b.Height).Under(Caption("Detail")).On(detail);
+      var section = On(detail).Heading("Detail").Of(Range(b => b.Height));
 
       var result = VerticalRepeat(section, separatedBy: BlankRows()).MapWithDiagnostics(CaptionedSections());
 
@@ -384,7 +384,7 @@ namespace Unrect.Tests.Projections
     {
       // Below anchors on a landmark exactly as On does, so it fails the same way, so a repeat reads
       // it the same way: a missing landmark is how the sections ran out, not a broken declaration.
-      var item = Cell(c => c.GetString()).Below(RowContaining("Detail"));
+      var item = Below(RowContaining("Detail")).Of(Cell(c => c.GetString()));
 
       var items = VerticalRepeat(item).Map(Mixed(new object?[,] { { "Detail" }, { "a" }, { "Detail" }, { "b" } }));
 

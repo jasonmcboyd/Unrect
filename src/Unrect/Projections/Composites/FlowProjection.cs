@@ -18,9 +18,9 @@ namespace Unrect.Projections
     private Orientation Orientation { get; }
 
     /// <summary>
-    /// What a factory that desugars into a flow calls itself. <c>Under</c> is one: a segment
-    /// reading <c>VerticalFlow</c> could not be grepped back to the <c>.Under(…)</c> that produced
-    /// it.
+    /// What a factory that desugars into a flow calls itself. A <c>Heading</c> stage is one: a
+    /// segment reading <c>VerticalFlow</c> could not be grepped back to the <c>Heading(…)</c> that
+    /// produced it.
     /// </summary>
     private string? Declared { get; }
 

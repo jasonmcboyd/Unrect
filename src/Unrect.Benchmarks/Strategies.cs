@@ -25,15 +25,15 @@ namespace Unrect.Benchmarks
     private static readonly IProjection<int> WholeHeight = Range(RowsWhileAnyValue(), b => b.Height);
 
     private static readonly IProjection<int> Seek =
-      Row(r => r.Count).On(RowContaining(CanonicalSpaces.Landmark));
+      On(RowContaining(CanonicalSpaces.Landmark)).Row(r => r.Count);
 
     // The miss: absorbed, so the row measures the full-grid scan and not the throw.
     private static readonly IProjection<int> SeekMiss = Seek.Optional();
 
     private static readonly IProjection<int> Bounded =
-      Range(RowsWhileAnyValue(), b => b.Height).Until(RowContaining(CanonicalSpaces.Landmark));
+      Until(RowContaining(CanonicalSpaces.Landmark)).Range(RowsWhileAnyValue(), b => b.Height);
 
-    private static readonly IProjection<int> SkipBlanks = Row(r => r.Count).OffsetBy(BlankRows());
+    private static readonly IProjection<int> SkipBlanks = OffsetBy(BlankRows()).Row(r => r.Count);
 
     private ISpace _dense = default!;
     private ISpace _sparse = default!;

@@ -26,12 +26,12 @@ namespace Unrect.Projections
     }
 
     private IProjection<TResult> Inner { get; }
-    private Landmark Landmark { get; set; }
-    private bool OrEnd { get; set; }
+    private Landmark Landmark { get; }
+    private bool OrEnd { get; }
 
     private bool IsVertical => Landmark.Orientation == Orientation.Vertical;
 
-    public override string Description => IsVertical ? "Until" : "UntilColumn";
+    public override string Description => Spelling(Landmark);
 
     public override IReadOnlyList<IProjection> Children { get; }
 
@@ -39,21 +39,18 @@ namespace Unrect.Projections
     public override bool IsTransparent => Name is null;
 
     /// <summary>
-    /// Replaces the landmark rather than nesting, so <c>Until(A).Until(B)</c> ends at B: a
-    /// projection has one end. The axis comes with the landmark, so this is also how a row bound is
-    /// replaced by a column one.
+    /// The refusal a second bound gets, naming the modifier that asked for it. A bound written
+    /// straight onto a bounded projection — or onto a clone of one, since a clone is not a layer —
+    /// would replace the end already declared, and the landmark it replaced would never be looked
+    /// for: the erasure is silent and total.
     /// </summary>
-    public IProjection<TResult> WithLandmark(Landmark landmark, bool orEnd)
-    {
-      // Cloned rather than rebuilt so the name and placement already on this wrapper survive, the
-      // same way ProjectionBase clones itself for Named and Sized.
-      var clone = (UntilProjection<TResult>)MemberwiseClone();
-
-      clone.Landmark = landmark;
-      clone.OrEnd = orEnd;
-
-      return clone;
-    }
+    public ArgumentException AlreadyEnded(Landmark landmark)
+      => new ArgumentException(
+        $"{ProjectionContext.DescribeThrough(this)} already ends at a landmark, and {Spelling(landmark)} would "
+        + "replace that end rather than bound what is inside it — a projection has one end, and the replaced "
+        + "landmark is never even sought. Bound it once: a bound written outside a wrapper nests instead of "
+        + "replacing, so a Select or a Padded between the two leaves both ends in force.",
+        "projection");
 
     public override ProjectionResult<TResult> Project(ISpace extent, ProjectionContext context)
     {
@@ -79,6 +76,10 @@ namespace Unrect.Projections
       // claim columns.
       return new ProjectionResult<TResult>(applied.Value, Consumed(limit, applied.Advance), applied.Presence);
     }
+
+    /// <summary>The word a reader wrote for a bound on this axis, which is also how it describes itself.</summary>
+    private static string Spelling(Landmark landmark)
+      => landmark.Orientation == Orientation.Vertical ? "Until" : "UntilColumn";
 
     private Area Bound(int limit, Size size)
       => IsVertical ? new Area(size.Width, limit) : new Area(limit, size.Height);

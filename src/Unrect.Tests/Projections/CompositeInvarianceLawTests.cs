@@ -49,20 +49,20 @@ namespace Unrect.Tests.Projections
       // says so with .Right(1).
       "adjacent cells" => (
         HorizontalFlow(h => $"{h.Next(IntCell())}/{h.Next(IntCell())}"),
-        Overlay(o => $"{o.Next(IntCell())}/{o.Next(IntCell().Right(1))}")),
+        Overlay(o => $"{o.Next(IntCell())}/{o.Next(Right(1).Of(IntCell()))}")),
 
       // A gap between them, which the two spellings express differently — the flow's child steps one
       // column into its own band, the overlay's steps two from the origin — and must absorb
       // identically.
       "a gap between them" => (
-        HorizontalFlow(h => $"{h.Next(IntCell())}/{h.Next(IntCell().Right(1))}"),
-        Overlay(o => $"{o.Next(IntCell())}/{o.Next(IntCell().Right(2))}")),
+        HorizontalFlow(h => $"{h.Next(IntCell())}/{h.Next(Right(1).Of(IntCell()))}"),
+        Overlay(o => $"{o.Next(IntCell())}/{o.Next(Right(2).Of(IntCell()))}")),
 
       // Children of different heights, so the consumed extent is not simply the first child's: the
       // flow takes the tallest across its axis, the overlay the furthest reach down.
       "children of different heights" => (
         HorizontalFlow(h => $"{h.Next(Column(2, s => s[0].GetInt()))}/{h.Next(IntCell())}"),
-        Overlay(o => $"{o.Next(Column(2, s => s[0].GetInt()))}/{o.Next(IntCell().Right(1))}")),
+        Overlay(o => $"{o.Next(Column(2, s => s[0].GetInt()))}/{o.Next(Right(1).Of(IntCell()))}")),
 
       _ => throw new ArgumentOutOfRangeException(nameof(spelling), spelling, "No such spelling."),
     };
@@ -157,7 +157,7 @@ namespace Unrect.Tests.Projections
         HorizontalFlow(h => $"{h.Next(IntCell())}/{h.Next(Text())}").Map(CoordinateGrid()));
 
       var inOverlay = Assert.Throws<ProjectionException>(() =>
-        Overlay(o => $"{o.Next(IntCell())}/{o.Next(Text().Right(1))}").Map(CoordinateGrid()));
+        Overlay(o => $"{o.Next(IntCell())}/{o.Next(Right(1).Of(Text()))}").Map(CoordinateGrid()));
 
       Assert.Equal("HorizontalFlow -> Text#2", inFlow.Path);
       Assert.Equal("Overlay -> Text#2", inOverlay.Path);
@@ -176,7 +176,7 @@ namespace Unrect.Tests.Projections
       // produce, because a flow's cursor only ever goes forwards. Everything the law is about is
       // nevertheless identical.
       var flow = VerticalFlow(v => v.Next(IntCell()) + v.Next(IntCell()));
-      var backwards = Overlay(o => o.Next(IntCell().Down(1)) + o.Next(IntCell()));
+      var backwards = Overlay(o => o.Next(Down(1).Of(IntCell())) + o.Next(IntCell()));
 
       AssertL2(Observe(flow, CoordinateGrid()), Observe(backwards, CoordinateGrid()));
 

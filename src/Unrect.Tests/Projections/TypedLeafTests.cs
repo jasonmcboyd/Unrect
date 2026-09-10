@@ -170,7 +170,7 @@ namespace Unrect.Tests.Projections
     public void ALeafForcedToMoreThanOneCell_Throws()
     {
       var failure = Assert.Throws<ProjectionException>(() =>
-        Decimal().Sized(WholeExtent()).Map(Mixed(new object?[,] { { 1, 2 } })));
+        Sized(WholeExtent()).Of(Decimal()).Map(Mixed(new object?[,] { { 1, 2 } })));
 
       Assert.Equal("a Decimal must be exactly one cell; this one is 2x1", Problem(failure));
     }

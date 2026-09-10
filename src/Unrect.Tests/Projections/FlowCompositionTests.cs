@@ -163,7 +163,7 @@ namespace Unrect.Tests.Projections
     public void AnOverlayChild()
     {
       AssertReads(
-        VerticalFlow(v => $"{v.Next(Overlay(o => $"({o.Next(IntCell())},{o.Next(IntCell().Right(2))})"))}|{v.Next(IntCell())}"),
+        VerticalFlow(v => $"{v.Next(Overlay(o => $"({o.Next(IntCell())},{o.Next(Right(2).Of(IntCell()))})"))}|{v.Next(IntCell())}"),
         CoordinateGrid(),
         "(1,3)|11",
         3,
@@ -189,7 +189,7 @@ namespace Unrect.Tests.Projections
       var space = Mixed(new object?[,] { { "preamble" }, { "Section" }, { 7 } });
 
       AssertReads(
-        VerticalFlow(v => $"{v.Next(Cell(c => c.GetString()))}|{v.Next(Cell(c => c.GetString()).On(RowContaining("Section")))}"),
+        VerticalFlow(v => $"{v.Next(Cell(c => c.GetString()))}|{v.Next(On(RowContaining("Section")).Of(Cell(c => c.GetString())))}"),
         space,
         "preamble|Section",
         1,

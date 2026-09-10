@@ -26,7 +26,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AnOffsetThatRunsPastTheSpace_ReportsWhatWasRequestedAndWhatWasAvailable()
     {
-      var failure = Assert.Throws<ProjectionException>(() => IntCell().Down(5).Map(Square()));
+      var failure = Assert.Throws<ProjectionException>(() => Down(5).Of(IntCell()).Map(Square()));
 
       Assert.Contains("an offset of 0x5 does not fit the available space", failure.Message);
       Assert.Contains("2x2 available", failure.Message);
@@ -42,7 +42,7 @@ namespace Unrect.Tests.Projections
       var space = Grid(new[,] { { 1 }, { 2 }, { 3 }, { 4 } });
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        IntCell().OffsetBy(Then(SkipRows(3), SkipRows(3))).Map(space));
+        OffsetBy(Then(SkipRows(3), SkipRows(3))).Of(IntCell()).Map(space));
 
       Assert.Contains("its offset ran past the available space", failure.Message);
       Assert.IsType<OutOfBoundsException>(failure.InnerException);
@@ -56,7 +56,7 @@ namespace Unrect.Tests.Projections
       var space = Mixed(new object?[,] { { "nothing", null }, { "relevant", null } });
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        Cell(v => v.GetString()).Named("taxable income").On(RowContaining("Taxable Income")).Map(space));
+        On(RowContaining("Taxable Income")).Of(Cell(v => v.GetString()).Named("taxable income")).Map(space));
 
       Assert.Equal("'taxable income'", failure.Subject);
       Assert.Contains("no row containing 'Taxable Income' exists in the available space", failure.Message);
@@ -83,9 +83,9 @@ namespace Unrect.Tests.Projections
     {
       var space = Mixed(new object?[,] { { "nothing", null } });
 
-      Assert.Throws<ProjectionException>(() => IntCell().On(RowContaining("Total")).Map(space));
-      Assert.Throws<ProjectionException>(() => IntCell().OffsetBy(FromRight(9)).Map(space));
-      Assert.Throws<ProjectionException>(() => IntCell().OffsetBy(FromBottom(9)).Map(space));
+      Assert.Throws<ProjectionException>(() => On(RowContaining("Total")).Of(IntCell()).Map(space));
+      Assert.Throws<ProjectionException>(() => OffsetBy(FromRight(9)).Of(IntCell()).Map(space));
+      Assert.Throws<ProjectionException>(() => OffsetBy(FromBottom(9)).Of(IntCell()).Map(space));
     }
 
     [Fact]
@@ -98,7 +98,7 @@ namespace Unrect.Tests.Projections
     }
 
     private static string Missing(IOffsetStrategy offset, ISpace space)
-      => Assert.Throws<ProjectionException>(() => Cell(v => v.GetString()).OffsetBy(offset).Map(space)).Message;
+      => Assert.Throws<ProjectionException>(() => OffsetBy(offset).Of(Cell(v => v.GetString())).Map(space)).Message;
 
     // --- Case B: the area does not fit ------------------------------------------------------------------
 
@@ -144,7 +144,7 @@ namespace Unrect.Tests.Projections
     public void AnOffsetStrategyThatThrows_IsReportedAgainstTheProjectionThatDeclaredIt()
     {
       var failure = Assert.Throws<ProjectionException>(() =>
-        IntCell().OffsetBy(OffsetStrategies.SelectOffset(_ => throw new InvalidOperationException("boom"))).Map(Square()));
+        OffsetBy(OffsetStrategies.SelectOffset(_ => throw new InvalidOperationException("boom"))).Of(IntCell()).Map(Square()));
 
       Assert.Contains("its offset strategy threw InvalidOperationException: boom", failure.Message);
       Assert.IsType<InvalidOperationException>(failure.InnerException);
@@ -340,7 +340,7 @@ namespace Unrect.Tests.Projections
         VerticalFlow(v =>
         {
           v.Next(Range(2, 2, b => b.Width));
-          return v.Next(IntCell().Right(1));
+          return v.Next(Right(1).Of(IntCell()));
         }).Select(x => x).Map(space));
 
       Assert.Equal("B3", failure.Location.A1);
@@ -354,7 +354,7 @@ namespace Unrect.Tests.Projections
       var space = Grid(new[,] { { 1, 1 }, { 1, 1 }, { 1, 0 } });
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v => $"{v.Next(Range(2, 2, b => b.Width))}{v.Next(IntCell().Right(1))}").Map(space));
+        VerticalFlow(v => $"{v.Next(Range(2, 2, b => b.Width))}{v.Next(Right(1).Of(IntCell()))}").Map(space));
 
       Assert.Equal(3, failure.Location.Row);
       Assert.Equal(2, failure.Location.Column);
@@ -380,7 +380,7 @@ namespace Unrect.Tests.Projections
 
       values[row - 1, column - 1] = 0;   // the blank the projection will trip over
 
-      var projection = IntCell().OffsetBy(Then(SkipColumns(column - 1), SkipRows(row - 1)));
+      var projection = OffsetBy(Then(SkipColumns(column - 1), SkipRows(row - 1))).Of(IntCell());
       var failure = Assert.Throws<ProjectionException>(() => projection.Map(Grid(values)));
 
       Assert.Equal(expected, failure.Location.A1);
@@ -433,7 +433,7 @@ namespace Unrect.Tests.Projections
       Assert.Throws<ProjectionException>(() => Row(9, s => s.Count).Map(space));
       Assert.Throws<ProjectionException>(() => Column(9, s => s.Count).Map(space));
       Assert.Throws<ProjectionException>(() => Range(9, 9, b => b.Width).Map(space));
-      Assert.Throws<ProjectionException>(() => IntCell().Down(9).Map(space));
+      Assert.Throws<ProjectionException>(() => Down(9).Of(IntCell()).Map(space));
       Assert.Throws<ProjectionException>(() => Row(ColumnStrategies.TakeColumns(9), s => s.Count).Map(space));
       Assert.Throws<ProjectionException>(() =>
         VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(IntCell())}{v.Next(IntCell())}").Map(Grid(new[,] { { 1 } })));

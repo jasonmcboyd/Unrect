@@ -184,11 +184,11 @@ namespace Unrect.Tests.Projections
       // named, at which point it claims a segment and says what it is.
       Assert.True(IntCell().Select(v => v + 1).IsTransparent);
       Assert.True(IntCell().Padded(1).IsTransparent);
-      Assert.True(IntCell().Until(RowContaining("Total")).IsTransparent);
+      Assert.True(Until(RowContaining("Total")).Of(IntCell()).IsTransparent);
 
       Assert.False(IntCell().Select(v => v + 1).Named("named").IsTransparent);
       Assert.False(IntCell().Padded(1).Named("named").IsTransparent);
-      Assert.False(IntCell().Until(RowContaining("Total")).Named("named").IsTransparent);
+      Assert.False(Until(RowContaining("Total")).Of(IntCell()).Named("named").IsTransparent);
 
       // Projections that are levels of the tree in their own right never are.
       Assert.False(IntCell().IsTransparent);
@@ -223,9 +223,8 @@ namespace Unrect.Tests.Projections
       // repeat happily, and stops where a layout composite is — reporting why rather than
       // pretending the layout is a leaf.
       var projection = VerticalRepeat(
-        Table(r => r[0])
-          .Named("rows")
-          .Until(RowContaining("Total"))
+        Until(RowContaining("Total")).Of(Table(r => r[0])
+          .Named("rows"))
           .Select(rows => rows.Count)
           .Named("block"))
         .Named("blocks");
@@ -307,7 +306,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void MappingDoesNotMutateTheProjection()
     {
-      var projection = IntCell().Named("value").Down(1);
+      var projection = Down(1).Of(IntCell().Named("value"));
 
       projection.Map(Grid(new[,] { { 1 }, { 2 } }));
 

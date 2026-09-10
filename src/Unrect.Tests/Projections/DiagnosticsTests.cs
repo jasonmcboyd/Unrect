@@ -119,7 +119,7 @@ namespace Unrect.Tests.Projections
       // after it. Reporting only the tail would say the leading gap was accounted for.
       var space = Grid(new[,] { { 1 }, { 2 }, { 3 }, { 4 } });
 
-      var info = Assert.Single(Cell(v => v.GetInt()).Down(2).MapWithDiagnostics(space).Diagnostics);
+      var info = Assert.Single(Down(2).Of(Cell(v => v.GetInt())).MapWithDiagnostics(space).Diagnostics);
 
       Assert.Equal("the projection consumed 1 of 4 rows; rows 1-2 and 4+ were not described", info.Message);
 
@@ -132,7 +132,7 @@ namespace Unrect.Tests.Projections
     {
       var space = Grid(new[,] { { 1 }, { 2 }, { 3 }, { 4 } });
 
-      var info = Assert.Single(Cell(v => v.GetInt()).Down(1).MapWithDiagnostics(space).Diagnostics);
+      var info = Assert.Single(Down(1).Of(Cell(v => v.GetInt())).MapWithDiagnostics(space).Diagnostics);
 
       Assert.Equal("the projection consumed 1 of 4 rows; rows 1 and 3+ were not described", info.Message);
     }
@@ -142,7 +142,7 @@ namespace Unrect.Tests.Projections
     {
       var space = Grid(new[,] { { 1, 2, 3, 4 } });
 
-      var info = Assert.Single(Cell(v => v.GetInt()).Right(2).MapWithDiagnostics(space).Diagnostics);
+      var info = Assert.Single(Right(2).Of(Cell(v => v.GetInt())).MapWithDiagnostics(space).Diagnostics);
 
       Assert.Equal("the projection consumed 1 of 4 columns; columns 1-2 and 4+ were not described", info.Message);
       Assert.Equal("A1", info.Location.A1);
@@ -286,9 +286,8 @@ namespace Unrect.Tests.Projections
           return (string?)v.Next(Row(2, r => r[0].GetString()).Named("body"));
         });
 
-      var item = section
-        .Else(Row(2, _ => (string?)null).Named("unreadable section"))
-        .On(RowContaining("Section"));
+      var item = On(RowContaining("Section")).Of(section
+        .Else(Row(2, _ => (string?)null).Named("unreadable section")));
 
       return VerticalRepeat(item).Select(all => (IReadOnlyList<string>)all.Where(s => s is not null).ToList()!);
     }

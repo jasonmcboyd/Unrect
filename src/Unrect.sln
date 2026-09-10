@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.32002.261
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.37516.0 d17.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Unrect", "Unrect\Unrect.csproj", "{AFCFEB42-BD8F-44D3-AF7B-8F5E876A57A4}"
 EndProject
@@ -14,6 +14,14 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Unrect.Tests", "Unrect.Tests\Unrect.Tests.csproj", "{5099C204-C665-461F-B49F-A1563449D1EE}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unrect.Benchmarks", "Unrect.Benchmarks\Unrect.Benchmarks.csproj", "{712B6FCC-E83D-4DED-8AFF-8A1E477E29FE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlacementGauntlet", "..\spike\PlacementGauntlet\PlacementGauntlet.csproj", "{39F70BE4-CC32-9AAB-436D-79084F605166}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unrect.Analyzers", "Unrect.Analyzers\Unrect.Analyzers.csproj", "{C94FA8DA-C64F-4E0D-A932-518E2071259D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unrect.Analyzers.CodeFixes", "Unrect.Analyzers.CodeFixes\Unrect.Analyzers.CodeFixes.csproj", "{B0E74BC5-1B01-43D6-8BD7-6E35410F6191}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unrect.Analyzers.Tests", "Unrect.Analyzers.Tests\Unrect.Analyzers.Tests.csproj", "{F46E9671-50B8-4479-A866-B19CE9B50105}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,6 +53,22 @@ Global
 		{712B6FCC-E83D-4DED-8AFF-8A1E477E29FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{712B6FCC-E83D-4DED-8AFF-8A1E477E29FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{712B6FCC-E83D-4DED-8AFF-8A1E477E29FE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{39F70BE4-CC32-9AAB-436D-79084F605166}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{39F70BE4-CC32-9AAB-436D-79084F605166}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{39F70BE4-CC32-9AAB-436D-79084F605166}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{39F70BE4-CC32-9AAB-436D-79084F605166}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C94FA8DA-C64F-4E0D-A932-518E2071259D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C94FA8DA-C64F-4E0D-A932-518E2071259D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C94FA8DA-C64F-4E0D-A932-518E2071259D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C94FA8DA-C64F-4E0D-A932-518E2071259D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0E74BC5-1B01-43D6-8BD7-6E35410F6191}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0E74BC5-1B01-43D6-8BD7-6E35410F6191}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0E74BC5-1B01-43D6-8BD7-6E35410F6191}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0E74BC5-1B01-43D6-8BD7-6E35410F6191}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F46E9671-50B8-4479-A866-B19CE9B50105}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F46E9671-50B8-4479-A866-B19CE9B50105}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F46E9671-50B8-4479-A866-B19CE9B50105}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F46E9671-50B8-4479-A866-B19CE9B50105}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

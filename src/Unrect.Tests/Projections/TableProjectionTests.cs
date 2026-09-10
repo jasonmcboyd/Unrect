@@ -430,8 +430,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void Table_WithAnExplicitArea_UsesItInsteadOfDiscovering()
     {
-      var applied = Table(t => (t.ColumnCount, t.RowCount))
-        .Sized(AreaStrategies.ExplicitArea(1, 2))
+      var applied = Sized(AreaStrategies.ExplicitArea(1, 2)).Of(Table(t => (t.ColumnCount, t.RowCount)))
         .Apply(SimpleTable());
 
       Assert.Equal((1, 1), applied.Value);
@@ -444,7 +443,7 @@ namespace Unrect.Tests.Projections
     {
       // Down(1) replaces the default skip-blank-rows offset, so the table starts a row lower and
       // the first data row becomes its header — non-text header cells naming themselves "".
-      var names = Table(t => t.ColumnNames).Down(1).Map(SimpleTable());
+      var names = Down(1).Of(Table(t => t.ColumnNames)).Map(SimpleTable());
 
       Assert.Equal(new[] { "Acme", "" }, names);
     }

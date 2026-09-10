@@ -51,7 +51,7 @@ namespace Unrect.Benchmarks
     // Four independent readings of the same band. An overlay's children each start from the band's
     // own origin, so this measures placement without the flow's advance.
     private static readonly IProjection<int> Anchored = Overlay(o =>
-      o.Next(Row(r => r.Count).On(RowContaining(CanonicalSpaces.Landmark)))
+      o.Next(On(RowContaining(CanonicalSpaces.Landmark)).Row(r => r.Count))
       + o.Next(Column(CanonicalSpaces.BlockRows, c => c.Count))
       + o.Next(Range(2, 2, b => b.Width))
       + o.Next(Cell(c => c.HasValue ? 1 : 0)));
@@ -72,7 +72,7 @@ namespace Unrect.Benchmarks
     });
 
     private static readonly IProjection<int> Section =
-      Range(RowsWhileAnyValue(), b => b.Height).Under(Caption(CanonicalSpaces.DetailsCaption));
+      Heading(CanonicalSpaces.DetailsCaption).Of(Range(RowsWhileAnyValue(), b => b.Height));
 
     private ISpace _tall = default!;
     private ISpace _blocks = default!;

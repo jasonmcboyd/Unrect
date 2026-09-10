@@ -133,7 +133,7 @@ namespace Unrect.Tests.Projections
       // The table's own row, in its three spellings: a caption that found its row, the content it
       // anchors, and a table that bound a header.
       Assert.Equal(Presence.Read, PresenceOf(Caption("Detail"), CaptionedSheet()));
-      Assert.Equal(Presence.Read, PresenceOf(Rows().Under(Caption("Detail")), CaptionedSheet()));
+      Assert.Equal(Presence.Read, PresenceOf(Heading("Detail").Of(Rows()), CaptionedSheet()));
       Assert.Equal(Presence.Read, PresenceOf(Table(), Mixed(new object?[,] { { "Amount" }, { 1 }, { 2 } })));
     }
 
@@ -315,7 +315,7 @@ namespace Unrect.Tests.Projections
     /// whatever the boundary made of it. One row per occurrence, whether the row read or was
     /// tolerated.
     /// </summary>
-    private static IProjection<int> ToleratedRow() => Integer().Optional().Sized(Extent(1, 1));
+    private static IProjection<int> ToleratedRow() => Sized(Extent(1, 1)).Of(Integer().Optional());
 
     [Fact]
     public void AnAbsorbedItemThatStillConsumedItsExtentGoesOnRepeating()

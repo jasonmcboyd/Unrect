@@ -27,8 +27,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ARowStripKnowsWhereItStartsAndWhereEachCellIs()
     {
-      var addresses = Row(3, r => new[] { r.Location.A1, r.AddressOf(0).A1, r.AddressOf(2).A1 })
-        .Down(1)
+      var addresses = Down(1).Of(Row(3, r => new[] { r.Location.A1, r.AddressOf(0).A1, r.AddressOf(2).A1 }))
         .Map(CoordinateGrid());
 
       Assert.Equal(new[] { "A2", "A2", "C2" }, addresses);
@@ -37,8 +36,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AColumnStripIsAddressedDownItsOwnAxis()
     {
-      var addresses = Column(3, c => new[] { c.Location.A1, c.AddressOf(0).A1, c.AddressOf(2).A1 })
-        .Right(1)
+      var addresses = Right(1).Of(Column(3, c => new[] { c.Location.A1, c.AddressOf(0).A1, c.AddressOf(2).A1 }))
         .Map(CoordinateGrid());
 
       Assert.Equal(new[] { "B1", "B1", "B3" }, addresses);
@@ -109,7 +107,7 @@ namespace Unrect.Tests.Projections
     {
       // Overlay children share an extent but sit in different places inside it.
       var corner = Range(1, 1, b => b.Location.A1);
-      var inset = Range(1, 1, b => b.Location.A1).Down(1).Right(2);
+      var inset = Down(1).Right(2).Of(Range(1, 1, b => b.Location.A1));
 
       Assert.Equal("A1|C2", Overlay(o => $"{o.Next(corner)}|{o.Next(inset)}").Map(CoordinateGrid()));
     }

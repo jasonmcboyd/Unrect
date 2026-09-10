@@ -32,7 +32,7 @@ namespace Unrect.Tests.Projections
     public void Overlay_AppliesEveryChildToTheSameExtent()
     {
       // Two children, each placing itself independently inside the one extent.
-      Assert.Equal("1|13", Overlay(o => $"{o.Next(IntCell())}|{o.Next(IntCell().Down(1).Right(2))}").Map(CoordinateGrid()));
+      Assert.Equal("1|13", Overlay(o => $"{o.Next(IntCell())}|{o.Next(Down(1).Right(2).Of(IntCell()))}").Map(CoordinateGrid()));
     }
 
     [Fact]
@@ -49,7 +49,7 @@ namespace Unrect.Tests.Projections
     {
       // Deliberately no z-order and no occlusion: reading a cell twice is not a conflict.
       var read = Overlay(o =>
-        $"{o.Next(Range(2, 2, b => b[1, 0].GetInt()))}|{o.Next(IntCell().Right(1))}|{o.Next(IntCell().Right(1))}");
+        $"{o.Next(Range(2, 2, b => b[1, 0].GetInt()))}|{o.Next(Right(1).Of(IntCell()))}|{o.Next(Right(1).Of(IntCell()))}");
 
       Assert.Equal("2|2|2", read.Map(CoordinateGrid()));
     }
@@ -57,7 +57,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void Overlay_ProjectsChildrenInDeclarationOrder()
     {
-      var result = Overlay(o => new[] { o.Next(IntCell()), o.Next(IntCell().Right(1)), o.Next(IntCell().Right(2)) })
+      var result = Overlay(o => new[] { o.Next(IntCell()), o.Next(Right(1).Of(IntCell())), o.Next(Right(2).Of(IntCell())) })
         .Map(CoordinateGrid());
 
       Assert.Equal(new[] { 1, 2, 3 }, result);
@@ -69,7 +69,7 @@ namespace Unrect.Tests.Projections
     public void Overlay_SizesItselfToTheUnionOfItsChildrensFootprints()
     {
       // Per axis, the furthest any child reached: three columns across, two rows down.
-      var applied = Overlay(o => $"{o.Next(IntCell())}|{o.Next(IntCell().Down(1).Right(2))}").Apply(CoordinateGrid());
+      var applied = Overlay(o => $"{o.Next(IntCell())}|{o.Next(Down(1).Right(2).Of(IntCell()))}").Apply(CoordinateGrid());
 
       Assert.Equal(3, applied.Consumed.Width);
       Assert.Equal(2, applied.Consumed.Height);
@@ -80,7 +80,7 @@ namespace Unrect.Tests.Projections
     {
       // The last child reaches least far; the bounding box is still the widest reach of any of
       // them.
-      var applied = Overlay(o => $"{o.Next(IntCell().Right(3))}|{o.Next(IntCell())}").Apply(CoordinateGrid());
+      var applied = Overlay(o => $"{o.Next(Right(3).Of(IntCell()))}|{o.Next(IntCell())}").Apply(CoordinateGrid());
 
       Assert.Equal(4, applied.Consumed.Width);
       Assert.Equal(1, applied.Consumed.Height);
@@ -91,7 +91,7 @@ namespace Unrect.Tests.Projections
     {
       // What the derived extent is for: the overlay occupies one row here, so the next child of the
       // enclosing flow begins on the second.
-      var band = Overlay(o => $"{o.Next(IntCell())}|{o.Next(IntCell().Right(2))}");
+      var band = Overlay(o => $"{o.Next(IntCell())}|{o.Next(Right(2).Of(IntCell()))}");
 
       Assert.Equal("1|3/11", VerticalFlow(v => $"{v.Next(band)}/{v.Next(IntCell())}").Map(CoordinateGrid()));
     }
@@ -100,8 +100,7 @@ namespace Unrect.Tests.Projections
     public void Sized_OverridesTheBoundingBox()
     {
       // Common for a header region, whose footprint on the sheet exceeds its sparse content.
-      var band = Overlay(o => $"{o.Next(IntCell())}|{o.Next(IntCell().Right(2))}")
-        .Sized(AreaStrategies.ExplicitArea(4, 2));
+      var band = Sized(AreaStrategies.ExplicitArea(4, 2)).Of(Overlay(o => $"{o.Next(IntCell())}|{o.Next(Right(2).Of(IntCell()))}"));
 
       var applied = band.Apply(CoordinateGrid());
 
@@ -131,7 +130,7 @@ namespace Unrect.Tests.Projections
     public void Overlay_WhenAChildsOffsetRunsOff_Throws()
     {
       Assert.Throws<ProjectionException>(() =>
-        Overlay(o => $"{o.Next(IntCell())}|{o.Next(IntCell().Right(9))}").Map(CoordinateGrid()));
+        Overlay(o => $"{o.Next(IntCell())}|{o.Next(Right(9).Of(IntCell()))}").Map(CoordinateGrid()));
     }
 
     // --- Context and diagnostics ----------------------------------------------------------------------
@@ -141,7 +140,7 @@ namespace Unrect.Tests.Projections
     {
       // Each child descends from the overlay's scope carrying its own offset, so a failure names
       // where the child actually landed rather than where the overlay starts.
-      var title = Cell(v => v.GetString()).Down(1).Right(2);
+      var title = Down(1).Right(2).Of(Cell(v => v.GetString()));
 
       var failure = Assert.Throws<ProjectionException>(() =>
         Overlay(o => $"{o.Next(IntCell())}|{o.Next(title)}").Map(CoordinateGrid()));
@@ -155,10 +154,10 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AChildFailure_IsReportedRelativeToAPlacedOverlayToo()
     {
-      var title = Cell(v => v.GetString()).Right(1);
+      var title = Right(1).Of(Cell(v => v.GetString()));
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        Overlay(o => $"{o.Next(IntCell())}|{o.Next(title)}").Down(1).Map(CoordinateGrid()));
+        Down(1).Of(Overlay(o => $"{o.Next(IntCell())}|{o.Next(title)}")).Map(CoordinateGrid()));
 
       Assert.Equal("B2", failure.Location.A1);
     }
@@ -170,7 +169,7 @@ namespace Unrect.Tests.Projections
     {
       // Every cursor composite is opaque: what it declares is knowable only by running it, so an
       // empty Children would read as "leaf" to a renderer unless the marker said otherwise.
-      var overlay = Overlay(o => $"{o.Next(IntCell())}|{o.Next(IntCell().Right(1))}");
+      var overlay = Overlay(o => $"{o.Next(IntCell())}|{o.Next(Right(1).Of(IntCell()))}");
 
       Assert.Equal("Overlay", overlay.Description);
       Assert.Empty(overlay.Children);
@@ -192,7 +191,7 @@ namespace Unrect.Tests.Projections
     {
       var space = Grid(new[,] { { 0, 0 }, { 1, 2 } });
 
-      var projection = Overlay(o => $"{o.Next(IntCell())}|{o.Next(IntCell().Right(1))}").AfterBlankRows().Named("header");
+      var projection = AfterBlankRows().Of(Overlay(o => $"{o.Next(IntCell())}|{o.Next(Right(1).Of(IntCell()))}")).Named("header");
 
       Assert.Equal("1|2", projection.Map(space));
       Assert.Equal("header", projection.Name);
@@ -206,9 +205,9 @@ namespace Unrect.Tests.Projections
       // Children are Next calls, so there is no tuple to run out of and no nesting to reach for.
       var projection = Overlay(o => string.Join(",", new[]
       {
-        o.Next(IntCell()), o.Next(IntCell().Right(1)), o.Next(IntCell().Right(2)), o.Next(IntCell().Right(3)),
-        o.Next(IntCell().Down(1)), o.Next(IntCell().Down(1).Right(1)), o.Next(IntCell().Down(1).Right(2)),
-        o.Next(IntCell().Down(2)), o.Next(IntCell().Down(2).Right(1)), o.Next(IntCell().Down(2).Right(2)),
+        o.Next(IntCell()), o.Next(Right(1).Of(IntCell())), o.Next(Right(2).Of(IntCell())), o.Next(Right(3).Of(IntCell())),
+        o.Next(Down(1).Of(IntCell())), o.Next(Down(1).Right(1).Of(IntCell())), o.Next(Down(1).Right(2).Of(IntCell())),
+        o.Next(Down(2).Of(IntCell())), o.Next(Down(2).Right(1).Of(IntCell())), o.Next(Down(2).Right(2).Of(IntCell())),
       }));
 
       Assert.Equal("1,2,3,4,11,12,13,21,22,23", projection.Map(CoordinateGrid()));
@@ -227,7 +226,7 @@ namespace Unrect.Tests.Projections
       });
 
       var entity = Cell(v => v.GetString());
-      var year = Cell(v => v.GetString()).Right(3);
+      var year = Right(3).Of(Cell(v => v.GetString()));
       var items = Table(r => r["Amount"].GetInt());
 
       var projection = VerticalFlow(v =>
@@ -262,7 +261,7 @@ namespace Unrect.Tests.Projections
       IProjection<int>? missing = null;
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        Overlay(o => $"{o.Next(IntCell().Down(1))}|{o.Next(missing!)}").Map(CoordinateGrid()));
+        Overlay(o => $"{o.Next(Down(1).Of(IntCell()))}|{o.Next(missing!)}").Map(CoordinateGrid()));
 
       Assert.Contains("a null projection was declared as child 2", failure.Message);
       Assert.Equal("A1", failure.Location.A1);
@@ -302,7 +301,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ACaptureNothingOverlayIsSafeToApplyToManySpacesAtOnce()
     {
-      var projection = Overlay(o => $"{o.Next(IntCell())}|{o.Next(IntCell().Right(1))}");
+      var projection = Overlay(o => $"{o.Next(IntCell())}|{o.Next(Right(1).Of(IntCell()))}");
 
       var spaces = Enumerable.Range(0, 64)
         .Select(seed => Grid(new[,] { { seed + 1, seed + 2 } }))

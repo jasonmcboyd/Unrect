@@ -179,8 +179,7 @@ namespace Unrect.Tests.Projections
           r["Distributions"].GetDecimal(),
           r["Net"].GetDecimal()))
           .Named("summary")),
-        Details: v.Next(VerticalRepeat(detail, separatedBy: BlankRows(), atLeast: 1)
-          .AfterBlankRows()
+        Details: v.Next(AfterBlankRows().Of(VerticalRepeat(detail, separatedBy: BlankRows(), atLeast: 1))
           .Named("investor details"))));
     }
 
@@ -294,11 +293,8 @@ namespace Unrect.Tests.Projections
       return VerticalFlow(v => new IrrReport(
         Title: v.Next(Column(4, c => c[0].GetString()).Named("report header")),
         Summary: v.Next(Table(r => r["Investors"].GetString()).Named("summary")),
-        ByTransferDate: v.Next(series
-          .Under(Caption("IRR Details"), Caption("Cash Flows Using Transfer Date"))
-          .Until(RowContaining(Inception))),
-        ByInception: v.Next(series
-          .Under(Caption(Inception)))));
+        ByTransferDate: v.Next(Until(RowContaining(Inception)).Heading("IRR Details").Heading("Cash Flows Using Transfer Date").Of(series)),
+        ByInception: v.Next(Heading(Inception).Of(series))));
     }
 
     [Fact]
@@ -367,8 +363,8 @@ namespace Unrect.Tests.Projections
 
       var report = VerticalFlow(v => new
       {
-        Ordinary = v.Next(lines.Under(Caption("K-1 Lines 1-21")).Until(RowContaining("Foreign transactions"))),
-        Foreign = v.Next(lines.Under(Caption("Foreign transactions"))),
+        Ordinary = v.Next(Until(RowContaining("Foreign transactions")).Heading("K-1 Lines 1-21").Of(lines)),
+        Foreign = v.Next(Heading("Foreign transactions").Of(lines)),
       }).Map(CaptionedSheet());
 
       Assert.Equal(new[] { "Ordinary income", "Interest income" }, report.Ordinary);
@@ -384,8 +380,8 @@ namespace Unrect.Tests.Projections
 
       var report = VerticalFlow(v => new
       {
-        Ordinary = v.Next(lines.Under(Caption("K-1 Lines 1-21")).Until(RowContaining("Foreign transactions"))),
-        Foreign = v.Next(lines.Under(Caption("Foreign transactions"))),
+        Ordinary = v.Next(Until(RowContaining("Foreign transactions")).Heading("K-1 Lines 1-21").Of(lines)),
+        Foreign = v.Next(Heading("Foreign transactions").Of(lines)),
       }).Map(CaptionedSheet());
 
       Assert.DoesNotContain("K-1 Lines 1-21", report.Ordinary);
@@ -402,8 +398,8 @@ namespace Unrect.Tests.Projections
 
       var report = VerticalFlow(v => new
       {
-        Ordinary = v.Next(lines.Under(Caption("K-1 Lines 1-21")).Until(RowContaining("Foreign transactions"))),
-        Foreign = v.Next(lines.Under(Caption("Foreign transactions"))),
+        Ordinary = v.Next(Until(RowContaining("Foreign transactions")).Heading("K-1 Lines 1-21").Of(lines)),
+        Foreign = v.Next(Heading("Foreign transactions").Of(lines)),
       });
 
       var result = report.MapWithDiagnostics(CaptionedSheet());

@@ -88,7 +88,7 @@ namespace Unrect.Tests.Spreadsheets
     {
       // C is the first computed column, and On owns it: offset 2, not 3. The heading is read from the
       // matched column itself, which is what distinguishes On from RightOf below.
-      var applied = Text().On(ColumnWithFormula()).Apply(Sheet());
+      var applied = On(ColumnWithFormula()).Of(Text()).Apply(Sheet());
 
       Assert.Equal("Rate", applied.Value);
       Assert.Equal(2, applied.Offset.Size.Width);
@@ -98,14 +98,14 @@ namespace Unrect.Tests.Spreadsheets
     [Fact]
     public void RightOf_StartsExactlyOneColumnRightOfTheMatch()
     {
-      var applied = Text().RightOf(ColumnWithFormula()).Apply(Sheet());
+      var applied = RightOf(ColumnWithFormula()).Of(Text()).Apply(Sheet());
 
       Assert.Equal("Total", applied.Value);
       Assert.Equal(3, applied.Offset.Size.Width);
 
       // Said the other way, so a regression in either operator shows up here: one more than On.
       Assert.Equal(
-        Text().On(ColumnWithFormula()).Apply(Sheet()).Offset.Size.Width + 1,
+        On(ColumnWithFormula()).Of(Text()).Apply(Sheet()).Offset.Size.Width + 1,
         applied.Offset.Size.Width);
     }
 
@@ -114,11 +114,11 @@ namespace Unrect.Tests.Spreadsheets
     {
       // C holds a formula and D holds one that mentions SUM. The bare overload stops at C; this one
       // must walk past it. A substring, case-insensitively — the rule the row half documents.
-      Assert.Equal("Total", Text().On(ColumnWithFormula("SUM")).Map(Sheet()));
-      Assert.Equal("Total", Text().On(ColumnWithFormula("sum")).Map(Sheet()));
+      Assert.Equal("Total", On(ColumnWithFormula("SUM")).Of(Text()).Map(Sheet()));
+      Assert.Equal("Total", On(ColumnWithFormula("sum")).Of(Text()).Map(Sheet()));
 
       // ...and the search is genuinely column-major: the reference formula in C matches on its own.
-      Assert.Equal("Rate", Text().On(ColumnWithFormula("$C$1")).Map(Sheet()));
+      Assert.Equal("Rate", On(ColumnWithFormula("$C$1")).Of(Text()).Map(Sheet()));
     }
 
     [Fact]
@@ -128,7 +128,7 @@ namespace Unrect.Tests.Spreadsheets
       // demanding, annotated nowhere: the annotation on the local is what the compiler inferred, and
       // it would not compile if the column lift had been left off the demanding family.
       IProjection<IFormulaSpace, string> firstComputedColumn =
-        Column(cells => cells[0].GetString()).On(ColumnWithFormula());
+        On(ColumnWithFormula()).Of(Column(cells => cells[0].GetString()));
 
       Assert.Equal("Rate", firstComputedColumn.Map(Sheet()));
     }
@@ -140,7 +140,7 @@ namespace Unrect.Tests.Spreadsheets
     {
       // Reached the only way it can be: through Landmark, the plain lift, where the typed layer has
       // handed the demand off and the mismatch survives to run time.
-      var cannotLook = Text().On(ColumnWithFormula().Landmark);
+      var cannotLook = On(ColumnWithFormula().Landmark).Of(Text());
 
       var failure = Assert.Throws<ProjectionException>(() => cannotLook.Map(Plain()));
 
@@ -160,8 +160,7 @@ namespace Unrect.Tests.Spreadsheets
       // The other lift and the other strategy slot: UntilColumn bounds an extent rather than placing
       // it, so the demand is made from the area strategy instead of the offset strategy. Two code
       // paths wrap a foreign exception and the fault list is consulted at both.
-      var bounded = HorizontalFlow(h => h.Next(Text()))
-        .UntilColumn(ColumnWithFormula().Landmark)
+      var bounded = UntilColumn(ColumnWithFormula().Landmark).Of(HorizontalFlow(h => h.Next(Text())))
         .Optional();
 
       var failure = Assert.Throws<ProjectionException>(() => bounded.Map(Plain()));
@@ -176,7 +175,7 @@ namespace Unrect.Tests.Spreadsheets
       // The half that keeps the test above meaningful. Over a space that CAN answer, "there is no
       // such column" is an ordinary miss, and the ordinary tolerances are exactly what it is for —
       // otherwise "loud" would only mean this matcher is loud about everything.
-      var missing = Text().On(ColumnWithFormula("MEDIAN"));
+      var missing = On(ColumnWithFormula("MEDIAN")).Of(Text());
 
       Assert.Null(missing.Optional().Map(Sheet()));
       Assert.Equal("fallback", missing.Else("fallback").Map(Sheet()));
@@ -196,10 +195,10 @@ namespace Unrect.Tests.Spreadsheets
       // copy-pasted "Row" would be invisible everywhere else in the suite. Both overloads, because
       // they take different branches of that constructor.
       var bare = Assert.Throws<ProjectionException>(
-        () => Text().On(ColumnWithFormula().Landmark).Map(Plain()));
+        () => On(ColumnWithFormula().Landmark).Of(Text()).Map(Plain()));
 
       var named = Assert.Throws<ProjectionException>(
-        () => Text().On(ColumnWithFormula("SUM").Landmark).Map(Plain()));
+        () => On(ColumnWithFormula("SUM").Landmark).Of(Text()).Map(Plain()));
 
       Assert.Equal("ColumnWithFormula()", Assert.IsType<MissingCapabilityException>(bare.InnerException).DemandedBy);
       Assert.Equal(
@@ -210,12 +209,12 @@ namespace Unrect.Tests.Spreadsheets
       // needs a space that can answer and has nothing to report; over Sheet() it always finds one.
       Assert.Contains(
         "no column with a formula",
-        Assert.Throws<ProjectionException>(() => Text().On(ColumnWithFormula()).Map(Barren())).Message,
+        Assert.Throws<ProjectionException>(() => On(ColumnWithFormula()).Of(Text()).Map(Barren())).Message,
         StringComparison.Ordinal);
 
       Assert.Contains(
         "no column with a formula mentioning 'MEDIAN'",
-        Assert.Throws<ProjectionException>(() => Text().On(ColumnWithFormula("MEDIAN")).Map(Sheet())).Message,
+        Assert.Throws<ProjectionException>(() => On(ColumnWithFormula("MEDIAN")).Of(Text()).Map(Sheet())).Message,
         StringComparison.Ordinal);
     }
 

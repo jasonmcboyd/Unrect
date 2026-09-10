@@ -134,10 +134,10 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ACaptionedSectionIsDeclarableFromTheOneImport()
     {
-      // Where the single-import claim is actually made: Caption, Under, On, Below and
+      // Where the single-import claim is actually made: Caption, Heading, On, Below and
       // RowContaining, with no member of Unrect.Strategies anywhere in the declaration. (Stronger
-      // since the renovation: the old spelling reached To/Past through re-exports; the modifiers
-      // ARE Projection's.)
+      // since the renovation: the old spelling reached To/Past through re-exports; the pipeline
+      // entries ARE Projection's.)
       var space = Mixed(new object?[,]
       {
         { "junk" },
@@ -146,12 +146,12 @@ namespace Unrect.Tests.Projections
         { "b" },
       });
 
-      var section = Range(b => b.Height).Under(Caption("Detail"));
-      var anchored = Cell(c => c.GetString()).Below(RowContaining("Detail"));
+      var section = Heading("Detail").Of(Range(b => b.Height));
+      var anchored = Below(RowContaining("Detail")).Of(Cell(c => c.GetString()));
 
       Assert.Equal(2, section.Map(space));
       Assert.Equal("a", anchored.Map(space));
-      Assert.Equal("Detail", Cell(c => c.GetString()).On(RowContaining("Detail")).Map(space));
+      Assert.Equal("Detail", On(RowContaining("Detail")).Of(Cell(c => c.GetString())).Map(space));
     }
 
     [Fact]
@@ -179,20 +179,20 @@ namespace Unrect.Tests.Projections
       Assert.Equal(10m, report.Lines[0].Amount);
 
       // ...and the typed leaves, which are the other half of the phase's vocabulary.
-      Assert.Equal("Acme", Text().Down(3).Map(card));
-      Assert.Equal(10m, Decimal().Down(3).Right(2).Map(card));
+      Assert.Equal("Acme", Down(3).Of(Text()).Map(card));
+      Assert.Equal(10m, Down(3).Right(2).Of(Decimal()).Map(card));
     }
 
     [Fact]
     public void AReExportedExtentResolvesInsideSized()
     {
-      // The single-import claim where it is most load-bearing: a modifier taking an IAreaStrategy,
-      // handed a re-export, with no strategies import in scope at the call site.
-      var projection = Range(b => $"{b.Width}x{b.Height}").Sized(ColumnsWhileAnyValue());
+      // The single-import claim where it is most load-bearing: the Sized entry taking an
+      // IAreaStrategy, handed a re-export, with no strategies import in scope at the call site.
+      var projection = Sized(ColumnsWhileAnyValue()).Of(Range(b => $"{b.Width}x{b.Height}"));
 
       Assert.Equal("1x2", projection.Map(Patchy()));
-      Assert.Equal("3x2", Range(b => $"{b.Width}x{b.Height}").Sized(RowsWhileAnyValue()).Map(Patchy()));
-      Assert.Equal("2x1", Range(b => $"{b.Width}x{b.Height}").Sized(Extent(2, 1)).Map(Patchy()));
+      Assert.Equal("3x2", Sized(RowsWhileAnyValue()).Of(Range(b => $"{b.Width}x{b.Height}")).Map(Patchy()));
+      Assert.Equal("2x1", Sized(Extent(2, 1)).Of(Range(b => $"{b.Width}x{b.Height}")).Map(Patchy()));
     }
   }
 }

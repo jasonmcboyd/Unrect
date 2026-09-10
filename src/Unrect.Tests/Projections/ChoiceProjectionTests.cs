@@ -335,7 +335,7 @@ namespace Unrect.Tests.Projections
     {
       var space = Mixed(new object?[,] { { null }, { "x" }, { 5 } });
 
-      var projection = Choice(NumberFirst(), TextFirst()).AfterBlankRows().Named("layout");
+      var projection = AfterBlankRows().Of(Choice(NumberFirst(), TextFirst())).Named("layout");
 
       Assert.Equal(5, projection.Map(space));
       Assert.Equal("layout", projection.Name);

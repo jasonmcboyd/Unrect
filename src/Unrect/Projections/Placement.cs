@@ -18,11 +18,23 @@ namespace Unrect.Projections
     // initializers below run in textual order.
     private static readonly IOffsetStrategy NoOffset = OffsetStrategies.MinOffset();
 
-    /// <summary>Creates a placement from an explicit offset and area; <paramref name="area"/> may be null (derived extent).</summary>
+    /// <summary>
+    /// Creates a placement from an explicit offset and area; <paramref name="area"/> may be null
+    /// (derived extent). This is how a projection states its <em>own</em> placement — a
+    /// <c>Table</c>'s "past the blank rows in front of me", a leaf's one cell — which a modifier is
+    /// free to replace.
+    /// </summary>
     public Placement(IOffsetStrategy offset, IAreaStrategy? area)
+      : this(offset, area, offsetWasDeclared: false, areaWasDeclared: false)
+    {
+    }
+
+    private Placement(IOffsetStrategy offset, IAreaStrategy? area, bool offsetWasDeclared, bool areaWasDeclared)
     {
       Offset = offset ?? throw new ArgumentNullException(nameof(offset));
       Area = area;
+      OffsetWasDeclared = offsetWasDeclared;
+      AreaWasDeclared = areaWasDeclared;
     }
 
     /// <summary>No offset declared, no area declared — a projection that sits where it is handed and derives its own extent.</summary>
@@ -37,11 +49,19 @@ namespace Unrect.Projections
     /// <summary>How the projection's extent is found, once its origin is known; null means the extent is derived, not declared.</summary>
     public IAreaStrategy? Area { get; }
 
-    /// <summary>A copy with <paramref name="offset"/> in place of this placement's own — the area is untouched.</summary>
-    public Placement WithOffset(IOffsetStrategy offset) => new Placement(offset, Area);
+    /// <summary>
+    /// A copy with <paramref name="offset"/> in place of this placement's own — the area is
+    /// untouched, and the copy records that the offset was declared rather than defaulted.
+    /// </summary>
+    public Placement WithOffset(IOffsetStrategy offset)
+      => new Placement(offset, Area, offsetWasDeclared: true, areaWasDeclared: AreaWasDeclared);
 
-    /// <summary>A copy with <paramref name="area"/> in place of this placement's own — the offset is untouched.</summary>
-    public Placement WithArea(IAreaStrategy area) => new Placement(Offset, NotNull(area));
+    /// <summary>
+    /// A copy with <paramref name="area"/> in place of this placement's own — the offset is
+    /// untouched, and the copy records that the area was declared rather than defaulted.
+    /// </summary>
+    public Placement WithArea(IAreaStrategy area)
+      => new Placement(Offset, NotNull(area), offsetWasDeclared: OffsetWasDeclared, areaWasDeclared: true);
 
     /// <summary>
     /// False while the projection simply sits where it is handed. Offset modifiers compose onto an
@@ -51,6 +71,22 @@ namespace Unrect.Projections
     /// was handed, so a movement after it still replaces.
     /// </summary>
     internal bool HasDeclaredOffset => !ReferenceEquals(Offset, NoOffset);
+
+    /// <summary>
+    /// Whether a modifier put this offset here, as against the projection's own definition supplying
+    /// one. A shape states its default in its constructor — a <c>Table</c> skips the blank rows in
+    /// front of it — and a modifier is free to replace that; a second modifier replacing the first
+    /// would erase something the declaration said out loud, which is what the placement modifiers
+    /// refuse. Distinct from <see cref="HasDeclaredOffset"/>, which asks only whether there is an
+    /// offset for a movement to compose onto.
+    /// </summary>
+    internal bool OffsetWasDeclared { get; }
+
+    /// <summary>
+    /// Whether a modifier put this area here, as against the projection's own definition supplying
+    /// one — the extent's half of <see cref="OffsetWasDeclared"/>.
+    /// </summary>
+    internal bool AreaWasDeclared { get; }
 
     // Only the constructor takes a null area, where it deliberately means "derive the extent".
     // Everywhere else a null would silently turn a declared extent into a derived one.

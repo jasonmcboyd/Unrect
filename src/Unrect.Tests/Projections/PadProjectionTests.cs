@@ -102,7 +102,7 @@ namespace Unrect.Tests.Projections
     public void PaddingTheOutsideAndMovingTheOutsideCompose()
     {
       // The pad's own placement moves the padded region; the inset then applies within it.
-      var applied = Cell(v => v.GetInt()).Padded(1).Down(1).Apply(CoordinateGrid(height: 5));
+      var applied = Down(1).Of(Cell(v => v.GetInt()).Padded(1)).Apply(CoordinateGrid(height: 5));
 
       Assert.Equal(22, applied.Value);
       Assert.Equal(1, applied.Offset.Size.Height);
@@ -112,7 +112,7 @@ namespace Unrect.Tests.Projections
     public void AMovementInsideThePaddingIsRelativeToTheInsetExtent()
     {
       // Padding shrinks the inside: the inner projection's own offset counts from the inset origin.
-      Assert.Equal(22, Cell(v => v.GetInt()).Down(1).Padded(1).Map(CoordinateGrid(height: 5)));
+      Assert.Equal(22, Down(1).Of(Cell(v => v.GetInt())).Padded(1).Map(CoordinateGrid(height: 5)));
     }
 
     // --- Insets that do not fit ---------------------------------------------------------------------------
@@ -218,7 +218,7 @@ namespace Unrect.Tests.Projections
       var padded = Assert.Throws<ProjectionException>(
         () => Cell(v => v.GetString()).Padded(2, 1, 0, 0).Map(CoordinateGrid()));
       var moved = Assert.Throws<ProjectionException>(
-        () => Cell(v => v.GetString()).Down(1).Right(2).Map(CoordinateGrid()));
+        () => Down(1).Right(2).Of(Cell(v => v.GetString())).Map(CoordinateGrid()));
 
       Assert.Equal(3, padded.Location.Column);
       Assert.Equal(2, padded.Location.Row);

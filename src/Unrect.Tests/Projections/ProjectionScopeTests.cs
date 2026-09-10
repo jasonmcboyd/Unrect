@@ -14,8 +14,11 @@ using static Unrect.Tests.ProjectionTestSpaces;
 namespace Unrect.Tests.Projections
 {
   /// <summary>
-  /// The scoped entry: <c>Projection.Over&lt;TSpace&gt;()</c> and the eight members of the
-  /// <see cref="ProjectionScope{TSpace}"/> it opens. The claim under test is the one the type's own
+  /// The scoped entry: <c>Projection.Over&lt;TSpace&gt;()</c> and the twenty-seven members of the
+  /// <see cref="ProjectionScope{TSpace}"/> it opens — the eight composing factories this suite pins
+  /// one by one, and the nineteen placement-pipeline entries that joined them in phase 2, whose
+  /// parity is pinned as a table in <see cref="ProjectionBuildersParityTests"/> and whose own laws
+  /// are in <see cref="PlacementPipelineLawTests"/>. The claim under test is the one the type's own
   /// documentation makes — <em>the scope is sugar over the witness form, not a second mechanism</em>
   /// — so every member is pinned against its witness twin rather than against a transcript of what
   /// it happens to do.
@@ -104,13 +107,13 @@ namespace Unrect.Tests.Projections
 
     /// <summary>A bind, as a method group — the spelling the table rung recommends.</summary>
     private static IProjection<IFormulaSpace, decimal> AmountColumn(CaptionMap captions)
-      => Decimal().Right(captions["Amount"]).Demanding(Formulas);
+      => Right(captions["Amount"]).Of(Decimal()).Demanding(Formulas);
 
     /// <summary>The same bind pointed at the column of fund names, so every record fails.</summary>
     private static IProjection<IFormulaSpace, decimal> FundColumnAsANumber(CaptionMap captions)
-      => Decimal().Right(captions["Fund"]).Demanding(Formulas);
+      => Right(captions["Fund"]).Of(Decimal()).Demanding(Formulas);
 
-    // --- 1. The eight members, each against its witness twin ---------------------------------------
+    // --- 1. The eight composing members, each against its witness twin -----------------------------
     //
     // One test per member. The two spellings are written side by side and read the same sheet, so a
     // member that stopped forwarding — a placement of its own, a lost separator, a different name —
@@ -161,16 +164,16 @@ namespace Unrect.Tests.Projections
       var p = Scope();
 
       SameProjection(
-        p.Overlay(o => $"{o.Next(Text())}/{o.Next(Text().Right(1))}"),
-        Overlay(Formulas, o => $"{o.Next(Text())}/{o.Next(Text().Right(1))}"));
+        p.Overlay(o => $"{o.Next(Text())}/{o.Next(Right(1).Of(Text()))}"),
+        Overlay(Formulas, o => $"{o.Next(Text())}/{o.Next(Right(1).Of(Text()))}"));
 
       // Every child is handed the whole extent, so the second one places itself rather than
       // following the first — the difference from the flow above, over the same two cells.
-      Assert.Equal("Fund/Amount", p.Overlay(o => $"{o.Next(Text())}/{o.Next(Text().Right(1))}").Map(Sheet()));
+      Assert.Equal("Fund/Amount", p.Overlay(o => $"{o.Next(Text())}/{o.Next(Right(1).Of(Text()))}").Map(Sheet()));
 
       var failure = SameFailure(
-        p.Overlay(o => $"{o.Next(Text())}/{o.Next(Decimal().Right(1))}"),
-        Overlay(Formulas, o => $"{o.Next(Text())}/{o.Next(Decimal().Right(1))}"));
+        p.Overlay(o => $"{o.Next(Text())}/{o.Next(Right(1).Of(Decimal()))}"),
+        Overlay(Formulas, o => $"{o.Next(Text())}/{o.Next(Right(1).Of(Decimal()))}"));
 
       Assert.Equal("Overlay -> Decimal#2", failure.Path);
       Assert.Equal("expected Number at B1, found Text", Problem(failure));
@@ -626,9 +629,7 @@ namespace Unrect.Tests.Projections
       // backend on purpose; this is the one that says the entry works where it is meant to be used.
       var p = Projection.Over<ISpreadsheetSpace>();
 
-      var cell = p.Overlay(o => (Value: o.Next(Text()), Formula: o.Next(Formula())))
-        .On(RowContaining("Text"))
-        .Right(1);
+      var cell = On(RowContaining("Text")).Right(1).Of(p.Overlay(o => (Value: o.Next(Text()), Formula: o.Next(Formula()))));
 
       var sheet = SpreadsheetSpace.CreateWithFormulas(
         System.IO.Path.Combine(AppContext.BaseDirectory, "TestData", "formulas.xlsx"),

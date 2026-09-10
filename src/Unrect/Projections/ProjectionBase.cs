@@ -76,8 +76,12 @@ namespace Unrect.Projections
     /// <summary>This projection bounded at <paramref name="landmark"/> — the wrapper <c>Until</c> declares.</summary>
     internal abstract IProjection BoundedBy(Landmark landmark, bool orEnd);
 
-    /// <summary>This projection below <paramref name="captions"/> — the flow <c>Under</c> declares.</summary>
-    internal abstract IProjection Beneath(IProjection<string>[] captions);
+    /// <summary>
+    /// This projection below <paramref name="captions"/>, as one vertical flow — the structure a
+    /// <c>Heading</c> stage builds directly. The captions are the heading rows, read and discarded;
+    /// this projection is the section they announce.
+    /// </summary>
+    internal abstract IProjection WithHeadings(IProjection<string>[] captions);
 
     /// <summary>
     /// This projection with <paramref name="fallback"/> to stand in for it — the boundary
@@ -127,16 +131,20 @@ namespace Unrect.Projections
       => new PadProjection<TResult>(this, left, top, right, bottom, Placement.Default);
 
     /// <summary>
-    /// Replaces an existing bound rather than nesting inside it, so <c>Until(A).Until(B)</c> ends
-    /// at B: a projection has one end. The axis comes with the landmark, so this is also how a row
-    /// bound is replaced by a column one.
+    /// Refuses a second end rather than replacing the first, so <c>Until(A).Until(B)</c> is not a
+    /// declaration at all: a projection has one end, and the axis comes with the landmark, so a
+    /// column bound over a row bound is a second end too. A wrapper in between makes the outer bound
+    /// nest, which is a different declaration and a legal one.
     /// </summary>
     internal sealed override IProjection BoundedBy(Landmark landmark, bool orEnd)
-      => this is UntilProjection<TResult> bounded
-        ? bounded.WithLandmark(landmark, orEnd)
-        : new UntilProjection<TResult>(this, landmark, orEnd, Placement.Default);
+    {
+      if (this is UntilProjection<TResult> bounded)
+        throw bounded.AlreadyEnded(landmark);
 
-    internal sealed override IProjection Beneath(IProjection<string>[] captions)
+      return new UntilProjection<TResult>(this, landmark, orEnd, Placement.Default);
+    }
+
+    internal sealed override IProjection WithHeadings(IProjection<string>[] captions)
       => new FlowProjection<TResult>(
         Orientation.Vertical,
         cursor =>
@@ -151,7 +159,7 @@ namespace Unrect.Projections
           return cursor.Next(this, declared: null);
         },
         Placement.Default,
-        description: "Under");
+        description: "Heading");
 
     internal sealed override IProjection Otherwise(IProjection fallback, string? declared)
       => new BoundaryProjection<TResult>(

@@ -119,7 +119,7 @@ namespace Unrect.Tests.Projections
       // the assertion half: the row it was pointed at is not the row it was promised.
       var space = Mixed(new object?[,] { { "x" }, { "y" } });
 
-      var failure = Assert.Throws<ProjectionException>(() => Caption("ein:").OffsetBy(SkipRows(1)).Map(space));
+      var failure = Assert.Throws<ProjectionException>(() => OffsetBy(SkipRows(1)).Of(Caption("ein:")).Map(space));
 
       Assert.Contains("expected a row containing 'ein:' here", failure.Message);
       Assert.Equal("A2", failure.Location.A1);
@@ -128,7 +128,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ACaptionForcedToMoreThanOneRow_Throws()
     {
-      var failure = Assert.Throws<ProjectionException>(() => Caption("ein:").Sized(WholeExtent()).Map(Sheet()));
+      var failure = Assert.Throws<ProjectionException>(() => Sized(WholeExtent()).Of(Caption("ein:")).Map(Sheet()));
 
       Assert.Contains("a Caption must be exactly one row tall; this one is 3 rows tall", failure.Message);
     }

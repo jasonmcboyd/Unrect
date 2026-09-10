@@ -10,88 +10,32 @@ namespace Unrect.Projections
   /// <para>
   /// A modifier does not appear here. Every modifier is written once, generic in the projection's
   /// own type, and hands that type straight back, so it preserves a demand without knowing there is
-  /// such a thing. What lives here is the two jobs a self-typed modifier genuinely cannot do:
+  /// such a thing. Raising a demand is not a modifier either any longer: a demanding matcher raises
+  /// it through the placement pipeline's entries (<c>On&lt;TSpace&gt;(RowWithFormula())</c>,
+  /// <c>Until&lt;TSpace&gt;(…)</c>), which carry the demand out to the terminal with nothing
+  /// annotated, now that geometry is the pipeline's alone. What is left here is the two jobs that are
+  /// neither a modifier nor geometry:
   /// </para>
   /// <list type="number">
-  /// <item>
-  /// <b>Raising a demand.</b> <c>x.On(RowWithFormula())</c> must come back demanding formulas
-  /// however plain <c>x</c> was. Inference does it: the receiver contributes one bound on the
-  /// demand, the matcher another, and the more demanding of the two wins — so nothing is annotated.
-  /// A fixed receiver type could not; these are overloads, not duplicates, and the family is
-  /// exactly the lifts that take a matcher.
-  /// </item>
   /// <item>
   /// <b>Changing the result type.</b> <c>Optional</c>, <c>Select</c> and <c>Else(value)</c> hand
   /// back a projection reading something else, and C# cannot say "the receiver's type with its
   /// result swapped". These three are the residual doubling, and they are irreducible for a
   /// language reason rather than a design one.
   /// </item>
+  /// <item>
+  /// <b>Ascribing a demand a lambda hides.</b> <c>Demanding</c> states a capability the type system
+  /// cannot see a projection reach for — a promise, carried by a witness rather than a type argument.
+  /// </item>
   /// </list>
   /// </summary>
   public static partial class ProjectionExtensions
   {
-    // --- Demand-raising lifts ---------------------------------------------------------------------
-    //
-    // A matcher only locates; a lift decides what absence means — and, here, carries the matcher's
-    // demand onto the projection. `plainProjection.On(RowWithFormula())` needs no annotation and comes back as
-    // IProjection<IFormulaSpace, T>. The plain twins of these take an IRowLandmark / IColumnLandmark,
-    // which the demanding matchers deliberately do not implement, so the two never compete.
-
-    /// <inheritdoc cref="On{TProjection}(TProjection, IRowLandmark)"/>
-    /// <typeparam name="TSpace">The demand, unified from the projection's and the matcher's.</typeparam>
-    /// <typeparam name="T">What the projection reads.</typeparam>
-    /// <param name="projection">The declaration.</param>
-    /// <param name="landmark">The row to sit on.</param>
-    public static IProjection<TSpace, T> On<TSpace, T>(this IProjection<TSpace, T> projection, IRowLandmark<TSpace> landmark)
-      where TSpace : class, ISpace
-      => Plain(projection).On(Required(landmark).Landmark);
-
-    /// <inheritdoc cref="On{TProjection}(TProjection, IColumnLandmark)"/>
-    /// <typeparam name="TSpace">The demand, unified from the projection's and the matcher's.</typeparam>
-    /// <typeparam name="T">What the projection reads.</typeparam>
-    /// <param name="projection">The declaration.</param>
-    /// <param name="landmark">The column to sit on.</param>
-    public static IProjection<TSpace, T> On<TSpace, T>(this IProjection<TSpace, T> projection, IColumnLandmark<TSpace> landmark)
-      where TSpace : class, ISpace
-      => Plain(projection).On(Required(landmark).Landmark);
-
-    /// <inheritdoc cref="Below{TProjection}"/>
-    /// <typeparam name="TSpace">The demand, unified from the projection's and the matcher's.</typeparam>
-    /// <typeparam name="T">What the projection reads.</typeparam>
-    /// <param name="projection">The declaration.</param>
-    /// <param name="landmark">The row to sit below.</param>
-    public static IProjection<TSpace, T> Below<TSpace, T>(this IProjection<TSpace, T> projection, IRowLandmark<TSpace> landmark)
-      where TSpace : class, ISpace
-      => Plain(projection).Below(Required(landmark).Landmark);
-
-    /// <inheritdoc cref="RightOf{TProjection}"/>
-    /// <typeparam name="TSpace">The demand, unified from the projection's and the matcher's.</typeparam>
-    /// <typeparam name="T">What the projection reads.</typeparam>
-    /// <param name="projection">The declaration.</param>
-    /// <param name="landmark">The column to sit right of.</param>
-    public static IProjection<TSpace, T> RightOf<TSpace, T>(this IProjection<TSpace, T> projection, IColumnLandmark<TSpace> landmark)
-      where TSpace : class, ISpace
-      => Plain(projection).RightOf(Required(landmark).Landmark);
-
-    /// <inheritdoc cref="Until{TProjection}(TProjection, IRowLandmark, bool)"/>
-    /// <typeparam name="TSpace">The demand, unified from the projection's and the matcher's.</typeparam>
-    /// <typeparam name="T">What the projection reads.</typeparam>
-    /// <param name="projection">The declaration.</param>
-    /// <param name="landmark">The row the extent stops before.</param>
-    /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
-    public static IProjection<TSpace, T> Until<TSpace, T>(this IProjection<TSpace, T> projection, IRowLandmark<TSpace> landmark, bool orEnd = false)
-      where TSpace : class, ISpace
-      => Plain(projection).Until(Required(landmark).Landmark, orEnd);
-
-    /// <inheritdoc cref="UntilColumn{TProjection}"/>
-    /// <typeparam name="TSpace">The demand, unified from the projection's and the matcher's.</typeparam>
-    /// <typeparam name="T">What the projection reads.</typeparam>
-    /// <param name="projection">The declaration.</param>
-    /// <param name="landmark">The column the extent stops before.</param>
-    /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
-    public static IProjection<TSpace, T> UntilColumn<TSpace, T>(this IProjection<TSpace, T> projection, IColumnLandmark<TSpace> landmark, bool orEnd = false)
-      where TSpace : class, ISpace
-      => Plain(projection).UntilColumn(Required(landmark).Landmark, orEnd);
+    // Demand-raising geometry lifts (On/Below/RightOf/Until/UntilColumn over a demanding matcher)
+    // retired with the rest of the postfix geometry: geometry is the pipeline's, and a demanding
+    // matcher opens a demanding pipeline through the entries (On<TSpace>(matcher), Until<TSpace>(...))
+    // with nothing annotated. What is left here is the two jobs a self-typed modifier cannot do that
+    // are NOT geometry — changing the result type, and ascribing a demand a lambda hides.
 
     // --- The result-changing three ----------------------------------------------------------------
     //
@@ -156,9 +100,5 @@ namespace Unrect.Projections
       => demand is null
         ? throw new ArgumentNullException(nameof(demand))
         : projection ?? throw new ArgumentNullException(nameof(projection));
-
-    private static TLandmark Required<TLandmark>(TLandmark landmark)
-      where TLandmark : class
-      => landmark ?? throw new ArgumentNullException(nameof(landmark));
   }
 }

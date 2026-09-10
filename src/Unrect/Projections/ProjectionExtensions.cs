@@ -2,31 +2,27 @@ using System;
 using System.Runtime.CompilerServices;
 
 using Unrect.Core;
-using Unrect.Strategies;
 
 namespace Unrect.Projections
 {
   /// <summary>
-  /// Application, naming, and placement modifiers.
+  /// Application, naming, tolerance, and the one surviving extent modifier.
   /// <para>
-  /// <b>Silence is adjacency.</b> A projection with no placement modifier starts exactly where the
-  /// one before it left off, so every modifier here is a declared exception — and each word names
-  /// the <em>kind</em> of reason it is an exception for. <c>On</c>, <c>Below</c> and <c>RightOf</c>
-  /// state a relation to something in the grid; <c>AfterBlankRows</c> and <c>AfterBlankColumns</c>
-  /// step over filler; <c>Down</c> and <c>Right</c> count cells; <c>OffsetBy</c> hands the decision
-  /// to the strategy calculus. Reading a declaration, you never have to ask why a projection moved.
+  /// <b>Geometry is the pipeline's, and the pipeline's alone.</b> Where a section starts, how big it
+  /// is, and where it ends are declared with the placement pipeline — the entries on
+  /// <see cref="Projection"/> (<c>On</c>, <c>Below</c>, <c>RightOf</c>, <c>OffsetBy</c>, <c>Down</c>,
+  /// <c>Right</c>, <c>AfterBlankRows</c>, <c>AfterBlankColumns</c>, <c>Until</c>, <c>UntilColumn</c>,
+  /// <c>Heading</c>) and the stages that follow them. The postfix forms those entries replay still
+  /// exist here, but they are <c>internal</c>: making a contradiction such as <c>x.On(a).On(b)</c>
+  /// unspellable at compile time is only possible once the modifiers that carry the erasure are gone
+  /// from the surface. See <see cref="PlacementStage"/> and the entries on <see cref="Projection"/>.
   /// </para>
   /// <para>
-  /// The movement modifiers — <c>Down</c>, <c>Right</c>, <c>AfterBlankRows</c>,
-  /// <c>AfterBlankColumns</c> — <em>compose</em>: each one starts from where the projection already
-  /// sits, so <c>.Right(9).Down(1)</c> anchors at column 9, row 1, and <c>Table(...).Down(2)</c>
-  /// means "past the blank rows, then two more".
-  /// </para>
-  /// <para>
-  /// The anchors — <c>On</c>, <c>Below</c>, <c>RightOf</c> — and <c>OffsetBy</c> <em>replace</em>
-  /// the offset outright: a position stated as a relation to a thing owes nothing to wherever the
-  /// cursor had got to, and replacing is also how a default is discarded. <c>Sized</c> replaces
-  /// too, since extents do not stack.
+  /// <b>What stays public here is not geometry.</b> <c>Named</c> labels; <c>Select</c> transforms;
+  /// <c>Else</c>, <c>Optional</c> and <c>OrBlank</c> declare tolerance. And <c>Padded</c> — the lone
+  /// documented exception: it is extent-geometry, but it <em>nests</em> rather than erases
+  /// (<c>x.Padded(1).Padded(2)</c> is two insets both in force, losing nothing), so it is not an
+  /// erasure vector and needs no pipeline stage to be made safe.
   /// </para>
   /// <para>
   /// <b>A modifier keeps the demand it is applied to.</b> Each one is generic in the
@@ -150,149 +146,6 @@ namespace Unrect.Projections
     public static TProjection Named<TProjection>(this TProjection projection, string name)
       where TProjection : class, IProjection
       => Cloned<TProjection>(Base(projection).Renamed(name ?? throw new ArgumentNullException(nameof(name))));
-
-    /// <summary>
-    /// Puts the projection <em>on</em> the row <paramref name="landmark"/> matches: it starts at
-    /// that row and owns it, so a caption is content the projection reads rather than a gap it
-    /// steps over.
-    /// <para>
-    /// A position is a relation to a thing, never a distance arrived at — <c>On</c> says which row,
-    /// and the arithmetic of reaching it is not the declaration's business. Occupancy has no
-    /// direction, so the word names none; the argument's type carries the axis, and the column form
-    /// is this same word.
-    /// </para>
-    /// <para>
-    /// Anchoring <em>replaces</em> the projection's offset, including a default. A landmark that
-    /// matches nothing is loud, because it means the section the declaration describes is not the
-    /// section in the file. That is a disagreement about the data rather than a broken projection,
-    /// so <c>Optional</c> and <c>Else</c> absorb it — and a <c>VerticalRepeat</c> reads it as
-    /// having run out of sections, which is how a repetition knows to stop.
-    /// </para>
-    /// </summary>
-    /// <typeparam name="TProjection">The projection's own type, handed back unchanged.</typeparam>
-    /// <param name="projection">The declaration.</param>
-    /// <param name="landmark">The row to sit on.</param>
-    public static TProjection On<TProjection>(this TProjection projection, IRowLandmark landmark)
-      where TProjection : class, IProjection
-      => projection.OffsetBy(OffsetStrategies.To(landmark));
-
-    /// <inheritdoc cref="On{TProjection}(TProjection, IRowLandmark)"/>
-    /// <typeparam name="TProjection">The projection's own type, handed back unchanged.</typeparam>
-    /// <param name="projection">The declaration.</param>
-    /// <param name="landmark">The column to sit on.</param>
-    public static TProjection On<TProjection>(this TProjection projection, IColumnLandmark landmark)
-      where TProjection : class, IProjection
-      => projection.OffsetBy(OffsetStrategies.To(landmark));
-
-    /// <summary>
-    /// Starts the projection on the row directly below the one <paramref name="landmark"/> matches
-    /// — for a section that sits under a caption some other projection describes, or under one
-    /// nothing does.
-    /// <para>
-    /// Exactly one row beyond the match, which is the matched row's own height and never a step you
-    /// chose. Like <c>On</c>, it states a relation and <em>replaces</em> the offset; unlike
-    /// <c>On</c>, the concept genuinely has a direction, so the word carries one — and it is
-    /// grid-absolute, meaning down the sheet, not "the next band along whichever way this flow
-    /// happens to run".
-    /// </para>
-    /// <para>
-    /// A landmark that matches nothing is loud, absorbable by <c>Optional</c> and <c>Else</c>, and
-    /// read by a repetition as the end of its sections — the same absence semantics as <c>On</c>.
-    /// </para>
-    /// </summary>
-    /// <typeparam name="TProjection">The projection's own type, handed back unchanged.</typeparam>
-    /// <param name="projection">The declaration.</param>
-    /// <param name="landmark">The row to sit below.</param>
-    public static TProjection Below<TProjection>(this TProjection projection, IRowLandmark landmark)
-      where TProjection : class, IProjection
-      => projection.OffsetBy(OffsetStrategies.Past(landmark));
-
-    /// <summary>
-    /// Starts the projection on the column directly right of the one <paramref name="landmark"/>
-    /// matches — the column twin of <see cref="Below{TProjection}"/>, spelled distinctly because
-    /// the direction is part of what is being said.
-    /// </summary>
-    /// <typeparam name="TProjection">The projection's own type, handed back unchanged.</typeparam>
-    /// <param name="projection">The declaration.</param>
-    /// <param name="landmark">The column to sit right of.</param>
-    public static TProjection RightOf<TProjection>(this TProjection projection, IColumnLandmark landmark)
-      where TProjection : class, IProjection
-      => projection.OffsetBy(OffsetStrategies.Past(landmark));
-
-    /// <summary>
-    /// Starts the projection wherever <paramref name="offset"/> ends — an assignment rather than a
-    /// movement: <em>my start is where that resolves to</em>. So it <em>replaces</em> any offset
-    /// the projection had, including a default, which is how a <c>Table</c> is told not to skip its
-    /// blank rows.
-    /// <para>
-    /// This is the door onto the strategy calculus, and the one marked crossing between the two
-    /// models the library otherwise keeps apart: the vocabulary around it speaks of rows, columns
-    /// and cells the way a sheet is read, while a strategy computes offsets and sizes over
-    /// intervals. Reach for it when no anchor says what you mean —
-    /// <c>.OffsetBy(Then(BlankRows(), SkipRows(1)))</c>, or a lift the projection layer does not
-    /// re-export — and prefer the anchors when one does.
-    /// </para>
-    /// </summary>
-    /// <typeparam name="TProjection">The projection's own type, handed back unchanged.</typeparam>
-    /// <param name="projection">The declaration.</param>
-    /// <param name="offset">Where the projection starts.</param>
-    public static TProjection OffsetBy<TProjection>(this TProjection projection, IOffsetStrategy offset)
-      where TProjection : class, IProjection
-      => Cloned<TProjection>(Base(projection).Replaced(projection.Placement.WithOffset(offset)));
-
-    /// <summary>
-    /// Moves the projection on past the blank rows in front of it.
-    /// <para>
-    /// One of the two operators that keep the word <em>after</em>, and they earn it: filler is the
-    /// one thing that genuinely has an after, and neither takes a positional argument, so there is
-    /// no relation for a reader to mis-read as a distance. Tolerant by nature — no blank rows in
-    /// front means no movement, not a failure.
-    /// </para>
-    /// </summary>
-    /// <typeparam name="TProjection">The projection's own type, handed back unchanged.</typeparam>
-    /// <param name="projection">The declaration.</param>
-    public static TProjection AfterBlankRows<TProjection>(this TProjection projection)
-      where TProjection : class, IProjection
-      => Move(projection, OffsetStrategies.SkipBlankRows());
-
-    /// <summary>
-    /// Moves the projection on past the blank columns in front of it; see
-    /// <see cref="AfterBlankRows{TProjection}"/> for why these two keep the word "after".
-    /// </summary>
-    /// <typeparam name="TProjection">The projection's own type, handed back unchanged.</typeparam>
-    /// <param name="projection">The declaration.</param>
-    public static TProjection AfterBlankColumns<TProjection>(this TProjection projection)
-      where TProjection : class, IProjection
-      => Move(projection, OffsetStrategies.SkipBlankColumns());
-
-    /// <summary>Moves the projection on <paramref name="rows"/> rows down from where it sits.</summary>
-    /// <typeparam name="TProjection">The projection's own type, handed back unchanged.</typeparam>
-    /// <param name="projection">The declaration.</param>
-    /// <param name="rows">How far down.</param>
-    public static TProjection Down<TProjection>(this TProjection projection, int rows)
-      where TProjection : class, IProjection
-      => Move(projection, OffsetStrategies.ExplicitOffset(0, NotNegative(rows, nameof(rows))));
-
-    /// <summary>
-    /// Moves the projection on <paramref name="columns"/> columns right from where it sits.
-    /// </summary>
-    /// <typeparam name="TProjection">The projection's own type, handed back unchanged.</typeparam>
-    /// <param name="projection">The declaration.</param>
-    /// <param name="columns">How far right.</param>
-    public static TProjection Right<TProjection>(this TProjection projection, int columns)
-      where TProjection : class, IProjection
-      => Move(projection, OffsetStrategies.ExplicitOffset(NotNegative(columns, nameof(columns)), 0));
-
-    /// <summary>
-    /// Declares the projection's extent, replacing whatever it had — including a derived one, after
-    /// which the extent is consumed in full whether the projection reads all of it or not.
-    /// </summary>
-    /// <typeparam name="TProjection">The projection's own type, handed back unchanged.</typeparam>
-    /// <param name="projection">The declaration.</param>
-    /// <param name="area">The extent.</param>
-    public static TProjection Sized<TProjection>(this TProjection projection, IAreaStrategy area)
-      where TProjection : class, IProjection
-      => Cloned<TProjection>(Base(projection).Replaced(projection.Placement.WithArea(area)));
 
     /// <summary>
     /// Falls back to <paramref name="fallback"/> when this projection fails, recording a
@@ -477,6 +330,12 @@ namespace Unrect.Projections
     /// Padding shrinks the inside, where an offset shifts the outside; that is the difference
     /// between this and the movement modifiers, and the two compose freely.
     /// </para>
+    /// <para>
+    /// <b>It is the one geometry modifier that stays postfix.</b> Every other extent or placement
+    /// modifier moved into the pipeline, because each could erase what came before it and the
+    /// pipeline makes that unspellable. <c>Padded</c> cannot erase — it wraps, so two of them nest —
+    /// so it is safe as a modifier and needs no stage of its own.
+    /// </para>
     /// </summary>
     /// <typeparam name="TProjection">The projection's own type, handed back unchanged.</typeparam>
     /// <param name="projection">The declaration.</param>
@@ -496,116 +355,6 @@ namespace Unrect.Projections
     }
 
     /// <summary>
-    /// Ends the projection's extent just before the first row that is <paramref name="landmark"/>,
-    /// which the projection therefore never reads. Where <c>On</c> and <c>Below</c> say where a
-    /// projection starts by content, this says where it ends by content — a section that runs until
-    /// the next caption: <c>VerticalRepeat(block, separatedBy:
-    /// BlankRows()).Until(RowContaining("Cash flows by inception date"))</c>.
-    /// <para>
-    /// The bound is consumed in full, whether or not the projection read all of it, so whatever
-    /// follows starts <em>at</em> the landmark row and can anchor on it at distance zero. That is
-    /// the point of bounding here rather than asking the inner projection to stop.
-    /// </para>
-    /// <para>
-    /// A missing landmark is loud by default, as a missed anchor is: it means the section the
-    /// declaration describes is not the section in the file. It is a disagreement about the data
-    /// rather than a broken projection, so <c>Optional</c> and <c>Else</c> absorb it.
-    /// <paramref name="orEnd"/> opts one projection into "until this, or the end of the space",
-    /// recording an <c>Info</c> when it does run to the end so a reader can still tell which
-    /// section was open-ended.
-    /// </para>
-    /// <para>
-    /// Applied straight to an already-bounded projection, a second <c>Until</c> replaces the first
-    /// rather than nesting — a projection has one end. Through a wrapper it does not:
-    /// <c>x.Until(A).Select(f)</c> then <c>.Until(B)</c> bounds the <c>Select</c>, so B applies
-    /// outside A and both are in force. (Unlike <c>Sized</c>, which replaces whatever it is applied
-    /// to, because a placement belongs to one projection and a bound is a wrapper around one.)
-    /// </para>
-    /// <para>
-    /// It belongs on the section, not on the thing repeated inside it. A bound applies its inner
-    /// projection strictly, as <c>Padded</c> always has, so wrapping a repeat's <em>item</em> turns
-    /// that item's own missing anchor into a hard failure instead of the graceful stop a repeat
-    /// relies on to know it has run out of sections. Write <c>VerticalRepeat(item,
-    /// …).Until(landmark)</c>, not <c>VerticalRepeat(item.Until(landmark), …)</c>.
-    /// </para>
-    /// </summary>
-    /// <typeparam name="TProjection">The projection's own type, handed back unchanged.</typeparam>
-    /// <param name="projection">The declaration.</param>
-    /// <param name="landmark">The row the extent stops before.</param>
-    /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
-    public static TProjection Until<TProjection>(this TProjection projection, IRowLandmark landmark, bool orEnd = false)
-      where TProjection : class, IProjection
-      => Bound(projection, Landmark.Of(NotNull(landmark, nameof(landmark))), orEnd);
-
-    /// <summary>
-    /// Ends the projection's extent just before the first column that is <paramref
-    /// name="landmark"/> — the column twin of <see cref="Until{TProjection}(TProjection,
-    /// IRowLandmark, bool)"/>, spelled distinctly so the common row form never has to be
-    /// disambiguated by the reader.
-    /// </summary>
-    /// <typeparam name="TProjection">The projection's own type, handed back unchanged.</typeparam>
-    /// <param name="projection">The declaration.</param>
-    /// <param name="landmark">The column the extent stops before.</param>
-    /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
-    public static TProjection UntilColumn<TProjection>(this TProjection projection, IColumnLandmark landmark, bool orEnd = false)
-      where TProjection : class, IProjection
-      => Bound(projection, Landmark.Of(NotNull(landmark, nameof(landmark))), orEnd);
-
-    /// <summary>
-    /// Puts this projection under <paramref name="captions"/> — the rows that announce it — so the
-    /// section starts below them and the caption rows are described rather than swallowed:
-    /// <c>lines.Under(Caption("K-1 Lines 1-21"))</c>.
-    /// <para>
-    /// It is sugar for a vertical flow and nothing else: <c>x.Under(a, b)</c> is
-    /// <c>VerticalFlow(v =&gt; { v.Next(a); v.Next(b); return v.Next(x); })</c>. So every caption is
-    /// a real child with its own path segment, each one seeks from where the last left off (a
-    /// stacked pair reads adjacent rows, and a gap is absorbed), the result is this projection's value
-    /// with the caption values discarded, and <c>Named</c>, <c>On</c>, <c>Until</c>,
-    /// <c>Optional</c> and the rest behave as they do on any flow. A missing caption under
-    /// <c>Optional</c> is an absent section, which is usually what you want.
-    /// </para>
-    /// <para>
-    /// <b>Inside a <c>VerticalRepeat</c>, anchor the item as well.</b> A repeat stops when the
-    /// item's own <em>placement</em> fails, and this puts the anchor inside the flow, whose placement
-    /// always fits — so the iteration past the last section fails loudly instead of stopping. Hoist
-    /// the matcher and put it on the item too; anchoring is idempotent, so the caption inside then
-    /// finds its row at distance zero:
-    /// <code>
-    /// var detail  = RowContaining("Detail");
-    /// var section = lines.Under(Caption("Detail")).On(detail);
-    ///
-    /// VerticalRepeat(section, separatedBy: BlankRows())   // stops at the first row that is not a section
-    /// </code>
-    /// </para>
-    /// <para>
-    /// <paramref name="captions"/> is typed as any string-valued projection rather than a caption type,
-    /// so a row projection whose value you want discarded may sit there too — but <c>Caption</c> is what
-    /// belongs there. A caption demands nothing of its space, which is the whole of what a caption
-    /// is; a section that sits under one it cannot read has a matcher problem, not a caption one.
-    /// </para>
-    /// </summary>
-    /// <typeparam name="TProjection">The projection's own type, handed back unchanged.</typeparam>
-    /// <param name="projection">The declaration.</param>
-    /// <param name="captions">The rows that announce it.</param>
-    public static TProjection Under<TProjection>(this TProjection projection, params IProjection<string>[] captions)
-      where TProjection : class, IProjection
-    {
-      if (captions is null)
-        throw new ArgumentNullException(nameof(captions));
-      if (captions.Length == 0)
-        throw new ArgumentException("A projection must sit under at least one caption.", nameof(captions));
-
-      for (var index = 0; index < captions.Length; index++)
-        if (captions[index] is null)
-          throw new ArgumentException($"Caption {index + 1} is null.", nameof(captions));
-
-      // Copied because params may hand us the caller's own array, and the flow below is captured
-      // for every future application of this projection. A projection that could change is not a
-      // declaration.
-      return Wrapped<TProjection>(Base(projection).Beneath((IProjection<string>[])captions.Clone()));
-    }
-
-    /// <summary>
     /// The projection as the engine sees it. Sound because every <see cref="IProjection{TSpace,
     /// TResult}"/> this library produces is a <see cref="ProjectionBase{TResult}"/>, which
     /// implements <see cref="IProjection{TResult}"/>; the demand lives only in the static type, so
@@ -615,28 +364,9 @@ namespace Unrect.Projections
       where TSpace : class, ISpace
       => projection as IProjection<T> ?? throw NotOurs(projection, nameof(projection));
 
-    /// <summary>
-    /// Carries the projection on from wherever it already sits, so movements read cumulatively. A
-    /// projection that has not been placed yet has nothing to carry on from and simply takes the
-    /// new offset.
-    /// </summary>
-    private static TProjection Move<TProjection>(TProjection projection, IOffsetStrategy offset)
-      where TProjection : class, IProjection
-    {
-      var placement = NotNull(projection).Placement;
-
-      return projection.OffsetBy(placement.HasDeclaredOffset
-        ? OffsetStrategies.Then(placement.Offset, offset)
-        : offset);
-    }
-
     private static TProjection Pad<TProjection>(TProjection projection, int left, int top, int right, int bottom)
       where TProjection : class, IProjection
       => Wrapped<TProjection>(Base(projection).Inset(left, top, right, bottom));
-
-    private static TProjection Bound<TProjection>(TProjection projection, Landmark landmark, bool orEnd)
-      where TProjection : class, IProjection
-      => Wrapped<TProjection>(Base(projection).BoundedBy(landmark, orEnd));
 
     /// <summary>
     /// The receiver as the typed cell leaf <c>OrBlank</c> needs it to be. A leaf keeps its own class

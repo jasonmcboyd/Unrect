@@ -139,12 +139,12 @@ namespace Unrect.Tests.Projections
       {
         v.Next(Range(RowsWhileAnyValue(), _ => 0).Named("body"));
 
-        return v.Next(Cell(c =>
+        return v.Next(AfterBlankRows().Of(Cell(c =>
         {
           rowsReadInsideTheSibling = counter.RowsTouched;
 
           return c.GetInt();
-        }).AfterBlankRows().Named("next"));
+        })).Named("next"));
       });
 
       Assert.Equal(9, flow.Map(counter));

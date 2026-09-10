@@ -113,9 +113,9 @@ namespace Unrect.Tests.Projections
     /// </summary>
     private static IProjection<Allocation> AllocationRow(CaptionMap captions)
       => Overlay(o => new Allocation(
-        Account: o.Next(Text().Right(captions["Account"])),
-        Symbol: o.Next(Text().Right(captions["Symbol"])),
-        Weight: o.Next(Decimal().Right(captions["Weight"]))));
+        Account: o.Next(Right(captions["Account"]).Of(Text())),
+        Symbol: o.Next(Right(captions["Symbol"]).Of(Text())),
+        Weight: o.Next(Right(captions["Weight"]).Of(Decimal()))));
 
     // --- 1. The bind runs exactly once per APPLICATION of the table ------------------------------------
     //
@@ -372,7 +372,7 @@ namespace Unrect.Tests.Projections
       => throw new InvalidOperationException("this is not the export this declaration reads");
 
     /// <summary>A bind that works, for the half of each test that must stay quiet.</summary>
-    private static IProjection<string> AccountCell(CaptionMap captions) => Text().Right(captions["Account"]);
+    private static IProjection<string> AccountCell(CaptionMap captions) => Right(captions["Account"]).Of(Text());
 
     private static ProjectionException Faults<T>(IProjection<T> projection, ISpace sheet)
     {
@@ -462,8 +462,8 @@ namespace Unrect.Tests.Projections
 
     private static IProjection<IFormulaSpace, SourcedAllocation> SourcedRow(CaptionMap captions)
       => Overlay(Formulas, o => new SourcedAllocation(
-        Account: o.Next(Text().Right(captions["Account"])),
-        Formula: o.Next(Formula().Right(captions["Total"]))));
+        Account: o.Next(Right(captions["Account"]).Of(Text())),
+        Formula: o.Next(Right(captions["Total"]).Of(Formula()))));
 
     [Fact]
     public void ABindReturningADemandingRowMakesTheTableDemandIt()
