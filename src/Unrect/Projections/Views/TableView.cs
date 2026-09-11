@@ -19,7 +19,7 @@ namespace Unrect.Projections
   /// three built-in row projections are written against <see cref="StreamRows"/>.
   /// </para>
   /// </summary>
-  public sealed class TableView : ILabelSource
+  public sealed class TableView : ILabelSource, IHeaderCitations
   {
     // Views are built per projection and are not covered by the projection thread-safety guarantee;
     // the caches race benignly (reference assignment is atomic, so the worst case is duplicated
@@ -75,6 +75,11 @@ namespace Unrect.Projections
     IReadOnlyList<string> ILabelSource.Labels => ColumnNames;
 
     IReadOnlyList<int> ILabelSource.IndicesOf(string label) => IndicesOf(label);
+
+    /// <summary>The header cells the bind rung cites: the table's own failure and header addresses.</summary>
+    ProjectionException IHeaderCitations.Failure(string problem) => Failure(problem);
+
+    ProjectionLocation IHeaderCitations.AddressOf(int column) => Header.AddressOf(column);
 
     /// <summary>
     /// The address of the table's top-left cell, header included. It carries the extent the table
@@ -217,7 +222,7 @@ namespace Unrect.Projections
   /// </summary>
   public sealed class TableRow
   {
-    internal TableRow(TableView table, int index, CellStrip cells, ProjectionContext context)
+    internal TableRow(TableView? table, int index, CellStrip cells, ProjectionContext context)
     {
       Table = table;
       Strip = cells;
@@ -364,7 +369,9 @@ namespace Unrect.Projections
     /// <summary>The <c>Boolean</c> in the column at <paramref name="column"/>, or null when the cell is blank.</summary>
     public bool? BooleanOrBlank(int column) => ReadOrBlank(Checked(column), CellKind.Boolean, CellReading.AsBoolean, null);
 
-    private TableView Table { get; }
+    // Nullable, and read by nothing: a Record projection builds a TableRow with no owning view, and
+    // caption resolution flows entirely through the ambient label scope rather than through a table.
+    private TableView? Table { get; }
     private CellStrip Strip { get; }
     private ProjectionContext Context { get; }
 
@@ -394,7 +401,10 @@ namespace Unrect.Projections
       if (indices.Count == 1)
         return indices[0];
 
-      var labels = Context.NearestLabels(LabelAxis.Column)?.Source.Labels ?? Table.ColumnNames;
+      // Unreachable fallback: Resolvable throws the headerless message when there is no scope, so by
+      // the time control reaches here a Column scope exists. Kept as an empty list rather than the
+      // owning table's columns — byte-identical, and it is what lets a TableRow have no table.
+      var labels = Context.NearestLabels(LabelAxis.Column)?.Source.Labels ?? Array.Empty<string>();
       var available = labels.Where(name => name.Length > 0).Select(name => $"'{name}'").ToList();
 
       throw Failure(

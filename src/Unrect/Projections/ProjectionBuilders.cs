@@ -183,6 +183,30 @@ namespace Unrect.Projections
     public static IProjection<T> Table<T>(int headerRows, Func<TableView, T> project)
       => Projection.Table(headerRows, project);
 
+    // --- Labels — the scope-introducer primitives ----------------------------------------------
+    //
+    // Re-exported at their plain type. ColumnLabels reads a header and Record reads a row — both
+    // leaf-like, demanding nothing beyond ISpace, so they compose here by variance and keep the
+    // weakest demand when hoisted. WithColumnLabels takes a projection, but the body it wraps is read
+    // where it stands, so a plain re-export serves the reimplementation the acceptance test proves;
+    // raising it to TSpace for a demanding body under a scope is a step-3 concern, when the built-in
+    // Table is actually rebuilt through these.
+
+    /// <inheritdoc cref="Projection.ColumnLabels(int)"/>
+    /// <param name="headerRows">How many rows to read as the header. Only 1 is supported in this release.</param>
+    public static IProjection<LabelMap> ColumnLabels(int headerRows = 1) => Projection.ColumnLabels(headerRows);
+
+    /// <inheritdoc cref="Projection.WithColumnLabels{T}(LabelMap, IProjection{T})"/>
+    /// <typeparam name="T">What the body reads.</typeparam>
+    /// <param name="map">The columns to make resolvable by name for the body.</param>
+    /// <param name="body">The projection read under the pushed labels.</param>
+    public static IProjection<T> WithColumnLabels<T>(LabelMap map, IProjection<T> body) => Projection.WithColumnLabels(map, body);
+
+    /// <inheritdoc cref="Projection.Record{T}(Func{TableRow, T})"/>
+    /// <typeparam name="T">What one record reads.</typeparam>
+    /// <param name="record">The reading applied to one body row.</param>
+    public static IProjection<T> Record<T>(Func<TableRow, T> record) => Projection.Record(record);
+
     // --- Leaves --------------------------------------------------------------------------------
 
     /// <inheritdoc cref="Projection.Cell{T}(Func{CellValue, T})"/>

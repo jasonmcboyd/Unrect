@@ -20,7 +20,8 @@ namespace Unrect.Projections
       DiagnosticCollector diagnostics,
       UseSite site,
       UseSite pending,
-      LabelScope? labels)
+      LabelScope? labels,
+      int? ordinal)
     {
       Parent = parent;
       Space = space;
@@ -31,6 +32,7 @@ namespace Unrect.Projections
       Site = site;
       Pending = pending;
       Labels = labels;
+      Ordinal = ordinal;
     }
 
     /// <summary>
@@ -42,7 +44,7 @@ namespace Unrect.Projections
       if (space is null)
         throw new ArgumentNullException(nameof(space));
 
-      return new ProjectionContext(null, null, null, default, space, new DiagnosticCollector(), default, default, null);
+      return new ProjectionContext(null, null, null, default, space, new DiagnosticCollector(), default, default, null, null);
     }
 
     private ProjectionContext? Parent { get; }
@@ -59,6 +61,17 @@ namespace Unrect.Projections
 
     /// <summary>Which occurrence of <see cref="Projection"/> this is, where that is meaningful (e.g. inside a repeat).</summary>
     public int? Index { get; }
+
+    /// <summary>
+    /// The occurrence number the nearest enclosing repeat is on, or null outside one. Unlike
+    /// <see cref="Index"/> — which names the path segment and is cleared on <see cref="Descend"/> so
+    /// a repeat's item does not inherit its parent's ordinal into its own children — this is copied
+    /// unchanged through <see cref="Descend"/> and so persists into the whole subtree the repeat
+    /// manufactures. That is what lets a decoupled record recover the body row it is projecting when
+    /// the path index has already been consumed by the repeat's own segment. A nested repeat
+    /// overwrites it, so the nearest enclosing one wins.
+    /// </summary>
+    internal int? Ordinal { get; }
 
     /// <summary>Where this context sits, relative to the space the root <c>Map</c> call was given.</summary>
     public Offset Origin { get; }
@@ -94,7 +107,7 @@ namespace Unrect.Projections
     /// frame to its own.
     /// </summary>
     internal ProjectionContext PushLabels(LabelAxis axis, ILabelSource source)
-      => new ProjectionContext(Parent, Projection, Index, Origin, Space, Diagnostics, Site, Pending, new LabelScope(axis, source, Origin, Labels));
+      => new ProjectionContext(Parent, Projection, Index, Origin, Space, Diagnostics, Site, Pending, new LabelScope(axis, source, Origin, Labels), Ordinal);
 
     /// <summary>
     /// The nearest labels along <paramref name="axis"/>, or null when none is in scope. Walks the
@@ -116,7 +129,7 @@ namespace Unrect.Projections
     /// by its.
     /// </summary>
     public ProjectionContext Descend(IProjection projection, Offset offset)
-      => new ProjectionContext(this, projection, null, Origin + offset, Space, Diagnostics, Pending, default, Labels);
+      => new ProjectionContext(this, projection, null, Origin + offset, Space, Diagnostics, Pending, default, Labels, Ordinal);
 
     /// <summary>
     /// Moves the origin without adding a path segment — how layouts and repeats track their cursor.
@@ -125,11 +138,11 @@ namespace Unrect.Projections
     /// reader would name.
     /// </summary>
     public ProjectionContext Advance(Offset offset)
-      => new ProjectionContext(Parent, Projection, Index, Origin + offset, Space, Diagnostics, Site, Pending, Labels);
+      => new ProjectionContext(Parent, Projection, Index, Origin + offset, Space, Diagnostics, Site, Pending, Labels, Ordinal);
 
     /// <summary>Declares where the next child was written, for it to claim on the way in.</summary>
     internal ProjectionContext WithUseSite(UseSite site)
-      => new ProjectionContext(Parent, Projection, Index, Origin, Space, Diagnostics, Site, site, Labels);
+      => new ProjectionContext(Parent, Projection, Index, Origin, Space, Diagnostics, Site, site, Labels, Ordinal);
 
     /// <summary>Where this context sits, expressed as an A1-style address against <paramref name="space"/>'s extent.</summary>
     public ProjectionLocation Locate(ISpace space) => ProjectionLocation.At(Origin, space.Area.Size);
@@ -161,7 +174,15 @@ namespace Unrect.Projections
         isFault);
 
     internal ProjectionContext WithIndex(int index)
-      => new ProjectionContext(Parent, Projection, index, Origin, Space, Diagnostics, Site, Pending, Labels);
+      => new ProjectionContext(Parent, Projection, index, Origin, Space, Diagnostics, Site, Pending, Labels, Ordinal);
+
+    /// <summary>
+    /// Stamps the occurrence number a repeat is applying, so the item's whole subtree can recover it
+    /// through <see cref="Ordinal"/>. Distinct from <see cref="WithIndex"/>, which sets the
+    /// path-rendering index: this survives the <see cref="Descend"/> into the item, that one does not.
+    /// </summary>
+    internal ProjectionContext WithOrdinal(int ordinal)
+      => new ProjectionContext(Parent, Projection, Index, Origin, Space, Diagnostics, Site, Pending, Labels, ordinal);
 
     internal ProjectionException Failure(
       IProjection projection,

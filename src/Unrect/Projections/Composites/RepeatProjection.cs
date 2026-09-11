@@ -116,8 +116,10 @@ namespace Unrect.Projections
         return false;
 
       // The index belongs to the repeat's own segment; the label belongs to the item, which claims
-      // it on the way in. Descend clears it afterwards, so the item's own children are unaffected.
-      var scope = context.Advance(Step(cursor)).WithIndex(values.Count).WithUseSite(ItemSite);
+      // it on the way in. Descend clears the index afterwards, so the item's own children are
+      // unaffected. The ordinal is the same occurrence number stamped so it survives that Descend —
+      // it is how a decoupled record recovers which body row it is projecting.
+      var scope = context.Advance(Step(cursor)).WithIndex(values.Count).WithOrdinal(values.Count).WithUseSite(ItemSite);
 
       // Only the item's own placement stops the repetition; a failure deeper inside it is an
       // error, so intra-block format drift is loud rather than silently truncating.

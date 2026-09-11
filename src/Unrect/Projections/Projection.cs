@@ -411,6 +411,63 @@ namespace Unrect.Projections
     public static IProjection<T> Table<T>(int headerRows, Func<TableView, T> project)
       => new TableProjection<T>(ValidateHeaderRows(headerRows), project, TablePlacement(), "Table");
 
+    // --- Labels — the scope-introducer primitives -----------------------------------------------
+    //
+    // The three verbs a labelled axis decomposes into, from which the built-in Table is
+    // reimplementable: MANUFACTURE a map (ColumnLabels, or the literal LabelMap.Of), PROVIDE it to a
+    // subtree (WithColumnLabels), and READ it (Record). The row twins — RowLabels/WithRowLabels — are
+    // deferred: a left/right header spans the height, so collecting it forces the full height before
+    // anything can be addressed, which is a different cost model, not merely untested.
+
+    /// <summary>
+    /// Reads and consumes a table's header row as a <see cref="LabelMap"/>, without projecting the
+    /// body — the map a <see cref="WithColumnLabels{T}(LabelMap, IProjection{T})"/> then provides to
+    /// the rows beneath it. The header parse is the one a built-in <c>Table</c> runs, so the labels,
+    /// their ordinals and the matching rule are identical.
+    /// </summary>
+    /// <param name="headerRows">How many rows to read as the header. Only 1 is supported in this release.</param>
+    public static IProjection<LabelMap> ColumnLabels(int headerRows = 1)
+    {
+      if (headerRows != 1)
+        throw new ArgumentOutOfRangeException(nameof(headerRows), headerRows, "ColumnLabels reads exactly one header row in this release.");
+
+      return new ColumnLabelsProjection(
+        headerRows,
+        Placement.Of(RowsThenColumns(RowStrategies.TakeRows(headerRows), ColumnStrategies.AllColumns())));
+    }
+
+    /// <summary>
+    /// Pushes <paramref name="map"/> as the ambient column labels for <paramref name="body"/>'s whole
+    /// declaration subtree, then reads <paramref name="body"/> where it stands. A record inside it
+    /// resolves a column by name through this map — <c>row.Decimal("Amount")</c> — with the ordinal
+    /// translated from the frame the labels were read in to the reading frame and bounds-checked, so a
+    /// label whose column has narrowed out of a slice is a clean, absorbable failure rather than a
+    /// silent read of the neighbour. Transparent: it adds no path segment and forces nothing of its
+    /// own, so the body reads exactly as it would unwrapped.
+    /// </summary>
+    /// <typeparam name="T">What the body reads.</typeparam>
+    /// <param name="map">The columns to make resolvable by name for the body.</param>
+    /// <param name="body">The projection read under the pushed labels.</param>
+    public static IProjection<T> WithColumnLabels<T>(LabelMap map, IProjection<T> body)
+      => new WithLabelsProjection<T>(
+        LabelAxis.Column,
+        map ?? throw new ArgumentNullException(nameof(map)),
+        body ?? throw new ArgumentNullException(nameof(body)),
+        Placement.Default);
+
+    /// <summary>
+    /// One body row, read by <paramref name="record"/> — the compute-legal binder decoupled from
+    /// <c>Table</c>. Its extent is a one-row band at the full width, so under a
+    /// <see cref="VerticalRepeat{T}"/> each occurrence reads one row and the repeat stops past the
+    /// last. Columns are resolved by name through whatever <see cref="WithColumnLabels{T}(LabelMap,
+    /// IProjection{T})"/> pushed; used with no labels in scope, a by-name read reports the headerless
+    /// message, exactly as a headerless table's row does.
+    /// </summary>
+    /// <typeparam name="T">What one record reads.</typeparam>
+    /// <param name="record">The reading applied to one body row.</param>
+    public static IProjection<T> Record<T>(Func<TableRow, T> record)
+      => new RecordProjection<T>(record ?? throw new ArgumentNullException(nameof(record)), Placement.Of(FullRow()));
+
     // --- Labelled pairs -------------------------------------------------------------------------
 
     /// <summary>

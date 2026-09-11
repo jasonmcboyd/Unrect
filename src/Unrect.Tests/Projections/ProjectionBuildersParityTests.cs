@@ -164,6 +164,11 @@ namespace Unrect.Tests.Projections
         ["Choice<T>(IProjection<TSpace, T>[])"] = Reading(
           () => B.Choice(Caption("Total"), Text()),
           () => Choice(Caption("Total"), Text())),
+        // The three labelled-axis primitives. ColumnLabels reads the header row (its value is a
+        // LabelMap, rendered by the harness through its Labels); Record reads a body row by index, so
+        // it needs no ambient labels; WithColumnLabels wraps a body that reads by index over a literal
+        // map. All three re-export at their plain type, so the twin is the same declaration twice.
+        ["ColumnLabels(int)"] = Reading(() => B.ColumnLabels(1), () => ColumnLabels(1)),
         ["Column<T>(Func<CellStrip, T>)"] = Reading(() => B.Column(s => s.Count), () => Column(s => s.Count)),
         ["Column<T>(int, Func<CellStrip, T>)"] = Reading(() => B.Column(2, s => s.Count), () => Column(2, s => s.Count)),
         ["Column<T>(IRowStrategy, Func<CellStrip, T>)"] = Reading(
@@ -192,6 +197,9 @@ namespace Unrect.Tests.Projections
         ["Range<T>(int, int, Func<CellBlock, T>)"] = Reading(
           () => B.Range(2, 2, b => b.Width * 100 + b.Height),
           () => Range(2, 2, b => b.Width * 100 + b.Height)),
+        ["Record<T>(Func<TableRow, T>)"] = Reading(
+          () => B.Record((TableRow r) => r.Count),
+          () => Record((TableRow r) => r.Count)),
         ["Row<T>(Func<CellStrip, T>)"] = Reading(() => B.Row(s => s.Count), () => Row(s => s.Count)),
         ["Row<T>(int, Func<CellStrip, T>)"] = Reading(() => B.Row(2, s => s.Count), () => Row(2, s => s.Count)),
         ["Row<T>(IColumnStrategy, Func<CellStrip, T>)"] = Reading(
@@ -225,6 +233,9 @@ namespace Unrect.Tests.Projections
         ["VerticalRepeat<T>(IProjection<TSpace, T>, IOffsetStrategy, int, string)"] = Reading(
           () => { var line = Text(); return B.VerticalRepeat(line, separatedBy: BlankRows(), atLeast: 1); },
           () => { var line = Text(); return VerticalRepeat(line, separatedBy: BlankRows(), atLeast: 1); }),
+        ["WithColumnLabels<T>(LabelMap, IProjection<T>)"] = Reading(
+          () => B.WithColumnLabels(LabelMap.Of(("Fund", 0)), Record((TableRow r) => r.Count)),
+          () => WithColumnLabels(LabelMap.Of(("Fund", 0)), Record((TableRow r) => r.Count))),
       };
 
     // --- 1b. The 25 that hand back something other than a projection -------------------------------
