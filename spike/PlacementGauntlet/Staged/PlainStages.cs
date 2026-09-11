@@ -99,7 +99,7 @@ namespace PlacementGauntlet.Staged
 
     public IProjection<IReadOnlyList<T>> Table<T>(
       int headerRows,
-      Func<CaptionMap, IProjection<T>> eachRow,
+      Func<LabelMap, IProjection<T>> eachRow,
       [CallerArgumentExpression("eachRow")] string? declared = null)
       => Close(Projection.Table(headerRows, eachRow, declared));
 

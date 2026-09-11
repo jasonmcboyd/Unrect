@@ -18,22 +18,22 @@ namespace Unrect.Projections
   /// cannot resolve to two different columns.
   /// </para>
   /// </summary>
-  public sealed class CaptionMap
+  public sealed class LabelMap
   {
     private readonly TableView _table;
 
     /// <summary>
-    /// Minted by <see cref="Projection.Table{T}(int, Func{CaptionMap, IProjection{T}}, string)"/>
+    /// Minted by <see cref="Projection.Table{T}(int, Func{LabelMap, IProjection{T}}, string)"/>
     /// and by nothing else. A test wanting a real one can take the table's own view through the
     /// bottom rung — <c>Table(1, table =&gt; table)</c> — and mint it from that.
     /// </summary>
-    internal CaptionMap(TableView table) => _table = table;
+    internal LabelMap(TableView table) => _table = table;
 
     /// <summary>
-    /// Each column's caption, in column order and trimmed, with the empty string where a column
-    /// carries none — so <c>Captions[i]</c> is what column <c>i</c> is called.
+    /// Each column's label, in column order and trimmed, with the empty string where a column
+    /// carries none — so <c>Labels[i]</c> is what column <c>i</c> is called.
     /// </summary>
-    public IReadOnlyList<string> Captions => _table.ColumnNames;
+    public IReadOnlyList<string> Labels => _table.ColumnNames;
 
     /// <summary>
     /// The column captioned <paramref name="caption"/>, as an index into the row a record is handed
@@ -56,7 +56,7 @@ namespace Unrect.Projections
         throw matches.Count == 0
           ? _table.Failure(
             $"no column is captioned '{caption}'; the table's captions are "
-            + string.Join(", ", Captions.Select(c => $"'{c}'")))
+            + string.Join(", ", Labels.Select(c => $"'{c}'")))
           : Ambiguous(caption, matches);
       }
     }
@@ -92,8 +92,8 @@ namespace Unrect.Projections
 
       var matches = new List<int>();
 
-      for (var column = 0; column < Captions.Count; column++)
-        if (CaptionComparer.Default.Equals(Captions[column], caption))
+      for (var column = 0; column < Labels.Count; column++)
+        if (CaptionComparer.Default.Equals(Labels[column], caption))
           matches.Add(column);
 
       return matches;
@@ -102,8 +102,8 @@ namespace Unrect.Projections
     private ProjectionException Ambiguous(string caption, IReadOnlyList<int> matches)
       => _table.Failure(
         $"the caption '{caption}' matches the columns at "
-        + $"{_table.Header.AddressOf(matches[0]).A1} ('{Captions[matches[0]]}') and "
-        + $"{_table.Header.AddressOf(matches[1]).A1} ('{Captions[matches[1]]}'); "
+        + $"{_table.Header.AddressOf(matches[0]).A1} ('{Labels[matches[0]]}') and "
+        + $"{_table.Header.AddressOf(matches[1]).A1} ('{Labels[matches[1]]}'); "
         + "captions are matched ignoring case and whitespace");
   }
 }

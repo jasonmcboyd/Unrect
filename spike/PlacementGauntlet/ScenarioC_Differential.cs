@@ -60,7 +60,7 @@ namespace PlacementGauntlet
       // its text is captured by CallerArgumentExpression and becomes the record's path segment, so
       // an inline lambda would make the two declarations differ at L3 for a reason that is about
       // this comparison rather than about Entry C.
-      Func<CaptionMap, IProjection<ISpreadsheetSpace, AuditedSummaryRow>> auditedRow = captions => q.Overlay(o => new AuditedSummaryRow(
+      Func<LabelMap, IProjection<ISpreadsheetSpace, AuditedSummaryRow>> auditedRow = captions => q.Overlay(o => new AuditedSummaryRow(
         Investor: o.Next(Projection.Right(captions["Investors"]).Text()),
         EndBalance: o.Next(Projection.Right(captions["End Balance"]).Decimal()),
         AmountFormula: o.Next(Projection.Right(captions["End Balance"]).Of(Formula()))));
@@ -120,7 +120,7 @@ namespace PlacementGauntlet
         ReportDate: v.Next(Date()),
         ReportId: v.Next(Text())));
 
-      Func<CaptionMap, IProjection<PlainSummaryRow>> plainRow = captions => Projection.Overlay(o => new PlainSummaryRow(
+      Func<LabelMap, IProjection<PlainSummaryRow>> plainRow = captions => Projection.Overlay(o => new PlainSummaryRow(
         Investor: o.Next(Projection.Right(captions["Investors"]).Text()),
         EndBalance: o.Next(Projection.Right(captions["End Balance"]).Decimal())));
 
@@ -164,7 +164,7 @@ namespace PlacementGauntlet
     {
       var sheet = Sheets.K1();
 
-      Func<CaptionMap, IProjection<KLine>> kLine = captions => Projection.Overlay(o => new KLine(
+      Func<LabelMap, IProjection<KLine>> kLine = captions => Projection.Overlay(o => new KLine(
         Code: o.Next(Projection.Right(captions["Line"]).Text()),
         Amount: o.Next(Projection.Right(captions["Amount"]).Decimal())));
 

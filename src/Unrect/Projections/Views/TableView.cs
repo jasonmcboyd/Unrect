@@ -19,7 +19,7 @@ namespace Unrect.Projections
   /// three built-in row projections are written against <see cref="StreamRows"/>.
   /// </para>
   /// </summary>
-  public sealed class TableView
+  public sealed class TableView : ILabelSource
   {
     // Views are built per projection and are not covered by the projection thread-safety guarantee;
     // the caches race benignly (reference assignment is atomic, so the worst case is duplicated
@@ -31,7 +31,6 @@ namespace Unrect.Projections
     {
       Space = space;
       HeaderRows = headerRows;
-      Context = context;
 
       Header = new CellStrip(
         space.GetSubspace(new Offset(0, 0), new Area(HasHeader ? ColumnCount : 0, headerRows)),
@@ -39,6 +38,12 @@ namespace Unrect.Projections
         context);
 
       ColumnNames = Header.Select(cell => cell.TryGetString()?.Trim() ?? string.Empty).ToList();
+
+      // Publish the columns as the ambient Column labels for the body's subtree, but only when a
+      // header was actually declared: a headerless table pushes nothing, so a by-name lookup still
+      // finds no scope and reports the headerless message. The origin PushLabels captures is this
+      // table's own, the frame the header's ordinals are read in and every body row translates from.
+      Context = HasHeader ? context.PushLabels(LabelAxis.Column, this) : context;
     }
 
     /// <summary>The table's full extent, header row(s) included.</summary>
@@ -65,6 +70,11 @@ namespace Unrect.Projections
 
     /// <summary>Each column's header text, trimmed; the empty string for a column with no caption.</summary>
     public IReadOnlyList<string> ColumnNames { get; }
+
+    /// <summary>The columns as an ambient label source: its names and the content-rule lookup already here.</summary>
+    IReadOnlyList<string> ILabelSource.Labels => ColumnNames;
+
+    IReadOnlyList<int> ILabelSource.IndicesOf(string label) => IndicesOf(label);
 
     /// <summary>
     /// The address of the table's top-left cell, header included. It carries the extent the table
@@ -384,26 +394,42 @@ namespace Unrect.Projections
       if (indices.Count == 1)
         return indices[0];
 
-      var available = Table.ColumnNames.Where(name => name.Length > 0).Select(name => $"'{name}'").ToList();
+      var labels = Context.NearestLabels(LabelAxis.Column)?.Source.Labels ?? Table.ColumnNames;
+      var available = labels.Where(name => name.Length > 0).Select(name => $"'{name}'").ToList();
 
       throw Failure(
         $"there is no column named '{columnName}'; available columns: {(available.Count == 0 ? "none" : string.Join(", ", available))}.");
     }
 
     /// <summary>
-    /// The columns the name resolves to, having rejected the lookups that cannot mean anything.
+    /// The columns the name resolves to — a single translated index, or empty when the ambient
+    /// columns carry no such label. Resolution runs through the label environment the manufacturing
+    /// table pushed: the columns are found in the frame the header was read in, then each ordinal is
+    /// translated to this row's frame and bounds-checked. A label whose column has narrowed out of
+    /// the row (a descendant reading a slice of the table) is a clean, absorbable failure — never a
+    /// silent read of the neighbour cell.
     /// </summary>
     private IReadOnlyList<int> Resolvable(string columnName)
     {
-      var indices = Table.IndicesOf(columnName);
+      var scope = Context.NearestLabels(LabelAxis.Column);
 
-      if (indices.Count > 1)
-        throw Ambiguous(columnName, indices);
-
-      if (indices.Count == 0 && !Table.HasHeader)
+      if (scope is null)
         throw Failure($"column '{columnName}' cannot be resolved: the table was declared without a header row; use column indices.");
 
-      return indices;
+      var ordinals = scope.Source.IndicesOf(columnName);
+
+      if (ordinals.Count > 1)
+        throw Ambiguous(columnName, ordinals);
+
+      if (ordinals.Count == 0)
+        return ordinals;
+
+      var local = ordinals[0] + scope.CaptureOrigin.Width - Context.Origin.Width;
+
+      if (local < 0 || local >= Count)
+        throw Failure($"column '{columnName}' is not in this region");
+
+      return new[] { local };
     }
 
     private ProjectionException Ambiguous(string columnName, IReadOnlyList<int> indices)

@@ -134,14 +134,14 @@ namespace Unrect.Projections
     public static IProjection<IReadOnlyList<T>> Table<T>(Func<TableBinding<T>, TableBinding<T>> bind)
       => Projection.Table(bind);
 
-    /// <inheritdoc cref="Projection.Table{T}(int, Func{CaptionMap, IProjection{T}}, string)"/>
+    /// <inheritdoc cref="Projection.Table{T}(int, Func{LabelMap, IProjection{T}}, string)"/>
     /// <typeparam name="T">What one record reads.</typeparam>
     /// <param name="headerRows">How many rows to read as the header; a bind needs 1.</param>
     /// <param name="eachRow">Given this file's captions, the projection that reads one record.</param>
     /// <param name="declared">Supplied by the compiler as the text of the <paramref name="eachRow"/> argument.</param>
     public static IProjection<TSpace, IReadOnlyList<T>> Table<T>(
       int headerRows,
-      Func<CaptionMap, IProjection<TSpace, T>> eachRow,
+      Func<LabelMap, IProjection<TSpace, T>> eachRow,
       [CallerArgumentExpression("eachRow")] string? declared = null)
       => Scope.Table(headerRows, eachRow, declared);
 

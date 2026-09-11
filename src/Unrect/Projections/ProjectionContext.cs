@@ -19,7 +19,8 @@ namespace Unrect.Projections
       ISpace space,
       DiagnosticCollector diagnostics,
       UseSite site,
-      UseSite pending)
+      UseSite pending,
+      LabelScope? labels)
     {
       Parent = parent;
       Space = space;
@@ -29,6 +30,7 @@ namespace Unrect.Projections
       Diagnostics = diagnostics;
       Site = site;
       Pending = pending;
+      Labels = labels;
     }
 
     /// <summary>
@@ -40,7 +42,7 @@ namespace Unrect.Projections
       if (space is null)
         throw new ArgumentNullException(nameof(space));
 
-      return new ProjectionContext(null, null, null, default, space, new DiagnosticCollector(), default, default);
+      return new ProjectionContext(null, null, null, default, space, new DiagnosticCollector(), default, default, null);
     }
 
     private ProjectionContext? Parent { get; }
@@ -78,12 +80,43 @@ namespace Unrect.Projections
     private UseSite Pending { get; }
 
     /// <summary>
+    /// The ambient label environment: a stack of <see cref="LabelScope"/> cons-cells a labelling
+    /// projection pushes for its declaration subtree, or null where none is in scope. Copied
+    /// unchanged through every in-tree move, so a label reaches every descendant a labelling
+    /// projection manufactures — the scope is the declaration subtree, not any region of the sheet.
+    /// </summary>
+    private LabelScope? Labels { get; }
+
+    /// <summary>
+    /// Pushes <paramref name="source"/> as the nearest set of labels along <paramref name="axis"/>,
+    /// capturing this context's <see cref="Origin"/> as the frame the labels' ordinals are relative
+    /// to. A leaf that later resolves one of these labels translates the ordinal from that captured
+    /// frame to its own.
+    /// </summary>
+    internal ProjectionContext PushLabels(LabelAxis axis, ILabelSource source)
+      => new ProjectionContext(Parent, Projection, Index, Origin, Space, Diagnostics, Site, Pending, new LabelScope(axis, source, Origin, Labels));
+
+    /// <summary>
+    /// The nearest labels along <paramref name="axis"/>, or null when none is in scope. Walks the
+    /// stack from the inside out, so an inner scope shadows an outer one on the same axis; a scope on
+    /// a different axis is skipped, so a row-labelled and a column-labelled scope coexist.
+    /// </summary>
+    internal LabelScope? NearestLabels(LabelAxis axis)
+    {
+      for (var scope = Labels; scope is not null; scope = scope.Outer)
+        if (scope.Axis == axis)
+          return scope;
+
+      return null;
+    }
+
+    /// <summary>
     /// Enters <paramref name="projection"/>, which claims whatever use site was waiting for it.
     /// Nothing is left over: a projection's own children are labelled by their own use sites, not
     /// by its.
     /// </summary>
     public ProjectionContext Descend(IProjection projection, Offset offset)
-      => new ProjectionContext(this, projection, null, Origin + offset, Space, Diagnostics, Pending, default);
+      => new ProjectionContext(this, projection, null, Origin + offset, Space, Diagnostics, Pending, default, Labels);
 
     /// <summary>
     /// Moves the origin without adding a path segment — how layouts and repeats track their cursor.
@@ -92,11 +125,11 @@ namespace Unrect.Projections
     /// reader would name.
     /// </summary>
     public ProjectionContext Advance(Offset offset)
-      => new ProjectionContext(Parent, Projection, Index, Origin + offset, Space, Diagnostics, Site, Pending);
+      => new ProjectionContext(Parent, Projection, Index, Origin + offset, Space, Diagnostics, Site, Pending, Labels);
 
     /// <summary>Declares where the next child was written, for it to claim on the way in.</summary>
     internal ProjectionContext WithUseSite(UseSite site)
-      => new ProjectionContext(Parent, Projection, Index, Origin, Space, Diagnostics, Site, site);
+      => new ProjectionContext(Parent, Projection, Index, Origin, Space, Diagnostics, Site, site, Labels);
 
     /// <summary>Where this context sits, expressed as an A1-style address against <paramref name="space"/>'s extent.</summary>
     public ProjectionLocation Locate(ISpace space) => ProjectionLocation.At(Origin, space.Area.Size);
@@ -128,7 +161,7 @@ namespace Unrect.Projections
         isFault);
 
     internal ProjectionContext WithIndex(int index)
-      => new ProjectionContext(Parent, Projection, index, Origin, Space, Diagnostics, Site, Pending);
+      => new ProjectionContext(Parent, Projection, index, Origin, Space, Diagnostics, Site, Pending, Labels);
 
     internal ProjectionException Failure(
       IProjection projection,
@@ -304,5 +337,58 @@ namespace Unrect.Projections
 
     private static bool IsLetterOrUnderscore(char character)
       => (character >= 'A' && character <= 'Z') || (character >= 'a' && character <= 'z') || character == '_';
+  }
+
+  /// <summary>
+  /// Which axis a set of labels names: a <see cref="Column"/> label answers a column, translating
+  /// along <c>Offset.Width</c>; a <see cref="Row"/> label answers a row, translating along
+  /// <c>Offset.Height</c>. Kept separate on the stack so a row-labelled and a column-labelled scope
+  /// coexist rather than shadow one another.
+  /// </summary>
+  internal enum LabelAxis
+  {
+    Column,
+    Row,
+  }
+
+  /// <summary>
+  /// Something that answers a label with the ordinals carrying it, in the frame it was captured in.
+  /// A <c>TableView</c> is one (its header); step 2's public <c>LabelMap</c> will be another, so the
+  /// context shape is already what a scope-introducer pushes.
+  /// </summary>
+  internal interface ILabelSource
+  {
+    /// <summary>Every label along the axis, in order — the values a resolver lists when a lookup misses.</summary>
+    IReadOnlyList<string> Labels { get; }
+
+    /// <summary>The ordinals carrying <paramref name="label"/>, in the captured frame; empty when none does.</summary>
+    IReadOnlyList<int> IndicesOf(string label);
+  }
+
+  /// <summary>
+  /// One entry in the ambient label environment: a set of labels along an axis, the origin they were
+  /// captured at, and the scope it shadows. Immutable — a cons-cell in the context's label stack.
+  /// </summary>
+  internal sealed class LabelScope
+  {
+    public LabelScope(LabelAxis axis, ILabelSource source, Offset captureOrigin, LabelScope? outer)
+    {
+      Axis = axis;
+      Source = source;
+      CaptureOrigin = captureOrigin;
+      Outer = outer;
+    }
+
+    /// <summary>Which axis these labels name.</summary>
+    public LabelAxis Axis { get; }
+
+    /// <summary>Where the labels' ordinals are read — the answer to <c>IndicesOf</c> is in this frame.</summary>
+    public ILabelSource Source { get; }
+
+    /// <summary>The <c>Origin</c> the scope was pushed at, the frame its ordinals translate from.</summary>
+    public Offset CaptureOrigin { get; }
+
+    /// <summary>The scope this one shadows, or null at the bottom of the stack.</summary>
+    public LabelScope? Outer { get; }
   }
 }

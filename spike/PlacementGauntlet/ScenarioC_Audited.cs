@@ -55,7 +55,7 @@ namespace PlacementGauntlet
 
       // The audited row: the amount, and the formula behind the same cell. Placement-first, in
       // execution order — that many columns along, a decimal — with the leaf as the terminal.
-      Func<CaptionMap, IProjection<ISpreadsheetSpace, AuditedSummaryRow>> auditedRow = captions => Overlay(o => new AuditedSummaryRow(
+      Func<LabelMap, IProjection<ISpreadsheetSpace, AuditedSummaryRow>> auditedRow = captions => Overlay(o => new AuditedSummaryRow(
         Investor:      o.Next(Right(captions["Investors"]).Text()),
         EndBalance:    o.Next(Right(captions["End Balance"]).Decimal()),
         AmountFormula: o.Next(Right(captions["End Balance"]).Of(Formula()))));

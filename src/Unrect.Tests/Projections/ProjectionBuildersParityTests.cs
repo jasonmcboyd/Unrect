@@ -116,10 +116,10 @@ namespace Unrect.Tests.Projections
     public record Pair(string Fund, decimal Amount);
 
     /// <summary>A bind as a method group — the spelling the table rung recommends.</summary>
-    private static IProjection<decimal> AmountByCaption(CaptionMap captions) => Right(captions["Amount"]).Of(Decimal());
+    private static IProjection<decimal> AmountByCaption(LabelMap captions) => Right(captions["Amount"]).Of(Decimal());
 
     /// <summary>The same bind pointed at the column of fund names, so every record fails.</summary>
-    private static IProjection<decimal> FundColumnAsANumber(CaptionMap captions) => Right(captions["Fund"]).Of(Decimal());
+    private static IProjection<decimal> FundColumnAsANumber(LabelMap captions) => Right(captions["Fund"]).Of(Decimal());
 
     // A matcher demanding nothing beyond ISpace. The published demanding matchers all demand a
     // capability (`RowWithFormula` demands IFormulaSpace) and IRowLandmark<in TSpace> is
@@ -212,7 +212,7 @@ namespace Unrect.Tests.Projections
         ["Table<T>(int, Func<TableView, T>)"] = Reading(
           () => B.Table(1, (TableView t) => t.RowCount),
           () => Table(1, (TableView t) => t.RowCount)),
-        ["Table<T>(int, Func<CaptionMap, IProjection<TSpace, T>>, string)"] = Reading(
+        ["Table<T>(int, Func<LabelMap, IProjection<TSpace, T>>, string)"] = Reading(
           () => B.Table(headerRows: 1, eachRow: AmountByCaption),
           () => Table(headerRows: 1, eachRow: AmountByCaption)),
         ["Table<T>(int, IProjection<TSpace, T>, string)"] = Reading(
@@ -576,7 +576,7 @@ namespace Unrect.Tests.Projections
       "HorizontalRepeat<TSpace, T>(IProjection<TSpace, T>, IOffsetStrategy, int, string)",
       "Choice<TSpace, T>(IProjection<TSpace, T>[])",
       "Table<TSpace, T>(int, IProjection<TSpace, T>, string)",
-      "Table<TSpace, T>(int, Func<CaptionMap, IProjection<TSpace, T>>, string)",
+      "Table<TSpace, T>(int, Func<LabelMap, IProjection<TSpace, T>>, string)",
     };
 
     [Fact]

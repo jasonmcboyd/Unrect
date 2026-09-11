@@ -111,7 +111,7 @@ namespace PlacementGauntlet.Staged
 
     public static IProjection<TSpace, IReadOnlyList<T>> Table<T>(
       int headerRows,
-      Func<CaptionMap, IProjection<TSpace, T>> eachRow,
+      Func<LabelMap, IProjection<TSpace, T>> eachRow,
       [CallerArgumentExpression("eachRow")] string? declared = null)
       => Scope.Table(headerRows, eachRow, declared);
 
@@ -333,7 +333,7 @@ namespace PlacementGauntlet.Staged
       /// <summary>A slot rung, to show that the whole family has to follow the one that split.</summary>
       public static IProjection<TSpace, IReadOnlyList<T>> Rows<T>(
         int headerRows,
-        Func<CaptionMap, IProjection<TSpace, T>> eachRow,
+        Func<LabelMap, IProjection<TSpace, T>> eachRow,
         [CallerArgumentExpression("eachRow")] string? declared = null)
         => Projection.Over<TSpace>().Table(headerRows, eachRow, declared);
     }

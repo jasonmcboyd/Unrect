@@ -15,7 +15,7 @@ using static Unrect.Tests.ProjectionTestSpaces;
 namespace Unrect.Tests.Projections
 {
   /// <summary>
-  /// <c>Table(headerRows: 1, eachRow: captions =&gt; …)</c> — the bind, and the <see cref="CaptionMap"/>
+  /// <c>Table(headerRows: 1, eachRow: captions =&gt; …)</c> — the bind, and the <see cref="LabelMap"/>
   /// it is handed. The rung where a record projection is written against <em>this file's</em> captions.
   /// <para>
   /// Two arrows, two moments: the bind maps a caption map to a <em>description</em>, and the engine
@@ -111,7 +111,7 @@ namespace Unrect.Tests.Projections
     /// A hoisted bound row is a <em>factory</em>, with its dependence on the captions in its
     /// signature — the spelling the rung recommends, and the one that gives every record a name.
     /// </summary>
-    private static IProjection<Allocation> AllocationRow(CaptionMap captions)
+    private static IProjection<Allocation> AllocationRow(LabelMap captions)
       => Overlay(o => new Allocation(
         Account: o.Next(Right(captions["Account"]).Of(Text())),
         Symbol: o.Next(Right(captions["Symbol"]).Of(Text())),
@@ -186,17 +186,17 @@ namespace Unrect.Tests.Projections
       Assert.Equal(2, binds);
     }
 
-    // --- 2. The CaptionMap ---------------------------------------------------------------------------
+    // --- 2. The LabelMap ---------------------------------------------------------------------------
     //
     // Minted from a real view through the bottom rung — a real header, a real context, real failures —
     // which is the recipe the spec records rather than a synthetic factory nobody would ship.
 
-    private static CaptionMap CaptionsOf(ISpace sheet) => new CaptionMap(Table((TableView view) => view).Map(sheet));
+    private static LabelMap CaptionsOf(ISpace sheet) => new LabelMap(Table((TableView view) => view).Map(sheet));
 
     [Fact]
     public void CaptionsAreTheColumnsOwnNamesInColumnOrder()
     {
-      Assert.Equal(new[] { "Account", "Symbol", "Weight" }, CaptionsOf(Allocations()).Captions);
+      Assert.Equal(new[] { "Account", "Symbol", "Weight" }, CaptionsOf(Allocations()).Labels);
     }
 
     [Fact]
@@ -210,7 +210,7 @@ namespace Unrect.Tests.Projections
         { "A-1", "XYZ", 1.5m },
       });
 
-      Assert.Equal(new[] { "Account", string.Empty, "Weight" }, CaptionsOf(ragged).Captions);
+      Assert.Equal(new[] { "Account", string.Empty, "Weight" }, CaptionsOf(ragged).Labels);
     }
 
     [Fact]
@@ -351,7 +351,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ANullBindIsRejectedAtConstructionToo()
     {
-      Assert.Throws<ArgumentNullException>(() => Table(1, (Func<CaptionMap, IProjection<int>>)null!));
+      Assert.Throws<ArgumentNullException>(() => Table(1, (Func<LabelMap, IProjection<int>>)null!));
     }
 
     // --- 4. Fault discipline ----------------------------------------------------------------------------
@@ -362,17 +362,17 @@ namespace Unrect.Tests.Projections
     // boundary that is loud about everything is a different (and wrong) system.
 
     /// <summary>A bind with a bug in it: it hands back no description at all.</summary>
-    private static IProjection<int> NoRow(CaptionMap captions) => null!;
+    private static IProjection<int> NoRow(LabelMap captions) => null!;
 
     /// <summary>A bind whose read of the file broke underneath it.</summary>
-    private static IProjection<int> DiskFailed(CaptionMap captions) => throw new IOException("the share stopped answering");
+    private static IProjection<int> DiskFailed(LabelMap captions) => throw new IOException("the share stopped answering");
 
     /// <summary>A bind that looked and disagreed — the data-quality side, which tolerance is for.</summary>
-    private static IProjection<int> WrongExport(CaptionMap captions)
+    private static IProjection<int> WrongExport(LabelMap captions)
       => throw new InvalidOperationException("this is not the export this declaration reads");
 
     /// <summary>A bind that works, for the half of each test that must stay quiet.</summary>
-    private static IProjection<string> AccountCell(CaptionMap captions) => Right(captions["Account"]).Of(Text());
+    private static IProjection<string> AccountCell(LabelMap captions) => Right(captions["Account"]).Of(Text());
 
     private static ProjectionException Faults<T>(IProjection<T> projection, ISpace sheet)
     {
@@ -460,7 +460,7 @@ namespace Unrect.Tests.Projections
       return new FormulaGridSpace(values, formulas);
     }
 
-    private static IProjection<IFormulaSpace, SourcedAllocation> SourcedRow(CaptionMap captions)
+    private static IProjection<IFormulaSpace, SourcedAllocation> SourcedRow(LabelMap captions)
       => Overlay(Formulas, o => new SourcedAllocation(
         Account: o.Next(Right(captions["Account"]).Of(Text())),
         Formula: o.Next(Right(captions["Total"]).Of(Formula()))));

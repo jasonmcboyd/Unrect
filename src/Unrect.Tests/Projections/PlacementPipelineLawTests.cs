@@ -312,7 +312,7 @@ namespace Unrect.Tests.Projections
     private static IRowLandmark Header() => RowContaining("Fund");
 
     /// <summary>A bind pointed at the column of fund names, so every record fails.</summary>
-    private static IProjection<decimal> FundColumnAsANumber(CaptionMap captions) => Right(captions["Fund"]).Of(Decimal());
+    private static IProjection<decimal> FundColumnAsANumber(LabelMap captions) => Right(captions["Fund"]).Of(Decimal());
 
     [Fact]
     public void AVerticalRepeatTerminalKeepsTheIdentifierItsItemWasWrittenAs()
@@ -402,7 +402,7 @@ namespace Unrect.Tests.Projections
     }
 
     /// <summary>The scoped bind's method group — a bind returning a demanding projection.</summary>
-    private static IProjection<ISpace, decimal> ScopedFundColumnAsANumber(CaptionMap captions)
+    private static IProjection<ISpace, decimal> ScopedFundColumnAsANumber(LabelMap captions)
       => Over<ISpace>().Right(captions["Fund"]).Of(Decimal());
 
     // --- 3. Heading is L3-by-construction ------------------------------------------------------------

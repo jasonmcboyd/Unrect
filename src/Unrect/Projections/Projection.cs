@@ -197,9 +197,9 @@ namespace Unrect.Projections
     /// handed to <paramref name="eachRow"/>, and the projection it returns is applied to every body
     /// row.
     /// <code>
-    /// Table(headerRows: 1, eachRow: captions =&gt; Overlay(o =&gt; new Allocation(
-    ///   Account: o.Next(Text().Right(captions["Account"])),
-    ///   Weight:  o.Next(Decimal().OrBlank().Right(captions["Weight"])))))
+    /// Table(headerRows: 1, eachRow: labels =&gt; Overlay(o =&gt; new Allocation(
+    ///   Account: o.Next(Text().Right(labels["Account"])),
+    ///   Weight:  o.Next(Decimal().OrBlank().Right(labels["Weight"])))))
     /// </code>
     /// <para>
     /// Two arrows, two moments. The bind runs <em>once per application of the table</em> — a table
@@ -217,13 +217,13 @@ namespace Unrect.Projections
     /// </para>
     /// <para>
     /// A caption the file does not carry, or carries twice, fails through the map and names the
-    /// header cells involved (see <see cref="CaptionMap"/>). A bind that reaches a value to decide
-    /// what to declare — <c>captions.Has("Fee") ? a : b</c> — is expressible because the API cannot
+    /// header cells involved (see <see cref="LabelMap"/>). A bind that reaches a value to decide
+    /// what to declare — <c>labels.Has("Fee") ? a : b</c> — is expressible because the API cannot
     /// prevent it, discouraged, and nothing here is added to encourage it.
     /// </para>
     /// <para>
     /// A hoisted bind is a factory rather than a value —
-    /// <c>static IProjection&lt;T&gt; AllocationRow(CaptionMap captions) =&gt; …</c> — with the
+    /// <c>static IProjection&lt;T&gt; AllocationRow(LabelMap labels) =&gt; …</c> — with the
     /// dependence stated in its signature, and passing the method group is also what gives the
     /// record a name: <c>Table(1, AllocationRow)</c> labels every record <c>'AllocationRow'</c>,
     /// while a lambda has no identifier to borrow and the row renders as whatever it is
@@ -242,7 +242,7 @@ namespace Unrect.Projections
     /// </param>
     public static IProjection<IReadOnlyList<T>> Table<T>(
       int headerRows,
-      Func<CaptionMap, IProjection<T>> eachRow,
+      Func<LabelMap, IProjection<T>> eachRow,
       [CallerArgumentExpression("eachRow")] string? declared = null)
     {
       if (eachRow is null)
@@ -304,7 +304,7 @@ namespace Unrect.Projections
     /// </para>
     /// <para>
     /// A header is consumed here rather than read: a row that reads <em>this file's</em> captions is
-    /// the rung above, <see cref="Table{T}(int, Func{CaptionMap, IProjection{T}}, string)"/>, and
+    /// the rung above, <see cref="Table{T}(int, Func{LabelMap, IProjection{T}}, string)"/>, and
     /// here a headered table means "skip that row".
     /// </para>
     /// </summary>
@@ -643,8 +643,8 @@ namespace Unrect.Projections
     /// projection raises and classifies it, so a broken read stays a fault and a disagreement with
     /// the data stays absorbable.
     /// </summary>
-    private static IProjection<T> BoundRow<T>(TableView table, Func<CaptionMap, IProjection<T>> eachRow)
-      => eachRow(new CaptionMap(table))
+    private static IProjection<T> BoundRow<T>(TableView table, Func<LabelMap, IProjection<T>> eachRow)
+      => eachRow(new LabelMap(table))
         ?? throw table.Fault("the row bind returned null; it must return the projection that reads one record");
 
     private static IProjection<T> Strip<T>(Orientation orientation, Func<CellStrip, T> project, IAreaStrategy area, string description)

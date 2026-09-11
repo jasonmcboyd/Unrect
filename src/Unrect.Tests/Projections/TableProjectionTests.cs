@@ -54,7 +54,7 @@ namespace Unrect.Tests.Projections
     //     only one view has (row.Index, table.RowCount, r["Amount"], t.ColumnNames) picks its overload
     //     on its own, which is why the great majority of the sites below carry no type.
     //   * The bind rung, Table(1, captions => …), resolves against both of them without help: a
-    //     CaptionMap's members exist on neither view, so the wrong candidates fail to bind and drop
+    //     LabelMap's members exist on neither view, so the wrong candidates fail to bind and drop
     //     out. That is the case that mattered, and it is clean.
     //
     // The compiler names both candidates (CS0121) rather than reporting the useless CS0411, so a reader

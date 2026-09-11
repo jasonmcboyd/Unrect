@@ -87,7 +87,7 @@ namespace Unrect.Projections
       where TSpace : class, ISpace
       => Table(headerRows, ProjectionExtensions.Plain(NotNull(eachRow, nameof(eachRow))), declared);
 
-    /// <inheritdoc cref="Table{T}(int, Func{CaptionMap, IProjection{T}}, string)"/>
+    /// <inheritdoc cref="Table{T}(int, Func{LabelMap, IProjection{T}}, string)"/>
     /// <typeparam name="TSpace">The space the bound row is declared over, and therefore the table.</typeparam>
     /// <typeparam name="T">What one record reads.</typeparam>
     /// <param name="headerRows">How many rows to read as the header; a bind needs 1.</param>
@@ -95,7 +95,7 @@ namespace Unrect.Projections
     /// <param name="declared">Supplied by the compiler as the text of the <paramref name="eachRow"/> argument.</param>
     public static IProjection<TSpace, IReadOnlyList<T>> Table<TSpace, T>(
       int headerRows,
-      Func<CaptionMap, IProjection<TSpace, T>> eachRow,
+      Func<LabelMap, IProjection<TSpace, T>> eachRow,
       [CallerArgumentExpression("eachRow")] string? declared = null)
       where TSpace : class, ISpace
       => eachRow is null
@@ -174,11 +174,11 @@ namespace Unrect.Projections
     /// here is the identity. A bind that returns null is passed through rather than reported here,
     /// because that is the plain form's failure to report and one message beats two.
     /// </summary>
-    private static Func<CaptionMap, IProjection<T>> Adapt<TSpace, T>(Func<CaptionMap, IProjection<TSpace, T>> eachRow)
+    private static Func<LabelMap, IProjection<T>> Adapt<TSpace, T>(Func<LabelMap, IProjection<TSpace, T>> eachRow)
       where TSpace : class, ISpace
-      => captions =>
+      => labels =>
       {
-        var row = eachRow(captions);
+        var row = eachRow(labels);
 
         return row is null ? null! : ProjectionExtensions.Plain(row);
       };

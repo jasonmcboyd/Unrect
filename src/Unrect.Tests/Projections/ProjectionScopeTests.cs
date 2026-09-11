@@ -106,11 +106,11 @@ namespace Unrect.Tests.Projections
     }
 
     /// <summary>A bind, as a method group — the spelling the table rung recommends.</summary>
-    private static IProjection<IFormulaSpace, decimal> AmountColumn(CaptionMap captions)
+    private static IProjection<IFormulaSpace, decimal> AmountColumn(LabelMap captions)
       => Right(captions["Amount"]).Of(Decimal()).Demanding(Formulas);
 
     /// <summary>The same bind pointed at the column of fund names, so every record fails.</summary>
-    private static IProjection<IFormulaSpace, decimal> FundColumnAsANumber(CaptionMap captions)
+    private static IProjection<IFormulaSpace, decimal> FundColumnAsANumber(LabelMap captions)
       => Right(captions["Fund"]).Of(Decimal()).Demanding(Formulas);
 
     // --- 1. The eight composing members, each against its witness twin -----------------------------
@@ -451,10 +451,10 @@ namespace Unrect.Tests.Projections
       var p = Scope();
 
       var scoped = Assert.Throws<ArgumentNullException>(
-        () => p.Table(1, (Func<CaptionMap, IProjection<IFormulaSpace, int>>)null!));
+        () => p.Table(1, (Func<LabelMap, IProjection<IFormulaSpace, int>>)null!));
 
       var plain = Assert.Throws<ArgumentNullException>(
-        () => Table(1, (Func<CaptionMap, IProjection<int>>)null!));
+        () => Table(1, (Func<LabelMap, IProjection<int>>)null!));
 
       Assert.Equal("eachRow", scoped.ParamName);
       Assert.Equal(plain.Message, scoped.Message);
@@ -547,7 +547,7 @@ namespace Unrect.Tests.Projections
 
       var scoped = Assert.Throws<ArgumentOutOfRangeException>(() => p.Table(headerRows: 0, eachRow: AmountColumn));
       var plain = Assert.Throws<ArgumentOutOfRangeException>(
-        () => Table(headerRows: 0, eachRow: (Func<CaptionMap, IProjection<decimal>>)(captions => Decimal())));
+        () => Table(headerRows: 0, eachRow: (Func<LabelMap, IProjection<decimal>>)(captions => Decimal())));
 
       Assert.Equal("headerRows", scoped.ParamName);
       Assert.StartsWith(
