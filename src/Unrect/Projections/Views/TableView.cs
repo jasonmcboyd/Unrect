@@ -36,7 +36,7 @@ namespace Unrect.Projections
       Header = new CellStrip(
         space.GetSubspace(new Offset(0, 0), new Area(HasHeader ? ColumnCount : 0, headerRows)),
         Orientation.Horizontal,
-        context.Origin);
+        context);
 
       ColumnNames = Header.Select(cell => cell.TryGetString()?.Trim() ?? string.Empty).ToList();
     }
@@ -98,7 +98,7 @@ namespace Unrect.Projections
       var index = 0;
 
       foreach (var band in StreamBands(1))
-        yield return new TableRow(this, index++, new CellStrip(band.Space, Orientation.Horizontal, band.Context.Origin), band.Context);
+        yield return new TableRow(this, index++, new CellStrip(band.Space, Orientation.Horizontal, band.Context), band.Context);
     }
 
     /// <summary>
@@ -266,6 +266,94 @@ namespace Unrect.Projections
     /// </summary>
     public ProjectionLocation AddressOf(string columnName) => Strip.AddressOf(Resolve(columnName));
 
+    // The typed reads — the compute-legal binder's accessors. A cell is named two ways, coexisting
+    // in one row projection: by CAPTION (resolved through the header, robust to a reordered export)
+    // and by INDEX (hard-coded, for the headerless or structurally-fixed column a caption cannot
+    // name). Each reads the cell through the one canonical accessor for its kind, the same one the
+    // matching leaf and the Table<T> binder use, so a Decimal() column and row.Decimal("Amount")
+    // describe a bad cell identically. The caption form names the column exactly as the binder does
+    // (`column 'Amount': …`); the index form has no caption to name, so it speaks the bare leaf
+    // sentence, the A1 alone pinning the column. An unknown caption, an ambiguous one, a name
+    // against a headerless table, or an out-of-range index fails as the indexers already do; a kind
+    // mismatch or an unrepresentable number throws the shared reading diagnostic, carrying the path.
+
+    /// <summary>The <c>Text</c> in the column named <paramref name="caption"/>; a non-text cell throws the reading diagnostic.</summary>
+    public string Text(string caption) => Read(Resolve(caption), CellKind.Text, CellReading.AsString, caption);
+
+    /// <summary>The <c>Decimal</c> in <paramref name="caption"/>; a non-number, or a number no decimal holds, throws.</summary>
+    public decimal Decimal(string caption) => Read(Resolve(caption), CellKind.Number, CellReading.AsDecimal, caption);
+
+    /// <summary>The whole-number <c>Integer</c> in <paramref name="caption"/>; a non-number, or a number that is not a whole 32-bit one, throws.</summary>
+    public int Integer(string caption) => Read(Resolve(caption), CellKind.Number, CellReading.AsInteger, caption);
+
+    /// <summary>The <c>Double</c> in <paramref name="caption"/>; a non-number cell throws.</summary>
+    public double Double(string caption) => Read(Resolve(caption), CellKind.Number, CellReading.AsDouble, caption);
+
+    /// <summary>The <c>Date</c> in <paramref name="caption"/>; a non-temporal cell throws.</summary>
+    public DateTime Date(string caption) => Read(Resolve(caption), CellKind.Temporal, CellReading.AsDateTime, caption);
+
+    /// <summary>The <c>Boolean</c> in <paramref name="caption"/>; a non-boolean cell throws.</summary>
+    public bool Boolean(string caption) => Read(Resolve(caption), CellKind.Boolean, CellReading.AsBoolean, caption);
+
+    /// <summary>The <c>Text</c> in the column at <paramref name="column"/>; a non-text cell throws.</summary>
+    public string Text(int column) => Read(Checked(column), CellKind.Text, CellReading.AsString, null);
+
+    /// <summary>The <c>Decimal</c> in the column at <paramref name="column"/>; a non-number, or a number no decimal holds, throws.</summary>
+    public decimal Decimal(int column) => Read(Checked(column), CellKind.Number, CellReading.AsDecimal, null);
+
+    /// <summary>The whole-number <c>Integer</c> in the column at <paramref name="column"/>; a non-number, or a number that is not a whole 32-bit one, throws.</summary>
+    public int Integer(int column) => Read(Checked(column), CellKind.Number, CellReading.AsInteger, null);
+
+    /// <summary>The <c>Double</c> in the column at <paramref name="column"/>; a non-number cell throws.</summary>
+    public double Double(int column) => Read(Checked(column), CellKind.Number, CellReading.AsDouble, null);
+
+    /// <summary>The <c>Date</c> in the column at <paramref name="column"/>; a non-temporal cell throws.</summary>
+    public DateTime Date(int column) => Read(Checked(column), CellKind.Temporal, CellReading.AsDateTime, null);
+
+    /// <summary>The <c>Boolean</c> in the column at <paramref name="column"/>; a non-boolean cell throws.</summary>
+    public bool Boolean(int column) => Read(Checked(column), CellKind.Boolean, CellReading.AsBoolean, null);
+
+    // The blank-tolerant twins — the row's spelling of the leaves' OrBlank. A blank cell reads as
+    // null with no complaint; a cell of the wrong kind still throws, because a blank says something
+    // about the data and a wrong kind says something about the format. Separate methods rather than
+    // an OrBlank() chained on, because a read returns a value, not a projection left to modify.
+
+    /// <summary>The <c>Text</c> in <paramref name="caption"/>, or null when the cell is blank.</summary>
+    public string? TextOrBlank(string caption) => ReadTextOrBlank(Resolve(caption), caption);
+
+    /// <summary>The <c>Decimal</c> in <paramref name="caption"/>, or null when the cell is blank.</summary>
+    public decimal? DecimalOrBlank(string caption) => ReadOrBlank(Resolve(caption), CellKind.Number, CellReading.AsDecimal, caption);
+
+    /// <summary>The whole-number <c>Integer</c> in <paramref name="caption"/>, or null when the cell is blank.</summary>
+    public int? IntegerOrBlank(string caption) => ReadOrBlank(Resolve(caption), CellKind.Number, CellReading.AsInteger, caption);
+
+    /// <summary>The <c>Double</c> in <paramref name="caption"/>, or null when the cell is blank.</summary>
+    public double? DoubleOrBlank(string caption) => ReadOrBlank(Resolve(caption), CellKind.Number, CellReading.AsDouble, caption);
+
+    /// <summary>The <c>Date</c> in <paramref name="caption"/>, or null when the cell is blank.</summary>
+    public DateTime? DateOrBlank(string caption) => ReadOrBlank(Resolve(caption), CellKind.Temporal, CellReading.AsDateTime, caption);
+
+    /// <summary>The <c>Boolean</c> in <paramref name="caption"/>, or null when the cell is blank.</summary>
+    public bool? BooleanOrBlank(string caption) => ReadOrBlank(Resolve(caption), CellKind.Boolean, CellReading.AsBoolean, caption);
+
+    /// <summary>The <c>Text</c> in the column at <paramref name="column"/>, or null when the cell is blank.</summary>
+    public string? TextOrBlank(int column) => ReadTextOrBlank(Checked(column), null);
+
+    /// <summary>The <c>Decimal</c> in the column at <paramref name="column"/>, or null when the cell is blank.</summary>
+    public decimal? DecimalOrBlank(int column) => ReadOrBlank(Checked(column), CellKind.Number, CellReading.AsDecimal, null);
+
+    /// <summary>The whole-number <c>Integer</c> in the column at <paramref name="column"/>, or null when the cell is blank.</summary>
+    public int? IntegerOrBlank(int column) => ReadOrBlank(Checked(column), CellKind.Number, CellReading.AsInteger, null);
+
+    /// <summary>The <c>Double</c> in the column at <paramref name="column"/>, or null when the cell is blank.</summary>
+    public double? DoubleOrBlank(int column) => ReadOrBlank(Checked(column), CellKind.Number, CellReading.AsDouble, null);
+
+    /// <summary>The <c>Date</c> in the column at <paramref name="column"/>, or null when the cell is blank.</summary>
+    public DateTime? DateOrBlank(int column) => ReadOrBlank(Checked(column), CellKind.Temporal, CellReading.AsDateTime, null);
+
+    /// <summary>The <c>Boolean</c> in the column at <paramref name="column"/>, or null when the cell is blank.</summary>
+    public bool? BooleanOrBlank(int column) => ReadOrBlank(Checked(column), CellKind.Boolean, CellReading.AsBoolean, null);
+
     private TableView Table { get; }
     private CellStrip Strip { get; }
     private ProjectionContext Context { get; }
@@ -322,6 +410,47 @@ namespace Unrect.Projections
       => Failure($"column '{columnName}' appears at indices {Join(indices)}; use the index.");
 
     private ProjectionException Failure(string problem) => Context.Failure(problem, Strip.Space);
+
+    /// <summary>A column index the caller supplied by number, checked as the indexer checks it.</summary>
+    private int Checked(int column)
+      => column >= 0 && column < Count
+        ? column
+        : throw Failure($"column index {column} is out of range; the table has {Count} columns.");
+
+    private T Read<T>(int column, CellKind kind, CellReader<T> read, string? caption)
+      => Convert(Strip[column], column, kind, read, caption);
+
+    private T? ReadOrBlank<T>(int column, CellKind kind, CellReader<T> read, string? caption) where T : struct
+    {
+      var cell = Strip[column];
+      return cell.IsBlank ? (T?)null : Convert(cell, column, kind, read, caption);
+    }
+
+    private string? ReadTextOrBlank(int column, string? caption)
+    {
+      var cell = Strip[column];
+      return cell.IsBlank ? null : Convert(cell, column, CellKind.Text, CellReading.AsString, caption);
+    }
+
+    /// <summary>
+    /// The kind assertion and the conversion, both spoken by <see cref="CellReading"/>. The caption
+    /// form names the column exactly as the <c>Table&lt;T&gt;</c> binder does; the index form has no
+    /// caption and speaks the bare leaf sentence, the A1 alone pinning the column. The address is a
+    /// thunk because it is only ever built on the failing path.
+    /// </summary>
+    private T Convert<T>(CellValue cell, int column, CellKind kind, CellReader<T> read, string? caption)
+    {
+      string At() => Strip.AddressOf(column).A1;
+      var subject = caption is null ? string.Empty : $"column '{caption}': ";
+
+      if (cell.Kind != kind)
+        throw Failure(subject + CellReading.WrongKind(kind, cell, At()));
+
+      if (!read(cell, At, out var value, out var conversion))
+        throw Failure(subject + conversion);
+
+      return value;
+    }
 
     private static string Join(IReadOnlyList<int> indices)
       => indices.Count == 1

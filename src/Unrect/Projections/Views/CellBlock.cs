@@ -25,17 +25,23 @@ namespace Unrect.Projections
     private IReadOnlyList<CellStrip>? _rows;
     private IReadOnlyList<CellStrip>? _columns;
 
-    internal CellBlock(ISpace space, Offset origin)
+    internal CellBlock(ISpace space, ProjectionContext context)
     {
       Space = space;
-      Origin = origin;
+      Context = context;
     }
 
     /// <summary>The block's own extent.</summary>
     public ISpace Space { get; }
 
+    /// <summary>
+    /// The context the block was projected in — where it sits, and the context its rows and columns
+    /// carry so a typed read of one reports a failure against the declaration that named the block.
+    /// </summary>
+    private ProjectionContext Context { get; }
+
     /// <summary>Where the block starts, relative to the space <c>Map</c> was called with.</summary>
-    private Offset Origin { get; }
+    private Offset Origin => Context.Origin;
 
     /// <summary>
     /// How many columns wide the block is. Free on an extent still being discovered: a width is
@@ -96,7 +102,7 @@ namespace Unrect.Projections
         throw new ArgumentOutOfRangeException(nameof(index), index, $"The block is {Height} rows tall.");
 
       var offset = new Offset(0, index);
-      return new CellStrip(Space.GetSubspace(offset, new Area(Width, 1)), Orientation.Horizontal, Origin + offset);
+      return new CellStrip(Space.GetSubspace(offset, new Area(Width, 1)), Orientation.Horizontal, Context.Advance(offset));
     }
 
     /// <summary>
@@ -110,7 +116,7 @@ namespace Unrect.Projections
         throw new ArgumentOutOfRangeException(nameof(index), index, $"The block is {Width} columns wide.");
 
       var offset = new Offset(index, 0);
-      return new CellStrip(Space.GetSubspace(offset, new Area(1, Height)), Orientation.Vertical, Origin + offset);
+      return new CellStrip(Space.GetSubspace(offset, new Area(1, Height)), Orientation.Vertical, Context.Advance(offset));
     }
 
     /// <summary>

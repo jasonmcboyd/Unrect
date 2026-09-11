@@ -19,6 +19,17 @@ namespace Unrect.Projections
   /// </summary>
   internal static class CellReading
   {
+    // The readers as values, one per kind, so a caller can pass "the reader for a decimal" to a
+    // generic helper — a method group cannot be inferred through a type parameter, a bound delegate
+    // can. The table binder boxes the same methods to CellReader&lt;object?&gt; instead; these are
+    // for the views, which want the reader's own type back.
+    public static readonly CellReader<string> AsString = ReadString;
+    public static readonly CellReader<decimal> AsDecimal = ReadDecimal;
+    public static readonly CellReader<int> AsInteger = ReadInteger;
+    public static readonly CellReader<double> AsDouble = ReadDouble;
+    public static readonly CellReader<DateTime> AsDateTime = ReadDateTime;
+    public static readonly CellReader<bool> AsBoolean = ReadBoolean;
+
     public static string WrongKind(CellKind expected, CellValue found, string at)
       => $"expected {expected} at {at}, found {Found(found)}";
 
