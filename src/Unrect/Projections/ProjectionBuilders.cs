@@ -183,6 +183,51 @@ namespace Unrect.Projections
     public static IProjection<T> Table<T>(int headerRows, Func<TableView, T> project)
       => Projection.Table(headerRows, project);
 
+    // The onBlank/blankRecord rungs — space-indifferent (the row is), so plain re-exports, exactly
+    // like the row-lambda and reflection rungs above. Present to keep the completeness covenant.
+
+    /// <inheritdoc cref="Projection.Table{T}(Func{TableRow, T}, BlankRowStrategy)"/>
+    /// <typeparam name="T">What one row reads.</typeparam>
+    /// <param name="project">The reading applied to each body row.</param>
+    /// <param name="onBlank">How a fully-blank body row is treated.</param>
+    public static IProjection<IReadOnlyList<T>> Table<T>(Func<TableRow, T> project, BlankRowStrategy onBlank)
+      => Projection.Table(project, onBlank);
+
+    /// <inheritdoc cref="Projection.Table{T}(int, Func{TableRow, T}, BlankRowStrategy)"/>
+    /// <typeparam name="T">What one row reads.</typeparam>
+    /// <param name="headerRows">How many rows to consume as the header, 0 or 1.</param>
+    /// <param name="project">The reading applied to each body row.</param>
+    /// <param name="onBlank">How a fully-blank body row is treated.</param>
+    public static IProjection<IReadOnlyList<T>> Table<T>(int headerRows, Func<TableRow, T> project, BlankRowStrategy onBlank)
+      => Projection.Table(headerRows, project, onBlank);
+
+    /// <inheritdoc cref="Projection.Table{T}(BlankRowStrategy)"/>
+    /// <typeparam name="T">What one record reads.</typeparam>
+    /// <param name="onBlank">How a fully-blank body row is treated.</param>
+    public static IProjection<IReadOnlyList<T>> Table<T>(BlankRowStrategy onBlank) => Projection.Table<T>(onBlank);
+
+    /// <inheritdoc cref="Projection.Table{T}(Func{TableBinding{T}, TableBinding{T}}, BlankRowStrategy)"/>
+    /// <typeparam name="T">What one record reads.</typeparam>
+    /// <param name="bind">The per-member declarations applied to what reflection would have written.</param>
+    /// <param name="onBlank">How a fully-blank body row is treated.</param>
+    public static IProjection<IReadOnlyList<T>> Table<T>(Func<TableBinding<T>, TableBinding<T>> bind, BlankRowStrategy onBlank)
+      => Projection.Table(bind, onBlank);
+
+    /// <inheritdoc cref="Projection.Table{T}(Func{TableRow, T}, Func{TableRow, T})"/>
+    /// <typeparam name="T">What one row reads.</typeparam>
+    /// <param name="project">The reading applied to each non-blank body row.</param>
+    /// <param name="blankRecord">The record produced for a fully-blank body row.</param>
+    public static IProjection<IReadOnlyList<T>> Table<T>(Func<TableRow, T> project, Func<TableRow, T> blankRecord)
+      => Projection.Table(project, blankRecord);
+
+    /// <inheritdoc cref="Projection.Table{T}(int, Func{TableRow, T}, Func{TableRow, T})"/>
+    /// <typeparam name="T">What one row reads.</typeparam>
+    /// <param name="headerRows">How many rows to consume as the header, 0 or 1.</param>
+    /// <param name="project">The reading applied to each non-blank body row.</param>
+    /// <param name="blankRecord">The record produced for a fully-blank body row.</param>
+    public static IProjection<IReadOnlyList<T>> Table<T>(int headerRows, Func<TableRow, T> project, Func<TableRow, T> blankRecord)
+      => Projection.Table(headerRows, project, blankRecord);
+
     // --- Labels — the scope-introducer primitives ----------------------------------------------
     //
     // Re-exported at their plain type. ColumnLabels reads a header and Record reads a row — both

@@ -139,6 +139,64 @@ namespace Unrect.Projections
       }
     }
 
+    /// <summary>
+    /// The body rows that become records under the four preset blank-row policies
+    /// (Stop/Skip/Fault/Tolerate). Under <see cref="BlankRowStrategy.Stop"/> the extent already
+    /// excludes blank rows, so this delegates verbatim to <see cref="StreamRows"/> — no blank test,
+    /// no filter, byte-identical to the default path. The other policies walk to the enclosing edge
+    /// and act on each fully-blank row: Fault throws terminally, Tolerate records an Info and omits
+    /// the record, Skip simply omits it. Project is not here — it injects records and is handled by
+    /// the rung through <see cref="StreamClassifiedRows"/>.
+    /// </summary>
+    internal IEnumerable<TableRow> StreamBodyRows(BlankRowStrategy onBlank)
+    {
+      if (onBlank.IsStop)
+      {
+        foreach (var row in StreamRows())
+          yield return row;
+
+        yield break;
+      }
+
+      foreach (var row in StreamRows())
+      {
+        if (!IsBlankRow(row))
+        {
+          yield return row;
+          continue;
+        }
+
+        if (onBlank.IsFault)
+          throw Fault($"the row at {row.Location.A1} is blank, which is not allowed here");
+
+        if (onBlank.Diagnostic is DiagnosticSeverity severity)
+          Context.Report(severity, Failure($"the row at {row.Location.A1} is blank; it was skipped"));
+
+        // Skip and Tolerate both omit the record and keep reading.
+      }
+    }
+
+    /// <summary>
+    /// Every body row to the enclosing edge, each tagged blank or not — the source the Project
+    /// (<c>blankRecord</c>) rung maps: a blank row yields its blank record, a non-blank row its
+    /// normal one.
+    /// </summary>
+    internal IEnumerable<(TableRow Row, bool IsBlank)> StreamClassifiedRows()
+    {
+      foreach (var row in StreamRows())
+        yield return (row, IsBlankRow(row));
+    }
+
+    /// <summary>A fully-blank row: every cell <see cref="CellValue.IsBlank"/> — the complement of "any value".</summary>
+    private static bool IsBlankRow(TableRow row)
+    {
+      for (var column = 0; column < row.Count; column++)
+        if (!row.Cells[column].IsBlank)
+          return false;
+
+      return true;
+    }
+
     private int HeaderRows { get; }
 
     /// <summary>

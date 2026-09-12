@@ -178,6 +178,29 @@ namespace Unrect.Tests.Streaming
     };
 
     /// <summary>
+    /// A header over a body carrying an interior blank row and a trailing one, with a totals landmark
+    /// below. The onBlank: Skip table skips the interior blank, runs to the landmark, and leaves the
+    /// totals row undescribed — so both doors have a diagnostic to agree on. 2 columns by 6 rows.
+    /// <code>
+    ///   1  Client   Amount
+    ///   2  Alpha    100
+    ///   3
+    ///   4  Gamma    300
+    ///   5
+    ///   6  Total    400
+    /// </code>
+    /// </summary>
+    private static object?[,] Gapped() => new object?[,]
+    {
+      { "Client", "Amount" },
+      { "Alpha", 100 },
+      { null, null },
+      { "Gamma", 300 },
+      { null, null },
+      { "Total", 400 },
+    };
+
+    /// <summary>
     /// A ledger long enough that a small window cannot hold it: a caption, a header, 37 records, and
     /// a terminating landmark on the last row. 2 columns by 40 rows.
     /// </summary>
@@ -207,6 +230,7 @@ namespace Unrect.Tests.Streaming
       "drift" => Drift(),
       "whitespace" => Whitespace(),
       "valueless" => Valueless(),
+      "gapped" => Gapped(),
       "tall" => Tall(),
 
       _ => throw new ArgumentOutOfRangeException(nameof(name), name, "No such grid."),
@@ -292,6 +316,14 @@ namespace Unrect.Tests.Streaming
         Until(RowContaining("Totals")).Heading("Quarterly Report").Of(Table<Entry>()),
         "report"),
 
+      // The onBlank knob across the doors: a Skip table (run-to-edge, non-self-bounding) bounded by
+      // a landmark. Both doors must skip the interior blank, read the content past it, consume the
+      // bound in full, and leave the totals row for the unconsumed-space Info to notice — the same
+      // value, extent and diagnostics through either.
+      "a bounded skip table over interior blanks" => Scenario.Of(
+        Until(RowContaining("Total")).Of(Table<Entry>(BlankRowStrategy.Skip)),
+        "gapped"),
+
       // Repetition: two blocks with a blank separator between them, and a memo column the
       // declaration never reaches, so the reading is complete down the sheet and short across it.
       "a repeat of blocks" => Scenario.Of(
@@ -358,6 +390,7 @@ namespace Unrect.Tests.Streaming
       "the record-projection rung",
       "the dictionary rung",
       "a table bounded by a landmark",
+      "a bounded skip table over interior blanks",
       "a repeat of blocks",
       "a repeat bounded by an absent landmark",
       "a repeat meeting a line it cannot read",
@@ -431,7 +464,7 @@ namespace Unrect.Tests.Streaming
         .Select(name => (Name: name, Observation: Case(name).Read(SpreadsheetSpace.Create(Fixture(Case(name).Grid), SheetName))))
         .ToList();
 
-      Assert.Equal(21, observed.Count);
+      Assert.Equal(22, observed.Count);
 
       foreach (var (name, observation) in observed)
         AssertNonVacuous(name, observation);
@@ -439,7 +472,7 @@ namespace Unrect.Tests.Streaming
       var failures = observed.Where(entry => entry.Observation.Failure is not null).ToList();
 
       Assert.Equal(6, failures.Count);
-      Assert.Equal(15, observed.Count - failures.Count);
+      Assert.Equal(16, observed.Count - failures.Count);
       Assert.Equal(6, failures.Select(entry => entry.Observation.Failure).Distinct().Count());
 
       // Both severities a successful parse can raise are represented, so the diagnostic half of L3 is

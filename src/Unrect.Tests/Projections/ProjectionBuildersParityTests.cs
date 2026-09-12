@@ -39,8 +39,8 @@ namespace Unrect.Tests.Projections
   /// instead of the caller's, and a factory that is added to the vocabulary and never re-exported.
   /// There is a section for each.
   /// <para>
-  /// <b>Section 1 — value parity, mechanically.</b> Three theories cover all 78 members: one for the
-  /// 33 that return a projection, read through the <see cref="Observations"/> harness at L3 over
+  /// <b>Section 1 — value parity, mechanically.</b> Three theories cover all 84 members: one for the
+  /// 39 that return a projection, read through the <see cref="Observations"/> harness at L3 over
   /// three grids (a well-formed ledger, one whose kinds are all wrong, and a sparse one); one
   /// for the 25 that hand back a strategy, a landmark or a <see cref="Unrect.Projections.Field"/>, compared at the
   /// strategy level — the selection, offset or area each computes over the same grids; and one for
@@ -226,6 +226,27 @@ namespace Unrect.Tests.Projections
         ["Table<T>(int, IProjection<TSpace, T>, string)"] = Reading(
           () => { var amountRow = Right(1).Of(Decimal()); return B.Table(headerRows: 1, eachRow: amountRow); },
           () => { var amountRow = Right(1).Of(Decimal()); return Table(headerRows: 1, eachRow: amountRow); }),
+        // The six onBlank/blankRecord Table rungs. They forward one-to-one exactly as the Stop-path
+        // rungs above do, so a Skip strategy (run-to-edge, non-self-bounding) reads identically
+        // through both spellings over every grid; the blankRecord rungs pass a lambda where the
+        // onBlank ones pass a strategy value, which is what tells the two Table/2 (and Table/3) pairs
+        // apart at the call site.
+        ["Table<T>(BlankRowStrategy)"] = Reading(() => B.Table<Pair>(BlankRowStrategy.Skip), () => Table<Pair>(BlankRowStrategy.Skip)),
+        ["Table<T>(Func<TableBinding<T>, TableBinding<T>>, BlankRowStrategy)"] = Reading(
+          () => B.Table<Pair>(bind => bind.Column(p => p.Amount, "Amount"), BlankRowStrategy.Skip),
+          () => Table<Pair>(bind => bind.Column(p => p.Amount, "Amount"), BlankRowStrategy.Skip)),
+        ["Table<T>(Func<TableRow, T>, BlankRowStrategy)"] = Reading(
+          () => B.Table((TableRow r) => r.Count, BlankRowStrategy.Skip),
+          () => Table((TableRow r) => r.Count, BlankRowStrategy.Skip)),
+        ["Table<T>(Func<TableRow, T>, Func<TableRow, T>)"] = Reading(
+          () => B.Table((TableRow r) => r.Count, blankRecord: _ => -1),
+          () => Table((TableRow r) => r.Count, blankRecord: _ => -1)),
+        ["Table<T>(int, Func<TableRow, T>, BlankRowStrategy)"] = Reading(
+          () => B.Table(1, (TableRow r) => r.Count, BlankRowStrategy.Skip),
+          () => Table(1, (TableRow r) => r.Count, BlankRowStrategy.Skip)),
+        ["Table<T>(int, Func<TableRow, T>, Func<TableRow, T>)"] = Reading(
+          () => B.Table(1, (TableRow r) => r.Count, blankRecord: _ => -1),
+          () => Table(1, (TableRow r) => r.Count, blankRecord: _ => -1)),
         ["Text()"] = Reading(() => B.Text(), () => Text()),
         ["VerticalFlow<T>(Layout<TSpace, T>)"] = Reading(
           () => B.VerticalFlow(v => $"{v.Next(Text())}/{v.Next(Text())}"),

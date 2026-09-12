@@ -179,6 +179,16 @@ namespace Unrect.Projections
     public static IProjection<IReadOnlyList<T>> Table<T>() => TypedRows<T>(null);
 
     /// <summary>
+    /// <see cref="Table{T}()"/> with a blank-row strategy: <paramref name="onBlank"/> says how a
+    /// fully-blank body row is treated — <c>Stop</c> (the default, self-bounding), <c>Skip</c>,
+    /// <c>Fault</c>, or <c>Tolerate</c>. Every non-<c>Stop</c> policy is not self-bounding, so the
+    /// table runs to the enclosing edge (declare <c>Until</c> or a count to bound it sooner).
+    /// </summary>
+    /// <typeparam name="T">What one record reads.</typeparam>
+    /// <param name="onBlank">How a fully-blank body row is treated.</param>
+    public static IProjection<IReadOnlyList<T>> Table<T>(BlankRowStrategy onBlank) => TypedRows<T>(null, onBlank);
+
+    /// <summary>
     /// <see cref="Table{T}()"/> with per-member declarations: <c>Column</c> for a caption the
     /// comparer would not have found, <c>Ignore</c> for a member this table does not carry.
     /// <code>
@@ -190,6 +200,20 @@ namespace Unrect.Projections
     public static IProjection<IReadOnlyList<T>> Table<T>(Func<TableBinding<T>, TableBinding<T>> bind)
       => TypedRows((bind ?? throw new ArgumentNullException(nameof(bind)))(new TableBinding<T>())
         ?? throw new ArgumentException("The binding lambda returned null.", nameof(bind)));
+
+    /// <summary>
+    /// <see cref="Table{T}(Func{TableBinding{T}, TableBinding{T}})"/> with a blank-row strategy:
+    /// <paramref name="onBlank"/> says how a fully-blank body row is treated — <c>Stop</c> (the
+    /// default, self-bounding), <c>Skip</c>, <c>Fault</c>, or <c>Tolerate</c>. Every non-<c>Stop</c>
+    /// policy is not self-bounding, so the table runs to the enclosing edge (declare <c>Until</c> or
+    /// a count to bound it sooner).
+    /// </summary>
+    /// <typeparam name="T">What one record reads.</typeparam>
+    /// <param name="bind">The per-member declarations applied to what reflection would have written.</param>
+    /// <param name="onBlank">How a fully-blank body row is treated.</param>
+    public static IProjection<IReadOnlyList<T>> Table<T>(Func<TableBinding<T>, TableBinding<T>> bind, BlankRowStrategy onBlank)
+      => TypedRows((bind ?? throw new ArgumentNullException(nameof(bind)))(new TableBinding<T>())
+        ?? throw new ArgumentException("The binding lambda returned null.", nameof(bind)), onBlank);
 
     /// <summary>
     /// A table whose record projection is written against <em>this file's</em> captions:
@@ -338,14 +362,14 @@ namespace Unrect.Projections
         eachRow);
     }
 
-    private static IProjection<IReadOnlyList<T>> TypedRows<T>(TableBinding<T>? binding)
+    private static IProjection<IReadOnlyList<T>> TypedRows<T>(TableBinding<T>? binding, BlankRowStrategy onBlank = default)
     {
       var plan = RowBinding<T>.Create(binding);
 
       return new TableProjection<IReadOnlyList<T>>(
         1,
-        table => BindRows(table, plan),
-        TablePlacement(),
+        table => BindRows(table, plan, onBlank),
+        TablePlacement(onBlank),
         $"Table<{typeof(T).Name}>");
     }
 
@@ -393,6 +417,73 @@ namespace Unrect.Projections
         ValidateHeaderRows(headerRows),
         table => (IReadOnlyList<T>)table.StreamRows().Select(project).ToList(),
         TablePlacement(),
+        "Table");
+    }
+
+    /// <summary>
+    /// <inheritdoc cref="Table{T}(Func{TableRow, T})"/> The <paramref name="onBlank"/> strategy says
+    /// how a fully-blank body row is treated: <c>Stop</c> (the default, self-bounding), <c>Skip</c>,
+    /// <c>Fault</c>, or <c>Tolerate</c>. Every non-<c>Stop</c> policy is not self-bounding, so the
+    /// table runs to the enclosing edge (declare <c>Until</c> or a count to bound it sooner).
+    /// </summary>
+    /// <typeparam name="T">What one row reads.</typeparam>
+    /// <param name="project">The reading applied to each body row.</param>
+    /// <param name="onBlank">How a fully-blank body row is treated.</param>
+    public static IProjection<IReadOnlyList<T>> Table<T>(Func<TableRow, T> project, BlankRowStrategy onBlank)
+      => Table(1, project, onBlank);
+
+    /// <inheritdoc cref="Table{T}(Func{TableRow, T}, BlankRowStrategy)"/>
+    /// <typeparam name="T">What one row reads.</typeparam>
+    /// <param name="headerRows">How many rows to consume as the header, 0 or 1.</param>
+    /// <param name="project">The reading applied to each body row.</param>
+    /// <param name="onBlank">How a fully-blank body row is treated.</param>
+    public static IProjection<IReadOnlyList<T>> Table<T>(int headerRows, Func<TableRow, T> project, BlankRowStrategy onBlank)
+    {
+      if (project is null)
+        throw new ArgumentNullException(nameof(project));
+
+      if (onBlank.IsStop)
+        return Table(headerRows, project);
+
+      return new TableProjection<IReadOnlyList<T>>(
+        ValidateHeaderRows(headerRows),
+        table => (IReadOnlyList<T>)table.StreamBodyRows(onBlank).Select(project).ToList(),
+        TablePlacement(onBlank),
+        "Table");
+    }
+
+    /// <summary>
+    /// <inheritdoc cref="Table{T}(Func{TableRow, T})"/> A fully-blank body row is projected to a
+    /// record by <paramref name="blankRecord"/> rather than skipped — where <c>Skip</c> omits an
+    /// entry, this includes one, usually built from the row's <see cref="TableRow.Index"/>. The
+    /// table runs to the enclosing edge (declare <c>Until</c> or a count to bound it sooner).
+    /// </summary>
+    /// <typeparam name="T">What one row reads.</typeparam>
+    /// <param name="project">The reading applied to each non-blank body row.</param>
+    /// <param name="blankRecord">The record produced for a fully-blank body row.</param>
+    public static IProjection<IReadOnlyList<T>> Table<T>(Func<TableRow, T> project, Func<TableRow, T> blankRecord)
+      => Table(1, project, blankRecord);
+
+    /// <inheritdoc cref="Table{T}(Func{TableRow, T}, Func{TableRow, T})"/>
+    /// <typeparam name="T">What one row reads.</typeparam>
+    /// <param name="headerRows">How many rows to consume as the header, 0 or 1.</param>
+    /// <param name="project">The reading applied to each non-blank body row.</param>
+    /// <param name="blankRecord">The record produced for a fully-blank body row.</param>
+    public static IProjection<IReadOnlyList<T>> Table<T>(int headerRows, Func<TableRow, T> project, Func<TableRow, T> blankRecord)
+    {
+      if (project is null)
+        throw new ArgumentNullException(nameof(project));
+
+      if (blankRecord is null)
+        throw new ArgumentNullException(nameof(blankRecord));
+
+      // Project continues past blanks, so it needs the run-to-edge extent; any non-Stop strategy
+      // selects ToEdgeBlock().
+      return new TableProjection<IReadOnlyList<T>>(
+        ValidateHeaderRows(headerRows),
+        table => (IReadOnlyList<T>)table.StreamClassifiedRows()
+          .Select(r => r.IsBlank ? blankRecord(r.Row) : project(r.Row)).ToList(),
+        TablePlacement(BlankRowStrategy.Skip),
         "Table");
     }
 
@@ -747,9 +838,26 @@ namespace Unrect.Projections
     private static int NotNegative(int count, string parameter)
       => count >= 0 ? count : throw new ArgumentOutOfRangeException(parameter, count, "An offset cannot be negative.");
 
-    private static Placement TablePlacement() => new Placement(OffsetStrategies.SkipBlankRows(), DiscoveredBlock());
+    private static Placement TablePlacement() => TablePlacement(BlankRowStrategy.Stop);
+
+    /// <summary>
+    /// The table body's placement, its height rule chosen by <paramref name="onBlank"/>:
+    /// <see cref="DiscoveredBlock"/> for <c>Stop</c> (self-bounding, today's behaviour exactly), the
+    /// run-to-edge <see cref="ToEdgeBlock"/> for every non-self-bounding policy. Both are incremental
+    /// area strategies, so the engine defers both lazily — the walker peeks one row at a time either
+    /// way.
+    /// </summary>
+    private static Placement TablePlacement(BlankRowStrategy onBlank)
+      => new Placement(OffsetStrategies.SkipBlankRows(), onBlank.IsStop ? DiscoveredBlock() : ToEdgeBlock());
 
     private static IAreaStrategy DiscoveredBlock() => RowStrategies.TakeRowsWhileAnyValue().TakeColumnsWhileAnyValue();
+
+    /// <summary>
+    /// The same width rule as <see cref="DiscoveredBlock"/>, but the height runs to the enclosing
+    /// edge instead of stopping at the first blank row — the extent a non-self-bounding
+    /// <see cref="BlankRowStrategy"/> needs so the walker can see and act on interior blank rows.
+    /// </summary>
+    private static IAreaStrategy ToEdgeBlock() => RowStrategies.AllRows().TakeColumnsWhileAnyValue();
 
     private static int ValidateHeaderRows(int headerRows)
       => headerRows == 0 || headerRows == 1

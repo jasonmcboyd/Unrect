@@ -107,6 +107,16 @@ Principle: **row-wise boundaries are lazy (along the streaming axis); column-wis
   usually all a blank row has to offer: `onBlank: Project((TableRow b) => new Spacer(b.Index))`.
 - **Boundary is a pipeline stage** (`Until("GrandTotal")`), needed only for the non-self-bounding
   policies (Skip/Fault/Tolerate/Project); `Stop` needs none.
+  - **No boundary declared → run to edge (RESOLVED 2026-09-12, owner).** A non-self-bounding policy
+    without a boundary is NOT a misuse — the table just runs until *something outward* forces a stop:
+    the parent's bound, and failing that the outermost extent (for a spreadsheet, the sheet's used
+    rows). "Unbounded" = "run until forced to stop; it resolves itself." So `Table<SomeEntity>()` on a
+    clean top-left sheet, no offset/size/boundary touched, parses the whole sheet in one line. (With the
+    default `Stop`, a clean no-interior-blank table reaches that same end at the first fully-blank row
+    past the data, so the one-liner behaves identically; the boundary only matters once interior blanks
+    must be *skipped* rather than *stopped on*.) Mechanically: the non-self-bounding height is
+    "all remaining rows to the enclosing edge" (not `TakeRowsWhileAnyValue`, which is `Stop`), still
+    lazy on the streaming door — the walker peeks each row once and applies the policy.
 - **`Table`'s defaults are sensible but OVERRIDABLE** — the resolution of "extent-agnostic vs
   convenient": the sin was *hardcoded* defaults, not defaults per se.
   - offset: **TWO node-type defaults (RESOLVED 2026-09-12 — supersedes the 2026-09-11 "no baked default"):**

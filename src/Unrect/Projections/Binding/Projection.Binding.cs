@@ -14,7 +14,7 @@ namespace Unrect.Projections
   /// </summary>
   public static partial class Projection
   {
-    private static IReadOnlyList<T> BindRows<T>(TableView table, RowBinding<T> plan)
+    private static IReadOnlyList<T> BindRows<T>(TableView table, RowBinding<T> plan, BlankRowStrategy onBlank = default)
     {
       var columns = new int[plan.Members.Count];
       var unbound = new List<string>();
@@ -61,7 +61,10 @@ namespace Unrect.Projections
       var rows = new List<T>();
       var values = new object?[plan.Members.Count];
 
-      foreach (var row in table.StreamRows())
+      // Under Stop the source is literally StreamRows() — byte-identical, blank test and all skipped.
+      var source = onBlank.IsStop ? table.StreamRows() : table.StreamBodyRows(onBlank);
+
+      foreach (var row in source)
       {
         for (var member = 0; member < plan.Members.Count; member++)
           values[member] = ReadCell(row, columns[member], plan.Members[member], table);
