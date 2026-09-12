@@ -841,14 +841,20 @@ namespace Unrect.Projections
     private static Placement TablePlacement() => TablePlacement(BlankRowStrategy.Stop);
 
     /// <summary>
-    /// The table body's placement, its height rule chosen by <paramref name="onBlank"/>:
-    /// <see cref="DiscoveredBlock"/> for <c>Stop</c> (self-bounding, today's behaviour exactly), the
-    /// run-to-edge <see cref="ToEdgeBlock"/> for every non-self-bounding policy. Both are incremental
-    /// area strategies, so the engine defers both lazily — the walker peeks one row at a time either
-    /// way.
+    /// The table body's placement. The offset is <see cref="OffsetStrategies.SkipToFirstNonBlankCell"/>:
+    /// a table is a self-contained region leaf, so it self-locates its content corner (down to the first
+    /// non-blank row, across to its first non-blank cell). This is orphaning-safe — a leaf has no children
+    /// to orphan, so the column-skip that is fatal at the composite level is confined to the table's own
+    /// full-width band (see <c>docs/design/table-extent-and-blank-rows.md</c>, node-type placement
+    /// defaults). Identical to <c>SkipBlankRows()</c> for a top-left-aligned table; it additionally moves
+    /// to the first non-blank column when the content starts past column 0. The height rule is chosen by
+    /// <paramref name="onBlank"/>: <see cref="DiscoveredBlock"/> for <c>Stop</c> (self-bounding, today's
+    /// behaviour exactly), the run-to-edge <see cref="ToEdgeBlock"/> for every non-self-bounding policy.
+    /// Both are incremental area strategies, so the engine defers both lazily — the walker peeks one row
+    /// at a time either way.
     /// </summary>
     private static Placement TablePlacement(BlankRowStrategy onBlank)
-      => new Placement(OffsetStrategies.SkipBlankRows(), onBlank.IsStop ? DiscoveredBlock() : ToEdgeBlock());
+      => new Placement(OffsetStrategies.SkipToFirstNonBlankCell(), onBlank.IsStop ? DiscoveredBlock() : ToEdgeBlock());
 
     private static IAreaStrategy DiscoveredBlock() => RowStrategies.TakeRowsWhileAnyValue().TakeColumnsWhileAnyValue();
 

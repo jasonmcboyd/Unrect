@@ -209,10 +209,12 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void AMovementComposesWithAProjectionsDefaultOffset()
+    public void AMovementReplacesAProjectionsDefaultOffset()
     {
-      // A Table already skips the blank rows in front of it; Down(1) carries on one row further.
-      // Were the modifier to replace, it would land on the blank row's successor instead.
+      // The law (spec §7): a pipeline offset REPLACES the shape's own constructor default; it does
+      // not compose onto it. A Table's default self-locates onto the first non-blank cell
+      // (SkipToFirstNonBlankCell); a bare Down(1) discards that self-locate and lands one row down
+      // from the origin — the header row here, not the data row a composing spelling would reach.
       var space = Mixed(new object?[,]
       {
         { null, null },
@@ -221,11 +223,100 @@ namespace Unrect.Tests.Projections
         { "Beta", "20" },
       });
 
+      // The default self-locates past the leading blank row onto the header.
       Assert.Equal(new[] { "Investor", "Amount" }, Table(t => t.ColumnNames).Map(space));
-      Assert.Equal(new[] { "Acme", "10" }, Down(1).Of(Table(t => t.ColumnNames)).Map(space));
 
-      // ...and OffsetBy discards the default outright, landing exactly one row down.
+      // Down(1) REPLACES the self-locate default: row 1 from the origin is the header, not the data
+      // row (["Acme", "10"]) the old composing semantics reached.
+      Assert.Equal(new[] { "Investor", "Amount" }, Down(1).Of(Table(t => t.ColumnNames)).Map(space));
+
+      // ...and OffsetBy discards the default outright likewise, landing exactly one row down.
       Assert.Equal(new[] { "Investor", "Amount" }, OffsetBy(SkipRows(1)).Of(Table(t => t.ColumnNames)).Map(space));
+
+      // The other half of the law: composition happens only when offsets are explicitly chained in
+      // the pipeline. Making the self-locate explicit marks the offset declared, so Down(1) then
+      // COMPOSES onto it — self-locate to the header, then one row down to the first data row.
+      Assert.Equal(
+        new[] { "Acme", "10" },
+        SkipToFirstNonBlankCell().Down(1).Of(Table(t => t.ColumnNames)).Map(space));
+    }
+
+    [Fact]
+    public void TheReplaceLaw_OnTheColumnAxis_TheThreeCanonicalScenarios()
+    {
+      // Spec §7's three canonical scenarios, on the column axis so replace and compose land on
+      // different columns. Content is indented one column (the leftmost column is entirely blank),
+      // so a bare Right(1) that REPLACES the self-locate reads a different column set than one that
+      // COMPOSES onto it.
+      var space = Mixed(new object?[,]
+      {
+        { null, "Investor", "Amount" },
+        { null, "Acme", 10 },
+        { null, "Beta", 20 },
+      });
+
+      // (1) Table() with no pipeline offset: SkipToFirstNonBlankCell self-locates onto the first
+      // content cell (column 1), so the discovered block reads both content columns.
+      Assert.Equal(new[] { "Investor", "Amount" }, Table(t => t.ColumnNames).Map(space));
+
+      // (2) Right(1).Of(Table()) REPLACES the default: the table's left edge is at column 1, NOT
+      // self-locate + 1. It reads the same two columns as the default. Were Right(1) to compose onto
+      // the self-locate (the old semantics), the origin would be column 2 and the read would be the
+      // single column ["Amount"].
+      Assert.Equal(new[] { "Investor", "Amount" }, Right(1).Of(Table(t => t.ColumnNames)).Map(space));
+
+      // (3) SkipToFirstNonBlankCell().Right(1).Of(Table()) COMPOSES: the explicit skip replaces the
+      // default and marks the offset declared, then Right(1) composes onto it — self-locate to
+      // column 1, then one column right to column 2 — reading the single column ["Amount"].
+      Assert.Equal(
+        new[] { "Amount" },
+        SkipToFirstNonBlankCell().Right(1).Of(Table(t => t.ColumnNames)).Map(space));
+    }
+
+    [Fact]
+    public void TheReplaceLaw_HoldsUniformlyForEveryShapeWithAConstructorDefault()
+    {
+      // Spec §7: "The law applies to EVERY one of them uniformly." Exactly three shapes carry a
+      // non-trivial constructor default — Table (SkipToFirstNonBlankCell), Caption (To(RowContaining))
+      // and Fields (Then(To(ColumnWhere), To(RowWhere))) — and all three obey the one rule: a bare
+      // declared movement REPLACES the default and starts the chain from the origin. Pinned side by
+      // side here so the "uniform across defaulted shapes" claim lives in one place (Caption and
+      // Fields each also carry their own pin in their own suites).
+      //
+      // Every fixture is DISCRIMINATING: row 0 is junk/blank so the default self-locates to row 1,
+      // where a COMPOSING Down(1) would reach row 2 while a REPLACING Down(1) lands at row 1 from the
+      // origin. The three read different content under the two semantics, so none can pass under both.
+
+      // Table: the default self-locates onto the first content row (the header at row 1). Down(1)
+      // replaces -> row 1 -> the header binds as the first content row; a compose would reach row 2
+      // and bind ["Acme", "10"] as the header.
+      var tableSheet = Mixed(new object?[,]
+      {
+        { null, null },
+        { "Investor", "Amount" },
+        { "Acme", "10" },
+      });
+      Assert.Equal(new[] { "Investor", "Amount" }, Down(1).Of(Table(t => t.ColumnNames)).Map(tableSheet));
+
+      // Caption: the default seeks the row containing its text (row 1). Down(1) replaces -> asserts
+      // at row 1 -> the verbatim "  EIN:  "; a compose would reach row 2 and yield the verbatim "EIN:".
+      var captionSheet = Mixed(new object?[,]
+      {
+        { "junk" },
+        { "  EIN:  " },
+        { "EIN:" },
+      });
+      Assert.Equal("  EIN:  ", Down(1).Of(Caption("ein:")).Map(captionSheet));
+
+      // Fields: the default self-anchors on the first label (row 1). Down(1) replaces -> reads the
+      // row-1 card ("target"); a compose would anchor to row 1 then reach row 2 ("other").
+      var fieldsSheet = Mixed(new object?[,]
+      {
+        { null, null },
+        { "EIN:", "target" },
+        { "EIN:", "other" },
+      });
+      Assert.Equal("target", Down(1).Of(Fields(Field("EIN"))).Map(fieldsSheet)["EIN"].GetString());
     }
 
     // --- Saying "no movement" out loud says nothing -----------------------------------------------------

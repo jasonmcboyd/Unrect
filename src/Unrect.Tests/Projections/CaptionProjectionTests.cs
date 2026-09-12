@@ -61,6 +61,34 @@ namespace Unrect.Tests.Projections
       Assert.Equal("  EIN:  |a", read);
     }
 
+    [Fact]
+    public void ABareMovementReplacesTheSeek()
+    {
+      // The uniform offset-replace law (docs/design/node-type-placement-defaults-spec.md §7/§5.4):
+      // a bare declared movement REPLACES a shape's own constructor default and starts from the
+      // origin. Caption's default seeks the row containing its text (To(RowContaining(text))), so a
+      // bare Down(1) discards the seek and lands one row down from the origin — where the caption
+      // then asserts the row it landed on. (ACaptionPlacedSomewhereElse_AssertsWhereItLanded pins the
+      // strategy-door replace via OffsetBy; this is its bare-movement twin, and the positive case
+      // where the landed row does match.)
+      //
+      // The fixture is DISCRIMINATING — the caption text is NOT at row 0, and the two matching rows
+      // carry DIFFERENT verbatim spellings so replace and compose yield different strings:
+      //   * REPLACE (the law): Down(1) lands at origin + 1 = row 1, whose verbatim text is "  EIN:  ".
+      //   * COMPOSE (the retired semantics): the seek would find the first matching row (row 1), then
+      //     Down(1) would carry on to row 2, whose verbatim text is "EIN:".
+      var space = Mixed(new object?[,]
+      {
+        { "junk" },
+        { "  EIN:  " },
+        { "EIN:" },
+      });
+
+      // Caption yields the file's text verbatim, so the two semantics produce different strings — the
+      // pin is non-vacuous: a green here is the replace law, not a coincidence.
+      Assert.Equal("  EIN:  ", Down(1).Of(Caption("ein:")).Map(space));
+    }
+
     // --- The value ---------------------------------------------------------------------------------------
 
     [Fact]

@@ -136,10 +136,10 @@ namespace Unrect.Projections
     public static OffsetStage SkipEmptyRowsAndColumns() => AfterBlankRows().AfterBlankColumns();
 
     /// <summary>
-    /// Opens a pipeline whose section starts <paramref name="rows"/> rows down. Movements compose onto
-    /// whatever offset follows, so <c>Down(1).On(mark)</c> is refused (an anchor is a root) but
-    /// <c>On(mark).Down(1)</c> and <c>Down(2).Table&lt;T&gt;()</c> — past the table's blank rows, then
-    /// two more — read cumulatively.
+    /// Opens a pipeline whose section starts <paramref name="rows"/> rows down. A movement composes onto
+    /// an offset an earlier stage declared, so <c>Down(1).On(mark)</c> is refused (an anchor is a root)
+    /// while <c>On(mark).Down(1)</c> reads cumulatively; a movement with nothing before it —
+    /// <c>Down(2).Of(Table())</c> — replaces the shape's own default rather than composing onto it.
     /// </summary>
     /// <param name="rows">How far down.</param>
     public static OffsetStage Down(int rows) => Enter(Step.Down(rows));

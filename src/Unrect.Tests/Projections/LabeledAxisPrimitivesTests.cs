@@ -30,7 +30,7 @@ namespace Unrect.Tests.Projections
     //
     // Exactly the composition docs/design/labeled-axes-and-context.md gives: a VerticalFlow of
     // ColumnLabels then WithColumnLabels(columns, VerticalRepeat(Record(record))). It is dressed with
-    // the built-in table's own placement — SkipBlankRows over a discovered block — and its "Table"
+    // the built-in table's own placement — skip-to-first-non-blank-cell over a discovered block — and its "Table"
     // description, through the internal FlowProjection, which is precisely what step 3 will do when
     // the bespoke path is deleted. Constructed in the test project because the primitives it composes
     // are public and the assembling FlowProjection/Placement are reachable through InternalsVisibleTo.
@@ -48,13 +48,14 @@ namespace Unrect.Tests.Projections
         "Table");
 
     /// <summary>
-    /// A hand copy of the private <c>Projection.TablePlacement()</c> — skip leading blank rows, then a
-    /// block of leading rows-then-columns while any cell carries a value. Copied rather than reached
-    /// because it is private to the vocabulary; the two are pinned equal by the differential below,
-    /// which would diverge on offset or extent the moment they drifted apart.
+    /// A hand copy of the private <c>Projection.TablePlacement()</c> — skip to the first non-blank cell
+    /// (down to the first content row, then across to its first non-blank column), then a block of
+    /// leading rows-then-columns while any cell carries a value. Copied rather than reached because it
+    /// is private to the vocabulary; the two are pinned equal by the differential below, which would
+    /// diverge on offset or extent the moment they drifted apart.
     /// </summary>
     private static Placement TablePlacementReplica()
-      => new Placement(OffsetStrategies.SkipBlankRows(), RowStrategies.TakeRowsWhileAnyValue().TakeColumnsWhileAnyValue());
+      => new Placement(OffsetStrategies.SkipToFirstNonBlankCell(), RowStrategies.TakeRowsWhileAnyValue().TakeColumnsWhileAnyValue());
 
     // --- The record read, shared by both spellings -------------------------------------------------
     //
@@ -151,6 +152,21 @@ namespace Unrect.Tests.Projections
         Right(1).Of(Table(1, ReadLine)),
         Right(1).Of(TableFromPrimitives(1, ReadLine)),
         OffsetColumn());
+
+    [Fact]
+    public void ADefaultTableNowSelfLocatesOntoAColumnIndentedRegion()
+    {
+      // Piece #3, the headline (docs/design/node-type-placement-defaults-spec.md §2.1): Table's
+      // default offset is SkipToFirstNonBlankCell, so a table whose content starts past column 0 reads
+      // with Table(...) ALONE — no explicit Right(1)/offset. Before the change the default
+      // SkipBlankRows landed the origin at column 0, DiscoveredBlock's TakeColumnsWhileAnyValue took a
+      // 0-wide leading block (column A is entirely blank), and the by-name read of "Investor"/"Amount"
+      // failed for want of columns. Contrast AColumnOffsetTableReadsIdentically above, which still
+      // spells the Right(1) override: on this sheet that spelling is now redundant, not required.
+      IReadOnlyList<Line> lines = Table(1, ReadLine).Map(OffsetColumn());
+
+      Assert.Equal(new[] { new Line(0, "Acme", 10m), new Line(1, "Beta", 20m) }, lines);
+    }
 
     [Fact]
     public void PerOccurrenceHeadersUnderAnOuterRepeatReadIdentically()

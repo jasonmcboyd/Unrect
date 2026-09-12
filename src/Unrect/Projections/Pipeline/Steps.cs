@@ -11,10 +11,11 @@ namespace Unrect.Projections
   /// <para>
   /// <b>The pipeline is a spelling, not a semantics.</b> A stage records the modifier the author
   /// wrote and replays it once, in declaration order, rather than composing strategies itself. That
-  /// is what keeps <c>Down(2).Table&lt;T&gt;()</c> meaning exactly what <c>Table&lt;T&gt;().Down(2)</c>
-  /// means: a movement <em>composes</em> onto a shape's own default offset where <c>OffsetBy</c>
-  /// <em>replaces</em> it, and a pipeline that flattened both into one strategy would quietly change
-  /// every declaration that relies on the difference.
+  /// order is load-bearing: an offset step <em>composes</em> onto an offset an earlier stage declared,
+  /// and a pipeline that reordered the steps would quietly change every declaration that relies on the
+  /// composition. An offset step with no earlier offset — <c>Right(1).Of(Table())</c> — starts from
+  /// the origin, <em>replacing</em> the shape's own default rather than composing onto it (see
+  /// <c>Offset</c>).
   /// </para>
   /// <para>
   /// Each slot is written at most once, because the stage types make a second write unspellable —
@@ -154,19 +155,19 @@ namespace Unrect.Projections
 
       return _kind switch
       {
-        // Anchors and the strategy door replace the offset outright.
-        StepKind.OnRow => Reoffset<T>(subject, OffsetStrategies.To((IRowLandmark)_subject!)),
-        StepKind.OnColumn => Reoffset<T>(subject, OffsetStrategies.To((IColumnLandmark)_subject!)),
-        StepKind.Below => Reoffset<T>(subject, OffsetStrategies.Past((IRowLandmark)_subject!)),
-        StepKind.RightOf => Reoffset<T>(subject, OffsetStrategies.Past((IColumnLandmark)_subject!)),
-        StepKind.OffsetBy => Reoffset<T>(subject, (IOffsetStrategy)_subject!),
-
-        // Movements compose onto whatever offset the projection already carries.
-        StepKind.Down => Move<T>(subject, OffsetStrategies.ExplicitOffset(0, _count)),
-        StepKind.Right => Move<T>(subject, OffsetStrategies.ExplicitOffset(_count, 0)),
-        StepKind.AfterBlankRows => Move<T>(subject, OffsetStrategies.SkipBlankRows()),
-        StepKind.AfterBlankColumns => Move<T>(subject, OffsetStrategies.SkipBlankColumns()),
-        StepKind.SkipToFirstNonBlankCell => Move<T>(subject, OffsetStrategies.SkipToFirstNonBlankCell()),
+        // An offset is an offset: every kind composes onto an earlier pipeline offset, or starts
+        // from the origin. An anchor is structurally always the first offset step, so it always
+        // starts fresh — replacing the shape's own default, as it always has.
+        StepKind.OnRow => Offset<T>(subject, OffsetStrategies.To((IRowLandmark)_subject!)),
+        StepKind.OnColumn => Offset<T>(subject, OffsetStrategies.To((IColumnLandmark)_subject!)),
+        StepKind.Below => Offset<T>(subject, OffsetStrategies.Past((IRowLandmark)_subject!)),
+        StepKind.RightOf => Offset<T>(subject, OffsetStrategies.Past((IColumnLandmark)_subject!)),
+        StepKind.OffsetBy => Offset<T>(subject, (IOffsetStrategy)_subject!),
+        StepKind.Down => Offset<T>(subject, OffsetStrategies.ExplicitOffset(0, _count)),
+        StepKind.Right => Offset<T>(subject, OffsetStrategies.ExplicitOffset(_count, 0)),
+        StepKind.AfterBlankRows => Offset<T>(subject, OffsetStrategies.SkipBlankRows()),
+        StepKind.AfterBlankColumns => Offset<T>(subject, OffsetStrategies.SkipBlankColumns()),
+        StepKind.SkipToFirstNonBlankCell => Offset<T>(subject, OffsetStrategies.SkipToFirstNonBlankCell()),
 
         // An extent replaces the projection's derived one.
         StepKind.Sized => (IProjection<T>)subject.Replaced(subject.Placement.WithArea((IAreaStrategy)_subject!)),
@@ -180,20 +181,26 @@ namespace Unrect.Projections
       };
     }
 
-    /// <summary>Replaces the offset, recording it as declared — the anchors and the strategy door.</summary>
-    private static IProjection<T> Reoffset<T>(ProjectionBase subject, IOffsetStrategy offset)
-      => (IProjection<T>)subject.Replaced(subject.Placement.WithOffset(offset));
-
     /// <summary>
-    /// Composes <paramref name="offset"/> onto the offset already there, or takes it as the offset if
-    /// there is none yet — the movements, which add to a position rather than answering it.
+    /// The one offset rule, for every offset step alike. <paramref name="offset"/> composes onto an
+    /// offset an earlier pipeline stage declared when there is one to compose with — the placement is
+    /// BOTH pipeline-declared (<see cref="Placement.OffsetWasDeclared"/>) AND carries a real offset
+    /// (<see cref="Placement.HasDeclaredOffset"/>) — and otherwise starts from the origin.
+    /// <para>
+    /// Starting fresh is what replaces a shape's own default (a <c>Table</c>'s self-locate — not
+    /// pipeline-declared) and what ignores an explicit no-op (<c>OffsetBy(MinOffset())</c> —
+    /// pipeline-declared but the canonical origin), so "saying no movement out loud says nothing"
+    /// holds. An anchor is always the first offset step (a second anchor is unspellable), so it always
+    /// starts fresh, exactly as an unconditional replace would.
+    /// </para>
     /// </summary>
-    private static IProjection<T> Move<T>(ProjectionBase subject, IOffsetStrategy offset)
+    private static IProjection<T> Offset<T>(ProjectionBase subject, IOffsetStrategy offset)
     {
       var placement = subject.Placement;
-      var moved = placement.HasDeclaredOffset ? OffsetStrategies.Then(placement.Offset, offset) : offset;
+      var composeOntoBase = placement.OffsetWasDeclared && placement.HasDeclaredOffset;
+      var composed = composeOntoBase ? OffsetStrategies.Then(placement.Offset, offset) : offset;
 
-      return (IProjection<T>)subject.Replaced(placement.WithOffset(moved));
+      return (IProjection<T>)subject.Replaced(placement.WithOffset(composed));
     }
 
     public override string ToString() => _kind switch
