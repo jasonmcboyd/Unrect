@@ -394,6 +394,9 @@ namespace Unrect.Projections
     /// <inheritdoc cref="Projection.AfterBlankColumns()"/>
     public OffsetStage AfterBlankColumns() => new OffsetStage(Steps.Then(Step.AfterBlankColumns()));
 
+    /// <inheritdoc cref="Projection.SkipToFirstNonBlankCell()"/>
+    public OffsetStage SkipToFirstNonBlankCell() => new OffsetStage(Steps.Then(Step.SkipToFirstNonBlankCell()));
+
     /// <summary>
     /// Declares the section's extent, replacing the derived one — after which the extent is consumed
     /// in full whether the section reads all of it or not. Extents do not stack, so a second
@@ -442,6 +445,10 @@ namespace Unrect.Projections
     /// <inheritdoc cref="Down(int)"/>
     [Obsolete(PipelineRefusals.OffsetComesFirst, error: true)]
     public OffsetAndSizeStage AfterBlankColumns() => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
+
+    /// <inheritdoc cref="Down(int)"/>
+    [Obsolete(PipelineRefusals.OffsetComesFirst, error: true)]
+    public OffsetAndSizeStage SkipToFirstNonBlankCell() => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
   }
 
   /// <summary>

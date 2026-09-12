@@ -85,6 +85,7 @@ namespace Unrect.Projections
     Right,
     AfterBlankRows,
     AfterBlankColumns,
+    SkipToFirstNonBlankCell,
     Sized,
     UntilRow,
     UntilColumn,
@@ -125,6 +126,8 @@ namespace Unrect.Projections
 
     internal static Step AfterBlankColumns() => new Step(StepKind.AfterBlankColumns);
 
+    internal static Step SkipToFirstNonBlankCell() => new Step(StepKind.SkipToFirstNonBlankCell);
+
     internal static Step Sized(IAreaStrategy area) => new Step(StepKind.Sized, NotNull(area, "area"));
 
     internal static Step UntilRow(IRowLandmark landmark, bool orEnd) => new Step(StepKind.UntilRow, NotNull(landmark), orEnd: orEnd);
@@ -163,6 +166,7 @@ namespace Unrect.Projections
         StepKind.Right => Move<T>(subject, OffsetStrategies.ExplicitOffset(_count, 0)),
         StepKind.AfterBlankRows => Move<T>(subject, OffsetStrategies.SkipBlankRows()),
         StepKind.AfterBlankColumns => Move<T>(subject, OffsetStrategies.SkipBlankColumns()),
+        StepKind.SkipToFirstNonBlankCell => Move<T>(subject, OffsetStrategies.SkipToFirstNonBlankCell()),
 
         // An extent replaces the projection's derived one.
         StepKind.Sized => (IProjection<T>)subject.Replaced(subject.Placement.WithArea((IAreaStrategy)_subject!)),
@@ -195,7 +199,7 @@ namespace Unrect.Projections
     public override string ToString() => _kind switch
     {
       StepKind.Down or StepKind.Right => $"{_kind}({_count})",
-      StepKind.AfterBlankRows or StepKind.AfterBlankColumns => $"{_kind}()",
+      StepKind.AfterBlankRows or StepKind.AfterBlankColumns or StepKind.SkipToFirstNonBlankCell => $"{_kind}()",
       _ => $"{_kind}({Describe(_subject)})",
     };
 

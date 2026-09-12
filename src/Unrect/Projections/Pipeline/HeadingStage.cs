@@ -116,6 +116,10 @@ namespace Unrect.Projections
     /// <inheritdoc cref="Down(int)"/>
     [Obsolete(PipelineRefusals.OffsetComesFirst, error: true)]
     public HeadingStage AfterBlankColumns() => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
+
+    /// <inheritdoc cref="Down(int)"/>
+    [Obsolete(PipelineRefusals.OffsetComesFirst, error: true)]
+    public HeadingStage SkipToFirstNonBlankCell() => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
   }
 
   /// <summary>The scoped twin of <see cref="HeadingStage"/>, refusals and all.</summary>
@@ -199,6 +203,10 @@ namespace Unrect.Projections
     /// <inheritdoc cref="HeadingStage.Down(int)"/>
     [Obsolete(PipelineRefusals.OffsetComesFirst, error: true)]
     public HeadingStage<TSpace> AfterBlankColumns() => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
+
+    /// <inheritdoc cref="HeadingStage.Down(int)"/>
+    [Obsolete(PipelineRefusals.OffsetComesFirst, error: true)]
+    public HeadingStage<TSpace> SkipToFirstNonBlankCell() => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
   }
 
   /// <summary>The three operations both heading stages need, written once.</summary>

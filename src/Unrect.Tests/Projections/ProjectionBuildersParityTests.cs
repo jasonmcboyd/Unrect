@@ -310,6 +310,10 @@ namespace Unrect.Tests.Projections
       {
         ["AfterBlankColumns()"] = Reading(() => B.AfterBlankColumns().Text(), () => AfterBlankColumns().Text()),
         ["AfterBlankRows()"] = Reading(() => B.AfterBlankRows().Text(), () => AfterBlankRows().Text()),
+
+        // The lazy corner heuristic — the offset entry added with the strategy. Like the AfterBlank*
+        // twins it moves the section, so Text() is the terminal that shows the move.
+        ["SkipToFirstNonBlankCell()"] = Reading(() => B.SkipToFirstNonBlankCell().Text(), () => SkipToFirstNonBlankCell().Text()),
         ["Below(IRowLandmark)"] = Reading(
           () => B.Below(RowContaining("Fund")).Text(),
           () => Below(RowContaining("Fund")).Text()),

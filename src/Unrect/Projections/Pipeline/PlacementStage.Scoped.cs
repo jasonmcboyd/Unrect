@@ -353,6 +353,9 @@ namespace Unrect.Projections
     /// <inheritdoc cref="OffsetStage.AfterBlankColumns()"/>
     public OffsetStage<TSpace> AfterBlankColumns() => new OffsetStage<TSpace>(Steps.Then(Step.AfterBlankColumns()));
 
+    /// <inheritdoc cref="OffsetStage.SkipToFirstNonBlankCell()"/>
+    public OffsetStage<TSpace> SkipToFirstNonBlankCell() => new OffsetStage<TSpace>(Steps.Then(Step.SkipToFirstNonBlankCell()));
+
     /// <inheritdoc cref="OffsetStage.Sized(IAreaStrategy)"/>
     /// <param name="area">The extent.</param>
     public OffsetAndSizeStage<TSpace> Sized(IAreaStrategy area)
@@ -394,6 +397,10 @@ namespace Unrect.Projections
     /// <inheritdoc cref="OffsetAndSizeStage.Down(int)"/>
     [Obsolete(PipelineRefusals.OffsetComesFirst, error: true)]
     public OffsetAndSizeStage<TSpace> AfterBlankColumns() => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
+
+    /// <inheritdoc cref="OffsetAndSizeStage.Down(int)"/>
+    [Obsolete(PipelineRefusals.OffsetComesFirst, error: true)]
+    public OffsetAndSizeStage<TSpace> SkipToFirstNonBlankCell() => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
   }
 
   /// <summary>The scoped twin of <see cref="BoundStage"/>.</summary>

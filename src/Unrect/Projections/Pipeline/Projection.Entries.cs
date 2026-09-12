@@ -110,6 +110,20 @@ namespace Unrect.Projections
     public static OffsetStage AfterBlankColumns() => Enter(Step.AfterBlankColumns());
 
     /// <summary>
+    /// Opens a pipeline whose section starts at the first non-blank cell scanning row-major from the
+    /// top-left — down to the first row that carries content, then across it to its first non-blank
+    /// cell. The lazy corner heuristic: it reads a row at a time and never scans down a column, so a
+    /// headered or top-left-aligned region locates its corner without measuring its height.
+    /// <para>
+    /// It finds the FIRST content row's first non-blank cell, which is the region's true corner only
+    /// when the region is top-left-aligned; a ragged region whose lower rows reach further left is
+    /// the documented, accepted miss. Tolerant by nature — an all-blank space resolves to its end,
+    /// an empty section, rather than failing.
+    /// </para>
+    /// </summary>
+    public static OffsetStage SkipToFirstNonBlankCell() => Enter(Step.SkipToFirstNonBlankCell());
+
+    /// <summary>
     /// Steps over the blank rows and then the blank columns in front of the section — the one-word
     /// entry for the instinct the default deliberately refuses.
     /// <para>

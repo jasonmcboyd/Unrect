@@ -218,6 +218,9 @@ namespace Unrect.Projections
     /// <inheritdoc cref="Projection.AfterBlankColumns()"/>
     public OffsetStage<TSpace> AfterBlankColumns() => Enter(Step.AfterBlankColumns());
 
+    /// <inheritdoc cref="Projection.SkipToFirstNonBlankCell()"/>
+    public OffsetStage<TSpace> SkipToFirstNonBlankCell() => Enter(Step.SkipToFirstNonBlankCell());
+
     /// <inheritdoc cref="Projection.SkipEmptyRowsAndColumns()"/>
     public OffsetStage<TSpace> SkipEmptyRowsAndColumns() => AfterBlankRows().AfterBlankColumns();
 

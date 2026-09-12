@@ -444,6 +444,9 @@ namespace Unrect.Projections
     /// <inheritdoc cref="Projection.AfterBlankColumns()"/>
     public static OffsetStage<TSpace> AfterBlankColumns() => Scope.AfterBlankColumns();
 
+    /// <inheritdoc cref="Projection.SkipToFirstNonBlankCell()"/>
+    public static OffsetStage<TSpace> SkipToFirstNonBlankCell() => Scope.SkipToFirstNonBlankCell();
+
     /// <inheritdoc cref="Projection.SkipEmptyRowsAndColumns()"/>
     public static OffsetStage<TSpace> SkipEmptyRowsAndColumns() => Scope.SkipEmptyRowsAndColumns();
 
