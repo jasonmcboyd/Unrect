@@ -113,7 +113,15 @@ it is one law, so read this first:
   (`SpaceExtensions.cs:33,36`). The engine pins this as the deliberate current limit
   (`ProjectionEngine.cs:159-167`).
 
-### Leaves
+Primitives come in two kinds — **value** (leaves that read cells and produce values) and
+**structure** (combinators that orchestrate children and produce structure). "Engine-composite" (has
+child projections) is a *different axis* from "not a primitive": a combinator has children yet is
+irreducible — it cannot be built from other primitives — so it IS a primitive. Only `Table` and
+`Fields` are composite building blocks assembled from other primitives.
+
+### Value primitives (leaves)
+
+Read cells, produce values.
 
 | Name / factory (class) | Reads (T) | Default placement | Bound: defer/stream vs force | How a parent places it / composes | Notes |
 |---|---|---|---|---|---|
@@ -124,45 +132,54 @@ it is one law, so read this first:
 | `Range` (`BlockProjection<T>`) | rectangle → `T` via `CellBlock` | `Placement.Of(DiscoveredBlock())` (`Projection.cs:108`) — incremental | **Streams**: engine binds a `BoundedSpace`; `BlockProjection` runs the lambda first and measures `extent.Area.Size` only after (`BlockProjection.cs:26-27`) | fixed / discovered block subspace | `Range(w,h)`=`ExplicitArea` (`:112`), `Range(area)` (`:115`); `CellBlock.Width` free, `.Height/.Rows` force (`CellBlock.cs:50,56`) |
 | `Caption` (`CaptionProjection`) | matched row's own text → `string` | `To(RowContaining(text))` offset + `FullRow()` area (`Projection.cs:144`) | Force — reads `extent.Area.Size` (`CaptionProjection.cs:35`); offset scans for the row | placed at the found row, full width | asserts match, yields file's spelling untrimmed (`:44-50`) |
 | `Field` (`FieldProjection`) | label+value pair → `CellValue` | `NoOffset` + `ExplicitArea(2,1)` (`Projection.cs:634`) | Force — fixed 2×1 | fixed 2×1 subspace | only used as a child of `Fields`; value blank ⇒ `Blank`, not failure (`FieldProjection.cs:31-47`) |
-| `Fields` (a `FlowProjection` of `FieldProjection`s) | `IReadOnlyDictionary<string,CellValue>` | `FieldsPlacement(firstLabel)` — anchors on first field's label (`Projection.cs:649`) | Composite (vertical flow) — see Layouts row | opaque vertical flow; each field one 2×1 band | children built once at construction (`:631-634`); keyed by declared labels |
 | `ColumnLabels` (`ColumnLabelsProjection`) | header band → `LabelMap` | `Placement.Of(RowsThenColumns(TakeRows(headerRows), AllColumns()))` (`Projection.cs:527`) | Force — builds a throwaway `TableView`, reads `extent.Area.Size` (`ColumnLabelsProjection.cs:28`); band is `headerRows` tall (small) | placed as the header band | reuses `TableView` header parse so labels match `Table` byte-for-byte (`:21-28`) |
 | `Record` (`RecordProjection<T>`) | one body row → `T` via `TableRow` | `Placement.Of(FullRow())` (`Projection.cs:560`) — 1 row, full width | Force at end — reads `extent.Area.Size` after the lambda (`RecordProjection.cs:35`); band is 1 row | one full-width row band; resolves columns through ambient `LabelAxis.Column` scope | `TableRow` has no owning `TableView`; ordinal from `context.Ordinal` set by the enclosing repeat (`RecordProjection.cs:33-35`) |
-| **`Table`** (`TableProjection<T>`) — the reference | header + body rows → `T` via `TableView` | `TablePlacement()` = `SkipToFirstNonBlankCell` offset + `DiscoveredBlock()` (Stop) / `ToEdgeBlock()` (other onBlank) (`Projection.cs:503,841-848`) | **Streams** (Stop): engine binds a `BoundedSpace`; `TableView.StreamRows`→`StreamBands` walks one row past the cursor via `BoundedSpace.HasRow`, never asks `Area` (`TableView.cs:111-140`, `TableProjection.cs:36-44`). Non-Stop uses `ToEdgeBlock` (runs to enclosing edge). | leaf: places the whole table region; rows read internally | the only primitive that streams a multi-row discovered bound. `RowCount`/`Rows`/`Location` force (`TableView.cs:63,88,95`); `ColumnCount`+header free (`:56`) |
 | `Formula` (`Unrect.Spreadsheets`) | one cell's formula text → `string?` | `Range(1,1,…)` = `ExplicitArea(1,1)`, `.Named("Formula").Demanding(Formulas)` (`SpreadsheetProjections.cs:56-59`) | Force — fixed 1×1 | fixed 1×1 subspace | not a reach-through; demands `IFormulaSpace`; `.Named` so path reads `Formula` not `Range(1,1)` |
 | `Nothing` / ε (`NothingProjection<T>`) | nothing → `default!` | `Placement.Default` (derive) (`NothingProjection.cs:26`) | Neither — consumes `Size(0,0)`, `Presence.Empty` (`:32-33`) | the layout-algebra unit; internal, not vocabulary | one shared `Instance` (`:23`) |
 
-### Layouts (composites)
+### Structure primitives (combinators)
+
+Orchestrate children, produce structure. Each has child projections yet is irreducible — none can be
+built from the other primitives — so each is a primitive, not a composite.
+
+**Multi-child:**
 
 | Name / factory (class) | Reads (T) | Default placement | Bound: defer/stream vs force | How it composes | Notes |
 |---|---|---|---|---|---|
 | `VerticalFlow`/`HorizontalFlow` (`FlowProjection<T>` → `FlowState`) | whatever the lambda builds → `T` | `Placement.Default` (derive; Area null) (`Projection.cs:49,57`) | Derives its extent, so the engine never binds it — handed the raw available space. **But if handed a `BoundedSpace`** it forces at first child: `FlowState.Next` slices `Extent.GetSubspace(cursor)` which reads `Area` (`FlowState.cs:64`, `SpaceExtensions.cs:33,36`) | hands each child a full-width band from the cursor, accumulating advances (`FlowState.cs:38-73`) | opaque to tooling — children exist only while the lambda runs (`LayoutProjection.cs:26-59`); "empty sibling" note (`FlowState.cs:66-88`); `Heading` desugars to a named vertical flow (`ProjectionBase.cs:147-162`) |
 | `Overlay` (`OverlayProjection<T>` → `OverlayState`) | whatever the lambda builds → `T` | `Placement.Default` (derive) (`Projection.cs:81`) | Same as flow: not bound by the engine; forces a handed `BoundedSpace` at first child via `Exceeds` inside child's `TryPlace` (`OverlayState.cs:37`, `ProjectionEngine.cs:91,303`) | hands every child the whole extent + unadvanced context; children may overlap (`OverlayState.cs:30-44`) | consumed = bounding box of children (`OverlayState.cs:22-26`); opaque |
-
-Both layouts fault if the lambda declares nothing (`LayoutProjection.cs:53-55`); presence = Read if any child read (`LayoutState.cs:57`).
-
-### Repetition / alternation
-
-| Name / factory (class) | Reads (T) | Default placement | Bound: defer/stream vs force | How it composes | Notes |
-|---|---|---|---|---|---|
-| `VerticalRepeat`/`HorizontalRepeat` (`RepeatProjection<T>`) | `IReadOnlyList<T>` | `Placement.Default` (derive) (`Projection.cs:813`) | **Forces** its extent today: each attempt slices `extent.GetSubspace(Step(cursor))` (reads `Area`, `RepeatProjection.cs:110,113`) and tests `IsEmpty(remaining)` which reads `Area` (`:115,180`). A `BoundedSpace` handed in is fully resolved on iteration 1. | walks occurrences: separate → place → `TryApply` the item (item's placement is non-strict, never deferred) → collect (`:103-146`). Stops when the item's placement fails or consumes/advances zero (`:135-140`) | item labelled from its use site; `atLeast`, `separatedBy`; per-occurrence index/ordinal stamped on context (`:122`). This is the primitive GAP A must convert to a `HasRow`-driven walk. |
+| `VerticalRepeat`/`HorizontalRepeat` (`RepeatProjection<T>`) | `IReadOnlyList<T>` | `Placement.Default` (derive) (`Projection.cs:813`) | **Forces** its extent today: each attempt slices `extent.GetSubspace(Step(cursor))` (reads `Area`, `RepeatProjection.cs:110,113`) and tests `IsEmpty(remaining)` which reads `Area` (`:115,180`). A `BoundedSpace` handed in is fully resolved on iteration 1. | walks occurrences: separate → place → `TryApply` the item (item's placement is non-strict, never deferred) → collect (`:103-146`). Stops when the item's placement fails or consumes/advances zero (`:135-140`) | item labelled from its use site; `atLeast`, `separatedBy`; per-occurrence index/ordinal stamped on context (`:122`). This is the structure primitive GAP A must convert to a `HasRow`-driven walk. |
 | `Choice` (`ChoiceProjection<T>`) | first matching alternative → `T` | `Placement.Default` (derive) (`Projection.cs:757`) | Passes the same `extent` to each alternative via `Apply`; forcing is whatever the winning alternative does | tries alternatives in order against the same extent, rolling back diagnostics of losers (`ChoiceProjection.cs:40-66`) | faults pass through (`:51`); no per-alternative name capture (params array) |
 | `.Else(fallback)` / `.Else(value)` (`BoundaryProjection<T>`) | `T` | `Placement.Default` (`ProjectionExtensions.cs:221`, `ProjectionBase.cs:164-174`) | forwards `extent` to inner via `Apply`; on absorbable failure runs fallback or yields value | tolerance boundary; innermost (own placement resolved first) | transparent when unnamed (`BoundaryProjection.cs:48`); faults not absorbed (`:61`) |
 | `.Optional()` (`BoundaryProjection<T?>`) | `T?` | `Placement.Default` (`ProjectionExtensions.cs:237`) | as `.Else`; no fallback ⇒ consumes `Size(0,0)`, `Presence.Absorbed` (`BoundaryProjection.cs:75`) | tolerance boundary yielding null | Absorbed carries a possibly-nonzero extent under a declared area (`:69-75`) |
 
-### Transparent wrappers
+Both layouts fault if the lambda declares nothing (`LayoutProjection.cs:53-55`); presence = Read if any child read (`LayoutState.cs:57`).
+
+**Single-child wrappers:**
 
 | Name / factory (class) | Reads (T) | Default placement | Bound: defer/stream vs force | How it composes | Notes |
 |---|---|---|---|---|---|
 | `WithColumnLabels` (`WithLabelsProjection<T>`) | forwards body → `T` | `Placement.Default` (`Projection.cs:547`) | **Forces nothing of its own** — forwards the whole `extent` to the body via `Apply` under a pushed `LabelMap` (`WithLabelsProjection.cs:37-42`) | single-child; pushes ambient column labels, body reads at the same frame (identity translation) | transparent when unnamed (`:35`); the "provide a map to subspaces" primitive |
 | `Select` (`MapProjection<TSource,TResult>`) | `f(inner)` → `TResult` | `Placement.Default` (`ProjectionExtensions.cs:292`) | forwards `extent` to inner via `Apply` (`MapProjection.cs:33`) | single-child; maps the value only | transparent when unnamed (`:29`) |
-| `.Named(name)` | receiver's `T` | clone with same placement | no change; makes the node opaque/named (adds a path segment) | modifier, returns a clone of same runtime type (`ProjectionBase.cs:58-63`) | flips `IsTransparent` to false on wrappers whose transparency is `Name is null` |
-| `.OrBlank()` (typed-cell clone) | `T?` | leaf's own placement (`TypedCellProjection.cs:97`) | Force — still a 1×1 leaf | not a wrapper: clones the typed leaf as blank-tolerant | tolerates blank only, not wrong kind (`:60-71`) |
 | `Padded` (`PadProjection<T>`) | forwards inner → `T` | `Placement.Default` (`ProjectionBase.cs:131`) | **Forces** — reads `extent.Area.Size` at top of `Project` (`PadProjection.cs:41`), then slices the inset | single-child; insets the extent, reports whole as consumed | transparent when unnamed (`:37`) |
 | `Until`/`UntilColumn` (`UntilProjection<T>`) | forwards inner → `T` | `Placement.Default` (`ProjectionBase.cs:144`) | **Forces** — reads `extent.Area.Size` and scans for the landmark (`UntilProjection.cs:57-58`) | single-child; bounds extent at a content landmark, consumes the bound in full | transparent when unnamed (`:39`); refuses a second `Until` (`:47-53`) |
+| `.Named(name)` | receiver's `T` | clone with same placement | no change; makes the node opaque/named (adds a path segment) | modifier, returns a clone of same runtime type (`ProjectionBase.cs:58-63`) | flips `IsTransparent` to false on wrappers whose transparency is `Name is null` |
+| `.OrBlank()` (typed-cell clone) | `T?` | leaf's own placement (`TypedCellProjection.cs:97`) | Force — still a 1×1 leaf | not a wrapper: clones the typed leaf as blank-tolerant | tolerates blank only, not wrong kind (`:60-71`) |
+
+### Composites (built from primitives — NOT primitives)
+
+These are assembled from the value and structure primitives above, so neither is irreducible. `Table`
+is listed as the **reference** its target composition must match — on values *and* on the
+streaming/forcing profile.
+
+| Name / factory (class) | Reads (T) | Default placement | Bound: defer/stream vs force | Composed of | Notes |
+|---|---|---|---|---|---|
+| **`Table`** (`TableProjection<T>`) — **INTERIM** | header + body rows → `T` via `TableView` | `TablePlacement()` = `SkipToFirstNonBlankCell` offset + `DiscoveredBlock()` (Stop) / `ToEdgeBlock()` (other onBlank) (`Projection.cs:503,841-848`) | **Streams** (Stop): engine binds a `BoundedSpace`; `TableView.StreamRows`→`StreamBands` walks one row past the cursor via `BoundedSpace.HasRow`, never asks `Area` (`TableView.cs:111-140`, `TableProjection.cs:36-44`). Non-Stop uses `ToEdgeBlock` (runs to enclosing edge). | today a bespoke leaf; TARGET is `VerticalFlow(ColumnLabels; WithColumnLabels(VerticalRepeat(Record)))` | **NOT a primitive** — an interim bespoke leaf to be retired once the target composition matches it on values and forcing profile. The only building block that streams a multi-row discovered bound today. `RowCount`/`Rows`/`Location` force (`TableView.cs:63,88,95`); `ColumnCount`+header free (`:56`) |
+| `Fields` (a `FlowProjection` of `FieldProjection`s) | `IReadOnlyDictionary<string,CellValue>` | `FieldsPlacement(firstLabel)` — anchors on first field's label (`Projection.cs:649`) | Composite (vertical flow) — forcing per the `VerticalFlow` row | a `VerticalFlow` of `Field` children | opaque vertical flow; each field one 2×1 band; children built once at construction (`:631-634`); keyed by declared labels |
 
 ### Synthesis — what streams, what forces, and what it means for GAP A
 
-- **Exactly one primitive streams a multi-row discovered bound today: the leaf `Table`.** Its
+- **Exactly one projection streams a multi-row discovered bound today: the leaf `Table`.** Its
   `DiscoveredBlock` placement is incremental, so the engine binds a `BoundedSpace`
   (`ProjectionEngine.cs:169-196`), and `TableView.StreamRows`→`StreamBands` walks the body one row
   past the cursor via `BoundedSpace.HasRow`, never asking `Area` (`TableView.cs:111-140`). That is the
