@@ -8,7 +8,7 @@ using Unrect.Projections;
 namespace PlacementGauntlet.Staged
 {
   /// <summary>
-  /// SPIKE — <b>Entry C, the file-scoped vocabulary</b> (<c>staged-placement-note.md</c> §5.5). A
+  /// SPIKE — <b>Entry C, the file-scoped vocabulary</b>. A
   /// closed generic static class imported once, which answers <typeparamref name="TSpace"/> at the
   /// top of the file, where C# already puts file-level bindings:
   /// <code>

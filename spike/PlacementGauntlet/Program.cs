@@ -3,7 +3,7 @@ using System;
 namespace PlacementGauntlet
 {
   /// <summary>
-  /// SPIKE — <c>docs/design/placement-gauntlet-spec.md</c> scenarios 1–5, each compiled and RUN,
+  /// SPIKE — scenarios 1–5, each compiled and RUN,
   /// each asserting that the inverted pipeline's spelling reads exactly what today's spelling reads.
   /// Scenario 6 is <c>MustNotCompile.cs</c> (build with <c>-p:DefineConstants=MUST_NOT_COMPILE</c>);
   /// scenario 7 is <c>MIGRATION-READ.md</c>.

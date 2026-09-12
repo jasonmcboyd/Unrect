@@ -178,8 +178,7 @@ namespace Unrect.Tests.Projections
     // The anchors' half of the rule lives in AnchorModifierTests, beside what they anchor on; this
     // file pins the rule itself, through the modifier that states it with nothing else attached.
     // What a placement replaces is the projection's own definition — a Table's skipped blank rows, a
-    // Range's constructor extent — never a second modifier; that is refused at construction (owner
-    // decision, 2026-09-09; docs/design/modifier-congruence-survey.md §5).
+    // Range's constructor extent — never a second modifier; that is refused at construction.
 
     [Fact]
     public void RepeatedOffsetModifiers_Compose()

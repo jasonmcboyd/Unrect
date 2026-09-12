@@ -98,7 +98,7 @@ namespace Unrect.Tests.Strategies
     // --- SkipToFirstNonBlankCell: the lazy corner heuristic -------------------------------------------
     //
     // Down to the first content row, across to its first non-blank cell; that cell's (column, row) is
-    // the offset. See docs/design/table-extent-and-blank-rows.md.
+    // the offset.
 
     [Fact]
     public void SkipToFirstNonBlankCell_OnATopLeftAlignedRegion_OffsetsByNothing()
@@ -165,7 +165,7 @@ namespace Unrect.Tests.Strategies
     [Fact]
     public void SkipToFirstNonBlankCell_OnARaggedRegion_ResolvesToTheFirstRowsCorner_TheDocumentedMiss()
     {
-      // The accepted residual (docs/design/table-extent-and-blank-rows.md): the heuristic finds the
+      // The accepted residual: the heuristic finds the
       // FIRST content row's first non-blank cell, which is the region's true corner only when it is
       // top-left-aligned. Here the first content row starts at column 2, but a lower row reaches back
       // to column 0 — so the offset lands on (2, 0) and the lower-left content (the 1 at column 0) is

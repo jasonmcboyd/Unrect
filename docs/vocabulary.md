@@ -24,13 +24,13 @@ is; do not let them drift silently.
 
 | Operator | Yields | Notes |
 |---|---|---|
-| `Text()` `Decimal()` `Integer()` `Double()` `Date()` `Boolean()` | typed value | One cell; asserts its `CellKind`, applies the canonical accessor. The family is CLOSED over `CellValue`'s accessor set and never leads it — no `Long()`, ever; conversions beyond the set are `Select` territory (typed-leaves-and-tables-spec §2, "the firewall") |
+| `Text()` `Decimal()` `Integer()` `Double()` `Date()` `Boolean()` | typed value | One cell; asserts its `CellKind`, applies the canonical accessor. The family is CLOSED over `CellValue`'s accessor set and never leads it — no `Long()`, ever; conversions beyond the set are `Select` territory (the firewall) |
 | `Text().OrBlank()` `Decimal().OrBlank()` … | `T?` | The same reading, tolerating a BLANK cell: null, quietly, with no diagnostic — where `.Optional()` absorbs a failure and records a Warning. A wrong kind still fails loudly, because blankness is about the data and a kind is about the format. The standalone spelling of a nullable table member's tolerance; belongs to the typed leaves only (anywhere else it is a declaration error at construction) |
 | `Cell(v => ...)` | `T` | One cell, arbitrary projection — the escape hatch |
 | `Row(r => ...)` / `Row(width, r => ...)` / `Row(IColumnStrategy, r => ...)` | from `CellStrip` | One row; width discovered (`while any value`), explicit count, or by column strategy (explicit counts are for structurally fixed regions only) |
 | `Column(c => ...)` / `Column(height, c => ...)` / `Column(IRowStrategy, c => ...)` | from `CellStrip` | One column; height discovered (`while any value`), explicit count, or by row strategy (explicit counts are for structurally fixed regions only) |
 | `Range(b => ...)` / `Range(w, h, ...)` / `Range(area, ...)` | from `CellBlock` | Rectangular block |
-| `Caption(text)` | matched text (verbatim) | A declared anchor: seeks its row by the content rule, consumes exactly that row, asserts the text (matcher-and-caption-spec) |
+| `Caption(text)` | matched text (verbatim) | A declared anchor: seeks its row by the content rule, consumes exactly that row, asserts the text |
 | `Fields(Field(a), Field(b), ...)` | `IReadOnlyDictionary<string, CellValue>` | Labeled-pair block (label column + value column); self-anchors on its first label; labels matched colon-tolerantly (`LabelEquals`) |
 | `Heading(text)` | — (a pipeline stage, not a value-yielding leaf) | Locates its row by content, asserts the text, consumes it at full width, places the section immediately below. Contributes NO node of its own — it mints the same `Caption` leaves internally, so a missing heading fails in the caption's own words. See "The placement pipeline" below |
 
@@ -169,8 +169,7 @@ operator has to pass; an operator that cannot be justified by one of them does n
    downward; the vocabulary does not assume it. `VerticalFlow`/`HorizontalFlow`,
    `VerticalRepeat`/`HorizontalRepeat`, `.Below`/`.RightOf` — both halves marked, neither
    the default. (`.Until`/`.UntilColumn` is the one pair that is not, and deliberately: its
-   argument does not have to be read to know the axis, so the row form carries no marking —
-   matcher-and-caption-spec §1.6.)
+   argument does not have to be read to know the axis, so the row form carries no marking.)
 
 ## The placement pipeline — the same declaration, position-first
 
@@ -316,8 +315,7 @@ it). All four describe a miss identically, because there is one matcher to descr
 a section can start at `.On(RowContaining("A"))` and end at `.Until(RowContaining("B"))`
 through the same matcher, the start and the end cannot disagree about what a caption is.
 
-Three matching rules exist in the library and deliberately never unify
-(typed-leaves-and-tables-spec §3): the **content rule** above (matchers, `Caption`, and
+Three matching rules exist in the library and deliberately never unify: the **content rule** above (matchers, `Caption`, and
 also `TableView`/`TableRow`'s by-caption row access — `row["Caption"]` resolves trimmed
 and case-insensitively, the same rule, so it has consumers beyond matchers and `Caption`
 — literal ↔ cell text), **`LabelEquals`** (`Field` only — content rule plus a trailing
@@ -365,7 +363,7 @@ foreach (var path in monthlyCloseOfFunds)
 }
 ```
 
-Streaming's cost is declaration-shaped, not a flat tax — see `docs/design/streaming-spec.md` §2.7
+Streaming's cost is declaration-shaped, not a flat tax — see `docs/streaming.md`
 for the full cost model and the sizing law (the window must be at least as tall as the tallest
 extent a declaration holds open at once).
 

@@ -56,7 +56,7 @@ namespace Unrect.Strategies
     /// <para>
     /// It finds the first content row's first non-blank cell, the region's true corner only when
     /// the region is top-left-aligned; a ragged region whose lower rows reach further left is the
-    /// documented, accepted miss (see docs/design/table-extent-and-blank-rows.md). An entirely
+    /// accepted miss. An entirely
     /// blank space resolves to its end, an empty subspace, exactly as <see cref="SkipBlankRows"/>
     /// does.
     /// </para>

@@ -33,10 +33,9 @@ reference implementation this document turns into a real one; §9 says exactly w
 carry over and which are rewritten. Every one of its measurements is quoted here as law
 (§1), because the design decisions below are consequences of those numbers.
 
-Conventions inherited: `wave2-shapes-spec.md` (engine rules, error-message template, file
-layout, test style), `flow-vocabulary-spec.md` (removal orders, `[decided here]` markers),
-`capability-seam-notes.md` (additive capability recipe; its default-interface-member escape
-hatch was withdrawn on 2026-09-05 — see that note's item 4),
+Conventions inherited from the project's established practice: engine rules, error-message
+template, file layout, test style, removal orders and `[decided here]` markers, and the additive
+capability recipe (its default-interface-member escape hatch was withdrawn on 2026-09-05),
 `docs/benchmarking.md` (benchmark family rules).
 
 Everything the owner settled is recorded as settled. Where a detail had to be decided to
@@ -270,8 +269,8 @@ namespace Unrect.Spreadsheets
 ```
 
 `WorkbookOptions` is a class with `init` accessors so a future option is additive and no
-existing call site is binary-broken (the discipline from `capability-seam-notes.md`:
-additive members are safe, new optional parameters on existing methods are not).
+existing call site is binary-broken (the additive-members discipline: additive members are safe,
+new optional parameters on existing methods are not).
 
 ### 2.3 Lifetime — the whole of it lives on `Workbook`
 
@@ -955,10 +954,10 @@ The raw material is already there:
 ### 11.2 The interfaces
 
 In `Unrect.Core`, additive, mirroring the existing three-layer strategy calculus exactly
-(row → size → area). Each layer's eager method is *defined* as the fold of its own scan, as a
-default interface member — so eager and lazy cannot disagree by construction, which is worth
-more than any number of equivalence tests. (netstandard2.1 supports DIMs; the capability-seam
-note already blesses them.)
+(row → size → area). Each layer's eager method is *defined* as the fold of its own scan — so
+eager and lazy cannot disagree by construction, which is worth more than any number of
+equivalence tests. (Delivered as one-line delegations to `Scans.Fold*` since 2026-09-05, when
+default interface members were withdrawn to keep netstandard2.0 support.)
 
 > **Corrected 2026-09-05 — the guarantee shifted when the libraries added netstandard2.0.**
 > .NET Framework's runtime cannot dispatch a default interface member, so the DIMs are gone:

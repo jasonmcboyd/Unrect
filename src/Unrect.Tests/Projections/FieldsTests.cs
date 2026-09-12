@@ -143,7 +143,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AMovementReplacesTheAnchor()
     {
-      // The uniform offset-replace law (docs/design/node-type-placement-defaults-spec.md §7/§5.4):
+      // The uniform offset-replace law:
       // a bare declared movement REPLACES a shape's own constructor default and starts the chain from
       // the origin — it does not compose onto the default. Fields' default self-anchors on its first
       // label (Then(To(ColumnWhere), To(RowWhere))), so this pins the law for Fields the same way

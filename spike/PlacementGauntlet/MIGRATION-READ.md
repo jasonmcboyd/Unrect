@@ -2,7 +2,7 @@
 
 One script, both spellings, side by side and **unannotated** — the cold read the verdict turns on.
 No commentary here on purpose: the question is whether a reader who knows today's vocabulary can
-read tomorrow's unaided. The judgment belongs in `docs/design/placement-gauntlet-spec.md` §6.
+read tomorrow's unaided. The judgment belonged in the placement-gauntlet spike's writeup (now in git history).
 
 Both columns are compiled and executed in `Scenario1_Examples.cs` and asserted to read the same
 values from `examples/investor-irr.xlsx`.

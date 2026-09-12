@@ -15,9 +15,8 @@ namespace Unrect.Strategies
   /// <para>
   /// It finds the first content row's first non-blank cell, which is the region's true corner only
   /// when the region is top-left-aligned. A ragged region whose lower rows reach further left than
-  /// its first content row starts at the wrong column and loses the left part — the documented,
-  /// accepted miss (see docs/design/table-extent-and-blank-rows.md; the eager escape hatch is where
-  /// that region is meant to go). An entirely blank space resolves to its end, so the resulting
+  /// its first content row starts at the wrong column and loses the left part — the accepted
+  /// miss. An entirely blank space resolves to its end, so the resulting
   /// subspace is empty, exactly as <see cref="OffsetStrategies.SkipBlankRows"/> does.
   /// </para>
   /// </summary>

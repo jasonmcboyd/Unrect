@@ -2,7 +2,7 @@
 
   <!-- SPIKE ONLY. Deliberately outside src/ and outside Unrect.sln: the gauntlet is experiment
        evidence, not a test suite, and MustNotCompile.cs needs a compilation that FAILS on purpose.
-       Judged per docs/design/placement-gauntlet-spec.md; nothing here ships. -->
+       Judged as spike evidence; nothing here ships. -->
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>

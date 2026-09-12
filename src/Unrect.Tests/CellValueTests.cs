@@ -8,7 +8,7 @@ using Xunit;
 namespace Unrect.Tests
 {
   /// <summary>
-  /// The canonical value model (docs/design/canonical-model-and-projections.md section 2): a small
+  /// The canonical value model: a small
   /// closed set of kinds, granular checked accessors, and blankness decided by the adapter — not by
   /// Core.
   /// </summary>

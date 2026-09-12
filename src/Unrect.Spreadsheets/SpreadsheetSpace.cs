@@ -42,8 +42,7 @@ namespace Unrect.Spreadsheets
   /// <c>AfterBlankRows</c>, <c>RowsWhileAnyValue</c> and a repeat's separator all key off it, so a
   /// single such cell in a data column can quietly truncate a region rather than fail loudly. The
   /// <c>.xls</c> path is unaffected — it reports an error code, and an unrecognised one lexes to
-  /// <see cref="Unrect.Core.CellError.Other"/> carrying its literal. See
-  /// <c>docs/design/vendor-type-survey.md</c> §8.4.
+  /// <see cref="Unrect.Core.CellError.Other"/> carrying its literal.
   /// </para>
   /// </summary>
   public static class SpreadsheetSpace

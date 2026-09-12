@@ -28,7 +28,7 @@ namespace Unrect.Tests.Projections
   {
     // --- The reimplementation, built from the PUBLIC primitives ------------------------------------
     //
-    // Exactly the composition docs/design/labeled-axes-and-context.md gives: a VerticalFlow of
+    // The composition: a VerticalFlow of
     // ColumnLabels then WithColumnLabels(columns, VerticalRepeat(Record(record))). It is dressed with
     // the built-in table's own placement — skip-to-first-non-blank-cell over a discovered block — and its "Table"
     // description, through the internal FlowProjection, which is precisely what step 3 will do when
@@ -156,7 +156,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ADefaultTableNowSelfLocatesOntoAColumnIndentedRegion()
     {
-      // Piece #3, the headline (docs/design/node-type-placement-defaults-spec.md §2.1): Table's
+      // Table's
       // default offset is SkipToFirstNonBlankCell, so a table whose content starts past column 0 reads
       // with Table(...) ALONE — no explicit Right(1)/offset. Before the change the default
       // SkipBlankRows landed the origin at column 0, DiscoveredBlock's TakeColumnsWhileAnyValue took a

@@ -39,9 +39,8 @@ namespace Unrect.Tests.Projections
   /// </para>
   /// <para>
   /// The refusals — the fourteen spellings that must NOT compile — cannot live in a test project at
-  /// all, because a test project must compile. They are documented, with their verbatim compiler
-  /// messages, in <c>docs/design/projection-model-refusals.md</c>, and remain re-runnable in
-  /// <c>spike/TypedSpacesGauntlet/MustNotCompile.cs</c>. What IS assertable about them is the
+  /// all, because a test project must compile. They remain re-runnable, with their verbatim compiler
+  /// messages, in <c>spike/TypedSpacesGauntlet/MustNotCompile.cs</c>. What IS assertable about them is the
   /// variance that produces them, and that is below.
   /// </para>
   /// </summary>

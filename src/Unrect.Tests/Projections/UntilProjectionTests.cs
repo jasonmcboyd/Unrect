@@ -195,8 +195,7 @@ namespace Unrect.Tests.Projections
       // Was ALaterBoundReplacesAnEarlierOneRatherThanNesting, and what it pinned is why this
       // flipped: the pair read as the LAST bound alone — "A","B", two rows consumed — with the first
       // landmark dropped and never sought. A projection has one end, so a second one is refused
-      // where it is written (owner decision, 2026-09-09;
-      // docs/design/modifier-congruence-survey.md §5). Nesting is how two ends are said, and
+      // where it is written. Nesting is how two ends are said, and
       // AWrapperBetweenTwoBoundsIsTheDifferenceBetweenARefusalAndANesting owns that half. The chained
       // spelling is now a compile-time refusal (BoundStage.Until, MustNotCompilePipeline.cs AD); the
       // runtime guard survives on the nested spelling, where the outer bound meets an already-bounded
@@ -289,8 +288,8 @@ namespace Unrect.Tests.Projections
     // A projection has one end, and the axis a bound cuts comes with its landmark — so a bound of the
     // other kind is still a SECOND end, and is refused like any other. Until 2026-09-09 the switch
     // replaced instead (the row bound below left two rows, the column bound that replaced it left two
-    // columns and all three rows, and the discarded landmark was never sought); the owner's decision
-    // recorded in docs/design/modifier-congruence-survey.md §5 flipped that. Both axes at once is
+    // columns and all three rows, and the discarded landmark was never sought); that was later
+    // flipped to a refusal. Both axes at once is
     // spelled by nesting, which the last test in this section pins.
 
     // 3 columns by 3 rows: a b Total / c d e / Stop f g.

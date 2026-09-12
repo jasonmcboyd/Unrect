@@ -6,22 +6,8 @@ using Unrect.Strategies;
 namespace Unrect.Projections
 {
   /// <summary>
-  /// What a placement pipeline has declared so far, held as the modifier calls that will write it
-  /// onto the projection its terminal builds.
-  /// <para>
-  /// <b>The pipeline is a spelling, not a semantics.</b> A stage records the modifier the author
-  /// wrote and replays it once, in declaration order, rather than composing strategies itself. That
-  /// order is load-bearing: an offset step <em>composes</em> onto an offset an earlier stage declared,
-  /// and a pipeline that reordered the steps would quietly change every declaration that relies on the
-  /// composition. An offset step with no earlier offset — <c>Right(1).Of(Table())</c> — starts from
-  /// the origin, <em>replacing</em> the shape's own default rather than composing onto it (see
-  /// <c>Offset</c>).
-  /// </para>
-  /// <para>
-  /// Each slot is written at most once, because the stage types make a second write unspellable —
-  /// so the declared-over-declared refusal in <see cref="ProjectionExtensions"/> can never fire from
-  /// inside a pipeline.
-  /// </para>
+  /// What a placement pipeline has declared so far, held as the modifier calls its terminal replays
+  /// onto the projection in declaration order. Each slot is written at most once.
   /// </summary>
   internal sealed class Steps
   {
@@ -44,13 +30,7 @@ namespace Unrect.Projections
 
     /// <summary>
     /// Records <paramref name="step"/> as the <em>innermost</em> one, whatever was declared before
-    /// it.
-    /// <para>
-    /// One step needs this: the headings. A heading and the section it announces are together the
-    /// thing an anchor places — the repeat-stop recipe puts the anchor on the heading-and-content
-    /// flow, so that running out of headings ends the repetition. Left to right on the page is top
-    /// to bottom on the sheet, and the replay is inside-out, which is what this prepend is for.
-    /// </para>
+    /// it — used by the headings, which must wrap the section they announce.
     /// </summary>
     internal Steps Before(Step step)
     {
@@ -142,12 +122,8 @@ namespace Unrect.Projections
     internal static Step Headings(IProjection<string>[] captions) => new Step(StepKind.Headings, captions);
 
     /// <summary>
-    /// Writes this step onto <paramref name="projection"/> by manipulating its <see cref="Placement"/>
-    /// directly — the offset/area/bound operation the retired postfix modifier used to wrap. There is
-    /// no public modifier to route through, and none is needed: geometry carries no
-    /// <c>CallerArgumentExpression</c> capture, so the modifier surface added nothing the step does
-    /// not. The pipeline stage types write each slot at most once, so the declared-over-declared
-    /// guards the modifiers carried can never fire here and are simply not replayed.
+    /// Writes this step's offset/area/bound operation onto <paramref name="projection"/>'s
+    /// <see cref="Placement"/>.
     /// </summary>
     internal IProjection<T> ApplyTo<T>(IProjection<T> projection)
     {
@@ -155,9 +131,7 @@ namespace Unrect.Projections
 
       return _kind switch
       {
-        // An offset is an offset: every kind composes onto an earlier pipeline offset, or starts
-        // from the origin. An anchor is structurally always the first offset step, so it always
-        // starts fresh — replacing the shape's own default, as it always has.
+        // Every offset kind composes onto an earlier pipeline offset, or starts from the origin.
         StepKind.OnRow => Offset<T>(subject, OffsetStrategies.To((IRowLandmark)_subject!)),
         StepKind.OnColumn => Offset<T>(subject, OffsetStrategies.To((IColumnLandmark)_subject!)),
         StepKind.Below => Offset<T>(subject, OffsetStrategies.Past((IRowLandmark)_subject!)),
@@ -182,17 +156,9 @@ namespace Unrect.Projections
     }
 
     /// <summary>
-    /// The one offset rule, for every offset step alike. <paramref name="offset"/> composes onto an
-    /// offset an earlier pipeline stage declared when there is one to compose with — the placement is
-    /// BOTH pipeline-declared (<see cref="Placement.OffsetWasDeclared"/>) AND carries a real offset
-    /// (<see cref="Placement.HasDeclaredOffset"/>) — and otherwise starts from the origin.
-    /// <para>
-    /// Starting fresh is what replaces a shape's own default (a <c>Table</c>'s self-locate — not
-    /// pipeline-declared) and what ignores an explicit no-op (<c>OffsetBy(MinOffset())</c> —
-    /// pipeline-declared but the canonical origin), so "saying no movement out loud says nothing"
-    /// holds. An anchor is always the first offset step (a second anchor is unspellable), so it always
-    /// starts fresh, exactly as an unconditional replace would.
-    /// </para>
+    /// The one offset rule for every offset step: <paramref name="offset"/> composes onto an offset an
+    /// earlier pipeline stage declared (placement both <see cref="Placement.OffsetWasDeclared"/> and
+    /// <see cref="Placement.HasDeclaredOffset"/>), otherwise starts from the origin.
     /// </summary>
     private static IProjection<T> Offset<T>(ProjectionBase subject, IOffsetStrategy offset)
     {

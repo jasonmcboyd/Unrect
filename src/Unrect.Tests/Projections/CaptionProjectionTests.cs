@@ -64,7 +64,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ABareMovementReplacesTheSeek()
     {
-      // The uniform offset-replace law (docs/design/node-type-placement-defaults-spec.md §7/§5.4):
+      // The uniform offset-replace law:
       // a bare declared movement REPLACES a shape's own constructor default and starts from the
       // origin. Caption's default seeks the row containing its text (To(RowContaining(text))), so a
       // bare Down(1) discards the seek and lands one row down from the origin — where the caption

@@ -8,8 +8,8 @@ using Unrect.Projections;
 namespace PlacementGauntlet.Staged
 {
   /// <summary>
-  /// SPIKE — the inverted pipeline's intermediates, plain half (<c>staged-placement-note.md</c>
-  /// §5.2). Placement runs in execution order and the projection TERMINATES the pipeline:
+  /// SPIKE — the inverted pipeline's intermediates, plain half. Placement runs in execution order
+  /// and the projection TERMINATES the pipeline:
   /// <code>
   /// Below(mark)          // entry factory — anchors exist ONLY here
   ///   .Down(1)           // movement: stage -> stage

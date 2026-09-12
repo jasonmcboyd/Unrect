@@ -15,13 +15,13 @@ using static Unrect.Spreadsheets.SpreadsheetProjections;
 namespace PlacementGauntlet
 {
   /// <summary>
-  /// SPIKE, scenario C — the differential for <b>Entry C, the file-scoped vocabulary</b>
-  /// (<c>staged-placement-note.md</c> §5.5). Today's spellings live HERE, and the Entry C readings
+  /// SPIKE, scenario C — the differential for <b>Entry C, the file-scoped vocabulary</b>.
+  /// Today's spellings live HERE, and the Entry C readings
   /// live in their own files, for a reason that is itself the arm's first finding:
   /// <b>the two spellings cannot share a file.</b> This file imports <c>Projection</c> statically;
   /// an Entry C file cannot (CS0121 on every shared name, ledgered as (q)). So a differential is
   /// necessarily cross-file, and the acceptance reads are necessarily whole files — which is what
-  /// §5.5 claimed the unit of scoping would become.
+  /// the file-scoped-vocabulary direction claimed the unit of scoping would become.
   /// </summary>
   public static class ScenarioC
   {

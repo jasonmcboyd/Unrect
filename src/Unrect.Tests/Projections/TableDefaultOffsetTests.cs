@@ -13,9 +13,7 @@ using static Unrect.Tests.ProjectionTestSpaces;
 namespace Unrect.Tests.Projections
 {
   /// <summary>
-  /// The node-type placement default for the leaf <c>Table</c> — piece #3 of the offset design
-  /// (<c>docs/design/node-type-placement-defaults-spec.md</c>, semantics in
-  /// <c>docs/design/table-extent-and-blank-rows.md</c>). Table's default offset moved from
+  /// The node-type placement default for the leaf <c>Table</c>. Table's default offset moved from
   /// <see cref="OffsetStrategies.SkipBlankRows"/> (skip leading blank <em>rows</em>, column always 0)
   /// to <see cref="OffsetStrategies.SkipToFirstNonBlankCell"/> (down to the first content row, then
   /// across to its first non-blank cell), so a self-contained region leaf self-locates on BOTH axes.
