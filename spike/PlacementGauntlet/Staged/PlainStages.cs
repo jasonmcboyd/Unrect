@@ -60,7 +60,7 @@ namespace PlacementGauntlet.Staged
       IOffsetStrategy? separatedBy = null,
       int atLeast = 0,
       [CallerArgumentExpression("item")] string? declared = null)
-      => Close(Projection.VerticalRepeat(item, separatedBy, atLeast, declared));
+      => Close(Projection.VerticalRepeat(item, separatedBy, atLeast, declared: declared));
 
     public IProjection<TSpace, IReadOnlyList<T>> VerticalRepeat<TSpace, T>(
       IProjection<TSpace, T> item,
@@ -68,14 +68,14 @@ namespace PlacementGauntlet.Staged
       int atLeast = 0,
       [CallerArgumentExpression("item")] string? declared = null)
       where TSpace : class, ISpace
-      => Close(Projection.VerticalRepeat(item, separatedBy, atLeast, declared));
+      => Close(Projection.VerticalRepeat(item, separatedBy, atLeast, declared: declared));
 
     public IProjection<IReadOnlyList<T>> HorizontalRepeat<T>(
       IProjection<T> item,
       IOffsetStrategy? separatedBy = null,
       int atLeast = 0,
       [CallerArgumentExpression("item")] string? declared = null)
-      => Close(Projection.HorizontalRepeat(item, separatedBy, atLeast, declared));
+      => Close(Projection.HorizontalRepeat(item, separatedBy, atLeast, declared: declared));
 
     // --- Tables -----------------------------------------------------------------------------------
 

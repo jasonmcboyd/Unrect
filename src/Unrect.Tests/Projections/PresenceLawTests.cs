@@ -287,6 +287,31 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
+    public void ARepeatOverAnAcrossZeroBandEndsBeforeAttemptingItsItemRatherThanTrippingTolerance()
+    {
+      // The across-axis guard, pinned on the case it was added for. A horizontal repeat over a band
+      // with zero width has no across-extent to hand any occurrence, so the walk must END before the
+      // item is attempted. Without the guard the item runs against a zero-across slice, its Optional
+      // absorbs the failure, the productivity guard trips on the standstill, and a spurious D2 Info
+      // fires — an item nobody could have read is reported as a tolerated ending.
+      var band = GridSpace.Create(new[,] { { "a", "b", "c" } }).GetSubspace(new Offset(0, 0), new Area(new Size(3, 0)));
+
+      var horizontal = HorizontalRepeat(Text().Optional()).MapWithDiagnostics(band);
+
+      Assert.Empty(horizontal.Value);
+      Assert.DoesNotContain(horizontal.Diagnostics, d => d.Message.Contains("absorbed"));
+
+      // The mirror across the axis is unaffected and stays so: a vertical repeat over a zero-HEIGHT
+      // band ends the same quiet way, so the guard reads the same on both axes.
+      var column = GridSpace.Create(new[,] { { "a" }, { "b" }, { "c" } }).GetSubspace(new Offset(0, 0), new Area(new Size(1, 0)));
+
+      var vertical = VerticalRepeat(Text().Optional()).MapWithDiagnostics(column);
+
+      Assert.Empty(vertical.Value);
+      Assert.DoesNotContain(vertical.Diagnostics, d => d.Message.Contains("absorbed"));
+    }
+
+    [Fact]
     public void AtLeastStillRejectsARunThatCollectedTooFew()
     {
       // Presence changes reasons and future capability, never current outcomes (D5/§6): the

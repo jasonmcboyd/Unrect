@@ -80,14 +80,14 @@ namespace PlacementGauntlet.Staged
       IOffsetStrategy? separatedBy = null,
       int atLeast = 0,
       [CallerArgumentExpression("item")] string? declared = null)
-      => Scope.VerticalRepeat(item, separatedBy, atLeast, declared);
+      => Scope.VerticalRepeat(item, separatedBy, atLeast, declared: declared);
 
     public static IProjection<TSpace, IReadOnlyList<T>> HorizontalRepeat<T>(
       IProjection<TSpace, T> item,
       IOffsetStrategy? separatedBy = null,
       int atLeast = 0,
       [CallerArgumentExpression("item")] string? declared = null)
-      => Scope.HorizontalRepeat(item, separatedBy, atLeast, declared);
+      => Scope.HorizontalRepeat(item, separatedBy, atLeast, declared: declared);
 
     public static IProjection<TSpace, T> Choice<T>(params IProjection<TSpace, T>[] alternatives)
       => Scope.Choice(alternatives);

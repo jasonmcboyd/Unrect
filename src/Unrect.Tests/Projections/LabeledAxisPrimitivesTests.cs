@@ -20,9 +20,9 @@ namespace Unrect.Tests.Projections
   /// column labels, and <see cref="Projection.Record{T}(Func{TableRow, T})"/> reads a row by name
   /// through the pushed scope. The acceptance claim is byte-identity of the reading's <em>value</em>,
   /// its failure <em>message</em> and <em>A1 location</em>, and — since GAP C closed in step 2 — its
-  /// <see cref="TableRow.Index"/>. The two documented divergences are captured, not asserted equal:
-  /// GAP B (path/subject reflect the primitive tree, not a flat <c>Table</c>) and GAP A (a composite
-  /// forces its discovered block up front where the built-in leaf streams).
+  /// <see cref="TableRow.Index"/>. GAP A is closed: the repeat re-hosts the discovered block, so the
+  /// composition streams in step with the leaf. GAP B remains the one documented divergence, captured
+  /// not asserted equal: path/subject reflect the primitive tree, not a flat <c>Table</c>.
   /// </summary>
   public class LabeledAxisPrimitivesTests
   {
@@ -42,20 +42,19 @@ namespace Unrect.Tests.Projections
         {
           var columns = flow.Next(ColumnLabels(headerRows));
 
-          return flow.Next(WithColumnLabels(columns, VerticalRepeat(Record(record))));
+          return flow.Next(WithColumnLabels(columns, VerticalRepeat(Record(record), onBlank: BlankRowStrategy.Stop)));
         },
         TablePlacementReplica(),
         "Table");
 
     /// <summary>
-    /// A hand copy of the private <c>Projection.TablePlacement()</c> — skip to the first non-blank cell
-    /// (down to the first content row, then across to its first non-blank column), then a block of
-    /// leading rows-then-columns while any cell carries a value. Copied rather than reached because it
-    /// is private to the vocabulary; the two are pinned equal by the differential below, which would
-    /// diverge on offset or extent the moment they drifted apart.
+    /// A hand copy of the offset half of the private <c>Projection.TablePlacement()</c> — skip to the
+    /// first non-blank cell (down to the first content row, then across to its first non-blank column).
+    /// The block is not declared here: it is re-hosted inside the <c>VerticalRepeat</c> via
+    /// <c>onBlank: Stop</c>, so the flow carries no area and the body streams.
     /// </summary>
     private static Placement TablePlacementReplica()
-      => new Placement(OffsetStrategies.SkipToFirstNonBlankCell(), RowStrategies.TakeRowsWhileAnyValue().TakeColumnsWhileAnyValue());
+      => new Placement(OffsetStrategies.SkipToFirstNonBlankCell(), null);
 
     // --- The record read, shared by both spellings -------------------------------------------------
     //
@@ -178,7 +177,7 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void ATableWithTrailingContentReadsTheSameValueEvenAsForcingDiverges()
+    public void ATableWithTrailingContentReadsTheSameValue()
       => SameReading(Table(1, ReadLine), TableFromPrimitives(1, ReadLine), Trailing());
 
     [Fact]
@@ -219,31 +218,23 @@ namespace Unrect.Tests.Projections
       Assert.Equal("Record", primitives.Subject);
     }
 
-    // --- 3. GAP A — the forcing divergence, MEASURED and documented (not a parity assertion) --------
+    // --- 3. GAP A closed — the composition streams in step with the leaf --------------------------
     //
-    // Both Tables read the same VALUE from the trailing-content sheet; where they differ is WHEN rows
-    // are touched. The reimplementation hangs the discovered block off a VerticalFlow — a composite —
-    // which the engine forces at first-child placement, so the whole block (through the blank row that
-    // ends it) is read before any record projects. The built-in Table is a leaf that streams via
-    // StreamBands, touching the header and then one body row at a time. Observed from inside the first
-    // record, where the difference is visible: a declared area is consumed in full by the time Map
-    // returns, so the totals converge and only the up-front cost distinguishes them.
+    // The reimplementation re-hosts the discovered block inside the VerticalRepeat, so the flow carries
+    // no area and the body walks one row past the cursor via HasRow, exactly as the built-in leaf's
+    // StreamBands does. Over the trailing-content sheet the two now touch the same rows by the time the
+    // first record projects and the same total at completion, and read the same value.
 
     [Fact]
-    public void GapA_TheCompositeForcesTheBlockUpFrontWhereTheLeafStreams()
+    public void GapA_TheCompositeStreamsInStepWithTheLeaf()
     {
       var (bespokeAtFirst, bespokeTotal) = RowsTouchedAtFirstRecord(Table(1, Instrumented));
       var (primitivesAtFirst, primitivesTotal) = RowsTouchedAtFirstRecord(TableFromPrimitives(1, Instrumented));
 
-      // The documented observation: the composite has read strictly more of the sheet by the time the
-      // first record projects. This is GAP A — recorded, not a demand that the two agree.
-      Assert.True(
-        primitivesAtFirst > bespokeAtFirst,
-        $"expected the primitive composite to force more up front: leaf touched {bespokeAtFirst} rows "
-        + $"at the first record, composite touched {primitivesAtFirst}");
-
-      // ...and by the end both have forced the same bound — the divergence is timing, not extent.
+      Assert.Equal(bespokeAtFirst, primitivesAtFirst);
       Assert.Equal(bespokeTotal, primitivesTotal);
+
+      SameReading(Table(1, ReadLine), TableFromPrimitives(1, ReadLine), Trailing());
     }
 
     // --- 4. §5.5 pins ------------------------------------------------------------------------------
@@ -285,6 +276,60 @@ namespace Unrect.Tests.Projections
 
       Assert.Equal(bare.Path, wrapped.Path);
       Assert.DoesNotContain("WithColumnLabels", wrapped.Path);
+    }
+
+    // ColumnLabels discovers its width via TakeColumnsWhileAnyValue, so a header row with trailing
+    // blank columns mints a map only as wide as its leading valued-column run — not the full sheet
+    // width, which would carry empty-string labels for the blank columns.
+
+    [Fact]
+    public void ColumnLabelsWidthIsTheLeadingValuedColumnRunNotTheFullSheetWidth()
+    {
+      var sheet = Mixed(new object?[,]
+      {
+        { "Investor", "Amount", null, null },
+        { "Acme", 10m, null, null },
+      });
+
+      LabelMap map = ColumnLabels(1).Map(sheet);
+
+      Assert.Equal(new[] { "Investor", "Amount" }, map.Labels);
+      Assert.Equal(2, map.Labels.Count);
+    }
+
+    // WithColumnLabels bounds the body to the label-map width when the extent is wider, so a record
+    // cannot reach a trailing column outside the labels; on an exact-width extent it is the identity.
+
+    [Fact]
+    public void WithColumnLabelsBoundsTheBodyToTheLabelWidthWhenTheSheetIsWider()
+    {
+      // Two labels over a three-column sheet whose body carries a trailing third column. The body is
+      // narrowed to the labelled width, so each record sees two columns, not three.
+      var sheet = Mixed(new object?[,]
+      {
+        { "Investor", "Amount", null },
+        { "Acme", 10m, 999m },
+        { "Beta", 20m, 888m },
+      });
+
+      var map = LabelMap.Of(("Investor", 0), ("Amount", 1));
+
+      IReadOnlyList<int> widths = WithColumnLabels(map, VerticalRepeat(Record((TableRow row) => row.Count))).Map(sheet);
+
+      Assert.All(widths, width => Assert.Equal(2, width));
+    }
+
+    [Fact]
+    public void WithColumnLabelsLeavesAnExactWidthSheetUntouched()
+    {
+      // Label width equals sheet width, so the wider-than branch is not taken and the body is handed
+      // the extent unchanged — the identity the extent-transparency pin depends on.
+      var sheet = Flat();
+      var map = LabelMap.Of(("Investor", 0), ("Amount", 1));
+
+      IReadOnlyList<int> widths = WithColumnLabels(map, VerticalRepeat(Record((TableRow row) => row.Count))).Map(sheet);
+
+      Assert.All(widths, width => Assert.Equal(2, width));
     }
 
     // ColumnLabels reads the header through the same TableView parser a built-in Table uses, so its

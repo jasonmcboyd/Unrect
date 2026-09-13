@@ -81,7 +81,7 @@ namespace Unrect.Projections
       IOffsetStrategy? separatedBy = null,
       int atLeast = 0,
       [CallerArgumentExpression("item")] string? declared = null)
-      => Close(Projection.VerticalRepeat(item, separatedBy, atLeast, declared));
+      => Close(Projection.VerticalRepeat(item, separatedBy, atLeast, declared: declared));
 
     /// <inheritdoc cref="Projection.HorizontalRepeat{T}"/>
     /// <typeparam name="T">What one occurrence reads.</typeparam>
@@ -94,7 +94,7 @@ namespace Unrect.Projections
       IOffsetStrategy? separatedBy = null,
       int atLeast = 0,
       [CallerArgumentExpression("item")] string? declared = null)
-      => Close(Projection.HorizontalRepeat(item, separatedBy, atLeast, declared));
+      => Close(Projection.HorizontalRepeat(item, separatedBy, atLeast, declared: declared));
 
     /// <inheritdoc cref="Projection.Choice{T}"/>
     /// <typeparam name="T">What every alternative reads.</typeparam>

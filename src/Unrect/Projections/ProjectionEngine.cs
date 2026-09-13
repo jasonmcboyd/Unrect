@@ -195,6 +195,36 @@ namespace Unrect.Projections
       return new BoundedSpace(inner, scan, exception => AreaFailure(scope, projection, inner, exception));
     }
 
+    /// <summary>
+    /// Constructs a <see cref="BoundedSpace"/> over <paramref name="inner"/> from
+    /// <paramref name="incremental"/>, carrying <paramref name="projection"/>'s placement failure as
+    /// the identity of the bound it discovers. Beginning the scan is the strategy call this replaces,
+    /// so it fails exactly as measuring would.
+    /// <para>
+    /// Unlike <see cref="Bind"/>, this does not consult <c>_forcedEager</c>: the repeat walks its
+    /// bound one band at a time via <c>HasRow</c>, with no measure-up-front alternative for a
+    /// forced-eager pass to exercise.
+    /// </para>
+    /// </summary>
+    internal static BoundedSpace BindArea(IProjection projection, ISpace inner, ProjectionContext scope, IIncrementalAreaStrategy incremental)
+    {
+      IAreaScan scan;
+      try
+      {
+        scan = incremental.BeginArea(inner);
+      }
+      catch (ProjectionException)
+      {
+        throw;
+      }
+      catch (Exception exception)
+      {
+        throw AreaFailure(scope, projection, inner, exception);
+      }
+
+      return new BoundedSpace(inner, scan, exception => AreaFailure(scope, projection, inner, exception));
+    }
+
     private static AppliedResult<TResult> Project<TResult>(IProjection<TResult> projection, Placed placed)
     {
       ProjectionResult<TResult> result;

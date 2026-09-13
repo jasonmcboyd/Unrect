@@ -36,7 +36,15 @@ namespace Unrect.Projections
 
     public override ProjectionResult<T> Project(ISpace extent, ProjectionContext context)
     {
-      var applied = ProjectionEngine.Apply(Body, extent, context.PushLabels(Axis, Map));
+      // Bound the body to the labelled width only when the extent is wider, so a sheet with trailing
+      // blank columns reads under the same columns the labels describe. On an exact-width extent the
+      // body is handed through untouched, forcing nothing.
+      var width = Map.Labels.Count;
+      var body = BoundedSpace.WidthOf(extent) > width
+        ? extent.GetSubspace(new Offset(0, 0), new Area(width, extent.Area.Height))
+        : extent;
+
+      var applied = ProjectionEngine.Apply(Body, body, context.PushLabels(Axis, Map));
 
       return new ProjectionResult<T>(applied.Value, applied.Advance, applied.Presence);
     }

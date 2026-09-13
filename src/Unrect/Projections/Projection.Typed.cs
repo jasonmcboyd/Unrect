@@ -108,14 +108,16 @@ namespace Unrect.Projections
     /// <param name="item">The projection to apply repeatedly.</param>
     /// <param name="separatedBy">The offset between occurrences; never applied before the first.</param>
     /// <param name="atLeast">How many occurrences make a well-formed section.</param>
+    /// <param name="onBlank">How a fully-blank body row is treated; null keeps the plain walk. See <see cref="VerticalRepeat{T}"/>.</param>
     /// <param name="declared">Supplied by the compiler as the text of the <paramref name="item"/> argument.</param>
     public static IProjection<TSpace, IReadOnlyList<T>> VerticalRepeat<TSpace, T>(
       IProjection<TSpace, T> item,
       IOffsetStrategy? separatedBy = null,
       int atLeast = 0,
+      BlankRowStrategy? onBlank = null,
       [CallerArgumentExpression("item")] string? declared = null)
       where TSpace : class, ISpace
-      => Repeat(Orientation.Vertical, ProjectionExtensions.Plain(NotNull(item, nameof(item))), separatedBy, atLeast, declared);
+      => Repeat(Orientation.Vertical, ProjectionExtensions.Plain(NotNull(item, nameof(item))), separatedBy, onBlank, atLeast, declared);
 
     /// <inheritdoc cref="VerticalRepeat{TSpace, T}"/>
     /// <typeparam name="TSpace">The space the item is declared over, and therefore the repeat.</typeparam>
@@ -123,14 +125,16 @@ namespace Unrect.Projections
     /// <param name="item">The projection to apply repeatedly.</param>
     /// <param name="separatedBy">The offset between occurrences; never applied before the first.</param>
     /// <param name="atLeast">How many occurrences make a well-formed section.</param>
+    /// <param name="onBlank">How a fully-blank body row is treated; null keeps the plain walk. See <see cref="VerticalRepeat{T}"/>.</param>
     /// <param name="declared">Supplied by the compiler as the text of the <paramref name="item"/> argument.</param>
     public static IProjection<TSpace, IReadOnlyList<T>> HorizontalRepeat<TSpace, T>(
       IProjection<TSpace, T> item,
       IOffsetStrategy? separatedBy = null,
       int atLeast = 0,
+      BlankRowStrategy? onBlank = null,
       [CallerArgumentExpression("item")] string? declared = null)
       where TSpace : class, ISpace
-      => Repeat(Orientation.Horizontal, ProjectionExtensions.Plain(NotNull(item, nameof(item))), separatedBy, atLeast, declared);
+      => Repeat(Orientation.Horizontal, ProjectionExtensions.Plain(NotNull(item, nameof(item))), separatedBy, onBlank, atLeast, declared);
 
     /// <summary>
     /// <see cref="Choice{T}"/> over a space offering at least <typeparamref name="TSpace"/>.

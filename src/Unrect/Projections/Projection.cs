@@ -524,7 +524,7 @@ namespace Unrect.Projections
 
       return new ColumnLabelsProjection(
         headerRows,
-        Placement.Of(RowsThenColumns(RowStrategies.TakeRows(headerRows), ColumnStrategies.AllColumns())));
+        Placement.Of(RowsThenColumns(RowStrategies.TakeRows(headerRows), ColumnStrategies.TakeColumnsWhileAnyValue())));
     }
 
     /// <summary>
@@ -703,24 +703,35 @@ namespace Unrect.Projections
     /// <c>.Named(…)</c> to choose a name, and note that an item written inline keeps its description
     /// instead.
     /// </param>
+    /// <param name="onBlank">
+    /// How a fully-blank body row is treated once the occurrences are the rows of a discovered block:
+    /// <c>Stop</c> ends at the first blank row, and <c>Skip</c>/<c>Fault</c>/<c>Tolerate</c> run to
+    /// the enclosing edge and act on each interior blank row. Null (the default) keeps the plain
+    /// walk, where a blank band is a separator rather than a terminator. Cannot be combined with
+    /// <paramref name="separatedBy"/>.
+    /// </param>
     public static IProjection<IReadOnlyList<T>> VerticalRepeat<T>(
       IProjection<T> item,
       IOffsetStrategy? separatedBy = null,
       int atLeast = 0,
+      BlankRowStrategy? onBlank = null,
       [CallerArgumentExpression("item")] string? declared = null)
-      => Repeat(Orientation.Vertical, item, separatedBy, atLeast, declared);
+      => Repeat(Orientation.Vertical, item, separatedBy, onBlank, atLeast, declared);
 
     /// <summary>
     /// One item stacked rightwards as many times as the space supports; see
     /// <see cref="VerticalRepeat{T}"/> for <paramref name="separatedBy"/>,
-    /// <paramref name="atLeast"/>, and how the item is named.
+    /// <paramref name="atLeast"/>, and how the item is named. <paramref name="onBlank"/> is a
+    /// vertical blank-row policy and is rejected here; the parameter exists for call-site symmetry
+    /// with <see cref="VerticalRepeat{T}"/>.
     /// </summary>
     public static IProjection<IReadOnlyList<T>> HorizontalRepeat<T>(
       IProjection<T> item,
       IOffsetStrategy? separatedBy = null,
       int atLeast = 0,
+      BlankRowStrategy? onBlank = null,
       [CallerArgumentExpression("item")] string? declared = null)
-      => Repeat(Orientation.Horizontal, item, separatedBy, atLeast, declared);
+      => Repeat(Orientation.Horizontal, item, separatedBy, onBlank, atLeast, declared);
 
     // --- Alternatives -------------------------------------------------------------------------
 
@@ -802,15 +813,29 @@ namespace Unrect.Projections
       Orientation orientation,
       IProjection<T> item,
       IOffsetStrategy? separatedBy,
+      BlankRowStrategy? onBlank,
       int atLeast,
       string? declared)
     {
       if (atLeast < 0)
         throw new ArgumentOutOfRangeException(nameof(atLeast), atLeast, "A repeat cannot require a negative number of occurrences.");
 
+      if (onBlank is not null && separatedBy is not null)
+        throw new ArgumentException("A repeat takes either a separator or an onBlank policy, not both — they are two ways to treat the gap between occurrences.", nameof(onBlank));
+
+      if (onBlank is not null && orientation == Orientation.Horizontal)
+        throw new ArgumentException("onBlank is a vertical blank-row policy; HorizontalRepeat does not support it.", nameof(onBlank));
+
+      // A policy makes the occurrences the rows of a block: Stop bounds it at the first blank row,
+      // the others run it to the edge so interior blank rows are seen. (Horizontal + onBlank already
+      // threw above, so reaching here means vertical.)
+      var boundArea = onBlank is BlankRowStrategy blank
+        ? (IIncrementalAreaStrategy)(blank.IsStop ? DiscoveredBlock() : ToEdgeBlock())
+        : null;
+
       // A repeat has one item rather than an nth child, so there is no ordinal to fall back on: an
       // item that is not a plain identifier keeps its description, exactly as before.
-      return new RepeatProjection<T>(item, separatedBy, orientation, atLeast, UseSite.From(declared, null), Placement.Default);
+      return new RepeatProjection<T>(item, separatedBy, orientation, atLeast, UseSite.From(declared, null), Placement.Default, onBlank, boundArea);
     }
 
     /// <summary>Validates a layout lambda where the caller's parameter name is what the user typed.</summary>

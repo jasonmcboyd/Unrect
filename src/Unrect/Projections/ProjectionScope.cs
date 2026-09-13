@@ -142,26 +142,30 @@ namespace Unrect.Projections
     /// <param name="item">The projection to apply repeatedly.</param>
     /// <param name="separatedBy">The offset between occurrences; never applied before the first.</param>
     /// <param name="atLeast">How many occurrences make a well-formed section.</param>
+    /// <param name="onBlank">How a fully-blank body row is treated; null keeps the plain walk. See <see cref="Projection.VerticalRepeat{T}"/>.</param>
     /// <param name="declared">Supplied by the compiler as the text of the <paramref name="item"/> argument.</param>
     public IProjection<TSpace, IReadOnlyList<TResult>> VerticalRepeat<TResult>(
       IProjection<TSpace, TResult> item,
       IOffsetStrategy? separatedBy = null,
       int atLeast = 0,
+      BlankRowStrategy? onBlank = null,
       [CallerArgumentExpression("item")] string? declared = null)
-      => Projection.VerticalRepeat(item, separatedBy, atLeast, declared);
+      => Projection.VerticalRepeat(item, separatedBy, atLeast, onBlank, declared);
 
     /// <inheritdoc cref="Projection.HorizontalRepeat{T}"/>
     /// <typeparam name="TResult">What one occurrence reads.</typeparam>
     /// <param name="item">The projection to apply repeatedly.</param>
     /// <param name="separatedBy">The offset between occurrences; never applied before the first.</param>
     /// <param name="atLeast">How many occurrences make a well-formed section.</param>
+    /// <param name="onBlank">How a fully-blank body row is treated; null keeps the plain walk. See <see cref="Projection.VerticalRepeat{T}"/>.</param>
     /// <param name="declared">Supplied by the compiler as the text of the <paramref name="item"/> argument.</param>
     public IProjection<TSpace, IReadOnlyList<TResult>> HorizontalRepeat<TResult>(
       IProjection<TSpace, TResult> item,
       IOffsetStrategy? separatedBy = null,
       int atLeast = 0,
+      BlankRowStrategy? onBlank = null,
       [CallerArgumentExpression("item")] string? declared = null)
-      => Projection.HorizontalRepeat(item, separatedBy, atLeast, declared);
+      => Projection.HorizontalRepeat(item, separatedBy, atLeast, onBlank, declared);
 
     /// <inheritdoc cref="Projection.Choice{T}"/>
     /// <typeparam name="TResult">What every alternative reads.</typeparam>

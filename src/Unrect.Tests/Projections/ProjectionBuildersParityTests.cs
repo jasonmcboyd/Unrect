@@ -181,7 +181,7 @@ namespace Unrect.Tests.Projections
         ["HorizontalFlow<T>(Layout<TSpace, T>)"] = Reading(
           () => B.HorizontalFlow(h => $"{h.Next(Text())}/{h.Next(Text())}"),
           () => HorizontalFlow(h => $"{h.Next(Text())}/{h.Next(Text())}")),
-        ["HorizontalRepeat<T>(IProjection<TSpace, T>, IOffsetStrategy, int, string)"] = Reading(
+        ["HorizontalRepeat<T>(IProjection<TSpace, T>, IOffsetStrategy, int, Nullable<BlankRowStrategy>, string)"] = Reading(
           () => { var cell = Text(); return B.HorizontalRepeat(cell, separatedBy: BlankColumns(), atLeast: 1); },
           () => { var cell = Text(); return HorizontalRepeat(cell, separatedBy: BlankColumns(), atLeast: 1); }),
         ["Integer()"] = Reading(() => B.Integer(), () => Integer()),
@@ -251,7 +251,7 @@ namespace Unrect.Tests.Projections
         ["VerticalFlow<T>(Layout<TSpace, T>)"] = Reading(
           () => B.VerticalFlow(v => $"{v.Next(Text())}/{v.Next(Text())}"),
           () => VerticalFlow(v => $"{v.Next(Text())}/{v.Next(Text())}")),
-        ["VerticalRepeat<T>(IProjection<TSpace, T>, IOffsetStrategy, int, string)"] = Reading(
+        ["VerticalRepeat<T>(IProjection<TSpace, T>, IOffsetStrategy, int, Nullable<BlankRowStrategy>, string)"] = Reading(
           () => { var line = Text(); return B.VerticalRepeat(line, separatedBy: BlankRows(), atLeast: 1); },
           () => { var line = Text(); return VerticalRepeat(line, separatedBy: BlankRows(), atLeast: 1); }),
         ["WithColumnLabels<T>(LabelMap, IProjection<T>)"] = Reading(
@@ -608,8 +608,8 @@ namespace Unrect.Tests.Projections
       // The five <TSpace, T> typed forms, for the same reason said the other way: their first type
       // argument is exactly what the using directive already fixed, so re-exporting them would ask
       // the file to name its space twice.
-      "VerticalRepeat<TSpace, T>(IProjection<TSpace, T>, IOffsetStrategy, int, string)",
-      "HorizontalRepeat<TSpace, T>(IProjection<TSpace, T>, IOffsetStrategy, int, string)",
+      "VerticalRepeat<TSpace, T>(IProjection<TSpace, T>, IOffsetStrategy, int, Nullable<BlankRowStrategy>, string)",
+      "HorizontalRepeat<TSpace, T>(IProjection<TSpace, T>, IOffsetStrategy, int, Nullable<BlankRowStrategy>, string)",
       "Choice<TSpace, T>(IProjection<TSpace, T>[])",
       "Table<TSpace, T>(int, IProjection<TSpace, T>, string)",
       "Table<TSpace, T>(int, Func<LabelMap, IProjection<TSpace, T>>, string)",
