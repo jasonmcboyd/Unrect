@@ -41,37 +41,43 @@ default placement and extent, whether it streams or forces its bound, and how it
 parent. That catalog is the map for making the primitives compose-and-stream (and for judging the
 leaf/composite question below).
 
-## The blocker and the fix — GAP A (streaming)
+## The blocker and the fix — GAP A (streaming) — CLOSED (2026-09-13, commit `e561f36`)
 
-Composing `Table` this way makes the flow a **composite**, and the engine resolves a composite's
-discovered extent at first-child placement (`Exceeds` + `GetSubspace(offset)`) — the whole block, up
-front. The bespoke leaf avoids that only because `TableView.StreamRows` walks a `BoundedSpace`
-row-by-row via `HasRow`.
+The blocker was: composing `Table` this way makes the flow a **composite**, and the engine resolves a
+composite's discovered extent at first-child placement (`Exceeds` + `GetSubspace(offset)`) — the whole
+block, up front. The bespoke leaf avoided that only because `TableView.StreamRows` walks a
+`BoundedSpace` row-by-row via `HasRow`.
 
-**Fix:** give `VerticalRepeat` that same walk — re-host the discovered bound **inside the repeat** so
-the repeat becomes `StreamBands`-as-a-combinator: the flow carries no composite area (it just
-accumulates its children's extents), and the repeat streams the body one row past the cursor via
-`HasRow`, reusing the exact `BoundedSpace` machinery. No engine change; the repeat is already a
-row-by-row walker rather than a slicer.
+The fix, now shipped: `VerticalRepeat` re-hosts the discovered bound **inside the repeat** and walks
+the body one band past the cursor via `BoundedSpace.HasRow`, reusing the exact `BoundedSpace`
+machinery — so it never reads `Area` on the bound. The flow carries no composite area. No engine
+change; the additive internal `ProjectionEngine.BindArea` builds the bound. The primitives
+(`ColumnLabels`/`WithColumnLabels`/`Record`/`VerticalRepeat`) now compose into a projection that
+streams in step with the leaf, proven equal on values and on the forcing profile. Truth is in code +
+tests (`RepeatProjection`, `RepeatBlankRowStrategyTests`, `LabeledAxisPrimitivesTests`); this section
+is kept only as the record of what the blocker was.
 
 ## Open questions (decide before / during the build — do NOT pre-lock)
 
-1. **Is "leaf" still a real distinction?** Once a composition can stream, "leaf" bundles three things
-   that turn out to be separable: **streaming** (achievable by a composite via the lazy repeat),
-   **opacity to tooling** (already how layout composites behave — children exist only while the lambda
-   runs), and a **flat diagnostic path** (that is GAP B, below). If those come apart, `Table` may just
-   be a streaming composition *presented as a named opaque unit*, and the leaf/composite engine
-   category may be obsolete. Open — to discuss, not to assume either way.
-2. **The repeat terminator's user-facing shape.** `VerticalRepeat(item, within: <area>)` ("fill this
-   discovered block") vs a **lazy while-terminator** — a repeat that stops when the next row peeks
-   blank, which is the same logic as the shipped `onBlank: Stop` lifted onto the general repeat. The
-   second composes with the `onBlank` vocabulary and avoids a second way to say "discovered block".
-3. **GAP B — path / subject parity.** The composition's diagnostics read `VerticalRepeat[i] -> Record`
-   where the leaf says flat `Table`. If `Table` is to *become* the composition, its diagnostics must
-   not regress — a path-flattening / naming decision.
-4. **Shared header/body width.** The header consume (`ColumnLabels`) and the body walk must share **one**
-   discovered width (one `BoundedSpace` threaded across both) or a ragged / trailing-blank-column sheet
-   drifts between the composition and the leaf.
+1. **Is "leaf" still a real distinction?** DECIDED conceptually (2026-09-12): no — the engine's `Bind`
+   keys off the placement strategy, not the projection kind, so streaming is a property of an
+   incremental placement and opacity-to-tooling is already how layout composites behave. "Leaf" is not
+   an engine category. Retiring the bespoke leaf `Table` in favour of the composition presented as a
+   named opaque unit is DEFERRED behind GAP B (#3) and the class-bounded composite that would carry
+   that presentation.
+2. **The repeat terminator's user-facing shape.** DECIDED (2026-09-12): the **lazy while-terminator**,
+   spelled `onBlank: BlankRowStrategy` on the repeat — the shipped `Stop`/`Skip`/`Fault`/`Tolerate`
+   vocabulary lifted onto the general repeat. No `within:` area. Table's `onBlank` and the repeat's are
+   SEPARATE knobs with independent defaults (Table `Stop`, repeat bare `null`); they are not conflated.
+   Shipped in `e561f36`.
+3. **GAP B — path / subject parity.** OPEN / DEFERRED. The composition's diagnostics read
+   `VerticalRepeat[i] -> Record` where the leaf says flat `Table`. Retiring the leaf waits on a
+   path-flattening / naming mechanism (the class-bounded composite) so the diagnostics do not regress.
+   Until then the leaf stays and the composition's honest nested path is accepted.
+4. **Shared header/body width.** DECIDED / shipped (2026-09-13): `ColumnLabels` discovers width via
+   `TakeColumnsWhileAnyValue` and `WithColumnLabels` bounds the body to that width, so header and body
+   share one discovered width. Exact leaf parity on *ragged* sheets (a body row wider than the header)
+   is DEFERRED; the equivalence proof is scoped to clean / trailing-blank fixtures.
 
 ## Already shipped this thread (truth is in code + tests; do not re-describe here)
 
@@ -79,6 +85,8 @@ row-by-row walker rather than a slicer.
 - `Table onBlank` blank-row strategy (Stop/Skip/Fault/Tolerate/blankRecord) — commit `1cc6c5a`.
 - Uniform offset law (a declared pipeline offset replaces the shape default; one `Steps.Offset` rule) —
   commit `b4838bc`.
+- GAP A closed: streaming `VerticalRepeat` (HasRow walk) + `onBlank` terminator + `ColumnLabels`/
+  `WithColumnLabels` shared-width thread; the primitives compose-and-stream — commit `e561f36`.
 
 ## Parked (elsewhere, not here)
 
@@ -178,6 +186,11 @@ streaming/forcing profile.
 | `Fields` (a `FlowProjection` of `FieldProjection`s) | `IReadOnlyDictionary<string,CellValue>` | `FieldsPlacement(firstLabel)` — anchors on first field's label (`Projection.cs:649`) | Composite (vertical flow) — forcing per the `VerticalFlow` row | a `VerticalFlow` of `Field` children | opaque vertical flow; each field one 2×1 band; children built once at construction (`:631-634`); keyed by declared labels |
 
 ### Synthesis — what streams, what forces, and what it means for GAP A
+
+> Pre-fix analysis, kept as the reasoning that led to the fix. GAP A is now closed (commit `e561f36`):
+> a streaming `VerticalRepeat` walks the re-hosted bound via `HasRow`, so the composition streams too —
+> the leaf is no longer the only projection that streams a multi-row discovered bound.
+
 
 - **Exactly one projection streams a multi-row discovered bound today: the leaf `Table`.** Its
   `DiscoveredBlock` placement is incremental, so the engine binds a `BoundedSpace`
