@@ -31,9 +31,16 @@ namespace Unrect.Projections
     /// <summary>
     /// True only for unnamed wrappers (<c>Select</c>, <c>Padded</c>, <c>Until</c>, and the
     /// <c>Else</c>/<c>Optional</c> boundary), which contribute no segment to a failure path;
-    /// naming a wrapper makes it opaque and it claims the segment.
+    /// naming a wrapper or marking it a unit boundary makes it opaque and it claims the segment.
     /// </summary>
     bool IsTransparent { get; }
+
+    /// <summary>
+    /// True when <c>.AsUnit</c> marked this projection a path boundary: in the collapsed failure
+    /// path its internal scaffolding folds into one named unit segment, while
+    /// <c>ProjectionException.FullPath</c> keeps the uncollapsed path for drill-through.
+    /// </summary>
+    bool IsUnitBoundary { get; }
   }
 
   /// <summary>

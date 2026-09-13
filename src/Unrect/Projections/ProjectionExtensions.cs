@@ -148,6 +148,24 @@ namespace Unrect.Projections
       => Cloned<TProjection>(Base(projection).Renamed(name ?? throw new ArgumentNullException(nameof(name))));
 
     /// <summary>
+    /// Marks the projection a path boundary named <paramref name="name"/>: in a failure or
+    /// diagnostic path its internal scaffolding folds into one <paramref name="name"/> segment, while
+    /// the full uncollapsed path is kept on <c>ProjectionException.FullPath</c> and
+    /// <c>ProjectionDiagnostic.FullPath</c> for drill-through.
+    /// <para>
+    /// A named child inside the unit survives the fold as a quoted segment, so a caption or a
+    /// hand-named leaf still points a reader at itself; everything else between the boundary and the
+    /// failure collapses, carrying only its occurrence index up onto the nearest surviving segment.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="TProjection">The projection's own type, handed back unchanged.</typeparam>
+    /// <param name="projection">The declaration.</param>
+    /// <param name="name">What the collapsed path and subject should call the unit.</param>
+    public static TProjection AsUnit<TProjection>(this TProjection projection, string name)
+      where TProjection : class, IProjection
+      => Cloned<TProjection>(Base(projection).AsUnitBoundary(name ?? throw new ArgumentNullException(nameof(name))));
+
+    /// <summary>
     /// Falls back to <paramref name="fallback"/> when this projection fails, recording a
     /// <c>Warning</c> that carries the failing projection's own path, location, and problem.
     /// <para>

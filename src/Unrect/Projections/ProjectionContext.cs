@@ -191,16 +191,22 @@ namespace Unrect.Projections
       Size? requested,
       Exception? inner,
       bool isFault = false)
-      => new ProjectionException(Describe(projection, SiteOf(projection)), problem, Render(projection), Locate(space), requested, projection, inner, isFault);
+    {
+      var chain = Chain(projection);
+      var (path, subject) = Collapse(chain);
+
+      return new ProjectionException(subject, problem, path, RenderFull(chain), Locate(space), requested, projection, inner, isFault);
+    }
 
     /// <summary>
     /// Records something about <paramref name="projection"/> that happened here.
     /// </summary>
     internal void Report(DiagnosticSeverity severity, IProjection projection, string message, ISpace space)
     {
-      var reported = Through(projection);
+      var chain = Chain(Through(projection));
+      var (path, subject) = Collapse(chain);
 
-      Diagnostics.Add(new ProjectionDiagnostic(severity, Describe(reported, SiteOf(projection)), message, Render(reported), Locate(space)));
+      Diagnostics.Add(new ProjectionDiagnostic(severity, subject, message, path, RenderFull(chain), Locate(space)));
     }
 
     /// <summary>
@@ -222,6 +228,7 @@ namespace Unrect.Projections
         subject ?? failure.Subject,
         message ?? failure.Problem,
         failure.Path,
+        failure.FullPath,
         failure.Location));
 
     internal static string Describe(IProjection projection) => Describe(projection, default);
@@ -254,45 +261,121 @@ namespace Unrect.Projections
     internal static string DescribeThrough(IProjection projection) => Describe(Through(projection));
 
     /// <summary>
-    /// Renders the chain of enclosing projections, ending at <paramref name="failing"/> — which is
-    /// a child of this context when a projection fails before it is descended into.
+    /// The chain of enclosing projections, root to leaf, ending at <paramref name="failing"/> — a
+    /// child of this context when a projection fails before it is descended into. Transparent
+    /// wrappers say nothing about themselves and are left out.
     /// </summary>
-    private string Render(IProjection? failing)
+    private List<PathNode> Chain(IProjection? failing)
     {
-      var segments = new List<string>();
+      var chain = new List<PathNode>();
       IProjection? deepest = null;
-      var deepestSite = default(UseSite);
 
       for (var context = this; context is not null; context = context.Parent)
       {
         if (context.Projection is not IProjection projection || projection.IsTransparent)
           continue;
 
-        segments.Insert(0, Describe(projection, context.Site) + (context.Index is int index ? $"[{index}]" : string.Empty));
-
-        if (deepest is null)
-        {
-          deepest = projection;
-          deepestSite = context.Site;
-        }
+        chain.Insert(0, new PathNode(projection, context.Site, context.Index));
+        deepest ??= projection;
       }
 
       if (failing is not null && !ReferenceEquals(deepest, failing))
-      {
-        segments.Add(Describe(failing, Pending));
-        deepest = failing;
-        deepestSite = Pending;
-      }
+        chain.Add(new PathNode(failing, Pending, null));
 
-      if (deepest is null)
+      return chain;
+    }
+
+    /// <summary>
+    /// The whole path with no boundary folded — a debugger drill-through. A boundary renders its unit
+    /// name unquoted; everything else renders as it always has, including the trailing kind suffix a
+    /// named leaf earns.
+    /// </summary>
+    private static string RenderFull(List<PathNode> chain)
+    {
+      if (chain.Count == 0)
         return "(root)";
 
-      // A name hides what the projection is, so the last segment says so — whether the name was
-      // declared on the projection or read off the use site, since both render as a quoted name.
-      if (deepest.Name is not null || deepestSite.Name is not null)
-        segments[segments.Count - 1] += $" ({Kind(deepest.Description)})";
+      var segments = new List<string>(chain.Count);
+      foreach (var node in chain)
+        segments.Add(Segment(node));
 
+      ApplyKindSuffix(segments, chain[chain.Count - 1]);
       return string.Join(" -> ", segments);
+    }
+
+    /// <summary>
+    /// The collapsed path and its subject. Inside a boundary, only quoted-name survivors keep a
+    /// segment of their own; every other node folds, carrying only its occurrence index up onto the
+    /// nearest surviving segment. With no boundary in the chain nothing folds, so this is
+    /// byte-identical to <see cref="RenderFull"/>, kind suffix and all, and the subject is the
+    /// failing node's own description. The subject always names the deepest surviving segment, so it
+    /// and the collapsed path's tail agree.
+    /// </summary>
+    private static (string Path, string Subject) Collapse(List<PathNode> chain)
+    {
+      if (chain.Count == 0)
+        return ("(root)", "(root)");
+
+      var segments = new List<string>();
+      var insideBoundary = false;
+      var lastKept = 0;
+      var surviving = chain[0];
+
+      foreach (var node in chain)
+      {
+        if (node.Projection.IsUnitBoundary)
+        {
+          insideBoundary = true;
+          Keep(node);
+        }
+        else if (!insideBoundary || node.Projection.Name is not null || node.Site.Name is not null)
+        {
+          Keep(node);
+        }
+        else if (node.Index is int index)
+        {
+          segments[lastKept] += $"[{index}]";
+        }
+      }
+
+      if (!insideBoundary)
+        ApplyKindSuffix(segments, chain[chain.Count - 1]);
+
+      return (string.Join(" -> ", segments), SegmentName(surviving));
+
+      void Keep(PathNode kept)
+      {
+        segments.Add(Segment(kept));
+        lastKept = segments.Count - 1;
+        surviving = kept;
+      }
+    }
+
+    /// <summary>What a projection contributes to a path: its name, plus its occurrence index if it has one.</summary>
+    private static string Segment(PathNode node)
+      => SegmentName(node) + (node.Index is int index ? $"[{index}]" : string.Empty);
+
+    /// <summary>
+    /// A boundary's unit label, unquoted, joined to its instance name as <c>label:name</c> when it
+    /// also carries one; anything else as a reader would name it.
+    /// </summary>
+    private static string SegmentName(PathNode node)
+    {
+      if (!node.Projection.IsUnitBoundary)
+        return Describe(node.Projection, node.Site);
+
+      var label = ((ProjectionBase)node.Projection).UnitName!;
+      return node.Projection.Name is string instance ? $"{label}:{instance}" : label;
+    }
+
+    /// <summary>
+    /// A name hides what the projection is, so the last segment says so — whether the name was
+    /// declared on the projection or read off the use site, since both render as a quoted name.
+    /// </summary>
+    private static void ApplyKindSuffix(List<string> segments, PathNode deepest)
+    {
+      if (deepest.Projection.Name is not null || deepest.Site.Name is not null)
+        segments[segments.Count - 1] += $" ({Kind(deepest.Projection.Description)})";
     }
 
     private static string Kind(string description)
@@ -300,6 +383,27 @@ namespace Unrect.Projections
       var parenthesis = description.IndexOf('(');
       return parenthesis < 0 ? description : description.Substring(0, parenthesis);
     }
+  }
+
+  /// <summary>
+  /// One projection in a rendered path: the projection, the use site that labels it, and its
+  /// occurrence index. Materialised once per failure so the collapsed path and the full path render
+  /// the same chain two ways.
+  /// </summary>
+  internal readonly struct PathNode
+  {
+    public PathNode(IProjection projection, UseSite site, int? index)
+    {
+      Projection = projection;
+      Site = site;
+      Index = index;
+    }
+
+    public IProjection Projection { get; }
+
+    public UseSite Site { get; }
+
+    public int? Index { get; }
   }
 
   /// <summary>

@@ -218,6 +218,238 @@ namespace Unrect.Tests.Projections
       Assert.Equal("Record", primitives.Subject);
     }
 
+    // --- 2b. .AsUnit — the composition folds to one named unit in the collapsed path --------------
+    //
+    // The same reimplementation marked .AsUnit("Table"). The boundary folds its internal scaffolding
+    // — the header repeat and the record — into one "Table" segment, carrying the failing occurrence's
+    // index up onto it, while FullPath keeps the uncollapsed tree GAP B pinned above. The value and
+    // the reading are untouched: the marker is presentation-only.
+
+    private static IProjection<IReadOnlyList<T>> UnitTableFromPrimitives<T>(int headerRows, Func<TableRow, T> record)
+      => TableFromPrimitives(headerRows, record).AsUnit("Table");
+
+    [Fact]
+    public void AsUnitFoldsTheCompositionToOneNamedSegment()
+    {
+      var failure = Assert.Throws<ProjectionException>(
+        () => UnitTableFromPrimitives(1, (TableRow row) => row.Decimal("Amount")).Map(KindMismatch()));
+
+      Assert.Equal("Table[0]", failure.Path);
+      Assert.Equal("Table", failure.Subject);
+      Assert.Equal("Table -> VerticalRepeat#2[0] -> Record", failure.FullPath);
+      Assert.Equal("A2", failure.Location.A1);
+    }
+
+    [Fact]
+    public void AsUnitIsAFirewallUnderAnOuterRepeat()
+    {
+      // Two blank-separated blocks; the second block's body cell is the wrong kind. The outer repeat
+      // stays outside the fold (it is not part of the unit), so its own segment survives with the
+      // occurrence index, and the inner scaffolding collapses onto the unit.
+      var sheet = Mixed(new object?[,]
+      {
+        { "Investor", "Amount" },
+        { "Acme", 10m },
+        { null, null },
+        { "Investor", "Amount" },
+        { "Beta", "oops" },
+      });
+
+      var failure = Assert.Throws<ProjectionException>(
+        () => VerticalRepeat(UnitTableFromPrimitives(1, ReadLine), separatedBy: BlankRows()).Map(sheet));
+
+      Assert.Equal("VerticalRepeat[1] -> Table[0]", failure.Path);
+      Assert.Equal("Table", failure.Subject);
+      Assert.Contains("VerticalRepeat[1] -> Table -> ", failure.FullPath);
+    }
+
+    [Fact]
+    public void WithoutAsUnitTheCollapsedPathEqualsTheFullPath()
+    {
+      // The no-boundary reference: collapse is inert, so Path and FullPath are the same uncollapsed
+      // string GAP B pins above.
+      var failure = Assert.Throws<ProjectionException>(
+        () => TableFromPrimitives(1, ReadLine).Map(KindMismatch()));
+
+      Assert.Equal(failure.FullPath, failure.Path);
+      Assert.Equal("Table -> VerticalRepeat#2[0] -> Record", failure.Path);
+    }
+
+    [Fact]
+    public void AsUnitIsPresentationOnly()
+      => SameReading(Table(1, ReadLine), UnitTableFromPrimitives(1, ReadLine), Flat());
+
+    // --- 2c. .AsUnit — broad behavioural coverage of the fold ------------------------------------
+    //
+    // The compositions below are built directly rather than through TableFromPrimitives, so each pins
+    // one facet of the collapse in isolation: a quoted-name survivor, nested boundaries, a diagnostic
+    // (not just an exception), the AsUnit/Named precedence, the degenerate single-leaf unit, and the
+    // kind-suffix rule. The strings asserted are the ones the code actually produces.
+
+    // A single value leaf hand-named "allocation" under a repeat marked .AsUnit("Table"). The named
+    // leaf survives the fold as a quoted segment; the repeat's internal occurrence index hoists onto
+    // the unit, and the failing leaf is the subject of the deepest surviving segment.
+    [Fact]
+    public void AsUnitKeepsANamedSurvivorAndHoistsTheIndexOntoTheUnit()
+    {
+      var sheet = Mixed(new object?[,] { { "oops" } });
+
+      var failure = Assert.Throws<ProjectionException>(
+        () => VerticalRepeat(Decimal().Named("allocation")).AsUnit("Table").Map(sheet));
+
+      Assert.Equal("Table[0] -> 'allocation'", failure.Path);
+      Assert.Equal("'allocation'", failure.Subject);
+
+      // The value leaf's kind is still what the failure is about — the marker touches only the path.
+      Assert.Contains("Number", failure.Problem);
+      Assert.Contains("Text", failure.Problem);
+
+      // The repeat itself is the boundary, so FullPath renders it as "Table[0]" too — the only
+      // difference from the collapsed Path is the trailing kind suffix RenderFull always applies.
+      Assert.Equal("Table[0] -> 'allocation' (Decimal)", failure.FullPath);
+    }
+
+    // A unit inside a unit: an .AsUnit("Inner") composition used as the item of an .AsUnit("Outer") one.
+    // Both boundaries survive the fold, the scaffolding between them (the flows and the repeat) does
+    // not, and the failing named leaf survives as the deepest segment.
+    private static IProjection<decimal> InnerUnit()
+      => new FlowProjection<decimal>(
+        Orientation.Vertical,
+        flow => flow.Next(Decimal().Named("allocation")),
+        Placement.Default,
+        "Row").AsUnit("Inner");
+
+    private static IProjection<IReadOnlyList<decimal>> OuterUnit()
+      => new FlowProjection<IReadOnlyList<decimal>>(
+        Orientation.Vertical,
+        flow => flow.Next(VerticalRepeat(InnerUnit())),
+        Placement.Default,
+        "Body").AsUnit("Outer");
+
+    [Fact]
+    public void NestedUnitsBothFoldAndNeitherLeaksScaffolding()
+    {
+      var sheet = Mixed(new object?[,] { { "oops" } });
+
+      var failure = Assert.Throws<ProjectionException>(() => OuterUnit().Map(sheet));
+
+      // Both boundaries kept; the repeat's occurrence index hoists onto the outer unit, and Inner
+      // carries none of its own. The collapsed path names no scaffolding.
+      Assert.Equal("Outer[0] -> Inner -> 'allocation'", failure.Path);
+      Assert.Equal("'allocation'", failure.Subject);
+      Assert.DoesNotContain("VerticalRepeat", failure.Path);
+      Assert.DoesNotContain("Row", failure.Path);
+      Assert.DoesNotContain("Body", failure.Path);
+
+      // FullPath keeps the uncollapsed tree, scaffolding and all — the repeat renders by description
+      // with its use-site ordinal, and the failing leaf earns its kind suffix.
+      Assert.Equal("Outer -> VerticalRepeat#1[0] -> Inner -> 'allocation' (Decimal)", failure.FullPath);
+    }
+
+    // A diagnostic (not an exception) under a boundary. A tolerant repeat skips a fully-blank body row
+    // with an Info; the boundary folds the Info's Path exactly as it folds a failure's, while FullPath
+    // keeps the uncollapsed chain.
+    private static IProjection<IReadOnlyList<int>> TolerantUnit()
+      => new FlowProjection<IReadOnlyList<int>>(
+        Orientation.Vertical,
+        flow => flow.Next(VerticalRepeat(Record((TableRow row) => row.Index), onBlank: BlankRowStrategy.Tolerate)),
+        Placement.Default,
+        "Body").AsUnit("Table");
+
+    [Fact]
+    public void AsUnitCollapsesADiagnosticPathButKeepsTheFullPath()
+    {
+      var sheet = Mixed(new object?[,]
+      {
+        { "a" },
+        { null },
+        { "b" },
+      });
+
+      var result = TolerantUnit().MapWithDiagnostics(sheet);
+
+      var info = result.Diagnostics.Single(diagnostic => diagnostic.Message.Contains("blank"));
+
+      Assert.Equal(DiagnosticSeverity.Info, info.Severity);
+      Assert.Equal("Table", info.Path);
+      Assert.Equal("Table -> VerticalRepeat#1", info.FullPath);
+      Assert.NotEqual(info.Path, info.FullPath);
+    }
+
+    // AsUnit sets the kind label and Named sets the instance name — two independent slots that
+    // concatenate as "kind:instance", so both orders yield the same segment. A plain Named with no
+    // AsUnit is unchanged: a quoted name with its kind suffix.
+    [Fact]
+    public void AsUnitAndNamedConcatenateOrderIndependently()
+    {
+      var sheet = Mixed(new object?[,] { { "oops" } });
+
+      var unitThenNamed = Assert.Throws<ProjectionException>(
+        () => Decimal().AsUnit("Table").Named("fruit").Map(sheet));
+      var namedThenUnit = Assert.Throws<ProjectionException>(
+        () => Decimal().Named("fruit").AsUnit("Table").Map(sheet));
+
+      Assert.Equal("Table:fruit", unitThenNamed.Path);
+      Assert.Equal("Table:fruit", namedThenUnit.Path);
+      Assert.Equal("Table:fruit", unitThenNamed.Subject);
+      Assert.Equal("Table:fruit", namedThenUnit.Subject);
+
+      var plainNamed = Assert.Throws<ProjectionException>(
+        () => Decimal().Named("fruit").Map(sheet));
+
+      Assert.Equal("'fruit' (Decimal)", plainNamed.Path);
+    }
+
+    // A .AsUnit'd item used at a use site with a bare-identifier name — the unit name wins over the
+    // use-site label 'block'.
+    [Fact]
+    public void AUnitNameBeatsTheUseSiteLabel()
+    {
+      var sheet = Mixed(new object?[,] { { "oops" } });
+      var block = VerticalRepeat(Decimal().Named("x")).AsUnit("Table");
+
+      var failure = Assert.Throws<ProjectionException>(
+        () => VerticalFlow(v => v.Next(block)).Map(sheet));
+
+      Assert.Contains("Table[0]", failure.Path);
+      Assert.DoesNotContain("block", failure.Path);
+    }
+
+    // A degenerate unit: .AsUnit on a plain leaf. With no instance name the kind suffix is gone from
+    // every rendering — the boundary carries the label alone, and there is no name to hide the kind.
+    [Fact]
+    public void AsUnitOnAPlainLeafIsADegenerateUnit()
+    {
+      var sheet = Mixed(new object?[,] { { "oops" } });
+
+      var failure = Assert.Throws<ProjectionException>(
+        () => Decimal().AsUnit("Cell").Map(sheet));
+
+      Assert.Equal("Cell", failure.Path);
+      Assert.Equal("Cell", failure.Subject);
+      Assert.Equal("Cell", failure.FullPath);
+      Assert.DoesNotContain("Decimal", failure.Path);
+    }
+
+    // The marker is presentation-only, over a second fixture as well as Flat above.
+    [Fact]
+    public void AsUnitIsPresentationOnlyOverTrailingContent()
+      => SameReading(Table(1, ReadLine), UnitTableFromPrimitives(1, ReadLine), Trailing());
+
+    // The kind-suffix rule, unchanged: a no-boundary failing leaf keeps its ` (Kind)` suffix, and with
+    // no boundary in the chain the collapsed Path equals FullPath.
+    [Fact]
+    public void ANoBoundaryFailingLeafStillCarriesItsKindSuffix()
+    {
+      var sheet = Mixed(new object?[,] { { "oops" } });
+
+      var failure = Assert.Throws<ProjectionException>(
+        () => Decimal().Named("amount").Map(sheet));
+
+      Assert.Equal("'amount' (Decimal)", failure.Path);
+      Assert.Equal(failure.Path, failure.FullPath);
+    }
+
     // --- 3. GAP A closed — the composition streams in step with the leaf --------------------------
     //
     // The reimplementation re-hosts the discovered block inside the VerticalRepeat, so the flow carries
@@ -276,6 +508,24 @@ namespace Unrect.Tests.Projections
 
       Assert.Equal(bare.Path, wrapped.Path);
       Assert.DoesNotContain("WithColumnLabels", wrapped.Path);
+    }
+
+    // .AsUnit on a transparent wrapper: WithColumnLabels adds no segment of its own, but marking it a
+    // unit boundary makes it opaque, so it claims a boundary segment the internals fold into instead of
+    // being skipped like the bare wrapper above.
+    [Fact]
+    public void AsUnitOnATransparentWrapperClaimsABoundarySegment()
+    {
+      var sheet = KindMismatch();
+      var map = LabelMap.Of(("Amount", 1));
+      var body = VerticalRepeat(Record((TableRow row) => row.Decimal("Amount")));
+
+      var failure = Assert.Throws<ProjectionException>(
+        () => WithColumnLabels(map, body).AsUnit("Table").Map(sheet));
+
+      Assert.StartsWith("Table", failure.Path);
+      Assert.DoesNotContain("VerticalRepeat", failure.Path);
+      Assert.Contains("VerticalRepeat", failure.FullPath);
     }
 
     // ColumnLabels discovers its width via TakeColumnsWhileAnyValue, so a header row with trailing

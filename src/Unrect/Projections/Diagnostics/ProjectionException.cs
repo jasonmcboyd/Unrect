@@ -15,6 +15,7 @@ namespace Unrect.Projections
       string subject,
       string problem,
       string path,
+      string fullPath,
       ProjectionLocation location,
       Size? requested,
       IProjection projection,
@@ -25,6 +26,7 @@ namespace Unrect.Projections
       Subject = subject;
       Problem = problem;
       Path = path;
+      FullPath = fullPath;
       Location = location;
       Requested = requested;
       Projection = projection;
@@ -36,6 +38,7 @@ namespace Unrect.Projections
         original.Subject,
         problem,
         original.Path,
+        original.FullPath,
         original.Location,
         original.Requested,
         original.Projection,
@@ -49,6 +52,12 @@ namespace Unrect.Projections
 
     /// <summary>The chain of enclosing projections that reached <see cref="Subject"/>, rendered for a failure message.</summary>
     public string Path { get; }
+
+    /// <summary>
+    /// The uncollapsed path: every enclosing projection, with no <c>.AsUnit</c> boundary folded.
+    /// Equals <see cref="Path"/> when no boundary is in play; a debugger drill-through when one is.
+    /// </summary>
+    public string FullPath { get; }
 
     /// <summary>Where on the sheet the failure occurred.</summary>
     public ProjectionLocation Location { get; }

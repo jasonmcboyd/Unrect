@@ -54,11 +54,34 @@ namespace Unrect.Projections
     /// <summary>Opaque by default; only an unnamed wrapper overrides this to true.</summary>
     public virtual bool IsTransparent => false;
 
+    /// <inheritdoc/>
+    public bool IsUnitBoundary { get; private set; }
+
+    /// <summary>
+    /// The kind label <c>.AsUnit</c> gave this boundary, or null. A separate slot from
+    /// <see cref="Name"/>: a named boundary renders both, as <c>UnitName:Name</c>.
+    /// </summary>
+    internal string? UnitName { get; private set; }
+
     /// <summary>This projection named <paramref name="name"/> — a copy, of this same type.</summary>
     internal ProjectionBase Renamed(string name)
     {
       var clone = Clone();
       clone.Name = name;
+      return clone;
+    }
+
+    /// <summary>
+    /// This projection marked a path boundary with kind label <paramref name="name"/> — a copy, of
+    /// this same type. The label is the collapsed path's segment; the flag is what folds the unit's
+    /// internals into it. Independent of <see cref="Name"/>, so a boundary that is also
+    /// <c>.Named</c> renders <c>label:name</c>.
+    /// </summary>
+    internal ProjectionBase AsUnitBoundary(string name)
+    {
+      var clone = Clone();
+      clone.UnitName = name;
+      clone.IsUnitBoundary = true;
       return clone;
     }
 
