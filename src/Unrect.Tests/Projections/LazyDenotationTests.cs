@@ -214,29 +214,6 @@ namespace Unrect.Tests.Projections
         VerticalRepeat(Range(RowsWhileAnyValue(), b => b.Height), separatedBy: BlankRows(), atLeast: 1).Select(items => items.Count),
         Sheet()),
 
-      // The onBlank blank-row terminator, which re-hosts a discovered (Stop) or edge (Skip/Tolerate)
-      // block and walks it via HasRow. The re-hosted bound is always deferred — BindArea does not
-      // consult ForceEager — so these pin that the walked bound denotes the same value, extent and
-      // diagnostics whichever way the surrounding placements are resolved. Stop self-bounds at the
-      // first blank (three records); Skip runs to the edge omitting the trailing blanks (three too);
-      // Tolerate does the same and remarks each with an Info, so the diagnostics facet is under test.
-      "repeat onBlank stop" => Scenario.Of(
-        VerticalRepeat(Record(row => row.Index), onBlank: BlankRowStrategy.Stop).Select(items => items.Count),
-        Sheet()),
-      "repeat onBlank skip" => Scenario.Of(
-        VerticalRepeat(Record(row => row.Index), onBlank: BlankRowStrategy.Skip).Select(items => items.Count),
-        Sheet()),
-      "repeat onBlank tolerate" => Scenario.Of(
-        VerticalRepeat(Record(row => row.Index), onBlank: BlankRowStrategy.Tolerate),
-        Sheet()),
-
-      // The one that genuinely flips a branch: .Sized puts an incremental area on the OUTER placement,
-      // which the engine binds and ForceEager resolves up front, while the repeat re-binds the edge
-      // block inside. A bound wrapping a bound — and it must still denote the same reading either way.
-      "repeat onBlank skip, sized" => Scenario.Of(
-        Sized(RowsWhileAnyValue()).Of(VerticalRepeat(Record(row => row.Index), onBlank: BlankRowStrategy.Skip)).Select(items => items.Count),
-        Sheet()),
-
       // A scan claiming one column more than there is. The engine declines to bind rather than
       // reporting the overrun itself, because saying so needs the height the eager reading
       // measured.
@@ -369,10 +346,6 @@ namespace Unrect.Tests.Projections
     [InlineData("breaking under Else")]
     [InlineData("repeat of discovered items")]
     [InlineData("repeat requiring one")]
-    [InlineData("repeat onBlank stop")]
-    [InlineData("repeat onBlank skip")]
-    [InlineData("repeat onBlank tolerate")]
-    [InlineData("repeat onBlank skip, sized")]
     [InlineData("overwide scan")]
     [InlineData("late break, unread extent")]
     [InlineData("late break under Optional")]

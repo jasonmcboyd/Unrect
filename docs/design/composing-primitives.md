@@ -55,21 +55,20 @@ leaf/composite question below).
 ## The blocker and the fix — GAP A (streaming)
 
 CLOSED (2026-09-13, commit `e561f36`) by the fix described below — then **SUPERSEDED (2026-09-14,
-uncommitted — commit: pending)** by a second fix, which is what `Table`'s composed rung actually
-uses today. The 2026-09-13 text stays, because it explains why `VerticalRepeat(onBlank:)` still
-carries its own bound.
+commit `6d64326`)** by a second fix, which is what `Table`'s composed rung uses today. The
+2026-09-13 text stays as the record of what was tried first.
 
 The blocker was: composing `Table` this way makes the flow a **composite**, and the engine resolved a
 composite's discovered extent at first-child placement (`Exceeds` + `GetSubspace(offset)`) — the whole
 block, up front. The bespoke leaf avoided that only because `TableView.StreamRows` walks a
 `BoundedSpace` row-by-row via `HasRow`.
 
-**2026-09-13 fix (superseded for `Table`; still live for `VerticalRepeat(onBlank:)`):**
-`VerticalRepeat` re-hosts the discovered bound **inside the repeat** (`ProjectionEngine.BindArea`,
-`RepeatProjection.cs:72-74`) and walks the body one band past the cursor via `BoundedSpace.HasRow`.
-This is why `onBlank` still lives on `VerticalRepeat` as well as on the tiler: an occurrence-searching
-repeat that also wants "stop/skip/fault/tolerate on a blank band" needs a bound of its own, discovered
-rather than declared, and this is the machinery that still does that job.
+**2026-09-13 fix (fully superseded; the machinery is gone):** `VerticalRepeat` re-hosted the
+discovered bound **inside the repeat** (`ProjectionEngine.BindArea`) and walked the body one band
+past the cursor via `BoundedSpace.HasRow`, with an `onBlank` blank-band terminator over that bound.
+The second fix put the bound on the composite's own placement instead, leaving the repeat's copy
+with nothing to do, so `onBlank`, the self-bound walk and `BindArea` were all deleted (2026-09-14).
+`VerticalRepeat` now simply walks the extent it is handed.
 
 **2026-09-14 fix (what `Table`'s composed rung uses):** the bound moved off the repeat entirely and
 onto the COMPOSITE's own placement — exactly where a `.Sized`/`TablePlacement()` already puts it for
@@ -79,8 +78,8 @@ a leaf. Two engine seams became bound-aware instead of forcing:
   instead of reading `Area`.
 - `FlowState.Next` (`FlowState.cs:64`) slices with `BoundedSpace.Tail(Extent, cursor)` — a lazy tail
   (`TailSpace.cs`) — instead of the `Area`-forcing `GetSubspace(offset)` extension.
-- `RepeatProjection.ItemExtent` (`RepeatProjection.cs:271-274`), with no `onBlank`, does the same:
-  `BoundedSpace.Tail(extent, Step(cursor))` rather than `GetSubspace`.
+- `RepeatProjection.TryCollect` (`RepeatProjection.cs:137`) does the same: it hands each attempt
+  `BoundedSpace.Tail(extent, Step(cursor))` rather than a `GetSubspace`.
 
 `ProjectionEngine.Bind` (`ProjectionEngine.cs:169-196`) is otherwise unchanged — it still binds a
 `BoundedSpace` exactly when a placement declares a strict, incremental area — but that `BoundedSpace`
@@ -111,13 +110,13 @@ what the blocker was and how it was actually closed.
    supplies `Description`/`Children`/`Placement`/`Project`. `Table(headerRows, eachRow)` is built from
    it (`Projection.cs:343-361`). The other four rungs stay on the bespoke leaf, deferred rather than
    blocked: retiring them needs the same `UnitProjection` treatment applied one rung at a time.
-2. **The repeat terminator's user-facing shape.** DECIDED (2026-09-12): the **lazy while-terminator**,
-   spelled `onBlank: BlankRowStrategy` on the repeat — the shipped `Stop`/`Skip`/`Fault`/`Tolerate`
-   vocabulary lifted onto the general repeat. No `within:` area. Table's `onBlank` and the repeat's are
-   SEPARATE knobs with independent defaults (Table `Stop`, repeat bare `null`); they are not conflated.
-   Shipped in `e561f36`. `onBlank`'s native home is now the tiler (`VerticalBands(1, item, onBlank:)`);
-   `VerticalRepeat(onBlank:)` remains, and its doc now points at the tiler spelling as the one that
-   means what it says when the occurrences really are one row each.
+2. **The repeat terminator's user-facing shape.** SUPERSEDED (2026-09-14). The 2026-09-12 answer was
+   `onBlank: BlankRowStrategy` on the repeat, shipped in `e561f36` only so `Table` could be built on
+   the repeat. `Table` is built on the tiler instead, and the tiler owns `onBlank` natively
+   (`VerticalBands(1, item, onBlank:)`) — so the knob was removed from `VerticalRepeat`/
+   `HorizontalRepeat`. A pattern-repeat's terminators are the ones it already had: the item stops
+   placing, `.Until(landmark)` bounds the run (including `.Until(RowWhere(...))` for "stop at a blank
+   row"), and `separatedBy: BlankRows()` skips blank bands between occurrences.
 3. **GAP B — path / subject parity.** CLOSED (2026-09-14, uncommitted). `AsScaffolding()`
    (`ProjectionExtensions.cs:183-185`, backed by `ProjectionBase.IsUnitScaffolding`) marks a unit's
    internal chrome — the wrapping flow, `ColumnLabels`, the tiler (`WithColumnLabels` carries no
@@ -167,8 +166,12 @@ what the blocker was and how it was actually closed.
   `FlowState.Next`, `RepeatProjection.ItemExtent`, `TailSpace`) so a discovered bound streams through
   a flow/overlay/repeat instead of forcing at first-child placement, `UnitProjection` (the generic
   named-wrapper-over-a-composed-body primitive), `AsScaffolding()` + the `ProjectionContext.Collapse`
-  fold (GAP B), and the `Table(headerRows, eachRow)` repoint onto this composition — landed
-  2026-09-14 (uncommitted at time of writing; commit: pending).
+  fold (GAP B), and the `Table(headerRows, eachRow)` repoint onto this composition — commit
+  `6d64326`.
+- `onBlank` removed from `VerticalRepeat`/`HorizontalRepeat`, with the repeat's self-bound walk
+  (`ProjectionEngine.BindArea`, the blank-band branches, `RepeatProjection.ItemExtent`) — the first
+  GAP-A pass's machinery, dead once the second pass put the bound on the composite's placement.
+  `BlankRowStrategy` stays: it is the tiler's and the leaf `Table`'s.
 
 ## Parked (elsewhere, not here)
 
@@ -191,8 +194,8 @@ it is one law, so read this first:
   `InterleavedRowAndColumnSizeStrategy` (`RowAndColumnSizeStrategy.cs:32-38`), which is
   `IIncrementalSizeStrategy`; `ToAreaStrategy` carries incrementality across
   (`SizeStrategyExtensions.cs:15-18`). `DiscoveredBlock()` =
-  `TakeRowsWhileAnyValue().TakeColumnsWhileAnyValue()` (`Projection.cs:850`) is therefore incremental;
-  `ExplicitArea`, `FullRow`, and `ToEdgeBlock` (`AllRows()…`, `Projection.cs:857`) are not.
+  `TakeRowsWhileAnyValue().TakeColumnsWhileAnyValue()` (`Projection.cs:968`) is therefore incremental;
+  `ExplicitArea`, `FullRow`, and `ToEdgeBlock` (`AllRows()…`, `Projection.cs:975`) are not.
 - **A bound streams forward and forces on a dimension query** — reading a cell/subspace advances the
   scan only as far as named; asking `Area`/`Height` reads it to exhaustion
   (`BoundedSpace.cs:68,71-99,134-141`). The views expose the free width and the forward `HasRow`
@@ -241,9 +244,9 @@ built from the other primitives — so each is a primitive, not a composite.
 |---|---|---|---|---|---|
 | `VerticalFlow`/`HorizontalFlow` (`FlowProjection<T>` → `FlowState`) | whatever the lambda builds → `T` | `Placement.Default` (derive; Area null) (`Projection.cs:49,57`) | Derives its extent, so the engine never binds it — handed the raw available space. **Streams a handed `BoundedSpace`** (2026-09-14): `FlowState.Next` slices with `BoundedSpace.Tail(Extent, cursor)` (`FlowState.cs:64`), a lazy tail (`TailSpace.cs`) that keeps an unsettled height unsettled — a child placed here forces only if its OWN placement does | hands each child a full-width band from the cursor, accumulating advances (`FlowState.cs:38-73`) | opaque to tooling — children exist only while the lambda runs (`LayoutProjection.cs:26-59`); "empty sibling" note (`FlowState.cs:66-88`); `Heading` desugars to a named vertical flow (`ProjectionBase.cs:147-162`) |
 | `Overlay` (`OverlayProjection<T>` → `OverlayState`) | whatever the lambda builds → `T` | `Placement.Default` (derive) (`Projection.cs:81`) | Same as flow: not bound by the engine; hands every child the same extent unsliced (`OverlayState.cs:37`). `Exceeds` no longer reads `Area` (`ProjectionEngine.cs:335-337`), so a handed `BoundedSpace` streams here too — a child forces only if its own placement does | hands every child the whole extent + unadvanced context; children may overlap (`OverlayState.cs:30-44`) | consumed = bounding box of children (`OverlayState.cs:22-26`); opaque |
-| `VerticalRepeat`/`HorizontalRepeat` (`RepeatProjection<T>`) | `IReadOnlyList<T>` | `Placement.Default` (derive) (`Projection.cs:749,764`) | **Streams** (2026-09-14): with no `onBlank`, `ItemExtent` hands each attempt a lazy `BoundedSpace.Tail(extent, Step(cursor))` (`RepeatProjection.cs:271-274`) and probes via `HasRow`/`BandIsBlank` (`:250-263`) rather than reading `Area`. With `onBlank` and no placement-declared area, the walk narrows to its own `ProjectionEngine.BindArea` block (`:72-74`) — the 2026-09-13 fix, needed only for this policy, since a blank-band scan wants to see interior blank rows the way `DiscoveredBlock`/`ToEdgeBlock` does — and that block's own row rule, which reads the full extent width, is what decides `Stop`. Under a placement-declared area the walk holds no bound of its own (a declared area wins; the repeat never self-binds beneath one) and decides `Stop` itself in `TryCollect`, across the width it reads. Both paths judge blankness over the extent the repeat was handed (DECIDED, owner, 2026-09-14): `Stop` is the repeat's own policy, so "blank" means the walked extent has nothing on the row — never a width inferred from the item, whose extent is often undefined until it is placed (an item that folds across a row has no width of its own). A value inside the extent but outside the columns the occurrences read therefore keeps the run alive (pinned in `RepeatBlankRowStrategyTests`); a declaration that does not want it counted narrows the repeat's extent with `.Sized`, which is where that intent belongs. **Honest limit:** an item with its OWN declared, non-incremental area (e.g. `Record`'s `FullRow()`) is measured up front regardless — a repeat item's placement is never strict, so `ProjectionEngine.Bind` (which requires strict) never applies to it, and the item's area strategy runs and may read `Area` itself (Open question 5 in this doc's own questions section) | walks occurrences: separate → place → `TryApply` the item (item's placement is non-strict, never deferred) → collect (`:142-214`). Stops when the item's placement fails or consumes/advances zero (`:203-208`) | item labelled from its use site; `atLeast`, `separatedBy`; per-occurrence index/ordinal stamped on context (`:190`) |
-| `VerticalBands`/`HorizontalBands` (`BandsProjection<T>`) | `IReadOnlyList<T>` | `Placement.Default` (derive) (`Projection.cs:947`) | **Streams**: cuts a REAL n-row/column band via `HasBand` (`BoundedSpace.HasRow`/`WidthOf`) then a two-argument `GetSubspace` (`BandsProjection.cs:65-115`) — the band handed to `each` is always a measured subspace, never a lazy tail, so `each` may declare its own area and read `Area` freely without forcing anything upstream | cuts the extent into fixed-stride bands top-to-bottom (or left-to-right), applying `each` to every whole band until a part-band is left; `onBlank` (vertical only) treats a fully-blank band as Stop/Skip/Fault/Tolerate (`:70-83,117-127`) | declares NO extent of its own — how far it runs is whoever places it (`.Sized`, a discovered block, or the raw handed space); no `separatedBy`/`atLeast`, no productivity guard (the stride is imposed, not discovered); this is the tiler underlying `Table(headerRows, eachRow)`'s body (`Projection.cs:354`) |
-| `Choice` (`ChoiceProjection<T>`) | first matching alternative → `T` | `Placement.Default` (derive) (`Projection.cs:757`) | Passes the same `extent` to each alternative via `Apply`; forcing is whatever the winning alternative does | tries alternatives in order against the same extent, rolling back diagnostics of losers (`ChoiceProjection.cs:40-66`) | faults pass through (`:51`); no per-alternative name capture (params array) |
+| `VerticalRepeat`/`HorizontalRepeat` (`RepeatProjection<T>`) | `IReadOnlyList<T>` | `Placement.Default` (derive) (`Projection.cs:746,758`) | **Streams** (2026-09-14): the walk holds no bound of its own. It hands each attempt a lazy `BoundedSpace.Tail(extent, Step(cursor))` (`RepeatProjection.cs:137`) and probes via `HasRow`/`WidthOf` (`:202-206`) rather than reading `Area`; the only `Area` read is a horizontal repeat's height (`:58-60`), which is its across axis. **Honest limit:** an item with its OWN declared, non-incremental area (e.g. `Record`'s `FullRow()`) is measured up front regardless — a repeat item's placement is never strict, so `ProjectionEngine.Bind` (which requires strict) never applies to it, and the item's area strategy runs and may read `Area` itself (Open question 5 in this doc's own questions section) | walks occurrences: separate → place → `TryApply` the item (item's placement is non-strict, never deferred) → collect (`:120-167`). Stops when the item's placement fails or consumes/advances zero (`:156-161`) | item labelled from its use site; `atLeast`, `separatedBy`; per-occurrence index/ordinal stamped on context (`:143`). No `onBlank` — the run is bounded by `.Until(landmark)` or by the item ceasing to place; a blank band between occurrences is `separatedBy: BlankRows()` |
+| `VerticalBands`/`HorizontalBands` (`BandsProjection<T>`) | `IReadOnlyList<T>` | `Placement.Default` (derive) (`Projection.cs:926`) | **Streams**: cuts a REAL n-row/column band via `HasBand` (`BoundedSpace.HasRow`/`WidthOf`) then a two-argument `GetSubspace` (`BandsProjection.cs:65-115`) — the band handed to `each` is always a measured subspace, never a lazy tail, so `each` may declare its own area and read `Area` freely without forcing anything upstream | cuts the extent into fixed-stride bands top-to-bottom (or left-to-right), applying `each` to every whole band until a part-band is left; `onBlank` (vertical only) treats a fully-blank band as Stop/Skip/Fault/Tolerate (`:70-83,117-127`) | declares NO extent of its own — how far it runs is whoever places it (`.Sized`, a discovered block, or the raw handed space); no `separatedBy`/`atLeast`, no productivity guard (the stride is imposed, not discovered); this is the tiler underlying `Table(headerRows, eachRow)`'s body (`Projection.cs:354`) |
+| `Choice` (`ChoiceProjection<T>`) | first matching alternative → `T` | `Placement.Default` (derive) (`Projection.cs:852`) | Passes the same `extent` to each alternative via `Apply`; forcing is whatever the winning alternative does | tries alternatives in order against the same extent, rolling back diagnostics of losers (`ChoiceProjection.cs:40-66`) | faults pass through (`:51`); no per-alternative name capture (params array) |
 | `.Else(fallback)` / `.Else(value)` (`BoundaryProjection<T>`) | `T` | `Placement.Default` (`ProjectionExtensions.cs:221`, `ProjectionBase.cs:164-174`) | forwards `extent` to inner via `Apply`; on absorbable failure runs fallback or yields value | tolerance boundary; innermost (own placement resolved first) | transparent when unnamed (`BoundaryProjection.cs:48`); faults not absorbed (`:61`) |
 | `.Optional()` (`BoundaryProjection<T?>`) | `T?` | `Placement.Default` (`ProjectionExtensions.cs:237`) | as `.Else`; no fallback ⇒ consumes `Size(0,0)`, `Presence.Absorbed` (`BoundaryProjection.cs:75`) | tolerance boundary yielding null | Absorbed carries a possibly-nonzero extent under a declared area (`:69-75`) |
 
@@ -268,7 +271,7 @@ streaming/forcing profile.
 
 | Name / factory (class) | Reads (T) | Default placement | Bound: defer/stream vs force | Composed of | Notes |
 |---|---|---|---|---|---|
-| **`Table`** — mixed: `TableProjection<T>` for four rungs, `UnitProjection<T>` for the fifth | header + body rows → `T` (via `TableView` on the leaf; via the composed rung's own `IProjection<T>`) | `TablePlacement()` = `SkipToFirstNonBlankCell` offset + `DiscoveredBlock()` (Stop) / `ToEdgeBlock()` (other onBlank) (`Projection.cs:980-996`) | **Streams**, by two mechanisms now. The leaf: `TableView.StreamRows`→`StreamBands` walks one row past the cursor via `BoundedSpace.HasRow`, never asks `Area` (`TableView.cs:111-140`, `TableProjection.cs:22-36`). The composed rung: its placement lives on the `UnitProjection`, and the `VerticalFlow`/`VerticalBands` beneath it are bound-aware (see their own rows above), so nothing forces the bound on the way down | `Table(headerRows, eachRow)` (`Projection.cs:343-361`) is **SHIPPED** as `UnitProjection` over `VerticalFlow(ColumnLabels; WithColumnLabels(VerticalBands(1, eachRow)))`, matching the leaf on values and forcing profile (`LabeledAxisPrimitivesTests.GapA_TheCompositeStreamsInStepWithTheLeaf`). The other four rungs (`Table<T>()`, the `LabelMap` bind, `Table()`, both lambda escape hatches) remain the bespoke leaf `TableProjection<T>` | The composed rung is **NOT a primitive** — it is `UnitProjection` + `VerticalFlow` + `ColumnLabels` + `WithColumnLabels` + `VerticalBands`, all primitives listed above. The leaf's `RowCount`/`Rows`/`Location` force (`TableView.cs:63,88,95`); `ColumnCount`+header free (`:56`) |
+| **`Table`** — mixed: `TableProjection<T>` for four rungs, `UnitProjection<T>` for the fifth | header + body rows → `T` (via `TableView` on the leaf; via the composed rung's own `IProjection<T>`) | `TablePlacement()` = `SkipToFirstNonBlankCell` offset + `DiscoveredBlock()` (Stop) / `ToEdgeBlock()` (other onBlank) (`Projection.cs:959-975`) | **Streams**, by two mechanisms now. The leaf: `TableView.StreamRows`→`StreamBands` walks one row past the cursor via `BoundedSpace.HasRow`, never asks `Area` (`TableView.cs:111-140`, `TableProjection.cs:22-36`). The composed rung: its placement lives on the `UnitProjection`, and the `VerticalFlow`/`VerticalBands` beneath it are bound-aware (see their own rows above), so nothing forces the bound on the way down | `Table(headerRows, eachRow)` (`Projection.cs:343-361`) is **SHIPPED** as `UnitProjection` over `VerticalFlow(ColumnLabels; WithColumnLabels(VerticalBands(1, eachRow)))`, matching the leaf on values and forcing profile (`LabeledAxisPrimitivesTests.GapA_TheCompositeStreamsInStepWithTheLeaf`). The other four rungs (`Table<T>()`, the `LabelMap` bind, `Table()`, both lambda escape hatches) remain the bespoke leaf `TableProjection<T>` | The composed rung is **NOT a primitive** — it is `UnitProjection` + `VerticalFlow` + `ColumnLabels` + `WithColumnLabels` + `VerticalBands`, all primitives listed above. The leaf's `RowCount`/`Rows`/`Location` force (`TableView.cs:63,88,95`); `ColumnCount`+header free (`:56`) |
 | `Fields` (a `FlowProjection` of `FieldProjection`s) | `IReadOnlyDictionary<string,CellValue>` | `FieldsPlacement(firstLabel)` — anchors on first field's label (`Projection.cs:649`) | Composite (vertical flow) — forcing per the `VerticalFlow` row | a `VerticalFlow` of `Field` children | opaque vertical flow; each field one 2×1 band; children built once at construction (`:631-634`); keyed by declared labels |
 
 ### Synthesis — what streams, what forces, and what it means for GAP A

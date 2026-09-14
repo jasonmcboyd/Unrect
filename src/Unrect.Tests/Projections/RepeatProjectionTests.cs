@@ -489,27 +489,63 @@ namespace Unrect.Tests.Projections
       Assert.Equal(0, watched.BackwardReach);
     }
 
-    [Fact]
-    public void Repeat_WithABlankRowPolicy_ReadsForwardOnlyToo()
+    /// <summary>
+    /// Three record rows, a blank row, and trailing content — the sheet a record walk has to stop
+    /// part way down.
+    /// </summary>
+    private static ISpace RecordsThenTrailingContent() => Mixed(new object?[,]
     {
-      // The canonical record walk, which is the shape the streaming door is sized around: the block
-      // is re-hosted inside the repeat and each occurrence is one row, read as the scan reaches it.
-      var watched = new WatermarkSpace(Mixed(new object?[,]
-      {
-        { "a", 1 },
-        { "b", 2 },
-        { "c", 3 },
-        { null, null },
-        { "trailing", 9 },
-      }));
+      { "a", 1 },
+      { "b", 2 },
+      { "c", 3 },
+      { null, null },
+      { "trailing", 9 },
+    });
 
-      var records = VerticalRepeat(Record((TableRow row) => row.Index), onBlank: BlankRowStrategy.Stop).Map(watched);
+    /// <summary>A landmark for "a row with nothing on it", spelled through the space predicate.</summary>
+    private static IRowLandmark BlankRow()
+      => RowWhere((space, row) => Enumerable.Range(0, space.Area.Width).All(column => space[column, row].IsBlank));
+
+    [Fact]
+    public void Repeat_OfRecords_IsEndedByALandmarkAndNotByABlankRow()
+    {
+      // A record's one-row band has no content rule of its own, so nothing about a blank row stops a
+      // repeat: the bare walk reads every row of the sheet, blank one included, and carries on into
+      // the trailing content. Ending the walk is a declared bound's job.
+      var sheet = RecordsThenTrailingContent();
+
+      Assert.Equal(new[] { 0, 1, 2, 3, 4 }, VerticalRepeat(Record((TableRow row) => row.Index)).Map(sheet));
+
+      // The same walk under .Until: the bound ends just before the blank row, and is consumed in
+      // full, so the trailing content is left where the next sibling would find it.
+      var bounded = Until(BlankRow()).Of(VerticalRepeat(Record((TableRow row) => row.Index))).Apply(sheet);
+
+      Assert.Equal(new[] { 0, 1, 2 }, bounded.Value);
+      Assert.Equal(2, bounded.Consumed.Width);
+      Assert.Equal(3, bounded.Consumed.Height);
+    }
+
+    [Fact]
+    public void Repeat_OfRecordsUnderALandmarkBound_ReadsAheadToTheLandmarkThenWalks()
+    {
+      // A landmark bound is located before the walk begins, so it reads ahead to the landmark and
+      // the walk then reads behind that high-water mark. What the bound costs is measured rather
+      // than argued; the forward-only spelling of "stop at a blank row" is the tiler's.
+      var watched = new WatermarkSpace(RecordsThenTrailingContent());
+
+      // Each record reads a cell of its row, so the watermark measures the walk itself and not only
+      // the landmark search that precedes it.
+      var records = Until(BlankRow()).Of(VerticalRepeat(Record((TableRow row) => { _ = row.Text(0); return row.Index; }))).Map(watched);
 
       Assert.Equal(new[] { 0, 1, 2 }, records);
 
-      // The three records and the blank row that ended them — the trailing content is never reached.
+      // The three records and the blank row the landmark search found — the trailing content is
+      // never reached.
       Assert.Equal(3, watched.HighWaterMark);
-      Assert.Equal(0, watched.BackwardReach);
+
+      // And the walk then reads from the top of the block, three rows behind the furthest row the
+      // landmark search reached: the bound is located first, the records are read after.
+      Assert.Equal(3, watched.BackwardReach);
     }
 
     [Fact]

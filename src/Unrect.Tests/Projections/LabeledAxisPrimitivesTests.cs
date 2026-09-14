@@ -20,19 +20,22 @@ namespace Unrect.Tests.Projections
   /// column labels, and <see cref="Projection.Record{T}(Func{TableRow, T})"/> reads a row by name
   /// through the pushed scope. The acceptance claim is byte-identity of the reading's <em>value</em>,
   /// its failure <em>message</em> and <em>A1 location</em>, and — since GAP C closed in step 2 — its
-  /// <see cref="TableRow.Index"/>. GAP A is closed: the repeat re-hosts the discovered block, so the
-  /// composition streams in step with the leaf. GAP B remains the one documented divergence, captured
-  /// not asserted equal: path/subject reflect the primitive tree, not a flat <c>Table</c>.
+  /// <see cref="TableRow.Index"/>. GAP A is closed: the body tiler walks the declared block a band
+  /// at a time, so the composition streams in step with the leaf. GAP B remains the one documented
+  /// divergence, captured not asserted equal: path/subject reflect the primitive tree, not a flat
+  /// <c>Table</c>.
   /// </summary>
   public class LabeledAxisPrimitivesTests
   {
     // --- The reimplementation, built from the PUBLIC primitives ------------------------------------
     //
     // The composition: a VerticalFlow of
-    // ColumnLabels then WithColumnLabels(columns, VerticalRepeat(Record(record))). It is dressed with
-    // the built-in table's own placement — skip-to-first-non-blank-cell over a discovered block — and its "Table"
-    // description, through the internal FlowProjection, which is precisely what step 3 will do when
-    // the bespoke path is deleted. Constructed in the test project because the primitives it composes
+    // ColumnLabels then WithColumnLabels(columns, VerticalBands(1, Record(record))). One row per
+    // record is the tiler's business, not a pattern repeat's — a record declares its own one-row band
+    // and so has no shape to discover. It is dressed with the built-in table's own placement —
+    // skip-to-first-non-blank-cell over a discovered block — and its "Table" description, through the
+    // internal FlowProjection, which is precisely what step 3 will do when the bespoke path is
+    // deleted. Constructed in the test project because the primitives it composes
     // are public and the assembling FlowProjection/Placement are reachable through InternalsVisibleTo.
 
     internal static IProjection<IReadOnlyList<T>> TableFromPrimitives<T>(int headerRows, Func<TableRow, T> record)
@@ -41,7 +44,7 @@ namespace Unrect.Tests.Projections
     /// <summary>
     /// The composition. <paramref name="marked"/> marks every part it assembles scaffolding, which
     /// is what a factory does to pieces the caller never wrote — the caller hands a
-    /// <c>Func&lt;TableRow, T&gt;</c>, so the header, the repeat and the record are all this
+    /// <c>Func&lt;TableRow, T&gt;</c>, so the header, the tiler and the record are all this
     /// method's. Unmarked, nothing folds and a rendered path is the whole tree.
     /// </summary>
     private static IProjection<IReadOnlyList<T>> PrimitiveTable<T>(int headerRows, Func<TableRow, T> record, bool marked)
@@ -50,7 +53,7 @@ namespace Unrect.Tests.Projections
         flow =>
         {
           var columns = flow.Next(Mark(ColumnLabels(headerRows), marked));
-          var body = Mark(VerticalRepeat(Mark(Record(record), marked), onBlank: BlankRowStrategy.Stop), marked);
+          var body = Mark(VerticalBands(1, Mark(Record(record), marked)), marked);
 
           return flow.Next(WithColumnLabels(columns, body));
         },
@@ -60,13 +63,15 @@ namespace Unrect.Tests.Projections
     private static IProjection<T> Mark<T>(IProjection<T> part, bool marked) => marked ? part.AsScaffolding() : part;
 
     /// <summary>
-    /// A hand copy of the offset half of the private <c>Projection.TablePlacement()</c> — skip to the
-    /// first non-blank cell (down to the first content row, then across to its first non-blank column).
-    /// The block is not declared here: it is re-hosted inside the <c>VerticalRepeat</c> via
-    /// <c>onBlank: Stop</c>, so the flow carries no area and the body streams.
+    /// A hand copy of the private <c>Projection.TablePlacement()</c> — skip to the first non-blank
+    /// cell (down to the first content row, then across to its first non-blank column) over a
+    /// discovered block. The block is what bounds the body: the tiler declares no extent of its own
+    /// and runs exactly as far as what places it, so the block is the composition's own terminator.
     /// </summary>
     private static Placement TablePlacementReplica()
-      => new Placement(OffsetStrategies.SkipToFirstNonBlankCell(), null);
+      => new Placement(
+        OffsetStrategies.SkipToFirstNonBlankCell(),
+        RowStrategies.TakeRowsWhileAnyValue().TakeColumnsWhileAnyValue());
 
     // --- The record read, shared by both spellings -------------------------------------------------
     //
@@ -201,7 +206,7 @@ namespace Unrect.Tests.Projections
     // The spec is explicit: message and A1 are identical (asserted), path and subject are not (GAP B).
     // The negative-pin rule forbids a blanket "these differ" — so the actual strings are documented as
     // specific asserts. Bespoke reports one flat `Table` segment; the reimplementation's failure sits
-    // inside the VerticalRepeat the primitives compose (the transparent WithColumnLabels is skipped,
+    // inside the VerticalBands the primitives compose (the transparent WithColumnLabels is skipped,
     // and the FlowProjection's "Table" description keeps the outer segment reading `Table`).
 
     [Fact]
@@ -221,12 +226,12 @@ namespace Unrect.Tests.Projections
       // Documented divergence (GAP B). The exact strings, so a change to either tree is caught here
       // rather than sliding under a "they differ" that would pass forever after the first drift. The
       // built-in Table's Func rung calls the record inline, so its failure blames the flat Table; the
-      // reimplementation's failure sits inside the VerticalRepeat the primitives compose — the "Table"
+      // reimplementation's failure sits inside the VerticalBands the primitives compose — the "Table"
       // description on the FlowProjection keeps the outer segment reading Table, and the transparent
-      // WithColumnLabels is skipped, so the tree between them is VerticalRepeat -> Record.
+      // WithColumnLabels is skipped, so the tree between them is VerticalBands -> Record.
       Assert.Equal("Table", bespoke.Path);
       Assert.Equal("Table", bespoke.Subject);
-      Assert.Equal("Table -> VerticalRepeat#2[0] -> Record", primitives.Path);
+      Assert.Equal("Table -> VerticalBands#2[0] -> Record", primitives.Path);
       Assert.Equal("Record", primitives.Subject);
     }
 
@@ -248,7 +253,7 @@ namespace Unrect.Tests.Projections
 
       Assert.Equal("Table[0]", failure.Path);
       Assert.Equal("Table", failure.Subject);
-      Assert.Equal("Table -> VerticalRepeat#2[0] -> Record", failure.FullPath);
+      Assert.Equal("Table -> VerticalBands#2[0] -> Record", failure.FullPath);
       Assert.Equal("A2", failure.Location.A1);
     }
 
@@ -284,7 +289,7 @@ namespace Unrect.Tests.Projections
         () => TableFromPrimitives(1, ReadLine).Map(KindMismatch()));
 
       Assert.Equal(failure.FullPath, failure.Path);
-      Assert.Equal("Table -> VerticalRepeat#2[0] -> Record", failure.Path);
+      Assert.Equal("Table -> VerticalBands#2[0] -> Record", failure.Path);
     }
 
     [Fact]
@@ -359,13 +364,13 @@ namespace Unrect.Tests.Projections
       Assert.Equal("Outer -> VerticalRepeat#1[0] -> Inner -> 'allocation' (Decimal)", failure.FullPath);
     }
 
-    // A diagnostic (not an exception) under a boundary. A tolerant repeat skips a fully-blank body row
-    // with an Info; the boundary folds the Info's Path exactly as it folds a failure's, while FullPath
-    // keeps the uncollapsed chain.
+    // A diagnostic (not an exception) under a boundary. A tolerant band tiler skips a fully-blank body
+    // row with an Info; the boundary folds the Info's Path exactly as it folds a failure's, while
+    // FullPath keeps the uncollapsed chain.
     private static IProjection<IReadOnlyList<int>> TolerantUnit()
       => new FlowProjection<IReadOnlyList<int>>(
         Orientation.Vertical,
-        flow => flow.Next(VerticalRepeat(Record((TableRow row) => row.Index), onBlank: BlankRowStrategy.Tolerate).AsScaffolding()),
+        flow => flow.Next(VerticalBands(1, Record((TableRow row) => row.Index), onBlank: BlankRowStrategy.Tolerate).AsScaffolding()),
         Placement.Default,
         "Body").AsUnit("Table");
 
@@ -385,7 +390,7 @@ namespace Unrect.Tests.Projections
 
       Assert.Equal(DiagnosticSeverity.Info, info.Severity);
       Assert.Equal("Table", info.Path);
-      Assert.Equal("Table -> VerticalRepeat#1", info.FullPath);
+      Assert.Equal("Table -> VerticalBands#1", info.FullPath);
       Assert.NotEqual(info.Path, info.FullPath);
     }
 
@@ -511,10 +516,10 @@ namespace Unrect.Tests.Projections
 
     // --- 3. GAP A closed — the composition streams in step with the leaf --------------------------
     //
-    // The reimplementation re-hosts the discovered block inside the VerticalRepeat, so the flow carries
-    // no area and the body walks one row past the cursor via HasRow, exactly as the built-in leaf's
-    // StreamBands does. Over the trailing-content sheet the two now touch the same rows by the time the
-    // first record projects and the same total at completion, and read the same value.
+    // The reimplementation declares the discovered block on the flow, and the band tiler inside it
+    // walks that bound one row past the cursor, exactly as the built-in leaf's StreamBands does. Over
+    // the trailing-content sheet the two now touch the same rows by the time the first record
+    // projects and the same total at completion, and read the same value.
 
     [Fact]
     public void GapA_TheCompositeStreamsInStepWithTheLeaf()
@@ -540,6 +545,24 @@ namespace Unrect.Tests.Projections
 
       Assert.Equal(leaf, composed);
       Assert.Equal((2, 4), composed);
+    }
+
+    [Fact]
+    public void AnEachRowInsideAHeaderedTableResolvesThatTablesOwnCaptionsByName()
+    {
+      // The header a Table(headerRows:, eachRow:) consumes is not merely skipped
+      // — it is pushed as the ambient column labels for the band projection, so a Record inside the
+      // slot resolves "Investor" against the table's OWN captions and lands on the body values. The
+      // parity partner is the leaf rung over the same sheet: composed and leaf read the same records,
+      // which is what says the slot rung is a composition of the primitives and not a second reading
+      // of the header.
+      var sheet = Flat();
+
+      IReadOnlyList<string> composed = Table(1, Record((TableRow row) => row.Text("Investor"))).Map(sheet);
+      IReadOnlyList<string> leaf = Table((TableRow row) => row.Text("Investor")).Map(sheet);
+
+      Assert.Equal(new[] { "Acme", "Beta" }, composed);
+      Assert.Equal(leaf, composed);
     }
 
     // --- 4. §5.5 pins ------------------------------------------------------------------------------

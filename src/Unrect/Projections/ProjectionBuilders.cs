@@ -90,30 +90,26 @@ namespace Unrect.Projections
     /// <param name="item">The projection to apply repeatedly.</param>
     /// <param name="separatedBy">The offset between occurrences; never applied before the first.</param>
     /// <param name="atLeast">How many occurrences make a well-formed section.</param>
-    /// <param name="onBlank">How a fully-blank body row is treated; null keeps the plain walk. See <see cref="Projection.VerticalRepeat{T}"/>.</param>
     /// <param name="declared">Supplied by the compiler as the text of the <paramref name="item"/> argument.</param>
     public static IProjection<TSpace, IReadOnlyList<T>> VerticalRepeat<T>(
       IProjection<TSpace, T> item,
       IOffsetStrategy? separatedBy = null,
       int atLeast = 0,
-      BlankRowStrategy? onBlank = null,
       [CallerArgumentExpression("item")] string? declared = null)
-      => Scope.VerticalRepeat(item, separatedBy, atLeast, onBlank, declared);
+      => Scope.VerticalRepeat(item, separatedBy, atLeast, declared);
 
     /// <inheritdoc cref="Projection.HorizontalRepeat{T}"/>
     /// <typeparam name="T">What one occurrence reads.</typeparam>
     /// <param name="item">The projection to apply repeatedly.</param>
     /// <param name="separatedBy">The offset between occurrences; never applied before the first.</param>
     /// <param name="atLeast">How many occurrences make a well-formed section.</param>
-    /// <param name="onBlank">How a fully-blank body row is treated; null keeps the plain walk. See <see cref="Projection.VerticalRepeat{T}"/>.</param>
     /// <param name="declared">Supplied by the compiler as the text of the <paramref name="item"/> argument.</param>
     public static IProjection<TSpace, IReadOnlyList<T>> HorizontalRepeat<T>(
       IProjection<TSpace, T> item,
       IOffsetStrategy? separatedBy = null,
       int atLeast = 0,
-      BlankRowStrategy? onBlank = null,
       [CallerArgumentExpression("item")] string? declared = null)
-      => Scope.HorizontalRepeat(item, separatedBy, atLeast, onBlank, declared);
+      => Scope.HorizontalRepeat(item, separatedBy, atLeast, declared);
 
     // The two tilers are re-exported at their plain type. There is no TSpace form of either on the
     // vocabulary to forward to, so closing them here would promise a demand the factory beneath
