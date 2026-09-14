@@ -113,7 +113,7 @@ namespace Unrect.Tests.Projections
       // satisfy it — and so would a dozen other things nobody asked for.
       var space = Mixed(new object?[,] { { "NetIncome" } });
 
-      Assert.Throws<ProjectionException>(() => On(RowContaining("Net Income")).Of(Cell(c => c.GetString())).Map(space));
+      Assert.Throws<ProjectionException>(() => On(RowContaining("Net Income")).Of(TextCell()).Map(space));
       Assert.Throws<ProjectionException>(() => Caption("Net Income").Map(space));
 
       // ...while the comparer itself would have said yes, which is the whole point of the pin.

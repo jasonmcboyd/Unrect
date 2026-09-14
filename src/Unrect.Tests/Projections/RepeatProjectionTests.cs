@@ -229,7 +229,7 @@ namespace Unrect.Tests.Projections
 
       var item = VerticalFlow(v =>
       {
-        var code = v.Next(Cell(c => c.GetString()).Named("code"));
+        var code = v.Next(TextCell().Named("code"));
         v.Next(Table(r => r["Amount"].GetInt()).Named("rows"));
         return code;
       });
@@ -264,8 +264,8 @@ namespace Unrect.Tests.Projections
 
       var section = On(RowContaining("Section")).Of(VerticalFlow(v =>
       {
-        v.Next(Cell(c => c.GetString()).Named("label"));
-        return v.Next(Right(1).Of(Cell(c => c.GetInt())).Named("amount"));
+        v.Next(TextCell().Named("label"));
+        return v.Next(Right(1).Of(IntCell()).Named("amount"));
       }));
 
       var amounts = VerticalRepeat(section).Map(space);
@@ -290,8 +290,8 @@ namespace Unrect.Tests.Projections
 
       var section = On(RowContaining("Section")).Of(VerticalFlow(v =>
       {
-        v.Next(Cell(c => c.GetString()).Named("label"));
-        return v.Next(Right(1).Of(Cell(c => c.GetInt())).Named("amount"));
+        v.Next(TextCell().Named("label"));
+        return v.Next(Right(1).Of(IntCell()).Named("amount"));
       }));
 
       Assert.Equal(new[] { 1, 2 }, VerticalRepeat(section).Map(space));
@@ -302,7 +302,7 @@ namespace Unrect.Tests.Projections
     {
       var space = Mixed(new object?[,] { { "nothing", null }, { "here", null } });
 
-      var section = On(RowContaining("Section")).Of(Cell(v => v.GetString()));
+      var section = On(RowContaining("Section")).Of(TextCell());
 
       Assert.Empty(VerticalRepeat(section).Map(space));
     }
@@ -315,7 +315,7 @@ namespace Unrect.Tests.Projections
       var space = Mixed(new object?[,] { { "nothing", null }, { "here", null } });
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        On(RowContaining("Section")).Of(Cell(v => v.GetString())).Map(space));
+        On(RowContaining("Section")).Of(TextCell()).Map(space));
 
       Assert.Contains("no row containing 'Section' exists in the available space", failure.Message);
     }
@@ -384,7 +384,7 @@ namespace Unrect.Tests.Projections
     {
       // Below anchors on a landmark exactly as On does, so it fails the same way, so a repeat reads
       // it the same way: a missing landmark is how the sections ran out, not a broken declaration.
-      var item = Below(RowContaining("Detail")).Of(Cell(c => c.GetString()));
+      var item = Below(RowContaining("Detail")).Of(TextCell());
 
       var items = VerticalRepeat(item).Map(Mixed(new object?[,] { { "Detail" }, { "a" }, { "Detail" }, { "b" } }));
 
@@ -471,7 +471,7 @@ namespace Unrect.Tests.Projections
 
     /// <summary>A code cell over a value one row down and one column across — two rows per block.</summary>
     private static IProjection<(string Code, int Amount)> Section()
-      => VerticalFlow(v => (Code: v.Next(Cell(c => c.GetString())), Amount: v.Next(Right(1).Of(IntCell()))));
+      => VerticalFlow(v => (Code: v.Next(TextCell()), Amount: v.Next(Right(1).Of(IntCell()))));
 
     [Fact]
     public void Repeat_InsideADiscoveredExtent_NeverReadsBehindTheFurthestRowRead()
@@ -615,7 +615,7 @@ namespace Unrect.Tests.Projections
       });
 
       var block = VerticalFlow(v => (
-        Code: v.Next(Cell(c => c.GetString()).Named("code")),
+        Code: v.Next(TextCell().Named("code")),
         Amounts: v.Next(Table(r => r["Amount"].GetInt()).Named("amounts"))))
         .Named("block");
 

@@ -19,10 +19,10 @@ namespace Unrect.Tests.Projections
   /// </summary>
   public class NameInferenceTests
   {
-    private static IProjection<int> Number() => Cell(c => c.GetInt());
+    private static IProjection<int> Number() => IntCell();
 
     /// <summary>A projection that always fails, so every test reads its label off the failure.</summary>
-    private static IProjection<string> Text() => Cell(c => c.GetString());
+    private static IProjection<string> Text() => TextCell();
 
     private static ProjectionException Failure<T>(IProjection<T> projection) => Assert.Throws<ProjectionException>(() => projection.Map(Ladder()));
 
@@ -69,7 +69,7 @@ namespace Unrect.Tests.Projections
     {
       // An inline factory call has no identifier to borrow, so the child is named by what it is and
       // where it sits — 1-based, because it is a position in a declaration a human wrote.
-      var failure = Failure(VerticalFlow(v => $"{v.Next(Number())}{v.Next(Cell(c => c.GetString()))}"));
+      var failure = Failure(VerticalFlow(v => $"{v.Next(Number())}{v.Next(TextCell())}"));
 
       Assert.Equal("Cell#2", failure.Subject);
       Assert.Equal("VerticalFlow -> Cell#2", failure.Path);
@@ -93,7 +93,7 @@ namespace Unrect.Tests.Projections
 
       Assert.Equal("'chosen'", Failure(VerticalFlow(v => v.Next(labelled))).Subject);
       Assert.Equal("'identified'", Failure(VerticalFlow(v => v.Next(identified))).Subject);
-      Assert.Equal("Cell#1", Failure(VerticalFlow(v => v.Next(Cell(c => c.GetString())))).Subject);
+      Assert.Equal("Cell#1", Failure(VerticalFlow(v => v.Next(TextCell()))).Subject);
     }
 
     // --- Ordinals ---------------------------------------------------------------------------------------
@@ -106,7 +106,7 @@ namespace Unrect.Tests.Projections
       var second = Number();
 
       var failure = Failure(VerticalFlow(v =>
-        $"{v.Next(Number())}{v.Next(second)}{v.Next(Cell(c => c.GetString()))}"));
+        $"{v.Next(Number())}{v.Next(second)}{v.Next(TextCell())}"));
 
       Assert.Equal("Cell#3", failure.Subject);
     }
@@ -153,7 +153,7 @@ namespace Unrect.Tests.Projections
         Overlay(o => $"{o.Next(Number())}{o.Next(transactions)}").Map(Ladder()));
 
       var ordinal = Assert.Throws<ProjectionException>(() =>
-        Overlay(o => $"{o.Next(Number())}{o.Next(Cell(c => c.GetString()))}").Map(Ladder()));
+        Overlay(o => $"{o.Next(Number())}{o.Next(TextCell())}").Map(Ladder()));
 
       Assert.Equal("Overlay -> 'transactions' (Cell)", identified.Path);
       Assert.Equal("Overlay -> Cell#2", ordinal.Path);
@@ -209,6 +209,9 @@ namespace Unrect.Tests.Projections
       // call, and a modifier chain are all "not a bare identifier" and all render the same way.
       var block = Text();
 
+      // Left as an inline lambda on purpose: the three spellings this test enumerates are an
+      // inline lambda, an inline factory call and a modifier chain, so funnelling this one into
+      // TextCell() would leave the first of them untested.
       Assert.Equal("VerticalRepeat[0] -> Cell", Failure(VerticalRepeat(Cell(c => c.GetString()))).Path);
       Assert.Equal("VerticalRepeat[0] -> Cell", Failure(VerticalRepeat(MakeBlock())).Path);
       Assert.Equal("VerticalRepeat[0] -> Cell", Failure(VerticalRepeat(Down(1).Of(block))).Path);
@@ -247,7 +250,7 @@ namespace Unrect.Tests.Projections
       // The label belongs to the item's segment and stops there; what is inside the item is named
       // by its own ladder, at its own use sites.
       var inner = Text();
-      var detailFlow = VerticalFlow(w => $"{w.Next(Cell(c => c.GetInt()))}{w.Next(inner)}");
+      var detailFlow = VerticalFlow(w => $"{w.Next(IntCell())}{w.Next(inner)}");
       var blocks = VerticalRepeat(detailFlow);
 
       var failure = Assert.Throws<ProjectionException>(() =>
@@ -401,17 +404,17 @@ namespace Unrect.Tests.Projections
       Assert.Equal("VerticalFlow -> Table#2[0] -> Decimal", failure.Path);
     }
 
-    private static IProjection<string> FullRow() => Cell(c => c.GetString());
+    private static IProjection<string> FullRow() => TextCell();
 
-    private static IProjection<string> NamedFullRow() => Cell(c => c.GetString()).Named("full row");
+    private static IProjection<string> NamedFullRow() => TextCell().Named("full row");
 
-    private static IProjection<string> Pick() => Cell(c => c.GetString());
+    private static IProjection<string> Pick() => TextCell();
 
-    private static IProjection<string> MakeBlock() => Cell(c => c.GetString());
+    private static IProjection<string> MakeBlock() => TextCell();
 
     private sealed class Projections
     {
-      public IProjection<string> Total { get; } = Cell(c => c.GetString());
+      public IProjection<string> Total { get; } = TextCell();
     }
   }
 }

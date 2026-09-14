@@ -140,7 +140,7 @@ namespace Unrect.Tests.Projections
     {
       // Each child descends from the overlay's scope carrying its own offset, so a failure names
       // where the child actually landed rather than where the overlay starts.
-      var title = Down(1).Right(2).Of(Cell(v => v.GetString()));
+      var title = Down(1).Right(2).Of(TextCell());
 
       var failure = Assert.Throws<ProjectionException>(() =>
         Overlay(o => $"{o.Next(IntCell())}|{o.Next(title)}").Map(CoordinateGrid()));
@@ -154,7 +154,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AChildFailure_IsReportedRelativeToAPlacedOverlayToo()
     {
-      var title = Right(1).Of(Cell(v => v.GetString()));
+      var title = Right(1).Of(TextCell());
 
       var failure = Assert.Throws<ProjectionException>(() =>
         Down(1).Of(Overlay(o => $"{o.Next(IntCell())}|{o.Next(title)}")).Map(CoordinateGrid()));
@@ -225,8 +225,8 @@ namespace Unrect.Tests.Projections
         { "Fees", 10, null, null },
       });
 
-      var entity = Cell(v => v.GetString());
-      var year = Right(3).Of(Cell(v => v.GetString()));
+      var entity = TextCell();
+      var year = Right(3).Of(TextCell());
       var items = Table(r => r["Amount"].GetInt());
 
       var projection = VerticalFlow(v =>

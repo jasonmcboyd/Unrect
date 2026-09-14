@@ -58,7 +58,7 @@ namespace Unrect.Tests.Projections
     public void Padded_ConsumesWhatTheInnerProjectionUsedPlusTheInsets()
     {
       // The inner Cell uses one cell of the 2x1 middle; the pad reports that plus its own border.
-      var applied = Cell(v => v.GetInt()).Padded(1).Apply(CoordinateGrid());
+      var applied = IntCell().Padded(1).Apply(CoordinateGrid());
 
       Assert.Equal(12, applied.Value);
       Assert.Equal(3, applied.Consumed.Width);
@@ -77,7 +77,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void Padded_WithAsymmetricInsets_AddsBothSidesOfEachAxis()
     {
-      var applied = Cell(v => v.GetInt()).Padded(1, 2, 0, 0).Apply(CoordinateGrid());
+      var applied = IntCell().Padded(1, 2, 0, 0).Apply(CoordinateGrid());
 
       Assert.Equal(22, applied.Value);
       Assert.Equal(2, applied.Consumed.Width);    // inner 1 + left 1 + right 0
@@ -88,8 +88,8 @@ namespace Unrect.Tests.Projections
     public void AFollowingSiblingStartsAfterThePadding()
     {
       // What the consumed size is for: the bottom inset is real space, so the next child clears it.
-      var block = Cell(v => v.GetInt()).Padded(1);
-      var next = Cell(v => v.GetInt());
+      var block = IntCell().Padded(1);
+      var next = IntCell();
 
       var read = VerticalFlow(v => $"{v.Next(block)}|{v.Next(next)}").Map(CoordinateGrid(height: 5));
 
@@ -102,7 +102,7 @@ namespace Unrect.Tests.Projections
     public void PaddingTheOutsideAndMovingTheOutsideCompose()
     {
       // The pad's own placement moves the padded region; the inset then applies within it.
-      var applied = Down(1).Of(Cell(v => v.GetInt()).Padded(1)).Apply(CoordinateGrid(height: 5));
+      var applied = Down(1).Of(IntCell().Padded(1)).Apply(CoordinateGrid(height: 5));
 
       Assert.Equal(22, applied.Value);
       Assert.Equal(1, applied.Offset.Size.Height);
@@ -112,7 +112,7 @@ namespace Unrect.Tests.Projections
     public void AMovementInsideThePaddingIsRelativeToTheInsetExtent()
     {
       // Padding shrinks the inside: the inner projection's own offset counts from the inset origin.
-      Assert.Equal(22, Down(1).Of(Cell(v => v.GetInt())).Padded(1).Map(CoordinateGrid(height: 5)));
+      Assert.Equal(22, Down(1).Of(IntCell()).Padded(1).Map(CoordinateGrid(height: 5)));
     }
 
     // --- Insets that do not fit ---------------------------------------------------------------------------
@@ -141,8 +141,8 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AnUnnamedPadContributesNoPathSegment()
     {
-      var padded = Assert.Throws<ProjectionException>(() => Cell(v => v.GetString()).Padded(1).Map(CoordinateGrid()));
-      var plain = Assert.Throws<ProjectionException>(() => Cell(v => v.GetString()).Map(CoordinateGrid()));
+      var padded = Assert.Throws<ProjectionException>(() => TextCell().Padded(1).Map(CoordinateGrid()));
+      var plain = Assert.Throws<ProjectionException>(() => TextCell().Map(CoordinateGrid()));
 
       Assert.Equal("Cell", padded.Path);
       Assert.Equal(plain.Path, padded.Path);
@@ -153,7 +153,7 @@ namespace Unrect.Tests.Projections
     public void ANamedPadContributesAPathSegment()
     {
       var failure = Assert.Throws<ProjectionException>(() =>
-        Cell(v => v.GetString()).Padded(1).Named("inner block").Map(CoordinateGrid()));
+        TextCell().Padded(1).Named("inner block").Map(CoordinateGrid()));
 
       Assert.Equal("'inner block' -> Cell", failure.Path);
     }
@@ -161,8 +161,8 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void OnlyAnUnnamedPadIsTransparent()
     {
-      Assert.True(Cell(v => v.GetInt()).Padded(1).IsTransparent);
-      Assert.False(Cell(v => v.GetInt()).Padded(1).Named("named").IsTransparent);
+      Assert.True(IntCell().Padded(1).IsTransparent);
+      Assert.False(IntCell().Padded(1).Named("named").IsTransparent);
     }
 
     // --- Inspection ------------------------------------------------------------------------------------------
@@ -170,7 +170,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void APadDescribesItselfAndExposesTheProjectionItWraps()
     {
-      var inner = Cell(v => v.GetInt()).Named("inner");
+      var inner = IntCell().Named("inner");
 
       var padded = inner.Padded(1);
 
@@ -216,9 +216,9 @@ namespace Unrect.Tests.Projections
       // The padded Cell lands on C2 (column 3, row 2, 1-based) — the same cell Down(1).Right(2)
       // reaches. Padding is transparent in the path but must still advance the coordinates.
       var padded = Assert.Throws<ProjectionException>(
-        () => Cell(v => v.GetString()).Padded(2, 1, 0, 0).Map(CoordinateGrid()));
+        () => TextCell().Padded(2, 1, 0, 0).Map(CoordinateGrid()));
       var moved = Assert.Throws<ProjectionException>(
-        () => Down(1).Right(2).Of(Cell(v => v.GetString())).Map(CoordinateGrid()));
+        () => Down(1).Right(2).Of(TextCell()).Map(CoordinateGrid()));
 
       Assert.Equal(3, padded.Location.Column);
       Assert.Equal(2, padded.Location.Row);

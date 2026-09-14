@@ -50,6 +50,14 @@ namespace Unrect.Tests
     public static IProjection<int> IntCell() => Projection.Cell(v => v.GetInt());
 
     /// <summary>
+    /// A cell read as text — the other leaf the suite reaches for by reflex, and the twin of
+    /// <see cref="IntCell"/>. Neither is a bare identifier at the use site, so a child written as
+    /// <c>v.Next(TextCell())</c> is named exactly as the inline lambda it replaced was: by kind and
+    /// ordinal.
+    /// </summary>
+    public static IProjection<string> TextCell() => Projection.Cell(v => v.GetString());
+
+    /// <summary>
     /// The problem text of a failure, without the subject the message template puts in front of it.
     /// </summary>
     public static string Problem(ProjectionException failure)

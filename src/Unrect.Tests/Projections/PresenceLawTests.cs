@@ -59,7 +59,7 @@ namespace Unrect.Tests.Projections
     private static IProjection<int> Rows() => Range(RowsWhileAnyValue(), b => b.Height);
 
     /// <summary>A cell read as text — which is a failure over <see cref="Numbers"/>, and an absorbable one.</summary>
-    private static IProjection<string> Title() => Cell(v => v.GetString());
+    private static IProjection<string> Title() => TextCell();
 
     /// <summary>The internal ε, at the one type these tests need it at.</summary>
     private static IProjection<int> Unit() => NothingProjection<int>.Instance;
@@ -508,12 +508,12 @@ namespace Unrect.Tests.Projections
       // The first of the two negative pins, and the reason the identity above is stated over
       // use-site-named children. A child written inline has no identifier to borrow and falls to the
       // naming ladder's last rung — its kind and its 1-based POSITION — which the extra child moves.
-      var plain = VerticalFlow(v => v.Next(Cell(c => c.GetString())));
+      var plain = VerticalFlow(v => v.Next(TextCell()));
       var withUnit = VerticalFlow(v =>
       {
         v.Next(Unit());
 
-        return v.Next(Cell(c => c.GetString()));
+        return v.Next(TextCell());
       });
 
       var one = Assert.Throws<ProjectionException>(() => plain.Map(Numbers()));

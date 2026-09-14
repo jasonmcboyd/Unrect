@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 using Unrect.Core;
@@ -84,6 +85,26 @@ namespace Unrect.Tests.Projections
       // A blank value cell is a blank value, not a failure: the label was there, which is what the
       // block asserted.
       Assert.Equal(CellKind.Blank, entity["Note"].Kind);
+    }
+
+    [Fact]
+    public void TheElementTypeIsADictionaryOfCanonicalCells()
+    {
+      // The block's declared result type, pinned rather than inferred from a var: the labels are the
+      // structure and the values are cells — CellValues, not a rendering of them and not a
+      // reader-shaped wrapper. The static side of the assertion is the local's type; the runtime
+      // side is the closed interface the factory's projection implements, so the pin holds even if
+      // the factory is later composed out of other projections.
+      IProjection<IReadOnlyDictionary<string, CellValue>> block = Fields(Field("EIN"));
+
+      Assert.Contains(
+        typeof(IProjection<IReadOnlyDictionary<string, CellValue>>),
+        block.GetType().GetInterfaces());
+
+      IReadOnlyDictionary<string, CellValue> read = block.Map(Card());
+      object value = read["EIN"];
+
+      Assert.IsType<CellValue>(value);
     }
 
     // --- The label rule -------------------------------------------------------------------------------

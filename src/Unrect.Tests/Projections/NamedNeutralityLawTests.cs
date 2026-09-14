@@ -78,7 +78,7 @@ namespace Unrect.Tests.Projections
     {
       // The L1 half: same problem, same cell, same fault flag, same inner exception. Only the two
       // labels move, and they are asserted below.
-      var failing = Cell(c => c.GetString());
+      var failing = TextCell();
 
       AssertL2(Observe(failing, Ladder()), Observe(failing.Named("client"), Ladder()));
     }

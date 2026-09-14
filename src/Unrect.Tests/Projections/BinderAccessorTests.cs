@@ -270,6 +270,34 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
+    public void TheColumnPrefixSitsInsideTheProblemAndNotInThePath()
+    {
+      // The whole message of an accessor failure, assembled as a reader sees it — the twin of the
+      // bind-side pin in CellReadingIdentityTests. Where the caption is said is the load-bearing
+      // part: `column 'Amount': ` sits between the subject and the cell-describing sentence, inside
+      // the PROBLEM, and the path names the table alone — the accessor has no caption to hang on it.
+      // The other pins in this file strip the subject and assert the remainder, which leaves the
+      // relationship between the three unstated; it is stated here once, in full, so moving the
+      // caption elsewhere is a visible diff rather than a silent change of shape.
+      var sheet = Mixed(new object?[,]
+      {
+        { "Client", "Amount" },
+        { "Acme", "x" },
+      });
+
+      var row = Assert.Single(Table((TableRow r) => r).Map(sheet));
+      var failure = Assert.Throws<ProjectionException>(() => row.Decimal("Amount"));
+
+      Assert.Equal(
+        "Table: column 'Amount': expected Number at B2, found Text" + Environment.NewLine
+        + "  in Table" + Environment.NewLine
+        + "  at row 2, column 1 (A2); 2x1 available",
+        failure.Message);
+
+      Assert.Equal("Table", failure.Path);
+    }
+
+    [Fact]
     public void ACaptionConversionDescribesABadCellExactlyAsTheBinderDoes()
     {
       var sheet = Mixed(new object?[,]

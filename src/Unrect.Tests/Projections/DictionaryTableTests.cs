@@ -82,6 +82,26 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
+    public void TheElementTypeIsADictionaryOfCanonicalCells()
+    {
+      // The rung's declared element type, pinned rather than inferred from a var: one
+      // IReadOnlyDictionary<string, CellValue> per body row, and the values really are CellValues
+      // rather than anything that renders like one. The static side of this assertion is the local's
+      // type; the runtime side is the closed interface the factory's projection implements, so the
+      // pin holds even if the factory is later composed out of other projections.
+      IProjection<IReadOnlyList<IReadOnlyDictionary<string, CellValue>>> table = Table();
+
+      Assert.Contains(
+        typeof(IProjection<IReadOnlyList<IReadOnlyDictionary<string, CellValue>>>),
+        table.GetType().GetInterfaces());
+
+      IReadOnlyDictionary<string, CellValue> row = table.Map(Sheet())[0];
+      object value = row["Amount"];
+
+      Assert.IsType<CellValue>(value);
+    }
+
+    [Fact]
     public void TheDictionaryIsReadOnlyAndCarriesTheComparer()
     {
       var row = Rows()[0];

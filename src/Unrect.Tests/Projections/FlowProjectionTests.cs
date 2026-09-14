@@ -27,7 +27,7 @@ namespace Unrect.Tests.Projections
   {
     /// <summary>A cell read as text — named for what it does, so it cannot be mistaken for the
     /// <c>Text()</c> leaf that the vocabulary now has.</summary>
-    private static IProjection<string> StringCell() => Cell(v => v.GetString());
+    private static IProjection<string> StringCell() => TextCell();
 
     // --- Flow arithmetic ---------------------------------------------------------------------------
 

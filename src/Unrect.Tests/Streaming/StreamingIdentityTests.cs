@@ -9,6 +9,7 @@ using Unrect.Spreadsheets;
 using Xunit;
 
 using static Unrect.Projections.Projection;
+using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Streaming
 {
@@ -250,7 +251,7 @@ namespace Unrect.Tests.Streaming
       // termination depends on reading past the end of one block and into the next.
       var declaration = VerticalRepeat(
         VerticalFlow(v => (
-          Deal: v.Next(Cell(cell => cell.GetString())),
+          Deal: v.Next(TextCell()),
           Rows: v.Next(Table(row => row["Name"].GetString())))),
         separatedBy: BlankRows());
 
@@ -388,7 +389,7 @@ namespace Unrect.Tests.Streaming
       // A diagnostic that named a different cell depending on which door was used would be worse
       // than useless: the message is what a caller acts on, and it has to describe the workbook
       // rather than the reader.
-      var declaration = Cell(cell => cell.GetInt()).Named("a number");
+      var declaration = IntCell().Named("a number");
 
       var eager = Assert.Throws<ProjectionException>(
         () => declaration.Map(SpreadsheetSpace.Create(Path("edge-cases.xlsx"), "Edges")));

@@ -141,7 +141,7 @@ namespace Unrect.Tests.Projections
       });
 
       AssertReads(
-        VerticalFlow(v => $"{v.Next(Cell(c => c.GetString()))}|{string.Join(",", v.Next(Table(r => r["Amount"].GetInt())))}"),
+        VerticalFlow(v => $"{v.Next(TextCell())}|{string.Join(",", v.Next(Table(r => r["Amount"].GetInt())))}"),
         space,
         "Report|1,2",
         2,
@@ -189,7 +189,7 @@ namespace Unrect.Tests.Projections
       var space = Mixed(new object?[,] { { "preamble" }, { "Section" }, { 7 } });
 
       AssertReads(
-        VerticalFlow(v => $"{v.Next(Cell(c => c.GetString()))}|{v.Next(On(RowContaining("Section")).Of(Cell(c => c.GetString())))}"),
+        VerticalFlow(v => $"{v.Next(TextCell())}|{v.Next(On(RowContaining("Section")).Of(TextCell()))}"),
         space,
         "preamble|Section",
         1,
@@ -242,7 +242,7 @@ namespace Unrect.Tests.Projections
     public void AChoiceWhoseLaterAlternativeWinsNamesTheEarlierOne()
     {
       var projection = Choice(
-        VerticalFlow(v => $"{v.Next(Cell(c => c.GetString()))}{v.Next(IntCell())}"),
+        VerticalFlow(v => $"{v.Next(TextCell())}{v.Next(IntCell())}"),
         VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(IntCell())}"));
 
       AssertReads(projection, Ladder(), "1|2", 1, 2);
@@ -265,7 +265,7 @@ namespace Unrect.Tests.Projections
       // Three levels down: the Warning must name the cell that failed rather than anything that
       // caught it, and an absorbed projection consumes nothing.
       var projection = VerticalFlow(v =>
-        $"{v.Next(IntCell())}|{v.Next(VerticalFlow(w => $"{w.Next(IntCell())}{w.Next(Cell(c => c.GetString()).Named("deep"))}"))}")
+        $"{v.Next(IntCell())}|{v.Next(VerticalFlow(w => $"{w.Next(IntCell())}{w.Next(TextCell().Named("deep"))}"))}")
         .Optional();
 
       AssertReads(projection, Ladder(), null, 0, 0);
@@ -282,7 +282,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AnAbsorbedSiblingConsumesNothingAndTheNextChildReadsItsCells()
     {
-      var projection = VerticalFlow(v => $"{v.Next(Cell(c => c.GetString()).Named("title").Else("fallback"))}|{v.Next(IntCell())}");
+      var projection = VerticalFlow(v => $"{v.Next(TextCell().Named("title").Else("fallback"))}|{v.Next(IntCell())}");
 
       AssertReads(projection, Ladder(), "fallback|1", 1, 1);
 
@@ -308,7 +308,7 @@ namespace Unrect.Tests.Projections
       // and the failing child follows directly. (The fixed-arity spelling had a second node — the
       // Select that combined the tuple — so naming *it* produced an extra path segment and a
       // '(Select)' kind. Nothing to compare against once that spelling is gone.)
-      var projection = VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(Cell(c => c.GetString()))}").Named("report");
+      var projection = VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(TextCell())}").Named("report");
 
       Assert.Equal("'report' -> Cell#2", Assert.Throws<ProjectionException>(() => projection.Map(Ladder())).Path);
     }
@@ -335,7 +335,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ADisagreementWithTheDataIsAbsorbed()
     {
-      var projection = VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(Cell(c => c.GetString()))}").Else("absorbed");
+      var projection = VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(TextCell())}").Else("absorbed");
 
       AssertReads(projection, Ladder(), "absorbed", 0, 0);
 
@@ -354,7 +354,7 @@ namespace Unrect.Tests.Projections
     public void FAILING_AChildOfTheWrongKind()
     {
       AssertFails(
-        VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(Cell(c => c.GetString()).Named("title"))}"),
+        VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(TextCell().Named("title"))}"),
         Ladder(),
         "'title'",
         "VerticalFlow -> 'title' (Cell)",

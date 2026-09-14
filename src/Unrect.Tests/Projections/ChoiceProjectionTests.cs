@@ -24,11 +24,11 @@ namespace Unrect.Tests.Projections
 
     /// <summary>Reads the pair as text-then-number: what the file actually is.</summary>
     private static IProjection<int> TextFirst(string name = "vendor A layout")
-      => VerticalFlow(v => { v.Next(Cell(c => c.GetString())); return v.Next(Cell(c => c.GetInt())); }).Named(name);
+      => VerticalFlow(v => { v.Next(TextCell()); return v.Next(IntCell()); }).Named(name);
 
     /// <summary>Reads the pair as number-then-number: a layout this file is not in.</summary>
     private static IProjection<int> NumberFirst(string name = "vendor B layout")
-      => VerticalFlow(v => { v.Next(Cell(c => c.GetInt())); return v.Next(Cell(c => c.GetInt())); }).Named(name);
+      => VerticalFlow(v => { v.Next(IntCell()); return v.Next(IntCell()); }).Named(name);
 
     // --- Choosing ------------------------------------------------------------------------------------
 
@@ -99,7 +99,7 @@ namespace Unrect.Tests.Projections
     public void AnUnnamedAlternative_IsDescribedStructurally()
     {
       var alternatives = Choice(
-        VerticalFlow(v => { v.Next(Cell(c => c.GetInt())); return v.Next(Cell(c => c.GetInt())); }),
+        VerticalFlow(v => { v.Next(IntCell()); return v.Next(IntCell()); }),
         TextFirst());
 
       var info = Assert.Single(alternatives.MapWithDiagnostics(Pair()).Diagnostics);
@@ -161,7 +161,7 @@ namespace Unrect.Tests.Projections
       var failure = Assert.Throws<ProjectionException>(() =>
         Choice(
           Cell<int>(_ => throw new NullReferenceException("boom")).Named("first"),
-          Cell(v => v.GetInt()).Named("second"))
+          IntCell().Named("second"))
           .Map(Mixed(new object?[,] { { 5 } })));
 
       Assert.Equal("'first'", failure.Subject);
@@ -280,8 +280,8 @@ namespace Unrect.Tests.Projections
       // reading that was thrown away, so keeping it would describe a parse that never happened.
       var losing = VerticalFlow(v =>
       {
-        v.Next(Cell(c => c.GetString()).Optional());
-        v.Next(Cell(c => c.GetString()));
+        v.Next(TextCell().Optional());
+        v.Next(TextCell());
         return 0;
       }).Named("losing");
 
@@ -298,9 +298,9 @@ namespace Unrect.Tests.Projections
       // Tolerance exercised by the branch that actually produced the result is part of the result.
       var winning = VerticalFlow(v =>
       {
-        v.Next(Cell(c => c.GetString()));
-        v.Next(Cell(c => c.GetString()).Optional());
-        return v.Next(Cell(c => c.GetInt()));
+        v.Next(TextCell());
+        v.Next(TextCell().Optional());
+        return v.Next(IntCell());
       }).Named("winning");
 
       var result = Choice(NumberFirst(), winning).MapWithDiagnostics(Pair());

@@ -154,10 +154,10 @@ namespace Unrect.Tests.Projections
       // The other end of the same choice: the projection the section is for falls to its ordinal in
       // the sugar and borrows the expansion's local in the hand-written flow.
       var sugar = Assert.Throws<ProjectionException>(() =>
-        Heading("Detail").Of(Cell(c => c.GetInt())).Map(Sheet()));
+        Heading("Detail").Of(IntCell()).Map(Sheet()));
 
       var expansion = Assert.Throws<ProjectionException>(() =>
-        Expansion(Cell(c => c.GetInt()), Caption("Detail")).Map(Sheet()));
+        Expansion(IntCell(), Caption("Detail")).Map(Sheet()));
 
       Assert.Equal("Cell#2", sugar.Subject);
       Assert.Equal("'section'", expansion.Subject);
@@ -178,7 +178,7 @@ namespace Unrect.Tests.Projections
     }
 
     /// <summary>A section that raises a Warning of its own rather than failing the parse.</summary>
-    private static IProjection<int> Tolerated() => Cell(c => c.GetInt()).Optional();
+    private static IProjection<int> Tolerated() => IntCell().Optional();
 
     /// <summary>A diagnostic with everything but its subject and path — the L3 residue the law keeps.</summary>
     private static IReadOnlyList<string> WithoutLabels(IReadOnlyList<ProjectionDiagnostic> diagnostics)

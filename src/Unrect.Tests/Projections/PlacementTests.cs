@@ -27,8 +27,6 @@ namespace Unrect.Tests.Projections
     private static ISpace CoordinateGrid(int width = 3, int height = 4)
       => ProjectionTestSpaces.CoordinateGrid(width, height);
 
-    private static IProjection<int> IntCell() => Cell(v => v.GetInt());
-
     // --- The placement is applied at the root ------------------------------------------------------
 
     [Fact]

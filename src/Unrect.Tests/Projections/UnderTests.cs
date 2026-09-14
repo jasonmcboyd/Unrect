@@ -75,7 +75,7 @@ namespace Unrect.Tests.Projections
     public void TheSectionIsTheChildAfterTheCaptions()
     {
       var failure = Assert.Throws<ProjectionException>(() =>
-        Heading("Detail").Of(Cell(c => c.GetInt())).Map(Sheet()));
+        Heading("Detail").Of(IntCell()).Map(Sheet()));
 
       Assert.Equal("Heading -> Cell#2", failure.Path);
     }
@@ -151,7 +151,7 @@ namespace Unrect.Tests.Projections
       // ever wrote.
       var captionMiss = Assert.Throws<ProjectionException>(() => Heading("Nope").Of(Lines()).Map(Sheet()));
       var sectionMiss = Assert.Throws<ProjectionException>(() =>
-        Heading("Detail").Of(Cell(c => c.GetInt())).Map(Sheet()));
+        Heading("Detail").Of(IntCell()).Map(Sheet()));
 
       Assert.DoesNotContain("'caption'", captionMiss.Path);
       Assert.DoesNotContain("'projection'", sectionMiss.Path);

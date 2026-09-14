@@ -10,6 +10,7 @@ using Unrect.Spreadsheets;
 using Xunit;
 
 using static Unrect.Projections.Projection;
+using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Streaming
 {
@@ -101,7 +102,7 @@ namespace Unrect.Tests.Streaming
     {
       // AfterBlankRows scanning into the row that cannot be read: the exact scenario in the spec's
       // statement of the bug.
-      AssertSurfacedAsAFault(fault, space => AfterBlankRows().Of(Cell(cell => cell.GetString())).Map(Faulting(fault, faultRow: 0)));
+      AssertSurfacedAsAFault(fault, space => AfterBlankRows().Of(TextCell()).Map(Faulting(fault, faultRow: 0)));
     }
 
     [Theory]
@@ -110,7 +111,7 @@ namespace Unrect.Tests.Streaming
     {
       // A landmark searches for a row, so it reads its way down the sheet; a search that fails
       // because the disk did is not the same as a search that finished and found nothing.
-      AssertSurfacedAsAFault(fault, space => On(RowContaining("nowhere")).Of(Cell(cell => cell.GetString())).Map(space));
+      AssertSurfacedAsAFault(fault, space => On(RowContaining("nowhere")).Of(TextCell()).Map(space));
     }
 
     [Theory]
@@ -188,7 +189,7 @@ namespace Unrect.Tests.Streaming
 
       AssertSurfacedAsAFault(
         fault,
-        space => On(RowContaining("nowhere")).Of(Cell(cell => cell.GetString())).Optional().Map(space));
+        space => On(RowContaining("nowhere")).Of(TextCell()).Optional().Map(space));
 
       AssertSurfacedAsAFault(
         fault,
@@ -234,7 +235,7 @@ namespace Unrect.Tests.Streaming
     {
       // "Amount is text where a number was declared" is a disagreement about the data, which is
       // exactly what a tolerance boundary is for.
-      var value = Cell(cell => cell.GetInt()).Optional().Map(Sound());
+      var value = IntCell().Optional().Map(Sound());
 
       Assert.Equal(0, value);
     }
@@ -242,7 +243,7 @@ namespace Unrect.Tests.Streaming
     [Fact]
     public void AMissingAnchorIsStillAbsorbed()
     {
-      var value = On(RowContaining("absent")).Of(Cell(cell => cell.GetString())).Optional().Map(Sound());
+      var value = On(RowContaining("absent")).Of(TextCell()).Optional().Map(Sound());
 
       Assert.Null(value);
     }
@@ -268,7 +269,7 @@ namespace Unrect.Tests.Streaming
     public void AChoiceStillFallsBackWhenTheDataDisagrees()
     {
       var value = Choice(
-        Cell(cell => cell.GetInt()).Named("a number"),
+        IntCell().Named("a number"),
         Cell(cell => cell.GetString().Length).Named("its length")).Map(Sound());
 
       Assert.Equal(4, value);

@@ -322,8 +322,8 @@ namespace Unrect.Tests.Projections
       // annotation and not Nullable<T>, so a projection of int stays a projection of int — the
       // absent reading is 0, as BoundaryProjectionTests pins — and both spellings have the same
       // static type at both arities.
-      IProjection<int> once = Cell(c => c.GetInt()).Optional();
-      IProjection<int> twice = Cell(c => c.GetInt()).Optional().Optional();
+      IProjection<int> once = IntCell().Optional();
+      IProjection<int> twice = IntCell().Optional().Optional();
 
       Assert.Equal(0, once.Map(Sheet()));
       Assert.Equal(0, twice.Map(Sheet()));

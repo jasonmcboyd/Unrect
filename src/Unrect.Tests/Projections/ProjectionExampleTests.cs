@@ -105,7 +105,7 @@ namespace Unrect.Tests.Projections
     {
       var deal =
         VerticalFlow(v => new Deal(
-          Code: v.Next(Cell(c => c.GetString()).Named("deal code")),
+          Code: v.Next(TextCell().Named("deal code")),
           // Every caption binds free: AccountKey to "Account Key", TransferDate to "Transfer Date".
           Transactions: v.Next(Table<DealTransaction>().Named("transactions"))))
           .Named("deal block");
@@ -162,7 +162,7 @@ namespace Unrect.Tests.Projections
     {
       var detail =
         VerticalFlow(v => new Detail(
-          Investor: v.Next(Cell(c => c.GetString()).Named("investor name")),
+          Investor: v.Next(TextCell().Named("investor name")),
           Transactions: v.Next(Table(r => new DetailTransaction(
             r["Date"].GetDateTime(),
             r["Transaction Type"].GetString(),

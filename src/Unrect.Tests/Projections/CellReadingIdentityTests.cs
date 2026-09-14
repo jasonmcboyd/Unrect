@@ -200,6 +200,33 @@ namespace Unrect.Tests.Projections
       Assert.Equal(Problem(byLeaf), Problem(tolerant));
     }
 
+    [Fact]
+    public void TheColumnPrefixSitsInsideTheProblemAndNotInThePath()
+    {
+      // The whole message of a bind failure, assembled as a reader sees it. Where the caption is
+      // said is the load-bearing part: `column 'Amount': ` sits between the subject and the
+      // cell-describing sentence, inside the PROBLEM, and the path names the table alone. Every
+      // other pin in this file strips the subject and asserts the remainder, which leaves the
+      // relationship between the three unstated — so it is stated here once, in full, and moving
+      // the caption anywhere else (into the path, into an address) is a visible diff on this test
+      // rather than a silent change of shape.
+      var space = Mixed(new object?[,]
+      {
+        { "Client", "Amount" },
+        { "Acme", "x" },
+      });
+
+      var failure = Assert.Throws<ProjectionException>(() => Table<Money>().Map(space));
+
+      Assert.Equal(
+        "Table<Money>: column 'Amount': expected Number at B2, found Text" + Environment.NewLine
+        + "  in Table<Money>" + Environment.NewLine
+        + "  at row 1, column 1 (A1); 2x2 available",
+        failure.Message);
+
+      Assert.Equal("Table<Money>", failure.Path);
+    }
+
     // --- Blank tolerance agrees too ------------------------------------------------------------------------------
 
     [Fact]

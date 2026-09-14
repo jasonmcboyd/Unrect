@@ -30,11 +30,11 @@ namespace Unrect.Tests.Projections
       return Grid(values);
     }
 
-    private static IProjection<string> Title() => Cell(v => v.GetString()).Named("title");
+    private static IProjection<string> Title() => TextCell().Named("title");
 
     /// <summary>Two levels below the boundary: the flow whose second child is the one that fails.</summary>
     private static IProjection<string> Inner()
-      => VerticalFlow(v => $"{v.Next(Cell(c => c.GetInt()))}{v.Next(Cell(c => c.GetString()))}");
+      => VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(TextCell())}");
 
     /// <summary>
     /// The one warning a parse produced. An absorbing boundary consumes nothing, so a boundary at
@@ -57,7 +57,7 @@ namespace Unrect.Tests.Projections
     {
       // Not null — the filler for an int is 0. Where "absent" and "zero" must differ, Else(value)
       // or a projection to a nullable says so explicitly.
-      Assert.Equal(0, Cell(v => v.GetString()).Select(text => text.Length).Optional().Map(Numbers()));
+      Assert.Equal(0, TextCell().Select(text => text.Length).Optional().Map(Numbers()));
     }
 
     [Fact]
@@ -77,7 +77,7 @@ namespace Unrect.Tests.Projections
     {
       var space = Mixed(new object?[,] { { "Acme" } });
 
-      var result = Cell(v => v.GetString()).Named("title").Optional().MapWithDiagnostics(space);
+      var result = TextCell().Named("title").Optional().MapWithDiagnostics(space);
 
       Assert.Equal("Acme", result.Value);
       Assert.Empty(result.Diagnostics);
@@ -141,7 +141,7 @@ namespace Unrect.Tests.Projections
     public void AFollowingSiblingStartsWhereTheAbsorbedProjectionBegan()
     {
       var read = VerticalFlow(v =>
-        $"{v.Next(Title().Optional()) ?? "null"}|{v.Next(Cell(c => c.GetInt()))}|{v.Next(Cell(c => c.GetInt()))}")
+        $"{v.Next(Title().Optional()) ?? "null"}|{v.Next(IntCell())}|{v.Next(IntCell())}")
         .Map(Numbers());
 
       Assert.Equal("null|1|2", read);
@@ -150,7 +150,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ElseValue_AlsoConsumesNothing()
     {
-      var read = VerticalFlow(v => $"{v.Next(Title().Else("missing"))}|{v.Next(Cell(c => c.GetInt()))}").Map(Numbers());
+      var read = VerticalFlow(v => $"{v.Next(Title().Else("missing"))}|{v.Next(IntCell())}").Map(Numbers());
 
       Assert.Equal("missing|1", read);
     }
@@ -161,7 +161,7 @@ namespace Unrect.Tests.Projections
       // A fallback projection did read something, so it reports an honest extent and the next
       // sibling clears it.
       var read = VerticalFlow(v =>
-        $"{v.Next(Title().Else(Cell(c => c.GetInt().ToString()).Named("plan B")))}|{v.Next(Cell(c => c.GetInt()))}")
+        $"{v.Next(Title().Else(Cell(c => c.GetInt().ToString()).Named("plan B")))}|{v.Next(IntCell())}")
         .Map(Numbers());
 
       Assert.Equal("1|2", read);
@@ -184,7 +184,7 @@ namespace Unrect.Tests.Projections
       // Three levels down: the boundary wraps a flow whose second child fails. Nothing between
       // them softens anything — the failure travels to the nearest boundary and stops there.
       var projection = VerticalFlow(v =>
-        $"{v.Next(Cell(c => c.GetInt()))}|{v.Next(Inner().Optional()) ?? "null"}|{v.Next(Cell(c => c.GetInt()))}");
+        $"{v.Next(IntCell())}|{v.Next(Inner().Optional()) ?? "null"}|{v.Next(IntCell())}");
 
       var result = projection.MapWithDiagnostics(Numbers());
 
@@ -195,7 +195,7 @@ namespace Unrect.Tests.Projections
     public void ADeeplyAbsorbedFailure_KeepsItsFullPathAndTrueLocation()
     {
       var projection = VerticalFlow(v =>
-        $"{v.Next(Cell(c => c.GetInt()))}|{v.Next(Inner().Optional()) ?? "null"}|{v.Next(Cell(c => c.GetInt()))}");
+        $"{v.Next(IntCell())}|{v.Next(Inner().Optional()) ?? "null"}|{v.Next(IntCell())}");
 
       var warning = Assert.Single(
         projection.MapWithDiagnostics(Numbers()).Diagnostics,
@@ -214,7 +214,7 @@ namespace Unrect.Tests.Projections
       // inside it is inside the try block.
       var space = Mixed(new object?[,] { { "nothing" }, { "here" } });
 
-      var result = On(RowContaining("Section")).Of(Cell(v => v.GetString())).Optional().MapWithDiagnostics(space);
+      var result = On(RowContaining("Section")).Of(TextCell()).Optional().MapWithDiagnostics(space);
 
       Assert.Null(result.Value);
       Assert.Contains(
@@ -230,7 +230,7 @@ namespace Unrect.Tests.Projections
       var space = Mixed(new object?[,] { { "nothing" }, { "here" } });
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        On(RowContaining("Section")).Of(Cell(v => v.GetString()).Optional()).Map(space));
+        On(RowContaining("Section")).Of(TextCell().Optional()).Map(space));
 
       Assert.Contains("no row containing 'Section'", failure.Message);
     }
@@ -298,7 +298,7 @@ namespace Unrect.Tests.Projections
     // --- When the fallback fails too ------------------------------------------------------------------------------------
 
     private static IProjection<string> PrimaryAndFallbackBothWrong()
-      => Cell(v => v.GetString()).Named("primary")
+      => TextCell().Named("primary")
         .Else(Cell(v => v.GetDateTime().ToString()).Named("fallback"));
 
     [Fact]
@@ -344,7 +344,7 @@ namespace Unrect.Tests.Projections
     private static ISpace TextOverNumber() => Mixed(new object?[,] { { "x" }, { 5 } });
 
     private static IProjection<string> AbsorbedThenSameCell()
-      => VerticalFlow(v => $"{v.Next(Cell(c => c.GetInt()).Optional())}|{v.Next(Cell(c => c.GetInt()))}");
+      => VerticalFlow(v => $"{v.Next(IntCell().Optional())}|{v.Next(IntCell())}");
 
     [Fact]
     public void AFailureRightAfterAnAbsorbedSibling_CarriesANote()
@@ -362,7 +362,7 @@ namespace Unrect.Tests.Projections
       // The quoted exception message brings its own full stop; keeping it would read ".; note:".
       var noted = FirstLine(Assert.Throws<ProjectionException>(() => AbsorbedThenSameCell().Map(TextOverNumber())));
       var plain = FirstLine(Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v => $"{v.Next(Cell(c => c.GetString()))}|{v.Next(Cell(c => c.GetString()))}").Map(TextOverNumber())));
+        VerticalFlow(v => $"{v.Next(TextCell())}|{v.Next(TextCell())}").Map(TextOverNumber())));
 
       Assert.EndsWith("expected Text.", plain);
       Assert.DoesNotContain("Number.;", noted);
@@ -402,10 +402,10 @@ namespace Unrect.Tests.Projections
     {
       // Nothing consumed nothing, so there is nothing to blame but the projection that failed.
       var laterChild = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v => $"{v.Next(Cell(c => c.GetString()))}|{v.Next(Cell(c => c.GetString()))}").Map(TextOverNumber()));
+        VerticalFlow(v => $"{v.Next(TextCell())}|{v.Next(TextCell())}").Map(TextOverNumber()));
 
       var firstChild = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v => $"{v.Next(Cell(c => c.GetInt()))}|{v.Next(Cell(c => c.GetInt()))}").Map(TextOverNumber()));
+        VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(IntCell())}").Map(TextOverNumber()));
 
       Assert.DoesNotContain("note:", laterChild.Message);
       Assert.DoesNotContain("note:", firstChild.Message);
@@ -418,7 +418,7 @@ namespace Unrect.Tests.Projections
       // on, so by the time the third child fails the coincidence has passed.
       var failure = Assert.Throws<ProjectionException>(() =>
         VerticalFlow(v =>
-          $"{v.Next(Cell(c => c.GetInt()).Optional())}|{v.Next(Cell(c => c.GetString()))}|{v.Next(Cell(c => c.GetString()))}")
+          $"{v.Next(IntCell().Optional())}|{v.Next(TextCell())}|{v.Next(TextCell())}")
           .Map(TextOverNumber()));
 
       Assert.DoesNotContain("note:", failure.Message);
@@ -434,7 +434,7 @@ namespace Unrect.Tests.Projections
 
       var failure = Assert.Throws<ProjectionException>(() =>
         VerticalFlow(v =>
-          $"{v.Next(Cell(c => c.GetInt()).Optional())}|{v.Next(OffsetBy(BlankRows()).Down(2).Of(Cell(c => c.GetString())))}")
+          $"{v.Next(IntCell().Optional())}|{v.Next(OffsetBy(BlankRows()).Down(2).Of(TextCell()))}")
           .Map(space));
 
       Assert.DoesNotContain("note:", failure.Message);
@@ -448,7 +448,7 @@ namespace Unrect.Tests.Projections
       // simply the usual way that happens.
       var failure = Assert.Throws<ProjectionException>(() =>
         VerticalFlow(v =>
-          $"{v.Next(Range(AreaStrategies.ExplicitArea(1, 0), b => b.Height))}|{v.Next(Cell(c => c.GetInt()))}")
+          $"{v.Next(Range(AreaStrategies.ExplicitArea(1, 0), b => b.Height))}|{v.Next(IntCell())}")
           .Map(TextOverNumber()));
 
       Assert.Contains("note: the preceding sibling consumed nothing at this position", failure.Message);
@@ -458,7 +458,7 @@ namespace Unrect.Tests.Projections
     public void AHorizontalFlowIsNotedTheSameWay()
     {
       var failure = Assert.Throws<ProjectionException>(() =>
-        HorizontalFlow(h => $"{h.Next(Cell(c => c.GetInt()).Optional())}|{h.Next(Cell(c => c.GetInt()))}")
+        HorizontalFlow(h => $"{h.Next(IntCell().Optional())}|{h.Next(IntCell())}")
           .Map(Mixed(new object?[,] { { "x", 5 } })));
 
       Assert.Contains("note: the preceding sibling consumed nothing at this position", failure.Message);
@@ -472,14 +472,14 @@ namespace Unrect.Tests.Projections
       // branch tolerated something before it died.
       var tolerant = VerticalFlow(v =>
       {
-        v.Next(Cell(c => c.GetInt()).Optional());
-        return v.Next(Cell(c => c.GetInt()));
+        v.Next(IntCell().Optional());
+        return v.Next(IntCell());
       }).Named("tolerant branch");
 
       var strict = VerticalFlow(v =>
       {
-        v.Next(Cell(c => c.GetInt()));
-        return v.Next(Cell(c => c.GetInt()));
+        v.Next(IntCell());
+        return v.Next(IntCell());
       }).Named("strict branch");
 
       var failure = Assert.Throws<ProjectionException>(() => Choice(tolerant, strict).Map(TextOverNumber()));
@@ -519,8 +519,8 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ABoundaryDescribesItselfAndExposesWhatItWraps()
     {
-      var inner = Cell(v => v.GetInt()).Named("inner");
-      var fallback = Cell(v => v.GetInt()).Named("fallback");
+      var inner = IntCell().Named("inner");
+      var fallback = IntCell().Named("fallback");
 
       Assert.Equal("Optional", inner.Optional().Description);
       Assert.Equal("Else", inner.Else(0).Description);
@@ -552,7 +552,7 @@ namespace Unrect.Tests.Projections
     {
       Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjection<int>)null!).Optional()).ParamName);
       Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjection<int>)null!).Else(0)).ParamName);
-      Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjection<int>)null!).Else(Cell(v => v.GetInt()))).ParamName);
+      Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjection<int>)null!).Else(IntCell())).ParamName);
     }
   }
 }

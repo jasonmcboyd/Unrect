@@ -280,7 +280,7 @@ namespace Unrect.Tests.Projections
     private static IProjection Refuse(string receiver) => receiver switch
     {
       "Row" => Row(cells => cells.Count).OrBlank(),
-      "Cell" => Cell(cell => cell.GetInt()).OrBlank(),
+      "Cell" => IntCell().OrBlank(),
       "Range" => Range(block => block.Width).OrBlank(),
 
       // A caption reads text out of a cell and is still not a typed leaf: it asserts a spelling

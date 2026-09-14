@@ -56,7 +56,7 @@ namespace Unrect.Tests.Projections
       var space = Mixed(new object?[,] { { "nothing", null }, { "relevant", null } });
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        On(RowContaining("Taxable Income")).Of(Cell(v => v.GetString()).Named("taxable income")).Map(space));
+        On(RowContaining("Taxable Income")).Of(TextCell().Named("taxable income")).Map(space));
 
       Assert.Equal("'taxable income'", failure.Subject);
       Assert.Contains("no row containing 'Taxable Income' exists in the available space", failure.Message);
@@ -98,7 +98,7 @@ namespace Unrect.Tests.Projections
     }
 
     private static string Missing(IOffsetStrategy offset, ISpace space)
-      => Assert.Throws<ProjectionException>(() => OffsetBy(offset).Of(Cell(v => v.GetString())).Map(space)).Message;
+      => Assert.Throws<ProjectionException>(() => OffsetBy(offset).Of(TextCell()).Map(space)).Message;
 
     // --- Case B: the area does not fit ------------------------------------------------------------------
 
@@ -178,7 +178,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AProjectionThatThrows_IsWrappedWithItsPathAndLocation()
     {
-      var failure = Assert.Throws<ProjectionException>(() => Cell(v => v.GetString()).Map(Square()));
+      var failure = Assert.Throws<ProjectionException>(() => TextCell().Map(Square()));
 
       Assert.Contains("the projection threw InvalidOperationException", failure.Message);
       Assert.Contains("Cell value is Number; expected Text", failure.Message);
@@ -197,7 +197,7 @@ namespace Unrect.Tests.Projections
       var projection = VerticalFlow(v =>
       {
         var first = v.Next(IntCell());
-        v.Next(VerticalRepeat(Cell(c => c.GetString())).Named("items"));
+        v.Next(VerticalRepeat(TextCell()).Named("items"));
         return first;
       });
 
@@ -225,7 +225,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AnUnnamedProjection_IsIdentifiedByItsDescription()
     {
-      var failure = Assert.Throws<ProjectionException>(() => Cell(v => v.GetString()).Map(Square()));
+      var failure = Assert.Throws<ProjectionException>(() => TextCell().Map(Square()));
 
       Assert.Equal("Cell", failure.Subject);
       Assert.Equal("Cell", failure.Path);
@@ -235,7 +235,7 @@ namespace Unrect.Tests.Projections
     public void ANamedProjection_IsIdentifiedByItsNameAndSaysWhatKindItIs()
     {
       var failure = Assert.Throws<ProjectionException>(() =>
-        Cell(v => v.GetString()).Named("report id").Map(Square()));
+        TextCell().Named("report id").Map(Square()));
 
       Assert.Equal("'report id'", failure.Subject);
       Assert.Equal("'report id' (Cell)", failure.Path);
@@ -245,7 +245,7 @@ namespace Unrect.Tests.Projections
     public void TheKindSuffixOnlyDecoratesNamedSegments()
     {
       var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(Cell(c => c.GetString()))}").Named("header").Map(Square()));
+        VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(TextCell())}").Named("header").Map(Square()));
 
       // The named flow is a plain segment; the failing segment carries the kind only when it
       // rendered as a quoted name, and an ordinal is not one.
@@ -261,7 +261,7 @@ namespace Unrect.Tests.Projections
         VerticalFlow(v =>
         {
           v.Next(IntCell());
-          return v.Next(VerticalFlow(w => $"{w.Next(IntCell())}{w.Next(Cell(c => c.GetString()))}").Named("inner"));
+          return v.Next(VerticalFlow(w => $"{w.Next(IntCell())}{w.Next(TextCell())}").Named("inner"));
         }).Map(space));
 
       Assert.Contains(" -> ", failure.Path);
@@ -274,7 +274,7 @@ namespace Unrect.Tests.Projections
       var space = Grid(new[,] { { 1 }, { 2 }, { 0 } });
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalRepeat(Cell(v => v.GetString()).Named("code")).Map(space));
+        VerticalRepeat(TextCell().Named("code")).Map(space));
 
       Assert.Equal("VerticalRepeat[0] -> 'code' (Cell)", failure.Path);
     }
@@ -293,10 +293,10 @@ namespace Unrect.Tests.Projections
     public void AnUnnamedSelectContributesNoPathSegment()
     {
       var withoutSelect = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(Cell(c => c.GetString()))}").Map(Square()));
+        VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(TextCell())}").Map(Square()));
 
       var withSelect = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(Cell(c => c.GetString()))}").Select(x => x).Map(Square()));
+        VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(TextCell())}").Select(x => x).Map(Square()));
 
       Assert.Equal("VerticalFlow -> Cell#2", withoutSelect.Path);
       Assert.Equal(withoutSelect.Path, withSelect.Path);
@@ -325,7 +325,7 @@ namespace Unrect.Tests.Projections
     public void ANamedSelectContributesAPathSegment()
     {
       var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(Cell(c => c.GetString()))}").Select(x => x).Named("report").Map(Square()));
+        VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(TextCell())}").Select(x => x).Named("report").Map(Square()));
 
       Assert.Equal("'report' -> VerticalFlow -> Cell#2", failure.Path);
     }
@@ -393,7 +393,7 @@ namespace Unrect.Tests.Projections
     public void TheMessageCarriesSubjectProblemPathAndLocationOnSeparateLines()
     {
       var failure = Assert.Throws<ProjectionException>(() =>
-        Cell(v => v.GetString()).Named("title").Map(Square()));
+        TextCell().Named("title").Map(Square()));
 
       var lines = failure.Message.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
 
@@ -407,7 +407,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void TheExceptionPointsAtTheProjectionThatFailed()
     {
-      var cell = Cell(v => v.GetString()).Named("title");
+      var cell = TextCell().Named("title");
 
       var failure = Assert.Throws<ProjectionException>(() => cell.Map(Square()));
 
@@ -418,7 +418,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void RequestedIsNullWhenNothingSpecificWasAskedFor()
     {
-      var failure = Assert.Throws<ProjectionException>(() => Cell(v => v.GetString()).Map(Square()));
+      var failure = Assert.Throws<ProjectionException>(() => TextCell().Map(Square()));
 
       Assert.Null(failure.Requested);
     }

@@ -147,11 +147,11 @@ namespace Unrect.Tests.Projections
       });
 
       var section = Heading("Detail").Of(Range(b => b.Height));
-      var anchored = Below(RowContaining("Detail")).Of(Cell(c => c.GetString()));
+      var anchored = Below(RowContaining("Detail")).Of(TextCell());
 
       Assert.Equal(2, section.Map(space));
       Assert.Equal("a", anchored.Map(space));
-      Assert.Equal("Detail", On(RowContaining("Detail")).Of(Cell(c => c.GetString())).Map(space));
+      Assert.Equal("Detail", On(RowContaining("Detail")).Of(TextCell()).Map(space));
     }
 
     [Fact]
