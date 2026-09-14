@@ -75,18 +75,20 @@ sheet determines whether streaming is cheap, free, or a bad idea:
   there and then: `TableView.Rows`, `.RowCount`, `.Location`, `CellBlock.Height`, `.Rows`,
   `.Columns`, `.Column`, `.Location`, `.AddressOf`, and `ISpace.Area` itself. Widths are
   free either way.
-- **Laziness stops at the first composite.** A `.Sized(RowsWhileAnyValue())` on a
-  `VerticalFlow`, a `HorizontalFlow` or an `Overlay` resolves eagerly, in full, today.
-  Placing that composite's first child asks the parent extent whether the child fits and
-  then slices it, and both questions settle the bound before any child projection runs — so
-  a lazy extent buys nothing once there is a box around it. A `.Sized` composite is a
-  legitimate spelling with no leaf equivalent — a composite has no intrinsic extent, and a
-  declared band is what scopes its internal seeks and settles its consumption — but in
-  practice such bands are short (a bounded header), where settling them eagerly costs
-  nothing. Where the region that reads the rows *is* a single leaf, size the leaf; the
-  deferred fix for tall sized composites is recorded in the spec (§13, Part 3), and this
-  limit is pinned by `LazyDenotationTests`' census, so lifting it is a deliberate change
-  rather than an accident.
+- **A composite over a discovered bound now streams.** A `.Sized(RowsWhileAnyValue())` on a
+  `VerticalFlow`, a `HorizontalFlow`, an `Overlay`, or a bare `VerticalRepeat` — a
+  `HorizontalRepeat` excepted, since each occurrence of it spans the full height and so settles
+  the bound before the first item, exactly as `HorizontalBands` does —
+  no longer settles the bound before the first child projection runs: placing a child asks only
+  whether there is a row at its offset (`ProjectionEngine.Exceeds`) and slices a lazy tail
+  (`BoundedSpace.Tail`) rather than reading `Area`, so the height stays undiscovered until
+  something genuinely needs it. What still forces is a CHILD's own declared area whose strategy
+  reads `ISpace.Area` to answer — a bare `VerticalRepeat(Record(record))` inside a bound still
+  settles the whole extent at the first occurrence, because `Record`'s placement declares its own
+  one-row area and the strategy behind it asks the extent how wide it is. Where the region that
+  reads the rows is sized by a fixed stride instead of a search, the tiler
+  (`VerticalBands`/`HorizontalBands`) cuts a real, measured band per iteration and never asks the
+  parent extent anything, which is how `Table`'s own body streams.
 - **A width discovered from the data costs the rows it takes to settle, and no more.** A
   `Table` on its default placement finds its width from the sheet too, in the *same* forward
   walk as its height: each row the height rule accepts is fed to the width rule as it is

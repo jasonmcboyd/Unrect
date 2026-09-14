@@ -41,7 +41,7 @@ namespace Unrect.Projections
       // body is handed through untouched, forcing nothing.
       var width = Map.Labels.Count;
       var body = BoundedSpace.WidthOf(extent) > width
-        ? extent.GetSubspace(new Offset(0, 0), new Area(width, extent.Area.Height))
+        ? BoundedSpace.Narrow(extent, width)
         : extent;
 
       var applied = ProjectionEngine.Apply(Body, body, context.PushLabels(Axis, Map));

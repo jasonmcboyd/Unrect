@@ -348,19 +348,37 @@ namespace Unrect.Projections
       if (eachRow is null)
         throw new ArgumentNullException(nameof(eachRow));
 
-      var site = UseSite.From(declared, null);
-      var rows = ValidateHeaderRows(headerRows);
+      // One row per record, which is what a table is until it is told otherwise, and no blank-band
+      // policy: what the body runs over is the extent the placement discovered, exactly as far as
+      // that reaches.
+      var body = VerticalBands(1, eachRow, onBlank: null, declared).AsScaffolding();
 
-      // bandHeight: one row per record, which is what a table is until it is told otherwise. The
-      // walk beneath this counts bands rather than rows, so slicing taller records is this argument
-      // and nothing else.
-      return new TableProjection<IReadOnlyList<T>>(
-        rows,
-        table => ProjectBands(table, eachRow, site, bandHeight: 1),
-        TablePlacement(),
-        "Table",
-        eachRow);
+      IProjection<IReadOnlyList<T>> composed = ValidateHeaderRows(headerRows) == 0
+        ? body
+        : UnderColumnLabels(ColumnLabels(1).AsScaffolding(), body).AsScaffolding();
+
+      return new UnitProjection<IReadOnlyList<T>>(composed, new IProjection[] { eachRow }, "Table", TablePlacement());
     }
+
+    /// <summary>
+    /// The header read once, then the body beneath it resolving columns through what the header
+    /// named. The unit above this owns the placement, so the flow sits where it is handed and the
+    /// rows it takes are the only thing it decides.
+    /// </summary>
+    private static IProjection<IReadOnlyList<T>> UnderColumnLabels<T>(IProjection<LabelMap> header, IProjection<IReadOnlyList<T>> body)
+      => new FlowProjection<IReadOnlyList<T>>(
+        Orientation.Vertical,
+        flow =>
+        {
+          // declared: null at both sites, and it is mandatory. Left to the compiler, the naming
+          // ladder would label the children with this method's own locals, identifiers the user
+          // never wrote.
+          var columns = flow.Next(header, declared: null);
+
+          return flow.Next(WithColumnLabels(columns, body), declared: null);
+        },
+        Placement.Default,
+        null);
 
     private static IProjection<IReadOnlyList<T>> TypedRows<T>(TableBinding<T>? binding, BlankRowStrategy onBlank = default)
     {
@@ -515,6 +533,12 @@ namespace Unrect.Projections
     /// body — the map a <see cref="WithColumnLabels{T}(LabelMap, IProjection{T})"/> then provides to
     /// the rows beneath it. The header parse is the one a built-in <c>Table</c> runs, so the labels,
     /// their ordinals and the matching rule are identical.
+    /// <para>
+    /// It takes the width of the band it is handed rather than discovering one of its own, so the
+    /// labels describe the same columns the body beneath them reads. An extent with no room for the
+    /// header row — no rows, or no columns — is an absorbable failure, so a table over an empty
+    /// region answers to <c>.Optional()</c> like any other absent section.
+    /// </para>
     /// </summary>
     /// <param name="headerRows">How many rows to read as the header. Only 1 is supported in this release.</param>
     public static IProjection<LabelMap> ColumnLabels(int headerRows = 1)
@@ -522,9 +546,7 @@ namespace Unrect.Projections
       if (headerRows != 1)
         throw new ArgumentOutOfRangeException(nameof(headerRows), headerRows, "ColumnLabels reads exactly one header row in this release.");
 
-      return new ColumnLabelsProjection(
-        headerRows,
-        Placement.Of(RowsThenColumns(RowStrategies.TakeRows(headerRows), ColumnStrategies.TakeColumnsWhileAnyValue())));
+      return new ColumnLabelsProjection(headerRows, Placement.Default);
     }
 
     /// <summary>
@@ -650,7 +672,17 @@ namespace Unrect.Projections
         description: "Fields");
     }
 
-    // --- Repetition ---------------------------------------------------------------------------
+    // --- Repetition and tiling ------------------------------------------------------------------
+    //
+    // Two ways for one declaration to be read many times, and the difference is where the boundary
+    // between occurrences comes from.
+    //
+    // A REPEAT repeats a PATTERN. Each occurrence is as big as the item's own placement makes it, so
+    // occurrences may differ in size, and the run ends where the pattern stops matching.
+    //
+    // A TILER repeats a FIXED-DIMENSION SPACE. The extent is cut into bands of a declared stride and
+    // each band is projected; nothing is searched for, no occurrence can be a different size, and the
+    // run ends when a whole band is no longer left.
 
     /// <summary>
     /// One item stacked downwards as many times as the space supports.
@@ -709,6 +741,12 @@ namespace Unrect.Projections
     /// the enclosing edge and act on each interior blank row. Null (the default) keeps the plain
     /// walk, where a blank band is a separator rather than a terminator. Cannot be combined with
     /// <paramref name="separatedBy"/>.
+    /// <para>
+    /// It says "blank ROW" of a repeat whose occurrences need not be rows at all. Where the
+    /// occurrences really are one row each,
+    /// <see cref="VerticalBands{T}(int, IProjection{T}, BlankRowStrategy?, string)"/> is the
+    /// spelling that says so.
+    /// </para>
     /// </param>
     public static IProjection<IReadOnlyList<T>> VerticalRepeat<T>(
       IProjection<T> item,
@@ -732,6 +770,61 @@ namespace Unrect.Projections
       BlankRowStrategy? onBlank = null,
       [CallerArgumentExpression("item")] string? declared = null)
       => Repeat(Orientation.Horizontal, item, separatedBy, onBlank, atLeast, declared);
+
+    /// <summary>
+    /// The extent cut into bands <paramref name="rows"/> rows tall, top to bottom, each projected by
+    /// <paramref name="each"/>. A band's boundaries come from the stride alone — nothing is searched
+    /// for and no band can be a different size — and the tiling ends when fewer than
+    /// <paramref name="rows"/> rows are left, so a trailing part-band is not a band.
+    /// <para>
+    /// It declares no extent of its own: how far it runs is whatever places it — a <c>.Sized</c>, a
+    /// discovered block, or simply the space it is handed. That is the difference from
+    /// <see cref="VerticalRepeat{T}"/>, which discovers each occurrence's size from the item and
+    /// stops where the item stops fitting.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">What one band reads.</typeparam>
+    /// <param name="rows">How many rows one band is; at least 1.</param>
+    /// <param name="each">The projection applied to each band.</param>
+    /// <param name="onBlank">
+    /// How a fully-blank band is treated: <c>Stop</c> ends the tiling there, <c>Skip</c> and
+    /// <c>Tolerate</c> omit the band and carry on (<c>Tolerate</c> recording an <c>Info</c>), and
+    /// <c>Fault</c> fails. Null (the default) projects every band the extent holds.
+    /// </param>
+    /// <param name="declared">
+    /// Supplied by the compiler as the text of the <paramref name="each"/> argument, so a band
+    /// projection hoisted into a local labels every band — <c>VerticalBands(1, allocation)</c> reads
+    /// as <c>VerticalBands[3] -&gt; 'allocation'</c>. Pass <c>.Named(…)</c> to choose a name instead.
+    /// </param>
+    public static IProjection<IReadOnlyList<T>> VerticalBands<T>(
+      int rows,
+      IProjection<T> each,
+      BlankRowStrategy? onBlank = null,
+      [CallerArgumentExpression("each")] string? declared = null)
+      => Bands(Orientation.Vertical, AtLeastOneBand(rows, nameof(rows)), each, onBlank, declared);
+
+    /// <summary>
+    /// The extent cut into bands <paramref name="columns"/> columns wide, left to right; see
+    /// <see cref="VerticalBands{T}"/> for how a band is cut and how the tiling ends.
+    /// <paramref name="onBlank"/> is a vertical blank-row policy and is rejected here; the parameter
+    /// exists for call-site symmetry.
+    /// <para>
+    /// A band spans the full height, so over an extent whose height is still being discovered this
+    /// settles it before the first band — which is what a column-wise reading of a vertically
+    /// discovered region costs.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">What one band reads.</typeparam>
+    /// <param name="columns">How many columns one band is; at least 1.</param>
+    /// <param name="each">The projection applied to each band.</param>
+    /// <param name="onBlank">Rejected; see the summary.</param>
+    /// <param name="declared">Supplied by the compiler as the text of the <paramref name="each"/> argument.</param>
+    public static IProjection<IReadOnlyList<T>> HorizontalBands<T>(
+      int columns,
+      IProjection<T> each,
+      BlankRowStrategy? onBlank = null,
+      [CallerArgumentExpression("each")] string? declared = null)
+      => Bands(Orientation.Horizontal, AtLeastOneBand(columns, nameof(columns)), each, onBlank, declared);
 
     // --- Alternatives -------------------------------------------------------------------------
 
@@ -837,6 +930,29 @@ namespace Unrect.Projections
       // item that is not a plain identifier keeps its description, exactly as before.
       return new RepeatProjection<T>(item, separatedBy, orientation, atLeast, UseSite.From(declared, null), Placement.Default, onBlank, boundArea);
     }
+
+    private static IProjection<IReadOnlyList<T>> Bands<T>(
+      Orientation orientation,
+      int stride,
+      IProjection<T> each,
+      BlankRowStrategy? onBlank,
+      string? declared)
+    {
+      if (each is null)
+        throw new ArgumentNullException(nameof(each));
+
+      if (onBlank is not null && orientation == Orientation.Horizontal)
+        throw new ArgumentException("onBlank is a vertical blank-row policy; HorizontalBands does not support it.", nameof(onBlank));
+
+      // A tiler has one band projection rather than an nth child, so there is no ordinal to fall
+      // back on: one written inline keeps its description, as a repeat's item does.
+      return new BandsProjection<T>(each, orientation, stride, UseSite.From(declared, null), onBlank, Placement.Default);
+    }
+
+    private static int AtLeastOneBand(int stride, string parameter)
+      => stride >= 1
+        ? stride
+        : throw new ArgumentOutOfRangeException(parameter, stride, "A band is at least one row or column across.");
 
     /// <summary>Validates a layout lambda where the caller's parameter name is what the user typed.</summary>
     private static Layout<T> NotNull<T>(Layout<T> build, string parameter) => build ?? throw new ArgumentNullException(parameter);

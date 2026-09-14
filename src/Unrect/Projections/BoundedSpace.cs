@@ -28,7 +28,7 @@ namespace Unrect.Projections
   /// placement, inside one <c>Map</c> call, and is never shared across calls.
   /// </para>
   /// </summary>
-  internal sealed class BoundedSpace : ISpace, ISpaceChart
+  internal sealed class BoundedSpace : ISpace, ISpaceChart, ILazyExtent
   {
     /// <summary>Rows the scan has accepted — the height so far, and the final one once the scan stops.</summary>
     private int _resolved;
@@ -112,7 +112,7 @@ namespace Unrect.Projections
     /// </para>
     /// </summary>
     internal static int WidthOf(ISpace space)
-      => space is BoundedSpace bound ? bound.Scan.Width : space.Area.Width;
+      => space is ILazyExtent lazy ? lazy.LazyWidth : space.Area.Width;
 
     /// <summary>
     /// Whether <paramref name="space"/> has a row at <paramref name="row"/> — the question a
@@ -124,7 +124,47 @@ namespace Unrect.Projections
     /// </para>
     /// </summary>
     internal static bool HasRow(ISpace space, int row)
-      => row >= 0 && (space is BoundedSpace bound ? bound.Includes(row) : row < space.Area.Height);
+      => space is ILazyExtent lazy ? lazy.LazyHasRow(row) : row >= 0 && row < space.Area.Height;
+
+    /// <summary>
+    /// <paramref name="space"/> from <paramref name="offset"/> to its far edge, keeping an unsettled
+    /// height unsettled — the lazy form of <c>SpaceExtensions.GetSubspace(offset)</c>, which is what
+    /// a measured space falls through to.
+    /// </summary>
+    internal static ISpace Tail(ISpace space, Offset offset)
+    {
+      if (space is not ILazyExtent lazy)
+        return space.GetSubspace(offset);
+
+      // Checked here for the reason SpaceExtensions checks it: without this an oversized offset
+      // produces a negative width, which Area reports as an argument bug rather than as the bounds
+      // condition a declaration may recover from.
+      if (offset.Width > lazy.LazyWidth)
+        throw new OutOfBoundsException();
+
+      return lazy.LazySlice(offset, lazy.LazyWidth - offset.Width);
+    }
+
+    /// <summary>
+    /// The leading <paramref name="width"/> columns of <paramref name="space"/>, keeping an unsettled
+    /// height unsettled — the lazy form of <c>GetSubspace(default, new Area(width, Area.Height))</c>.
+    /// </summary>
+    internal static ISpace Narrow(ISpace space, int width)
+    {
+      if (space is not ILazyExtent lazy)
+        return space.GetSubspace(new Offset(0, 0), new Area(width, space.Area.Height));
+
+      if (width > lazy.LazyWidth)
+        throw new OutOfBoundsException();
+
+      return lazy.LazySlice(new Offset(0, 0), width);
+    }
+
+    int ILazyExtent.LazyWidth => Scan.Width;
+
+    bool ILazyExtent.LazyHasRow(int row) => row >= 0 && Includes(row);
+
+    ISpace ILazyExtent.LazySlice(Offset offset, int width) => TailSpace.Over(this, Inner, 0, offset, width);
 
     /// <summary>
     /// The extent's size with the scan read to exhaustion — what the engine consumes for a declared
@@ -141,7 +181,7 @@ namespace Unrect.Projections
     }
 
     /// <summary>Whether <paramref name="row"/> is inside the extent, advancing the scan only as far as it takes to say.</summary>
-    private bool Includes(int row)
+    internal bool Includes(int row)
     {
       Advance(row);
 

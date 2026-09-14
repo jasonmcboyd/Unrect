@@ -36,16 +36,28 @@ namespace Unrect.Tests.Projections
     // are public and the assembling FlowProjection/Placement are reachable through InternalsVisibleTo.
 
     internal static IProjection<IReadOnlyList<T>> TableFromPrimitives<T>(int headerRows, Func<TableRow, T> record)
+      => PrimitiveTable(headerRows, record, marked: false);
+
+    /// <summary>
+    /// The composition. <paramref name="marked"/> marks every part it assembles scaffolding, which
+    /// is what a factory does to pieces the caller never wrote — the caller hands a
+    /// <c>Func&lt;TableRow, T&gt;</c>, so the header, the repeat and the record are all this
+    /// method's. Unmarked, nothing folds and a rendered path is the whole tree.
+    /// </summary>
+    private static IProjection<IReadOnlyList<T>> PrimitiveTable<T>(int headerRows, Func<TableRow, T> record, bool marked)
       => new FlowProjection<IReadOnlyList<T>>(
         Orientation.Vertical,
         flow =>
         {
-          var columns = flow.Next(ColumnLabels(headerRows));
+          var columns = flow.Next(Mark(ColumnLabels(headerRows), marked));
+          var body = Mark(VerticalRepeat(Mark(Record(record), marked), onBlank: BlankRowStrategy.Stop), marked);
 
-          return flow.Next(WithColumnLabels(columns, VerticalRepeat(Record(record), onBlank: BlankRowStrategy.Stop)));
+          return flow.Next(WithColumnLabels(columns, body));
         },
         TablePlacementReplica(),
         "Table");
+
+    private static IProjection<T> Mark<T>(IProjection<T> part, bool marked) => marked ? part.AsScaffolding() : part;
 
     /// <summary>
     /// A hand copy of the offset half of the private <c>Projection.TablePlacement()</c> — skip to the
@@ -220,13 +232,13 @@ namespace Unrect.Tests.Projections
 
     // --- 2b. .AsUnit — the composition folds to one named unit in the collapsed path --------------
     //
-    // The same reimplementation marked .AsUnit("Table"). The boundary folds its internal scaffolding
-    // — the header repeat and the record — into one "Table" segment, carrying the failing occurrence's
-    // index up onto it, while FullPath keeps the uncollapsed tree GAP B pinned above. The value and
-    // the reading are untouched: the marker is presentation-only.
+    // The same reimplementation with its parts marked scaffolding and the whole marked .AsUnit("Table").
+    // The marked parts — the header, the repeat and the record — fold into the one "Table" segment,
+    // carrying the failing occurrence's index up onto it, while FullPath keeps the uncollapsed tree
+    // GAP B pinned above. The value and the reading are untouched: the markers are presentation-only.
 
     private static IProjection<IReadOnlyList<T>> UnitTableFromPrimitives<T>(int headerRows, Func<TableRow, T> record)
-      => TableFromPrimitives(headerRows, record).AsUnit("Table");
+      => PrimitiveTable(headerRows, record, marked: true).AsUnit("Table");
 
     [Fact]
     public void AsUnitFoldsTheCompositionToOneNamedSegment()
@@ -286,9 +298,9 @@ namespace Unrect.Tests.Projections
     // (not just an exception), the AsUnit/Named precedence, the degenerate single-leaf unit, and the
     // kind-suffix rule. The strings asserted are the ones the code actually produces.
 
-    // A single value leaf hand-named "allocation" under a repeat marked .AsUnit("Table"). The named
-    // leaf survives the fold as a quoted segment; the repeat's internal occurrence index hoists onto
-    // the unit, and the failing leaf is the subject of the deepest surviving segment.
+    // A single value leaf hand-named "allocation" under a repeat marked .AsUnit("Table"). The unit
+    // label replaces the repeat's own segment and carries its occurrence index; the leaf is written
+    // by the declaration, so it keeps its quoted segment and is the subject.
     [Fact]
     public void AsUnitKeepsANamedSurvivorAndHoistsTheIndexOntoTheUnit()
     {
@@ -297,21 +309,22 @@ namespace Unrect.Tests.Projections
       var failure = Assert.Throws<ProjectionException>(
         () => VerticalRepeat(Decimal().Named("allocation")).AsUnit("Table").Map(sheet));
 
-      Assert.Equal("Table[0] -> 'allocation'", failure.Path);
+      Assert.Equal("Table[0] -> 'allocation' (Decimal)", failure.Path);
       Assert.Equal("'allocation'", failure.Subject);
 
       // The value leaf's kind is still what the failure is about — the marker touches only the path.
       Assert.Contains("Number", failure.Problem);
       Assert.Contains("Text", failure.Problem);
 
-      // The repeat itself is the boundary, so FullPath renders it as "Table[0]" too — the only
-      // difference from the collapsed Path is the trailing kind suffix RenderFull always applies.
+      // The repeat itself is the boundary and nothing in the chain is marked scaffolding, so there
+      // is nothing to fold: the collapsed Path and FullPath are the same string.
       Assert.Equal("Table[0] -> 'allocation' (Decimal)", failure.FullPath);
     }
 
     // A unit inside a unit: an .AsUnit("Inner") composition used as the item of an .AsUnit("Outer") one.
-    // Both boundaries survive the fold, the scaffolding between them (the flows and the repeat) does
-    // not, and the failing named leaf survives as the deepest segment.
+    // Both boundaries keep their segments, the marked repeat between them does not, and the failing
+    // named leaf keeps its own as the deepest segment. Each flow IS its boundary, so neither "Body"
+    // nor "Row" appears: a boundary renders its unit label in place of its description.
     private static IProjection<decimal> InnerUnit()
       => new FlowProjection<decimal>(
         Orientation.Vertical,
@@ -322,7 +335,7 @@ namespace Unrect.Tests.Projections
     private static IProjection<IReadOnlyList<decimal>> OuterUnit()
       => new FlowProjection<IReadOnlyList<decimal>>(
         Orientation.Vertical,
-        flow => flow.Next(VerticalRepeat(InnerUnit())),
+        flow => flow.Next(VerticalRepeat(InnerUnit()).AsScaffolding()),
         Placement.Default,
         "Body").AsUnit("Outer");
 
@@ -335,7 +348,7 @@ namespace Unrect.Tests.Projections
 
       // Both boundaries kept; the repeat's occurrence index hoists onto the outer unit, and Inner
       // carries none of its own. The collapsed path names no scaffolding.
-      Assert.Equal("Outer[0] -> Inner -> 'allocation'", failure.Path);
+      Assert.Equal("Outer[0] -> Inner -> 'allocation' (Decimal)", failure.Path);
       Assert.Equal("'allocation'", failure.Subject);
       Assert.DoesNotContain("VerticalRepeat", failure.Path);
       Assert.DoesNotContain("Row", failure.Path);
@@ -352,7 +365,7 @@ namespace Unrect.Tests.Projections
     private static IProjection<IReadOnlyList<int>> TolerantUnit()
       => new FlowProjection<IReadOnlyList<int>>(
         Orientation.Vertical,
-        flow => flow.Next(VerticalRepeat(Record((TableRow row) => row.Index), onBlank: BlankRowStrategy.Tolerate)),
+        flow => flow.Next(VerticalRepeat(Record((TableRow row) => row.Index), onBlank: BlankRowStrategy.Tolerate).AsScaffolding()),
         Placement.Default,
         "Body").AsUnit("Table");
 
@@ -389,8 +402,10 @@ namespace Unrect.Tests.Projections
       var namedThenUnit = Assert.Throws<ProjectionException>(
         () => Decimal().Named("fruit").AsUnit("Table").Map(sheet));
 
-      Assert.Equal("Table:fruit", unitThenNamed.Path);
-      Assert.Equal("Table:fruit", namedThenUnit.Path);
+      // The kind suffix is there because a name is: the segment says "fruit", and the leaf is still
+      // a Decimal.
+      Assert.Equal("Table:fruit (Decimal)", unitThenNamed.Path);
+      Assert.Equal("Table:fruit (Decimal)", namedThenUnit.Path);
       Assert.Equal("Table:fruit", unitThenNamed.Subject);
       Assert.Equal("Table:fruit", namedThenUnit.Subject);
 
@@ -431,6 +446,50 @@ namespace Unrect.Tests.Projections
       Assert.DoesNotContain("Decimal", failure.Path);
     }
 
+    // .AsScaffolding standing on its own, away from the table composition: the marker is the whole of
+    // what the collapse acts on, so a unit a user assembles themselves folds exactly the parts they
+    // marked and nothing else. Two readings of one declaration, differing only in the marker.
+
+    private static IProjection<IReadOnlyList<string>> Card(bool marked)
+      => new FlowProjection<IReadOnlyList<string>>(
+        Orientation.Vertical,
+        flow => flow.Next(Mark(VerticalRepeat(Text().Named("investor")), marked)),
+        Placement.Default,
+        "Body").AsUnit("Card");
+
+    [Fact]
+    public void AsScaffoldingFoldsOnlyWhatCarriesIt()
+    {
+      var sheet = Mixed(new object?[,] { { 1 } });
+
+      var marked = Assert.Throws<ProjectionException>(() => Card(marked: true).Map(sheet));
+      var unmarked = Assert.Throws<ProjectionException>(() => Card(marked: false).Map(sheet));
+
+      // Marked: the repeat is chrome the caller never wrote, so it contributes no segment and hands
+      // its occurrence index up to the unit. The leaf the caller named keeps its own segment and the
+      // kind suffix that says what a quoted name hides.
+      Assert.Equal("Card[0] -> 'investor' (Text)", marked.Path);
+      Assert.Equal("Card -> VerticalRepeat#1[0] -> 'investor' (Text)", marked.FullPath);
+
+      // Unmarked: an inner node without the marker is not folded, even inside a unit — so the
+      // collapsed path is the whole tree, and equals the uncollapsed one.
+      Assert.Equal("Card -> VerticalRepeat#1[0] -> 'investor' (Text)", unmarked.Path);
+      Assert.Equal(unmarked.FullPath, unmarked.Path);
+    }
+
+    [Fact]
+    public void AScaffoldingMarkedRootStillRendersAPath()
+    {
+      // Nothing survives the fold, so the path is the degenerate one rather than empty; the subject
+      // still names the node that failed.
+      var failure = Assert.Throws<ProjectionException>(
+        () => Decimal().AsScaffolding().Map(Mixed(new object?[,] { { "oops" } })));
+
+      Assert.Equal("(root)", failure.Path);
+      Assert.NotEmpty(failure.Subject);
+      Assert.Equal("Decimal", failure.FullPath);
+    }
+
     // The marker is presentation-only, over a second fixture as well as Flat above.
     [Fact]
     public void AsUnitIsPresentationOnlyOverTrailingContent()
@@ -467,6 +526,20 @@ namespace Unrect.Tests.Projections
       Assert.Equal(bespokeTotal, primitivesTotal);
 
       SameReading(Table(1, ReadLine), TableFromPrimitives(1, ReadLine), Trailing());
+    }
+
+    [Fact]
+    public void TheComposedRowSlotStreamsInStepWithTheRecordLeaf()
+    {
+      // The same claim about the built-in Table(headerRows:, eachRow:), which is a composition of
+      // these primitives rather than a leaf and carries the streaming obligation with it: the first
+      // record projects having read the header and its own row, and the whole reading touches the
+      // block and the blank row that ended it, never the trailing content.
+      var leaf = RowsTouchedAtFirstRecord(Table(1, Instrumented));
+      var composed = RowsTouchedAtFirstRecord(Table(1, eachRow: InstrumentedBand()));
+
+      Assert.Equal(leaf, composed);
+      Assert.Equal((2, 4), composed);
     }
 
     // --- 4. §5.5 pins ------------------------------------------------------------------------------
@@ -518,7 +591,7 @@ namespace Unrect.Tests.Projections
     {
       var sheet = KindMismatch();
       var map = LabelMap.Of(("Amount", 1));
-      var body = VerticalRepeat(Record((TableRow row) => row.Decimal("Amount")));
+      var body = VerticalRepeat(Record((TableRow row) => row.Decimal("Amount")).AsScaffolding()).AsScaffolding();
 
       var failure = Assert.Throws<ProjectionException>(
         () => WithColumnLabels(map, body).AsUnit("Table").Map(sheet));
@@ -528,12 +601,12 @@ namespace Unrect.Tests.Projections
       Assert.Contains("VerticalRepeat", failure.FullPath);
     }
 
-    // ColumnLabels discovers its width via TakeColumnsWhileAnyValue, so a header row with trailing
-    // blank columns mints a map only as wide as its leading valued-column run — not the full sheet
-    // width, which would carry empty-string labels for the blank columns.
+    // ColumnLabels takes the width of the band it is handed rather than discovering one of its own,
+    // so a header row read straight off a four-column sheet mints four labels — two named and two
+    // empty. Narrowing to the columns that carry content is the placement's job, not the map's.
 
     [Fact]
-    public void ColumnLabelsWidthIsTheLeadingValuedColumnRunNotTheFullSheetWidth()
+    public void ColumnLabelsTakesTheWidthOfTheBandItIsHanded()
     {
       var sheet = Mixed(new object?[,]
       {
@@ -543,8 +616,8 @@ namespace Unrect.Tests.Projections
 
       LabelMap map = ColumnLabels(1).Map(sheet);
 
-      Assert.Equal(new[] { "Investor", "Amount" }, map.Labels);
-      Assert.Equal(2, map.Labels.Count);
+      Assert.Equal(new[] { "Investor", "Amount", "", "" }, map.Labels);
+      Assert.Equal(4, map.Labels.Count);
     }
 
     // WithColumnLabels bounds the body to the label-map width when the extent is wider, so a record
@@ -874,6 +947,67 @@ namespace Unrect.Tests.Projections
       Assert.Contains("VerticalRepeat[2]", failure.Path);
     }
 
+    // --- 5. An empty extent under a declared header — the composed rung says what the leaves say ---
+    //
+    // Regression pin. The composed Table(1, eachRow) reaches its header through ColumnLabels rather
+    // than through TableView's own parse, so the "there is no row to cut a header band from" guard
+    // has to live in the primitive as well. Without it the composed rung cut the band anyway and
+    // surfaced a raw OutOfBoundsException: not the sentence the leaf rungs speak, and not a
+    // declaration-level failure, so no tolerance boundary could absorb it either. The leaf rungs'
+    // side of this sentence is pinned in TableProjectionTests and DictionaryTableTests; here it is
+    // asserted IDENTICAL across the composed rung and the primitive underneath it.
+
+    private const string EmptyExtentProblem = "a header row was declared but the table's extent is empty";
+
+    /// <summary>An all-blank sheet: a real extent to place onto, with no content row to head it.</summary>
+    private static ISpace AllBlank() => Mixed(new object?[,] { { null, null }, { null, null } });
+
+    [Fact]
+    public void TheComposedRungCitesAnEmptyExtentInTheLeafRungsOwnSentence()
+    {
+      var composed = Assert.Throws<ProjectionException>(
+        () => Table(1, Record((TableRow row) => row.Index)).Map(AllBlank()));
+
+      // The TableView leaf rung over the same sheet — the parity partner, not a copied string.
+      var leaf = Assert.Throws<ProjectionException>(() => Table((TableView view) => view.RowCount).Map(AllBlank()));
+
+      Assert.Equal(EmptyExtentProblem, Problem(composed));
+      Assert.Equal(Problem(leaf), Problem(composed));
+
+      // A declaration-level failure, not a fault — which is what makes the sibling pin below possible.
+      Assert.False(composed.IsFault);
+
+      // The unit boundary keeps the composed rung's collapsed path as flat as the leaf's.
+      Assert.Equal("Table", composed.Path);
+      Assert.Equal("Table", composed.Subject);
+      Assert.Equal(leaf.Path, composed.Path);
+      Assert.Equal(leaf.Subject, composed.Subject);
+
+      // FullPath keeps the primitive tree the rung composes, each part under its own description.
+      Assert.Equal("Table -> VerticalFlow -> ColumnLabels#1", composed.FullPath);
+    }
+
+    [Fact]
+    public void TheComposedRungsEmptyExtentFailureIsAbsorbable()
+    {
+      // The other half of the regression: a raw OutOfBoundsException escaped .Optional(), so the
+      // absence of a table read as a broken file. The guarded failure is absorbed and reads as null.
+      IReadOnlyList<int>? absent = Table(1, Record((TableRow row) => row.Index)).Optional().Map(AllBlank());
+
+      Assert.Null(absent);
+    }
+
+    [Fact]
+    public void ColumnLabelsCitesAnEmptyExtentInTheSameSentence()
+    {
+      // The primitive alone, over a genuinely zero-by-zero extent: the guard's own home, so the
+      // sentence is pinned at the site that produces it as well as through the composition.
+      var failure = Assert.Throws<ProjectionException>(() => ColumnLabels(1).Map(Mixed(new object?[0, 0])));
+
+      Assert.Equal(EmptyExtentProblem, Problem(failure));
+      Assert.Equal("ColumnLabels", failure.Path);
+    }
+
     // --- Machinery ----------------------------------------------------------------------------------
 
     private static void SameReading<T>(IProjection<T> bespoke, IProjection<T> primitives, ISpace sheet)
@@ -898,6 +1032,19 @@ namespace Unrect.Tests.Projections
 
       return row.Index;
     }
+
+    /// <summary>
+    /// <see cref="Instrumented"/> as a row PROJECTION rather than a record lambda, so the slot rung
+    /// can be measured by the same harness. It reads the band it was handed, which is what a record
+    /// that measured itself could not do.
+    /// </summary>
+    private static IProjection<int> InstrumentedBand() => Range(WholeExtent(), block =>
+    {
+      if (_gapAAtFirstRecord < 0)
+        _gapAAtFirstRecord = _gapACounter.RowsTouched;
+
+      return block.Height;
+    });
 
     private static (int AtFirstRecord, int Total) RowsTouchedAtFirstRecord(IProjection<IReadOnlyList<int>> table)
     {

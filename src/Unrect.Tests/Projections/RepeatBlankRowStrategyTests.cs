@@ -174,6 +174,97 @@ namespace Unrect.Tests.Projections
       Assert.True(underElse.IsFault);
     }
 
+    // --- 4b. A declared extent is the bound the walk uses ------------------------------------------
+
+    [Fact]
+    public void ADeclaredExtentIsTheBoundRatherThanASecondSelfBinding()
+    {
+      // A policy re-hosts a block inside the repeat, but only where the placement declared none: a
+      // repeat that bound itself a second time would narrow an extent somebody else had already
+      // decided. The sheet is the wedge — its first column is empty, so a self-bound block would
+      // take a zero-wide leading region and collect nothing at all, while the declared extent is the
+      // full width and every record sees both columns.
+      var sheet = Mixed(new object?[,]
+      {
+        { null, "Acme" },
+        { null, "Beta" },
+        { null, null },
+      });
+
+      var declared = Sized(RowsWhileAnyValue())
+        .Of(VerticalRepeat(Record((TableRow row) => row.Count), onBlank: BlankRowStrategy.Stop));
+
+      Assert.Equal(new[] { 2, 2 }, declared.Map(sheet));
+    }
+
+    /// <summary>A record per row, the blank row spelt out rather than skipped — what a blank band would read as.</summary>
+    private static IProjection<string> BlankReadingRecord()
+      => Record((TableRow row) => row.TextOrBlank(0) ?? "<blank>");
+
+    /// <summary>Records on both sides of one interior blank, with no header row above them.</summary>
+    private static ISpace HeaderlessInteriorBlank() => Mixed(new object?[,]
+    {
+      { "a", 1m },
+      { null, null },
+      { "b", 2m },
+    });
+
+    [Fact]
+    public void StopEndsAtAnInteriorBlankWhetherOrNotThePlacementDeclaredTheExtent()
+    {
+      // The walk judges the band itself, so the terminator does not depend on the repeat having
+      // bound its own block: under an extent somebody else declared — here the whole sheet, which
+      // runs past the blank — the blank row ends the run rather than becoming a record.
+      IReadOnlyList<string> underDeclaredExtent = Sized(WholeExtent())
+        .Of(VerticalRepeat(BlankReadingRecord(), onBlank: BlankRowStrategy.Stop))
+        .Map(HeaderlessInteriorBlank());
+
+      Assert.Equal(new[] { "a" }, underDeclaredExtent);
+
+      IReadOnlyList<string> selfBound = VerticalRepeat(BlankReadingRecord(), onBlank: BlankRowStrategy.Stop)
+        .Map(HeaderlessInteriorBlank());
+
+      Assert.Equal(new[] { "a" }, selfBound);
+    }
+
+    /// <summary>
+    /// The same records on either side of an interior blank, plus a stray value far to the right of
+    /// the block the repeat discovers for itself.
+    /// </summary>
+    private static ISpace SparseInteriorBlank() => Mixed(new object?[,]
+    {
+      { "a", 1m, null, null, null, null },
+      { null, null, null, null, null, "X" },
+      { "b", 2m, null, null, null, null },
+    });
+
+    [Fact]
+    public void SelfBoundStopJudgesABlankRowAcrossTheFullExtentWidthRatherThanTheBlocksWidth()
+    {
+      // The rule as it stands, pinned because the two Stop paths measure blankness over different
+      // widths: the self-bound path is judged by the discovered block's own row rule, which scans the
+      // full extent width, so the stray value at F2 makes that row a row with a value and the run
+      // reads straight through it. The declared-extent path judges the band across the width the walk
+      // was handed, under which the same row is blank and ends the run — so the two paths are not
+      // interchangeable on a sparse sheet.
+      IReadOnlyList<string> selfBound = VerticalRepeat(BlankReadingRecord(), onBlank: BlankRowStrategy.Stop)
+        .Map(SparseInteriorBlank());
+
+      Assert.Equal(new[] { "a", "<blank>", "b" }, selfBound);
+    }
+
+    [Fact]
+    public void SkipReadsPastAnInteriorBlankUnderADeclaredExtent()
+    {
+      // The same declared extent, the policy that runs to the edge: the blank is omitted and the
+      // record past it is read.
+      IReadOnlyList<string> read = Sized(WholeExtent())
+        .Of(VerticalRepeat(BlankReadingRecord(), onBlank: BlankRowStrategy.Skip))
+        .Map(HeaderlessInteriorBlank());
+
+      Assert.Equal(new[] { "a", "b" }, read);
+    }
+
     // --- 5. Bare repeat regression -----------------------------------------------------------------
 
     [Fact]

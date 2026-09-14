@@ -63,6 +63,20 @@ namespace Unrect.Projections
     /// </summary>
     internal string? UnitName { get; private set; }
 
+    /// <summary>
+    /// Whether this node is a composition's internal plumbing rather than something the declaration
+    /// wrote. A collapsed path drops it and keeps its occurrence index.
+    /// </summary>
+    internal bool IsUnitScaffolding { get; private set; }
+
+    /// <summary>This projection marked internal plumbing — a copy, of this same type.</summary>
+    internal ProjectionBase AsScaffolding()
+    {
+      var clone = Clone();
+      clone.IsUnitScaffolding = true;
+      return clone;
+    }
+
     /// <summary>This projection named <paramref name="name"/> — a copy, of this same type.</summary>
     internal ProjectionBase Renamed(string name)
     {

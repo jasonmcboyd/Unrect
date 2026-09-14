@@ -304,12 +304,12 @@ namespace Unrect.Projections
     }
 
     /// <summary>
-    /// The collapsed path and its subject. Inside a boundary, only quoted-name survivors keep a
-    /// segment of their own; every other node folds, carrying only its occurrence index up onto the
-    /// nearest surviving segment. With no boundary in the chain nothing folds, so this is
-    /// byte-identical to <see cref="RenderFull"/>, kind suffix and all, and the subject is the
-    /// failing node's own description. The subject always names the deepest surviving segment, so it
-    /// and the collapsed path's tail agree.
+    /// The collapsed path and its subject. A node a factory marked scaffolding contributes no
+    /// segment, carrying only its occurrence index up onto the nearest segment that was kept;
+    /// everything the declaration wrote keeps its own. With no scaffolding in the chain nothing
+    /// folds, so this is byte-identical to <see cref="RenderFull"/>, kind suffix and all. The
+    /// subject always names the deepest surviving segment, so it and the collapsed path's tail
+    /// agree.
     /// </summary>
     private static (string Path, string Subject) Collapse(List<PathNode> chain)
     {
@@ -317,28 +317,27 @@ namespace Unrect.Projections
         return ("(root)", "(root)");
 
       var segments = new List<string>();
-      var insideBoundary = false;
       var lastKept = 0;
       var surviving = chain[0];
 
       foreach (var node in chain)
       {
-        if (node.Projection.IsUnitBoundary)
-        {
-          insideBoundary = true;
+        if (!IsScaffolding(node.Projection))
           Keep(node);
-        }
-        else if (!insideBoundary || node.Projection.Name is not null || node.Site.Name is not null)
-        {
-          Keep(node);
-        }
-        else if (node.Index is int index)
-        {
+        // With nothing kept above it there is no segment to carry the index up onto, so it is
+        // dropped rather than moved down onto whatever the fold keeps next; RenderFull still has it.
+        else if (node.Index is int index && segments.Count > 0)
           segments[lastKept] += $"[{index}]";
-        }
       }
 
-      if (!insideBoundary)
+      // Every node was scaffolding, so the fold left no segment to speak of or to suffix. The
+      // subject still names the root, which is the one thing left that a reader can act on.
+      if (segments.Count == 0)
+        return ("(root)", SegmentName(surviving));
+
+      // The suffix says what a quoted name hides, and the deepest node is what it would say — so
+      // scaffolding there has no name to speak for and nothing to add.
+      if (!IsScaffolding(chain[chain.Count - 1].Projection))
         ApplyKindSuffix(segments, chain[chain.Count - 1]);
 
       return (string.Join(" -> ", segments), SegmentName(surviving));
@@ -350,6 +349,9 @@ namespace Unrect.Projections
         surviving = kept;
       }
     }
+
+    private static bool IsScaffolding(IProjection projection)
+      => projection is ProjectionBase node && node.IsUnitScaffolding;
 
     /// <summary>What a projection contributes to a path: its name, plus its occurrence index if it has one.</summary>
     private static string Segment(PathNode node)

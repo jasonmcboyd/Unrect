@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 
 using Unrect.Core;
 
@@ -7,26 +6,18 @@ namespace Unrect.Projections
 {
   internal sealed class TableProjection<T> : ProjectionBase<T>
   {
-    public TableProjection(int headerRows, Func<TableView, T> project, Placement placement, string description, IProjection? eachRow = null)
+    public TableProjection(int headerRows, Func<TableView, T> project, Placement placement, string description)
       : base(placement)
     {
       HeaderRows = headerRows;
       Projection = project ?? throw new ArgumentNullException(nameof(project));
       Description = description;
-      Children = eachRow is null ? Array.Empty<IProjection>() : new[] { eachRow };
     }
 
     private int HeaderRows { get; }
     private Func<TableView, T> Projection { get; }
 
     public override string Description { get; }
-
-    /// <summary>
-    /// The row projection, where the table has one. The lambda rungs have none to show — what they
-    /// read is knowable only by running them — so they are a leaf to tooling, as they have always
-    /// been.
-    /// </summary>
-    public override IReadOnlyList<IProjection> Children { get; }
 
     public override ProjectionResult<T> Project(ISpace extent, ProjectionContext context)
     {

@@ -283,7 +283,7 @@ namespace Unrect.Tests.Streaming
 
     // --- The row-projection slot ----------------------------------------------------------------------------
     //
-    // Table(0, eachRow) reads its body through TableView.StreamBands, which is the walk the whole
+    // Table(0, eachRow) reads its body as a tiler of one-row bands, which is the walk the whole
     // streaming door is sized around: one band open at a time, each band the row after the last. So
     // the slot form is the declaration most worth reading through a window that cannot hold the
     // sheet, and the counters are where the claim is — a monotone walk must not reload a chunk,
@@ -341,6 +341,43 @@ namespace Unrect.Tests.Streaming
       // table's own discovered band — are both taller than four rows. Two bands that did not fit,
       // costing nothing, which is exactly the pair StreamingStatistics says to read together.
       Assert.Equal(2, stats.WindowOverruns);
+    }
+
+    /// <summary>
+    /// The same ledger read as a HEADERED table, so the composition the slot rung is built from —
+    /// a header read once, then the body tiled beneath it — is the thing under the window.
+    /// </summary>
+    private static IProjection<IReadOnlyList<LedgerEntry>> HeaderedLedger()
+    {
+      var ledgerEntry = HorizontalFlow(h => new LedgerEntry(
+        Entry: h.Next(Integer()),
+        Amount: h.Next(Integer()),
+        Category: h.Next(Text())));
+
+      return On(RowContaining("Entry")).Of(Table(headerRows: 1, eachRow: ledgerEntry));
+    }
+
+    [Fact]
+    public void AndAHeaderedOneCostsNoRereadingEither()
+    {
+      // The header is the part that could have cost a reload: it is read once, before the body, and
+      // the body then walks forward from the row after it. If the composition reached back for its
+      // captions per record — or measured the block before projecting — this counter would say so.
+      var declaration = HeaderedLedger();
+
+      var eager = declaration.Map(SpreadsheetSpace.Create(Path("tall-ledger.xlsx"), "Ledger"));
+
+      using var book = Workbook.Open(
+        Path("tall-ledger.xlsx"),
+        new WorkbookOptions { WarmReaders = false, ChunkRows = 1, WindowRows = 1 });
+
+      var streamed = declaration.Map(book.Sheet("Ledger"));
+
+      var stats = book.Statistics("Ledger")!.Value;
+
+      Assert.Equal(1200, streamed.Count);
+      Assert.Equal(eager, streamed);
+      Assert.Equal(0, stats.ChunkReloads);
     }
 
     // --- Failures are identical too -----------------------------------------------------------------------

@@ -79,6 +79,47 @@ namespace Unrect.Tests.Projections
       Assert.Equal(3, applied.Advance.Height);
     }
 
+    // --- Whether a placement fits is asked a row at a time -----------------------------------------
+    //
+    // The fit test reads the available space through the forward probes (its width, and whether it
+    // has a row at the far edge of what is being asked for) rather than off ISpace.Area, so that an
+    // extent still being discovered is asked for one row instead of for all of them. What it ANSWERS
+    // must not depend on which kind of space it was asked about — so every case below is asserted
+    // twice, over a measured grid and over a bound the engine is discovering, and the boundary case
+    // is in the table on purpose: an extent exactly as tall as what is available fits.
+
+    [Theory]
+    [InlineData(3, 4, true)]      // the whole extent, which is the boundary case: equal fits
+    [InlineData(3, 2, true)]
+    [InlineData(4, 4, false)]     // one column too wide
+    [InlineData(3, 5, false)]     // one row too tall
+    public void AnExtentFitsWhenItIsNoBiggerThanTheSpaceAvailable(int width, int height, bool fits)
+    {
+      var extent = $"{width}x{height}";
+      var block = Range(width, height, b => $"{b.Width}x{b.Height}");
+
+      AssertFit(fits, extent, block, CoordinateGrid());
+
+      // The same declaration inside a discovered bound of exactly the same 3x4, walked a row at a
+      // time. RowsWhileAnyValue takes every row of the coordinate grid, so the two spaces differ in
+      // how their extent is arrived at and in nothing else.
+      AssertFit(fits, extent, Sized(RowsWhileAnyValue()).Of(VerticalFlow(v => v.Next(block))), CoordinateGrid());
+    }
+
+    private static void AssertFit(bool fits, string extent, IProjection<string> declaration, ISpace space)
+    {
+      if (fits)
+      {
+        Assert.Equal(extent, declaration.Map(space));
+
+        return;
+      }
+
+      var failure = Assert.Throws<ProjectionException>(() => declaration.Map(space));
+
+      Assert.Contains($"an extent of {extent} does not fit here", failure.Message);
+    }
+
     // --- The placement is applied exactly once -----------------------------------------------------
 
     [Fact]

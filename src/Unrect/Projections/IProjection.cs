@@ -36,9 +36,10 @@ namespace Unrect.Projections
     bool IsTransparent { get; }
 
     /// <summary>
-    /// True when <c>.AsUnit</c> marked this projection a path boundary: in the collapsed failure
-    /// path its internal scaffolding folds into one named unit segment, while
-    /// <c>ProjectionException.FullPath</c> keeps the uncollapsed path for drill-through.
+    /// True when <c>.AsUnit</c> gave this projection a unit label: its path segment is that label
+    /// rather than its description or use-site name (joined as <c>label:name</c> when it is also
+    /// <c>.Named</c>), and it is opaque even where it would otherwise be transparent. Folding a
+    /// path is a separate mark — <c>.AsScaffolding</c>, on the parts to drop.
     /// </summary>
     bool IsUnitBoundary { get; }
   }

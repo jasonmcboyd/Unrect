@@ -178,6 +178,9 @@ namespace Unrect.Tests.Projections
         ["Decimal()"] = Reading(() => B.Decimal(), () => Decimal()),
         ["Double()"] = Reading(() => B.Double(), () => Double()),
         ["Fields(Field[])"] = Reading(() => B.Fields(Field("Fund")), () => Fields(Field("Fund"))),
+        ["HorizontalBands<T>(int, IProjection<T>, Nullable<BlankRowStrategy>, string)"] = Reading(
+          () => { var quarter = Text(); return B.HorizontalBands(2, quarter); },
+          () => { var quarter = Text(); return HorizontalBands(2, quarter); }),
         ["HorizontalFlow<T>(Layout<TSpace, T>)"] = Reading(
           () => B.HorizontalFlow(h => $"{h.Next(Text())}/{h.Next(Text())}"),
           () => HorizontalFlow(h => $"{h.Next(Text())}/{h.Next(Text())}")),
@@ -248,6 +251,9 @@ namespace Unrect.Tests.Projections
           () => B.Table(1, (TableRow r) => r.Count, blankRecord: _ => -1),
           () => Table(1, (TableRow r) => r.Count, blankRecord: _ => -1)),
         ["Text()"] = Reading(() => B.Text(), () => Text()),
+        ["VerticalBands<T>(int, IProjection<T>, Nullable<BlankRowStrategy>, string)"] = Reading(
+          () => { var line = Text(); return B.VerticalBands(1, line, onBlank: BlankRowStrategy.Tolerate); },
+          () => { var line = Text(); return VerticalBands(1, line, onBlank: BlankRowStrategy.Tolerate); }),
         ["VerticalFlow<T>(Layout<TSpace, T>)"] = Reading(
           () => B.VerticalFlow(v => $"{v.Next(Text())}/{v.Next(Text())}"),
           () => VerticalFlow(v => $"{v.Next(Text())}/{v.Next(Text())}")),

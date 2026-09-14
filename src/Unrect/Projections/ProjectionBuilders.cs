@@ -83,7 +83,7 @@ namespace Unrect.Projections
     /// <param name="build">The layout, declaring its children by calling <c>Next</c>.</param>
     public static IProjection<TSpace, T> Overlay<T>(Layout<TSpace, T> build) => Scope.Overlay(build);
 
-    // --- Repetition and alternation ------------------------------------------------------------
+    // --- Repetition, tiling and alternation ----------------------------------------------------
 
     /// <inheritdoc cref="Projection.VerticalRepeat{T}"/>
     /// <typeparam name="T">What one occurrence reads.</typeparam>
@@ -114,6 +114,37 @@ namespace Unrect.Projections
       BlankRowStrategy? onBlank = null,
       [CallerArgumentExpression("item")] string? declared = null)
       => Scope.HorizontalRepeat(item, separatedBy, atLeast, onBlank, declared);
+
+    // The two tilers are re-exported at their plain type. There is no TSpace form of either on the
+    // vocabulary to forward to, so closing them here would promise a demand the factory beneath
+    // cannot carry; a band projection that demands a capability is served through Table, which does
+    // have one.
+
+    /// <inheritdoc cref="Projection.VerticalBands{T}"/>
+    /// <typeparam name="T">What one band reads.</typeparam>
+    /// <param name="rows">How many rows one band is; at least 1.</param>
+    /// <param name="each">The projection applied to each band.</param>
+    /// <param name="onBlank">How a fully-blank band is treated; null projects every band. See <see cref="Projection.VerticalBands{T}"/>.</param>
+    /// <param name="declared">Supplied by the compiler as the text of the <paramref name="each"/> argument.</param>
+    public static IProjection<IReadOnlyList<T>> VerticalBands<T>(
+      int rows,
+      IProjection<T> each,
+      BlankRowStrategy? onBlank = null,
+      [CallerArgumentExpression("each")] string? declared = null)
+      => Projection.VerticalBands(rows, each, onBlank, declared);
+
+    /// <inheritdoc cref="Projection.HorizontalBands{T}"/>
+    /// <typeparam name="T">What one band reads.</typeparam>
+    /// <param name="columns">How many columns one band is; at least 1.</param>
+    /// <param name="each">The projection applied to each band.</param>
+    /// <param name="onBlank">Rejected; see <see cref="Projection.HorizontalBands{T}"/>.</param>
+    /// <param name="declared">Supplied by the compiler as the text of the <paramref name="each"/> argument.</param>
+    public static IProjection<IReadOnlyList<T>> HorizontalBands<T>(
+      int columns,
+      IProjection<T> each,
+      BlankRowStrategy? onBlank = null,
+      [CallerArgumentExpression("each")] string? declared = null)
+      => Projection.HorizontalBands(columns, each, onBlank, declared);
 
     /// <inheritdoc cref="Projection.Choice{T}"/>
     /// <typeparam name="T">What every alternative reads.</typeparam>

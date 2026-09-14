@@ -267,10 +267,10 @@ namespace Unrect.Tests.Projections
         Sized(RowsWhileAnyValue()).Of(Table()).Select(rows => rows.Select(row => $"{row["Client"]}/{row["Amount"]}").ToList()),
         Headered()),
 
-      // The row-projection slot, which reads its body through TableView.StreamBands — the surface
-      // StreamRows is now written over, and therefore the one a forcing regression would show up on
-      // first. Three shapes of record: a whole band read by a flow, a band read in part, and a
-      // headered table whose header is consumed rather than projected.
+      // The row-projection slot, which reads its body as a tiler of one-row bands — the walk a
+      // forcing regression would show up on first. Three shapes of record: a whole band read by a
+      // flow, a band read in part, and a headered table whose header is consumed rather than
+      // projected.
       "table with a row projection" => Scenario.Of(
         Sized(RowsWhileAnyValue()).Of(Table(0, eachRow: HorizontalFlow(h => $"{h.Next(IntCell())}/{h.Next(IntCell())}"))),
         Sheet()),
@@ -570,23 +570,13 @@ namespace Unrect.Tests.Projections
     [InlineData("VerticalFlow")]
     [InlineData("HorizontalFlow")]
     [InlineData("Overlay")]
-    public void ASizedLayoutCompositeIsEagerBothWaysThoughItsExtentIsAPerRowRule(string layout)
+    public void ASizedLayoutCompositeStreamsItsBound(string layout)
     {
-      // The third statement of what Part 2 does not cover, and the one that could not join the theory
-      // above it: these extents ARE IIncrementalAreaStrategy — the same RowsWhileAnyValue() that
-      // defers on a leaf — and they still resolve in full before anything projects. So the claim has
-      // to be made twice over, structurally and observationally, rather than by the one negative
-      // assertion that serves a fixed size.
-      //
-      // The forcing sites are two lines of ProjectionEngine.TryPlace, both reached while placing the
-      // composite's FIRST child, both before any child projects:
-      //   Exceeds(offset.Size, availableSpace)  — reads availableSpace.Area, which on a BoundedSpace
-      //                                           is defined as reading the scan to exhaustion;
-      //   availableSpace.GetSubspace(offset)    — the ISpace form, which asks for an Area too.
-      // Making those bound-aware — a child's placement asking "is there a row here" rather than "how
-      // tall are you" — is Part 3's business, deliberately not attempted in Part 2. This test is the
-      // decision pin: lifting the limitation must come here and flip the second number below from 4
-      // to 0 on purpose, rather than silently widening what defers.
+      // These extents ARE IIncrementalAreaStrategy — the same RowsWhileAnyValue() that defers on a
+      // leaf — and a composite handed one walks it rather than measuring it: placing the first child
+      // asks whether there is a row at the child's offset, and slices the extent without naming a
+      // height. So the one row the fixed 3x1 child probes is the whole cost before it projects,
+      // against the four the eager reading takes to find where the values stop.
       Func<Func<CellBlock, int>, IProjection<int>> declare = layout switch
       {
         // A fixed 3x1 child so the child's own placement has nothing to discover: what is measured
@@ -600,9 +590,7 @@ namespace Unrect.Tests.Projections
 
       Assert.IsAssignableFrom<IIncrementalAreaStrategy>(declare(_ => 0).Placement.Area);
 
-      // Both readings take the whole bound — the four rows it costs to find where the values stop —
-      // before the projection runs. Eager both ways in effect, incremental strategy or not.
-      Assert.Equal(4, RowsReadBeforeTheProjectionRuns(declare, Sheet(), eager: false));
+      Assert.Equal(1, RowsReadBeforeTheProjectionRuns(declare, Sheet(), eager: false));
       Assert.Equal(4, RowsReadBeforeTheProjectionRuns(declare, Sheet(), eager: true));
     }
 

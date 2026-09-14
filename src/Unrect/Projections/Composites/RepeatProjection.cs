@@ -50,17 +50,35 @@ namespace Unrect.Projections
 
     public override IReadOnlyList<IProjection> Children { get; }
 
+    /// <summary>
+    /// The walk. A repeat handed a tail whose height is still being discovered streams only as far
+    /// as its item lets it: an item that derives its extent takes a band at a time, while an item
+    /// with a declared area hands that area's strategy the tail and the strategy asks how tall it is
+    /// — <c>Record</c>'s full-width row among them — which settles the bound before the first
+    /// occurrence.
+    /// <para>
+    /// A blank-row policy under a placement-declared extent settles it too: the walk keeps a bound,
+    /// so each occurrence is sliced by <c>ItemExtent</c>'s bounded branch, which reads
+    /// <c>extent.Area</c> to measure the rest of the block. The bound is whatever the placement
+    /// declared, so the reading is correct; it is not streaming.
+    /// </para>
+    /// </summary>
     public override ProjectionResult<IReadOnlyList<T>> Project(ISpace extent, ProjectionContext context)
     {
       // The bound is the extent narrowed to the block the walk fills, discovered as it is read; with
-      // no blank-band terminator the walk runs the raw extent and the width is measured up front.
-      var bound = BoundArea is null ? extent : ProjectionEngine.BindArea(this, extent, context, BoundArea);
+      // no blank-band terminator the walk runs the raw extent and the width is measured up front. A
+      // bound declared on the placement is the one the walk uses, so a blank-row policy under a
+      // declared extent does not narrow it a second time.
+      var ownBound = Placement.Area is null ? BoundArea : null;
+      var bound = ownBound is null ? extent : ProjectionEngine.BindArea(this, extent, context, ownBound);
       var width = BoundedSpace.WidthOf(bound);
 
       // The across axis. HasBand probes only the along axis, so without this a zero-height
       // horizontal band would attempt an item over empty space and trip the productivity guard.
       // Read from the raw extent, never the discovered bound.
-      var acrossExtent = Across(extent.Area.Size);
+      var acrossExtent = Orientation == Orientation.Vertical
+        ? BoundedSpace.WidthOf(extent)
+        : extent.Area.Height;
 
       var values = new List<T>();
       var along = 0;
@@ -71,7 +89,7 @@ namespace Unrect.Projections
       {
         var mark = context.Diagnostics.Mark();
 
-        if (!TryCollect(extent, bound, width, context, values, ref along, ref across, ref absorbed))
+        if (!TryCollect(extent, bound, width, ownBound is not null, context, values, ref along, ref across, ref absorbed))
         {
           // An attempt that is not collected leaves nothing behind — not even what it tolerated on
           // the way to being discarded.
@@ -119,15 +137,19 @@ namespace Unrect.Projections
     /// One attempt: separate, place, project, and collect. False means the repetition is over, and
     /// whatever the attempt did is discarded by the caller — which is why <paramref name="absorbed"/>
     /// travels back out here rather than being reported in place.
+    /// <para>
+    /// <paramref name="selfBound"/> says whether <paramref name="bound"/> is a block the walk
+    /// discovered for itself, which is what decides who ends the run on a blank band.
+    /// </para>
     /// </summary>
-    private bool TryCollect(ISpace extent, ISpace bound, int width, ProjectionContext context, List<T> values, ref int along, ref int across, ref bool absorbed)
+    private bool TryCollect(ISpace extent, ISpace bound, int width, bool selfBound, ProjectionContext context, List<T> values, ref int along, ref int across, ref bool absorbed)
     {
       // The cursor is tentative until an item is collected, so a separator followed by nothing
       // (a trailing blank band) is not counted as consumed.
       var cursor = along;
       var reach = across;
 
-      if (values.Count > 0 && !TrySeparate(extent.GetSubspace(Step(cursor)), context, ref cursor, ref reach))
+      if (values.Count > 0 && !TrySeparate(BoundedSpace.Tail(extent, Step(cursor)), context, ref cursor, ref reach))
         return false;
 
       // A forward probe: the band at the cursor exists within the bound, asked one band at a time so
@@ -135,10 +157,23 @@ namespace Unrect.Projections
       if (!HasBand(bound, cursor))
         return false;
 
+      // Stop ends the walk at the first fully-blank band, and which half judges the band depends on
+      // who bound the extent. Where the walk re-hosted a discovered block, the block's own row rule
+      // decides it — reading the full extent width — and refuses the band at HasBand above. Where the
+      // extent was declared from outside, the bound runs straight through the band, so the walk
+      // decides it here, across the width it reads. The two rules read different widths, so this test
+      // is scoped to the walk's own case rather than run over both.
+      if (!selfBound && OnBlank is BlankRowStrategy stop && stop.IsStop && BandIsBlank(bound, cursor, width))
+        return false;
+
       // A non-Stop blank-row policy inspects the band before placing an item, so a fully-blank band
       // never becomes a record: Fault throws terminally, Tolerate records an Info, and Skip and
       // Tolerate both advance past the band and collect nothing. The band is one row; a multi-row
       // item under a non-Stop policy is out of scope, the canonical target being a one-row Record.
+      // Stop is out of scope the same way and for the same reason, from the other side: under a
+      // declared extent the walk judges the cursor row alone, while a discovered block's row rule
+      // judges every row it scans, so a blank row interior to a multi-row item ends the self-bound
+      // run and not the declared-extent one.
       if (OnBlank is BlankRowStrategy onBlank && !onBlank.IsStop && BandIsBlank(bound, cursor, width))
       {
         var band = extent.GetSubspace(Step(cursor), new Area(Extent(1, width)));
@@ -211,7 +246,8 @@ namespace Unrect.Projections
         throw context.Failure(ProjectionEngine.Threw("separator", exception), remaining, exception, ProjectionEngine.IsFault(exception));
       }
 
-      if (offset.Width > remaining.Area.Width || offset.Height > remaining.Area.Height)
+      if (offset.Width > BoundedSpace.WidthOf(remaining)
+        || (offset.Height > 0 && !BoundedSpace.HasRow(remaining, offset.Height - 1)))
         return false;
 
       cursor += Along(offset.Size);
@@ -236,15 +272,14 @@ namespace Unrect.Projections
     }
 
     /// <summary>
-    /// The slice the item is applied to. With no bound it is the whole tail from the cursor; with a
-    /// bound it is that tail narrowed to the discovered width. The repeat declares no area of its
-    /// own, so it is never engine-bound: whenever the caller hands raw space — which flows and
-    /// <c>GetSubspace</c> do — reading <c>extent.Area.Size</c> is a measured read. An <c>Overlay</c>
-    /// may instead pass down its own bound, which forcing here resolves to the same height.
+    /// The slice the item is applied to. With no bound it is the tail from the cursor, kept
+    /// unsettled so an item that derives its extent reads only the band it takes. With one it is the
+    /// rest of the block at the discovered width, which measures the extent — the bound is there for
+    /// a blank-band policy, which looks at every band anyway.
     /// </summary>
     private ISpace ItemExtent(ISpace extent, int cursor, int width)
       => BoundArea is null
-        ? extent.GetSubspace(Step(cursor))
+        ? BoundedSpace.Tail(extent, Step(cursor))
         : extent.GetSubspace(Step(cursor), new Area(Extent(Along(extent.Area.Size) - cursor, width)));
 
     private Offset Step(int along) => Orientation == Orientation.Vertical ? new Offset(0, along) : new Offset(along, 0);
