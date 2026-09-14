@@ -17,8 +17,8 @@ namespace Unrect.Strategies
 
     private IIncrementalSizeStrategy Strategy { get; }
 
-    public IAreaScan BeginArea(ISpace availableSpace) => Strategy.BeginSize(availableSpace);
+    public IAreaScan BeginArea(ICellValues availableSpace) => Strategy.BeginSize(availableSpace);
 
-    public Area GetArea(ISpace availableSpace) => Scans.FoldArea(BeginArea(availableSpace), availableSpace);
+    public Area GetArea(ICellValues availableSpace) => Scans.FoldArea(BeginArea(availableSpace), availableSpace);
   }
 }

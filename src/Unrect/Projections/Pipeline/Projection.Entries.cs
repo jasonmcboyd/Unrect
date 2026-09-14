@@ -45,14 +45,14 @@ namespace Unrect.Projections
     /// <typeparam name="TSpace">The demand the matcher raises.</typeparam>
     /// <param name="landmark">The row to sit on.</param>
     public static OffsetStage<TSpace> On<TSpace>(IRowLandmark<TSpace> landmark)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => EnterDemanding<TSpace>(Step.OnRow(Required(landmark).Landmark));
 
     /// <inheritdoc cref="On{TSpace}(IRowLandmark{TSpace})"/>
     /// <typeparam name="TSpace">The demand the matcher raises.</typeparam>
     /// <param name="landmark">The column to sit on.</param>
     public static OffsetStage<TSpace> On<TSpace>(IColumnLandmark<TSpace> landmark)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => EnterDemanding<TSpace>(Step.OnColumn(Required(landmark).Landmark));
 
     /// <summary>
@@ -69,7 +69,7 @@ namespace Unrect.Projections
     /// <typeparam name="TSpace">The demand the matcher raises.</typeparam>
     /// <param name="landmark">The row to sit below.</param>
     public static OffsetStage<TSpace> Below<TSpace>(IRowLandmark<TSpace> landmark)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => EnterDemanding<TSpace>(Step.Below(Required(landmark).Landmark));
 
     /// <summary>
@@ -84,7 +84,7 @@ namespace Unrect.Projections
     /// <typeparam name="TSpace">The demand the matcher raises.</typeparam>
     /// <param name="landmark">The column to sit right of.</param>
     public static OffsetStage<TSpace> RightOf<TSpace>(IColumnLandmark<TSpace> landmark)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => EnterDemanding<TSpace>(Step.RightOf(Required(landmark).Landmark));
 
     // --- The strategy door, the filler-steppers and the counted movements --------------------------
@@ -176,7 +176,7 @@ namespace Unrect.Projections
     /// <param name="landmark">The row the extent stops before.</param>
     /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
     public static BoundStage<TSpace> Until<TSpace>(IRowLandmark<TSpace> landmark, bool orEnd = false)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => new BoundStage<TSpace>(Steps.None.Then(Step.UntilRow(Required(landmark).Landmark, orEnd)));
 
     /// <inheritdoc cref="UnboundedStage.UntilColumn(IColumnLandmark, bool)"/>
@@ -190,7 +190,7 @@ namespace Unrect.Projections
     /// <param name="landmark">The column the extent stops before.</param>
     /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
     public static BoundStage<TSpace> UntilColumn<TSpace>(IColumnLandmark<TSpace> landmark, bool orEnd = false)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => new BoundStage<TSpace>(Steps.None.Then(Step.UntilColumn(Required(landmark).Landmark, orEnd)));
 
     // --- The heading ------------------------------------------------------------------------------
@@ -202,7 +202,7 @@ namespace Unrect.Projections
     private static OffsetStage Enter(Step step) => new OffsetStage(Steps.None.Then(step));
 
     private static OffsetStage<TSpace> EnterDemanding<TSpace>(Step step)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => new OffsetStage<TSpace>(Steps.None.Then(step));
 
     private static TLandmark Required<TLandmark>(TLandmark landmark)

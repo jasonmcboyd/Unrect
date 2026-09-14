@@ -1,13 +1,13 @@
 using Unrect.Core;
 using Unrect.Projections;
 
-using static PlacementGauntlet.Staged.ProjectionBuilders<Unrect.Core.ISpace>;
+using static PlacementGauntlet.Staged.ProjectionBuilders<Unrect.Core.ICellValues>;
 
 namespace PlacementGauntlet
 {
   /// <summary>
   /// SPIKE, scenario C — <b>boundary (d), the partial-class edge</b>, half two. The same class,
-  /// scoped to <c>ISpace</c> in its own file. Both halves compile, and each member demands what its
+  /// scoped to <c>ICellValues</c> in its own file. Both halves compile, and each member demands what its
   /// own file said — so a partial class is NOT a counter-example to the dichotomy theorem: it is two
   /// files, and the theorem is about files.
   /// <para>

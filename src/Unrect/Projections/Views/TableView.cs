@@ -23,7 +23,7 @@ namespace Unrect.Projections
     // work).
     private IReadOnlyList<TableRow>? _rows;
 
-    internal TableView(ISpace space, int headerRows, ProjectionContext context)
+    internal TableView(ICellValues space, int headerRows, ProjectionContext context)
     {
       Space = space;
       HeaderRows = headerRows;
@@ -46,7 +46,7 @@ namespace Unrect.Projections
     internal LabelMap Labels { get; }
 
     /// <summary>The table's full extent, header row(s) included.</summary>
-    public ISpace Space { get; }
+    public ICellValues Space { get; }
 
     /// <summary>
     /// How many columns wide the table is. Free on an extent still being discovered: a width is
@@ -118,7 +118,7 @@ namespace Unrect.Projections
     /// undescribed.
     /// </para>
     /// </summary>
-    internal IEnumerable<(ISpace Space, ProjectionContext Context)> StreamBands(int bandHeight)
+    internal IEnumerable<(ICellValues Space, ProjectionContext Context)> StreamBands(int bandHeight)
     {
       for (var row = HeaderRows; BoundedSpace.HasRow(Space, row + bandHeight - 1); row += bandHeight)
       {

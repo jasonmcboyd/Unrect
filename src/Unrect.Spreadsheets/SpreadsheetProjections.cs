@@ -124,7 +124,7 @@ namespace Unrect.Spreadsheets
       /// The capability, or a fault. A boundary that cannot look must not answer "not there": that
       /// would be a claim about the document made by a reader describing itself.
       /// </summary>
-      protected IFormulaSpace Formulas(ISpace space) => space.RequiredCapability<IFormulaSpace>(_demandedBy);
+      protected IFormulaSpace Formulas(ICellValues space) => space.RequiredCapability<IFormulaSpace>(_demandedBy);
 
       protected bool Matches(string? formula)
         => formula is not null
@@ -140,7 +140,7 @@ namespace Unrect.Spreadsheets
 
       IRowLandmark IRowLandmark<IFormulaSpace>.Landmark => this;
 
-      public int? FindRow(ISpace space)
+      public int? FindRow(ICellValues space)
       {
         var formulas = Formulas(space);
 
@@ -162,7 +162,7 @@ namespace Unrect.Spreadsheets
 
       IColumnLandmark IColumnLandmark<IFormulaSpace>.Landmark => this;
 
-      public int? FindColumn(ISpace space)
+      public int? FindColumn(ICellValues space)
       {
         var formulas = Formulas(space);
 

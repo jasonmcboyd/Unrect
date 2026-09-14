@@ -34,7 +34,7 @@ namespace Unrect.Tests.Projections
   public class UnderExpansionLawTests
   {
     // A junk row, a caption, two data rows.
-    private static ISpace Sheet() => Mixed(new object?[,]
+    private static ICellValues Sheet() => Mixed(new object?[,]
     {
       { "junk", null },
       { "Detail", null },
@@ -43,7 +43,7 @@ namespace Unrect.Tests.Projections
     });
 
     // Two captions stacked, so the multi-caption arm of the equation has somewhere to run.
-    private static ISpace TwoCaptionSheet() => Mixed(new object?[,]
+    private static ICellValues TwoCaptionSheet() => Mixed(new object?[,]
     {
       { "Cap1" },
       { "Cap2" },

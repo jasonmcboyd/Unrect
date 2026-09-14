@@ -7,17 +7,17 @@ namespace Unrect.Strategies
   /// <summary>The column twin of <see cref="PredicateRowLandmark"/>.</summary>
   internal sealed class PredicateColumnLandmark : IColumnLandmark
   {
-    public PredicateColumnLandmark(Func<ISpace, int, bool> predicate, string description)
+    public PredicateColumnLandmark(Func<ICellValues, int, bool> predicate, string description)
     {
       Predicate = predicate;
       Description = description;
     }
 
-    private Func<ISpace, int, bool> Predicate { get; }
+    private Func<ICellValues, int, bool> Predicate { get; }
 
     public string Description { get; }
 
-    public int? FindColumn(ISpace space)
+    public int? FindColumn(ICellValues space)
     {
       for (var column = 0; column < space.Area.Width; column++)
         if (Predicate(space, column))

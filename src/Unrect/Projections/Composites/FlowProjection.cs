@@ -28,7 +28,7 @@ namespace Unrect.Projections
     public override string Description
       => Declared ?? (Orientation == Orientation.Vertical ? "VerticalFlow" : "HorizontalFlow");
 
-    protected override LayoutState NewState(ISpace extent, ProjectionContext context)
+    protected override LayoutState NewState(ICellValues extent, ProjectionContext context)
       => new FlowState(this, Orientation, extent, context);
   }
 }

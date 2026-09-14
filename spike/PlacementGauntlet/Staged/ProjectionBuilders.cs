@@ -60,7 +60,7 @@ namespace PlacementGauntlet.Staged
   /// </summary>
   /// <typeparam name="TSpace">The space every declaration in the importing file is written over.</typeparam>
   public static class ProjectionBuilders<TSpace>
-    where TSpace : class, ISpace
+    where TSpace : class, ICellValues
   {
     // ============================================================================================
     // The scoped half — the six members that take projections, forwarded to Entry B (7 with the
@@ -174,13 +174,13 @@ namespace PlacementGauntlet.Staged
     // means, which is why these are plain values rather than stages.
     // ============================================================================================
 
-    public static IRowLandmark RowWhere(Func<ISpace, int, bool> predicate) => Projection.RowWhere(predicate);
+    public static IRowLandmark RowWhere(Func<ICellValues, int, bool> predicate) => Projection.RowWhere(predicate);
 
     public static IRowLandmark RowWithCell(Func<CellValue, bool> anyCell) => Projection.RowWithCell(anyCell);
 
     public static IRowLandmark RowContaining(string text) => Projection.RowContaining(text);
 
-    public static IColumnLandmark ColumnWhere(Func<ISpace, int, bool> predicate) => Projection.ColumnWhere(predicate);
+    public static IColumnLandmark ColumnWhere(Func<ICellValues, int, bool> predicate) => Projection.ColumnWhere(predicate);
 
     public static IColumnLandmark ColumnWithCell(Func<CellValue, bool> anyCell) => Projection.ColumnWithCell(anyCell);
 
@@ -323,7 +323,7 @@ namespace PlacementGauntlet.Staged
   /// </summary>
   /// <typeparam name="TSpace">The space every declaration in the importing file is written over.</typeparam>
   public static class SplitRungs<TSpace>
-    where TSpace : class, ISpace
+    where TSpace : class, ICellValues
   {
     /// <summary>The reflection rung, spelled through the type dot.</summary>
     public static class Table

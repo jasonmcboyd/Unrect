@@ -19,7 +19,7 @@ namespace Unrect.Projections
 
     public override string Description { get; }
 
-    public override ProjectionResult<T> Project(ISpace extent, ProjectionContext context)
+    public override ProjectionResult<T> Project(ICellValues extent, ProjectionContext context)
     {
       // "Is there a row for the header" rather than "how tall are you": the same question of a
       // measured extent, and one row rather than all of them where the height is still being

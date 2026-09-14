@@ -28,7 +28,7 @@ namespace TypedSpacesGauntlet
     //
     // Verbatim today's vocabulary. The only type arguments are the ones the vocabulary has always
     // had (Table<Allocation>), and nothing here knows the word "space".
-    public static Report PlainParser(ISpace sheet)
+    public static Report PlainParser(ICellValues sheet)
     {
       var title = Text();
       var rows = Table<Allocation>();
@@ -60,7 +60,7 @@ namespace TypedSpacesGauntlet
     // type is IProjection<IReadOnlyList<SourcedAllocation>> — plain. Nothing acquired a demand, so
     // nothing stops this being applied to a grid, where every formula reads null. The typed layer
     // is blind here: a lambda's body is not part of its type.
-    public static IReadOnlyList<SourcedAllocation> ProjectionUnchecked(ISpace sheet)
+    public static IReadOnlyList<SourcedAllocation> ProjectionUnchecked(ICellValues sheet)
     {
       var rows = Table(row => new SourcedAllocation(
           Account: row["Account"].GetString(),
@@ -176,7 +176,7 @@ namespace TypedSpacesGauntlet
     //               'ProjectionExtensions.Map<TSpace, TResult>(IProjection<TSpace, TResult>, TSpace)'
     //               cannot be inferred from the usage. Try specifying the type arguments explicitly.
     //
-    //   (c) ISpace plain = Sheets.Plain(); report.Map(plain)
+    //   (c) ICellValues plain = Sheets.Plain(); report.Map(plain)
     //       CS0411: (identical to (a))
     //
     //   (i) Formula().Map(Sheets.Plain())
@@ -253,7 +253,7 @@ namespace TypedSpacesGauntlet
     // A GENERIC helper — one that works over whatever its caller demands — needs the parameter, the
     // constraint, and (because a layout lambda cannot infer) the type arguments again inside.
     public static IProjection<TSpace, IReadOnlyList<T>> Sections<TSpace, T>(IProjection<TSpace, T> item)   // TAX x2 + constraint
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => VerticalRepeat(item, separatedBy: BlankRows());
 
     // =============================================================================================
@@ -290,7 +290,7 @@ namespace TypedSpacesGauntlet
     // the next one starts where it stopped, so adjacency does all the work. (Written here with a
     // header row, which the table consumes and the record never sees; binding to captions is the
     // bind, and that is phase 5.)
-    public static IReadOnlyList<Allocation> DenseRows(ISpace sheet)
+    public static IReadOnlyList<Allocation> DenseRows(ICellValues sheet)
     {
       var allocation = HorizontalFlow(h => new Allocation(
         Account: h.Next(Text()),
@@ -305,7 +305,7 @@ namespace TypedSpacesGauntlet
     // Matrix cell 4 — NO HEADERS + SPARSE/INCOMPLETE, spelled as §6 writes it. The overlay hands
     // every child the whole row, `Right(n)` says which column each one is, and `OrBlank` says which
     // of them a record may omit. The declaration IS the completeness contract, per field.
-    public static IReadOnlyList<BuyingPowerRow> SparseRows(ISpace sheet)
+    public static IReadOnlyList<BuyingPowerRow> SparseRows(ICellValues sheet)
     {
       var allocation = Overlay(o => new BuyingPowerRow(
         FundCode: o.Next(Text().Right(1)),
@@ -398,7 +398,7 @@ namespace TypedSpacesGauntlet
     //
     // The bind runs once per Map, after the header is read and before any body row; what it returns
     // is an ordinary projection, applied to every row by the engine.
-    public static IReadOnlyList<PartialAllocation> BoundRows(ISpace sheet)
+    public static IReadOnlyList<PartialAllocation> BoundRows(ICellValues sheet)
     {
       var table = Table(headerRows: 1, eachRow: captions => Overlay(o => new PartialAllocation(
         Account: o.Next(Text().Right(captions["Account"])),
@@ -427,7 +427,7 @@ namespace TypedSpacesGauntlet
         Symbol: o.Next(Text().Right(captions["Symbol"])),
         Weight: o.Next(Decimal().Right(captions["Weight"]))));
 
-    public static IReadOnlyList<Allocation> BoundByAHoistedFactory(ISpace sheet)
+    public static IReadOnlyList<Allocation> BoundByAHoistedFactory(ICellValues sheet)
       => Table(headerRows: 1, eachRow: AllocationRow).On(RowContaining("Account")).Map(sheet);
 
     /// <summary>A caption the file does not carry fails through the map, listing the ones it does.</summary>
@@ -465,7 +465,7 @@ namespace TypedSpacesGauntlet
     // The friend demo: the whole ladder's top rung inside an ordinary flow. Nothing about the table
     // is written down — the captions are the record's own member names, and the kinds are its
     // members' own types.
-    public static InvestorBlock TypedTableInAFlow(ISpace sheet)
+    public static InvestorBlock TypedTableInAFlow(ICellValues sheet)
     {
       var cashFlows = Table<CashFlow>();
 
@@ -496,12 +496,12 @@ namespace TypedSpacesGauntlet
     //               'Unrect.Spreadsheets.ISpreadsheetSpace'
     //
     //   (l) scoped.Map<ISpreadsheetSpace, ...>(plain)      [the same, stated, at Map]
-    //       CS1503: Argument 2: cannot convert from 'Unrect.Core.ISpace' to
+    //       CS1503: Argument 2: cannot convert from 'Unrect.Core.ICellValues' to
     //               'Unrect.Spreadsheets.ISpreadsheetSpace'
     //
-    //   (m) Over<ISpace>().VerticalFlow(v => v.Next(Formula()))   [demanding child, PLAIN scope]
+    //   (m) Over<ICellValues>().VerticalFlow(v => v.Next(Formula()))   [demanding child, PLAIN scope]
     //       CS1503: Argument 1: cannot convert from 'IProjection<IFormulaSpace, string?>' to
-    //               'IProjection<Unrect.Core.ISpace, string>'
+    //               'IProjection<Unrect.Core.ICellValues, string>'
     //       — and this is the sharpest result of the phase. The unscoped twin of exactly this
     //         mistake is (e), whose message is CS0411 on `Next` and never says the word formula.
     //         Fixing the space on the CURSOR turns the worst message in the taxonomy into one of

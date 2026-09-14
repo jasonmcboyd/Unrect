@@ -24,7 +24,7 @@ namespace Unrect.Projections
 
     public override string Description => "ColumnLabels";
 
-    public override ProjectionResult<LabelMap> Project(ISpace extent, ProjectionContext context)
+    public override ProjectionResult<LabelMap> Project(ICellValues extent, ProjectionContext context)
     {
       var width = BoundedSpace.WidthOf(extent);
 

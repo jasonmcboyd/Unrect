@@ -127,7 +127,7 @@ namespace Unrect.Tests.Streaming
     /// INSTANCE — itself for a first sighting, and -1 for a cell that is not text at all. Two
     /// spaces with the same pattern share exactly the same values as each other.
     /// </summary>
-    private static IReadOnlyList<int> SharingPattern(ISpace space)
+    private static IReadOnlyList<int> SharingPattern(ICellValues space)
     {
       // Reference equality on purpose: the question is which instance a cell points at, and the
       // default comparer would answer the one this test is not asking.

@@ -5,14 +5,14 @@ namespace Unrect.Strategies
 {
   internal sealed class TakeWhileColumnStrategy : IColumnStrategy
   {
-    public TakeWhileColumnStrategy(Func<ISpace, int, bool> predicate)
+    public TakeWhileColumnStrategy(Func<ICellValues, int, bool> predicate)
     {
       Predicate = predicate;
     }
 
-    private Func<ISpace, int, bool> Predicate { get; }
+    private Func<ICellValues, int, bool> Predicate { get; }
 
-    public int SelectColumns(ISpace space)
+    public int SelectColumns(ICellValues space)
     {
       int count = 0;
 

@@ -41,10 +41,10 @@ namespace Unrect.Spreadsheets
     /// </para>
     /// <para>
     /// <b>A demanding projection has no overload here, deliberately.</b> A streamed sheet reads
-    /// values only — <see cref="Workbook.Sheet"/> hands back a plain <see cref="Core.ISpace"/>, the
+    /// values only — <see cref="Workbook.Sheet"/> hands back a plain <see cref="Core.ICellValues"/>, the
     /// honest absence — so there is no capable space for a declaration that reads formulas to be
     /// applied to, and the receiver type says so: the compiler refuses
-    /// <c>formulaReadingProjection.MapWorkbook(…)</c> where an <c>ISpace</c>-only overload would
+    /// <c>formulaReadingProjection.MapWorkbook(…)</c> where an <c>ICellValues</c>-only overload would
     /// have had to fault at run time or read a file's formulas as absent. Read formulas through the
     /// eager door instead — <c>projection.Map(SpreadsheetSpace.CreateWithFormulas(path,
     /// sheet))</c>, which needs no sugar because it has no lifetime to hide.

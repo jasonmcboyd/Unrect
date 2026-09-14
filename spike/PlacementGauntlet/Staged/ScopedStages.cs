@@ -22,7 +22,7 @@ namespace PlacementGauntlet.Staged
   /// </summary>
   /// <typeparam name="TSpace">What the pipeline's declaration demands of the space.</typeparam>
   public abstract class PlacementStage<TSpace>
-    where TSpace : class, ISpace
+    where TSpace : class, ICellValues
   {
     private protected PlacementStage(Steps steps) => Steps = steps;
 
@@ -104,7 +104,7 @@ namespace PlacementGauntlet.Staged
 
   /// <summary>The scoped twin of <see cref="UnboundedStage"/>.</summary>
   public abstract class UnboundedStage<TSpace> : PlacementStage<TSpace>
-    where TSpace : class, ISpace
+    where TSpace : class, ICellValues
   {
     private protected UnboundedStage(Steps steps) : base(steps)
     {
@@ -144,7 +144,7 @@ namespace PlacementGauntlet.Staged
   /// what to write instead.
   /// </summary>
   public sealed class OffsetStage<TSpace> : UnboundedStage<TSpace>
-    where TSpace : class, ISpace
+    where TSpace : class, ICellValues
   {
     private const string SecondAnchor =
       "a pipeline declares where it starts once, and its anchor is its entry: On/Below/RightOf/OffsetBy "
@@ -183,7 +183,7 @@ namespace PlacementGauntlet.Staged
 
   /// <summary>The scoped twin of <see cref="OffsetAndSizeStage"/>.</summary>
   public sealed class OffsetAndSizeStage<TSpace> : UnboundedStage<TSpace>
-    where TSpace : class, ISpace
+    where TSpace : class, ICellValues
   {
     internal OffsetAndSizeStage(Steps steps) : base(steps)
     {
@@ -192,7 +192,7 @@ namespace PlacementGauntlet.Staged
 
   /// <summary>The scoped twin of <see cref="BoundStage"/>.</summary>
   public sealed class BoundStage<TSpace> : PlacementStage<TSpace>
-    where TSpace : class, ISpace
+    where TSpace : class, ICellValues
   {
     internal BoundStage(Steps steps) : base(steps)
     {
@@ -204,7 +204,7 @@ namespace PlacementGauntlet.Staged
 
   /// <summary>The scoped twin of <see cref="UnderStage"/>, refusals and all.</summary>
   public sealed class UnderStage<TSpace> : PlacementStage<TSpace>
-    where TSpace : class, ISpace
+    where TSpace : class, ICellValues
   {
     internal UnderStage(Steps steps) : base(steps)
     {

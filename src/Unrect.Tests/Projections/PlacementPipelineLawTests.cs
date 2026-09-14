@@ -74,7 +74,7 @@ namespace Unrect.Tests.Projections
     /// hoisted <c>series</c> placed twice the natural declaration — and therefore what makes the two
     /// spellings of the placement worth comparing.
     /// </summary>
-    private static ISpace Report() => Mixed(new object?[,]
+    private static ICellValues Report() => Mixed(new object?[,]
     {
       { "Investor IRR", null, null },
       { "IRR Details", null, null },
@@ -302,7 +302,7 @@ namespace Unrect.Tests.Projections
     // and is indistinguishable wherever the caller's identifier happens to match.
 
     /// <summary>The ledger the capture pins fail over — a text column where a number is asked for.</summary>
-    private static ISpace Ledger() => Mixed(new object?[,]
+    private static ICellValues Ledger() => Mixed(new object?[,]
     {
       { "Fund", "Amount" },
       { "Alpha", 100m },
@@ -365,7 +365,7 @@ namespace Unrect.Tests.Projections
       var investorDetail = Decimal();
 
       var throughPipeline = Assert.Throws<ProjectionException>(
-        () => Over<ISpace>().On(Header()).VerticalRepeat(investorDetail).Map(Ledger()));
+        () => Over<ICellValues>().On(Header()).VerticalRepeat(investorDetail).Map(Ledger()));
 
       Assert.Equal("VerticalRepeat[0] -> 'investorDetail' (Decimal)", throughPipeline.Path);
     }
@@ -376,7 +376,7 @@ namespace Unrect.Tests.Projections
       var quarterlyColumn = Decimal();
 
       var throughPipeline = Assert.Throws<ProjectionException>(
-        () => Over<ISpace>().On(Header()).HorizontalRepeat(quarterlyColumn).Map(Ledger()));
+        () => Over<ICellValues>().On(Header()).HorizontalRepeat(quarterlyColumn).Map(Ledger()));
 
       Assert.Equal("HorizontalRepeat[0] -> 'quarterlyColumn' (Decimal)", throughPipeline.Path);
     }
@@ -387,7 +387,7 @@ namespace Unrect.Tests.Projections
       var allocationRow = Decimal();
 
       var throughPipeline = Assert.Throws<ProjectionException>(
-        () => Over<ISpace>().On(Header()).Table(headerRows: 1, eachRow: allocationRow).Map(Ledger()));
+        () => Over<ICellValues>().On(Header()).Table(headerRows: 1, eachRow: allocationRow).Map(Ledger()));
 
       Assert.Equal("Table[0] -> 'allocationRow' (Decimal)", throughPipeline.Path);
     }
@@ -396,14 +396,14 @@ namespace Unrect.Tests.Projections
     public void AndAScopedTableBindTerminal()
     {
       var throughPipeline = Assert.Throws<ProjectionException>(
-        () => Over<ISpace>().On(Header()).Table(headerRows: 1, eachRow: ScopedFundColumnAsANumber).Map(Ledger()));
+        () => Over<ICellValues>().On(Header()).Table(headerRows: 1, eachRow: ScopedFundColumnAsANumber).Map(Ledger()));
 
       Assert.Equal("Table[0] -> 'ScopedFundColumnAsANumber' (Decimal)", throughPipeline.Path);
     }
 
     /// <summary>The scoped bind's method group — a bind returning a demanding projection.</summary>
-    private static IProjection<ISpace, decimal> ScopedFundColumnAsANumber(LabelMap captions)
-      => Over<ISpace>().Right(captions["Fund"]).Of(Decimal());
+    private static IProjection<ICellValues, decimal> ScopedFundColumnAsANumber(LabelMap captions)
+      => Over<ICellValues>().Right(captions["Fund"]).Of(Decimal());
 
     // --- 3. Heading is L3-by-construction ------------------------------------------------------------
 
@@ -467,8 +467,8 @@ namespace Unrect.Tests.Projections
       foreach (var refusal in new[]
       {
         Assert.Throws<ArgumentException>(() => Heading(text!)),
-        Assert.Throws<ArgumentException>(() => Over<ISpace>().Heading(text!)),
-        Assert.Throws<ArgumentException>(() => ProjectionBuilders<ISpace>.Heading(text!)),
+        Assert.Throws<ArgumentException>(() => Over<ICellValues>().Heading(text!)),
+        Assert.Throws<ArgumentException>(() => ProjectionBuilders<ICellValues>.Heading(text!)),
         Assert.Throws<ArgumentException>(() => Heading("IRR Details").Heading(text!)),
         Assert.Throws<ArgumentException>(() => Until(RowContaining(Inception)).Heading(text!)),
       })
@@ -536,12 +536,12 @@ namespace Unrect.Tests.Projections
         ["OffsetAndSizeStage"] = (typeof(OffsetAndSizeStage), Down(1).Sized(WholeExtent())),
         ["BoundStage"] = (typeof(BoundStage), Until(RowContaining("IRR Details"))),
         ["HeadingStage"] = (typeof(HeadingStage), Heading("IRR Details")),
-        ["PlacementStage<TSpace>"] = (typeof(PlacementStage<ISpace>), Over<ISpace>().Down(1)),
-        ["UnboundedStage<TSpace>"] = (typeof(UnboundedStage<ISpace>), Over<ISpace>().Down(1)),
-        ["OffsetStage<TSpace>"] = (typeof(OffsetStage<ISpace>), Over<ISpace>().Down(1)),
-        ["OffsetAndSizeStage<TSpace>"] = (typeof(OffsetAndSizeStage<ISpace>), Over<ISpace>().Down(1).Sized(WholeExtent())),
-        ["BoundStage<TSpace>"] = (typeof(BoundStage<ISpace>), Over<ISpace>().Until(RowContaining("IRR Details"))),
-        ["HeadingStage<TSpace>"] = (typeof(HeadingStage<ISpace>), Over<ISpace>().Heading("IRR Details")),
+        ["PlacementStage<TSpace>"] = (typeof(PlacementStage<ICellValues>), Over<ICellValues>().Down(1)),
+        ["UnboundedStage<TSpace>"] = (typeof(UnboundedStage<ICellValues>), Over<ICellValues>().Down(1)),
+        ["OffsetStage<TSpace>"] = (typeof(OffsetStage<ICellValues>), Over<ICellValues>().Down(1)),
+        ["OffsetAndSizeStage<TSpace>"] = (typeof(OffsetAndSizeStage<ICellValues>), Over<ICellValues>().Down(1).Sized(WholeExtent())),
+        ["BoundStage<TSpace>"] = (typeof(BoundStage<ICellValues>), Over<ICellValues>().Until(RowContaining("IRR Details"))),
+        ["HeadingStage<TSpace>"] = (typeof(HeadingStage<ICellValues>), Over<ICellValues>().Heading("IRR Details")),
       };
 
     /// <summary>The seven sentences a stage is allowed to refuse with, written once in the library.</summary>

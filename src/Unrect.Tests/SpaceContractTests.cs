@@ -31,18 +31,19 @@ namespace Unrect.Tests
     /// </summary>
     public static TheoryData<string> Doors => new TheoryData<string> { "grid", "windowed" };
 
-    private static ISpace Door(string door)
+    /// <summary>The grid both in-memory doors are built from: every cell says its own coordinate.</summary>
+    private static CellValue[,] Cells() => new[,]
     {
-      var values = new[,]
-      {
-        { CellValue.Of("0,0"), CellValue.Of("1,0"), CellValue.Of("2,0") },
-        { CellValue.Of("0,1"), CellValue.Of("1,1"), CellValue.Of("2,1") },
-      };
+      { CellValue.Of("0,0"), CellValue.Of("1,0"), CellValue.Of("2,0") },
+      { CellValue.Of("0,1"), CellValue.Of("1,1"), CellValue.Of("2,1") },
+    };
 
+    private static ICellValues Door(string door)
+    {
       switch (door)
       {
         case "grid":
-          return new GridSpace(values);
+          return new GridSpace(Cells());
 
         default:
           var source = new FakeRowSource(new FakeSheet("Data", 2, 3));
@@ -111,9 +112,98 @@ namespace Unrect.Tests
       Assert.Throws<OutOfBoundsException>(() => { _ = slice[0, 1]; });
     }
 
+    // --- The canonical surface ------------------------------------------------------------------------
+    //
+    // The questions anything may ask of a grid without knowing what is behind it: is this cell
+    // empty, does it say a word of its own, what does it say. They are stated across every door for
+    // the reason the bounds rules are — a declaration cannot see which door it was handed — and the
+    // eager reader joins the theory here, because the laws are about content and it has some.
+
+    /// <summary>Every door, including the eager reader, whose content comes from a file.</summary>
+    public static TheoryData<string> CanonicalDoors => new TheoryData<string> { "grid", "windowed", "xlsx" };
+
+    /// <summary>Every door as the canonical surface alone — the eager one read from a real workbook.</summary>
+    private static ISpace CanonicalDoor(string door)
+      => door == "xlsx"
+        ? SpreadsheetSpace.Create(
+          System.IO.Path.Combine(AppContext.BaseDirectory, "TestData", "simple-report.xlsx"),
+          "Report")
+        : Door(door);
+
+    [Theory]
+    [MemberData(nameof(CanonicalDoors))]
+    public void ACellSaysNothingExactlyWhenItIsBlank(string door)
+    {
+      // The equivalence the whole canonical surface rests on, swept over every cell of every door.
+      // A door that rendered a blank as "" would make "is there anything here" a question with two
+      // different answers, and every skip-while-blank strategy would read differently through it.
+      var cells = CanonicalDoor(door);
+
+      for (var row = 0; row < cells.Area.Height; row++)
+        for (var column = 0; column < cells.Area.Width; column++)
+          Assert.Equal(cells.IsBlank(column, row), cells.AsText(column, row) is null);
+    }
+
+    [Theory]
+    [MemberData(nameof(CanonicalDoors))]
+    public void OnlyACellWithAValueCanBeText(string door)
+    {
+      var cells = CanonicalDoor(door);
+
+      for (var row = 0; row < cells.Area.Height; row++)
+        for (var column = 0; column < cells.Area.Width; column++)
+          if (cells.IsText(column, row))
+            Assert.False(cells.IsBlank(column, row));
+    }
+
+    [Fact]
+    public void TextIsTheOneKindWhoseTextIsItsOwnValue()
+    {
+      // The sweeps above cannot say this: they check that the classification is consistent, not
+      // that it classifies. Every other kind HAS a canonical text and none of them is text, which
+      // is exactly the difference a matcher reads through.
+      ISpace cells = GridSpace.Create(
+        new object?[,]
+        {
+          { "Total", null, 42 },
+          { new DateTime(2026, 3, 4), true, CellValue.OfError(CellError.DivisionByZero) },
+        },
+        ProjectionTestSpaces.Adapt);
+
+      Assert.True(cells.IsText(0, 0));
+      Assert.Equal("Total", cells.AsText(0, 0));
+
+      Assert.False(cells.IsText(1, 0));
+      Assert.True(cells.IsBlank(1, 0));
+
+      foreach (var (column, row, said) in new[] { (2, 0, "42"), (0, 1, "2026-03-04"), (1, 1, "TRUE"), (2, 1, "#DIV/0!") })
+      {
+        Assert.False(cells.IsText(column, row));
+        Assert.False(cells.IsBlank(column, row));
+        Assert.Equal(said, cells.AsText(column, row));
+      }
+    }
+
+    [Theory]
+    [MemberData(nameof(CanonicalDoors))]
+    public void EveryCanonicalMemberRefusesACoordinateOutsideTheSpace(string door)
+    {
+      // The indexer's rule, extended to the three questions that do not go through it. A member
+      // that answered for a cell outside the space would let a strategy walk off the edge of a
+      // subspace and read its parent's data without ever hearing about it.
+      var cells = CanonicalDoor(door);
+
+      foreach (var (column, row) in new[] { (-1, 0), (cells.Area.Width, 0), (0, -1), (0, cells.Area.Height) })
+      {
+        Assert.Throws<OutOfBoundsException>(() => { _ = cells.IsBlank(column, row); });
+        Assert.Throws<OutOfBoundsException>(() => { _ = cells.IsText(column, row); });
+        Assert.Throws<OutOfBoundsException>(() => { _ = cells.AsText(column, row); });
+      }
+    }
+
     // --- The three spellings of "give me a subspace" --------------------------------------------------
     //
-    // Two of these are extension methods rather than members of ISpace, which is why they were not
+    // Two of these are extension methods rather than members of ICellValues, which is why they were not
     // in this class before. They belong here now because a caller cannot tell the difference: the
     // convenience overloads are part of the contract as experienced, and the rule they have to keep
     // is the same one the interface keeps — running off the edge of a space is a bounds condition.
@@ -216,7 +306,7 @@ namespace Unrect.Tests
 
       var source = new FakeRowSource(new FakeSheet("Empty", 10, 0));
       var pool = new ReaderPool(source, 1, warmReaders: false);
-      ISpace streamed = new WindowedSpace(new SheetStore(pool, 0, "Empty", 10, 0, chunkRows: 100, windowChunks: 4));
+      ICellValues streamed = new WindowedSpace(new SheetStore(pool, 0, "Empty", 10, 0, chunkRows: 100, windowChunks: 4));
 
       Assert.Equal(0, eager.Area.Size.Width);
       Assert.Equal(eager.Area.Size.Width, streamed.Area.Size.Width);
@@ -300,7 +390,7 @@ namespace Unrect.Tests
       // Shedding is the failure this forbids. A slice that handed back a plain space would tell a
       // declaration the file has no formulas — and it would say it in the one voice a declaration
       // cannot argue with, because absence at a projection site is a fact about the cell.
-      ISpace space = CapableDoor(door);
+      ICellValues space = CapableDoor(door);
 
       Assert.True(space.Area.Width >= 4 && space.Area.Height >= 10, "the samples need a 4x10 space");
 
@@ -426,7 +516,7 @@ namespace Unrect.Tests
       // an empty answer.
       var source = new FakeRowSource(new FakeSheet("Empty", 10, 0));
       var pool = new ReaderPool(source, 1, warmReaders: false);
-      ISpace streamed = new WindowedSpace(new SheetStore(pool, 0, "Empty", 10, 0, chunkRows: 100, windowChunks: 4));
+      ICellValues streamed = new WindowedSpace(new SheetStore(pool, 0, "Empty", 10, 0, chunkRows: 100, windowChunks: 4));
 
       var slice = streamed.GetSubspace(new Offset(0, 2), new Area(0, 5));
 

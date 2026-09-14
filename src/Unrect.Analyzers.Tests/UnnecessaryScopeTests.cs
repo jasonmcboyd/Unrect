@@ -139,7 +139,7 @@ namespace Unrect.Analyzers.Tests
         class Report
         {
           static IProjection<TSpace, string> Header<TSpace>()
-            where TSpace : class, ISpace
+            where TSpace : class, ICellValues
             => Projection.Over<TSpace>().VerticalFlow(v => v.Next(Projection.Text()));
         }
         """);

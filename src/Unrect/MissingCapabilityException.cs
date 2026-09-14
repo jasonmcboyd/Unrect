@@ -3,7 +3,7 @@ using System;
 namespace Unrect
 {
   /// <summary>
-  /// A declaration asked a space for something <see cref="Unrect.Core.ISpace"/> does not promise,
+  /// A declaration asked a space for something <see cref="Unrect.Core.ICellValues"/> does not promise,
   /// at a site where "I could not look" is not an answer.
   /// <para>
   /// This is the <em>boundary</em> half of the absence rule. At a projection site a missing

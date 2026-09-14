@@ -32,7 +32,7 @@ namespace Unrect.Tests.Spreadsheets
   public class CapabilityFaultTests
   {
     /// <summary>A space with no formulas in it and no way to answer about formulas.</summary>
-    private static ISpace Plain() => GridSpace.Create(new[,] { { "a" }, { "b" } });
+    private static ICellValues Plain() => GridSpace.Create(new[,] { { "a" }, { "b" } });
 
     /// <summary>
     /// A declaration that lands on the first row holding a formula, reached through the plain lift.
@@ -144,7 +144,7 @@ namespace Unrect.Tests.Spreadsheets
         System.IO.Path.Combine(AppContext.BaseDirectory, "TestData", "formulas.xlsx"),
         "Formulas");
 
-      Assert.Same(sheet, ((ISpace)sheet).RequiredCapability<IFormulaSpace>("RowWithFormula()"));
+      Assert.Same(sheet, ((ICellValues)sheet).RequiredCapability<IFormulaSpace>("RowWithFormula()"));
     }
 
     [Fact]
@@ -180,7 +180,7 @@ namespace Unrect.Tests.Spreadsheets
       // Both doors take the space as a nullable receiver, so an unset space is answered by the rule
       // rather than by a NullReferenceException from inside the walk. Null offers no capability, so
       // one door says so and the other faults.
-      ISpace? nothing = null;
+      ICellValues? nothing = null;
 
       Assert.Null(nothing.Capability<IFormulaSpace>());
       Assert.Throws<MissingCapabilityException>(() => nothing.RequiredCapability<IFormulaSpace>("RowWithFormula()"));
@@ -209,19 +209,25 @@ namespace Unrect.Tests.Spreadsheets
     /// The minimum <see cref="ISpaceChart"/>: a different view of exactly the same cells, which is
     /// all the seam's walk is entitled to assume.
     /// </summary>
-    private sealed class Chart : ISpace, ISpaceChart
+    private sealed class Chart : ICellValues, ISpaceChart
     {
-      private readonly ISpace _inner;
+      private readonly ICellValues _inner;
 
-      internal Chart(ISpace inner) => _inner = inner;
+      internal Chart(ICellValues inner) => _inner = inner;
 
-      public ISpace Underlying => _inner;
+      public ICellValues Underlying => _inner;
 
       public Area Area => _inner.Area;
 
       public CellValue this[int column, int row] => _inner[column, row];
 
-      public ISpace GetSubspace(Offset offset, Area area) => new Chart(_inner.GetSubspace(offset, area));
+      public bool IsBlank(int column, int row) => _inner.IsBlank(column, row);
+
+      public bool IsText(int column, int row) => _inner.IsText(column, row);
+
+      public string? AsText(int column, int row) => _inner.AsText(column, row);
+
+      public ICellValues GetSubspace(Offset offset, Area area) => new Chart(_inner.GetSubspace(offset, area));
     }
   }
 }

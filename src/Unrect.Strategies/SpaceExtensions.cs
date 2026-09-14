@@ -3,7 +3,7 @@ using Unrect.Core;
 namespace Unrect
 {
   /// <summary>
-  /// Convenience overloads of <see cref="ISpace.GetSubspace(Offset, Area)"/> for the common partial
+  /// Convenience overloads of <see cref="ICellValues.GetSubspace(Offset, Area)"/> for the common partial
   /// cases: a starting point with no area to declare, or an area from the space's own corner.
   /// <para>
   /// In the <c>Unrect</c> namespace beside <c>GridSpace</c>, because that is where it
@@ -22,7 +22,7 @@ namespace Unrect
     /// <exception cref="OutOfBoundsException">
     /// <paramref name="offset"/> lies outside <paramref name="space"/>.
     /// </exception>
-    public static ISpace GetSubspace(this ISpace space, Offset offset)
+    public static ICellValues GetSubspace(this ICellValues space, Offset offset)
     {
       // Checked here rather than left to the subtraction below. Without it an oversized offset
       // produces a negative extent, and Area's own validation reports that as an
@@ -38,6 +38,6 @@ namespace Unrect
 
     /// <summary><paramref name="area"/>, from <paramref name="space"/>'s own top-left corner.</summary>
     /// <exception cref="OutOfBoundsException"><paramref name="area"/> does not fit <paramref name="space"/>.</exception>
-    public static ISpace GetSubspace(this ISpace space, Area area) => space.GetSubspace(new Offset(0, 0), area);
+    public static ICellValues GetSubspace(this ICellValues space, Area area) => space.GetSubspace(new Offset(0, 0), area);
   }
 }

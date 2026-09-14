@@ -63,7 +63,7 @@ namespace Unrect.Projections
     // spelled with the raw lift there too.
 
     /// <summary>The first row satisfying <paramref name="predicate"/>.</summary>
-    public static IRowLandmark RowWhere(Func<ISpace, int, bool> predicate) => RowLandmarks.RowWhere(predicate);
+    public static IRowLandmark RowWhere(Func<ICellValues, int, bool> predicate) => RowLandmarks.RowWhere(predicate);
 
     /// <summary>The first row with any cell satisfying <paramref name="anyCell"/>.</summary>
     public static IRowLandmark RowWithCell(Func<CellValue, bool> anyCell) => RowLandmarks.RowWithCell(anyCell);
@@ -75,7 +75,7 @@ namespace Unrect.Projections
     public static IRowLandmark RowContaining(string text) => RowLandmarks.RowContaining(text);
 
     /// <summary>The first column satisfying <paramref name="predicate"/>.</summary>
-    public static IColumnLandmark ColumnWhere(Func<ISpace, int, bool> predicate) => ColumnLandmarks.ColumnWhere(predicate);
+    public static IColumnLandmark ColumnWhere(Func<ICellValues, int, bool> predicate) => ColumnLandmarks.ColumnWhere(predicate);
 
     /// <summary>The first column with any cell satisfying <paramref name="anyCell"/>.</summary>
     public static IColumnLandmark ColumnWithCell(Func<CellValue, bool> anyCell) => ColumnLandmarks.ColumnWithCell(anyCell);

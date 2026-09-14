@@ -23,7 +23,7 @@ namespace Unrect.Strategies
 
     private IOffsetStrategy[] Strategies { get; }
 
-    public Size GetSize(ISpace availableSpace)
+    public Size GetSize(ICellValues availableSpace)
     {
       var total = new Size(0, 0);
 

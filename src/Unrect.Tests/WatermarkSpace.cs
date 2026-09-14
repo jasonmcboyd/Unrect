@@ -18,18 +18,18 @@ namespace Unrect.Tests
   /// coordinates. Mirrored from the typed-spaces spike, whose scenario 9 first measured this.
   /// </para>
   /// </summary>
-  internal sealed class WatermarkSpace : ISpace
+  internal sealed class WatermarkSpace : ICellValues
   {
-    private readonly ISpace _inner;
+    private readonly ICellValues _inner;
     private readonly int _firstRow;
     private readonly Trace _trace;
 
-    public WatermarkSpace(ISpace inner)
+    public WatermarkSpace(ICellValues inner)
       : this(inner, 0, new Trace())
     {
     }
 
-    private WatermarkSpace(ISpace inner, int firstRow, Trace trace)
+    private WatermarkSpace(ICellValues inner, int firstRow, Trace trace)
     {
       _inner = inner;
       _firstRow = firstRow;
@@ -57,7 +57,16 @@ namespace Unrect.Tests
     }
 
     /// <inheritdoc/>
-    public ISpace GetSubspace(Offset offset, Area area)
+    public bool IsBlank(int column, int row) => this[column, row].IsBlank;
+
+    /// <inheritdoc/>
+    public bool IsText(int column, int row) => this[column, row].IsText;
+
+    /// <inheritdoc/>
+    public string? AsText(int column, int row) => this[column, row].AsText();
+
+    /// <inheritdoc/>
+    public ICellValues GetSubspace(Offset offset, Area area)
       => new WatermarkSpace(_inner.GetSubspace(offset, area), _firstRow + offset.Height, _trace);
 
     private sealed class Trace

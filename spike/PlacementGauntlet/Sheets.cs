@@ -19,7 +19,7 @@ namespace PlacementGauntlet
     public static string TestData(string file) => Path.Combine(AppContext.BaseDirectory, "TestData", file);
 
     /// <summary>A blank-separated repeat of integer blocks — <c>linqpad/array.linq</c>'s grid.</summary>
-    public static ISpace Numbers()
+    public static ICellValues Numbers()
       => GridSpace.Create(
         new[,]
         {
@@ -39,7 +39,7 @@ namespace PlacementGauntlet
     /// A buying-power-style export: one header row, then records whose columns are found by caption
     /// rather than by adjacency. Scenario 2's sheet — the census hotspot.
     /// </summary>
-    public static ISpace BuyingPower()
+    public static ICellValues BuyingPower()
       => Grid(new object?[,]
       {
         { "Account", "Symbol", "Quantity", "Market Value", "Buying Power" },
@@ -49,7 +49,7 @@ namespace PlacementGauntlet
       });
 
     /// <summary>Two regions of the same shape, each announced by its own caption. Scenario 4's sheet.</summary>
-    public static ISpace Regions()
+    public static ICellValues Regions()
       => Grid(new object?[,]
       {
         { "Regional Report", null },
@@ -69,7 +69,7 @@ namespace PlacementGauntlet
     /// A K-1-style nesting: sections announced by caption, each carrying its own captioned table,
     /// with a terminator the second section is bounded by. Scenario 5's sheet.
     /// </summary>
-    public static ISpace K1()
+    public static ICellValues K1()
       => Grid(new object?[,]
       {
         { "Partner K-1", null, null },
@@ -87,7 +87,7 @@ namespace PlacementGauntlet
         { "Totals", null, 1445m },
       });
 
-    public static ISpace Grid(object?[,] values) => GridSpace.Create(values, Cell);
+    public static ICellValues Grid(object?[,] values) => GridSpace.Create(values, Cell);
 
     private static CellValue Cell(object? value) => value switch
     {

@@ -4,6 +4,6 @@ namespace Unrect.Core
   public interface IColumnStrategy
   {
     /// <summary>How many leading columns of <paramref name="space"/>, from the left, this strategy selects.</summary>
-    int SelectColumns(ISpace space);
+    int SelectColumns(ICellValues space);
   }
 }

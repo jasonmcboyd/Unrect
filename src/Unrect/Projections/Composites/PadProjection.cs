@@ -36,7 +36,7 @@ namespace Unrect.Projections
 
     public override bool IsTransparent => Name is null && !IsUnitBoundary;
 
-    public override ProjectionResult<TResult> Project(ISpace extent, ProjectionContext context)
+    public override ProjectionResult<TResult> Project(ICellValues extent, ProjectionContext context)
     {
       var size = extent.Area.Size;
       var width = size.Width - Left - Right;

@@ -108,7 +108,7 @@ namespace PlacementGauntlet
     // --- Acceptance read 2: the plain-twin floor ----------------------------------------------------
     //
     // The dichotomy theorem's corollary, measured: the plain vocabulary is Entry C at its floor. If
-    // ProjectionBuilders<ISpace> is not exactly today's plain vocabulary, the claim is false.
+    // ProjectionBuilders<ICellValues> is not exactly today's plain vocabulary, the claim is false.
 
     private static void ThePlainFloor()
     {
@@ -148,8 +148,8 @@ namespace PlacementGauntlet
         today.MapWithDiagnostics(sheet).Diagnostics.Select(d => d.ToString()).ToList(),
         entryC.MapWithDiagnostics(sheet).Diagnostics.Select(d => d.ToString()).ToList());
 
-      Judge.Note("Same document, same reading, one leaf less. ProjectionBuilders<ISpace> is today's plain"
-        + " vocabulary spelled through a scope that answers ISpace — the theorem's corollary, compiled.");
+      Judge.Note("Same document, same reading, one leaf less. ProjectionBuilders<ICellValues> is today's plain"
+        + " vocabulary spelled through a scope that answers ICellValues — the theorem's corollary, compiled.");
 
       // And the audited declaration applied to a space that cannot answer: refused, which is the whole
       // point of the demand. Ledgered as (t); prose here because a compile error cannot be run.
@@ -210,8 +210,8 @@ namespace PlacementGauntlet
     {
       var sheet = SpreadsheetSpace.Create(Sheets.Example("investors-by-deal.xlsx"), "Investors");
 
-      var throughTheDot = SplitRungs<ISpace>.Table.Of<DealTransaction>();
-      var throughTheMethod = Staged.ProjectionBuilders<ISpace>.Table<DealTransaction>();
+      var throughTheDot = SplitRungs<ICellValues>.Table.Of<DealTransaction>();
+      var throughTheMethod = Staged.ProjectionBuilders<ICellValues>.Table<DealTransaction>();
 
       var deal = VerticalFlow(v => new
       {

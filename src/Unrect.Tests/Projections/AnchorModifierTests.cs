@@ -29,10 +29,10 @@ namespace Unrect.Tests.Projections
   public class AnchorModifierTests
   {
     // A junk row, the landmark row, two rows under it.
-    private static ISpace Rows() => Mixed(new object?[,] { { "junk" }, { "Detail" }, { "a" }, { "b" } });
+    private static ICellValues Rows() => Mixed(new object?[,] { { "junk" }, { "Detail" }, { "a" }, { "b" } });
 
     // The same four cells turned on their side, so the column twins read identically.
-    private static ISpace Columns() => Mixed(new object?[,] { { "junk", "Detail", "a", "b" } });
+    private static ICellValues Columns() => Mixed(new object?[,] { { "junk", "Detail", "a", "b" } });
 
     private static IRowLandmark Detail() => RowContaining("Detail");
 
@@ -321,13 +321,13 @@ namespace Unrect.Tests.Projections
       // The demanding twin: a scoped pipeline's .Of carries the same guard on its own overload.
       Assert.Equal(
         "projection",
-        Assert.Throws<ArgumentNullException>(() => Over<ISpace>().On(Detail()).Of<string>(null!)).ParamName);
+        Assert.Throws<ArgumentNullException>(() => Over<ICellValues>().On(Detail()).Of<string>(null!)).ParamName);
     }
 
-    private static string Miss(IProjection<string> projection, ISpace space)
+    private static string Miss(IProjection<string> projection, ICellValues space)
       => Assert.Throws<ProjectionException>(() => projection.Map(space)).Message;
 
-    private static void AssertSameOffset(IProjection<string> lifted, IProjection<string> anchored, ISpace space)
+    private static void AssertSameOffset(IProjection<string> lifted, IProjection<string> anchored, ICellValues space)
     {
       var expected = lifted.Apply(space);
       var actual = anchored.Apply(space);

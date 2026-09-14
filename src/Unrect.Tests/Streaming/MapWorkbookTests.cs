@@ -222,7 +222,7 @@ namespace Unrect.Tests.Streaming
       // return away from losing. The probe captures the extent it was handed on the way past; the
       // sibling after it then fails, and the captured view is dead by the time the exception
       // surfaces.
-      ISpace? captured = null;
+      ICellValues? captured = null;
 
       var probe = Range(1, 1, block =>
       {
@@ -276,7 +276,7 @@ namespace Unrect.Tests.Streaming
     //
     // The refusal is the point and the tail is misleading: no import would help, because there is no
     // demanding overload to find. A streamed sheet reads values only — Workbook.Sheet hands back a
-    // plain ISpace — so a formula-reading declaration has no capable space here to be applied to, and
+    // plain ICellValues — so a formula-reading declaration has no capable space here to be applied to, and
     // the alternatives were a run-time fault or a file's formulas quietly read as absent. Read
     // formulas through the eager door instead: projection.Map(SpreadsheetSpace.CreateWithFormulas(…)).
   }

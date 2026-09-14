@@ -27,7 +27,7 @@ namespace PlacementGauntlet.Staged
     /// pipeline already scoped to a space that carries formulas.
     /// </summary>
     public static IProjection<TSpace, string?> Formula<TSpace>(this PlacementStage<TSpace> stage)
-      where TSpace : class, ISpace, IFormulaSpace
+      where TSpace : class, ICellValues, IFormulaSpace
       => stage.Of<string?>(SpreadsheetProjections.Formula());
   }
 }

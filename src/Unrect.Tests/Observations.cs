@@ -114,7 +114,7 @@ namespace Unrect.Tests
     /// twice rather than two readings.
     /// </para>
     /// </summary>
-    public static Observation Observe<T>(IProjection<T> projection, ISpace space)
+    public static Observation Observe<T>(IProjection<T> projection, ICellValues space)
     {
       try
       {

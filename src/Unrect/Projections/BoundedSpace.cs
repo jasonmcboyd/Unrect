@@ -28,7 +28,7 @@ namespace Unrect.Projections
   /// placement, inside one <c>Map</c> call, and is never shared across calls.
   /// </para>
   /// </summary>
-  internal sealed class BoundedSpace : ISpace, ISpaceChart, ILazyExtent
+  internal sealed class BoundedSpace : ICellValues, ISpaceChart, ILazyExtent
   {
     /// <summary>Rows the scan has accepted — the height so far, and the final one once the scan stops.</summary>
     private int _resolved;
@@ -36,7 +36,7 @@ namespace Unrect.Projections
     /// <summary>Whether the scan has stopped, at which point <see cref="_resolved"/> is the height.</summary>
     private bool _stopped;
 
-    public BoundedSpace(ISpace inner, IAreaScan scan, Func<Exception, ProjectionException> failure)
+    public BoundedSpace(ICellValues inner, IAreaScan scan, Func<Exception, ProjectionException> failure)
     {
       Inner = inner;
       Scan = scan;
@@ -44,14 +44,14 @@ namespace Unrect.Projections
     }
 
     /// <summary>The space this extent is being discovered inside — already resolved for the offset.</summary>
-    private ISpace Inner { get; }
+    private ICellValues Inner { get; }
 
     /// <summary>
     /// The chart's underlying space. A bound narrows a height and moves nothing, so a capability
     /// found through here answers about exactly the cells this space addresses — the condition
     /// <see cref="ISpaceChart"/> imposes, met here by construction.
     /// </summary>
-    ISpace ISpaceChart.Underlying => Inner;
+    ICellValues ISpaceChart.Underlying => Inner;
 
     private IAreaScan Scan { get; }
 
@@ -82,7 +82,16 @@ namespace Unrect.Projections
     }
 
     /// <inheritdoc/>
-    public ISpace GetSubspace(Offset offset, Area area)
+    public bool IsBlank(int column, int row) => this[column, row].IsBlank;
+
+    /// <inheritdoc/>
+    public bool IsText(int column, int row) => this[column, row].IsText;
+
+    /// <inheritdoc/>
+    public string? AsText(int column, int row) => this[column, row].AsText();
+
+    /// <inheritdoc/>
+    public ICellValues GetSubspace(Offset offset, Area area)
     {
       if (offset.Width + area.Width > Scan.Width)
         throw new OutOfBoundsException();
@@ -105,13 +114,13 @@ namespace Unrect.Projections
     /// where the question was never expensive.
     /// <para>
     /// This and <see cref="HasRow"/> are the seam the views read a bound through, and it is
-    /// internal on purpose: <see cref="ISpace"/> hands out one <see cref="Core.Area"/> struct, so a
+    /// internal on purpose: <see cref="ICellValues"/> hands out one <see cref="Core.Area"/> struct, so a
     /// public caller asking for a width asks for a height too, and no addition here changes that.
     /// What it buys is that <c>CellBlock.Width</c>, <c>TableView.ColumnCount</c> and the column
     /// half of every index check cost nothing on an extent still being discovered.
     /// </para>
     /// </summary>
-    internal static int WidthOf(ISpace space)
+    internal static int WidthOf(ICellValues space)
       => space is ILazyExtent lazy ? lazy.LazyWidth : space.Area.Width;
 
     /// <summary>
@@ -123,7 +132,7 @@ namespace Unrect.Projections
     /// settled by the time anything needs to say what it was.
     /// </para>
     /// </summary>
-    internal static bool HasRow(ISpace space, int row)
+    internal static bool HasRow(ICellValues space, int row)
       => space is ILazyExtent lazy ? lazy.LazyHasRow(row) : row >= 0 && row < space.Area.Height;
 
     /// <summary>
@@ -131,7 +140,7 @@ namespace Unrect.Projections
     /// height unsettled — the lazy form of <c>SpaceExtensions.GetSubspace(offset)</c>, which is what
     /// a measured space falls through to.
     /// </summary>
-    internal static ISpace Tail(ISpace space, Offset offset)
+    internal static ICellValues Tail(ICellValues space, Offset offset)
     {
       if (space is not ILazyExtent lazy)
         return space.GetSubspace(offset);
@@ -149,7 +158,7 @@ namespace Unrect.Projections
     /// The leading <paramref name="width"/> columns of <paramref name="space"/>, keeping an unsettled
     /// height unsettled — the lazy form of <c>GetSubspace(default, new Area(width, Area.Height))</c>.
     /// </summary>
-    internal static ISpace Narrow(ISpace space, int width)
+    internal static ICellValues Narrow(ICellValues space, int width)
     {
       if (space is not ILazyExtent lazy)
         return space.GetSubspace(new Offset(0, 0), new Area(width, space.Area.Height));
@@ -164,7 +173,7 @@ namespace Unrect.Projections
 
     bool ILazyExtent.LazyHasRow(int row) => row >= 0 && Includes(row);
 
-    ISpace ILazyExtent.LazySlice(Offset offset, int width) => TailSpace.Over(this, Inner, 0, offset, width);
+    ICellValues ILazyExtent.LazySlice(Offset offset, int width) => TailSpace.Over(this, Inner, 0, offset, width);
 
     /// <summary>
     /// The extent's size with the scan read to exhaustion — what the engine consumes for a declared

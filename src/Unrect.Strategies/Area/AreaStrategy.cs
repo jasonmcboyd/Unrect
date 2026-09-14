@@ -11,6 +11,6 @@ namespace Unrect.Strategies
 
     private ISizeStrategy Strategy { get; }
 
-    public Area GetArea(ISpace availableSpace) => new Area(Strategy.GetSize(availableSpace));
+    public Area GetArea(ICellValues availableSpace) => new Area(Strategy.GetSize(availableSpace));
   }
 }

@@ -27,7 +27,7 @@ namespace Unrect.Analyzers
 
     /// <summary>
     /// The space <paramref name="invocation"/> closes its result over, or null when it closes over
-    /// nothing, over <c>ISpace</c>, or over a type parameter — a generic helper is parameterized by
+    /// nothing, over <c>ICellValues</c>, or over a type parameter — a generic helper is parameterized by
     /// its space, not scoped to one.
     /// </summary>
     public static ITypeSymbol? ClosedOver(
@@ -146,7 +146,7 @@ namespace Unrect.Analyzers
     }
 
     /// <summary>
-    /// The space, once the three non-answers are struck out: <c>ISpace</c> raises nothing, a type
+    /// The space, once the three non-answers are struck out: <c>ICellValues</c> raises nothing, a type
     /// parameter is a helper's own space rather than a scope, and an error type is a compilation
     /// already broken elsewhere.
     /// </summary>

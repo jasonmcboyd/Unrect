@@ -30,11 +30,11 @@ namespace Unrect.Strategies
     /// failure renders — "no row with the label 'EIN'" — so a projection that anchors on something
     /// other than a caption can still fail in the vocabulary's own voice.
     /// </summary>
-    public static IRowLandmark RowWhere(Func<ISpace, int, bool> predicate, string description)
+    public static IRowLandmark RowWhere(Func<ICellValues, int, bool> predicate, string description)
       => new PredicateRowLandmark(NotNull(predicate, nameof(predicate)), NotNull(description, nameof(description)));
 
     /// <summary>The first row satisfying <paramref name="predicate"/>, described generically as "no matching row" when it fails.</summary>
-    public static IRowLandmark RowWhere(Func<ISpace, int, bool> predicate)
+    public static IRowLandmark RowWhere(Func<ICellValues, int, bool> predicate)
       => new PredicateRowLandmark(NotNull(predicate, nameof(predicate)), "no matching row");
 
     /// <summary>The first row with any cell satisfying <paramref name="anyCell"/>.</summary>

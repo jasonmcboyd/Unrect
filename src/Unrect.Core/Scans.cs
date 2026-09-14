@@ -18,7 +18,7 @@ namespace Unrect.Core
     /// The number of leading rows of <paramref name="space"/> that <paramref name="scan"/> includes,
     /// read to exhaustion.
     /// </summary>
-    public static int Fold(IRowScan scan, ISpace space)
+    public static int Fold(IRowScan scan, ICellValues space)
     {
       int count = 0;
 
@@ -32,14 +32,14 @@ namespace Unrect.Core
     /// The size <paramref name="scan"/> denotes over <paramref name="space"/>: its settled width, and
     /// its rows folded to exhaustion.
     /// </summary>
-    public static Size FoldSize(IAreaScan scan, ISpace space)
+    public static Size FoldSize(IAreaScan scan, ICellValues space)
       => new Size(scan.Width, Fold(scan, space));
 
     /// <summary>
     /// The area <paramref name="scan"/> denotes over <paramref name="space"/> — <see cref="FoldSize"/>
     /// at the area layer, which is the same rectangle under the other name.
     /// </summary>
-    public static Area FoldArea(IAreaScan scan, ISpace space)
+    public static Area FoldArea(IAreaScan scan, ICellValues space)
       => new Area(FoldSize(scan, space));
   }
 }

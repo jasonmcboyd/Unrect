@@ -86,7 +86,7 @@ namespace Unrect.Tests.Projections
     // --- The sheet set (spec §5.4) -----------------------------------------------------------------
 
     /// <summary>(1) A flat, well-formed table — the case where laziness is preserved.</summary>
-    private static ISpace Flat() => Mixed(new object?[,]
+    private static ICellValues Flat() => Mixed(new object?[,]
     {
       { "Investor", "Amount" },
       { "Acme", 10m },
@@ -94,21 +94,21 @@ namespace Unrect.Tests.Projections
     });
 
     /// <summary>(2) A table missing the "Investor" column the record reads — an absent-column failure.</summary>
-    private static ISpace AbsentColumn() => Mixed(new object?[,]
+    private static ICellValues AbsentColumn() => Mixed(new object?[,]
     {
       { "Client", "Amount" },
       { "Acme", 10m },
     });
 
     /// <summary>(3) A table carrying "Amount" twice — an ambiguous-column failure.</summary>
-    private static ISpace AmbiguousColumn() => Mixed(new object?[,]
+    private static ICellValues AmbiguousColumn() => Mixed(new object?[,]
     {
       { "Investor", "Amount", "Amount" },
       { "Acme", 10m, 11m },
     });
 
     /// <summary>(4) The table shifted one column right — column origin &gt; 0, the translation case.</summary>
-    private static ISpace OffsetColumn() => Mixed(new object?[,]
+    private static ICellValues OffsetColumn() => Mixed(new object?[,]
     {
       { null, "Investor", "Amount" },
       { null, "Acme", 10m },
@@ -116,7 +116,7 @@ namespace Unrect.Tests.Projections
     });
 
     /// <summary>(5) Two blank-separated blocks, each with its own header — per-occurrence scope.</summary>
-    private static ISpace Repeated() => Mixed(new object?[,]
+    private static ICellValues Repeated() => Mixed(new object?[,]
     {
       { "Investor", "Amount" },
       { "Acme", 10m },
@@ -127,7 +127,7 @@ namespace Unrect.Tests.Projections
     });
 
     /// <summary>(6) A table with trailing content past a blank row — forces the discovered block (GAP A).</summary>
-    private static ISpace Trailing() => Mixed(new object?[,]
+    private static ICellValues Trailing() => Mixed(new object?[,]
     {
       { "Investor", "Amount" },
       { "Acme", 10m },
@@ -137,7 +137,7 @@ namespace Unrect.Tests.Projections
     });
 
     /// <summary>(7) A body cell of the wrong kind — text where the record reads a decimal.</summary>
-    private static ISpace KindMismatch() => Mixed(new object?[,]
+    private static ICellValues KindMismatch() => Mixed(new object?[,]
     {
       { "Investor", "Amount" },
       { "Acme", "oops" },
@@ -740,7 +740,7 @@ namespace Unrect.Tests.Projections
 
     // The built-in Table's own map, captured through the bind rung: eachRow is handed the table's
     // LabelMap, and a record that reads only by index lets the Map complete so the capture survives.
-    private static LabelMap ATablesOwnMap(ISpace sheet)
+    private static LabelMap ATablesOwnMap(ICellValues sheet)
     {
       LabelMap captured = null!;
 
@@ -753,7 +753,7 @@ namespace Unrect.Tests.Projections
       return captured;
     }
 
-    private static void SameCitation(ISpace sheet, string caption)
+    private static void SameCitation(ICellValues sheet, string caption)
     {
       LabelMap fromPrimitive = ColumnLabels(1).Map(sheet);
       LabelMap fromTable = ATablesOwnMap(sheet);
@@ -804,7 +804,7 @@ namespace Unrect.Tests.Projections
       HeaderBandCitation(ambiguous, caption: "Amount", expected: new Size(3, 1), fullHeight: 5);
     }
 
-    private static void HeaderBandCitation(ISpace sheet, string caption, Size expected, int fullHeight)
+    private static void HeaderBandCitation(ICellValues sheet, string caption, Size expected, int fullHeight)
     {
       LabelMap fromPrimitive = ColumnLabels(1).Map(sheet);
       LabelMap fromTable = ATablesOwnMap(sheet);
@@ -983,7 +983,7 @@ namespace Unrect.Tests.Projections
     private const string EmptyExtentProblem = "a header row was declared but the table's extent is empty";
 
     /// <summary>An all-blank sheet: a real extent to place onto, with no content row to head it.</summary>
-    private static ISpace AllBlank() => Mixed(new object?[,] { { null, null }, { null, null } });
+    private static ICellValues AllBlank() => Mixed(new object?[,] { { null, null }, { null, null } });
 
     [Fact]
     public void TheComposedRungCitesAnEmptyExtentInTheLeafRungsOwnSentence()
@@ -1033,7 +1033,7 @@ namespace Unrect.Tests.Projections
 
     // --- Machinery ----------------------------------------------------------------------------------
 
-    private static void SameReading<T>(IProjection<T> bespoke, IProjection<T> primitives, ISpace sheet)
+    private static void SameReading<T>(IProjection<T> bespoke, IProjection<T> primitives, ICellValues sheet)
     {
       var expected = Observations.Observe(bespoke, sheet);
       var actual = Observations.Observe(primitives, sheet);

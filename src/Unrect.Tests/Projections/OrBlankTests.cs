@@ -24,13 +24,13 @@ namespace Unrect.Tests.Projections
   /// </summary>
   public class OrBlankTests
   {
-    private static ISpace One(object? value) => Mixed(new object?[,] { { value } });
+    private static ICellValues One(object? value) => Mixed(new object?[,] { { value } });
 
     /// <summary>
     /// One row eight columns wide with something in column 0 and <paramref name="atSix"/> in column
     /// 6 — the sparse shape the modifier was designed for, small enough to say one thing.
     /// </summary>
-    private static ISpace Sparse(object? atSix)
+    private static ICellValues Sparse(object? atSix)
     {
       var cells = new object?[1, 8];
 

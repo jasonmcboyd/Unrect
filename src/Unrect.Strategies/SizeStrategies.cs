@@ -38,7 +38,7 @@ namespace Unrect.Strategies
       => ColumnsWhileAny(v => v.HasValue);
 
     /// <summary>Whatever <paramref name="selector"/> computes from the available space — the escape hatch when no other strategy fits.</summary>
-    public static ISizeStrategy SelectSize(Func<ISpace, Size> selector)
+    public static ISizeStrategy SelectSize(Func<ICellValues, Size> selector)
       => new SelectSizeStrategy(selector);
   }
 }

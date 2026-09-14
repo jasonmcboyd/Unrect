@@ -4,6 +4,6 @@ namespace Unrect.Core
   public interface IOffsetStrategy
   {
     /// <summary>Where to start, relative to the top-left of <paramref name="availableSpace"/>. Throws <see cref="OutOfBoundsException"/> when nothing satisfies it.</summary>
-    Offset GetOffset(ISpace availableSpace);
+    Offset GetOffset(ICellValues availableSpace);
   }
 }

@@ -31,7 +31,7 @@ namespace Unrect.Projections
 
     public override string Description => $"Caption(\"{Text}\")";
 
-    public override ProjectionResult<string> Project(ISpace extent, ProjectionContext context)
+    public override ProjectionResult<string> Project(ICellValues extent, ProjectionContext context)
     {
       var size = extent.Area.Size;
 

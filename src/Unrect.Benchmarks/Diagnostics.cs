@@ -43,7 +43,7 @@ namespace Unrect.Benchmarks
     private static readonly IProjection<int> AbsorbedFailure =
       Heading("No Such Caption Exists Here").Of(Section).Optional();
 
-    private ISpace _document = default!;
+    private ICellValues _document = default!;
 
     [GlobalSetup]
     public void Setup() => _document = CanonicalSpaces.SmallDocument;

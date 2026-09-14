@@ -67,18 +67,55 @@ namespace Unrect.Tests.Strategies
     private static Func<CellValue, bool> Says(string text) => cell => cell.TryGetString()?.Trim() == text;
 
     /// <summary>A junk row, then <paramref name="value"/> at A2 with a neighbour at B2.</summary>
-    private static ISpace RowsHolding(object? value) => Mixed(new object?[,]
+    private static ICellValues RowsHolding(object? value) => Mixed(new object?[,]
     {
       { "junk", null },
       { value, "x" },
     });
 
     /// <summary>A junk column, then <paramref name="value"/> at B1 with a neighbour at B2.</summary>
-    private static ISpace ColumnsHolding(object? value) => Mixed(new object?[,]
+    private static ICellValues ColumnsHolding(object? value) => Mixed(new object?[,]
     {
       { "junk", value },
       { null, "x" },
     });
+
+    // --- What the cells in these pins actually say ---------------------------------------------------
+    //
+    // Every refusal below is worth something only if its needle is the text the cell really has. A
+    // needle no rendering could produce would make "not found" true for an uninteresting reason,
+    // and the widening these pins exist to catch would sail through them. So the needles are
+    // checked against the canonical surface first: each non-text cell SAYS exactly the needle, and
+    // is still not a text cell.
+
+    [Theory]
+    [InlineData(ANumber, "42")]
+    [InlineData(ATemporal, "2026-03-04")]
+    [InlineData(ABoolean, "TRUE")]
+    [InlineData(AnError, "#DIV/0!")]
+    public void TheNeedleIsExactlyWhatTheNonTextCellSays(string kind, string text)
+    {
+      var cells = RowsHolding(CellOf(kind));
+
+      Assert.Equal(text, cells.AsText(0, 1));
+      Assert.False(cells.IsText(0, 1));
+      Assert.False(cells.IsBlank(0, 1));
+    }
+
+    [Theory]
+    [InlineData("42")]
+    [InlineData("2026-03-04")]
+    [InlineData("TRUE")]
+    [InlineData("#DIV/0!")]
+    public void ATextCellSpellingTheSameThingSaysItAsItsOwnValue(string text)
+    {
+      // The positive twin: the same words, and this time they are the cell's own. IsText is the
+      // whole of the difference the matchers read.
+      var cells = RowsHolding(text);
+
+      Assert.Equal(text, cells.AsText(0, 1));
+      Assert.True(cells.IsText(0, 1));
+    }
 
     // --- RowContaining ------------------------------------------------------------------------------
 

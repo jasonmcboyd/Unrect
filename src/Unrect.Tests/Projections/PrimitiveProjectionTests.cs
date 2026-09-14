@@ -298,6 +298,6 @@ namespace Unrect.Tests.Projections
     /// Runs a projection purely to get hold of the view it was handed, so the view can be exercised
     /// outside a projection — where its own exceptions are not wrapped by the engine.
     /// </summary>
-    private static TView Capture<TView>(IProjection<TView> projection, ISpace space) => projection.Map(space);
+    private static TView Capture<TView>(IProjection<TView> projection, ICellValues space) => projection.Map(space);
   }
 }

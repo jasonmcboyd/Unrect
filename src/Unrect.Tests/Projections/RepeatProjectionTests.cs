@@ -328,7 +328,7 @@ namespace Unrect.Tests.Projections
     // pinned: the trap, and the one-modifier recipe that fixes it.
 
     /// <summary>Two captioned sections, a blank line between them, and a totals row that is neither.</summary>
-    private static ISpace CaptionedSections() => Mixed(new object?[,]
+    private static ICellValues CaptionedSections() => Mixed(new object?[,]
     {
       { "Detail" },
       { "a" },
@@ -461,7 +461,7 @@ namespace Unrect.Tests.Projections
     // --- A repeat inside a discovered bound reads forward only ------------------------------------------------------
 
     /// <summary>Two two-row blocks, adjacent: a repeat walks them with nothing between.</summary>
-    private static ISpace TwoBlocks() => Mixed(new object?[,]
+    private static ICellValues TwoBlocks() => Mixed(new object?[,]
     {
       { "A-1", null },
       { null, 10 },
@@ -493,7 +493,7 @@ namespace Unrect.Tests.Projections
     /// Three record rows, a blank row, and trailing content — the sheet a record walk has to stop
     /// part way down.
     /// </summary>
-    private static ISpace RecordsThenTrailingContent() => Mixed(new object?[,]
+    private static ICellValues RecordsThenTrailingContent() => Mixed(new object?[,]
     {
       { "a", 1 },
       { "b", 2 },

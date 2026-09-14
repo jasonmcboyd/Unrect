@@ -59,18 +59,18 @@ namespace Unrect.Benchmarks
 
     // ----- Dense numeric: every cell a number. The engine's cheapest possible content. -----
 
-    private static ISpace? _megaDenseNumeric;
-    public static ISpace MegaDenseNumeric => _megaDenseNumeric ??= new GridSpace(DenseNumericCells(MegaRows));
+    private static ICellValues? _megaDenseNumeric;
+    public static ICellValues MegaDenseNumeric => _megaDenseNumeric ??= new GridSpace(DenseNumericCells(MegaRows));
 
     // ----- Dense mixed: kinds cycle by column, so a sweep sees every branch of the value model. -----
 
-    private static ISpace? _megaDenseMixed;
-    public static ISpace MegaDenseMixed => _megaDenseMixed ??= new GridSpace(DenseMixedCells(MegaRows));
+    private static ICellValues? _megaDenseMixed;
+    public static ICellValues MegaDenseMixed => _megaDenseMixed ??= new GridSpace(DenseMixedCells(MegaRows));
 
     // ----- Sparse: the K-1 shape. Same extent as dense, a quarter of the values. -----
 
-    private static ISpace? _megaSparse;
-    public static ISpace MegaSparse => _megaSparse ??= new GridSpace(SparseCells(MegaRows));
+    private static ICellValues? _megaSparse;
+    public static ICellValues MegaSparse => _megaSparse ??= new GridSpace(SparseCells(MegaRows));
 
     // ----- Raw arrays, for the adaptation benchmarks that measure GridSpace.Create itself. -----
 
@@ -93,19 +93,19 @@ namespace Unrect.Benchmarks
 
     // ----- Tabular: a header row over typed columns that bind to SummaryRow by caption. -----
 
-    private static ISpace? _largeTabular;
-    public static ISpace LargeTabular => _largeTabular ??= new GridSpace(TabularCells(LargeRows));
+    private static ICellValues? _largeTabular;
+    public static ICellValues LargeTabular => _largeTabular ??= new GridSpace(TabularCells(LargeRows));
 
-    private static ISpace? _megaTabular;
-    public static ISpace MegaTabular => _megaTabular ??= new GridSpace(TabularCells(MegaRows));
+    private static ICellValues? _megaTabular;
+    public static ICellValues MegaTabular => _megaTabular ??= new GridSpace(TabularCells(MegaRows));
 
     // ----- Documents: the investor-IRR shape, the end-to-end subject. -----
 
-    private static ISpace? _smallDocument;
-    public static ISpace SmallDocument => _smallDocument ??= new GridSpace(DocumentCells(SmallDocumentInvestors));
+    private static ICellValues? _smallDocument;
+    public static ICellValues SmallDocument => _smallDocument ??= new GridSpace(DocumentCells(SmallDocumentInvestors));
 
-    private static ISpace? _largeDocument;
-    public static ISpace LargeDocument => _largeDocument ??= new GridSpace(DocumentCells(LargeDocumentInvestors));
+    private static ICellValues? _largeDocument;
+    public static ICellValues LargeDocument => _largeDocument ??= new GridSpace(DocumentCells(LargeDocumentInvestors));
 
     /// <summary>
     /// The smaller of the two end-to-end sizes, at roughly 2 ms a parse.
@@ -135,15 +135,15 @@ namespace Unrect.Benchmarks
     /// <summary>The text a <c>RowContaining</c> seek looks for in the landmark fixtures.</summary>
     public const string Landmark = "LANDMARK";
 
-    private static ISpace? _landmarkNear;
-    public static ISpace LandmarkNear => _landmarkNear ??= new GridSpace(LandmarkCells(MegaRows, MegaRows / 10));
+    private static ICellValues? _landmarkNear;
+    public static ICellValues LandmarkNear => _landmarkNear ??= new GridSpace(LandmarkCells(MegaRows, MegaRows / 10));
 
-    private static ISpace? _landmarkFar;
-    public static ISpace LandmarkFar => _landmarkFar ??= new GridSpace(LandmarkCells(MegaRows, MegaRows * 9 / 10));
+    private static ICellValues? _landmarkFar;
+    public static ICellValues LandmarkFar => _landmarkFar ??= new GridSpace(LandmarkCells(MegaRows, MegaRows * 9 / 10));
 
     /// <summary>No landmark anywhere: the seek that scans the whole grid and finds nothing.</summary>
-    private static ISpace? _landmarkAbsent;
-    public static ISpace LandmarkAbsent => _landmarkAbsent ??= new GridSpace(LandmarkCells(MegaRows, -1));
+    private static ICellValues? _landmarkAbsent;
+    public static ICellValues LandmarkAbsent => _landmarkAbsent ??= new GridSpace(LandmarkCells(MegaRows, -1));
 
     // ----- Blocks: many small regions separated by blank rows, the Repeat subject. -----
 
@@ -152,12 +152,12 @@ namespace Unrect.Benchmarks
 
     public const int BlockRows = 4;
 
-    private static ISpace? _repeatBlocks;
-    public static ISpace RepeatBlocks => _repeatBlocks ??= new GridSpace(BlockCells(BlockCount, BlockRows));
+    private static ICellValues? _repeatBlocks;
+    public static ICellValues RepeatBlocks => _repeatBlocks ??= new GridSpace(BlockCells(BlockCount, BlockRows));
 
     /// <summary>A leading run of blank rows, sized so skipping it is the whole measurement.</summary>
-    private static ISpace? _blankLed;
-    public static ISpace BlankLed => _blankLed ??= new GridSpace(BlankLedCells(MegaRows, MegaRows / 2));
+    private static ICellValues? _blankLed;
+    public static ICellValues BlankLed => _blankLed ??= new GridSpace(BlankLedCells(MegaRows, MegaRows / 2));
 
     // ----- Builders -----
 

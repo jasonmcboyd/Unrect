@@ -23,7 +23,7 @@ namespace Unrect.Analyzers.Tests
         {
           IProjection<ISpreadsheetSpace, string?> Header()
           {
-            var plain = Projection.Over<ISpace>();
+            var plain = Projection.Over<ICellValues>();
             var spreadsheet = Projection.Over<ISpreadsheetSpace>();
 
             return plain.VerticalFlow(v => v.Next({|CS1503:SpreadsheetProjections.Formula()|}));
@@ -35,7 +35,7 @@ namespace Unrect.Analyzers.Tests
         {
           IProjection<ISpreadsheetSpace, string?> Header()
           {
-            var plain = Projection.Over<ISpace>();
+            var plain = Projection.Over<ICellValues>();
             var spreadsheet = Projection.Over<ISpreadsheetSpace>();
 
             return spreadsheet.VerticalFlow(v => v.Next(SpreadsheetProjections.Formula()));
@@ -55,7 +55,7 @@ namespace Unrect.Analyzers.Tests
         {
           IProjection<ISpreadsheetSpace, IReadOnlyList<string?>> Rows()
           {
-            var plain = Projection.Over<ISpace>();
+            var plain = Projection.Over<ICellValues>();
             var spreadsheet = Projection.Over<ISpreadsheetSpace>();
             IProjection<IFormulaSpace, string?> row = SpreadsheetProjections.Formula();
 
@@ -68,7 +68,7 @@ namespace Unrect.Analyzers.Tests
         {
           IProjection<ISpreadsheetSpace, IReadOnlyList<string?>> Rows()
           {
-            var plain = Projection.Over<ISpace>();
+            var plain = Projection.Over<ICellValues>();
             var spreadsheet = Projection.Over<ISpreadsheetSpace>();
             IProjection<IFormulaSpace, string?> row = SpreadsheetProjections.Formula();
 
@@ -86,7 +86,7 @@ namespace Unrect.Analyzers.Tests
         {
           IProjection<ISpreadsheetSpace, string?> Header(ProjectionScope<ISpreadsheetSpace> sheet)
           {
-            var plain = Projection.Over<ISpace>();
+            var plain = Projection.Over<ICellValues>();
 
             return plain.VerticalFlow(v => v.Next({|CS1503:SpreadsheetProjections.Formula()|}));
           }
@@ -97,7 +97,7 @@ namespace Unrect.Analyzers.Tests
         {
           IProjection<ISpreadsheetSpace, string?> Header(ProjectionScope<ISpreadsheetSpace> sheet)
           {
-            var plain = Projection.Over<ISpace>();
+            var plain = Projection.Over<ICellValues>();
 
             return sheet.VerticalFlow(v => v.Next(SpreadsheetProjections.Formula()));
           }
@@ -115,9 +115,9 @@ namespace Unrect.Analyzers.Tests
         """
         class Report
         {
-          IProjection<ISpace, string?> Header()
+          IProjection<ICellValues, string?> Header()
           {
-            var plain = Projection.Over<ISpace>();
+            var plain = Projection.Over<ICellValues>();
 
             return plain.VerticalFlow(v => v.Next({|CS1503:SpreadsheetProjections.Formula()|}));
           }

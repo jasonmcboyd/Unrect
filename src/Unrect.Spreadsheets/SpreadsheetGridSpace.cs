@@ -16,16 +16,16 @@ namespace Unrect.Spreadsheets
   /// </summary>
   internal sealed class SpreadsheetGridSpace : ISpreadsheetSpace
   {
-    private readonly ISpace _values;
+    private readonly ICellValues _values;
     private readonly string?[,] _formulas;
     private readonly Offset _origin;
 
-    internal SpreadsheetGridSpace(ISpace values, string?[,] formulas)
+    internal SpreadsheetGridSpace(ICellValues values, string?[,] formulas)
       : this(values, formulas, default)
     {
     }
 
-    private SpreadsheetGridSpace(ISpace values, string?[,] formulas, Offset origin)
+    private SpreadsheetGridSpace(ICellValues values, string?[,] formulas, Offset origin)
     {
       _values = values;
       _formulas = formulas;
@@ -36,7 +36,13 @@ namespace Unrect.Spreadsheets
 
     public CellValue this[int column, int row] => _values[column, row];
 
-    public ISpace GetSubspace(Offset offset, Area area)
+    public bool IsBlank(int column, int row) => _values.IsBlank(column, row);
+
+    public bool IsText(int column, int row) => _values.IsText(column, row);
+
+    public string? AsText(int column, int row) => _values.AsText(column, row);
+
+    public ICellValues GetSubspace(Offset offset, Area area)
       => new SpreadsheetGridSpace(_values.GetSubspace(offset, area), _formulas, _origin + offset);
 
     public string? FormulaAt(int column, int row)

@@ -48,7 +48,7 @@ namespace Unrect.Tests.Projections
     /// the whole sheet; the gaps between columns 1, 6 and 9 are what makes an overlay the right
     /// layout; and r5 is the record the declaration must be allowed to describe as incomplete.
     /// </summary>
-    private static ISpace BuyingPower(object? fepOfSecondRecord = null)
+    private static ICellValues BuyingPower(object? fepOfSecondRecord = null)
     {
       var cells = new object?[8, 11];
 
@@ -76,7 +76,7 @@ namespace Unrect.Tests.Projections
     }
 
     /// <summary>The dense, headered shape: adjacent columns, so a flow reads it with no coordinates.</summary>
-    private static ISpace Allocations() => Mixed(new object?[,]
+    private static ICellValues Allocations() => Mixed(new object?[,]
     {
       { "Account", "Symbol", "Weight" },
       { "A-1", "XYZ", 1.5m },

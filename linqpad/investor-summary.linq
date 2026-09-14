@@ -7,11 +7,11 @@
   <Namespace>Unrect.Core</Namespace>
   <Namespace>Unrect.Spreadsheets</Namespace>
   <Namespace>Unrect.Projections</Namespace>
-  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Core.ISpace&gt;</Namespace>
+  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Core.ICellValues&gt;</Namespace>
 </Query>
 
 // The space is named once, in the query's namespace imports:
-// `using static Unrect.Projections.ProjectionBuilders<Unrect.Core.ISpace>`.
+// `using static Unrect.Projections.ProjectionBuilders<Unrect.Core.ICellValues>`.
 var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\examples\investor-summary.xlsx");
 
 // Per-investor detail block: a name cell over a transaction table.

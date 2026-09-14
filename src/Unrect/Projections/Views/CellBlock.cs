@@ -25,14 +25,14 @@ namespace Unrect.Projections
     private IReadOnlyList<CellStrip>? _rows;
     private IReadOnlyList<CellStrip>? _columns;
 
-    internal CellBlock(ISpace space, ProjectionContext context)
+    internal CellBlock(ICellValues space, ProjectionContext context)
     {
       Space = space;
       Context = context;
     }
 
     /// <summary>The block's own extent.</summary>
-    public ISpace Space { get; }
+    public ICellValues Space { get; }
 
     /// <summary>
     /// The context the block was projected in — where it sits, and the context its rows and columns

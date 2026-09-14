@@ -51,7 +51,7 @@ namespace TypedSpacesGauntlet
       }
     }
 
-    public ISpace GetSubspace(Offset offset, Area area)
+    public ICellValues GetSubspace(Offset offset, Area area)
     {
       if (offset.Width + area.Width > Area.Width || offset.Height + area.Height > Area.Height)
         throw new OutOfBoundsException();

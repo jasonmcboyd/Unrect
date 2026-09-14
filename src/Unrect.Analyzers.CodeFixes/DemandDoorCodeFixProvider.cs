@@ -17,7 +17,7 @@ namespace Unrect.Analyzers
   /// do about it.
   /// <para>
   /// The message reads <c>cannot convert from 'IProjection&lt;IFormulaSpace, string?&gt;' to
-  /// 'IProjection&lt;ISpace, string?&gt;'</c>, which names both types and still leaves the reader to
+  /// 'IProjection&lt;ICellValues, string?&gt;'</c>, which names both types and still leaves the reader to
   /// work out that the fix belongs two lines up, on the factory whose lambda this child sits in. A
   /// factory is where a demand enters a declaration; if a scope over a space that answers the demand
   /// is already in hand, this offers to build the factory through it.

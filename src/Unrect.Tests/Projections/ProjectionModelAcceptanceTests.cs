@@ -94,7 +94,7 @@ namespace Unrect.Tests.Projections
       return values;
     }
 
-    private static ISpace PlainAllocations() => new GridSpace(AllocationValues());
+    private static ICellValues PlainAllocations() => new GridSpace(AllocationValues());
 
     private static ISpreadsheetSpace CapableAllocations()
     {
@@ -225,7 +225,7 @@ namespace Unrect.Tests.Projections
 
     /// <summary>A helper generic in whatever its caller demands — the one shape that needs the parameter.</summary>
     private static IProjection<TSpace, IReadOnlyList<T>> Sections<TSpace, T>(IProjection<TSpace, T> item)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => VerticalRepeat(item, separatedBy: BlankRows());
 
     [Fact]
@@ -235,11 +235,11 @@ namespace Unrect.Tests.Projections
       // move; the demanding one grew a type argument that reads as a requirement; and a generic
       // helper composes either, keeping whatever it was handed.
       //
-      // The generic helper's plain instantiation is IProjection<ISpace, T> and NOT IProjection<T>:
+      // The generic helper's plain instantiation is IProjection<ICellValues, T> and NOT IProjection<T>:
       // the latter DERIVES from the former, so the conversion runs one way and a generic helper
       // hands back the base form. It is the annotation tax's whole remaining balance, it costs one
       // word at one kind of site, and it is recorded here rather than filed away.
-      IProjection<ISpace, IReadOnlyList<Allocation>> plainSections = Sections(AllocationRow());
+      IProjection<ICellValues, IReadOnlyList<Allocation>> plainSections = Sections(AllocationRow());
       IProjection<IFormulaSpace, IReadOnlyList<SourcedAllocation>> demandingSections = Sections(SourcedRow());
 
       // Both read the same capable sheet — the plain one because variance lets it, the demanding one
@@ -279,7 +279,7 @@ namespace Unrect.Tests.Projections
     /// r7   TOTAL             2231.25
     /// </code>
     /// </summary>
-    private static ISpace BuyingPower()
+    private static ICellValues BuyingPower()
     {
       var cells = new object?[8, 11];
 
@@ -415,7 +415,7 @@ namespace Unrect.Tests.Projections
     // spelling never had, plus the two facts that must agree between the spellings (the block
     // counts, and full consumption of the sheet).
 
-    private static ISpace Irr() => SpreadsheetSpace.Create(TestData("investor-irr.xlsx"), "IRR");
+    private static ICellValues Irr() => SpreadsheetSpace.Create(TestData("investor-irr.xlsx"), "IRR");
 
     private static IProjection<IrrReport> IrrReportDeclaration()
     {

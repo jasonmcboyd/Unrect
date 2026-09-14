@@ -30,7 +30,7 @@ namespace Unrect.Tests.Projections
   /// </summary>
   public class LazyErrorTimingTests
   {
-    private static ISpace Sheet() => Grid(new[,]
+    private static ICellValues Sheet() => Grid(new[,]
     {
       { 1, 2, 3 },
       { 4, 5, 6 },
@@ -230,7 +230,7 @@ namespace Unrect.Tests.Projections
     // --- Rule 2: a repeat's item is placed up front, always ----------------------------------------
 
     /// <summary>Two blocks of values with one blank row between them, so a repeat finds exactly two.</summary>
-    private static ISpace TwoBlocks() => Grid(new[,]
+    private static ICellValues TwoBlocks() => Grid(new[,]
     {
       { 1, 2 },
       { 3, 4 },

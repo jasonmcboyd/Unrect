@@ -41,7 +41,7 @@ namespace PlacementGauntlet
     private static void TheSketch()
     {
       var sheet = Sheets.BuyingPower();
-      var scope = Place.Over<ISpace>();
+      var scope = Place.Over<ICellValues>();
 
       var oldSketch = VerticalRepeat(Table<Position>());
       var newSketch = scope.Offset().SizedToChildren().VerticalRepeat(Table<Position>());

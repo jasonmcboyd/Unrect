@@ -6,11 +6,11 @@
   <Namespace>Unrect.Core</Namespace>
   <Namespace>Unrect.Spreadsheets</Namespace>
   <Namespace>Unrect.Projections</Namespace>
-  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Core.ISpace&gt;</Namespace>
+  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Core.ICellValues&gt;</Namespace>
 </Query>
 
 // The space is named once, in the query's namespace imports:
-// `using static Unrect.Projections.ProjectionBuilders<Unrect.Core.ISpace>`.
+// `using static Unrect.Projections.ProjectionBuilders<Unrect.Core.ICellValues>`.
 var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\examples\edge-cases.xlsx");
 
 // The corner-case fixture (distilled from the real K-1 workbook):
@@ -58,7 +58,7 @@ new
 // 5. Typed leaves speak the document's vocabulary: kinds for a kind mismatch, conversions for a
 // number that will not fit. Note that the error cell is reported as the Error it is, never as
 // "blank" — and that the sentence changes entirely when the number is genuinely there.
-string Message<T>(IProjection<ISpace, T> projection)
+string Message<T>(IProjection<ICellValues, T> projection)
 {
 	try { projection.Map(defaultSpace); return "no failure"; }
 	catch (ProjectionException failure) { return failure.Message.Split('\n')[0].TrimEnd('\r'); }

@@ -7,6 +7,6 @@ namespace Unrect.Core
     string Description { get; }
 
     /// <summary>The index of the first column that is the landmark, or null when there is none.</summary>
-    int? FindColumn(ISpace space);
+    int? FindColumn(ICellValues space);
   }
 }

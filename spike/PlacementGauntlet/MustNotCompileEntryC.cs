@@ -17,7 +17,7 @@
 
 namespace PlacementGauntlet.EntryC.TwoClosedImports
 {
-  using static PlacementGauntlet.Staged.ProjectionBuilders<Unrect.Core.ISpace>;
+  using static PlacementGauntlet.Staged.ProjectionBuilders<Unrect.Core.ICellValues>;
   using static PlacementGauntlet.Staged.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>;
 
   /// <summary>
@@ -58,7 +58,7 @@ namespace PlacementGauntlet.EntryC.TwoClosedImports
 namespace PlacementGauntlet.EntryC.WithTheOpenVocabulary
 {
   using static Unrect.Projections.Projection;
-  using static PlacementGauntlet.Staged.ProjectionBuilders<Unrect.Core.ISpace>;
+  using static PlacementGauntlet.Staged.ProjectionBuilders<Unrect.Core.ICellValues>;
 
   /// <summary>
   /// (q) ENTRY C AND <c>using static Projection</c> TOGETHER — boundary (c), the completeness
@@ -123,7 +123,7 @@ namespace PlacementGauntlet.EntryC.OverDemanded
     //         cannot be inferred from the usage. Try specifying the type arguments explicitly.
     public static object Applied() => ScenarioCAudited.Report.Map(Sheets.K1());
 
-    // CS1503: Argument 2: cannot convert from 'Unrect.Core.ISpace' to 'Unrect.Spreadsheets.ISpreadsheetSpace'
+    // CS1503: Argument 2: cannot convert from 'Unrect.Core.ICellValues' to 'Unrect.Spreadsheets.ISpreadsheetSpace'
     public static object Stated()
       => ScenarioCAudited.Report.Map<Unrect.Spreadsheets.ISpreadsheetSpace, AuditedIrrReport>(Sheets.K1());
   }
@@ -131,7 +131,7 @@ namespace PlacementGauntlet.EntryC.OverDemanded
 
 namespace PlacementGauntlet.EntryC.TwoSplitImports
 {
-  using static PlacementGauntlet.Staged.SplitRungs<Unrect.Core.ISpace>;
+  using static PlacementGauntlet.Staged.SplitRungs<Unrect.Core.ICellValues>;
   using static PlacementGauntlet.Staged.SplitRungs<Unrect.Spreadsheets.ISpreadsheetSpace>;
 
   /// <summary>
@@ -149,7 +149,7 @@ namespace PlacementGauntlet.EntryC.TwoSplitImports
   public static class U
   {
     // CS0104: 'Table' is an ambiguous reference between
-    //         'PlacementGauntlet.Staged.SplitRungs<Unrect.Core.ISpace>.Table' and
+    //         'PlacementGauntlet.Staged.SplitRungs<Unrect.Core.ICellValues>.Table' and
     //         'PlacementGauntlet.Staged.SplitRungs<Unrect.Spreadsheets.ISpreadsheetSpace>.Table'
     public static object Rung() => Table.Of<Line>();
   }
@@ -174,7 +174,7 @@ namespace PlacementGauntlet.EntryC.Declarations
   /// family.
   /// </summary>
   public static class R<TSpace>
-    where TSpace : class, ISpace
+    where TSpace : class, ICellValues
   {
     // CS0102: The type 'R<TSpace>' already contains a definition for 'Table'
     public static class Table
@@ -201,7 +201,7 @@ namespace PlacementGauntlet.EntryC.Declarations
   /// </para>
   /// </summary>
   public static class S<TSpace>
-    where TSpace : class, ISpace
+    where TSpace : class, ICellValues
   {
     // CS1106: Extension method must be defined in a non-generic static class
     public static IProjection<TSpace, T> Until<T>(this IProjection<TSpace, T> projection, IRowLandmark landmark)

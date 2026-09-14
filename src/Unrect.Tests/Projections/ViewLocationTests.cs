@@ -137,7 +137,7 @@ namespace Unrect.Tests.Projections
 
     // --- TableView and TableRow -----------------------------------------------------------------------------
 
-    private static ISpace Sheet() => Mixed(new object?[,]
+    private static ICellValues Sheet() => Mixed(new object?[,]
     {
       { null, null },
       { "Name", "Amount" },

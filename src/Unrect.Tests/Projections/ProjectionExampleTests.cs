@@ -23,7 +23,7 @@ namespace Unrect.Tests.Projections
   {
     // The workbooks are copied into the test output, so tests never depend on the repository
     // layout.
-    private static ISpace Workbook(string fileName, string sheet)
+    private static ICellValues Workbook(string fileName, string sheet)
       => SpreadsheetSpace.Create(Path.Combine(AppContext.BaseDirectory, "TestData", fileName), sheet);
 
     // --- simple-report.xlsx: a fixed header over a table ----------------------------------------------------
@@ -346,7 +346,7 @@ namespace Unrect.Tests.Projections
     // is DESCRIBED by the projection that owns it, not smuggled past inside an offset — so the section's
     // own rows exclude its caption, and the meter counts the caption rows all the same.
 
-    private static ISpace CaptionedSheet() => Mixed(new object?[,]
+    private static ICellValues CaptionedSheet() => Mixed(new object?[,]
     {
       { "K-1 Lines 1-21", null },
       { "Ordinary income", 100 },

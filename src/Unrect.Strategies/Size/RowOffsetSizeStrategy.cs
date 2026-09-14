@@ -11,7 +11,7 @@ namespace Unrect.Strategies
 
     private IRowStrategy RowSelectionStrategy { get; }
 
-    public Size GetSize(ISpace availableSpace)
+    public Size GetSize(ICellValues availableSpace)
       => new Size(0, RowSelectionStrategy.SelectRows(availableSpace));
   }
 }

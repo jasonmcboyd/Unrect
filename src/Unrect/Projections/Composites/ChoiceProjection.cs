@@ -33,7 +33,7 @@ namespace Unrect.Projections
 
     public override IReadOnlyList<IProjection> Children { get; }
 
-    public override ProjectionResult<T> Project(ISpace extent, ProjectionContext context)
+    public override ProjectionResult<T> Project(ICellValues extent, ProjectionContext context)
     {
       ProjectionException[]? failures = null;
 

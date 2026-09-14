@@ -15,7 +15,7 @@ namespace Unrect.Projections
   /// then no declaration serves both, so the file wants splitting — or it does not, and both
   /// declarations target the shared base one scope already covers. <b>Scope a file to what its
   /// declarations READ, not to what the file parses</b>: a workbook opened for formulas whose
-  /// projections never ask for one is an <c>ISpace</c> file.
+  /// projections never ask for one is an <c>ICellValues</c> file.
   /// <code>
   /// using Unrect.Projections;                                                      // the postfix half
   /// using Unrect.Spreadsheets;
@@ -62,7 +62,7 @@ namespace Unrect.Projections
   /// </summary>
   /// <typeparam name="TSpace">The space every declaration in the importing file is written over.</typeparam>
   public static class ProjectionBuilders<TSpace>
-    where TSpace : class, ISpace
+    where TSpace : class, ICellValues
   {
     private static ProjectionScope<TSpace> Scope => Projection.Over<TSpace>();
 
@@ -262,7 +262,7 @@ namespace Unrect.Projections
     // --- Labels — the scope-introducer primitives ----------------------------------------------
     //
     // Re-exported at their plain type. ColumnLabels reads a header and Record reads a row — both
-    // leaf-like, demanding nothing beyond ISpace, so they compose here by variance and keep the
+    // leaf-like, demanding nothing beyond ICellValues, so they compose here by variance and keep the
     // weakest demand when hoisted. WithColumnLabels takes a projection, but the body it wraps is read
     // where it stands, so a plain re-export serves the reimplementation the acceptance test proves;
     // raising it to TSpace for a demanding body under a scope is a step-3 concern, when the built-in
@@ -379,9 +379,9 @@ namespace Unrect.Projections
 
     // --- Matchers ------------------------------------------------------------------------------
 
-    /// <inheritdoc cref="Projection.RowWhere(Func{ISpace, int, bool})"/>
+    /// <inheritdoc cref="Projection.RowWhere(Func{ICellValues, int, bool})"/>
     /// <param name="predicate">What makes a row the one.</param>
-    public static IRowLandmark RowWhere(Func<ISpace, int, bool> predicate) => Projection.RowWhere(predicate);
+    public static IRowLandmark RowWhere(Func<ICellValues, int, bool> predicate) => Projection.RowWhere(predicate);
 
     /// <inheritdoc cref="Projection.RowWithCell(Func{CellValue, bool})"/>
     /// <param name="anyCell">What makes a cell the one.</param>
@@ -391,9 +391,9 @@ namespace Unrect.Projections
     /// <param name="text">The whole cell value to look for.</param>
     public static IRowLandmark RowContaining(string text) => Projection.RowContaining(text);
 
-    /// <inheritdoc cref="Projection.ColumnWhere(Func{ISpace, int, bool})"/>
+    /// <inheritdoc cref="Projection.ColumnWhere(Func{ICellValues, int, bool})"/>
     /// <param name="predicate">What makes a column the one.</param>
-    public static IColumnLandmark ColumnWhere(Func<ISpace, int, bool> predicate) => Projection.ColumnWhere(predicate);
+    public static IColumnLandmark ColumnWhere(Func<ICellValues, int, bool> predicate) => Projection.ColumnWhere(predicate);
 
     /// <inheritdoc cref="Projection.ColumnWithCell(Func{CellValue, bool})"/>
     /// <param name="anyCell">What makes a cell the one.</param>

@@ -50,7 +50,7 @@ namespace Unrect.Projections
     /// extent before the first occurrence.
     /// </para>
     /// </summary>
-    public override ProjectionResult<IReadOnlyList<T>> Project(ISpace extent, ProjectionContext context)
+    public override ProjectionResult<IReadOnlyList<T>> Project(ICellValues extent, ProjectionContext context)
     {
       // The across axis, read without settling a discovered extent: a vertical walk asks the width,
       // a horizontal one the height. HasBand probes only the along axis, so without this a band with
@@ -117,7 +117,7 @@ namespace Unrect.Projections
     /// whatever the attempt did is discarded by the caller — which is why <paramref name="absorbed"/>
     /// travels back out here rather than being reported in place.
     /// </summary>
-    private bool TryCollect(ISpace extent, ProjectionContext context, List<T> values, ref int along, ref int across, ref bool absorbed)
+    private bool TryCollect(ICellValues extent, ProjectionContext context, List<T> values, ref int along, ref int across, ref bool absorbed)
     {
       // The cursor is tentative until an item is collected, so a separator followed by nothing
       // (a trailing blank band) is not counted as consumed.
@@ -166,7 +166,7 @@ namespace Unrect.Projections
       return true;
     }
 
-    private bool TrySeparate(ISpace remaining, ProjectionContext context, ref int cursor, ref int reach)
+    private bool TrySeparate(ICellValues remaining, ProjectionContext context, ref int cursor, ref int reach)
     {
       if (Separator is null)
         return true;
@@ -200,7 +200,7 @@ namespace Unrect.Projections
     }
 
     /// <summary>Whether <paramref name="extent"/> has a band at <paramref name="cursor"/> along the repeat's axis.</summary>
-    private bool HasBand(ISpace extent, int cursor)
+    private bool HasBand(ICellValues extent, int cursor)
       => Orientation == Orientation.Vertical
         ? BoundedSpace.HasRow(extent, cursor)
         : cursor < BoundedSpace.WidthOf(extent);

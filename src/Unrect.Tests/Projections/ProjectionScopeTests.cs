@@ -661,9 +661,9 @@ namespace Unrect.Tests.Projections
     //       cursor's space is already answered, so the refusal lands on the ARGUMENT and both types
     //       are named:
     //
-    //         Projection.Over<ISpace>().VerticalFlow(v => v.Next(Formula()))
+    //         Projection.Over<ICellValues>().VerticalFlow(v => v.Next(Formula()))
     //         CS1503: Argument 1: cannot convert from 'IProjection<IFormulaSpace, string?>'
-    //                                              to 'IProjection<Unrect.Core.ISpace, string>'
+    //                                              to 'IProjection<Unrect.Core.ICellValues, string>'
     //
     // The positive halves of both are above: AScopeRaisesEverythingBuiltThroughItToItsOwnSpace
     // composes a narrow helper into a wide scope, which is the direction that DOES compile.

@@ -59,7 +59,16 @@ namespace Unrect.Tests
     }
 
     /// <inheritdoc/>
-    public ISpace GetSubspace(Offset offset, Area area)
+    public bool IsBlank(int column, int row) => this[column, row].IsBlank;
+
+    /// <inheritdoc/>
+    public bool IsText(int column, int row) => this[column, row].IsText;
+
+    /// <inheritdoc/>
+    public string? AsText(int column, int row) => this[column, row].AsText();
+
+    /// <inheritdoc/>
+    public ICellValues GetSubspace(Offset offset, Area area)
     {
       if (offset.Width + area.Width > Area.Width || offset.Height + area.Height > Area.Height)
         throw new OutOfBoundsException();

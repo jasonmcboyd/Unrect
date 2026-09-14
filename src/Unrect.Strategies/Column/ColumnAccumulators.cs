@@ -14,7 +14,7 @@ namespace Unrect.Strategies
     /// rows taken into account in order, stopping as soon as the answer is settled or the rows run
     /// out.
     /// </summary>
-    internal static int Fold(IColumnAccumulator accumulator, ISpace space)
+    internal static int Fold(IColumnAccumulator accumulator, ICellValues space)
     {
       for (var row = 0; !accumulator.IsSettled && row < space.Area.Height; row++)
         accumulator.Include(space, row);

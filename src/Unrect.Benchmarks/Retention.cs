@@ -232,7 +232,7 @@ namespace Unrect.Benchmarks
 
       switch (held)
       {
-        case ISpace space:
+        case ICellValues space:
           if (space.Area.Height != rows || space.Area.Width != RetentionSpaces.Columns)
             throw new InvalidOperationException(
               FormattableString.Invariant($"{name}: expected a {rows}x{RetentionSpaces.Columns} grid, got {space.Area.Height}x{space.Area.Width}."));

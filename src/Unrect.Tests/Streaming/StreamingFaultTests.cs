@@ -48,7 +48,7 @@ namespace Unrect.Tests.Streaming
     /// has already failed would fail differently the second time.
     /// </para>
     /// </summary>
-    private static ISpace Faulting(string fault, int faultRow = 4)
+    private static ICellValues Faulting(string fault, int faultRow = 4)
     {
       var source = new FakeRowSource(FakeSheet.Of(
         "Data",
@@ -68,7 +68,7 @@ namespace Unrect.Tests.Streaming
       return new WindowedSpace(new SheetStore(pool, 0, "Data", 6, 2, chunkRows: 1, windowChunks: 4));
     }
 
-    private static void AssertSurfacedAsAFault(string fault, Func<ISpace, object?> map)
+    private static void AssertSurfacedAsAFault(string fault, Func<ICellValues, object?> map)
     {
       var failure = Assert.Throws<ProjectionException>(() => { _ = map(Faulting(fault)); });
 
@@ -223,7 +223,7 @@ namespace Unrect.Tests.Streaming
 
     // --- The controls: what a boundary IS still for --------------------------------------------------
 
-    private static ISpace Sound() => ProjectionTestSpaces.Mixed(new object?[,]
+    private static ICellValues Sound() => ProjectionTestSpaces.Mixed(new object?[,]
     {
       { "Name", "Amount" },
       { "a", 1 },

@@ -34,9 +34,9 @@ namespace Unrect.Tests.Projections
 
     // 3 columns by 2 rows: 1 0 3 / 2 0 4 — a blank middle column, so column-wise and row-wise
     // discovery give different answers and a mis-wired re-export cannot hide.
-    private static ISpace Patchy() => Grid(new[,] { { 1, 0, 3 }, { 2, 0, 4 } });
+    private static ICellValues Patchy() => Grid(new[,] { { 1, 0, 3 }, { 2, 0, 4 } });
 
-    private static ISpace Block() => Grid(new[,] { { 1, 2, 3 }, { 4, 5, 6 } });
+    private static ICellValues Block() => Grid(new[,] { { 1, 2, 3 }, { 4, 5, 6 } });
 
     /// <summary>The extent a strategy resolves to on the patchy grid, as "WxH".</summary>
     private static string Measure(IAreaStrategy area)

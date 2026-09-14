@@ -34,7 +34,7 @@ namespace Unrect.Projections
 
     public override bool IsTransparent => Name is null && !IsUnitBoundary;
 
-    public override ProjectionResult<T> Project(ISpace extent, ProjectionContext context)
+    public override ProjectionResult<T> Project(ICellValues extent, ProjectionContext context)
     {
       // Bound the body to the labelled width only when the extent is wider, so a sheet with trailing
       // blank columns reads under the same columns the labels describe. On an exact-width extent the

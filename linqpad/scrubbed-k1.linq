@@ -3,7 +3,7 @@
   <Reference Relative="..\src\Unrect\bin\Debug\netstandard2.1\Unrect.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect\bin\Debug\netstandard2.1\Unrect.dll</Reference>
   <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll</Reference>
   <Reference Relative="..\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll</Reference>
-  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Core.ISpace&gt;</Namespace>
+  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Core.ICellValues&gt;</Namespace>
   <Namespace>Unrect.Core</Namespace>
   <Namespace>Unrect.Projections</Namespace>
   <Namespace>Unrect.Spreadsheets</Namespace>
@@ -12,8 +12,8 @@
 // NOTE: examples/scrubbed-k1.xlsx is a LOCAL-ONLY fixture (gitignored, never committed).
 //
 // ONE root projection, ZERO hard-coded coordinates. The space is named once, in the query's
-// namespace imports: `using static Unrect.Projections.ProjectionBuilders<Unrect.Core.ISpace>` —
-// this file reads text and numbers, so it is an ISpace file, whatever the workbook can do.
+// namespace imports: `using static Unrect.Projections.ProjectionBuilders<Unrect.Core.ICellValues>` —
+// this file reads text and numbers, so it is an ICellValues file, whatever the workbook can do.
 // The working style that survives real-world drift (extra rows, moved columns, varying fund
 // counts):
 //   - rows anchor by content matchers, written as the pipeline's entry: On(RowContaining(...));
@@ -39,7 +39,7 @@ int Find(CellValue[] row, string caption) => Array.FindIndex(row,
 // caption band has gaps. The helper does NOT name what it returns: a name baked in here would call
 // every row the same thing at every use site, and the use site is the only place that knows which
 // row this is.
-IProjection<ISpace, CellValue[]> FullRow(string anchor) =>
+IProjection<ICellValues, CellValue[]> FullRow(string anchor) =>
 	On(RowContaining(anchor))
 		.Row(AllColumns(), r => r.ToArray());
 

@@ -46,7 +46,7 @@ namespace Unrect.Analyzers
       isEnabledByDefault: true,
       description:
         "A scope raises everything built through it to its space whether the children needed it or not. "
-        + "Where no leaf, matcher or witness underneath the declaration demands anything beyond ISpace, "
+        + "Where no leaf, matcher or witness underneath the declaration demands anything beyond ICellValues, "
         + "the scoped spelling states a requirement the declaration does not have — and a helper written "
         + "that way quietly demands more than it reads.");
 

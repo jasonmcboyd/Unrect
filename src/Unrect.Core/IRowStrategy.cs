@@ -4,6 +4,6 @@ namespace Unrect.Core
   public interface IRowStrategy
   {
     /// <summary>How many leading rows of <paramref name="space"/>, from the top, this strategy selects.</summary>
-    int SelectRows(ISpace space);
+    int SelectRows(ICellValues space);
   }
 }

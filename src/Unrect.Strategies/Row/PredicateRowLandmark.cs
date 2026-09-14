@@ -10,17 +10,17 @@ namespace Unrect.Strategies
   /// </summary>
   internal sealed class PredicateRowLandmark : IRowLandmark
   {
-    public PredicateRowLandmark(Func<ISpace, int, bool> predicate, string description)
+    public PredicateRowLandmark(Func<ICellValues, int, bool> predicate, string description)
     {
       Predicate = predicate;
       Description = description;
     }
 
-    private Func<ISpace, int, bool> Predicate { get; }
+    private Func<ICellValues, int, bool> Predicate { get; }
 
     public string Description { get; }
 
-    public int? FindRow(ISpace space)
+    public int? FindRow(ICellValues space)
     {
       for (var row = 0; row < space.Area.Height; row++)
         if (Predicate(space, row))

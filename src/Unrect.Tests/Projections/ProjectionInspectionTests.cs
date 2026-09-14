@@ -219,7 +219,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AProjectionTreeCanBeWalkedWithoutASpaceUntilItMeetsALayout()
     {
-      // The dry-run traversal in miniature: no ISpace anywhere. It walks the wrappers and the
+      // The dry-run traversal in miniature: no ICellValues anywhere. It walks the wrappers and the
       // repeat happily, and stops where a layout composite is — reporting why rather than
       // pretending the layout is a leaf.
       var projection = VerticalRepeat(
@@ -316,7 +316,7 @@ namespace Unrect.Tests.Projections
     }
 
     /// <summary>Renders a result as text so array identity never enters the comparison.</summary>
-    private static string Read(IProjection<(int, IReadOnlyList<int>)> projection, ISpace space)
+    private static string Read(IProjection<(int, IReadOnlyList<int>)> projection, ICellValues space)
     {
       var (first, rest) = projection.Map(space);
       return $"{first}:{string.Join(",", rest)}";

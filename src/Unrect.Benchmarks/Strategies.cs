@@ -35,12 +35,12 @@ namespace Unrect.Benchmarks
 
     private static readonly IProjection<int> SkipBlanks = OffsetBy(BlankRows()).Row(r => r.Count);
 
-    private ISpace _dense = default!;
-    private ISpace _sparse = default!;
-    private ISpace _near = default!;
-    private ISpace _far = default!;
-    private ISpace _absent = default!;
-    private ISpace _blankLed = default!;
+    private ICellValues _dense = default!;
+    private ICellValues _sparse = default!;
+    private ICellValues _near = default!;
+    private ICellValues _far = default!;
+    private ICellValues _absent = default!;
+    private ICellValues _blankLed = default!;
 
     [GlobalSetup]
     public void Setup()

@@ -42,8 +42,8 @@ namespace Unrect.Benchmarks
     private static readonly IProjection<IReadOnlyList<IReadOnlyDictionary<string, CellValue>>> Dictionaries =
       Table();
 
-    private ISpace _large = default!;
-    private ISpace _mega = default!;
+    private ICellValues _large = default!;
+    private ICellValues _mega = default!;
 
     [GlobalSetup]
     public void Setup()

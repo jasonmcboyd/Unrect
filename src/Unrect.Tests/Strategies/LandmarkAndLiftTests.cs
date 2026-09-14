@@ -25,7 +25,7 @@ namespace Unrect.Tests.Strategies
     // absence and is defeated by anything inserted above the thing being looked for; these anchor on
     // presence, which is what survives an inserted proof row.
 
-    private static ISpace Labelled() => Text(new string?[,]
+    private static ICellValues Labelled() => Text(new string?[,]
     {
       { "junk", null },
       { "an inserted proof row", null },
@@ -33,7 +33,7 @@ namespace Unrect.Tests.Strategies
       { "a", "b" },
     });
 
-    private static ISpace LabelledColumns() => Text(new string?[,]
+    private static ICellValues LabelledColumns() => Text(new string?[,]
     {
       { "a", "b", "  TOTAL  ", "d" },
       { null, null, null, null },
@@ -216,14 +216,14 @@ namespace Unrect.Tests.Strategies
     // seeks exactly and matches on the same rules; the difference is that a landmark reports "not
     // found" as null and lets the projection bounding itself decide, where a seek throws.
 
-    private static ISpace RowsWithATotal() => Text(new string?[,]
+    private static ICellValues RowsWithATotal() => Text(new string?[,]
     {
       { "x", "y" },
       { "  TOTAL  ", null },
       { "z", null },
     });
 
-    private static ISpace ColumnsWithATotal() => Text(new string?[,]
+    private static ICellValues ColumnsWithATotal() => Text(new string?[,]
     {
       { "a", "  TOTAL  ", "c" },
       { null, null, "z" },

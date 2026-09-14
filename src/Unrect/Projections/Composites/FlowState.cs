@@ -23,7 +23,7 @@ namespace Unrect.Projections
     private int _across;
     private int _previous;
 
-    public FlowState(IProjection owner, Orientation orientation, ISpace extent, ProjectionContext context)
+    public FlowState(IProjection owner, Orientation orientation, ICellValues extent, ProjectionContext context)
       : base(owner, extent, context)
     {
       Orientation = orientation;

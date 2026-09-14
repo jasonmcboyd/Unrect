@@ -7,7 +7,7 @@ namespace Unrect.Strategies
   public static class ColumnStrategies
   {
     /// <summary>Leading columns for which <paramref name="predicate"/> holds; stops at the first column it does not, keeping the match out.</summary>
-    public static IColumnStrategy TakeColumnsWhile(Func<ISpace, int, bool> predicate)
+    public static IColumnStrategy TakeColumnsWhile(Func<ICellValues, int, bool> predicate)
       => new TakeWhileColumnStrategy(predicate);
 
     /// <summary>
@@ -27,7 +27,7 @@ namespace Unrect.Strategies
     /// of <see cref="RowStrategies.TakeRowsTo"/>. The match is kept, where a while-strategy stops
     /// before it.
     /// </summary>
-    public static IColumnStrategy TakeColumnsTo(Func<ISpace, int, bool> predicate)
+    public static IColumnStrategy TakeColumnsTo(Func<ICellValues, int, bool> predicate)
       => new TakeToColumnStrategy(predicate);
 
     /// <summary>
@@ -55,10 +55,10 @@ namespace Unrect.Strategies
     public static IColumnStrategy TakeColumnsWhileAnyValue()
       => TakeColumnsWhileAny(v => v.HasValue);
 
-    /// <summary>Combines <paramref name="strategy"/>'s rows with columns selected by <see cref="TakeColumnsWhile(Func{ISpace, int, bool})"/>, rows measured first.</summary>
+    /// <summary>Combines <paramref name="strategy"/>'s rows with columns selected by <see cref="TakeColumnsWhile(Func{ICellValues, int, bool})"/>, rows measured first.</summary>
     public static IAreaStrategy TakeColumnsWhile(
       this IRowStrategy strategy,
-      Func<ISpace, int, bool> predicate)
+      Func<ICellValues, int, bool> predicate)
       => AreaStrategies.RowsThenColumns(strategy, TakeColumnsWhile(predicate));
 
     /// <summary>Combines <paramref name="strategy"/>'s rows with columns selected by <see cref="TakeColumnsWhileAll(Func{CellValue, bool})"/>, rows measured first.</summary>

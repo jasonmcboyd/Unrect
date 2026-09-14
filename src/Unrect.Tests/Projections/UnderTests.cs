@@ -25,7 +25,7 @@ namespace Unrect.Tests.Projections
   public class UnderTests
   {
     // A junk row, a caption, two data rows.
-    private static ISpace Sheet() => Mixed(new object?[,]
+    private static ICellValues Sheet() => Mixed(new object?[,]
     {
       { "junk", null },
       { "Detail", null },

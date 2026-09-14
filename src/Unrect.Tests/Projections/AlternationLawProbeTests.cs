@@ -52,7 +52,7 @@ namespace Unrect.Tests.Projections
   public class AlternationLawProbeTests
   {
     /// <summary>One text cell — enough for an arm to agree or disagree about, and nothing else.</summary>
-    private static ISpace Sheet() => Mixed(new object?[,] { { "x" } });
+    private static ICellValues Sheet() => Mixed(new object?[,] { { "x" } });
 
     /// <summary>An arm that reads the cell and marks its answer with its own name.</summary>
     private static IProjection<string> Accepts(string name) => Cell(c => $"{c.GetString()}-{name}").Named(name);

@@ -46,7 +46,7 @@ namespace PlacementGauntlet
       Console.WriteLine($"  Below(mark).Down(1).Sized(3x4)       : {Staged.Place.Below(mark).Down(1).Sized(Unrect.Projections.Projection.Extent(3, 4))}");
       Console.WriteLine($"  Below(mark).Until(mark)              : {Staged.Place.Below(mark).Until(mark)}");
       Console.WriteLine($"  Offset()                             : {Staged.Place.Offset()}");
-      Console.WriteLine($"  Over<ISpace>().Below(mark)           : {Staged.Place.Over<Unrect.Core.ISpace>().Below(mark)}");
+      Console.WriteLine($"  Over<ICellValues>().Below(mark)           : {Staged.Place.Over<Unrect.Core.ICellValues>().Below(mark)}");
     }
   }
 }

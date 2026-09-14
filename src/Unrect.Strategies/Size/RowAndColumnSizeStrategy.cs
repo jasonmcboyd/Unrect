@@ -47,7 +47,7 @@ namespace Unrect.Strategies
     public static ISizeStrategy ColumnsThenRows(IColumnStrategy columns, IRowStrategy rows)
       => new RowAndColumnSizeStrategy(rows, columns, rowFirst: false);
 
-    public Size GetSize(ISpace availableSpace)
+    public Size GetSize(ICellValues availableSpace)
     {
       if (RowFirst)
       {

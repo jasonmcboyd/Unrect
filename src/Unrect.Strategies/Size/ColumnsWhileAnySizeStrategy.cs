@@ -16,7 +16,7 @@ namespace Unrect.Strategies
 
     private IColumnStrategy ColumnSelectionStrategy { get; }
 
-    public Size GetSize(ISpace availableSpace)
+    public Size GetSize(ICellValues availableSpace)
       => new Size(ColumnSelectionStrategy.SelectColumns(availableSpace), availableSpace.Area.Height);
   }
 }

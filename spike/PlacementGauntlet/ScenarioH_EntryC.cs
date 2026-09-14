@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using Unrect.Core;
 using Unrect.Projections;
 
-using static PlacementGauntlet.Staged.ProjectionBuilders<Unrect.Core.ISpace>;
+using static PlacementGauntlet.Staged.ProjectionBuilders<Unrect.Core.ICellValues>;
 
 namespace PlacementGauntlet
 {
@@ -28,16 +28,16 @@ namespace PlacementGauntlet
     private const string Inception = "Cash Flows using inception date";
 
     /// <summary>The whole script, headings and all.</summary>
-    public static IProjection<ISpace, PlainIrrReport> Report { get; } = Declare();
+    public static IProjection<ICellValues, PlainIrrReport> Report { get; } = Declare();
 
     /// <summary>The bounded series with the bound LEADING, per ruling 1's canonical order.</summary>
-    public static IProjection<ISpace, IReadOnlyList<IReadOnlyList<CashFlow>>> BoundLeading { get; }
+    public static IProjection<ICellValues, IReadOnlyList<IReadOnlyList<CashFlow>>> BoundLeading { get; }
       = Until(RowContaining(Inception))
         .Heading("IRR Details")
         .Heading("Cash Flows Using Transfer Date")
         .Of(VerticalRepeat(Table<CashFlow>(), separatedBy: BlankRows()));
 
-    private static IProjection<ISpace, PlainIrrReport> Declare()
+    private static IProjection<ICellValues, PlainIrrReport> Declare()
     {
       var reportHeader = VerticalFlow(v => new IrrHeader(
         Title:      v.Next(Text()),
@@ -45,7 +45,7 @@ namespace PlacementGauntlet
         ReportDate: v.Next(Date()),
         ReportId:   v.Next(Text())));
 
-      Func<LabelMap, IProjection<ISpace, PlainSummaryRow>> plainRow = captions => Overlay(o => new PlainSummaryRow(
+      Func<LabelMap, IProjection<ICellValues, PlainSummaryRow>> plainRow = captions => Overlay(o => new PlainSummaryRow(
         Investor:   o.Next(Right(captions["Investors"]).Text()),
         EndBalance: o.Next(Right(captions["End Balance"]).Decimal())));
 

@@ -27,7 +27,7 @@ namespace Unrect.Analyzers.Tests
         """
         class Report
         {
-          static string? Read(ISpace grid)
+          static string? Read(ICellValues grid)
           {
             IProjection<IFormulaSpace, string?> formula = SpreadsheetProjections.Formula();
 
@@ -35,7 +35,7 @@ namespace Unrect.Analyzers.Tests
           }
         }
         """,
-        Exceeds("IFormulaSpace", "ISpace"));
+        Exceeds("IFormulaSpace", "ICellValues"));
 
     [Fact]
     public Task Apply_is_read_the_same_way()
@@ -43,7 +43,7 @@ namespace Unrect.Analyzers.Tests
         """
         class Report
         {
-          static void Read(ISpace grid)
+          static void Read(ICellValues grid)
           {
             IProjection<IFormulaSpace, string?> formula = SpreadsheetProjections.Formula();
 
@@ -51,7 +51,7 @@ namespace Unrect.Analyzers.Tests
           }
         }
         """,
-        Exceeds("IFormulaSpace", "ISpace"));
+        Exceeds("IFormulaSpace", "ICellValues"));
 
     [Fact]
     public Task MapWithDiagnostics_is_read_the_same_way()
@@ -59,7 +59,7 @@ namespace Unrect.Analyzers.Tests
         """
         class Report
         {
-          static void Read(ISpace grid)
+          static void Read(ICellValues grid)
           {
             IProjection<IFormulaSpace, string?> formula = SpreadsheetProjections.Formula();
 
@@ -67,7 +67,7 @@ namespace Unrect.Analyzers.Tests
           }
         }
         """,
-        Exceeds("IFormulaSpace", "ISpace"));
+        Exceeds("IFormulaSpace", "ICellValues"));
 
     [Fact]
     public Task A_space_that_answers_the_demand_is_silent()
@@ -90,7 +90,7 @@ namespace Unrect.Analyzers.Tests
         """
         class Report
         {
-          static string Read(ISpace grid) => Projection.Text().Map(grid);
+          static string Read(ICellValues grid) => Projection.Text().Map(grid);
         }
         """);
 

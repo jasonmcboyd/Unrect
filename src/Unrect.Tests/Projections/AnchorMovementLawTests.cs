@@ -31,7 +31,7 @@ namespace Unrect.Tests.Projections
   public class AnchorMovementLawTests
   {
     /// <summary>Four rows, one of which is the landmark — so the anchor can be moved down the sheet.</summary>
-    private static ISpace RowsWithLandmarkAt(int row)
+    private static ICellValues RowsWithLandmarkAt(int row)
     {
       var values = new object?[4, 1];
 
@@ -42,7 +42,7 @@ namespace Unrect.Tests.Projections
     }
 
     /// <summary>The same four cells turned on their side, so the column twin reads identically.</summary>
-    private static ISpace ColumnsWithLandmarkAt(int column)
+    private static ICellValues ColumnsWithLandmarkAt(int column)
     {
       var values = new object?[1, 4];
 

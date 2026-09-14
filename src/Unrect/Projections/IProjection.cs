@@ -52,7 +52,7 @@ namespace Unrect.Projections
   /// <para>
   /// Contravariance is the load-bearing choice: a demand is an input, so a projection demanding
   /// less runs wherever more is offered. <see cref="IProjection{TResult}"/> — every projection
-  /// written today — derives from <c>IProjection&lt;ISpace, TResult&gt;</c>, and variance therefore
+  /// written today — derives from <c>IProjection&lt;ICellValues, TResult&gt;</c>, and variance therefore
   /// makes it an <c>IProjection&lt;IFormulaSpace, TResult&gt;</c> too, with no ceremony.
   /// Composition unifies to the most demanding child; the reverse conversion does not exist, which
   /// is what makes applying a formula-reading declaration to a plain grid a compile error rather
@@ -73,7 +73,7 @@ namespace Unrect.Projections
   /// <typeparam name="TSpace">The least capable space this projection can be applied to.</typeparam>
   /// <typeparam name="TResult">What projecting this projection's extent produces.</typeparam>
   public interface IProjection<in TSpace, TResult> : IProjection
-    where TSpace : class, ISpace
+    where TSpace : class, ICellValues
   {
   }
 
@@ -82,18 +82,18 @@ namespace Unrect.Projections
   /// and applied in. The untyped <see cref="IProjection"/> above it is what diagnostics and tooling
   /// walk, where the result type is neither known nor needed.
   /// <para>
-  /// It demands nothing of its space beyond <see cref="ISpace"/>, which is what
-  /// <c>IProjection&lt;ISpace, TResult&gt;</c> says, so it runs everywhere.
+  /// It demands nothing of its space beyond <see cref="ICellValues"/>, which is what
+  /// <c>IProjection&lt;ICellValues, TResult&gt;</c> says, so it runs everywhere.
   /// </para>
   /// </summary>
   /// <typeparam name="TResult">What projecting this projection's extent produces.</typeparam>
-  public interface IProjection<TResult> : IProjection<ISpace, TResult>
+  public interface IProjection<TResult> : IProjection<ICellValues, TResult>
   {
     /// <summary>
     /// Projects the projection's <em>resolved</em> extent: the placement has already been applied,
     /// so a projection can neither observe nor re-apply it.
     /// </summary>
-    ProjectionResult<TResult> Project(ISpace extent, ProjectionContext context);
+    ProjectionResult<TResult> Project(ICellValues extent, ProjectionContext context);
 
     /// <summary>A copy of this projection named <paramref name="name"/> — see <see cref="IProjection.Name"/>.</summary>
     IProjection<TResult> WithName(string name);

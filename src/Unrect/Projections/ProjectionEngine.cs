@@ -27,7 +27,7 @@ namespace Unrect.Projections
     /// and projects it. Strict: a placement that does not fit throws rather than signalling failure
     /// to the caller — use <see cref="TryApply{TResult}"/> where running out of space is expected.
     /// </summary>
-    public static AppliedResult<TResult> Apply<TResult>(IProjection<TResult> projection, ISpace availableSpace, ProjectionContext context)
+    public static AppliedResult<TResult> Apply<TResult>(IProjection<TResult> projection, ICellValues availableSpace, ProjectionContext context)
       => Project(projection, Place(projection, availableSpace, context));
 
     /// <summary>
@@ -35,7 +35,7 @@ namespace Unrect.Projections
     /// condition. Failures deeper inside the projection — a nested misfit, a projection that throws
     /// — still propagate: format drift inside a block is an error, not a quiet truncation.
     /// </summary>
-    public static bool TryApply<TResult>(IProjection<TResult> projection, ISpace availableSpace, ProjectionContext context, out AppliedResult<TResult> result)
+    public static bool TryApply<TResult>(IProjection<TResult> projection, ICellValues availableSpace, ProjectionContext context, out AppliedResult<TResult> result)
     {
       if (!TryPlace(projection, availableSpace, context, strict: false, out var placed))
       {
@@ -47,7 +47,7 @@ namespace Unrect.Projections
       return true;
     }
 
-    private static Placed Place(IProjection projection, ISpace availableSpace, ProjectionContext context)
+    private static Placed Place(IProjection projection, ICellValues availableSpace, ProjectionContext context)
     {
       // Unreachable: TryPlace(strict: true) throws on every path that would return false. It stays
       // because it is the assertion that keeps the two modes' contract visible at the call site —
@@ -63,7 +63,7 @@ namespace Unrect.Projections
     /// <paramref name="strict"/> is false (that is what a repeat asks for); every other way a
     /// strategy can fail is a malformed declaration and throws either way.
     /// </summary>
-    private static bool TryPlace(IProjection projection, ISpace availableSpace, ProjectionContext context, bool strict, out Placed placed)
+    private static bool TryPlace(IProjection projection, ICellValues availableSpace, ProjectionContext context, bool strict, out Placed placed)
     {
       placed = default;
 
@@ -166,7 +166,7 @@ namespace Unrect.Projections
     /// child of the same flow measures the whole tail first.
     /// </para>
     /// </summary>
-    private static BoundedSpace? Bind(IProjection projection, ISpace inner, ProjectionContext scope, bool strict)
+    private static BoundedSpace? Bind(IProjection projection, ICellValues inner, ProjectionContext scope, bool strict)
     {
       if (!strict || _forcedEager || projection.Placement.Area is not IIncrementalAreaStrategy incremental)
         return null;
@@ -253,7 +253,7 @@ namespace Unrect.Projections
     /// expression from the same scope, projection and space. Only the moment differs.
     /// </para>
     /// </summary>
-    private static ProjectionException AreaFailure(ProjectionContext scope, IProjection projection, ISpace inner, Exception exception)
+    private static ProjectionException AreaFailure(ProjectionContext scope, IProjection projection, ICellValues inner, Exception exception)
       => exception is OutOfBoundsException
         ? scope.Failure(projection, "its area ran past the space available here", inner, null, exception)
         : scope.Failure(projection, Threw("area", exception), inner, null, exception, IsFault(exception));
@@ -302,7 +302,7 @@ namespace Unrect.Projections
 
     // Asked as "is there a row at size.Height - 1" rather than "how tall are you": the same answer
     // on a measured extent, and one row rather than all of them on one still being discovered.
-    private static bool Exceeds(Size size, ISpace space)
+    private static bool Exceeds(Size size, ICellValues space)
       => size.Width > BoundedSpace.WidthOf(space)
       || (size.Height > 0 && !BoundedSpace.HasRow(space, size.Height - 1));
 
@@ -320,7 +320,7 @@ namespace Unrect.Projections
 
     private readonly struct Placed
     {
-      public Placed(Offset offset, ISpace extent, ProjectionContext scope, bool hasDeclaredArea, BoundedSpace? bound = null)
+      public Placed(Offset offset, ICellValues extent, ProjectionContext scope, bool hasDeclaredArea, BoundedSpace? bound = null)
       {
         Offset = offset;
         Extent = extent;
@@ -330,7 +330,7 @@ namespace Unrect.Projections
       }
 
       public Offset Offset { get; }
-      public ISpace Extent { get; }
+      public ICellValues Extent { get; }
       public ProjectionContext Scope { get; }
       public bool HasDeclaredArea { get; }
 

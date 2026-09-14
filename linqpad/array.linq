@@ -5,14 +5,14 @@
   <Namespace>Unrect</Namespace>
   <Namespace>Unrect.Core</Namespace>
   <Namespace>Unrect.Projections</Namespace>
-  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Core.ISpace&gt;</Namespace>
+  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Core.ICellValues&gt;</Namespace>
 </Query>
 
 // Projections over an in-memory array. The adapter decides blankness where data enters
 // the system — in this grid, zero means empty — and everything above it is the same
 // vocabulary the spreadsheet scripts use — down to the header. The query's namespace imports name
-// this file's space once, `using static Unrect.Projections.ProjectionBuilders<Unrect.Core.ISpace>`,
-// which is the line the spreadsheet scripts carry too: an ISpace is an ISpace.
+// this file's space once, `using static Unrect.Projections.ProjectionBuilders<Unrect.Core.ICellValues>`,
+// which is the line the spreadsheet scripts carry too: an ICellValues is an ICellValues.
 var nums = new[,]
 {
 	{ 1,  2,  3,  4 },

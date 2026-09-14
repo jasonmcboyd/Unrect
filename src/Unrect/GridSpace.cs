@@ -5,7 +5,7 @@ using Unrect.Core;
 namespace Unrect
 {
   /// <summary>
-  /// A rectangular grid of <see cref="CellValue"/>s, viewed as an <see cref="ISpace"/>. This is what
+  /// A rectangular grid of <see cref="CellValue"/>s, viewed as an <see cref="ICellValues"/>. This is what
   /// every adapter ends up holding: a backend reads its own format, produces one array of canonical
   /// cell values, and hands it here — so the indexing, the bounds checking and the subspace
   /// arithmetic are written once and every adapter agrees on them.
@@ -31,7 +31,7 @@ namespace Unrect
   /// workbook.
   /// </para>
   /// </summary>
-  public sealed class GridSpace : ISpace
+  public sealed class GridSpace : ICellValues
   {
     /// <summary>
     /// The whole of <paramref name="values"/>, as a space. Blankness is already decided: whatever
@@ -64,7 +64,7 @@ namespace Unrect
     {
       get
       {
-        // OutOfBoundsException, per the ISpace contract: running off the edge of a space is a data
+        // OutOfBoundsException, per the ICellValues contract: running off the edge of a space is a data
         // condition a declaration may recover from, not a bug in the reading code.
         if (column < 0 || column >= Area.Width)
           throw new OutOfBoundsException();
@@ -77,7 +77,16 @@ namespace Unrect
     }
 
     /// <inheritdoc/>
-    public ISpace GetSubspace(Offset offset, Area area)
+    public bool IsBlank(int column, int row) => this[column, row].IsBlank;
+
+    /// <inheritdoc/>
+    public bool IsText(int column, int row) => this[column, row].IsText;
+
+    /// <inheritdoc/>
+    public string? AsText(int column, int row) => this[column, row].AsText();
+
+    /// <inheritdoc/>
+    public ICellValues GetSubspace(Offset offset, Area area)
     {
       if (offset.Width + area.Width > Area.Width || offset.Height + area.Height > Area.Height)
         throw new OutOfBoundsException();

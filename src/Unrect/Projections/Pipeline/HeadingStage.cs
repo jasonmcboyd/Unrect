@@ -125,7 +125,7 @@ namespace Unrect.Projections
   /// <summary>The scoped twin of <see cref="HeadingStage"/>, refusals and all.</summary>
   /// <typeparam name="TSpace">What the pipeline's declaration demands of the space.</typeparam>
   public sealed class HeadingStage<TSpace> : PlacementStage<TSpace>
-    where TSpace : class, ISpace
+    where TSpace : class, ICellValues
   {
     private readonly Steps _placement;
     private readonly string[] _headings;

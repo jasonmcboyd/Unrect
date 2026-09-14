@@ -619,9 +619,9 @@ namespace Unrect.Tests.Streaming
     /// </summary>
     private sealed class Scenario
     {
-      private readonly Func<ISpace, Observation> _read;
+      private readonly Func<ICellValues, Observation> _read;
 
-      private Scenario(string grid, Func<ISpace, Observation> read)
+      private Scenario(string grid, Func<ICellValues, Observation> read)
       {
         Grid = grid;
         _read = read;
@@ -633,7 +633,7 @@ namespace Unrect.Tests.Streaming
       public static Scenario Of<T>(IProjection<T> projection, string grid)
         => new Scenario(grid, space => Observe(projection, space));
 
-      public Observation Read(ISpace space) => _read(space);
+      public Observation Read(ICellValues space) => _read(space);
     }
 
     // --- The fixture writer -------------------------------------------------------------------------------------

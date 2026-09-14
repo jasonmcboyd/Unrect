@@ -3,14 +3,14 @@ using System;
 using Unrect.Core;
 using Unrect.Projections;
 
-using static PlacementGauntlet.Staged.ProjectionBuilders<Unrect.Core.ISpace>;
+using static PlacementGauntlet.Staged.ProjectionBuilders<Unrect.Core.ICellValues>;
 
 namespace PlacementGauntlet
 {
   /// <summary>
-  /// SPIKE, scenario C — <b>the plain-twin floor</b>. The same file, scoped to <c>ISpace</c>: the
+  /// SPIKE, scenario C — <b>the plain-twin floor</b>. The same file, scoped to <c>ICellValues</c>: the
   /// corollary of the dichotomy theorem, which says the plain vocabulary IS Entry C at its floor —
-  /// every file conceptually scopes to what its document offers, <c>ISpace</c> included.
+  /// every file conceptually scopes to what its document offers, <c>ICellValues</c> included.
   /// <para>
   /// Two acceptance reads live here. <b>Read 2</b> is the plain twin of the audited report next
   /// door: the same declaration with the formula leaf removed, and therefore nothing in it demands
@@ -31,12 +31,12 @@ namespace PlacementGauntlet
     public const string Totals = "Totals";
 
     /// <summary>Read 2 — the investor-irr report with no capability anywhere in it.</summary>
-    public static IProjection<ISpace, PlainIrrReport> Report { get; } = DeclareReport();
+    public static IProjection<ICellValues, PlainIrrReport> Report { get; } = DeclareReport();
 
     /// <summary>Read 3 — the K-1 pair, each section anchored above and bounded below.</summary>
-    public static IProjection<ISpace, K1Report> K1 { get; } = DeclareK1();
+    public static IProjection<ICellValues, K1Report> K1 { get; } = DeclareK1();
 
-    private static IProjection<ISpace, PlainIrrReport> DeclareReport()
+    private static IProjection<ICellValues, PlainIrrReport> DeclareReport()
     {
       var reportHeader = VerticalFlow(v => new IrrHeader(
         Title:      v.Next(Text()),
@@ -44,7 +44,7 @@ namespace PlacementGauntlet
         ReportDate: v.Next(Date()),
         ReportId:   v.Next(Text())));
 
-      Func<LabelMap, IProjection<ISpace, PlainSummaryRow>> plainRow = captions => Overlay(o => new PlainSummaryRow(
+      Func<LabelMap, IProjection<ICellValues, PlainSummaryRow>> plainRow = captions => Overlay(o => new PlainSummaryRow(
         Investor:   o.Next(Right(captions["Investors"]).Text()),
         EndBalance: o.Next(Right(captions["End Balance"]).Decimal())));
 
@@ -69,13 +69,13 @@ namespace PlacementGauntlet
     /// Read 3's provoked failure, declared HERE so that the failure the differential compares is
     /// Entry C's own — an anchor that is not in the document, raised through the pipeline's entry.
     /// </summary>
-    public static IProjection<ISpace, KSection> MissingAnchor { get; } = DeclareMissingAnchor();
+    public static IProjection<ICellValues, KSection> MissingAnchor { get; } = DeclareMissingAnchor();
 
-    private static IProjection<ISpace, KLine> KLineRow(LabelMap captions) => Overlay(o => new KLine(
+    private static IProjection<ICellValues, KLine> KLineRow(LabelMap captions) => Overlay(o => new KLine(
       Code: o.Next(Right(captions["Line"]).Text()),
       Amount: o.Next(Right(captions["Amount"]).Decimal())));
 
-    private static IProjection<ISpace, KSection> DeclareMissingAnchor()
+    private static IProjection<ICellValues, KSection> DeclareMissingAnchor()
     {
       var kLines = Table(headerRows: 1, eachRow: KLineRow);
 
@@ -85,9 +85,9 @@ namespace PlacementGauntlet
           Lines: v.Next(kLines)));
     }
 
-    private static IProjection<ISpace, K1Report> DeclareK1()
+    private static IProjection<ICellValues, K1Report> DeclareK1()
     {
-      Func<LabelMap, IProjection<ISpace, KLine>> kLine = captions => Overlay(o => new KLine(
+      Func<LabelMap, IProjection<ICellValues, KLine>> kLine = captions => Overlay(o => new KLine(
         Code:   o.Next(Right(captions["Line"]).Text()),
         Amount: o.Next(Right(captions["Amount"]).Decimal())));
 

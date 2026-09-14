@@ -29,7 +29,7 @@ namespace Unrect.Analyzers.Tests
 
     private static readonly MetadataReference[] Unrect =
     {
-      MetadataReference.CreateFromFile(typeof(Core.ISpace).Assembly.Location),
+      MetadataReference.CreateFromFile(typeof(Core.ICellValues).Assembly.Location),
       MetadataReference.CreateFromFile(typeof(Projections.Projection).Assembly.Location),
       MetadataReference.CreateFromFile(typeof(Strategies.SizeStrategies).Assembly.Location),
       MetadataReference.CreateFromFile(typeof(Spreadsheets.SpreadsheetProjections).Assembly.Location),

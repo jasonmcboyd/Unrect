@@ -60,8 +60,8 @@ namespace Unrect.Benchmarks
       return sum;
     });
 
-    private ISpace _grid = default!;
-    private ISpace _resident = default!;
+    private ICellValues _grid = default!;
+    private ICellValues _resident = default!;
     private ReaderPool _residentPool = default!;
 
     [GlobalSetup]

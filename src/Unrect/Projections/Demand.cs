@@ -10,7 +10,7 @@ namespace Unrect.Projections
   /// </summary>
   /// <typeparam name="TSpace">The capability being demanded.</typeparam>
   public sealed class Demand<TSpace>
-    where TSpace : class, ISpace
+    where TSpace : class, ICellValues
   {
     private Demand()
     {

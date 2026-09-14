@@ -12,10 +12,10 @@ namespace Unrect.Strategies
 
     private IIncrementalRowStrategy RowSelectionStrategy { get; }
 
-    public IAreaScan BeginSize(ISpace availableSpace)
+    public IAreaScan BeginSize(ICellValues availableSpace)
       => new Scan(availableSpace.Area.Width, RowSelectionStrategy.BeginRows());
 
-    public Size GetSize(ISpace availableSpace) => Scans.FoldSize(BeginSize(availableSpace), availableSpace);
+    public Size GetSize(ICellValues availableSpace) => Scans.FoldSize(BeginSize(availableSpace), availableSpace);
 
     /// <summary>
     /// The width is the whole of what is available, so it is settled before a cell is read and the
@@ -33,7 +33,7 @@ namespace Unrect.Strategies
 
       private IRowScan Rows { get; }
 
-      public bool IncludesRow(ISpace space, int row) => Rows.IncludesRow(space, row);
+      public bool IncludesRow(ICellValues space, int row) => Rows.IncludesRow(space, row);
     }
   }
 }

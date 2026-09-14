@@ -74,7 +74,7 @@ namespace Unrect.Projections
   /// </summary>
   /// <typeparam name="TSpace">The space the enclosing layout is declared over.</typeparam>
   public readonly ref struct LayoutCursor<TSpace>
-    where TSpace : class, Core.ISpace
+    where TSpace : class, Core.ICellValues
   {
     private readonly LayoutState? _state;
 
@@ -111,5 +111,5 @@ namespace Unrect.Projections
   /// <typeparam name="TResult">What the layout builds from what its children read.</typeparam>
   /// <param name="cursor">The cursor the layout declares its children with.</param>
   public delegate TResult Layout<TSpace, TResult>(LayoutCursor<TSpace> cursor)
-    where TSpace : class, Core.ISpace;
+    where TSpace : class, Core.ICellValues;
 }

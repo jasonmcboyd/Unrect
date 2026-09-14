@@ -40,7 +40,7 @@ namespace Unrect.Tests.Strategies
 
     // --- The four grids every fold is folded over ------------------------------------------------
 
-    private static ISpace Space(string name) => name switch
+    private static ICellValues Space(string name) => name switch
     {
       // Every cell carries a value, so every row-wise rule runs to the bottom.
       "dense" => Grid(new[,]
@@ -109,7 +109,7 @@ namespace Unrect.Tests.Strategies
     /// The fold, written out here rather than called from <see cref="Scans.Fold"/>, so the test
     /// says independently what every implementation's one-line delegation claims.
     /// </summary>
-    private static int Fold(IRowScan scan, ISpace space)
+    private static int Fold(IRowScan scan, ICellValues space)
     {
       var count = 0;
 
@@ -135,7 +135,7 @@ namespace Unrect.Tests.Strategies
       _ => throw new ArgumentOutOfRangeException(nameof(name), name, "No such strategy."),
     };
 
-    private static void AssertRowFoldIdentity(IRowStrategy strategy, ISpace space, int expected)
+    private static void AssertRowFoldIdentity(IRowStrategy strategy, ICellValues space, int expected)
     {
       var incremental = Assert.IsAssignableFrom<IIncrementalRowStrategy>(strategy);
 

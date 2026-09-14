@@ -16,7 +16,7 @@ namespace Unrect.Projections
       IProjection? projection,
       int? index,
       Offset origin,
-      ISpace space,
+      ICellValues space,
       DiagnosticCollector diagnostics,
       UseSite site,
       UseSite pending,
@@ -39,7 +39,7 @@ namespace Unrect.Projections
     /// The context a <c>Map</c> call starts from: no projection yet, no path, origin (0, 0), and a
     /// fresh diagnostic collector for this decomposition.
     /// </summary>
-    public static ProjectionContext Root(ISpace space)
+    public static ProjectionContext Root(ICellValues space)
     {
       if (space is null)
         throw new ArgumentNullException(nameof(space));
@@ -54,7 +54,7 @@ namespace Unrect.Projections
     /// what it was given rather than discarding it, which is what a decomposition trace will hang
     /// off when wave 3 adds one.
     /// </summary>
-    internal ISpace Space { get; }
+    internal ICellValues Space { get; }
 
     /// <summary>The projection this context is inside, or null at the root.</summary>
     public IProjection? Projection { get; }
@@ -145,13 +145,13 @@ namespace Unrect.Projections
       => new ProjectionContext(Parent, Projection, Index, Origin, Space, Diagnostics, Site, site, Labels, Ordinal);
 
     /// <summary>Where this context sits, expressed as an A1-style address against <paramref name="space"/>'s extent.</summary>
-    public ProjectionLocation Locate(ISpace space) => ProjectionLocation.At(Origin, space.Area.Size);
+    public ProjectionLocation Locate(ICellValues space) => ProjectionLocation.At(Origin, space.Area.Size);
 
     /// <summary>
     /// A <see cref="ProjectionException"/> blaming this context's own projection, for a projection
     /// to throw when the data it was handed is not what the projection declared.
     /// </summary>
-    public ProjectionException Failure(string problem, ISpace space, Exception? inner = null)
+    public ProjectionException Failure(string problem, ICellValues space, Exception? inner = null)
       => Failure(
         Projection ?? throw new InvalidOperationException("The root context has no projection to blame; report failures from within a projection's Project."),
         problem,
@@ -160,11 +160,11 @@ namespace Unrect.Projections
         inner);
 
     /// <summary>
-    /// The same failure as the public <see cref="Failure(string, ISpace, Exception?)"/>, carrying
+    /// The same failure as the public <see cref="Failure(string, ICellValues, Exception?)"/>, carrying
     /// the fault flag. An overload rather than an optional parameter on the public method: adding a
     /// parameter there would be a binary break, and the flag is not a caller's to set.
     /// </summary>
-    internal ProjectionException Failure(string problem, ISpace space, Exception? inner, bool isFault)
+    internal ProjectionException Failure(string problem, ICellValues space, Exception? inner, bool isFault)
       => Failure(
         Projection ?? throw new InvalidOperationException("The root context has no projection to blame; report failures from within a projection's Project."),
         problem,
@@ -187,7 +187,7 @@ namespace Unrect.Projections
     internal ProjectionException Failure(
       IProjection projection,
       string problem,
-      ISpace space,
+      ICellValues space,
       Size? requested,
       Exception? inner,
       bool isFault = false)
@@ -201,7 +201,7 @@ namespace Unrect.Projections
     /// <summary>
     /// Records something about <paramref name="projection"/> that happened here.
     /// </summary>
-    internal void Report(DiagnosticSeverity severity, IProjection projection, string message, ISpace space)
+    internal void Report(DiagnosticSeverity severity, IProjection projection, string message, ICellValues space)
     {
       var chain = Chain(Through(projection));
       var (path, subject) = Collapse(chain);

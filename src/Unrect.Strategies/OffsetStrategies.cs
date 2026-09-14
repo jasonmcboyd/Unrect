@@ -22,7 +22,7 @@ namespace Unrect.Strategies
       => ExplicitSize(width, height).ToOffsetStrategy();
 
     /// <summary>Whatever <paramref name="selector"/> computes from the available space.</summary>
-    public static IOffsetStrategy SelectOffset(Func<ISpace, Size> selector)
+    public static IOffsetStrategy SelectOffset(Func<ICellValues, Size> selector)
       => SelectSize(selector).ToOffsetStrategy();
 
     /// <summary>Past the leading rows in which every cell satisfies <paramref name="predicate"/>.</summary>

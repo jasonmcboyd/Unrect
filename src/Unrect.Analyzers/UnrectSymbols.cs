@@ -38,7 +38,7 @@ namespace Unrect.Analyzers
       ScopedCursor = scopedCursor;
     }
 
-    /// <summary><c>Unrect.Core.ISpace</c> — the demand a declaration makes when it makes none.</summary>
+    /// <summary><c>Unrect.Core.ICellValues</c> — the demand a declaration makes when it makes none.</summary>
     public INamedTypeSymbol Space { get; }
 
     /// <summary><c>IProjection&lt;TSpace, TResult&gt;</c>, the only place a demand is written.</summary>
@@ -76,7 +76,7 @@ namespace Unrect.Analyzers
     /// <summary>The Unrect types in <paramref name="compilation"/>, or null if it has none.</summary>
     public static UnrectSymbols? TryLoad(Compilation compilation)
     {
-      var space = compilation.GetTypeByMetadataName("Unrect.Core.ISpace");
+      var space = compilation.GetTypeByMetadataName("Unrect.Core.ICellValues");
       var projection = compilation.GetTypeByMetadataName("Unrect.Projections.IProjection`2");
       var scope = compilation.GetTypeByMetadataName("Unrect.Projections.ProjectionScope`1");
       var builders = compilation.GetTypeByMetadataName("Unrect.Projections.ProjectionBuilders`1");
@@ -109,11 +109,11 @@ namespace Unrect.Analyzers
         ?? SpaceArgumentOf(type, RowLandmark)
         ?? SpaceArgumentOf(type, ColumnLandmark);
 
-    /// <summary>True when <paramref name="type"/> asks for more of a space than <c>ISpace</c>.</summary>
+    /// <summary>True when <paramref name="type"/> asks for more of a space than <c>ICellValues</c>.</summary>
     public bool DemandsBeyondSpace(ITypeSymbol? type)
       => DemandOf(type) is ITypeSymbol demanded && !IsSpace(demanded);
 
-    /// <summary>True for <c>ISpace</c> itself — the demand that is no demand.</summary>
+    /// <summary>True for <c>ICellValues</c> itself — the demand that is no demand.</summary>
     public bool IsSpace(ITypeSymbol type) => SymbolEqualityComparer.Default.Equals(type, Space);
 
     /// <summary>
@@ -156,8 +156,8 @@ namespace Unrect.Analyzers
       {
         var argument = candidate.TypeArguments[0];
 
-        // A projection that names a capability lists that construction alongside the ISpace one it
-        // inherits (IProjection<T> IS an IProjection<ISpace, T>); the demanding one is the answer.
+        // A projection that names a capability lists that construction alongside the ICellValues one it
+        // inherits (IProjection<T> IS an IProjection<ICellValues, T>); the demanding one is the answer.
         if (found is null || (IsSpace(found) && !IsSpace(argument)))
           found = argument;
       }

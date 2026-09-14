@@ -19,21 +19,21 @@ namespace Unrect.Tests
   /// system the assertion does not use.
   /// </para>
   /// </summary>
-  internal sealed class CountingSpace : ISpace
+  internal sealed class CountingSpace : ICellValues
   {
-    public CountingSpace(ISpace inner)
+    public CountingSpace(ICellValues inner)
       : this(inner, new Ledger(), 0)
     {
     }
 
-    private CountingSpace(ISpace inner, Ledger reads, int rowOrigin)
+    private CountingSpace(ICellValues inner, Ledger reads, int rowOrigin)
     {
       Inner = inner;
       Reads = reads;
       RowOrigin = rowOrigin;
     }
 
-    private ISpace Inner { get; }
+    private ICellValues Inner { get; }
     private Ledger Reads { get; }
     private int RowOrigin { get; }
 
@@ -58,7 +58,16 @@ namespace Unrect.Tests
     }
 
     /// <inheritdoc/>
-    public ISpace GetSubspace(Offset offset, Area area)
+    public bool IsBlank(int column, int row) => this[column, row].IsBlank;
+
+    /// <inheritdoc/>
+    public bool IsText(int column, int row) => this[column, row].IsText;
+
+    /// <inheritdoc/>
+    public string? AsText(int column, int row) => this[column, row].AsText();
+
+    /// <inheritdoc/>
+    public ICellValues GetSubspace(Offset offset, Area area)
       => new CountingSpace(Inner.GetSubspace(offset, area), Reads, RowOrigin + offset.Height);
 
     private sealed class Ledger

@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Linq;
 
 using Unrect.Core;
@@ -789,6 +790,122 @@ namespace Unrect.Tests
       Assert.True(value.HasValue);
       Assert.False(value.IsBlank);
       Assert.Null(value.TryGetString());
+    }
+
+    // --- Canonical text -------------------------------------------------------------------------
+    //
+    // What a cell SAYS, as against what it holds. A text cell says its own string; every other kind
+    // is rendered, from the value and invariantly, so the answer does not move with the reader's
+    // culture and carries no trace of the format the backend displayed. A blank says nothing at
+    // all, which is the equivalence a space contract turns on: AsText is null exactly where the
+    // cell is blank.
+
+    [Fact]
+    public void AsText_OfATextCell_IsItsOwnString()
+    {
+      Assert.Equal("Total", CellValue.Of("Total").AsText());
+      Assert.Equal("  spaced  ", CellValue.Of("  spaced  ").AsText());
+      Assert.Equal("", CellValue.Of("").AsText());
+    }
+
+    [Fact]
+    public void AsText_OfABlankCell_IsNull()
+    {
+      Assert.Null(CellValue.Blank.AsText());
+      Assert.Null(default(CellValue).AsText());
+      Assert.Null(CellValue.Of((string?)null).AsText());
+    }
+
+    [Fact]
+    public void AsText_OfANumber_SaysTheExactValueWhereOneWasKept()
+    {
+      // A number that arrived exact says its exact digits, trailing zeroes and all, because that is
+      // what the file wrote; one that arrived as a double says what the double is.
+      Assert.Equal("42", CellValue.Of(42).AsText());
+      Assert.Equal("42.50", CellValue.Of(42.50m).AsText());
+      Assert.Equal("-3", CellValue.Of(-3L).AsText());
+      Assert.Equal("1.5", CellValue.Of(1.5).AsText());
+      Assert.Equal("0.1", CellValue.Of(0.1).AsText());
+    }
+
+    [Fact]
+    public void AsText_OfADouble_SaysTheSameDigitsOnEveryTargetFramework()
+    {
+      // The one rendering that is not the same under both of this package's targets unless it is
+      // asked for round-trip: .NET Framework's default is 15 significant digits, which rounds both
+      // of these to something shorter and prettier than the double actually is. A declaration
+      // matching on a rendered number would find it through one target and not the other.
+      Assert.Equal("0.30000000000000004", CellValue.Of(0.1 + 0.2).AsText());
+      Assert.Equal("0.3333333333333333", CellValue.Of(1.0 / 3.0).AsText());
+    }
+
+    [Fact]
+    public void AsText_OfANumber_DoesNotMoveWithTheReadersCulture()
+    {
+      // A rendering a matcher compares against has to be the same everywhere, or a declaration
+      // written in one office stops anchoring in another.
+      var culture = CultureInfo.CurrentCulture;
+
+      try
+      {
+        CultureInfo.CurrentCulture = new CultureInfo("de-DE");
+
+        Assert.Equal("1.5", CellValue.Of(1.5).AsText());
+        Assert.Equal("42.50", CellValue.Of(42.50m).AsText());
+      }
+      finally
+      {
+        CultureInfo.CurrentCulture = culture;
+      }
+    }
+
+    [Fact]
+    public void AsText_OfATemporalCell_IsItsIsoForm()
+    {
+      // A date says its date; a moment within a day says the time too, rather than rendering as the
+      // midnight it is not. Sub-second digits appear only where there are some, so the ordinary
+      // whole-second case is unchanged by carrying them.
+      Assert.Equal("2026-03-04", CellValue.Of(new DateTime(2026, 3, 4)).AsText());
+      Assert.Equal("2026-03-04T09:30:00", CellValue.Of(new DateTime(2026, 3, 4, 9, 30, 0)).AsText());
+      Assert.Equal("2026-03-04T09:30:00.25", CellValue.Of(new DateTime(2026, 3, 4, 9, 30, 0).AddMilliseconds(250)).AsText());
+    }
+
+    [Fact]
+    public void AsText_OfABooleanCell_IsTheSpreadsheetSpelling()
+    {
+      Assert.Equal("TRUE", CellValue.Of(true).AsText());
+      Assert.Equal("FALSE", CellValue.Of(false).AsText());
+    }
+
+    [Fact]
+    public void AsText_OfAnErrorCell_IsTheLiteralTheCellShows()
+    {
+      // The same spelling Excel puts in the cell — and the literal the adapter kept, where it knew
+      // one the error code does not carry.
+      Assert.Equal("#DIV/0!", CellValue.OfError(CellError.DivisionByZero).AsText());
+      Assert.Equal("#N/A", CellValue.OfError(CellError.NotAvailable).AsText());
+      Assert.Equal("Err:501", CellValue.OfError(CellError.Other, "Err:501").AsText());
+      Assert.Equal("Other", CellValue.OfError(CellError.Other).AsText());
+    }
+
+    [Fact]
+    public void AsText_IsNullForNoCellThatHasAValue()
+    {
+      // The empty string, zero and false are all cells with something in them. A rendering that
+      // came back null for any of them would make blankness mean "says nothing useful" rather than
+      // "is not there".
+      var valued = new[]
+      {
+        CellValue.Of(""),
+        CellValue.Of(0),
+        CellValue.Of(0.0),
+        CellValue.Of(false),
+        CellValue.Of(DateTime.MinValue),
+        CellValue.OfError(CellError.Null),
+      };
+
+      Assert.All(valued, value => Assert.NotNull(value.AsText()));
+      Assert.All(valued, value => Assert.True(value.HasValue));
     }
   }
 }

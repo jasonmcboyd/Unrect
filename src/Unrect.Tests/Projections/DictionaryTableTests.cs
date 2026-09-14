@@ -24,7 +24,7 @@ namespace Unrect.Tests.Projections
   /// </summary>
   public class DictionaryTableTests
   {
-    private static ISpace Sheet() => Mixed(new object?[,]
+    private static ICellValues Sheet() => Mixed(new object?[,]
     {
       { "Investor Name", "Transaction Date", "Amount" },
       { "Acme", new DateTime(2026, 3, 4), 10m },

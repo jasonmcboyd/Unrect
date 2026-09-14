@@ -21,7 +21,7 @@ namespace Unrect.Tests.Projections
   public class UntilProjectionTests
   {
     // A, B, Total, C, End — two rows, a caption, two more.
-    private static ISpace Sections() => Mixed(new object?[,] { { "A" }, { "B" }, { "Total" }, { "C" }, { "End" } });
+    private static ICellValues Sections() => Mixed(new object?[,] { { "A" }, { "B" }, { "Total" }, { "C" }, { "End" } });
 
     private static IProjection<IReadOnlyList<string>> Lines() => VerticalRepeat(TextCell());
 
@@ -293,7 +293,7 @@ namespace Unrect.Tests.Projections
     // spelled by nesting, which the last test in this section pins.
 
     // 3 columns by 3 rows: a b Total / c d e / Stop f g.
-    private static ISpace BothAxes() => Mixed(new object?[,]
+    private static ICellValues BothAxes() => Mixed(new object?[,]
     {
       { "a", "b", "Total" },
       { "c", "d", "e" },

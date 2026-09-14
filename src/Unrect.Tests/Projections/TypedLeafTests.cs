@@ -23,7 +23,7 @@ namespace Unrect.Tests.Projections
   /// </summary>
   public class TypedLeafTests
   {
-    private static ISpace One(object? value) => Mixed(new object?[,] { { value } });
+    private static ICellValues One(object? value) => Mixed(new object?[,] { { value } });
 
     // --- Each leaf reads its kind ------------------------------------------------------------------
 

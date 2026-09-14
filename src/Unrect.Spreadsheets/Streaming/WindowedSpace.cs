@@ -23,7 +23,7 @@ namespace Unrect.Spreadsheets
   /// <see cref="OutOfBoundsException"/> as it is for any space.
   /// </para>
   /// </summary>
-  internal sealed class WindowedSpace : ISpace
+  internal sealed class WindowedSpace : ICellValues
   {
     internal WindowedSpace(SheetStore store)
       : this(store, default, new Area(store.ColumnCount, store.RowCount))
@@ -67,7 +67,16 @@ namespace Unrect.Spreadsheets
     }
 
     /// <inheritdoc/>
-    public ISpace GetSubspace(Offset offset, Area area)
+    public bool IsBlank(int column, int row) => this[column, row].IsBlank;
+
+    /// <inheritdoc/>
+    public bool IsText(int column, int row) => this[column, row].IsText;
+
+    /// <inheritdoc/>
+    public string? AsText(int column, int row) => this[column, row].AsText();
+
+    /// <inheritdoc/>
+    public ICellValues GetSubspace(Offset offset, Area area)
     {
       if (offset.Width + area.Width > Area.Width || offset.Height + area.Height > Area.Height)
         throw new OutOfBoundsException();

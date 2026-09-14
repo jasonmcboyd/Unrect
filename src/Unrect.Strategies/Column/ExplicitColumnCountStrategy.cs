@@ -14,7 +14,7 @@ namespace Unrect.Strategies
 
     private int Count { get; }
 
-    public int SelectColumns(ISpace space)
+    public int SelectColumns(ICellValues space)
       => Count <= space.Area.Width ? Count : throw new OutOfBoundsException();
   }
 }

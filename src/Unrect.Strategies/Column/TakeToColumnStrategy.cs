@@ -9,14 +9,14 @@ namespace Unrect.Strategies
   /// </summary>
   internal sealed class TakeToColumnStrategy : IColumnStrategy
   {
-    public TakeToColumnStrategy(Func<ISpace, int, bool> predicate)
+    public TakeToColumnStrategy(Func<ICellValues, int, bool> predicate)
     {
       Predicate = predicate;
     }
 
-    private Func<ISpace, int, bool> Predicate { get; }
+    private Func<ICellValues, int, bool> Predicate { get; }
 
-    public int SelectColumns(ISpace space)
+    public int SelectColumns(ICellValues space)
     {
       int count = 0;
 

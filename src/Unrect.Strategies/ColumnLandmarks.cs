@@ -12,11 +12,11 @@ namespace Unrect.Strategies
     /// failure renders — "no column with the label 'EIN'" — so a projection that anchors on
     /// something other than a caption can still fail in the vocabulary's own voice.
     /// </summary>
-    public static IColumnLandmark ColumnWhere(Func<ISpace, int, bool> predicate, string description)
+    public static IColumnLandmark ColumnWhere(Func<ICellValues, int, bool> predicate, string description)
       => new PredicateColumnLandmark(NotNull(predicate, nameof(predicate)), NotNull(description, nameof(description)));
 
     /// <summary>The first column satisfying <paramref name="predicate"/>, described generically as "no matching column" when it fails.</summary>
-    public static IColumnLandmark ColumnWhere(Func<ISpace, int, bool> predicate)
+    public static IColumnLandmark ColumnWhere(Func<ICellValues, int, bool> predicate)
       => new PredicateColumnLandmark(NotNull(predicate, nameof(predicate)), "no matching column");
 
     /// <summary>The first column with any cell satisfying <paramref name="anyCell"/>.</summary>

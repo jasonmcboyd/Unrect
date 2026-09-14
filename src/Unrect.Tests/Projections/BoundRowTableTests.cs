@@ -37,7 +37,7 @@ namespace Unrect.Tests.Projections
     /// is A2 rather than A1 — an assertion about "the header origin" says nothing if the header is at
     /// the corner of the sheet anyway.
     /// </summary>
-    private static ISpace Allocations() => Mixed(new object?[,]
+    private static ICellValues Allocations() => Mixed(new object?[,]
     {
       { null, null, null },
       { "Account", "Symbol", "Weight" },
@@ -50,7 +50,7 @@ namespace Unrect.Tests.Projections
     /// The same three records with the columns in an order no declaration mentions. Nothing but the
     /// header row and the cell positions differ from <see cref="Allocations"/>.
     /// </summary>
-    private static ISpace ReorderedAllocations() => Mixed(new object?[,]
+    private static ICellValues ReorderedAllocations() => Mixed(new object?[,]
     {
       { null, null, null },
       { "Weight", "Account", "Symbol" },
@@ -64,7 +64,7 @@ namespace Unrect.Tests.Projections
     /// read. Which record is a parameter so the index in the path and the address on the sheet can be
     /// varied independently — they differ by the header row and the blank row above it.
     /// </summary>
-    private static ISpace AllocationsWithABadWeightIn(int record)
+    private static ICellValues AllocationsWithABadWeightIn(int record)
     {
       var cells = new object?[5, 3];
 
@@ -83,10 +83,10 @@ namespace Unrect.Tests.Projections
     }
 
     /// <summary>The one the naming tests use: the SECOND record's weight, at C4.</summary>
-    private static ISpace AllocationsWithABadWeight() => AllocationsWithABadWeightIn(1);
+    private static ICellValues AllocationsWithABadWeight() => AllocationsWithABadWeightIn(1);
 
     /// <summary>Two headered blocks with a blank row between them — one declaration, placed repeatedly.</summary>
-    private static ISpace TwoBlocks() => Mixed(new object?[,]
+    private static ICellValues TwoBlocks() => Mixed(new object?[,]
     {
       { "Account", "Symbol", "Weight" },
       { "A-1", "XYZ", 1.5m },
@@ -191,7 +191,7 @@ namespace Unrect.Tests.Projections
     // Minted from a real view through the bottom rung — a real header, a real context, real failures —
     // which is the recipe the spec records rather than a synthetic factory nobody would ship.
 
-    private static LabelMap CaptionsOf(ISpace sheet) => Table((TableView view) => view.Labels).Map(sheet);
+    private static LabelMap CaptionsOf(ICellValues sheet) => Table((TableView view) => view.Labels).Map(sheet);
 
     [Fact]
     public void CaptionsAreTheColumnsOwnNamesInColumnOrder()
@@ -374,7 +374,7 @@ namespace Unrect.Tests.Projections
     /// <summary>A bind that works, for the half of each test that must stay quiet.</summary>
     private static IProjection<string> AccountCell(LabelMap captions) => Right(captions["Account"]).Of(Text());
 
-    private static ProjectionException Faults<T>(IProjection<T> projection, ISpace sheet)
+    private static ProjectionException Faults<T>(IProjection<T> projection, ICellValues sheet)
     {
       var failure = Assert.Throws<ProjectionException>(() => projection.Map(sheet));
 

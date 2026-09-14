@@ -28,7 +28,7 @@ namespace Unrect.Projections
 
     public override string Description => $"Field(\"{Label}\")";
 
-    public override ProjectionResult<CellValue> Project(ISpace extent, ProjectionContext context)
+    public override ProjectionResult<CellValue> Project(ICellValues extent, ProjectionContext context)
     {
       var size = extent.Area.Size;
 

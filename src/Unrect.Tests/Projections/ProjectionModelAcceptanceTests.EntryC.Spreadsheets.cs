@@ -6,7 +6,7 @@ using Xunit;
 using static Unrect.Tests.Observations;
 
 // THE SECOND SPACE, AND THEREFORE THE SECOND FILE. The declaration below demands a capability, so
-// its file closes the vocabulary over ISpreadsheetSpace rather than over ISpace — and that is why it
+// its file closes the vocabulary over ISpreadsheetSpace rather than over ICellValues — and that is why it
 // cannot live beside the plain twins in ProjectionModelAcceptanceTests.EntryC.cs: two closings of
 // ProjectionBuilders<> in one file would make every shared name ambiguous (CS0121 on invocation,
 // every signature being identical), so a declaration file names ONE space. The split is the

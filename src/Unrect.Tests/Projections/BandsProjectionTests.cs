@@ -126,7 +126,7 @@ namespace Unrect.Tests.Projections
     // --- 3. The blank-band policy ------------------------------------------------------------------
 
     /// <summary>A value, a fully blank row, and a value: the shape every policy is distinguished on.</summary>
-    private static ISpace InteriorBlank() => Grid(new[,]
+    private static ICellValues InteriorBlank() => Grid(new[,]
     {
       { 1 },
       { 0 },

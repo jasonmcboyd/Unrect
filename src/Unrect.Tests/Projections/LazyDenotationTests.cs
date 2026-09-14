@@ -44,7 +44,7 @@ namespace Unrect.Tests.Projections
     /// a discovered bound and undescribed space below it for the diagnostics to have something to
     /// say.
     /// </summary>
-    private static ISpace Sheet() => Grid(new[,]
+    private static ICellValues Sheet() => Grid(new[,]
     {
       { 1, 2, 3 },
       { 4, 5, 6 },
@@ -57,7 +57,7 @@ namespace Unrect.Tests.Projections
     /// A hundred rows of values and three blank ones — long enough that "the projection read three
     /// rows" and "the scan read the lot" are different readings rather than the same one twice.
     /// </summary>
-    private static ISpace TallSheet()
+    private static ICellValues TallSheet()
     {
       var values = new int[103, 2];
 
@@ -75,7 +75,7 @@ namespace Unrect.Tests.Projections
     /// cref="Sheet"/> with a header on top, so the table rungs have captions to bind and
     /// undescribed space below.
     /// </summary>
-    private static ISpace Headered() => Mixed(new object?[,]
+    private static ICellValues Headered() => Mixed(new object?[,]
     {
       { "Client", "Amount" },
       { "Acme", 10 },
@@ -92,7 +92,7 @@ namespace Unrect.Tests.Projections
     /// where the deferred reading and the measured one read most nearly the same amount of the
     /// sheet.
     /// </summary>
-    private static ISpace LateWideningSheet()
+    private static ICellValues LateWideningSheet()
     {
       var values = new object?[104, 2];
 
@@ -390,7 +390,7 @@ namespace Unrect.Tests.Projections
     // asks the counting space how much of the sheet has been read is asking a question the two paths
     // answer differently — nothing yet, versus the whole scan.
 
-    private static int RowsReadBeforeTheProjectionRuns(Func<Func<CellBlock, int>, IProjection<int>> declare, ISpace sheet, bool eager)
+    private static int RowsReadBeforeTheProjectionRuns(Func<Func<CellBlock, int>, IProjection<int>> declare, ICellValues sheet, bool eager)
     {
       var counter = new CountingSpace(sheet);
       var observed = -1;
@@ -571,7 +571,7 @@ namespace Unrect.Tests.Projections
     /// <see cref="Sheet"/> with a hole in its first row, so an "any" column rule cannot settle the
     /// width there and the walk has to take a second row to find it.
     /// </summary>
-    private static ISpace HoledSheet() => Grid(new[,]
+    private static ICellValues HoledSheet() => Grid(new[,]
     {
       { 1, 0, 3 },
       { 4, 5, 6 },
@@ -659,7 +659,7 @@ namespace Unrect.Tests.Projections
 
       private Func<Outcome> Observe { get; }
 
-      public static Scenario Of<T>(IProjection<T> projection, ISpace space) => new Scenario(() => Read(projection, space));
+      public static Scenario Of<T>(IProjection<T> projection, ICellValues space) => new Scenario(() => Read(projection, space));
 
       public Outcome Lazily() => Observe();
 
@@ -669,7 +669,7 @@ namespace Unrect.Tests.Projections
           return Observe();
       }
 
-      private static Outcome Read<T>(IProjection<T> projection, ISpace space)
+      private static Outcome Read<T>(IProjection<T> projection, ICellValues space)
       {
         try
         {
@@ -738,9 +738,9 @@ namespace Unrect.Tests.Projections
     /// </summary>
     private sealed class OverwideStrategy : IIncrementalAreaStrategy
     {
-      public IAreaScan BeginArea(ISpace availableSpace) => new Scan(availableSpace.Area.Width + 1);
+      public IAreaScan BeginArea(ICellValues availableSpace) => new Scan(availableSpace.Area.Width + 1);
 
-      public Area GetArea(ISpace availableSpace) => Scans.FoldArea(BeginArea(availableSpace), availableSpace);
+      public Area GetArea(ICellValues availableSpace) => Scans.FoldArea(BeginArea(availableSpace), availableSpace);
 
       private sealed class Scan : IAreaScan
       {
@@ -748,7 +748,7 @@ namespace Unrect.Tests.Projections
 
         public int Width { get; }
 
-        public bool IncludesRow(ISpace space, int row) => !space[0, row].IsBlank;
+        public bool IncludesRow(ICellValues space, int row) => !space[0, row].IsBlank;
       }
     }
   }

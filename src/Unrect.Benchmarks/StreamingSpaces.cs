@@ -80,7 +80,7 @@ namespace Unrect.Benchmarks
     }
 
     /// <summary>The same rows as a materialised grid: the eager side of the headline ratio.</summary>
-    public static ISpace Grid(int rows = Rows, int columns = Columns)
+    public static ICellValues Grid(int rows = Rows, int columns = Columns)
     {
       var cells = new CellValue[rows, columns];
 
@@ -103,7 +103,7 @@ namespace Unrect.Benchmarks
     }
 
     /// <summary>A window over a synthetic sheet, sized in rows.</summary>
-    public static ISpace Windowed(ReaderPool pool, int windowRows = WindowRows, int rows = Rows, int columns = Columns)
+    public static ICellValues Windowed(ReaderPool pool, int windowRows = WindowRows, int rows = Rows, int columns = Columns)
     {
       var chunkRows = SheetStore.DefaultChunkRows(columns);
 

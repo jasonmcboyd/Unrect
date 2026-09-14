@@ -39,7 +39,7 @@ namespace Unrect.Tests.Spreadsheets
         File.Delete(_path);
     }
 
-    private ISpace Durations() => SpreadsheetSpace.Create(_path, "Durations");
+    private ICellValues Durations() => SpreadsheetSpace.Create(_path, "Durations");
 
     [Fact]
     public void ADurationCellIsANumberOfDays()

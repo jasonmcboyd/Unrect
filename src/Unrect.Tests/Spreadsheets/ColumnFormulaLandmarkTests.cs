@@ -72,7 +72,7 @@ namespace Unrect.Tests.Spreadsheets
     }
 
     /// <summary>A space that holds no formulas and cannot be asked about them.</summary>
-    private static ISpace Plain() => GridSpace.Create(new[,] { { "a", "b" } });
+    private static ICellValues Plain() => GridSpace.Create(new[,] { { "a", "b" } });
 
     /// <summary>
     /// A space that CAN be asked and has nothing to report — the only way to reach the bare

@@ -117,14 +117,14 @@ namespace Unrect.Tests.Projections
 
     // --- Grids -----------------------------------------------------------------------------------------
 
-    private static ISpace Free() => Mixed(new object?[,]
+    private static ICellValues Free() => Mixed(new object?[,]
     {
       { "Investor Name", "Transaction Date", "Amount" },
       { "Acme", new DateTime(2026, 3, 4), 10m },
       { "Beta", new DateTime(2026, 5, 1), 20m },
     });
 
-    private static ISpace Captioned() => Mixed(new object?[,]
+    private static ICellValues Captioned() => Mixed(new object?[,]
     {
       { "Client", "Transaction Date", "Transaction Type", "Amount" },
       { "Acme", new DateTime(2026, 3, 4), "Capital Call", 10m },

@@ -29,19 +29,19 @@ namespace PlacementGauntlet.Staged
     // annotation — the demand is in the matcher's type and the pipeline carries it to the terminal.
 
     public static OffsetStage<TSpace> On<TSpace>(IRowLandmark<TSpace> landmark)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => StartScoped<TSpace>(Step.OnRow(landmark.Landmark));
 
     public static OffsetStage<TSpace> On<TSpace>(IColumnLandmark<TSpace> landmark)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => StartScoped<TSpace>(Step.OnColumn(landmark.Landmark));
 
     public static OffsetStage<TSpace> Below<TSpace>(IRowLandmark<TSpace> landmark)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => StartScoped<TSpace>(Step.Below(landmark.Landmark));
 
     public static OffsetStage<TSpace> RightOf<TSpace>(IColumnLandmark<TSpace> landmark)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => StartScoped<TSpace>(Step.RightOf(landmark.Landmark));
 
     // --- The strategy door, the filler-steppers, and the counted movements as entries --------------
@@ -118,13 +118,13 @@ namespace PlacementGauntlet.Staged
     /// </para>
     /// </summary>
     public static PlacementScope<TSpace> Over<TSpace>()
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => default;
 
     private static OffsetStage Start(Step step) => new OffsetStage(Steps.None.Then(step));
 
     private static OffsetStage<TSpace> StartScoped<TSpace>(Step step)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => new OffsetStage<TSpace>(Steps.None.Then(step));
   }
 
@@ -135,7 +135,7 @@ namespace PlacementGauntlet.Staged
   /// </summary>
   /// <typeparam name="TSpace">The space everything built through this scope is declared over.</typeparam>
   public readonly struct PlacementScope<TSpace>
-    where TSpace : class, ISpace
+    where TSpace : class, ICellValues
   {
     /// <summary>The neutral entry: no placement declared, but the space answered.</summary>
     public OffsetStage<TSpace> Offset() => new OffsetStage<TSpace>(Steps.None);

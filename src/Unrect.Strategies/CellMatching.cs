@@ -29,7 +29,7 @@ namespace Unrect.Strategies
   /// </summary>
   internal static class CellMatching
   {
-    public static Func<ISpace, int, bool> AnyCellInRow(Func<CellValue, bool> cell)
+    public static Func<ICellValues, int, bool> AnyCellInRow(Func<CellValue, bool> cell)
       => (space, row) =>
       {
         for (var column = 0; column < space.Area.Width; column++)
@@ -39,7 +39,7 @@ namespace Unrect.Strategies
         return false;
       };
 
-    public static Func<ISpace, int, bool> AnyCellInColumn(Func<CellValue, bool> cell)
+    public static Func<ICellValues, int, bool> AnyCellInColumn(Func<CellValue, bool> cell)
       => (space, column) =>
       {
         for (var row = 0; row < space.Area.Height; row++)

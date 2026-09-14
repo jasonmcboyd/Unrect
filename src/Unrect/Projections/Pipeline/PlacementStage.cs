@@ -272,7 +272,7 @@ namespace Unrect.Projections
     /// <typeparam name="T">What the projection reads.</typeparam>
     /// <param name="projection">The declaration to place.</param>
     public IProjection<TSpace, T> Of<TSpace, T>(IProjection<TSpace, T> projection)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => Steps.ApplyTo(ProjectionExtensions.Plain(
         projection ?? throw new ArgumentNullException(nameof(projection))));
 
@@ -319,7 +319,7 @@ namespace Unrect.Projections
     /// <param name="landmark">The row the extent stops before.</param>
     /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
     public BoundStage<TSpace> Until<TSpace>(IRowLandmark<TSpace> landmark, bool orEnd = false)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => new BoundStage<TSpace>(Steps.Then(Step.UntilRow(
         (landmark ?? throw new ArgumentNullException(nameof(landmark))).Landmark,
         orEnd)));
@@ -339,7 +339,7 @@ namespace Unrect.Projections
     /// <param name="landmark">The column the extent stops before.</param>
     /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
     public BoundStage<TSpace> UntilColumn<TSpace>(IColumnLandmark<TSpace> landmark, bool orEnd = false)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => new BoundStage<TSpace>(Steps.Then(Step.UntilColumn(
         (landmark ?? throw new ArgumentNullException(nameof(landmark))).Landmark,
         orEnd)));

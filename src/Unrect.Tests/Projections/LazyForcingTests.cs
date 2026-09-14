@@ -44,7 +44,7 @@ namespace Unrect.Tests.Projections
     /// having had to read row 100 to find out — so "forced to exhaustion" is 101 rows touched for a
     /// bound of 100, and the difference between the two numbers is the row that ended it.
     /// </summary>
-    private static ISpace TallSheet()
+    private static ICellValues TallSheet()
     {
       var values = new int[103, 2];
 
@@ -66,7 +66,7 @@ namespace Unrect.Tests.Projections
     /// with what the whole application ended up consuming, which is the other half of every fact
     /// here.
     /// </summary>
-    private static (int RowsTouchedAtReadTime, Size Consumed) Observe(Action<ISpace> read)
+    private static (int RowsTouchedAtReadTime, Size Consumed) Observe(Action<ICellValues> read)
       => ObserveBlock(block => read(block.Space));
 
     /// <summary>
@@ -167,7 +167,7 @@ namespace Unrect.Tests.Projections
     public void TheBlocksWidthIsFreeOnADiscoveredBound()
     {
       // Zero rows for a question about columns. This is where the width/height seam is observable —
-      // ISpace cannot give a free width (see AskingAPublicSpaceForItsWidthForcesTheHeightWithIt),
+      // ICellValues cannot give a free width (see AskingAPublicSpaceForItsWidthForcesTheHeightWithIt),
       // and the view can, because it reads the bound through BoundedSpace.WidthOf.
       var (observed, _) = ObserveBlock(block => Assert.Equal(2, block.Width));
 
@@ -258,10 +258,10 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AskingAPublicSpaceForItsWidthForcesTheHeightWithIt()
     {
-      // DECIDED, not pending. §11.5 says a width never forces the height, and through ISpace it
-      // does force, because ISpace.Area is ONE struct: there is no answering half of it, so a
+      // DECIDED, not pending. §11.5 says a width never forces the height, and through ICellValues it
+      // does force, because ICellValues.Area is ONE struct: there is no answering half of it, so a
       // public caller asking for a width asks for a height too. Step 6 did not change that and no
-      // step will without surgery on ISpace. What it changed is that the free width now exists one
+      // step will without surgery on ICellValues. What it changed is that the free width now exists one
       // level up, internal, as BoundedSpace.WidthOf — so the 0 lives on the views, pinned by
       // TheBlocksWidthIsFreeOnADiscoveredBound and TheTablesColumnVocabularyIsFree below.
       var (observed, _) = Observe(space => Assert.Equal(2, space.Area.Width));
@@ -374,7 +374,7 @@ namespace Unrect.Tests.Projections
     /// <see cref="TallSheet"/>. The declared extent is 101 rows with the header, and reaching
     /// exhaustion costs 102, the extra one being the blank row that ends the scan.
     /// </summary>
-    private static ISpace TallTable()
+    private static ICellValues TallTable()
     {
       var values = new object?[104, 2];
 
@@ -514,7 +514,7 @@ namespace Unrect.Tests.Projections
     /// <summary>
     /// How much of the sheet had been read at the moment each body row was projected.
     /// </summary>
-    private static IReadOnlyList<int> RowsReadAsEachBodyRowProjects(bool sized, ISpace? sheet = null)
+    private static IReadOnlyList<int> RowsReadAsEachBodyRowProjects(bool sized, ICellValues? sheet = null)
     {
       var counter = new CountingSpace(sheet ?? TallTable());
       var observations = new List<int>();
@@ -566,7 +566,7 @@ namespace Unrect.Tests.Projections
     /// The same hundred body rows, with the second column empty until row 50 — so the width is not
     /// settled by the caption row and the walk that decides it has to go looking.
     /// </summary>
-    private static ISpace LateWideningTable()
+    private static ICellValues LateWideningTable()
     {
       var values = new object?[104, 2];
 

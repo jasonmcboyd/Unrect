@@ -13,7 +13,7 @@ namespace Unrect.Spreadsheets
   /// <see cref="CellValue"/> — which is where <em>blankness is decided</em>, the one question the
   /// grid itself cannot answer.
   /// <para>
-  /// This is a factory and not a type. What comes back is an <see cref="ISpace"/>, or an
+  /// This is a factory and not a type. What comes back is an <see cref="ICellValues"/>, or an
   /// <see cref="ISpreadsheetSpace"/> where formulas were asked for: the domain's face is the
   /// interface, because the eager door, the streaming door and a test double are three different
   /// objects and a declaration should not be written against any one of them. (The delegation shell
@@ -54,7 +54,7 @@ namespace Unrect.Spreadsheets
     /// The named sheet of <paramref name="path"/>, with blankness decided by
     /// <paramref name="isBlank"/> — see the sibling overload for what the default does.
     /// </summary>
-    public static ISpace Create(
+    public static ICellValues Create(
       string path,
       string sheetName,
       bool caseSensitive = false,
@@ -83,7 +83,7 @@ namespace Unrect.Spreadsheets
     /// grid is built, and only for such a sheet.
     /// </para>
     /// </summary>
-    public static IEnumerable<ISpace> Create(
+    public static IEnumerable<ICellValues> Create(
       string path,
       Func<SpreadsheetContext, bool> predicate,
       Func<CellValue, bool>? isBlank = null)
@@ -138,7 +138,7 @@ namespace Unrect.Spreadsheets
       // statement of what the overload above already decided rather than a hope about the elements.
       => Read(path, predicate, isBlank, withFormulas: true).Cast<ISpreadsheetSpace>();
 
-    private static ISpace Sheet(
+    private static ICellValues Sheet(
       string path,
       string sheetName,
       bool caseSensitive,
@@ -154,7 +154,7 @@ namespace Unrect.Spreadsheets
       // they opened or the name they asked for.
       ?? throw new ArgumentException($"No sheet named '{sheetName}' in '{path}'.", nameof(sheetName));
 
-    private static IEnumerable<ISpace> Read(
+    private static IEnumerable<ICellValues> Read(
       string path,
       Func<SpreadsheetContext, bool> predicate,
       Func<CellValue, bool>? isBlank,

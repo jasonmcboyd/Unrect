@@ -27,7 +27,7 @@ namespace Unrect.Projections
 
     public override string Description => "Record";
 
-    public override ProjectionResult<T> Project(ISpace extent, ProjectionContext context)
+    public override ProjectionResult<T> Project(ICellValues extent, ProjectionContext context)
     {
       var strip = new CellStrip(extent, Orientation.Horizontal, context);
       var row = new TableRow(context.Ordinal ?? 0, strip, context);

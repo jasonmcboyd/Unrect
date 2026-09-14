@@ -6,11 +6,11 @@
   <Namespace>Unrect.Core</Namespace>
   <Namespace>Unrect.Spreadsheets</Namespace>
   <Namespace>Unrect.Projections</Namespace>
-  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Core.ISpace&gt;</Namespace>
+  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Core.ICellValues&gt;</Namespace>
 </Query>
 
 // The space this file is written over is named ONCE, in the query's namespace imports:
-// `using static Unrect.Projections.ProjectionBuilders<Unrect.Core.ISpace>`. Everything below is
+// `using static Unrect.Projections.ProjectionBuilders<Unrect.Core.ICellValues>`. Everything below is
 // spelled with no prefix and no type argument. A file that read formulas would name
 // ISpreadsheetSpace there instead — and nothing else in it would change.
 var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\examples\simple-report.xlsx");

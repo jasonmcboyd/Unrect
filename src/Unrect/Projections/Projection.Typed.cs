@@ -49,7 +49,7 @@ namespace Unrect.Projections
     /// <param name="over">The capability's witness, published by the package that owns it.</param>
     /// <param name="build">The layout, declaring its children by calling <c>Next</c>.</param>
     public static IProjection<TSpace, T> VerticalFlow<TSpace, T>(Demand<TSpace> over, Layout<TSpace, T> build)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => Witnessed<TSpace, T>(over, new FlowProjection<T>(Orientation.Vertical, Adapt(NotNull(build, nameof(build))), Placement.Default));
 
     /// <inheritdoc cref="VerticalFlow{TSpace, T}(Demand{TSpace}, Layout{TSpace, T})"/>
@@ -58,7 +58,7 @@ namespace Unrect.Projections
     /// <param name="over">The capability's witness.</param>
     /// <param name="build">The layout.</param>
     public static IProjection<TSpace, T> HorizontalFlow<TSpace, T>(Demand<TSpace> over, Layout<TSpace, T> build)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => Witnessed<TSpace, T>(over, new FlowProjection<T>(Orientation.Horizontal, Adapt(NotNull(build, nameof(build))), Placement.Default));
 
     /// <inheritdoc cref="VerticalFlow{TSpace, T}(Demand{TSpace}, Layout{TSpace, T})"/>
@@ -67,11 +67,11 @@ namespace Unrect.Projections
     /// <param name="over">The capability's witness.</param>
     /// <param name="build">The layout.</param>
     public static IProjection<TSpace, T> Overlay<TSpace, T>(Demand<TSpace> over, Layout<TSpace, T> build)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => Witnessed<TSpace, T>(over, new OverlayProjection<T>(Adapt(NotNull(build, nameof(build))), Placement.Default));
 
     private static IProjection<TSpace, T> Witnessed<TSpace, T>(Demand<TSpace> over, IProjection<TSpace, T> projection)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => over is null ? throw new ArgumentNullException(nameof(over)) : projection;
 
     /// <inheritdoc cref="Table{T}(int, IProjection{T}, string)"/>
@@ -84,7 +84,7 @@ namespace Unrect.Projections
       int headerRows,
       IProjection<TSpace, T> eachRow,
       [CallerArgumentExpression("eachRow")] string? declared = null)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => Table(headerRows, ProjectionExtensions.Plain(NotNull(eachRow, nameof(eachRow))), declared);
 
     /// <inheritdoc cref="Table{T}(int, Func{LabelMap, IProjection{T}}, string)"/>
@@ -97,7 +97,7 @@ namespace Unrect.Projections
       int headerRows,
       Func<LabelMap, IProjection<TSpace, T>> eachRow,
       [CallerArgumentExpression("eachRow")] string? declared = null)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => eachRow is null
         ? throw new ArgumentNullException(nameof(eachRow))
         : Table(headerRows, Adapt(eachRow), declared);
@@ -114,7 +114,7 @@ namespace Unrect.Projections
       IOffsetStrategy? separatedBy = null,
       int atLeast = 0,
       [CallerArgumentExpression("item")] string? declared = null)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => Repeat(Orientation.Vertical, ProjectionExtensions.Plain(NotNull(item, nameof(item))), separatedBy, atLeast, declared);
 
     /// <inheritdoc cref="VerticalRepeat{TSpace, T}"/>
@@ -129,7 +129,7 @@ namespace Unrect.Projections
       IOffsetStrategy? separatedBy = null,
       int atLeast = 0,
       [CallerArgumentExpression("item")] string? declared = null)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => Repeat(Orientation.Horizontal, ProjectionExtensions.Plain(NotNull(item, nameof(item))), separatedBy, atLeast, declared);
 
     /// <summary>
@@ -146,7 +146,7 @@ namespace Unrect.Projections
     /// <typeparam name="T">What every alternative reads.</typeparam>
     /// <param name="alternatives">The alternatives, tried in declaration order.</param>
     public static IProjection<TSpace, T> Choice<TSpace, T>(params IProjection<TSpace, T>[] alternatives)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
     {
       if (alternatives is null)
         throw new ArgumentNullException(nameof(alternatives));
@@ -166,7 +166,7 @@ namespace Unrect.Projections
     /// and nothing about how the layout runs changes.
     /// </summary>
     private static Layout<T> Adapt<TSpace, T>(Layout<TSpace, T> build)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => cursor => build(new LayoutCursor<TSpace>(cursor.State));
 
     /// <summary>
@@ -175,7 +175,7 @@ namespace Unrect.Projections
     /// because that is the plain form's failure to report and one message beats two.
     /// </summary>
     private static Func<LabelMap, IProjection<T>> Adapt<TSpace, T>(Func<LabelMap, IProjection<TSpace, T>> eachRow)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => labels =>
       {
         var row = eachRow(labels);
@@ -187,11 +187,11 @@ namespace Unrect.Projections
     /// <see cref="ProjectionExtensions.Plain{TSpace, T}"/>, whose cast guard would otherwise see a null
     /// first and answer in the wrong words ("projection" where the caller wrote "eachRow").</summary>
     private static IProjection<TSpace, T> NotNull<TSpace, T>(IProjection<TSpace, T> projection, string parameter)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => projection ?? throw new ArgumentNullException(parameter);
 
     private static Layout<TSpace, T> NotNull<TSpace, T>(Layout<TSpace, T> build, string parameter)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => build ?? throw new ArgumentNullException(parameter);
   }
 }

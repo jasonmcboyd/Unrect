@@ -21,9 +21,9 @@ namespace Unrect.Tests.Spreadsheets
     private static string WorkbookPath(string fileName)
       => Path.Combine(AppContext.BaseDirectory, "TestData", fileName);
 
-    private static ISpace SimpleReport() => SpreadsheetSpace.Create(WorkbookPath("simple-report.xlsx"), "Report");
+    private static ICellValues SimpleReport() => SpreadsheetSpace.Create(WorkbookPath("simple-report.xlsx"), "Report");
 
-    private static ISpace InvestorsByDeal() => SpreadsheetSpace.Create(WorkbookPath("investors-by-deal.xlsx"), "Investors");
+    private static ICellValues InvestorsByDeal() => SpreadsheetSpace.Create(WorkbookPath("investors-by-deal.xlsx"), "Investors");
 
     // --- Adapter behaviour ------------------------------------------------------------------------
 
@@ -193,7 +193,7 @@ namespace Unrect.Tests.Spreadsheets
     // path is a sheet with no VALUED cell — which is a sheet with no text to share. The rule is the
     // same one already recorded for the measured path's width above, and for the same reason.
 
-    private static ISpace RepeatedText(string sheetName = "Ledger")
+    private static ICellValues RepeatedText(string sheetName = "Ledger")
       => SpreadsheetSpace.Create(WorkbookPath("repeated-text.xlsx"), sheetName);
 
     [Fact]

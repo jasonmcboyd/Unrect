@@ -14,7 +14,7 @@ namespace Unrect.Analyzers
   /// declaration asks for.
   /// <para>
   /// The rule is one question asked of a whole declaration: <em>does any leaf, matcher or witness
-  /// underneath this factory demand more than <c>ISpace</c>?</em> A demand a scope manufactures does
+  /// underneath this factory demand more than <c>ICellValues</c>?</em> A demand a scope manufactures does
   /// not count — that is the thing being questioned — so a nested scoped factory is looked
   /// <em>through</em> rather than at, and only the outermost scoped construction is reported. Fix
   /// that one and the next surfaces, the way an unused using does.
@@ -84,7 +84,7 @@ namespace Unrect.Analyzers
     /// <summary>
     /// True when something under the chain genuinely demands a capability: a demanding leaf, a
     /// demanding matcher, an ascription, or anything else whose own type names a space beyond
-    /// <c>ISpace</c> without a scope having put it there.
+    /// <c>ICellValues</c> without a scope having put it there.
     /// </summary>
     private static bool Demands(
       InvocationExpressionSyntax entry,

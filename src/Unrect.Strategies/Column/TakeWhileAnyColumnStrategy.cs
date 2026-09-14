@@ -28,7 +28,7 @@ namespace Unrect.Strategies
 
     public IColumnAccumulator BeginColumns(int width) => new Accumulator(Predicate, width);
 
-    public int SelectColumns(ISpace space)
+    public int SelectColumns(ICellValues space)
       => ColumnAccumulators.Fold(BeginColumns(space.Area.Width), space);
 
     private sealed class Accumulator : IColumnAccumulator
@@ -49,7 +49,7 @@ namespace Unrect.Strategies
 
       private Func<CellValue, bool> Predicate { get; }
 
-      public void Include(ISpace space, int row)
+      public void Include(ICellValues space, int row)
       {
         for (var column = Count; column < _matched.Length; column++)
         {

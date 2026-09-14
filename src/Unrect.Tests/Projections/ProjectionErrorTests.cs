@@ -19,7 +19,7 @@ namespace Unrect.Tests.Projections
   /// </summary>
   public class ProjectionErrorTests
   {
-    private static ISpace Square() => Grid(new[,] { { 1, 2 }, { 3, 4 } });
+    private static ICellValues Square() => Grid(new[,] { { 1, 2 }, { 3, 4 } });
 
     // --- Case A: the offset does not fit ---------------------------------------------------------------
 
@@ -97,7 +97,7 @@ namespace Unrect.Tests.Projections
       Assert.Contains("its offset ran past the available space", Missing(FromRight(9), space));
     }
 
-    private static string Missing(IOffsetStrategy offset, ISpace space)
+    private static string Missing(IOffsetStrategy offset, ICellValues space)
       => Assert.Throws<ProjectionException>(() => OffsetBy(offset).Of(TextCell()).Map(space)).Message;
 
     // --- Case B: the area does not fit ------------------------------------------------------------------

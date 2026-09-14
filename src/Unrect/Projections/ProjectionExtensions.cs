@@ -41,7 +41,7 @@ namespace Unrect.Projections
     /// placement is applied here too, exactly as it would be nested inside another projection.
     /// <para>
     /// <paramref name="space"/> must satisfy whatever the projection demands, which for a
-    /// declaration that names no capability is any <see cref="ISpace"/> at all. A declaration that
+    /// declaration that names no capability is any <see cref="ICellValues"/> at all. A declaration that
     /// reads formulas will not compile against a grid that has none.
     /// </para>
     /// <para>
@@ -62,7 +62,7 @@ namespace Unrect.Projections
     /// <param name="projection">The declaration.</param>
     /// <param name="space">The space to decompose.</param>
     public static TResult Map<TSpace, TResult>(this IProjection<TSpace, TResult> projection, TSpace space)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => projection.Apply(space).Value;
 
     /// <summary>
@@ -74,7 +74,7 @@ namespace Unrect.Projections
     /// <param name="projection">The declaration.</param>
     /// <param name="space">The space to decompose.</param>
     public static AppliedResult<TResult> Apply<TSpace, TResult>(this IProjection<TSpace, TResult> projection, TSpace space)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
     {
       if (projection is null)
         throw new ArgumentNullException(nameof(projection));
@@ -108,7 +108,7 @@ namespace Unrect.Projections
     /// <param name="projection">The declaration.</param>
     /// <param name="space">The space to decompose.</param>
     public static MapResult<TResult> MapWithDiagnostics<TSpace, TResult>(this IProjection<TSpace, TResult> projection, TSpace space)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
     {
       if (projection is null)
         throw new ArgumentNullException(nameof(projection));
@@ -398,7 +398,7 @@ namespace Unrect.Projections
     /// forgetting it here is the identity.
     /// </summary>
     internal static IProjection<T> Plain<TSpace, T>(IProjection<TSpace, T> projection)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => projection as IProjection<T> ?? throw NotOurs(projection, nameof(projection));
 
     private static TProjection Pad<TProjection>(TProjection projection, int left, int top, int right, int bottom)

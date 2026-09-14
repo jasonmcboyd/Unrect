@@ -24,7 +24,7 @@ namespace Unrect.Spreadsheets
   /// had. Forgetting is safe in the type system and a lie in a space.
   /// </para>
   /// </summary>
-  public interface IFormulaSpace : ISpace
+  public interface IFormulaSpace : ICellValues
   {
     /// <summary>
     /// The formula behind the cell at <paramref name="column"/>, <paramref name="row"/>, in this

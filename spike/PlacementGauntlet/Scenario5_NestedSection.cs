@@ -87,7 +87,7 @@ namespace PlacementGauntlet
     // meaningful semantics, not a contradiction — which is why it was never a candidate for the
     // runtime refusal. The pipeline dissolves it by GRAMMAR: after a bound, only a terminal follows.
 
-    private static void FrameHazard(Unrect.Core.ISpace sheet)
+    private static void FrameHazard(Unrect.Core.ICellValues sheet)
     {
       var section = VerticalFlow(v => new KSection(
         Caption: v.Next(Caption("K-1 Lines 1-21")),

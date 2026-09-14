@@ -60,7 +60,7 @@ namespace Unrect.Tests.Projections
     // --- The sheets --------------------------------------------------------------------------------
 
     /// <summary>Four rows, two columns, the landmark on row 3 (index 2).</summary>
-    private static ISpace Rows() => Mixed(new object?[,]
+    private static ICellValues Rows() => Mixed(new object?[,]
     {
       { "a0", "a1" },
       { "b0", "b1" },
@@ -69,7 +69,7 @@ namespace Unrect.Tests.Projections
     });
 
     /// <summary>The same sheet with the landmark on the FIRST row, so a bound leaves nothing.</summary>
-    private static ISpace MarkFirst() => Mixed(new object?[,]
+    private static ICellValues MarkFirst() => Mixed(new object?[,]
     {
       { "Mark", "a1" },
       { "b0", "b1" },
@@ -78,7 +78,7 @@ namespace Unrect.Tests.Projections
     });
 
     /// <summary>A wholly blank first row — the filler a content-sensitive movement steps over.</summary>
-    private static ISpace BlankLead() => Mixed(new object?[,]
+    private static ICellValues BlankLead() => Mixed(new object?[,]
     {
       { null, null },
       { "b0", "b1" },
@@ -91,7 +91,7 @@ namespace Unrect.Tests.Projections
     /// IS blank; unsliced it is not — which is what makes a column movement change what "blank row"
     /// means.
     /// </summary>
-    private static ISpace Ragged() => Mixed(new object?[,]
+    private static ICellValues Ragged() => Mixed(new object?[,]
     {
       { "a0", null },
       { "b0", "b1" },
@@ -100,7 +100,7 @@ namespace Unrect.Tests.Projections
     });
 
     /// <summary>Column 1 is numbers all the way down, so a <c>Text</c> leaf fails wherever it lands.</summary>
-    private static ISpace Numbers() => Mixed(new object?[,]
+    private static ICellValues Numbers() => Mixed(new object?[,]
     {
       { 1, "a1" },
       { 2, "b1" },
@@ -758,7 +758,7 @@ namespace Unrect.Tests.Projections
       // observe, so nothing to pin beyond this identity.)
       var projection = Down(1).Of(Text());
 
-      Assert.Same(projection, projection.Demanding(Demand<ISpace>.Instance));
+      Assert.Same(projection, projection.Demanding(Demand<ICellValues>.Instance));
     }
   }
 }

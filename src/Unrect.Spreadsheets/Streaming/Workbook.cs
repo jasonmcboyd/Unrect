@@ -53,7 +53,7 @@ namespace Unrect.Spreadsheets
   /// materialised grid, not the parser.</para>
   ///
   /// <para><b>No formulas, said out loud.</b> <see cref="Sheet"/> hands back a plain
-  /// <see cref="ISpace"/>: a streamed sheet does not implement <see cref="IFormulaSpace"/>, so
+  /// <see cref="ICellValues"/>: a streamed sheet does not implement <see cref="IFormulaSpace"/>, so
   /// <c>Capability&lt;IFormulaSpace&gt;()</c> over one answers null and a formula-demanding
   /// declaration will not compile against it. That is the honest absence, not an oversight — a
   /// space that implemented the capability and answered null everywhere would report a file full of
@@ -189,7 +189,7 @@ namespace Unrect.Spreadsheets
     /// </summary>
     /// <exception cref="ArgumentException">No sheet of that name exists.</exception>
     /// <exception cref="ObjectDisposedException">This workbook has been disposed.</exception>
-    public ISpace Sheet(string name)
+    public ICellValues Sheet(string name)
     {
       if (name is null)
         throw new ArgumentNullException(nameof(name));

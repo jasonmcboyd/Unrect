@@ -21,7 +21,7 @@ namespace Unrect.Projections
     /// </summary>
     /// <typeparam name="TSpace">The space everything built through the scope is declared over.</typeparam>
     public static ProjectionScope<TSpace> Over<TSpace>()
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => default;
   }
 
@@ -65,7 +65,7 @@ namespace Unrect.Projections
   /// capability, and points two lines away from the fix. In a scope the cursor's space is already
   /// answered, so the same mistake is a failed argument conversion and both types are named:
   /// <c>cannot convert from 'IProjection&lt;IFormulaSpace, string?&gt;' to
-  /// 'IProjection&lt;ISpace, string&gt;'</c>.
+  /// 'IProjection&lt;ICellValues, string&gt;'</c>.
   /// </para>
   /// <para>
   /// <b>Demand the weakest thing that works.</b> A scope raises everything built through it to
@@ -86,7 +86,7 @@ namespace Unrect.Projections
   /// </summary>
   /// <typeparam name="TSpace">The space everything built through this scope is declared over.</typeparam>
   public readonly struct ProjectionScope<TSpace>
-    where TSpace : class, ISpace
+    where TSpace : class, ICellValues
   {
     // --- Layouts ----------------------------------------------------------------------------
     //

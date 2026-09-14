@@ -24,7 +24,7 @@ namespace Unrect.Tests.Projections
     /// The shared coordinate grid, turned on its side: this file's placements read down a tall
     /// narrow sheet, where the other suites read across a wide one. Only the default differs.
     /// </summary>
-    private static ISpace CoordinateGrid(int width = 3, int height = 4)
+    private static ICellValues CoordinateGrid(int width = 3, int height = 4)
       => ProjectionTestSpaces.CoordinateGrid(width, height);
 
     // --- The placement is applied at the root ------------------------------------------------------
@@ -80,7 +80,7 @@ namespace Unrect.Tests.Projections
     // --- Whether a placement fits is asked a row at a time -----------------------------------------
     //
     // The fit test reads the available space through the forward probes (its width, and whether it
-    // has a row at the far edge of what is being asked for) rather than off ISpace.Area, so that an
+    // has a row at the far edge of what is being asked for) rather than off ICellValues.Area, so that an
     // extent still being discovered is asked for one row instead of for all of them. What it ANSWERS
     // must not depend on which kind of space it was asked about — so every case below is asserted
     // twice, over a measured grid and over a bound the engine is discovering, and the boundary case
@@ -104,7 +104,7 @@ namespace Unrect.Tests.Projections
       AssertFit(fits, extent, Sized(RowsWhileAnyValue()).Of(VerticalFlow(v => v.Next(block))), CoordinateGrid());
     }
 
-    private static void AssertFit(bool fits, string extent, IProjection<string> declaration, ISpace space)
+    private static void AssertFit(bool fits, string extent, IProjection<string> declaration, ICellValues space)
     {
       if (fits)
       {

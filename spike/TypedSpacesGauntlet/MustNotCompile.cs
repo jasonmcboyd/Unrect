@@ -33,10 +33,10 @@ namespace TypedSpacesGauntlet
     // (b) the same, with the type arguments stated
     public static AuditedReport B() => Report().Map<IFormulaSpace, AuditedReport>(Sheets.Plain());
 
-    // (c) the same, through an ISpace-typed variable
+    // (c) the same, through an ICellValues-typed variable
     public static AuditedReport C()
     {
-      ISpace plain = Sheets.Plain();
+      ICellValues plain = Sheets.Plain();
 
       return Report().Map(plain);
     }
@@ -82,21 +82,21 @@ namespace TypedSpacesGauntlet
     // (k) a SCOPED declaration applied to a plain grid — entry B's refusal, phase 6
     public static AuditedLedger K() => Gauntlet.ScopedAuditedLedger(Sheets.Plain());
 
-    // (l) the same at Map, through an ISpace-typed variable, with the type arguments stated
+    // (l) the same at Map, through an ICellValues-typed variable, with the type arguments stated
     public static IReadOnlyList<string?> L()
     {
       var p = Projection.Over<ISpreadsheetSpace>();
       var scoped = p.VerticalRepeat(p.Overlay(o => o.Next(Formula())));
 
-      ISpace plain = Sheets.Plain();
+      ICellValues plain = Sheets.Plain();
 
       return scoped.Map<ISpreadsheetSpace, IReadOnlyList<string?>>(plain);
     }
 
     // (m) a demanding child in a PLAIN SCOPE — the scoped twin of (e), which is where the scope
     // pays for itself: the refusal lands on the argument rather than on inference.
-    public static IProjection<ISpace, string?> M()
-      => Projection.Over<ISpace>().VerticalFlow(v => v.Next(Formula()));
+    public static IProjection<ICellValues, string?> M()
+      => Projection.Over<ICellValues>().VerticalFlow(v => v.Next(Formula()));
 
     // (n) the workbook sugar over a formula-reading declaration: there is no overload, because a
     // streamed sheet carries no formulas and the honest absence is stated by the receiver type.

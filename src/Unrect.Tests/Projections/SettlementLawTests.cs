@@ -50,7 +50,7 @@ namespace Unrect.Tests.Projections
     /// Two blocks of values with one blank row between them, so a repeat finds exactly two and a
     /// discovered extent has somewhere to stop.
     /// </summary>
-    private static ISpace TwoBlocks() => Grid(new[,]
+    private static ICellValues TwoBlocks() => Grid(new[,]
     {
       { 1, 2 },
       { 3, 4 },
@@ -123,7 +123,7 @@ namespace Unrect.Tests.Projections
     // --- Site 2: a flow child settles by the advance ----------------------------------------------
 
     /// <summary>Three rows of values, a blank one, and a tail — so a discovered band has a successor.</summary>
-    private static ISpace BlockThenGapThenTail() => Mixed(new object?[,] { { 1 }, { 2 }, { 3 }, { null }, { 9 } });
+    private static ICellValues BlockThenGapThenTail() => Mixed(new object?[,] { { 1 }, { 2 }, { 3 }, { null }, { 9 } });
 
     [Fact]
     public void AFlowChildSettlesByTheAdvance()
@@ -214,7 +214,7 @@ namespace Unrect.Tests.Projections
       Assert.Contains("alternative 1 ('first')", note.Message);
     }
 
-    private static MapResult<T> Read<T>(IProjection<T> projection, ISpace space, bool eager)
+    private static MapResult<T> Read<T>(IProjection<T> projection, ICellValues space, bool eager)
     {
       if (!eager)
         return projection.MapWithDiagnostics(space);

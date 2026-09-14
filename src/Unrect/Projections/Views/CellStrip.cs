@@ -12,7 +12,7 @@ namespace Unrect.Projections
   /// </summary>
   public sealed class CellStrip : IReadOnlyList<CellValue>
   {
-    internal CellStrip(ISpace space, Orientation orientation, ProjectionContext context)
+    internal CellStrip(ICellValues space, Orientation orientation, ProjectionContext context)
     {
       Space = space;
       Orientation = orientation;
@@ -20,7 +20,7 @@ namespace Unrect.Projections
     }
 
     /// <summary>The strip's own extent — one cell wide or one cell tall, depending on its orientation.</summary>
-    public ISpace Space { get; }
+    public ICellValues Space { get; }
 
     private Orientation Orientation { get; }
 

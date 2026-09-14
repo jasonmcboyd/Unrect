@@ -111,12 +111,12 @@ namespace PlacementGauntlet
     // (h) THE SAME REFUSAL, TAUGHT. The scoped offset stage carries the four anchors as
     //     [Obsolete(error)] stubs, so the compiler says the library's words instead of its own. This
     //     is the same class of error as the OrBlank-after-wrapper precedent, moved to compile time.
-    //     CS0619: 'OffsetStage<ISpace>.On(IRowLandmark)' is obsolete: 'a pipeline declares where it
+    //     CS0619: 'OffsetStage<ICellValues>.On(IRowLandmark)' is obsolete: 'a pipeline declares where it
     //             starts once, and its anchor is its entry: On/Below/RightOf/OffsetBy are factories,
     //             not stages. To search inside a region another landmark found, nest — place the
     //             region, and place this projection within it. To carry on from a position, use Down
     //             or Right, which compose onto it.'
-    public static object H() => Place.Over<ISpace>().Below(Mark).On(Other).Text();
+    public static object H() => Place.Over<ICellValues>().Below(Mark).On(Other).Text();
 
     // (i) THE OWNER'S SKETCH, VERBATIM. An ascription that states the space and infers the result
     //     cannot exist: C# infers a method's type arguments all or none. The scoped ENTRY is the
@@ -137,17 +137,17 @@ namespace PlacementGauntlet
     //     rather than interfaces with extension terminals. A terminal whose result type must be
     //     STATED cannot be an extension on a stage generic in the space: stating one of two type
     //     arguments makes the method invisible.
-    //     CS1061: 'OffsetStage<ISpace>' does not contain a definition for 'TableExt' and no accessible
-    //             extension method 'TableExt' accepting a first argument of type 'OffsetStage<ISpace>'
+    //     CS1061: 'OffsetStage<ICellValues>' does not contain a definition for 'TableExt' and no accessible
+    //             extension method 'TableExt' accepting a first argument of type 'OffsetStage<ICellValues>'
     //             could be found (are you missing a using directive or an assembly reference?)
     // The stage type is spelled in full: since the pipeline shipped, `PlacementStage<TSpace>` is
     // ambiguous between the spike's and the library's, and a TYPE ambiguity is a declaration error,
     // which stops Roslyn binding any body in the compilation — the whole ledger would go silent.
     public static IProjection<TSpace, IReadOnlyList<T>> TableExt<TSpace, T>(this Staged.PlacementStage<TSpace> stage)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => stage.Table<T>();
 
-    public static object K() => Place.Over<ISpace>().Offset().TableExt<Position>();
+    public static object K() => Place.Over<ICellValues>().Offset().TableExt<Position>();
 
     // --- The geography law's additions (2026-09-09) ------------------------------------------------
 

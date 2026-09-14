@@ -23,7 +23,7 @@ namespace Unrect.Tests.Projections
   public class CaptionProjectionTests
   {
     // A junk row, then the caption written as the file has it, then two data rows.
-    private static ISpace Sheet() => Mixed(new object?[,]
+    private static ICellValues Sheet() => Mixed(new object?[,]
     {
       { "junk", null },
       { "  EIN:  ", null },

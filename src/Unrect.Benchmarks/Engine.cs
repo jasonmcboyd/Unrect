@@ -74,11 +74,11 @@ namespace Unrect.Benchmarks
     private static readonly IProjection<int> Section =
       Heading(CanonicalSpaces.DetailsCaption).Of(Range(RowsWhileAnyValue(), b => b.Height));
 
-    private ISpace _tall = default!;
-    private ISpace _blocks = default!;
-    private ISpace _band = default!;
-    private ISpace _document = default!;
-    private ISpace _mixed = default!;
+    private ICellValues _tall = default!;
+    private ICellValues _blocks = default!;
+    private ICellValues _band = default!;
+    private ICellValues _document = default!;
+    private ICellValues _mixed = default!;
 
     [GlobalSetup]
     public void Setup()

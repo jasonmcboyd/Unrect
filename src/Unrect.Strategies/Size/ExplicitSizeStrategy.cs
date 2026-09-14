@@ -17,6 +17,6 @@ namespace Unrect.Strategies
     private int Width { get; }
     private int Height { get; }
 
-    public Size GetSize(ISpace availableSpace) => new Size(Width, Height);
+    public Size GetSize(ICellValues availableSpace) => new Size(Width, Height);
   }
 }

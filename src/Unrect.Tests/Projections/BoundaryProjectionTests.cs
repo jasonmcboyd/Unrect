@@ -20,7 +20,7 @@ namespace Unrect.Tests.Projections
   public class BoundaryProjectionTests
   {
     // One column of numbers, so a projection asking for text is a guaranteed, well-located failure.
-    private static ISpace Numbers(int height = 3)
+    private static ICellValues Numbers(int height = 3)
     {
       var values = new int[height, 1];
 
@@ -341,7 +341,7 @@ namespace Unrect.Tests.Projections
     // failed — and fails the same way, for the same reason, while blaming itself. The note is the
     // framework saying "the projection before me read nothing, which is probably why I am here".
 
-    private static ISpace TextOverNumber() => Mixed(new object?[,] { { "x" }, { 5 } });
+    private static ICellValues TextOverNumber() => Mixed(new object?[,] { { "x" }, { 5 } });
 
     private static IProjection<string> AbsorbedThenSameCell()
       => VerticalFlow(v => $"{v.Next(IntCell().Optional())}|{v.Next(IntCell())}");

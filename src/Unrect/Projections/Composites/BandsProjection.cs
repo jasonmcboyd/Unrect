@@ -50,7 +50,7 @@ namespace Unrect.Projections
 
     public override IReadOnlyList<IProjection> Children { get; }
 
-    public override ProjectionResult<IReadOnlyList<T>> Project(ISpace extent, ProjectionContext context)
+    public override ProjectionResult<IReadOnlyList<T>> Project(ICellValues extent, ProjectionContext context)
     {
       // The across axis, measured once. A vertical tiler takes the width, which is free even on an
       // extent still being discovered; a horizontal one takes the height, which on such an extent
@@ -96,7 +96,7 @@ namespace Unrect.Projections
     }
 
     /// <summary>Whether a whole band is left at <paramref name="cursor"/>; a part-band is not one.</summary>
-    private bool HasBand(ISpace extent, int cursor)
+    private bool HasBand(ICellValues extent, int cursor)
       => Orientation == Orientation.Vertical
         ? BoundedSpace.HasRow(extent, cursor + Stride - 1)
         : cursor + Stride - 1 < BoundedSpace.WidthOf(extent);
@@ -111,10 +111,10 @@ namespace Unrect.Projections
     /// is, and no strategy is ever handed an unsettled tail.
     /// </para>
     /// </summary>
-    private ISpace Cut(ISpace extent, Offset offset, int across)
+    private ICellValues Cut(ICellValues extent, Offset offset, int across)
       => extent.GetSubspace(offset, new Area(Extent(Stride, across)));
 
-    private void ReportBlank(BlankRowStrategy onBlank, ISpace band, ProjectionContext scope)
+    private void ReportBlank(BlankRowStrategy onBlank, ICellValues band, ProjectionContext scope)
     {
       var noun = Stride == 1 ? "row" : "band";
       var at = scope.Locate(band).A1;
@@ -127,7 +127,7 @@ namespace Unrect.Projections
     }
 
     /// <summary>Whether every cell of a cut band is blank. The band is measured, so its extent is free.</summary>
-    private static bool IsBlank(ISpace band)
+    private static bool IsBlank(ICellValues band)
     {
       var area = band.Area;
 

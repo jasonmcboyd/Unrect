@@ -50,7 +50,7 @@ namespace Unrect.Tests.Projections
     ///   r4  (blank)            body index 3 — trailing blank
     /// </code>
     /// </summary>
-    private static ISpace Gapped() => Mixed(new object?[,]
+    private static ICellValues Gapped() => Mixed(new object?[,]
     {
       { "Name", "Amount" },
       { "Alpha", 100m },
@@ -71,7 +71,7 @@ namespace Unrect.Tests.Projections
     ///   r5  note                past the landmark
     /// </code>
     /// </summary>
-    private static ISpace GappedWithTotal() => Mixed(new object?[,]
+    private static ICellValues GappedWithTotal() => Mixed(new object?[,]
     {
       { "Name", "Amount" },
       { "Alpha", 100m },

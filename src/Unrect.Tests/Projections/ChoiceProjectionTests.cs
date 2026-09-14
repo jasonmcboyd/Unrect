@@ -20,7 +20,7 @@ namespace Unrect.Tests.Projections
   {
     // One column, two rows: a label over a number. The winning alternative below consumes both, so
     // these tests see no unconsumed-space diagnostic to filter out.
-    private static ISpace Pair() => Mixed(new object?[,] { { "x" }, { 5 } });
+    private static ICellValues Pair() => Mixed(new object?[,] { { "x" }, { 5 } });
 
     /// <summary>Reads the pair as text-then-number: what the file actually is.</summary>
     private static IProjection<int> TextFirst(string name = "vendor A layout")
@@ -179,7 +179,7 @@ namespace Unrect.Tests.Projections
     /// <summary>A typed leaf, named — one clause of a problem, so a tally's line is predictable.</summary>
     private static IProjection<int> Number(string name) => Integer().Named(name);
 
-    private static ISpace OneText() => Mixed(new object?[,] { { "text" } });
+    private static ICellValues OneText() => Mixed(new object?[,] { { "text" } });
 
     private const string Wrong = "expected Number at A1, found Text";
 

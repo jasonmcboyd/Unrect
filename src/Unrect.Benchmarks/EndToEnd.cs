@@ -19,8 +19,8 @@ namespace Unrect.Benchmarks
   [BenchmarkCategory("EndToEnd")]
   public class EndToEnd
   {
-    private ISpace _small = default!;
-    private ISpace _large = default!;
+    private ICellValues _small = default!;
+    private ICellValues _large = default!;
 
     [GlobalSetup]
     public void Setup()

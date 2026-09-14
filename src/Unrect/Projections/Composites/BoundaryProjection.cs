@@ -47,7 +47,7 @@ namespace Unrect.Projections
 
     public override bool IsTransparent => Name is null && !IsUnitBoundary;
 
-    public override ProjectionResult<T> Project(ISpace extent, ProjectionContext context)
+    public override ProjectionResult<T> Project(ICellValues extent, ProjectionContext context)
     {
       var mark = context.Diagnostics.Mark();
 

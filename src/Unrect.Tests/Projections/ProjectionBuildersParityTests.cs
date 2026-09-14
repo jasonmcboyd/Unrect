@@ -24,10 +24,10 @@ using static Unrect.Tests.ProjectionTestSpaces;
 // real thing.
 //
 // The type argument is spelled in FULL, and must be: a using alias is resolved as if the other
-// usings were not there, so `ProjectionBuilders<ISpace>` would not bind even with
+// usings were not there, so `ProjectionBuilders<ICellValues>` would not bind even with
 // `using Unrect.Core;` two lines above. That is the same rule the shipping `using static` lives
 // under, and the reason the import names the space in full there too.
-using B = Unrect.Projections.ProjectionBuilders<Unrect.Core.ISpace>;
+using B = Unrect.Projections.ProjectionBuilders<Unrect.Core.ICellValues>;
 
 namespace Unrect.Tests.Projections
 {
@@ -84,28 +84,28 @@ namespace Unrect.Tests.Projections
     // shape with every kind wrong, which is what turns the value theory into a failure theory
     // without a second list of cases; the sparse grid is where a discovered extent stops early.
 
-    private static ISpace Ledger() => Mixed(new object?[,]
+    private static ICellValues Ledger() => Mixed(new object?[,]
     {
       { "Fund", "Amount", "Units" },
       { "Alpha", 100m, 2 },
       { "Beta", 250m, 4 },
     });
 
-    private static ISpace Hostile() => Mixed(new object?[,]
+    private static ICellValues Hostile() => Mixed(new object?[,]
     {
       { 1m, 2m, 3m },
       { "x", "y", "z" },
       { true, "Beta", 9m },
     });
 
-    private static ISpace Sparse() => Mixed(new object?[,]
+    private static ICellValues Sparse() => Mixed(new object?[,]
     {
       { "Fund", null, null },
       { null, null, null },
       { "Beta", 250m, null },
     });
 
-    private static IEnumerable<(string Name, ISpace Space)> Grids()
+    private static IEnumerable<(string Name, ICellValues Space)> Grids()
     {
       yield return ("ledger", Ledger());
       yield return ("hostile", Hostile());
@@ -121,30 +121,30 @@ namespace Unrect.Tests.Projections
     /// <summary>The same bind pointed at the column of fund names, so every record fails.</summary>
     private static IProjection<decimal> FundColumnAsANumber(LabelMap captions) => Right(captions["Fund"]).Of(Decimal());
 
-    // A matcher demanding nothing beyond ISpace. The published demanding matchers all demand a
+    // A matcher demanding nothing beyond ICellValues. The published demanding matchers all demand a
     // capability (`RowWithFormula` demands IFormulaSpace) and IRowLandmark<in TSpace> is
-    // contravariant, so none of them can stand where an IRowLandmark<ISpace> is wanted — and this
-    // file's builders are closed over ISpace. The demand is a static-type fact with no run-time
+    // contravariant, so none of them can stand where an IRowLandmark<ICellValues> is wanted — and this
+    // file's builders are closed over ICellValues. The demand is a static-type fact with no run-time
     // shadow, so the least demanding witness is exactly the right one: it exercises the forwarder's
     // unwrap (`Required(landmark).Landmark`) and nothing else.
 
-    private sealed class DemandingRow : IRowLandmark<ISpace>
+    private sealed class DemandingRow : IRowLandmark<ICellValues>
     {
       internal DemandingRow(IRowLandmark landmark) => Landmark = landmark;
 
       public IRowLandmark Landmark { get; }
     }
 
-    private sealed class DemandingColumn : IColumnLandmark<ISpace>
+    private sealed class DemandingColumn : IColumnLandmark<ICellValues>
     {
       internal DemandingColumn(IColumnLandmark landmark) => Landmark = landmark;
 
       public IColumnLandmark Landmark { get; }
     }
 
-    private static IRowLandmark<ISpace> Demanding(IRowLandmark landmark) => new DemandingRow(landmark);
+    private static IRowLandmark<ICellValues> Demanding(IRowLandmark landmark) => new DemandingRow(landmark);
 
-    private static IColumnLandmark<ISpace> Demanding(IColumnLandmark landmark) => new DemandingColumn(landmark);
+    private static IColumnLandmark<ICellValues> Demanding(IColumnLandmark landmark) => new DemandingColumn(landmark);
 
     // --- 1a. The 33 projection-returning members ---------------------------------------------------
     //
@@ -155,8 +155,8 @@ namespace Unrect.Tests.Projections
     // A twin returns whether the reading it just compared ENDED IN A FAILURE, which is what the
     // census below counts: an L3 comparison of two successful readings never looks at a path or a
     // subject, so a suite that only ever succeeded would be pinning half of what it claims to.
-    private static readonly IReadOnlyDictionary<string, Func<ISpace, bool>> ProjectionTwins =
-      new Dictionary<string, Func<ISpace, bool>>(StringComparer.Ordinal)
+    private static readonly IReadOnlyDictionary<string, Func<ICellValues, bool>> ProjectionTwins =
+      new Dictionary<string, Func<ICellValues, bool>>(StringComparer.Ordinal)
       {
         ["Boolean()"] = Reading(() => B.Boolean(), () => Boolean()),
         ["Caption(string)"] = Reading(() => B.Caption("Fund"), () => Caption("Fund")),
@@ -272,8 +272,8 @@ namespace Unrect.Tests.Projections
     // area an area strategy measures, the index a landmark finds. Same grids, same arguments, and a
     // throw is compared as a value so a guard cannot move on one side only.
 
-    private static readonly IReadOnlyDictionary<string, Action<ISpace>> StrategyTwins =
-      new Dictionary<string, Action<ISpace>>(StringComparer.Ordinal)
+    private static readonly IReadOnlyDictionary<string, Action<ICellValues>> StrategyTwins =
+      new Dictionary<string, Action<ICellValues>>(StringComparer.Ordinal)
       {
         ["AllColumns()"] = Strategy(s => B.AllColumns().SelectColumns(s), s => AllColumns().SelectColumns(s)),
         ["AllRows()"] = Strategy(s => B.AllRows().SelectRows(s), s => AllRows().SelectRows(s)),
@@ -286,7 +286,7 @@ namespace Unrect.Tests.Projections
           s => B.ColumnsWhileAny(v => v.HasValue).GetArea(s),
           s => ColumnsWhileAny(v => v.HasValue).GetArea(s)),
         ["ColumnsWhileAnyValue()"] = Strategy(s => B.ColumnsWhileAnyValue().GetArea(s), s => ColumnsWhileAnyValue().GetArea(s)),
-        ["ColumnWhere(Func<ISpace, int, bool>)"] = Strategy(
+        ["ColumnWhere(Func<ICellValues, int, bool>)"] = Strategy(
           s => B.ColumnWhere((space, index) => index == space.Area.Width - 1).FindColumn(s),
           s => ColumnWhere((space, index) => index == space.Area.Width - 1).FindColumn(s)),
         ["ColumnWithCell(Func<CellValue, bool>)"] = Strategy(
@@ -304,7 +304,7 @@ namespace Unrect.Tests.Projections
           s => B.RowsWhileAny(v => v.HasValue).GetArea(s),
           s => RowsWhileAny(v => v.HasValue).GetArea(s)),
         ["RowsWhileAnyValue()"] = Strategy(s => B.RowsWhileAnyValue().GetArea(s), s => RowsWhileAnyValue().GetArea(s)),
-        ["RowWhere(Func<ISpace, int, bool>)"] = Strategy(
+        ["RowWhere(Func<ICellValues, int, bool>)"] = Strategy(
           s => B.RowWhere((space, index) => index == space.Area.Height - 1).FindRow(s),
           s => RowWhere((space, index) => index == space.Area.Height - 1).FindRow(s)),
         ["RowWithCell(Func<CellValue, bool>)"] = Strategy(
@@ -332,8 +332,8 @@ namespace Unrect.Tests.Projections
     // measurements wherever it changes the extent, because a bound written on a leaf that reads one
     // cell has nothing to show for itself.
 
-    private static readonly IReadOnlyDictionary<string, Func<ISpace, bool>> StageTwins =
-      new Dictionary<string, Func<ISpace, bool>>(StringComparer.Ordinal)
+    private static readonly IReadOnlyDictionary<string, Func<ICellValues, bool>> StageTwins =
+      new Dictionary<string, Func<ICellValues, bool>>(StringComparer.Ordinal)
       {
         ["AfterBlankColumns()"] = Reading(() => B.AfterBlankColumns().Text(), () => AfterBlankColumns().Text()),
         ["AfterBlankRows()"] = Reading(() => B.AfterBlankRows().Text(), () => AfterBlankRows().Text()),
@@ -488,7 +488,7 @@ namespace Unrect.Tests.Projections
       SameRefusal(() => B.Cell<int>(null!), () => Cell<int>(null!));
       SameRefusal(() => B.VerticalFlow<int>(null!), () => VerticalFlow<int>(null!));
       SameRefusal(() => B.Overlay<int>(null!), () => Overlay<int>(null!));
-      SameRefusal(() => B.VerticalRepeat((IProjection<ISpace, int>)null!), () => VerticalRepeat((IProjection<int>)null!));
+      SameRefusal(() => B.VerticalRepeat((IProjection<ICellValues, int>)null!), () => VerticalRepeat((IProjection<int>)null!));
       SameRefusal(() => B.HorizontalRepeat(Text(), atLeast: -1), () => HorizontalRepeat(Text(), atLeast: -1));
       SameRefusal(() => B.Choice(Text()), () => Choice(Text()));
       SameRefusal(() => B.Table(headerRows: 2, eachRow: Text()), () => Table(headerRows: 2, eachRow: Text()));
@@ -500,7 +500,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AndClosingTheClassOverACapableSpaceIsTheWitnessFormSaidOnce()
     {
-      // The other half of what the class is for, and the one place a `TSpace` other than ISpace is
+      // The other half of what the class is for, and the one place a `TSpace` other than ICellValues is
       // exercised: closed over a capability, the layouts are the witness spelling with the witness
       // moved into the using directive. Written through the full type name rather than the alias,
       // because this is the only test that needs a second closing.
@@ -638,7 +638,7 @@ namespace Unrect.Tests.Projections
       // member of the closed class with the same name and the same number of parameters — matched as
       // a MULTISET, so an overload cannot go missing behind a sibling that shares its name. The
       // signatures themselves cannot be compared directly, since the whole point of the class is
-      // that TSpace replaces ISpace in the members that take a projection.
+      // that TSpace replaces ICellValues in the members that take a projection.
       //
       // This is the test that fails when a factory is added to the vocabulary and not re-exported.
       var expected = Signatures(typeof(Projection))
@@ -679,7 +679,7 @@ namespace Unrect.Tests.Projections
       // Only the members that TAKE a projection are closed over TSpace; a leaf is re-exported at its
       // plain type on purpose. This is that decision's consequence, pinned positively: OrBlank is
       // written against IProjection<T>, so a leaf raised to IProjection<TSpace, T> would be out of
-      // its reach and `B.Decimal().OrBlank()` would be CS1929 — "IProjection<ISpace, decimal> does
+      // its reach and `B.Decimal().OrBlank()` would be CS1929 — "IProjection<ICellValues, decimal> does
       // not contain a definition for OrBlank". It compiles, and it reads a blank as null.
       IProjection<decimal> leaf = B.Decimal();
       IProjection<decimal?> tolerant = leaf.OrBlank();
@@ -703,7 +703,7 @@ namespace Unrect.Tests.Projections
     /// failure — see the census. A comparison that blows up is re-thrown naming the grid, since
     /// otherwise a difference reads as an anonymous mismatch in one of three identical-looking runs.
     /// </summary>
-    private static int OverEveryGrid(Func<ISpace, bool> twin)
+    private static int OverEveryGrid(Func<ICellValues, bool> twin)
     {
       var failed = 0;
 
@@ -723,7 +723,7 @@ namespace Unrect.Tests.Projections
       return failed;
     }
 
-    private static void OverEveryGrid(Action<ISpace> twin)
+    private static void OverEveryGrid(Action<ICellValues> twin)
       => OverEveryGrid(space =>
       {
         twin(space);
@@ -736,8 +736,8 @@ namespace Unrect.Tests.Projections
     /// strongest level there is. Both sides are built inside the comparison rather than passed in
     /// already built, so a factory that refuses at CONSTRUCTION is compared too.
     /// </summary>
-    private static Func<ISpace, bool> Reading<T>(
-      Func<IProjection<ISpace, T>> throughBuilders,
+    private static Func<ICellValues, bool> Reading<T>(
+      Func<IProjection<ICellValues, T>> throughBuilders,
       Func<IProjection<T>> throughProjection)
       => space =>
       {
@@ -759,12 +759,12 @@ namespace Unrect.Tests.Projections
     /// library makes implements <c>IProjection&lt;T&gt;</c>, so forgetting it here to read the
     /// declaration is the same cast the typed layer itself makes.
     /// </summary>
-    private static Func<ISpace, bool> Raised<T>(
-      Func<IProjection<ISpace, T>> throughBuilders,
-      Func<IProjection<ISpace, T>> throughProjection)
+    private static Func<ICellValues, bool> Raised<T>(
+      Func<IProjection<ICellValues, T>> throughBuilders,
+      Func<IProjection<ICellValues, T>> throughProjection)
       => Reading(throughBuilders, () => (IProjection<T>)throughProjection());
 
-    private static (Observation? Reading, Exception? Fault) Read<T>(Func<IProjection<T>> declare, ISpace space)
+    private static (Observation? Reading, Exception? Fault) Read<T>(Func<IProjection<T>> declare, ICellValues space)
     {
       try
       {
@@ -780,7 +780,7 @@ namespace Unrect.Tests.Projections
     /// One non-projection member's twin: what it computes over a grid, with a throw rendered as a
     /// value so a guard that moved on one side only reads as a difference rather than as an error.
     /// </summary>
-    private static Action<ISpace> Strategy<T>(Func<ISpace, T> throughBuilders, Func<ISpace, T> throughProjection)
+    private static Action<ICellValues> Strategy<T>(Func<ICellValues, T> throughBuilders, Func<ICellValues, T> throughProjection)
       => space => Assert.Equal(Attempt(() => throughProjection(space)), Attempt(() => throughBuilders(space)));
 
     private static void SameRefusal(Action throughBuilders, Action throughProjection)
@@ -874,7 +874,7 @@ namespace Unrect.Tests.Projections
     /// <summary>
     /// A signature reduced to what the two classes can be expected to agree on: the name and the
     /// parameter count. The types themselves cannot be compared — <c>TSpace</c> stands where
-    /// <c>ISpace</c> stood in every member that takes a projection, which is the class's entire
+    /// <c>ICellValues</c> stood in every member that takes a projection, which is the class's entire
     /// reason to exist.
     /// </summary>
     private static string Shape(string signature)

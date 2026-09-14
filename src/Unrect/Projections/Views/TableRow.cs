@@ -54,7 +54,7 @@ namespace Unrect.Projections
     /// projection asks a capability through:
     /// <c>row.Space.Capability&lt;IFormulaSpace&gt;()?.FormulaAt(column, 0)</c>.
     /// </summary>
-    public ISpace Space => Strip.Space;
+    public ICellValues Space => Strip.Space;
 
     /// <summary>
     /// The address of one cell of the row, for citing it in a message — a data-quality complaint

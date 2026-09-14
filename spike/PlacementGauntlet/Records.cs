@@ -52,7 +52,7 @@ namespace PlacementGauntlet
   // its amount as well as the amount, so the report reads a capability and the file's scope is
   // load-bearing rather than decorative. The plain twin reads the same document with that one leaf
   // removed, which is the whole difference between ProjectionBuilders<ISpreadsheetSpace> and
-  // ProjectionBuilders<ISpace>.
+  // ProjectionBuilders<ICellValues>.
 
   public record IrrHeader(string Title, string Fund, DateTime ReportDate, string ReportId);
 

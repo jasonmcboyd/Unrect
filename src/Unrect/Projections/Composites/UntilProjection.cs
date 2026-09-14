@@ -52,7 +52,7 @@ namespace Unrect.Projections
         + "replacing, so a Select or a Padded between the two leaves both ends in force.",
         "projection");
 
-    public override ProjectionResult<TResult> Project(ISpace extent, ProjectionContext context)
+    public override ProjectionResult<TResult> Project(ICellValues extent, ProjectionContext context)
     {
       var size = extent.Area.Size;
       var found = Landmark.Find(extent);

@@ -21,13 +21,13 @@ namespace Unrect.Tests.Projections
   public class LabeledAxisContextTests
   {
     /// <summary>Header <c>X Y Amount Z</c> over one body row <c>1 2 100 999</c> — Amount at column 2, its neighbour Z at 3.</summary>
-    private static ISpace AmountAtColumnTwo() => Mixed(new object?[,]
+    private static ICellValues AmountAtColumnTwo() => Mixed(new object?[,]
     {
       { "X", "Y", "Amount", "Z" },
       { 1m,  2m,  100m,     999m },
     });
 
-    private static TableView TableOver(ISpace sheet) => Table((TableView view) => view).Map(sheet);
+    private static TableView TableOver(ICellValues sheet) => Table((TableView view) => view).Map(sheet);
 
     // --- 1. CRITICAL: the capture->reading translation is actually applied ----------------------------
     //

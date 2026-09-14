@@ -7,7 +7,7 @@ using Unrect.Core;
 namespace Unrect.Projections
 {
   /// <summary>
-  /// A placement being declared over a space that answers more than <see cref="ISpace"/> — the same
+  /// A placement being declared over a space that answers more than <see cref="ICellValues"/> — the same
   /// pipeline as <see cref="PlacementStage"/>, carrying a demand.
   /// <para>
   /// Two things start one: a scope, when the whole declaration is written over one space
@@ -27,7 +27,7 @@ namespace Unrect.Projections
   /// </summary>
   /// <typeparam name="TSpace">What the pipeline's declaration demands of the space.</typeparam>
   public abstract class PlacementStage<TSpace>
-    where TSpace : class, ISpace
+    where TSpace : class, ICellValues
   {
     private protected PlacementStage(Steps steps) => Steps = steps;
 
@@ -266,7 +266,7 @@ namespace Unrect.Projections
   /// <summary>The scoped twin of <see cref="UnboundedStage"/>.</summary>
   /// <typeparam name="TSpace">What the pipeline's declaration demands of the space.</typeparam>
   public abstract class UnboundedStage<TSpace> : PlacementStage<TSpace>
-    where TSpace : class, ISpace
+    where TSpace : class, ICellValues
   {
     private protected UnboundedStage(Steps steps) : base(steps)
     {
@@ -333,7 +333,7 @@ namespace Unrect.Projections
   /// <summary>The scoped twin of <see cref="OffsetStage"/>.</summary>
   /// <typeparam name="TSpace">What the pipeline's declaration demands of the space.</typeparam>
   public sealed class OffsetStage<TSpace> : UnboundedStage<TSpace>
-    where TSpace : class, ISpace
+    where TSpace : class, ICellValues
   {
     internal OffsetStage(Steps steps) : base(steps)
     {
@@ -368,7 +368,7 @@ namespace Unrect.Projections
   /// <summary>The scoped twin of <see cref="OffsetAndSizeStage"/>.</summary>
   /// <typeparam name="TSpace">What the pipeline's declaration demands of the space.</typeparam>
   public sealed class OffsetAndSizeStage<TSpace> : UnboundedStage<TSpace>
-    where TSpace : class, ISpace
+    where TSpace : class, ICellValues
   {
     internal OffsetAndSizeStage(Steps steps) : base(steps)
     {
@@ -406,7 +406,7 @@ namespace Unrect.Projections
   /// <summary>The scoped twin of <see cref="BoundStage"/>.</summary>
   /// <typeparam name="TSpace">What the pipeline's declaration demands of the space.</typeparam>
   public sealed class BoundStage<TSpace> : PlacementStage<TSpace>
-    where TSpace : class, ISpace
+    where TSpace : class, ICellValues
   {
     internal BoundStage(Steps steps) : base(steps)
     {

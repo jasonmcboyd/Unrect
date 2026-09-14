@@ -19,7 +19,7 @@ namespace Unrect.Tests.Projections
   /// </summary>
   public class TableProjectionTests
   {
-    private static ISpace SimpleTable() => Mixed(new object?[,]
+    private static ICellValues SimpleTable() => Mixed(new object?[,]
     {
       { "Investor", "Amount" },
       { "Acme", 10 },

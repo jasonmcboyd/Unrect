@@ -13,15 +13,15 @@ namespace Unrect.Tests
   internal static class ProjectionTestSpaces
   {
     /// <summary>A grid of numbers in which zero means an empty cell.</summary>
-    public static ISpace Grid(int[,] values) => GridSpace.Create(values, isBlank: v => v == 0);
+    public static ICellValues Grid(int[,] values) => GridSpace.Create(values, isBlank: v => v == 0);
 
     /// <summary>A grid of labels; the array adapter treats null and "" as empty cells.</summary>
-    public static ISpace Text(string?[,] values) => GridSpace.Create(values);
+    public static ICellValues Text(string?[,] values) => GridSpace.Create(values);
 
     /// <summary>
     /// A column of 1..<paramref name="height"/>, so an assertion reads as the row it came from.
     /// </summary>
-    public static ISpace Ladder(int height = 3)
+    public static ICellValues Ladder(int height = 3)
     {
       var values = new int[height, 1];
 
@@ -35,7 +35,7 @@ namespace Unrect.Tests
     /// A grid whose every cell is (row * 10 + column + 1), so an assertion reads as a coordinate:
     /// 1 2 3 4 / 11 12 13 14 / 21 22 23 24. The +1 keeps cell (0, 0) non-blank.
     /// </summary>
-    public static ISpace CoordinateGrid(int width = 4, int height = 3)
+    public static ICellValues CoordinateGrid(int width = 4, int height = 3)
     {
       var values = new int[height, width];
 
@@ -82,7 +82,7 @@ namespace Unrect.Tests
     /// A grid of heterogeneous values: null and "" are blank, everything else adapts to the cell
     /// kind its CLR type implies. This is the array-adapter equivalent of a real sheet.
     /// </summary>
-    public static ISpace Mixed(object?[,] values) => GridSpace.Create(values, Adapt);
+    public static ICellValues Mixed(object?[,] values) => GridSpace.Create(values, Adapt);
 
     /// <summary>
     /// One CLR value as the cell it stands for — the rule <see cref="Mixed"/> is built from, shared

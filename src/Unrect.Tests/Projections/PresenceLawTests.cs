@@ -41,19 +41,19 @@ namespace Unrect.Tests.Projections
     // --- The grids, and the declarations that meet them --------------------------------------------
 
     /// <summary>A column of 1, 2, 3: a projection asking for text fails here, at a known cell.</summary>
-    private static ISpace Numbers() => Ladder(3);
+    private static ICellValues Numbers() => Ladder(3);
 
     /// <summary>Nothing but blank cells, so a discovered extent has somewhere to settle at zero.</summary>
-    private static ISpace Blank() => Grid(new int[2, 2]);
+    private static ICellValues Blank() => Grid(new int[2, 2]);
 
     /// <summary>A value then a blank row: a flow can mix a child that reads with one that finds nothing.</summary>
-    private static ISpace ValueThenNothing() => Grid(new[,] { { 1 }, { 0 } });
+    private static ICellValues ValueThenNothing() => Grid(new[,] { { 1 }, { 0 } });
 
     /// <summary>Two names then a number, so a repeat of text cells finds two occurrences and then trouble.</summary>
-    private static ISpace TwoNamesThenANumber() => Mixed(new object?[,] { { "a" }, { "b" }, { 1 } });
+    private static ICellValues TwoNamesThenANumber() => Mixed(new object?[,] { { "a" }, { "b" }, { 1 } });
 
     /// <summary>A caption over two rows of content, for the anchored half of the table's last-but-one row.</summary>
-    private static ISpace CaptionedSheet() => Mixed(new object?[,] { { "Detail" }, { 1 }, { 2 } });
+    private static ICellValues CaptionedSheet() => Mixed(new object?[,] { { "Detail" }, { 1 }, { 2 } });
 
     /// <summary>The discovered extent: full width, and as many leading rows as hold anything.</summary>
     private static IProjection<int> Rows() => Range(RowsWhileAnyValue(), b => b.Height);
@@ -65,7 +65,7 @@ namespace Unrect.Tests.Projections
     private static IProjection<int> Unit() => NothingProjection<int>.Instance;
 
     /// <summary>What the engine recorded about the reading — the value the composites act on.</summary>
-    private static Presence PresenceOf<T>(IProjection<T> projection, ISpace space)
+    private static Presence PresenceOf<T>(IProjection<T> projection, ICellValues space)
       => projection.Apply(space).Presence;
 
     // --- §4, the classification table, one law per row ---------------------------------------------
@@ -598,7 +598,7 @@ namespace Unrect.Tests.Projections
     /// </summary>
     private static (Presence Expected, Presence Lazily, Presence Eagerly) Compare<T>(
       IProjection<T> projection,
-      ISpace space,
+      ICellValues space,
       Presence expected)
     {
       var lazily = PresenceOf(projection, space);

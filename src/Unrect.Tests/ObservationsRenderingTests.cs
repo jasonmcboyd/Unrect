@@ -28,7 +28,7 @@ namespace Unrect.Tests
   public class ObservationsRenderingTests
   {
     /// <summary>The smallest space a leaf can be read over — the value under test comes from the closure, not the sheet.</summary>
-    private static ISpace One() => GridSpace.Create(new[,] { { "x" } });
+    private static ICellValues One() => GridSpace.Create(new[,] { { "x" } });
 
     /// <summary>Renders <paramref name="value"/> the way the value facet would.</summary>
     private static string Rendered<T>(T value) => Observations.Observe(Cell(_ => value), One()).Value;

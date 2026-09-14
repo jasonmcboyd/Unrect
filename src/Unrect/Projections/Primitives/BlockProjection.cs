@@ -17,7 +17,7 @@ namespace Unrect.Projections
 
     public override string Description { get; }
 
-    public override ProjectionResult<T> Project(ISpace extent, ProjectionContext context)
+    public override ProjectionResult<T> Project(ICellValues extent, ProjectionContext context)
     {
       var value = Projection(new CellBlock(extent, context));
 

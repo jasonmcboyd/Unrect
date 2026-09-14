@@ -15,7 +15,7 @@ namespace Unrect.Projections
     bool LazyHasRow(int row);
 
     /// <summary>A view of this extent from <paramref name="offset"/>, <paramref name="width"/> wide, with the height still unsettled.</summary>
-    ISpace LazySlice(Offset offset, int width);
+    ICellValues LazySlice(Offset offset, int width);
   }
 
   /// <summary>
@@ -24,9 +24,9 @@ namespace Unrect.Projections
   /// so slicing it hands back an ordinary measured space and only row admission goes back to the
   /// bound.
   /// </summary>
-  internal sealed class TailSpace : ISpace, ISpaceChart, ILazyExtent
+  internal sealed class TailSpace : ICellValues, ISpaceChart, ILazyExtent
   {
-    private TailSpace(BoundedSpace bound, int rowShift, ISpace view, int width)
+    private TailSpace(BoundedSpace bound, int rowShift, ICellValues view, int width)
     {
       Bound = bound;
       RowShift = rowShift;
@@ -41,7 +41,7 @@ namespace Unrect.Projections
     private int RowShift { get; }
 
     /// <summary>The measured space every cell comes from, already sliced for the offset and the width.</summary>
-    private ISpace View { get; }
+    private ICellValues View { get; }
 
     public int LazyWidth { get; }
 
@@ -50,7 +50,7 @@ namespace Unrect.Projections
     /// cell (c, r) is this one's cell (c, r) — the condition <see cref="ISpaceChart"/> imposes, met
     /// by construction rather than by agreement.
     /// </summary>
-    ISpace ISpaceChart.Underlying => View;
+    ICellValues ISpaceChart.Underlying => View;
 
     /// <summary>
     /// The extent, which means reading the bound's scan to exhaustion. The bound admitted every row
@@ -71,7 +71,16 @@ namespace Unrect.Projections
     }
 
     /// <inheritdoc/>
-    public ISpace GetSubspace(Offset offset, Area area)
+    public bool IsBlank(int column, int row) => this[column, row].IsBlank;
+
+    /// <inheritdoc/>
+    public bool IsText(int column, int row) => this[column, row].IsText;
+
+    /// <inheritdoc/>
+    public string? AsText(int column, int row) => this[column, row].AsText();
+
+    /// <inheritdoc/>
+    public ICellValues GetSubspace(Offset offset, Area area)
     {
       if (offset.Width + area.Width > LazyWidth)
         throw new OutOfBoundsException();
@@ -88,7 +97,7 @@ namespace Unrect.Projections
 
     public bool LazyHasRow(int row) => row >= 0 && Bound.Includes(row + RowShift);
 
-    public ISpace LazySlice(Offset offset, int width) => Over(Bound, View, RowShift, offset, width);
+    public ICellValues LazySlice(Offset offset, int width) => Over(Bound, View, RowShift, offset, width);
 
     /// <summary>
     /// A tail of <paramref name="view"/> from <paramref name="offset"/>, still admitting rows
@@ -97,7 +106,7 @@ namespace Unrect.Projections
     /// measured path's "does this offset fit" asked a row at a time. An offset landing exactly at the
     /// far edge is a zero-height tail rather than an overrun, as it is there.
     /// </summary>
-    internal static ISpace Over(BoundedSpace bound, ISpace view, int rowShift, Offset offset, int width)
+    internal static ICellValues Over(BoundedSpace bound, ICellValues view, int rowShift, Offset offset, int width)
     {
       if (offset.Height > 0 && !bound.Includes(rowShift + offset.Height - 1))
         throw new OutOfBoundsException();

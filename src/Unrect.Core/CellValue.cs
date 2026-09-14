@@ -1,9 +1,10 @@
 using System;
+using System.Globalization;
 
 namespace Unrect.Core
 {
   /// <summary>
-  /// One cell's value, in the vocabulary every <see cref="ISpace"/> speaks: a <see cref="CellKind"/>
+  /// One cell's value, in the vocabulary every <see cref="ICellValues"/> speaks: a <see cref="CellKind"/>
   /// plus a payload for that kind. Construct one with an <c>Of</c> overload (or <see cref="OfError"/>
   /// for <see cref="CellKind.Error"/>); read it back with the typed <c>TryGet*</c>/<c>Get*</c> pairs,
   /// never by inspecting a backend type directly — that boundary is the whole point of the canonical
@@ -120,6 +121,13 @@ namespace Unrect.Core
     /// <summary>The negation of <see cref="IsBlank"/>; an error cell has a value and is never blank.</summary>
     public bool HasValue => !IsBlank;
 
+    /// <summary>
+    /// Whether this cell's <see cref="AsText"/> is its own value rather than a rendering —
+    /// <see cref="Kind"/> is <see cref="CellKind.Text"/>. Text matching asks this first, which is
+    /// why a numeric 42 is not a cell saying "42".
+    /// </summary>
+    public bool IsText => Kind == CellKind.Text;
+
     // The payloads, unpacked. Each is meaningful only for its own kind; every reader below checks
     // Kind first, exactly as it did when these were fields.
     private string? Text => (string?)_overflow;
@@ -214,6 +222,45 @@ namespace Unrect.Core
     /// Use it to recover what an <see cref="CellError.Other"/> actually was.
     /// </summary>
     public string? TryGetErrorText() => Kind == CellKind.Error ? ErrorText : null;
+
+    /// <summary>
+    /// What the cell says: a <see cref="CellKind.Text"/> cell's own string, a number's digits, a
+    /// date's ISO form, <c>TRUE</c> or <c>FALSE</c>, an error's spreadsheet literal. Null exactly
+    /// when the cell is <see cref="Blank"/>.
+    /// <para>
+    /// Not display output, and not the text the backend showed: a number renders invariantly from
+    /// the value, carrying no trace of the format it was formatted with. What this is for is the
+    /// questions a reader asks without knowing the kind — "does this cell say <c>Total</c>" — and
+    /// the answer for a cell that is not text is a rendering rather than something the cell holds,
+    /// which is what <see cref="CellKind.Text"/> distinguishes.
+    /// </para>
+    /// <para>
+    /// A number renders from <em>how it arrived</em> rather than from what it is worth, because the
+    /// exact decimal it may carry is the digits the file wrote. So <see cref="Of(decimal)"/> of
+    /// <c>1.0m</c> and <see cref="Of(double)"/> of <c>1.0</c> are equal cells that say <c>1.0</c>
+    /// and <c>1</c>. A number with no exact decimal behind it round-trips its double, which leaves
+    /// two residuals worth knowing: a negative zero says <c>-0</c> on .NET Core and <c>0</c> on
+    /// .NET Framework, and a large enough magnitude says <c>1E+20</c> rather than its digits.
+    /// </para>
+    /// </summary>
+    public string? AsText() =>
+      Kind switch
+      {
+        CellKind.Text => Text,
+        // "R" and not the default: the default renders a double to 15 significant digits on .NET
+        // Framework and shortest-round-trip elsewhere, so 0.1 + 0.2 would say "0.3" through one
+        // target of this package and "0.30000000000000004" through the other.
+        CellKind.Number => ExactNumber?.ToString(CultureInfo.InvariantCulture) ?? Number.ToString("R", CultureInfo.InvariantCulture),
+        // A date says its date; a moment within a day says the time too, rather than silently
+        // rendering as the midnight it is not. Sub-second digits are carried only when there are
+        // some, so a whole second still says hh:mm:ss.
+        CellKind.Temporal => Temporal.ToString(
+          Temporal.TimeOfDay == TimeSpan.Zero ? "yyyy-MM-dd" : "yyyy-MM-ddTHH:mm:ss.FFFFFFF",
+          CultureInfo.InvariantCulture),
+        CellKind.Boolean => Boolean ? "TRUE" : "FALSE",
+        CellKind.Error => ErrorText ?? Display(Error),
+        _ => null
+      };
 
     /// <summary>
     /// Two cell values are equal when they share a kind and an equal payload. Numbers compare on

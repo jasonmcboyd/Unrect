@@ -45,12 +45,12 @@ namespace PlacementGauntlet.Staged
 
     /// <summary>The witness form, for a layout whose demand lives inside its own lambda.</summary>
     public IProjection<TSpace, T> VerticalFlow<TSpace, T>(Demand<TSpace> over, Layout<TSpace, T> build)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => Close(Projection.VerticalFlow(over, build));
 
     /// <inheritdoc cref="VerticalFlow{TSpace, T}(Demand{TSpace}, Layout{TSpace, T})"/>
     public IProjection<TSpace, T> Overlay<TSpace, T>(Demand<TSpace> over, Layout<TSpace, T> build)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => Close(Projection.Overlay(over, build));
 
     // --- Repetition -------------------------------------------------------------------------------
@@ -67,7 +67,7 @@ namespace PlacementGauntlet.Staged
       IOffsetStrategy? separatedBy = null,
       int atLeast = 0,
       [CallerArgumentExpression("item")] string? declared = null)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => Close(Projection.VerticalRepeat(item, separatedBy, atLeast, declared: declared));
 
     public IProjection<IReadOnlyList<T>> HorizontalRepeat<T>(
@@ -94,7 +94,7 @@ namespace PlacementGauntlet.Staged
       int headerRows,
       IProjection<TSpace, T> eachRow,
       [CallerArgumentExpression("eachRow")] string? declared = null)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => Close(Projection.Table(headerRows, eachRow, declared));
 
     public IProjection<IReadOnlyList<T>> Table<T>(
@@ -139,7 +139,7 @@ namespace PlacementGauntlet.Staged
 
     /// <inheritdoc cref="Of{T}(IProjection{T})"/>
     public IProjection<TSpace, T> Of<TSpace, T>(IProjection<TSpace, T> projection)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => Close(projection);
 
     private IProjection<T> Close<T>(IProjection<T> projection) => Steps.ApplyTo(projection);
@@ -147,7 +147,7 @@ namespace PlacementGauntlet.Staged
     // The one cast the façade makes, on the library's own licence: every projection it builds
     // implements IProjection<T>, and the demand lives only in the static type.
     private IProjection<TSpace, T> Close<TSpace, T>(IProjection<TSpace, T> projection)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => Steps.ApplyTo((IProjection<T>)projection);
   }
 
@@ -192,7 +192,7 @@ namespace PlacementGauntlet.Staged
 
     /// <inheritdoc cref="Until(IRowLandmark, bool)"/>
     public BoundStage<TSpace> Until<TSpace>(IRowLandmark<TSpace> landmark, bool orEnd = false)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => new BoundStage<TSpace>(Steps.Then(Step.UntilRow(landmark.Landmark, orEnd)));
 
     /// <inheritdoc cref="Until(IRowLandmark, bool)"/>

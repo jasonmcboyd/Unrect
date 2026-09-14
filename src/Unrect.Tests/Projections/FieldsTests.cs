@@ -26,7 +26,7 @@ namespace Unrect.Tests.Projections
   public class FieldsTests
   {
     // A card sitting two columns in, as a real one does.
-    private static ISpace Card() => Mixed(new object?[,]
+    private static ICellValues Card() => Mixed(new object?[,]
     {
       { null, null, "EIN:", "12-3456789" },
       { null, null, "Entity Type", "LLC" },

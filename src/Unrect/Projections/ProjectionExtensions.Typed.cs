@@ -6,7 +6,7 @@ namespace Unrect.Projections
 {
   /// <summary>
   /// The members that exist <em>because</em> a declaration can demand
-  /// more of a space than <see cref="ISpace"/> — and only those.
+  /// more of a space than <see cref="ICellValues"/> — and only those.
   /// <para>
   /// A modifier does not appear here. Every modifier is written once, generic in the projection's
   /// own type, and hands that type straight back, so it preserves a demand without knowing there is
@@ -49,7 +49,7 @@ namespace Unrect.Projections
     /// <param name="projection">The declaration.</param>
     /// <param name="fallbackValue">What to yield instead.</param>
     public static IProjection<TSpace, T> Else<TSpace, T>(this IProjection<TSpace, T> projection, T fallbackValue)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => Plain(projection).Else(fallbackValue);
 
     /// <inheritdoc cref="Optional{T}"/>
@@ -57,7 +57,7 @@ namespace Unrect.Projections
     /// <typeparam name="T">What the projection reads.</typeparam>
     /// <param name="projection">The declaration.</param>
     public static IProjection<TSpace, T?> Optional<TSpace, T>(this IProjection<TSpace, T> projection)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => Plain(projection).Optional();
 
     /// <inheritdoc cref="Select{T, TResult}"/>
@@ -67,7 +67,7 @@ namespace Unrect.Projections
     /// <param name="projection">The declaration.</param>
     /// <param name="selector">The transformation applied to what it reads.</param>
     public static IProjection<TSpace, TResult> Select<TSpace, T, TResult>(this IProjection<TSpace, T> projection, Func<T, TResult> selector)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => Plain(projection).Select(selector);
 
     // --- Ascription -------------------------------------------------------------------------------
@@ -96,7 +96,7 @@ namespace Unrect.Projections
     /// <param name="projection">The declaration.</param>
     /// <param name="demand">The capability's witness, published by the package that owns it.</param>
     public static IProjection<TSpace, T> Demanding<TSpace, T>(this IProjection<T> projection, Demand<TSpace> demand)
-      where TSpace : class, ISpace
+      where TSpace : class, ICellValues
       => demand is null
         ? throw new ArgumentNullException(nameof(demand))
         : projection ?? throw new ArgumentNullException(nameof(projection));

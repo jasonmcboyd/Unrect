@@ -44,7 +44,7 @@ namespace PlacementGauntlet
     {
       var sheet = SpreadsheetSpace.Create(Sheets.Example("investor-irr.xlsx"), "IRR");
 
-      Judge.SameL2("read 5 — the same script through ProjectionBuilders<ISpace>, no prefixes and no Caption",
+      Judge.SameL2("read 5 — the same script through ProjectionBuilders<ICellValues>, no prefixes and no Caption",
         ScenarioCPlain.Report.Apply(sheet), ScenarioHEntryC.Report.Apply(sheet));
 
       Judge.Same("read 5 at L3 — diagnostics, verbatim",

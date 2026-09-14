@@ -19,7 +19,7 @@ namespace Unrect.Tests.Projections
   /// </summary>
   public class DiagnosticsTests
   {
-    private static ISpace Square() => Grid(new[,] { { 1, 2 }, { 3, 4 } });
+    private static ICellValues Square() => Grid(new[,] { { 1, 2 }, { 3, 4 } });
 
     private static IProjection<string> Title() => TextCell().Named("title");
 
