@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789408533601,
+  "lastUpdate": 1789408533874,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -4656,6 +4656,42 @@ window.BENCHMARK_DATA = {
             "value": 23843223.37748016,
             "unit": "ns",
             "range": "± 1082196.3606784747"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "d06708df60e381758b11dde07836c674565409b6",
+          "message": "Merge experiment/record-primitive: streaming composites over a bound, the band tiler, Table composed from primitives\n\nThe labels-as-context primitives (ColumnLabels, WithColumnLabels, Record),\nSkipToFirstNonBlankCell, and the uniform offset law; the engine streaming a\ndiscovered bound through a composite (TailSpace, a bound-aware Exceeds, lazy\nflow and repeat slices); VerticalBands/HorizontalBands, the tiler — a\nrepeating fixed-dimension space, distinct from the pattern repeat;\nTable(headerRows, eachRow) composed over the tiler under a UnitProjection,\nwith AsScaffolding and a mark-driven path fold giving it the leaf's own\ndiagnostics; ColumnLabels self-contained, its header parse the one home in\nLabelMap.FromHeader; and the repeat returned to a pure walk, onBlank living\non the tiler alone.\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01Wk5ZXojzv4hibCXDkjRu3g",
+          "timestamp": "2026-09-14T17:43:35Z",
+          "tree_id": "1c80a0bed7aeb311bb6e1bdb0933ac5a05562434",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/d06708df60e381758b11dde07836c674565409b6"
+        },
+        "date": 1789408533815,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.EndToEnd.Document_400Investors",
+            "value": 2557286.6434151786,
+            "unit": "ns",
+            "range": "± 14088.61522364146"
+          },
+          {
+            "name": "Unrect.Benchmarks.EndToEnd.Document_4000Investors",
+            "value": 33521302.49107143,
+            "unit": "ns",
+            "range": "± 461600.3244350894"
           }
         ]
       }
