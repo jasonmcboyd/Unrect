@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789408536398,
+  "lastUpdate": 1789408536660,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -12320,6 +12320,72 @@ window.BENCHMARK_DATA = {
             "name": "Unrect.Benchmarks.Retention.Eager_SpaceHeld_Shared",
             "value": 58223056,
             "range": "± 536 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · CONTROL/TARGET — the same values shared-string encoded, which the reader already dedups"
+          },
+          {
+            "name": "Unrect.Benchmarks.Retention.Eager_ResultHeld",
+            "value": 32319784,
+            "range": "± 0 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · Table over the eager grid; result held, grid released"
+          },
+          {
+            "name": "Unrect.Benchmarks.Retention.Streaming_ResultHeld",
+            "value": 32319784,
+            "range": "± 0 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · Table through a window; result held, workbook closed"
+          },
+          {
+            "name": "Unrect.Benchmarks.Retention.Streaming_ResultHeld_Unique",
+            "value": 86096872,
+            "range": "± 0 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · CONTROL — the same projection, every text distinct"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "d06708df60e381758b11dde07836c674565409b6",
+          "message": "Merge experiment/record-primitive: streaming composites over a bound, the band tiler, Table composed from primitives\n\nThe labels-as-context primitives (ColumnLabels, WithColumnLabels, Record),\nSkipToFirstNonBlankCell, and the uniform offset law; the engine streaming a\ndiscovered bound through a composite (TailSpace, a bound-aware Exceeds, lazy\nflow and repeat slices); VerticalBands/HorizontalBands, the tiler — a\nrepeating fixed-dimension space, distinct from the pattern repeat;\nTable(headerRows, eachRow) composed over the tiler under a UnitProjection,\nwith AsScaffolding and a mark-driven path fold giving it the leaf's own\ndiagnostics; ColumnLabels self-contained, its header parse the one home in\nLabelMap.FromHeader; and the repeat returned to a pure walk, onBlank living\non the tiler alone.\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01Wk5ZXojzv4hibCXDkjRu3g",
+          "timestamp": "2026-09-14T17:43:35Z",
+          "tree_id": "1c80a0bed7aeb311bb6e1bdb0933ac5a05562434",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/d06708df60e381758b11dde07836c674565409b6"
+        },
+        "date": 1789408536601,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Retention.Eager_SpaceHeld",
+            "value": 58223056,
+            "range": "± 6,144 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · SpreadsheetSpace.Create over a real .xlsx (inline strings); grid held"
+          },
+          {
+            "name": "Unrect.Benchmarks.Retention.Eager_SpaceHeld_Unique",
+            "value": 112000144,
+            "range": "± 536 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · CONTROL — the same file and reader, every text distinct"
+          },
+          {
+            "name": "Unrect.Benchmarks.Retention.Eager_SpaceHeld_Shared",
+            "value": 58223056,
+            "range": "± 0 bytes",
             "unit": "bytes",
             "extra": "median of 3 · CONTROL/TARGET — the same values shared-string encoded, which the reader already dedups"
           },
