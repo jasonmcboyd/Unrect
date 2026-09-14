@@ -1,46 +1,37 @@
-# The Point Substrate — design spec, revision 4
+# The Point Substrate — design spec, revision 5
 
-**Status:** for owner review. Revision 4 rebases the whole spec on the **self‑typed slicing contract** (two tiers, no erased space) and the **single generic vocabulary**. Nothing built.
-**Base:** `master` @ `d06708d`, branch `experiment/point-and-line`. **Inputs:** `docs/design/substrate-inventory.md`, the compiling three‑tier prototype (session scratchpad `crtp/Program.cs`), `docs/design/spreadsheet-reader-survey.md`.
-**Scope:** `Line` deferred. `IProjection` → Core deferred.
+**Status:** for owner review. Revision 5 is a *reduction* of rev 4: the CRTP contract is gone, replaced by **three locator structs over one interface**. Rev 4's conclusions stand except where restated.
+**Base:** branch `experiment/point-and-line` @ `e6e1d10` + the uncommitted phase‑2 build (2,322 green).
+**Deferred:** `Line` (shape stated, not built); `IProjection` → Core.
 
-Rulings applied (owner, 2026-09-14): the strict shape (kinds live in the package that owns them; views hand back points and host no reads; the reflective binder is a backend record leaf composed through the `Table` sugar); `IsText` + `AsText` at all three levels with `Text()` kinded and relocated; `Cell<T>` retired for `Point()`; the struct named `Cell`; **`GetSubspace` returns `TSpace` — "a subspace should just be a lens into the same space"**; **no erased space and no non‑generic vocabulary**; contract first, then Point; placement pipeline and analyzers frozen; `ICells` as the canonical base.
+Rulings applied (owner, 2026-09-14): the strict shape; `IsText`/`AsText` at all three levels with `Text()` kinded and relocated; `Cell<T>` retired for `Point()`; the struct named `Cell`; **the ladder is three locator structs — `Plane`, `Line`, `Point` — over one `ISpace`**; `Slice` is the verb; no erased vocabulary; contract first; placement pipeline and analyzers frozen.
 
 ---
 
-## 0. Facts this spec stands on
+## 0. Facts this revision stands on
 
 | Fact | Where |
 |---|---|
-| `ISpace` has 3 members; only the indexer speaks `CellValue`. No strategy/scan/landmark interface speaks it | `ISpace.cs:11,27,34`; `ISizeStrategy.cs:7`, `IRowStrategy.cs:7`, `IRowScan.cs:27`, `IAreaScan.cs:17`, `Scans.cs:21-43` |
-| `CellValue` is a 24‑byte struct; `default` is Blank | `CellValue.cs:30-46,74` |
-| 9 `ISpace` implementers; **every real one already slices to its own type** (`GridSpace`→`GridSpace`, `SpreadsheetGridSpace`→itself, `WindowedSpace`→itself); the test doubles wrap and slice to themselves | `GridSpace.cs:80-86`, `SpreadsheetGridSpace.cs:39-40`, `WindowedSpace.cs:70-76`; inventory T2‑11 |
-| **`BoundedSpace`/`TailSpace` are the only decorators** and the only `ISpaceChart`s; `TailSpace`'s `view` is already a real translated subspace sliced **to the inner's full measured height**, with the bound hiding rows | `BoundedSpace.cs:31,54`; `TailSpace.cs:27,44,53,105` |
-| `Table(headerRows, eachRow)` is already composed: `VerticalBands(1, eachRow).AsScaffolding()` under `ColumnLabels(1)` inside `UnitProjection` | `Projection.cs:354-361`, `UnitProjection.cs:14-36` |
-| The bind rung hands a `LabelMap` to a lambda **once per table application** and its typed twin flows the demand | `Projection.cs:267-286`, `Projection.Typed.cs:96-103` |
-| The reflective binder resolves columns once per table and aggregates unbound members into one message; member‑type checks run at **construction** | `Projection.Binding.cs:17-56`; `RowBinding.cs:209-234` |
-| `column 'Amount': ` is a prefix on the **problem text** | `Projection.Binding.cs:99,102`, `TableRow.cs:267` |
-| Matching only ever sees **text** cells; a non‑text header cell becomes the empty label | `CellMatching.cs:66,88`; `LabelMap.cs:194` |
-| **`ProjectionBase<TResult>` is `public`**; only its ctor is `private protected`. `Unrect.csproj` carries IVT for `Unrect.Tests` only. IVT **does** unlock a `private protected` ctor for a friend subclass (verified two‑assembly netstandard2.0 build) | `ProjectionBase.cs:141,151-154`; `Unrect.csproj:17`; inventory T2‑2 |
-| Views host **36** typed accessors; `CellStrip : IReadOnlyList<CellValue>`, `TableRow.Cells`/`TryGet` and the `Table()` dictionary rung leak the struct. `CellStrip.Count` calls `BoundedSpace.WidthOf` — a view can never live in a backend | `CellStrip.cs:13,41,85-124`; `TableRow.cs:30,86-170`; inventory T2‑6 |
-| `MapProjection` and `CellProjection` invoke their lambda **bare**; the engine wraps anything a `Project` throws as `the projection threw {Type}: {Message}` located at the **extent**; **`IsFault` does not list `InvalidOperationException`** | `MapProjection.cs:34`, `CellProjection.cs:26`, `ProjectionEngine.cs:197-217,288-296` |
-| `PlacementStage.Of<T>` is public, `Close<T>` private; the six typed leaves have pipeline terminals, `Formula()` does not | `PlacementStage.cs:167-188,267,279` |
-| **No type anywhere is named `Cell`**; the simple name occurs only as a vocabulary member, in 4 places | `Projection.cs:24`, `ProjectionBuilders.cs:291`, `PlacementStage.cs:170`, `PlacementStage.Scoped.cs:165` |
-| **85 files import `using static …Projection;`** — 63 of them tests | repo grep |
-| `UnrectSymbols.TryLoad` **hard‑requires** `Unrect.Core.ISpace`, and `IsSpace` is "the demand that is no demand" | `UnrectSymbols.cs:79-99,112-116` |
-| `MissingCapabilityException : InvalidOperationException` and is on the fault list | `MissingCapabilityException.cs:22`, `ProjectionEngine.cs:295` |
-| **The elapsed‑time Known Bug in `CLAUDE.md` is stale** — the adapter lexes `TimeSpan` to a Number of days | `ExcelDataReaderExtensions.cs:33-40` |
-| **Prototype‑verified** (netstandard2.0): self‑typed slicing compiles; canonical members must sit on the **non‑generic** base or go ambiguous (CS0229/CS0121) for any type implementing two instantiations; a generic engine constrains `where TSpace : class, ISpace<TSpace>` only; a level with two parents redeclares `new`; a slice keeps its static type with no cast and no walk. Also verified: `p.Value()` infers `T` from a `Point<IValueCells<int>>`; `p.Decimal()` infers on `Point<ISheetCells>`; an erased point cannot read a kind (CS0311) | session scratchpad `crtp/Program.cs`, `infer/Program.cs` |
-| Inventory sizing: engine+context+pipeline 4,042 LOC / composites+primitives+vocabulary 2,142 / typed layer 1,072 / views 1,079 / binder 1,005 / lazy extents 334 | inventory T1 b,c,d,e,g,m |
-
-Census: 94 test files, 1,594 methods; `Mixed(object?[,])` in 47 files; six typed leaves in 35; `CellValue` in 40; `IntCell()` at 228 sites through one helper; 104 `static ISpace` fixture signatures; 102 kind pins + 26 conversion pins.
+| Phase 2 as built: `ICells` (canonical four), `ISpace<TSpace>` (self‑typed slice + indexer), the old non‑generic `ISpace : ICells` kept as the bridge, `Point<TSpace>`, `CellValue.AsText()/IsText`, canonical four on all 9 spaces, `SpaceContractTests` +173, `PointTests` (11 facts), `MatchingPreservationTests` +37 | working tree, 17 files / +640 lines |
+| Every real space already slices to its own type; `BoundedSpace`/`TailSpace` are the only decorators, and `TailSpace`'s `view` is a real translated subspace cut to the inner's **full measured height**, with the bound hiding rows | `GridSpace.cs:80-86`, `SpreadsheetGridSpace.cs:39-40`, `WindowedSpace.cs:70-76`, `TailSpace.cs:44,105` |
+| **The streaming locus**: `WindowedSpace` passes `(Offset.Height, Area.Height)` on **every cell read**; `Anchor` unions it into `[_locusFrom,_locusTo)` while the union fits `WindowChunks × ChunkRows`, else re‑anchors, else counts a `WindowOverrun`; `Evict` refuses locus chunks as victims and falls back to LRU | `WindowedSpace.cs:65`; `SheetStore.cs:191,227-228,316-364,376-430` |
+| The reader pool is keyed on `(sheetIndex, startRow)` — **chunk‑load driven, locus‑independent**. The locus affects eviction only, hence `ChunkReloads`/`WindowOverruns`/`Evictions`, and through them `RowsMaterialised` | `ReaderPool.cs:161-203`; `SheetStore.cs:260-283` |
+| `ProjectionContext` accumulates `Origin` and `Advance`; `Locate(space) = ProjectionLocation.At(Origin, space.Area.Size)`; `CellStrip.AddressOf = Origin + Step(i)`; `TableRow.Resolvable` translates by `scope.CaptureOrigin.Width − Context.Origin.Width` | `ProjectionContext.cs:77,148,176`; `CellStrip.cs:58,65`; `TableRow.cs:224` |
+| `ProjectionBase<TResult>` is **public** with a `private protected` ctor; IVT unlocks it for a friend subclass (verified) | `ProjectionBase.cs:141,151-154`; `Unrect.csproj:17` |
+| Views host **36** typed accessors; `CellStrip : IReadOnlyList<CellValue>`, `TableRow.Cells`/`TryGet` and the `Table()` rung leak the struct; `CellStrip.Count` needs `Unrect`‑internal access | `CellStrip.cs:13,41,85-124`; `TableRow.cs:30,86-170` |
+| `MapProjection`/`CellProjection` invoke their lambda bare; the engine wraps as `the projection threw {Type}: {Message}` at the **extent**; `IsFault` omits `InvalidOperationException` | `MapProjection.cs:34`, `CellProjection.cs:26`, `ProjectionEngine.cs:197-217,288-296` |
+| `PlacementStage.Of<T>` public, `Close<T>` private; the six typed leaves have terminals, `Formula()` does not | `PlacementStage.cs:167-188,267,279` |
+| `UnrectSymbols.TryLoad` hard‑requires `Unrect.Core.ISpace`; `IsSpace` is "the demand that is no demand" | `UnrectSymbols.cs:79-99,112-116` |
+| No type anywhere is named `Cell`; the simple name occurs only as a vocabulary member, 4 places | `Projection.cs:24`, `ProjectionBuilders.cs:291`, `PlacementStage.cs:170`, `PlacementStage.Scoped.cs:165` |
+| **`ISpace` occurs ~641 times across ~200 source files**; `using static …Projection;` in 85 files (63 tests) | repo grep |
+| The `CLAUDE.md` elapsed‑time Known Bug is **stale** — the adapter lexes `TimeSpan` to a Number of days | `ExcelDataReaderExtensions.cs:33-40` |
 
 ---
 
-## 1. The contract, and what it costs
+## 1. The ladder: three locator structs over one interface
 
 ```
-public interface ICells                                  // canonical, non-generic, declared ONCE
+public interface ISpace                          // ONE interface. Root coordinates. No slicing.
 {
   Area Area { get; }
   bool IsBlank(int column, int row);
@@ -48,402 +39,255 @@ public interface ICells                                  // canonical, non-gener
   string? AsText(int column, int row);
 }
 
-public interface ISpace<TSpace> : ICells where TSpace : ISpace<TSpace>
+public readonly struct Plane<TSpace> where TSpace : class, ISpace     // 2-D locator
 {
-  TSpace GetSubspace(Offset offset, Area area);
-  Point<TSpace> this[int column, int row] { get; }
+  public Plane(TSpace space, Offset origin, Area area);
+  public TSpace Space { get; }  public Offset Origin { get; }  public Area Area { get; }
+  public Plane<TSpace> Slice(Offset offset, Area area);       // eager check vs own Area; pure arithmetic
+  public Point<TSpace> this[int column, int row] { get; }     // eager check; mints ROOT = Origin + local
 }
 
-public readonly struct Point<TSpace> where TSpace : class, ICells   // a point never slices
+public readonly struct Point<TSpace> : IEquatable<Point<TSpace>>      // 0-D locator, as built
+  where TSpace : class, ISpace
+{ TSpace Space; int Column; int Row;   bool IsBlank, HasValue, IsText;   string? AsText(); }
 ```
 
-**Two tiers. There is no erased `ISpace`.** Every hop is statically typed; erasure is not one hop away, it is unspellable.
-
-The canonical four sit on `ICells` because the prototype says they must: a type implementing two instantiations of a generic interface that declared them would see them ambiguous (CS0229/CS0121). That constraint is also the design — *the canonical surface is one surface, not one per capability.*
+Capability interfaces are **plain**, root‑coordinate, no slicing and no redeclarations:
 
 ```
-ISheetCells   : ISpace<ISheetCells>    + 6 reads, Describe, IsErrorAt, ErrorTextAt
-IFormulaSpace : ISpace<IFormulaSpace>  + FormulaAt
-ISpreadsheetSpace : ISheetCells, IFormulaSpace, ISpace<ISpreadsheetSpace>
-                                        { new GetSubspace; new this[] }     // two parents ⇒ redeclare
-IValueCells<T> : ISpace<IValueCells<T>> + ValueAt
+ISheetCells   : ISpace   // six reads + Describe + IsErrorAt/ErrorTextAt
+IFormulaSpace : ISpace   // FormulaAt
+ISpreadsheetSpace : ISheetCells, IFormulaSpace
+IValueCells<T>    : ISpace   // ValueAt
 ```
 
-**Implementation cost, counted.** One private `Slice` plus one forward per distinct return type:
+**What this deletes outright**, relative to rev 4: `ISpace<TSpace>`, every `new` redeclaration, every per‑backend slice body (2–6 per implementer, 9 implementers, and every future one), the recursive constraint `where TSpace : class, ISpace<TSpace>` threaded through the whole engine, `SpaceCapabilities`, `ISpaceChart` and its law, `MissingCapabilityException` and its `IsFault` entry, `RequiredCapability` and the mint walk.
 
-| implementer | `GetSubspace` bodies | indexer bodies |
-|---|---|---|
-| `WindowedSpace : ISheetCells`, `GridSpace<T> : IValueCells<T>`, each test double | 1 | 1 |
-| `SpreadsheetGridSpace : ISpreadsheetSpace` | 3 (1 public + 2 explicit) | 3 |
+**`Slice` is the uniform verb.** `GetSubspace` is renamed everywhere it survives — which, after this arc, is only on `Plane` (and later `Line`).
 
-All one‑liners. C# has no covariant interface implementation, which is why the explicit forwards exist; the prototype needed 7 bodies for a three‑tier ladder, the two‑tier shape needs 6 for the richest space and 2 for everything else.
+**`Line<TSpace>`, stated once so `Plane` can grow toward it** (next arc, not built): `(TSpace Space, Point<TSpace> Start, Orientation Orientation, int Length)` with `Slice(start, count)` and `this[i] → Point<TSpace>`. The owner's "starting point and length" is exactly that; `plane.Row(i)` is full‑width sugar over it. No further concept.
 
-**What the contract buys** (inventory T2‑1b, now cashed):
+**Why structs matter beyond allocation:** adding a member to a struct later is **not a breaking change**. The no‑DIM rule (`CLAUDE.md`: a DIM on a published Core interface compiles everywhere and fails at run time on .NET Framework) makes every interface member a one‑way door. `Plane` and `Line` can grow; `ISpace` cannot. That is why the surface is four interface members and everything else is a locator.
 
-- `SpaceCapabilities`, `ISpaceChart`, the "coordinates must not move" law, `MissingCapabilityException` and its `IsFault` entry — **all delete**, ~120 LOC and a whole fault class.
-- `RequiredCapability` and the runtime mint walk — **delete**. A point is minted from a statically typed slice, always.
-- `Formula()`'s and `RowWithFormula`'s runtime asks (`SpreadsheetProjections.cs:57,127`) — **delete**; they receive a real `TSpace`.
-- The two‑vocabulary parity surface — **deletes with the second vocabulary** (§2).
-- Rev 3 §5.4's chart‑chain frame check — **collapses to `ReferenceEquals`** (§7).
-
-**What it costs:** the engine, 16 composites, ~11 primitives, the modifier surface and `PlacementStage<TSpace>` all go generic in `TSpace`; ~4,000–4,500 LOC rewritten in place. Plus the one true collision, §4.
+**Contract laws** (tested at every door, as built):
+1. `AsText(c,r) is null` ⟺ `IsBlank(c,r)`.
+2. `IsText(c,r)` is true iff the cell's canonical text is its own value — false for blank, false where `AsText` renders.
+3. Every `ISpace` member, and `Plane.Slice`/`Plane.this[]`, throws `OutOfBoundsException` eagerly. The checking entry is the plane; a `Point` constructed directly is unchecked and its read throws from the space.
+4. Nothing in Core requires a capability.
 
 ---
 
-## 2. One vocabulary
+## 2. The transitional rename
 
-`Projection` (the static class) and `IProjection<T>` **retire**. `ProjectionBuilders<TSpace>` is the vocabulary; `PlacementStage<TSpace>` is the pipeline; the non‑generic `PlacementStage` and `ProjectionScope<TSpace>` (with `Projection.Over`) retire with them.
+The old non‑generic `ISpace` (the `CellValue` indexer + `GetSubspace`) must survive until the kinded leaves and the binder leave `Unrect` — but it must vacate the name **now**, so the base can be `ISpace` from the next commit.
+
+**Proposal: `ICellValues`.** It names exactly what it is — the interface whose indexer yields a `CellValue` — it sorts next to `CellValue` for a reader, and it dies in phase 12 with the struct.
+
+One commit, two mechanical renames in order:
+
+1. `ISpace` → `ICellValues` (~641 occurrences, ~200 files)
+2. `ICells` → `ISpace` (14 occurrences)
+
+Both are compiler‑verified, and **doc `cref`s are warnings‑as‑errors**, so a stale reference in a summary fails the build rather than rotting. Do them as two passes in one commit; the reverse order collides on the name.
+
+---
+
+## 3. What of the built phase 2 stays
+
+| Built | Verdict |
+|---|---|
+| `ICells.cs` — the canonical four and their laws | **KEEP**, renamed `ISpace.cs`. Strike the paragraph explaining why the members are not on `ISpace<TSpace>` — the reason is gone; the surviving reason is simpler ("one canonical surface, not one per capability"). |
+| `Point<TSpace>` (`Point.cs`) — address equality, `IsBlank`/`IsText`/`AsText()`, `ToString()` | **KEEP** verbatim; the constraint reads `where TSpace : class, ISpace` after the rename. Coordinates are now **root**, which is a documentation change only. |
+| `CellValue.AsText()` / `IsText` (+47) | **KEEP** — the backend's rendering, and it travels with the struct to Spreadsheets. |
+| The canonical four on all 9 spaces (`GridSpace`, `SpreadsheetGridSpace`, `WindowedSpace`, `BoundedSpace`, `TailSpace`, the 4 doubles) | **KEEP** — root‑coordinate on a root space; on the two decorators they stay as the bridge until phase 5 retires them. |
+| `SpaceContractTests` (+173), the rendering pins, `MatchingPreservationTests` (+37) | **KEEP** |
+| `PointTests` — 10 of 11 facts | **KEEP** |
+| `ISpace<TSpace>` and its doc | **REMOVE** |
+| Every self‑typed `Slice`/indexer body and explicit forward across the 9 implementers | **REMOVE** (~150 LOC, and the obligation on every future backend) |
+| `PointTests.ASliceIsAnotherSpaceAndSoMintsAnotherAddress` | **REWRITE over `Plane`** in phase 3: a *slice of a plane* is the same space and mints the same root address — the opposite fact, and the better one. |
+
+---
+
+## 4. The engine, and where the canonical layer sits
 
 ```
-public interface IProjection                                   // tooling only; never slices
-public interface IProjection<in TSpace, TResult> : IProjection
-  where TSpace : class, ISpace<TSpace>
+IProjection<in TSpace, TResult> : IProjection  where TSpace : class, ISpace
 {
-  ProjectionResult<TResult> Project(TSpace extent, ProjectionContext context);   // REAL, not phantom
+  ProjectionResult<TResult> Project(Plane<TSpace> extent, ProjectionContext context);
   IProjection<TSpace, TResult> WithName(string name);
   IProjection<TSpace, TResult> WithPlacement(Placement placement);
 }
+
+projection.Map(TSpace space)  ==>  Project(new Plane<TSpace>(space, default, space.Area), …)
 ```
 
-**`in TSpace` stays, and it replaces `Demand<TSpace>`.** A helper written over the narrowest interface it reads — `IProjection<ISheetCells, decimal>` — converts contravariantly into any file whose space is more capable, so it composes into an `ISpreadsheetSpace` declaration with no ceremony. That is the whole job the witness did, done by the type system.
+Composites slice planes (`extent.Slice(offset, area)`), which is pure struct arithmetic: no allocation, no cast, no walk. `in TSpace` stays and does `Demand<TSpace>`'s old job — a helper written over `ISheetCells` composes contravariantly into an `ISpreadsheetSpace` file. `Demand<TSpace>` and **UNR001** retire together (rev 4 §2: with `TSpace` fixed lexically there is nothing to infer, and the type records the file's space rather than the narrowest demand).
 
-**`Demand<TSpace>` retires, and so does UNR001.** The witness existed because `TSpace` had to be *inferred* and a lambda body's demands were invisible to inference (inventory T2‑3b). Under `ProjectionBuilders<TSpace>` there is nothing to infer: `TSpace` is fixed lexically by the file's one import, and a leaf built there is `IProjection<TSpace, T>` whatever it reads. The cost is stated plainly: **the type now records the space the file was written over, not the narrowest space the declaration needs.** UNR001 ("this scope carries a demand nobody makes") cannot be computed from that and retires — which also disposes of inventory T2‑3's false positive by deletion rather than by a symbol patch. A shared helper still states its minimum, in its constraint: `static IProjection<TSpace,T> Helper<TSpace>(…) where TSpace : class, ISpace<TSpace>, ISheetCells`.
+**(A) The canonical layer takes erased planes — option (ii).**
 
-A helper indifferent to the space is a generic method under `where TSpace : class, ISpace<TSpace>`; it can then use the canonical four and nothing else, which is the right default.
+```
+int SelectRows(Plane<ISpace> plane);        bool IncludesRow(Plane<ISpace> plane, int row);
+int? FindRow(Plane<ISpace> plane);          Func<Point<ISpace>, bool> predicates
+```
 
-**Every file names its space once.** 85 import sites re‑scope (63 in tests, 9 scripts). Fixtures return `IValueCells<int>` / `IValueCells<object?>` / `ISheetCells`.
+`Plane<ISheetCells>` is not a `Plane<ISpace>` (structs are invariant), so the engine re‑mints — `new Plane<ISpace>(plane.Space, plane.Origin, plane.Area)`, a three‑field struct copy, **once per strategy invocation, never per cell**. This `ISpace` is the real base contract, not the rejected erased vocabulary.
+
+Chosen over generic strategy methods (`Size Compute<TSpace>(Plane<TSpace>)`) because (a) predicates are `Func<Point<ISpace>,bool>` either way, so a generic strategy would re‑mint anyway and buy nothing; (b) it keeps **42 strategy files non‑generic**, which is most of why phase 6 shrinks; (c) nothing leaks upward — a strategy returns `int`, `Size`, `Offset` or `bool`, never a locator. The re‑mint is the only erasure in the system and it is one‑way by construction.
 
 ---
 
-## 3. `Unrect.Core`
+## 5. Absolute position, answered (rev 4 §7 reduced)
 
-```
-ICells.cs    NEW      the canonical four
-ISpace.cs    REWRITTEN ISpace<TSpace> : ICells — GetSubspace + the indexer
-Point.cs     NEW
-Area / Offset / Size / OutOfBoundsException / the 11 strategy, scan and landmark interfaces / Scans   kept
-  — every one of them retyped ISpace -> ICells (inventory T2-12: none needs TSpace)
-CellValue.cs, CellKind.cs, CellError.cs   DELETED -> Unrect.Spreadsheets
-Line, Orientation   not in this arc
-```
+Points and planes carry **root coordinates**. Everything built to compensate for their absence collapses:
 
-**Contract laws**, tested at every door:
-
-1. `AsText(c,r) is null` **⟺** `IsBlank(c,r)`.
-2. `IsText(c,r)` is true **iff the cell's canonical text is its own value**. False for blank, false where `AsText` renders. `IsText ⇒ !IsBlank`.
-3. Every member throws `OutOfBoundsException` off the edge, **including the indexer, eagerly** (`SpaceContractTests.cs:82-85` pins it; a lazily‑minted locator would move the overrun out of the strategy discovering it into a user lambda).
-4. `GetSubspace` returns `TSpace`. A subspace is a lens into the same space, never a weaker one.
-5. Nothing in Core requires a capability.
-
-**`Point<TSpace>`** — `Space`, `Column`, `Row`; `IsBlank`, `IsText` (properties, a field test); **`AsText()` a method** (it may allocate). No indexer, no `GetSubspace`, no `As<>`/`Cast<>`. 16 bytes on x64. Equality is **address equality**, `IEquatable<Point<TSpace>>`, documented in as many words — the type it replaces had value equality (`CellValue.cs:226`) and that is the one place a reader can be misled.
-
-`Point` earns Core through the indexer; the charter is unamended.
-
----
-
-## 4. The bound, re‑homed
-
-`BoundedSpace`/`TailSpace`/`ILazyExtent` cannot be self‑typed: a decorator's `GetSubspace` must return the *inner's* type. This is the one true collision, and it resolves by the split the inventory found already latent in `TailSpace`'s fields.
-
-```
-Unrect/Projections/Bound.cs   NEW (replaces BoundedSpace.cs + TailSpace.cs + ILazyExtent, 334 -> ~150 LOC)
-
-internal sealed class Bound
-{
-  internal int Width { get; }                    // Scan.Width — free, settled before any row is read
-  internal bool HasRow(int row);                 // advances the scan only as far as it takes to say
-  internal Size ForceResolved();                 // reads the scan to exhaustion
-  internal Bound Shifted(int rows);              // TailSpace's rowShift, as a value
-}
-```
-
-The extent handed to `Project` is a **real `TSpace` slice**, cut to the inner's full measured height and the scan's width — exactly what `TailSpace.cs:105` already does. The bound *hides* rows above the discovered boundary. No new contract member is needed: every real space has a measured height.
-
-`Placed` carries `(extent, bound)`; `ProjectionEngine.Exceeds`/`Bind`, `FlowState.Next`, `RepeatProjection.ItemExtent`, `BandsProjection` take the pair. `ProjectionContext` gains `Bound? Bound` so the views can see it. The scan's mutable position still belongs to one `Map` call, as it does today.
-
-### The sharp edge: enforcement moves off the space
-
-Today a read past a discovered bound overruns because the *space* refuses. With the bound off the space, the views must refuse instead.
-
-| today | after |
+| rev 4 machinery | now |
 |---|---|
-| `BoundedSpace.WidthOf(space)` | `context.Bound?.Width ?? extent.Area.Width` |
-| `BoundedSpace.HasRow(space, r)` | `context.Bound?.HasRow(r) ?? r < extent.Area.Height` |
-| `space.Area` forces the scan | `context.Bound?.ForceResolved() ?? extent.Area.Size` |
+| `ProjectionContext.Origin`, `Advance` and their accumulation | **gone** — the context is paired with a plane that knows where it is. One of the context's three jobs (sheet position) dissolves; ~80 LOC and the `CLAUDE.md` "three jobs" note with it |
+| `Locate(space) = At(Origin, space.Area.Size)` | `ProjectionLocation.At(plane)` |
+| `CellStrip.AddressOf = At(Origin + Step(i))`, `CellBlock.AddressOf` | `ProjectionLocation.At(point)` |
+| the minting law, `MintOrigin` on every view | **gone** — a view mints from its own plane; the coordinates are already root |
+| the frame check (`ReferenceEquals`, chart chain) | **gone** |
+| the foreign‑point rule | **reduced to a fact**: a point over the *same* root space is always locatable; one over another space cites its own coordinates and names its space |
 
-`CellStrip<TSpace>.Count`, `CellBlock<TSpace>.Width/Height/Validate/Row/Rows`, `TableView<TSpace>.ColumnCount/RowCount/StreamRows` all read the bound from their context — which they already carry. So `Range(b => b[0, 500])` still throws `ArgumentOutOfRangeException("the block is N rows tall")`, `b.Rows` still settles the bound, and a walk still streams.
-
-**The one behavioural change: `View.Space` forces.** Today `CellBlock.Space` hands out the `BoundedSpace` itself, so a raw `b.Space[0, 500]` overruns. With no bounded space to hand out, `Space` must return a slice of exactly the settled extent — which means **asking for `Space` settles the bound**, where today `Space.Area` settles it. That is a strictly earlier force by one member access, it preserves enforcement completely, and it is documented on the property ("asking for the extent settles the bound — the same question `Area` has always been"). `LazyForcingTests` gains one moved expectation with that comment.
-
-The alternative — hand out the unforced full‑height slice and document that raw reads are unbounded — is cheaper and silently wrong, and is rejected.
-
-**Outside any projection**, `space[c,r]` has no bound: the space is measured and throws at its own edge. Unchanged.
-
-**Streaming is untouched.** `WindowedSpace` slices to itself and the locus pair rides the slice (`WindowedSpace.cs:65`). `RowsMaterialised` / `ChunkReloads` / `WindowOverruns` on the 1M‑row walk must be **identical** — that is the phase gate.
-
----
-
-## 5. `Unrect` — the algebra, de‑typed
-
-### 5.1 `GridSpace<T>`
-
-```
-GridSpace<T> : IValueCells<T>          storage T[,] + isBlank, isText, asText given at construction
-static GridSpace                       the factories, names and signatures unchanged
-IValueCells<T> : ISpace<IValueCells<T>> { T ValueAt(int column, int row); }
-Point<IValueCells<T>>.Value()          one extension; T infers from the receiver (verified)
-```
-
-| factory | `T` | `IsBlank` | `IsText` | `AsText` |
-|---|---|---|---|---|
-| `Create(string?[,])` | `string?` | null/empty | `!IsBlank` | the string |
-| `Create(int[,], isBlank)` / `Create(double[,], isBlank)` | `int`/`double` | predicate | **false** | invariant `ToString()` |
-| `Create(object?[,])` — **the new home of `Mixed`** | `object?` | null/`""` | `v is string` | invariant `Convert.ToString` |
-| `Create<T>(T[,], isBlank, isText, asText)` | `T` | given | given | given |
-
-The `object?` row is load‑bearing: it reproduces today's matcher semantics exactly (a numeric cell is not a text cell) for the 47 files that use `Mixed`. A `string?[,]` grid would not.
-
-**One member, one word.** `Value()` *is* `GridSpace<int>`'s `Integer()`; there is no copy of the spreadsheet's six. `Value()` is total and returns the stored `T` even where the grid calls the cell blank; blankness is asked separately.
-
-`IntCell()` becomes one line (§5.3), and the 104 fixture signatures become `IValueCells<int>` / `IValueCells<object?>`.
-
-### 5.2 Views
-
-`CellStrip<TSpace>`, `CellBlock<TSpace>`, `TableRow<TSpace>`, `TableView<TSpace>`, all `where TSpace : class, ISpace<TSpace>`.
-
-- **Deleted:** the 36 typed accessors, `CellStrip : IReadOnlyList<CellValue>` (→ `IReadOnlyList<Point<TSpace>>`), `TableRow.Cells`, `TableRow.TryGet(out CellValue)`. ≈430 of 1,079 lines.
-- **Kept:** `Space`, `Count`/`Width`/`Height`, `Location`, **`AddressOf`**, `Row`/`Column`/`Rows`/`Columns`, `StreamRows`, `Resolvable` (pure ordinal arithmetic), the bounds messages, failure composition through `Context.Failure`. `AddressOf` matters more than before: it is how a caller's own complaint still cites a cell the way the framework's do.
-- **Reads become extensions on the point:** `row["Amount"].Decimal()`.
-- **`MintOrigin`**: each view carries its offset within the rung's extent and mints points in the extent's frame (§7).
-
-Rung parameter types are now unambiguous — one vocabulary, one answer: `Row(r => …)` gives `CellStrip<TSpace>`, `Range(b => …)` gives `CellBlock<TSpace>`, `Record(row => …)` and `Table(row => …)` give `TableRow<TSpace>`, `Table(view => …)` gives `TableView<TSpace>`, `Fields(…)` yields `Point<TSpace>`. Inventory T2‑9's doubled parity surface vanishes.
-
-### 5.3 `Point()` replaces `Cell<T>`; `AsText()` is the canonical leaf
-
-```
-Point()   -> IProjection<TSpace, Point<TSpace>>     asserts 1x1: "a Point must be exactly one cell; this one is 2x1"
-AsText()  -> IProjection<TSpace, string>            total; fails only on blank:
-                                                    "expected a value at B4, found a blank cell"
-```
-
-`CellProjection.cs` → `PointProjection.cs`. Custom conversion is `Point().Select(f)` — diagnostically identical to today's `Cell(f)` (both invoke the lambda bare, `CellProjection.cs:26`, `MapProjection.cs:34`), and better after §7. `IntCell()` = `Point().Select(p => p.Value())`; the 56 funneled `GetString`/`GetInt` lambdas likewise; `array.linq` changes one word per read.
-
-**`Choice(AsText(), …)` is degenerate** and is pinned as `ChoiceProjectionTests.AsTextFirstIsDegenerate`, with *narrow leaf first* in `docs/vocabulary.md`. `Text()` keeps its kind assertion and simply relocates (§6), so **none of the ~12 `Text()` pins change** and `Choice(Text(), Decimal())` still discriminates.
-
-**Name check:** after the retirement no member is named `Cell` and no type anywhere is (§0), so a file importing the vocabulary and `using Unrect.Spreadsheets;` sees `Cell` as a **type only**. `Point()` invoked with zero type arguments cannot bind to the generic struct `Point<TSpace>`.
-
-### 5.4 Matchers
-
-Predicates become `Func<Point<ICells>, bool>`; strategies and landmarks take `ICells`. Every text rule gains the `IsText` guard, so behaviour is **identical**:
-
-```
-point => point.IsText && Comparison.Equals(Trimmed(point.AsText()!), needle)
-```
-
-`RowContaining`, `RowWithCell`, the column twins, `Caption`, `Field` and `LabelMap`'s header parse all behave as today; a numeric header stays unlabeled; no scan renders, so no scan allocates. Phase 1's work is **preservation pins**.
-
-**`RowSaying(text)` / `ColumnSaying(text)`** — the same whole‑cell, trimmed, case‑insensitive comparison against **every** cell's `AsText`. Obeys the naming law: not a bare `Where`/`While`, not `Containing`. No numeric overload: that would force the declaration to know the backend's rendering rule. `Caption` and `Field` are not widened — they assert a *label*, and a rendered number is not one.
-
-`TakeRowsToValue`/`TakeColumnsToValue` → `…ToText` (no production callers; 8 test sites).
-
----
-
-## 6. `Unrect.Spreadsheets` — where the kinds live
-
-```
-Cell.cs / CellKind.cs / CellError.cs   MOVED from Core, verbatim; Get*/TryGet* and equality -> internal
-ISheetCells.cs        NEW   : ISpace<ISheetCells>; six reads + Describe + IsErrorAt/ErrorTextAt
-SheetGrid.cs          NEW   Cell[,] as an ISpreadsheetSpace, constructible from arrays
-CellReading.cs        MOVED from Unrect
-PointReads.cs         NEW   Point<TSpace>.Text()/Decimal()/Integer()/Double()/Date()/Boolean()
-TypedCellProjection   MOVED — a REAL primitive here (see below)
-SpreadsheetProjections / SpreadsheetProjectionBuilders<TSpace>   + six leaves, Record<T>, Table<T> rungs
-SpreadsheetPipeline.cs NEW  the six pipeline terminals as extensions over PlacementStage<TSpace>.Of
-Binding/RowBinding, MemberPlan, TableBinding   MOVED from Unrect
-SpreadsheetGridSpace / WindowedSpace / SheetStore / IRowSource / Workbook / MapWorkbook   retyped
-```
-
-### 6.1 `ISheetCells`
-
-```
-bool TextAt    (int c, int r, out string   value, out CellProblem? problem);
-bool DecimalAt (…out decimal…);  IntegerAt;  DoubleAt;  DateTimeAt;  BooleanAt;
-string Describe(int c, int r);                 // "Text", "Number", "Error(#VALUE!)"
-bool IsErrorAt(int c, int r);   string? ErrorTextAt(int c, int r);      // D-D
-```
-
-Today's `CellReader<T>` (`TypedCellProjection.cs:17`) promoted to interface members, with the address turned from an input thunk into a **parameter of the sentence** (`CellProblem`, §7.1): the backend builds the words, whoever knows the address renders them. That is what keeps `expected Number at B4, found Text` byte‑identical at a leaf, at a view read and at a bare read.
-
-`ISpreadsheetSpace : ISheetCells, IFormulaSpace, ISpace<ISpreadsheetSpace>` with the two `new` redeclarations. `Workbook.Sheet` returns `ISheetCells` (D‑9) — forced now, since a declaration over a lesser interface could read nothing but text. The honest‑absence rule is preserved exactly: formulas stay absent *from the type*.
-
-### 6.2 The six kinded leaves are real primitives
-
-`ProjectionBase<TResult>` is public with a `private protected` ctor, and IVT opens it for a friend assembly (verified, §0). **Add `<InternalsVisibleTo Include="Unrect.Spreadsheets" />` to `Unrect.csproj`** — one line — and `TypedCellProjection<T>` moves to the backend as a real primitive.
-
-This reverses rev 3 §4.3: there is no `Select` tax, the leaf's description is its own (`Decimal`, not a named `Select`), `OrBlank`'s `Tolerating` mechanism survives intact, and the R‑8 benchmark becomes a check rather than a veto. "Only we derive" is preserved — the ctor stays closed to everyone outside the two friend assemblies, which is what the closure was for (`ProjectionBase.cs:144-149`). Publishing a `Leaf<T>` factory is still refused: it would re‑import a reading vocabulary into `Unrect`.
-
-**Pipeline terminals.** The six leave `PlacementStage<TSpace>`, so `OffsetBy(SkipRows(1)).Decimal()` (54 use sites, one pinned parity law) is restored by extensions over the public `Of`:
-
-```
-public static IProjection<TSpace, decimal> Decimal<TSpace>(this PlacementStage<TSpace> stage)
-  where TSpace : class, ISpace<TSpace>, ISheetCells
-  => stage.Of(SpreadsheetProjections.Decimal<TSpace>());
-```
-
-reached by the namespace import every spreadsheet file already has. The leaf firewall survives one layer down: six readings over six kinds, no `Long()`, no `Money()`, no `Enum<T>()`.
-
-### 6.3 `Record<T>()` and `Table<T>()`, composed
-
-```
-Table<T>() == ProjectionBuilders<TSpace>.Table(headerRows: 1, eachRow: labels => RecordRow<T>(plan, labels))
-```
-
-and the bind rung is itself `UnitProjection` over `ColumnLabels(1)` + `VerticalBands(1, row)` — so `Table<T>()` inherits the path folding, the scaffolding fold, the `onBlank` policies and the streaming behaviour with nothing re‑implemented. `RecordRow<T>` is an `Overlay` of kinded leaves at `labels["Amount"]`, built by reflection at bind time — the spelling the rung's own doc already shows (`Projection.cs:224-227`).
-
-| today | after |
-|---|---|
-| construction‑time member checks (`RowBinding.cs:209-234`) | **unchanged** — the plan is built when `Table<T>()` is called and captured in the bind closure |
-| `Table<T>(bind => bind.Column(…).Ignore(…))` | **unchanged** — same `TableBinding<T>`, same moment; only what the plan compiles to changes |
-| aggregated `no column binds Money.Amount or Money.Fee; …` | **preserved** — the bind lambda runs once per table application, the same moment the old binder resolved columns; it loops the members, collects the unbound and throws one failure through `LabelMap`'s header citations |
-| ambiguity citation naming two header cells | **preserved** (`LabelMap.cs:150-155`) |
-| subject `Table<Money>` | unchanged — the composed unit is named for it |
-| `column 'Amount': ` prefix | **becomes a path segment** (D‑A): `Table<Money> -> column 'Amount' @ B2: expected Number at B2, found Text` |
-
-D‑A applies identically to a view read, where the extension never sees the caption. `CellReadingIdentityTests`' stated law (`:26-31`) is rewritten to say the column is named by the declaration, not by the problem.
-
-### 6.4 `AsText` rendering — the backend's documented choice
-
-Observable only through the `AsText()` leaf and the `Saying` family, so it is a default, not a contract:
-
-blank → `null`; text → verbatim (`IsText` true); number → exact decimal if kept else the double, invariant; temporal → `yyyy-MM-dd`, or `…THH:mm:ss` when not midnight; boolean → `TRUE`/`FALSE`; error → the canonical literal `#DIV/0!` (`CellValue.cs:296-315`).
-
-An error cell is therefore: not blank, not text, says `#DIV/0!`, fails every kinded read with today's sentence, findable by `RowSaying` and not by `RowContaining`, and answerable by `IsErrorAt`.
-
-Displayed text stays out of reach — ExcelDataReader has no formatter. The reader survey's conclusion stands: **keep ExcelDataReader**, nothing here depends on a reader change, and `ExcelNumberFormat` is the path to `IFormattingSpace` later.
-
----
-
-## 7. Lambda‑read diagnostics
-
-`row["Amount"].Decimal()` is an extension with no context. Left bare it reaches the engine as `the projection threw InvalidOperationException: …` located at the **extent** with a meaningless local address. It is already *absorbable* (`IsFault` omits `InvalidOperationException`) — what is lost is the sentence and the address.
-
-### 7.1 The protocol — two small public types in `Unrect`
+§7's read‑failure protocol reduces accordingly:
 
 ```
 public delegate string CellProblem(string at);
 
-public sealed class CellReadException : Exception
+public sealed class CellReadException : Exception          // in Unrect, beside the engine
+{ Point<ISpace> At { get; }  CellProblem Problem { get; }  Message => Problem(At.ToString()); }
+```
+
+and the catch, at the seven lambda sites (`MapProjection`, `StripProjection`, `BlockProjection`, `RecordProjection`, the two `Table` lambda rungs, the layout bodies):
+
+```
+catch (CellReadException failure)
 {
-  public CellReadException(Point<ICells> at, CellProblem problem);
-  public Point<ICells> At { get; }
-  public CellProblem Problem { get; }
-  public override string Message => Problem(At.ToString());     // the LOCAL address
+  throw context.Failure(failure.Problem(ProjectionLocation.At(failure.At).A1), extent, failure);
 }
 ```
 
-In `Unrect`, not Core: Core's contracts do not speak it, and every backend publishing projection‑level reads already references `Unrect`. It derives from `Exception`, not `InvalidOperationException`, so it can never be confused with the retiring `MissingCapabilityException`. It is **not** a fault: a cell that says the wrong thing is a statement about the document, absorbable exactly as a kind failure is today. An IO failure inside a read still surfaces as `IOException` and stays a fault.
+No arithmetic, no check, no conditional. Anything other than `CellReadException` keeps today's behaviour and `IsFault` decides. `Point<TSpace>` gains one member — `Erased()`, a struct copy — so the exception can carry `Point<ISpace>`; a struct addition, non‑breaking.
 
-`CellProblem` is why `ISheetCells`'s reads return a sentence‑builder rather than a string: only the catching site knows the real A1, only the backend knows the words, and nothing formats unless someone asks.
+**D‑E (where absolute position lives) is CLOSED:** in the locator. **D‑F (an `Info` for a foreign point) is MOOT:** there is no frame to mismatch, only a legitimate cross‑space read that cites itself.
 
-### 7.2 Translation
+---
 
-Every site that invokes a user lambda catches exactly `CellReadException` and rethrows it as a projection failure at the enclosing path:
+## 6. The bound (rev 4 §4, simplified by planes)
+
+A lazily discovered height is not a property of a locator, so the bound stays engine‑carried — and planes make it smaller:
 
 ```
-internal static T Reading<TSpace, T>(Func<T> body, TSpace extent, ProjectionContext context)
+internal sealed class Bound            // replaces BoundedSpace + TailSpace + ILazyExtent, 334 -> ~130 LOC
 {
-  try { return body(); }
-  catch (CellReadException failure)
-  {
-    var at = ReferenceEquals(failure.At.Space, extent)
-      ? ProjectionLocation.At(context.Origin + new Offset(failure.At.Column, failure.At.Row), context.Extent).A1
-      : failure.At.ToString();                                   // a foreign point keeps its local address
-    throw context.Failure(failure.Problem(at), extent, failure);
-  }
+  internal int Width { get; }                  // the scan's width, settled before any row is read
+  internal bool HasRootRow(int rootRow);       // advances the scan only as far as it takes to say
+  internal Size ForceResolved();
 }
 ```
 
-Sites: `MapProjection` (Select), `StripProjection` (`Row`/`Column`), `BlockProjection` (`Range`), `RecordProjection`, `TableProjection`'s two lambda rungs, the layout lambda bodies, and `Fields`' consumer. Everything other than `CellReadException` keeps today's behaviour: it escapes to `ProjectionEngine.cs:197-217` and `IsFault` decides. A user bug stays a fault; a cell saying the wrong thing is a failure.
+**`Shifted`/`rowShift` disappear**: because a plane's origin is root, a bound expressed in root rows needs no re‑basing when a plane is sliced. `Placed` becomes `(Plane<TSpace> Extent, Bound? Bound)`; `Exceeds`, `Bind`, `FlowState.Next`, `RepeatProjection.ItemExtent`, `BandsProjection` take the pair. The extent is a real plane cut to the space's full measured height; the bound hides rows above the discovered boundary. The scan's mutable position still belongs to one `Map` call.
 
-Result: `Table<Money> -> column 'Amount' @ B2: expected Number at B2, found Text` — path, real A1, backend's words, absorbable.
+**Enforcement is the views', via `ProjectionContext.Bound`** — `CellStrip.Count`, `CellBlock.Width/Height/Validate/Row/Rows`, `TableView.ColumnCount/RowCount/StreamRows` consult it, so `Range(b => b[0,500])` still throws `ArgumentOutOfRangeException("the block is N rows tall")` and `b.Rows` still settles the bound.
 
-### 7.3 Locating the A1
-
-**The minting law.** *A point is minted in the frame of the extent its projection was handed.* A leaf mints at `(0,0)` of its 1×1 extent; a view mints against the rung's extent with coordinates translated by its own `MintOrigin` — the same arithmetic `AddressOf` already does through `Context.Origin` (`CellStrip.cs:58,65`, `CellBlock.cs:78,90`).
-
-Rev 3's chart‑chain frame check **collapses to `ReferenceEquals(point.Space, extent)`**: under the self‑typed contract there is no unwrapping between them, so the point's space either *is* the extent or is foreign. A foreign point — captured from elsewhere, or from a nested `Map` — still produces a projection failure at the enclosing path, carrying its local address.
-
-A point read **outside any projection** throws a bare `CellReadException` whose `Message` renders the local address. Correct: there is no declaration to name.
-
-A point **handed out of `Map`** (D‑5: `Fields`, `Table()`, records holding points) has no context left. `AsText()`, `IsBlank`, `IsText` and the kinded reads work while the space is alive; a failing read throws bare. Through the streaming door the lifetime rule is unchanged: a point outliving its `Workbook` throws `ObjectDisposedException`, a fault.
-
-**Still open (parked, not settled):** absolute position lives in the context, not in the space or the point. Whether a future run‑record trace pays for provenance with a field on `Point`, an `Origin` on `ICells`, or by recording addresses as it goes is untouched by this arc.
+**Restated over planes:** a view's `Plane` property is cut to the settled height — `_plane.Slice(default, new Area(Width, Height))` — so **asking for it settles the bound**, where today `Space.Area` settles it. One member access earlier, enforcement complete, documented on the property; `LazyForcingTests` gains one moved expectation. The alternative (hand out the full‑height plane, document that raw reads are unbounded) is cheaper and silently wrong.
 
 ---
 
-## 8. Analyzers, benchmarks, tests, docs
+## 7. (D) The streaming locus — the one open risk, closed
 
-**Analyzers — frozen, but three things change.** `UnrectSymbols.TryLoad` drops `Unrect.Core.ISpace` (no erased space exists), `Demand\`1` and `ProjectionScope\`1`; keeps `IProjection\`2` (now real), `ProjectionBuilders\`1`, `PlacementStage\`1`, `IRowLandmark\`1`/`IColumnLandmark\`1`, both cursors. **UNR001 and its analyzer/code‑fix retire** with `Demand` (§2) — which is also how inventory T2‑3's false positive dies, without the `Point\`1`/`CellStrip\`1`/… symbol additions rev 3 planned. **UNR002** (a fix on CS1503) and **UNR003** (demands exceed offer — now naming both `TSpace`s where `Map`'s inference fails with CS0411) survive and matter more. No new analyzer features.
+Today the hint rides on the slice: `WindowedSpace` passes `(Offset.Height, Area.Height)` on **every cell read** (`WindowedSpace.cs:65`), `Anchor` unions it into the locus, and `Evict` refuses locus chunks. With root‑coordinate reads on the root space there are no slices, so the hint is gone.
 
-**Placement pipeline — frozen, but it goes generic.** `PlacementStage` (non‑generic) retires; `PlacementStage<TSpace>` absorbs its members; the six kinded terminals move out (§6.2); `Of<T>` stays public. No new spellings, no new operators.
+**What actually depends on it.** The pool is keyed on `(sheetIndex, startRow)` and is locus‑independent, so the locus affects **eviction only** → `ChunkReloads`, `WindowOverruns`, `Evictions`, and through them `RowsMaterialised`.
 
-**Benchmarks.** `Values` keeps its class name (CI leg + Bencher series). `Create_FromInts`/`Create_FromObjects`/`Blankness` keep their names over the new types; `Sweep_*` and `Equality` are replaced by `IsBlank_Million`, `IsText_Million`, `AsText_Million_Text`, `Decimal_Million`. New: **`Point_Mint_Million`** (does the indexer returning a struct cost anything measurable) and **`Slice_Million`** (the self‑typed slice against today's, since slicing is now on every hot path and the walk it replaces is gone). `Leaf_Via_Select_Million` is dropped — §6.2 removes the Select tax. `Retention` is structurally and numerically unchanged under relocation; **the pin is that its three floor rows and the `_Unique` controls do not move.**
+- **The 1M‑row monotone walk:** recency order equals row order, so plain LRU always evicts the chunk furthest behind — exactly what the locus would have chosen. **Statistics identical with no hint.**
+- **A band sweep that fits the window:** eviction only runs at the residency cap; a band of k < `WindowChunks` chunks is never a victim while nothing else competes. **Identical with no hint.**
+- **Where it diverges:** reads interleaved between a band and somewhere else — a row projection reaching back to a header chunk. The locus pins the band; LRU would evict its top. That is the case the residency law was written for (`SheetStore.cs:20-24`), and dropping it would silently change the cost model rather than fail a test.
 
-**Tests.** Ten files move wholesale to `Spreadsheets/` (~4,150 lines): `CellValueTests`→`CellTests` (794), `TypedLeafTests` (292), `OrBlankTests` (307), `TypedTableTests` (662), `BinderAccessorTests` (444), `CellReadingIdentityTests` (254), `BoundRowTableTests` (609), `RowProjectionTableTests` (448), `DictionaryTableTests` (~200), `FieldsTests` (398). Seven split. The rest stay, rewritten onto `AsText()`/`Value()` over `GridSpace<object?>` — **the payoff of keeping a total canonical leaf in `Unrect`**. `ProjectionBuildersParityTests` (938 lines) **shrinks**: with one vocabulary there is no parity to assert; what survives is the spreadsheet‑side parity (`stage.Decimal() == stage.Of(Decimal())`) and a disjoint‑simple‑names assertion over the two `using static` imports.
+**Design: the engine announces the band once per extent.** One optional interface in `Unrect`, detected by the engine, never required by Core:
 
-**Docs.** `CLAUDE.md` (charter table, data‑flow, the `CellValue` bullet, the leaf firewall, the `Table` rungs, the matcher paragraph, **strike the stale elapsed‑time Known Bug**), `docs/vocabulary.md` (one vocabulary; the `AsText`/`Text` distinction; narrow‑leaf‑first), `docs/streaming.md` (`Sheet` → `ISheetCells`), `docs/benchmarking.md`.
+```
+namespace Unrect;   public interface ISweepAware { void Sweeping(Offset origin, Area area); }
+```
 
----
+`SheetStore` exposes its existing private `Anchor` through it (`WindowedSpace` — now the root space — implements it by forwarding); `ProjectionEngine` calls it where `Placed` is built, once per placement. `SheetStore.GetCell` loses its two locus parameters.
 
-## 9. Phases — contract first, every commit green
+This is **less** machinery than today, not more: one announcement per rung instead of one per cell, one gate acquisition per rung instead of one per resident read (`SheetStore.cs:227-228`), and `Anchor`'s per‑cell dedup (`_oversizedFrom`/`_oversizedTo`) can go because the call is already deduplicated. Reads outside a projection simply do not announce and get LRU.
 
-| # | Phase | What | Blast |
-|---|---|---|---|
-| **1** | **Preservation pins and funnels** | Pin that a numeric/temporal/boolean/error cell is *not* matched and a numeric header is unlabeled; funnel the 56 inline `Cell(v => …)` lambdas; pin the exploratory rungs' element types and the `column 'Amount': ` sentences so D‑A is a visible diff | ~25 test files, additive |
-| **2** | **The contract** | `ICells` + `ISpace<TSpace>` + `Point<TSpace>` in Core; the canonical four alongside the old indexer (temporary `At`); every implementer self‑types (1–3 `GetSubspace`/indexer bodies each); strategies/scans/landmarks retyped to `ICells`; `SpaceContractTests` gains §3's five laws | Core 3 files; 9 implementers; 11 interfaces retyped; 1 test file |
-| **3** | **The bound** | `Bound` replaces `BoundedSpace`/`TailSpace`/`ILazyExtent`; `Placed`/`Exceeds`/`Bind`/`FlowState`/`RepeatProjection`/`BandsProjection` take `(extent, bound)`; `ProjectionContext.Bound`; views read the bound; `View.Space` forces | ~10 files, 334 → ~150 LOC; `LazyForcingTests` one moved expectation; **gate: the streaming statistics are identical** |
-| **4** | **Generic to the root** | `IProjection<in TSpace,T>.Project(TSpace, …)` real; engine, 16 composites, 11 primitives, `ProjectionBase<T>`'s clone surface, `PlacementStage<TSpace>`, views all generic; `Projection`, `IProjection<T>`, `ProjectionScope`, non‑generic `PlacementStage`, `Demand<TSpace>`, `SpaceCapabilities`, `ISpaceChart`, `MissingCapabilityException` **deleted**; UNR001 retired; 85 import sites re‑scoped | **the cost centre: ~4,000–4,500 LOC**; 63 test files re‑scope |
-| **5** | **`Point()`, `AsText()`, `IsText`** | `CellProjection`→`PointProjection`; the `Cell` retirement at all 4 sites; the total `AsText()` leaf; matchers gain the `IsText` guard; `Saying`; `…ToText` | ~20 files; 6 strategy test files; phase‑1 pins must not move |
-| **6** | **Both backends learn to read** | `IValueCells<T>`/`GridSpace<T>`/`Value()`; in Spreadsheets: `Cell`/`CellKind`/`CellError` **copies**, `ISheetCells`, `SheetGrid`, `PointReads`, `CellReading` copy, the IVT line, the six leaves as real primitives, their terminals, `Record<T>`/`Table<T>` as **delegating copies**; `Workbook.Sheet` → `ISheetCells` | `Unrect` +4, `Spreadsheets` +10/6 changed; **0 test changes** |
-| **7** | **The read‑failure protocol** | `CellProblem`, `CellReadException`, `Reading`, the seven catch sites, `MintOrigin` | `Unrect` +2, 7 changed; 1 new test file |
-| **8** | **`Unrect`'s surface de‑types** | 36 accessors and `Cells`/`TryGet` deleted; views over points; `LabelMap` over `IsText`/`AsText`; `Fields`/`Table()` element type (D‑5) | ~24 files in `Unrect`; suite still compiles — the originals are still present |
-| **9** | **Test relocation** | 10 files move, 7 split, ~40 rewritten; fixtures return `IValueCells<…>`; the parity suite shrinks | ~60 test files |
-| **10** | **Move‑out** | Delete from `Unrect`: the six leaves and terminals, `CellReading`, `RowBinding`/`MemberPlan`/`TableBinding`, `BindRows`/`ReadCell`, `Table<T>()`/`Table<T>(bind)` — nothing references them | ~10 files, deletions only |
-| **11** | **Flip the indexer, drop `CellValue`** | `this[]` returns `Point<TSpace>`; delete `At`; delete `CellValue`/`CellKind`/`CellError` from Core | Core is then `Area`, `Offset`, `Size`, `ICells`, `ISpace<TSpace>`, `Point`, `OutOfBoundsException`, 11 interfaces, `Scans` |
-| **12** | **Surfaces** | 9 scripts, `docs/vocabulary.md`, `docs/streaming.md`, `docs/benchmarking.md`, `CLAUDE.md` (incl. striking the stale elapsed‑time bug), the `Values` rows, the `Retention` no‑move check | — |
-
-Delegating copies (6) before relocation (9) before deletion (10): **no red interval.** Phase 4 is one large but mechanical commit; it can be split by subsystem (engine → composites → primitives → views → pipeline) with the old vocabulary kept compiling until the last of them.
+**Gate:** `RowsMaterialised == 1,000,001`, `ChunkReloads`, `WindowOverruns` and `Evictions` identical on the 1M‑row walk **and** on a `HorizontalFlow` band sweep, before and after.
 
 ---
 
-## 10. Risks
+## 8. (E) Views — minimal re‑host only
+
+Each view is a `Plane<TSpace>` plus a context. No `MintOrigin`, no `Space` field, no origin arithmetic. `CellStrip<TSpace>` is a plane of height 1 (or width 1) until `Line` arrives next arc. The 36 typed accessors, `CellStrip : IReadOnlyList<CellValue>`, `TableRow.Cells` and `TableRow.TryGet` are deleted (≈430 of 1,079 lines); `Space`, `Count`/`Width`/`Height`, `Location`, `AddressOf`, `Row`/`Column`/`Rows`/`Columns`, `StreamRows` and `Resolvable` stay. Reads become `row["Amount"].Decimal()`. Views are dealt with categorically in a later arc.
+
+`TableRow.Resolvable`'s column translation stays the same formula with simpler provenance: both the label scope's capture origin and the row's origin are root, so it is one subtraction with nothing accumulated.
+
+---
+
+## 9. Everything rev 4 settled that is unchanged
+
+Stated by name only; the reasoning stands.
+
+`Text()` keeps its kind assertion and relocates to Spreadsheets with the other five kinded leaves; `AsText()` is the total canonical leaf, and `Choice(AsText(), …)` is degenerate and pinned. `Cell<T>` retires for `Point()`; the struct is named `Cell` (no collision, §0). Matchers keep today's semantics via the `IsText` guard; `RowSaying`/`ColumnSaying` is the opt‑in widening; `…ToText` replaces `…ToValue`. `GridSpace<T>` + `IValueCells<T>` + one‑member `Value()`; `Create(object?[,])` is the new home of `Mixed`. `Cell`/`CellKind`/`CellError` relocate verbatim, accessors and equality internal. `ISheetCells` carries the six reads returning a `CellProblem`, plus `Describe`, `IsErrorAt`, `ErrorTextAt` (D‑D). `Workbook.Sheet → ISheetCells` (D‑9). **IVT for `Unrect.Spreadsheets`** makes the six kinded leaves real primitives — no `Select` tax; their pipeline terminals return as extensions over the public `Of`. `Record<T>()`/`Table<T>()` compose through the existing bind rung, preserving construction‑time checks, the aggregated unbound‑member message and the header citations; the caption becomes a **path segment** (D‑A). `Fields`/`Table()` yield points (D‑5). `Cell` keeps internal equality (D‑C). The analyzers are frozen: UNR001 retires, UNR002/UNR003 survive with symbol‑set edits. The reader survey stands — keep ExcelDataReader, `ExcelNumberFormat` is the later `IFormattingSpace` path. The `OfError(Other)`‑with‑no‑literal rendering (`Other`) is left for phase 7, where the error vocabulary lives.
+
+---
+
+## 10. Phases — every commit green
+
+| # | Phase | Blast |
+|---|---|---|
+| **1 ✔** | Preservation pins and test funnels | committed `e6e1d10` |
+| **2** | **Reduce and rename.** Drop `ISpace<TSpace>` and every self‑typed body; rename `ISpace`→`ICellValues` then `ICells`→`ISpace`; keep everything in §3's first block | ~200 files touched by the rename (mechanical, compiler‑verified); ~150 LOC deleted; 1 test rewritten in phase 3 |
+| **3** | **`Plane<TSpace>`** + its laws (slice arithmetic, eager checks, root minting); `ProjectionLocation.At(Point)` / `At(Plane)`; the rewritten slice law | Core +1 file; 1 test file; no callers yet |
+| **4** | **Canonical layer to locators.** Strategy/scan/landmark signatures take `Plane<ISpace>`; predicates `Func<Point<ISpace>,bool>`; `IsText` guard; `Saying`; `…ToText`. (Before the generic engine: once `Project` takes a typed extent the strategies must already be canonical.) | 42 strategy files; 7 test files; phase‑1 pins must not move |
+| **5** | **The bound.** `Bound` (root rows) replaces `BoundedSpace`/`TailSpace`/`ILazyExtent`; `Placed = (Plane, Bound?)`; views enforce via context; `View.Plane` forces | ~10 files, 334 → ~130 LOC; one moved `LazyForcingTests` expectation; **gate: streaming statistics identical** |
+| **6** | **Generic to the root.** `Project(Plane<TSpace>, …)` real; one vocabulary; delete `Projection`, `IProjection<T>`, `ProjectionScope`, non‑generic `PlacementStage`, `Demand`, `SpaceCapabilities`, `ISpaceChart`, `MissingCapabilityException`; UNR001 retires; `ProjectionContext.Origin`/`Advance` dissolve; 85 import sites re‑scope | **the cost centre — see below**; 63 test files re‑scope |
+| **7** | **Backends learn to read.** `IValueCells<T>`/`GridSpace<T>`/`Value()`; in Spreadsheets: `Cell` copies, `ISheetCells`, `SheetGrid`, `PointReads`, `CellReading` copy, the IVT line, six leaves as real primitives + terminals, `Record<T>`/`Table<T>` **delegating copies**, `Workbook.Sheet → ISheetCells`, **`ISweepAware`** | `Unrect` +4, `Spreadsheets` +10 / 6 changed; **0 test changes** |
+| **8** | **Read‑failure protocol.** `CellProblem`, `CellReadException`, `Point.Erased()`, the seven catch sites | `Unrect` +2, 7 changed; 1 new test file |
+| **9** | **Surface de‑types.** `Point()` and `AsText()` leaves; the `Cell` retirement at all 4 sites; 36 accessors and `Cells`/`TryGet` deleted; views over planes; `LabelMap` over `IsText`/`AsText`; `Fields`/`Table()` element type | ~24 files; suite still compiles — the originals are still present |
+| **10** | **Test relocation.** 10 files move to `Spreadsheets/`, 7 split, ~40 rewritten onto `AsText()`/`Value()`; the parity suite shrinks to one vocabulary | ~60 test files |
+| **11** | **Move‑out.** Delete from `Unrect`: the six leaves and terminals, `CellReading`, `RowBinding`/`MemberPlan`/`TableBinding`, `BindRows`/`ReadCell`, `Table<T>()`/`Table<T>(bind)` — nothing references them | ~10 files, deletions only |
+| **12** | **Drop the bridge.** Delete `ICellValues` and `CellValue`/`CellKind`/`CellError` from Core. Core is then `Area`, `Offset`, `Size`, `ISpace`, `Plane`, `Point`, `OutOfBoundsException`, 11 canonical interfaces, `Scans` | Core final |
+| **13** | **Surfaces.** 9 scripts, `docs/vocabulary.md`, `docs/streaming.md`, `docs/benchmarking.md`, `CLAUDE.md` (incl. **striking the stale elapsed‑time bug**), the `Values` rows, the `Retention` no‑move check | — |
+
+**Phase 6 shrinks against rev 4's ~4,000–4,500 LOC to roughly 2,800–3,200 — about 30%** — for four reasons, in order of size:
+
+1. **No recursive constraint.** `where TSpace : class, ISpace` instead of `where TSpace : class, ISpace<TSpace>` on every composite, primitive, modifier, cursor and stage. The recursive form is where a generic rewrite fights the compiler (inference through `Layout<TSpace,T>`, `params` arrays, the clone surface on `ProjectionBase`); the plain form is a find‑and‑replace.
+2. **Nothing slices through an interface.** `extent.Slice(…)` is struct arithmetic, so no call site needs the self type, and the 9 implementers + 3 doubles contribute **zero** generic ceremony instead of 2–6 bodies each.
+3. **`ProjectionContext.Origin`/`Advance` dissolve** (§5) rather than being re‑parameterized, taking ~80 LOC and their call sites with them.
+4. **No `MintOrigin`, no frame check, no foreign‑point branch** in the views or the read protocol (~120 LOC never written).
+
+Delegating copies (7) before relocation (10) before deletion (11): **no red interval.** Phase 6 may be split by subsystem — engine → composites → primitives → views → pipeline — with the old vocabulary compiling until the last split.
+
+---
+
+## 11. Risks
 
 | # | Risk | Catch |
 |---|---|---|
-| **R‑1** | **Phase 4 is 4,000+ LOC of mechanical rewrite.** The suite is the only thing standing between it and a subtle behavioural change. | Split by subsystem; the suite must be green at each split, and the acceptance scripts (`investor-irr`, `scrubbed-k1`) must consume their whole sheet with unchanged diagnostics at the end of it. |
-| **R‑2** | **The bound's enforcement moves off the space** (§4). A view that forgets to consult `context.Bound` silently reads past a discovered boundary. | A test per view member that used to call `BoundedSpace.HasRow`/`WidthOf`; a `Range(b => b[0, 500])` pin per rung; the `View.Space` forcing pin. |
-| **R‑3** | **Streaming behaviour drifts** while the bound and the extent are re‑cut. | `RowsMaterialised == 1,000,001`, `ChunkReloads`, `WindowOverruns` identical on the 1M‑row walk — the phase‑3 gate. `CrossDoorDenotationTests`, `StreamingIdentityTests`. |
-| **R‑4** | **The type no longer records the narrowest demand** (§2) — a helper hoisted out of a file silently keeps the file's space unless its author writes the constraint. | `in TSpace` makes the narrow version *compose*, so the incentive is right; `docs/vocabulary.md` states the helper idiom; UNR003 catches the mismatch at `Map`. |
-| **R‑5** | **`IValueCells<T>`'s `Value()` must infer** from `Point<IValueCells<T>>`. | **Verified in the session prototype** (§0). |
-| **R‑6** | **A lambda read escapes translation** (§7.2) and loses its path and A1. | An exhaustive test per rung, plus a reflection test that every `Func<…>`‑taking primitive routes through `Reading`. |
-| **R‑7** | **`column 'Amount': ` moves into the path** (D‑A). Log greps for the old string find nothing. | ~15 pinned messages; `CellReadingIdentityTests`' law rewritten. |
-| **R‑8** | **The aggregated unbound‑member diagnostic degrades** — fires per record or blames record 0. | The bind lambda runs once per table application. Pin: a `Table<T>` missing two columns produces **exactly one** failure naming both, subject `Table<Money>`, citing header cells. |
-| **R‑9** | **`AsText()` degeneracy in `Choice`** — silent and successful. | The named pin; narrow‑leaf‑first in the docs. |
-| **R‑10** | **Allocation and slice cost.** Slicing is now on every hot path and points are minted per read. | `Point_Mint_Million`, `Slice_Million`; `MemoryDiagnoser` on `Strategies`/`Engine` — any `Allocated` movement is a review item. |
-| **R‑11** | **Points have a lifetime** (D‑5). A detached point costs a reload, or a fault after `Dispose`. | Document, don't engineer (inventory T2‑8). Pin `MapWorkbook` + `Table()` read after close. |
-| **R‑12** | **Two vocabularies to import in every spreadsheet file** (the builders and the backend's). | The disjoint‑simple‑names assertion; the two‑line header in every script and in `docs/vocabulary.md`. |
-| **R‑13** | **The test relocation loses coverage silently.** | Line‑multiset diff per moved file; the total test count must not fall. |
-| **R‑14** | **net48.** Self‑typed generic interfaces, a generic capability interface, generic structs over constrained parameters, a delegate‑carrying exception. | The Windows‑only `-f net48` leg at phases 2, 4 and 11. |
+| **R‑1** | **The streaming locus** (§7). The one place behaviour can change invisibly. | `RowsMaterialised`/`ChunkReloads`/`WindowOverruns`/`Evictions` identical on the monotone walk **and** a band sweep — the phase‑5 and phase‑7 gate. |
+| **R‑2** | **Phase 6 is ~3,000 LOC of mechanical rewrite.** | Split by subsystem, green at each; the acceptance scripts must consume their whole sheet with unchanged diagnostics at the end. |
+| **R‑3** | **The bound's enforcement is the views'** (§6). A view that forgets `context.Bound` reads past the boundary silently. | A test per view member that used to call `BoundedSpace.HasRow`/`WidthOf`; a `Range(b => b[0,500])` pin per rung; the `View.Plane` forcing pin. |
+| **R‑4** | **The rename sweep** touches ~641 occurrences. | Compiler‑verified both ways; doc `cref`s are warnings‑as‑errors, so a stale reference fails the build. |
+| **R‑5** | **The type no longer records the narrowest demand** (rev 4 §2); UNR001 is gone. | `in TSpace` makes the narrow helper compose, so the incentive is right; UNR003 catches the mismatch at `Map`; the helper idiom goes in `docs/vocabulary.md`. |
+| **R‑6** | **A lambda read escapes translation** (§5) and loses its path and A1. | A test per rung, plus a reflection test that every `Func<…>`‑taking primitive routes through the catch. |
+| **R‑7** | **`column 'Amount': ` moves into the path** (D‑A). | ~15 pinned messages; `CellReadingIdentityTests`' law rewritten. |
+| **R‑8** | **Plane/point cost.** Slicing and minting are now on every hot path. | `Point_Mint_Million`, `Slice_Million`, `IsBlank_Million`, `AsText_Million_Text`, `Decimal_Million` in the `Values` family (which keeps its name and CI leg); `MemoryDiagnoser` on `Strategies`/`Engine` — any `Allocated` movement is a review item. `Retention`'s three floor rows and `_Unique` controls must not move. |
+| **R‑9** | **Points have a lifetime** (D‑5) — a detached point costs a reload, or a fault after `Dispose`. | Document, don't engineer. Pin `MapWorkbook` + `Table()` read after close. |
+| **R‑10** | **Test relocation loses coverage silently.** | Line‑multiset diff per moved file; the total test count must not fall. |
+| **R‑11** | **net48.** Generic structs over constrained parameters, a generic capability interface, a delegate‑carrying exception. | The Windows‑only `-f net48` leg at phases 3, 6 and 12. |
 
 ---
 
-## 11. Open decisions
+## 12. Open decisions
 
 | # | Decision | Status |
 |---|---|---|
-| **D‑C** | `Cell` keeps **internal** equality — the interner and the fixtures compare cells; nothing above does. | Written as recommended; **owner confirming**. |
-| **D‑D** | `IsErrorAt`/`ErrorTextAt` ride on **`ISheetCells`**, not a separate interface. | Written as recommended; **owner confirming**. |
-| **D‑9** | `Workbook.Sheet` returns **`ISheetCells`** — now forced, not merely preferred. | Confirmed by the owner (2026-09-14). |
-| **D‑E** | **Where a point's absolute position will eventually live** — a field on `Point`, an `Origin` on `ICells`, or the trace recording addresses as it goes. This arc needs none of them. | **Open, deliberately.** Nothing here forecloses any of the three. |
-| **D‑F** | Whether a **foreign‑point read** (`ReferenceEquals` fails, §7.3) should also record an `Info`. | **Open**; cheap either way, not needed. |
-| **D‑10** | **`IProjection` → Core.** Revisited under a real `Project(TSpace, ProjectionContext)`: the charter argument is *unchanged in force and narrower in shape*. `TSpace` is now a Core type (`ISpace<TSpace>`), which removes one objection — but `Project` still speaks `ProjectionContext` (521 lines, three jobs, flagged for splitting) and `ProjectionResult<T>`, and `IProjection` still speaks `Placement` and `IReadOnlyList<IProjection>`. The charter would still drag most of the projection layer into Core, and the slim‑down still waits on the deferred context representation. | **Defer**, unchanged. Nothing in this arc forecloses it. |
+| **D‑G** | **The transitional name** for the old `CellValue`‑indexer interface — `ICellValues` proposed (§2). It lives from phase 2 to phase 12. | Owner's call; one word, one sweep. |
+| **D‑H** | **`ISweepAware`** (§7): the name, and whether the engine may carry one optional `is` test per placement for a backend concern. The alternative is no hint and plain LRU, which is provably identical on both pinned scenarios and silently different on an interleaved read. | Recommended as written; owner's call. |
+| **D‑C / D‑D / D‑9** | `Cell` keeps internal equality; error queries on `ISheetCells`; `Workbook.Sheet → ISheetCells`. | Written as recommended; **owner confirming**. |
+| **D‑10** | **`IProjection` → Core.** With `Project(Plane<TSpace>, ProjectionContext)`, `Plane` and `ISpace` are Core types — but `Project` still speaks `ProjectionContext` and `ProjectionResult<T>`, and `IProjection` still speaks `Placement` and `IReadOnlyList<IProjection>`. The charter would still drag the projection layer into Core, and the slim‑down still waits on the context representation — which §5 has just made *smaller*, so the question is worth re‑asking after this arc, not during it. | **Defer**, unchanged. |
+
+*Closed since rev 4: D‑E (absolute position lives in the locator), D‑F (moot — no frame to mismatch).*
