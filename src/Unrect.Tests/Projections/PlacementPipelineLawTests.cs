@@ -312,7 +312,7 @@ namespace Unrect.Tests.Projections
     private static IRowLandmark Header() => RowContaining("Fund");
 
     /// <summary>A bind pointed at the column of fund names, so every record fails.</summary>
-    private static IProjection<decimal> FundColumnAsANumber(CaptionMap captions) => Right(captions["Fund"]).Of(Decimal());
+    private static IProjection<decimal> FundColumnAsANumber(LabelMap captions) => Right(captions["Fund"]).Of(Decimal());
 
     [Fact]
     public void AVerticalRepeatTerminalKeepsTheIdentifierItsItemWasWrittenAs()
@@ -402,7 +402,7 @@ namespace Unrect.Tests.Projections
     }
 
     /// <summary>The scoped bind's method group — a bind returning a demanding projection.</summary>
-    private static IProjection<ISpace, decimal> ScopedFundColumnAsANumber(CaptionMap captions)
+    private static IProjection<ISpace, decimal> ScopedFundColumnAsANumber(LabelMap captions)
       => Over<ISpace>().Right(captions["Fund"]).Of(Decimal());
 
     // --- 3. Heading is L3-by-construction ------------------------------------------------------------
@@ -590,9 +590,10 @@ namespace Unrect.Tests.Projections
       // The census, so a stub that quietly disappeared — taking its sentence with it and leaving the
       // compiler to explain the refusal in its own words — is noticed. Counted per stage rather than
       // in total, because that is where a reader can check the claim: an unbounded pipeline refuses
-      // only a second anchor (5); a sized one refuses the movements as well (5, all of them); a
-      // bounded one refuses a second end, an extent and the anchors (10); a headed one refuses
-      // everything but another heading (12).
+      // only a second anchor (5); a sized one refuses the movements as well (6, all of them — the
+      // three of Down/Right/AfterBlank*, the new SkipToFirstNonBlankCell offset entry, and Sized
+      // itself); a bounded one refuses a second end, an extent and the anchors (10); a headed one
+      // refuses everything but another heading (13, gaining the same new offset entry).
       var counted = Stages
         .Where(stage => stage.Key.Contains("<") == false)
         .ToDictionary(stage => stage.Key, stage => Refusals(stage.Value.Type), StringComparer.Ordinal);
@@ -603,9 +604,9 @@ namespace Unrect.Tests.Projections
           ["PlacementStage"] = 0,
           ["UnboundedStage"] = 5,
           ["OffsetStage"] = 0,
-          ["OffsetAndSizeStage"] = 5,
+          ["OffsetAndSizeStage"] = 6,
           ["BoundStage"] = 10,
-          ["HeadingStage"] = 12,
+          ["HeadingStage"] = 13,
         },
         counted);
 

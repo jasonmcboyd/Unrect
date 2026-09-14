@@ -81,7 +81,7 @@ namespace Unrect.Projections
       IOffsetStrategy? separatedBy = null,
       int atLeast = 0,
       [CallerArgumentExpression("item")] string? declared = null)
-      => Close(Projection.VerticalRepeat(item, separatedBy, atLeast, declared));
+      => Close(Projection.VerticalRepeat(item, separatedBy, atLeast, declared: declared));
 
     /// <inheritdoc cref="Projection.HorizontalRepeat{T}"/>
     /// <typeparam name="T">What one occurrence reads.</typeparam>
@@ -94,7 +94,7 @@ namespace Unrect.Projections
       IOffsetStrategy? separatedBy = null,
       int atLeast = 0,
       [CallerArgumentExpression("item")] string? declared = null)
-      => Close(Projection.HorizontalRepeat(item, separatedBy, atLeast, declared));
+      => Close(Projection.HorizontalRepeat(item, separatedBy, atLeast, declared: declared));
 
     /// <inheritdoc cref="Projection.Choice{T}"/>
     /// <typeparam name="T">What every alternative reads.</typeparam>
@@ -113,14 +113,14 @@ namespace Unrect.Projections
     public IProjection<IReadOnlyList<T>> Table<T>(Func<TableBinding<T>, TableBinding<T>> bind)
       => Close(Projection.Table(bind));
 
-    /// <inheritdoc cref="Projection.Table{T}(int, Func{CaptionMap, IProjection{T}}, string)"/>
+    /// <inheritdoc cref="Projection.Table{T}(int, Func{LabelMap, IProjection{T}}, string)"/>
     /// <typeparam name="T">What one record reads.</typeparam>
     /// <param name="headerRows">How many rows to read as the header; a bind needs 1.</param>
     /// <param name="eachRow">Given this file's captions, the projection that reads one record.</param>
     /// <param name="declared">Supplied by the compiler as the text of the <paramref name="eachRow"/> argument.</param>
     public IProjection<IReadOnlyList<T>> Table<T>(
       int headerRows,
-      Func<CaptionMap, IProjection<T>> eachRow,
+      Func<LabelMap, IProjection<T>> eachRow,
       [CallerArgumentExpression("eachRow")] string? declared = null)
       => Close(Projection.Table(headerRows, eachRow, declared));
 
@@ -394,6 +394,9 @@ namespace Unrect.Projections
     /// <inheritdoc cref="Projection.AfterBlankColumns()"/>
     public OffsetStage AfterBlankColumns() => new OffsetStage(Steps.Then(Step.AfterBlankColumns()));
 
+    /// <inheritdoc cref="Projection.SkipToFirstNonBlankCell()"/>
+    public OffsetStage SkipToFirstNonBlankCell() => new OffsetStage(Steps.Then(Step.SkipToFirstNonBlankCell()));
+
     /// <summary>
     /// Declares the section's extent, replacing the derived one — after which the extent is consumed
     /// in full whether the section reads all of it or not. Extents do not stack, so a second
@@ -442,6 +445,10 @@ namespace Unrect.Projections
     /// <inheritdoc cref="Down(int)"/>
     [Obsolete(PipelineRefusals.OffsetComesFirst, error: true)]
     public OffsetAndSizeStage AfterBlankColumns() => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
+
+    /// <inheritdoc cref="Down(int)"/>
+    [Obsolete(PipelineRefusals.OffsetComesFirst, error: true)]
+    public OffsetAndSizeStage SkipToFirstNonBlankCell() => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
   }
 
   /// <summary>

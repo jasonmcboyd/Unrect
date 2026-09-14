@@ -39,8 +39,8 @@ namespace Unrect.Tests.Projections
   /// instead of the caller's, and a factory that is added to the vocabulary and never re-exported.
   /// There is a section for each.
   /// <para>
-  /// <b>Section 1 — value parity, mechanically.</b> Three theories cover all 78 members: one for the
-  /// 33 that return a projection, read through the <see cref="Observations"/> harness at L3 over
+  /// <b>Section 1 — value parity, mechanically.</b> Three theories cover all 84 members: one for the
+  /// 39 that return a projection, read through the <see cref="Observations"/> harness at L3 over
   /// three grids (a well-formed ledger, one whose kinds are all wrong, and a sparse one); one
   /// for the 25 that hand back a strategy, a landmark or a <see cref="Unrect.Projections.Field"/>, compared at the
   /// strategy level — the selection, offset or area each computes over the same grids; and one for
@@ -116,10 +116,10 @@ namespace Unrect.Tests.Projections
     public record Pair(string Fund, decimal Amount);
 
     /// <summary>A bind as a method group — the spelling the table rung recommends.</summary>
-    private static IProjection<decimal> AmountByCaption(CaptionMap captions) => Right(captions["Amount"]).Of(Decimal());
+    private static IProjection<decimal> AmountByCaption(LabelMap captions) => Right(captions["Amount"]).Of(Decimal());
 
     /// <summary>The same bind pointed at the column of fund names, so every record fails.</summary>
-    private static IProjection<decimal> FundColumnAsANumber(CaptionMap captions) => Right(captions["Fund"]).Of(Decimal());
+    private static IProjection<decimal> FundColumnAsANumber(LabelMap captions) => Right(captions["Fund"]).Of(Decimal());
 
     // A matcher demanding nothing beyond ISpace. The published demanding matchers all demand a
     // capability (`RowWithFormula` demands IFormulaSpace) and IRowLandmark<in TSpace> is
@@ -164,6 +164,11 @@ namespace Unrect.Tests.Projections
         ["Choice<T>(IProjection<TSpace, T>[])"] = Reading(
           () => B.Choice(Caption("Total"), Text()),
           () => Choice(Caption("Total"), Text())),
+        // The three labelled-axis primitives. ColumnLabels reads the header row (its value is a
+        // LabelMap, rendered by the harness through its Labels); Record reads a body row by index, so
+        // it needs no ambient labels; WithColumnLabels wraps a body that reads by index over a literal
+        // map. All three re-export at their plain type, so the twin is the same declaration twice.
+        ["ColumnLabels(int)"] = Reading(() => B.ColumnLabels(1), () => ColumnLabels(1)),
         ["Column<T>(Func<CellStrip, T>)"] = Reading(() => B.Column(s => s.Count), () => Column(s => s.Count)),
         ["Column<T>(int, Func<CellStrip, T>)"] = Reading(() => B.Column(2, s => s.Count), () => Column(2, s => s.Count)),
         ["Column<T>(IRowStrategy, Func<CellStrip, T>)"] = Reading(
@@ -173,6 +178,9 @@ namespace Unrect.Tests.Projections
         ["Decimal()"] = Reading(() => B.Decimal(), () => Decimal()),
         ["Double()"] = Reading(() => B.Double(), () => Double()),
         ["Fields(Field[])"] = Reading(() => B.Fields(Field("Fund")), () => Fields(Field("Fund"))),
+        ["HorizontalBands<T>(int, IProjection<T>, Nullable<BlankRowStrategy>, string)"] = Reading(
+          () => { var quarter = Text(); return B.HorizontalBands(2, quarter); },
+          () => { var quarter = Text(); return HorizontalBands(2, quarter); }),
         ["HorizontalFlow<T>(Layout<TSpace, T>)"] = Reading(
           () => B.HorizontalFlow(h => $"{h.Next(Text())}/{h.Next(Text())}"),
           () => HorizontalFlow(h => $"{h.Next(Text())}/{h.Next(Text())}")),
@@ -192,6 +200,9 @@ namespace Unrect.Tests.Projections
         ["Range<T>(int, int, Func<CellBlock, T>)"] = Reading(
           () => B.Range(2, 2, b => b.Width * 100 + b.Height),
           () => Range(2, 2, b => b.Width * 100 + b.Height)),
+        ["Record<T>(Func<TableRow, T>)"] = Reading(
+          () => B.Record((TableRow r) => r.Count),
+          () => Record((TableRow r) => r.Count)),
         ["Row<T>(Func<CellStrip, T>)"] = Reading(() => B.Row(s => s.Count), () => Row(s => s.Count)),
         ["Row<T>(int, Func<CellStrip, T>)"] = Reading(() => B.Row(2, s => s.Count), () => Row(2, s => s.Count)),
         ["Row<T>(IColumnStrategy, Func<CellStrip, T>)"] = Reading(
@@ -212,19 +223,46 @@ namespace Unrect.Tests.Projections
         ["Table<T>(int, Func<TableView, T>)"] = Reading(
           () => B.Table(1, (TableView t) => t.RowCount),
           () => Table(1, (TableView t) => t.RowCount)),
-        ["Table<T>(int, Func<CaptionMap, IProjection<TSpace, T>>, string)"] = Reading(
+        ["Table<T>(int, Func<LabelMap, IProjection<TSpace, T>>, string)"] = Reading(
           () => B.Table(headerRows: 1, eachRow: AmountByCaption),
           () => Table(headerRows: 1, eachRow: AmountByCaption)),
         ["Table<T>(int, IProjection<TSpace, T>, string)"] = Reading(
           () => { var amountRow = Right(1).Of(Decimal()); return B.Table(headerRows: 1, eachRow: amountRow); },
           () => { var amountRow = Right(1).Of(Decimal()); return Table(headerRows: 1, eachRow: amountRow); }),
+        // The six onBlank/blankRecord Table rungs. They forward one-to-one exactly as the Stop-path
+        // rungs above do, so a Skip strategy (run-to-edge, non-self-bounding) reads identically
+        // through both spellings over every grid; the blankRecord rungs pass a lambda where the
+        // onBlank ones pass a strategy value, which is what tells the two Table/2 (and Table/3) pairs
+        // apart at the call site.
+        ["Table<T>(BlankRowStrategy)"] = Reading(() => B.Table<Pair>(BlankRowStrategy.Skip), () => Table<Pair>(BlankRowStrategy.Skip)),
+        ["Table<T>(Func<TableBinding<T>, TableBinding<T>>, BlankRowStrategy)"] = Reading(
+          () => B.Table<Pair>(bind => bind.Column(p => p.Amount, "Amount"), BlankRowStrategy.Skip),
+          () => Table<Pair>(bind => bind.Column(p => p.Amount, "Amount"), BlankRowStrategy.Skip)),
+        ["Table<T>(Func<TableRow, T>, BlankRowStrategy)"] = Reading(
+          () => B.Table((TableRow r) => r.Count, BlankRowStrategy.Skip),
+          () => Table((TableRow r) => r.Count, BlankRowStrategy.Skip)),
+        ["Table<T>(Func<TableRow, T>, Func<TableRow, T>)"] = Reading(
+          () => B.Table((TableRow r) => r.Count, blankRecord: _ => -1),
+          () => Table((TableRow r) => r.Count, blankRecord: _ => -1)),
+        ["Table<T>(int, Func<TableRow, T>, BlankRowStrategy)"] = Reading(
+          () => B.Table(1, (TableRow r) => r.Count, BlankRowStrategy.Skip),
+          () => Table(1, (TableRow r) => r.Count, BlankRowStrategy.Skip)),
+        ["Table<T>(int, Func<TableRow, T>, Func<TableRow, T>)"] = Reading(
+          () => B.Table(1, (TableRow r) => r.Count, blankRecord: _ => -1),
+          () => Table(1, (TableRow r) => r.Count, blankRecord: _ => -1)),
         ["Text()"] = Reading(() => B.Text(), () => Text()),
+        ["VerticalBands<T>(int, IProjection<T>, Nullable<BlankRowStrategy>, string)"] = Reading(
+          () => { var line = Text(); return B.VerticalBands(1, line, onBlank: BlankRowStrategy.Tolerate); },
+          () => { var line = Text(); return VerticalBands(1, line, onBlank: BlankRowStrategy.Tolerate); }),
         ["VerticalFlow<T>(Layout<TSpace, T>)"] = Reading(
           () => B.VerticalFlow(v => $"{v.Next(Text())}/{v.Next(Text())}"),
           () => VerticalFlow(v => $"{v.Next(Text())}/{v.Next(Text())}")),
         ["VerticalRepeat<T>(IProjection<TSpace, T>, IOffsetStrategy, int, string)"] = Reading(
           () => { var line = Text(); return B.VerticalRepeat(line, separatedBy: BlankRows(), atLeast: 1); },
           () => { var line = Text(); return VerticalRepeat(line, separatedBy: BlankRows(), atLeast: 1); }),
+        ["WithColumnLabels<T>(LabelMap, IProjection<T>)"] = Reading(
+          () => B.WithColumnLabels(LabelMap.Of(("Fund", 0)), Record((TableRow r) => r.Count)),
+          () => WithColumnLabels(LabelMap.Of(("Fund", 0)), Record((TableRow r) => r.Count))),
       };
 
     // --- 1b. The 25 that hand back something other than a projection -------------------------------
@@ -299,6 +337,10 @@ namespace Unrect.Tests.Projections
       {
         ["AfterBlankColumns()"] = Reading(() => B.AfterBlankColumns().Text(), () => AfterBlankColumns().Text()),
         ["AfterBlankRows()"] = Reading(() => B.AfterBlankRows().Text(), () => AfterBlankRows().Text()),
+
+        // The lazy corner heuristic — the offset entry added with the strategy. Like the AfterBlank*
+        // twins it moves the section, so Text() is the terminal that shows the move.
+        ["SkipToFirstNonBlankCell()"] = Reading(() => B.SkipToFirstNonBlankCell().Text(), () => SkipToFirstNonBlankCell().Text()),
         ["Below(IRowLandmark)"] = Reading(
           () => B.Below(RowContaining("Fund")).Text(),
           () => Below(RowContaining("Fund")).Text()),
@@ -576,7 +618,7 @@ namespace Unrect.Tests.Projections
       "HorizontalRepeat<TSpace, T>(IProjection<TSpace, T>, IOffsetStrategy, int, string)",
       "Choice<TSpace, T>(IProjection<TSpace, T>[])",
       "Table<TSpace, T>(int, IProjection<TSpace, T>, string)",
-      "Table<TSpace, T>(int, Func<CaptionMap, IProjection<TSpace, T>>, string)",
+      "Table<TSpace, T>(int, Func<LabelMap, IProjection<TSpace, T>>, string)",
     };
 
     [Fact]

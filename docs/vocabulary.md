@@ -24,13 +24,13 @@ is; do not let them drift silently.
 
 | Operator | Yields | Notes |
 |---|---|---|
-| `Text()` `Decimal()` `Integer()` `Double()` `Date()` `Boolean()` | typed value | One cell; asserts its `CellKind`, applies the canonical accessor. The family is CLOSED over `CellValue`'s accessor set and never leads it — no `Long()`, ever; conversions beyond the set are `Select` territory (typed-leaves-and-tables-spec §2, "the firewall") |
+| `Text()` `Decimal()` `Integer()` `Double()` `Date()` `Boolean()` | typed value | One cell; asserts its `CellKind`, applies the canonical accessor. The family is CLOSED over `CellValue`'s accessor set and never leads it — no `Long()`, ever; conversions beyond the set are `Select` territory (the firewall) |
 | `Text().OrBlank()` `Decimal().OrBlank()` … | `T?` | The same reading, tolerating a BLANK cell: null, quietly, with no diagnostic — where `.Optional()` absorbs a failure and records a Warning. A wrong kind still fails loudly, because blankness is about the data and a kind is about the format. The standalone spelling of a nullable table member's tolerance; belongs to the typed leaves only (anywhere else it is a declaration error at construction) |
 | `Cell(v => ...)` | `T` | One cell, arbitrary projection — the escape hatch |
 | `Row(r => ...)` / `Row(width, r => ...)` / `Row(IColumnStrategy, r => ...)` | from `CellStrip` | One row; width discovered (`while any value`), explicit count, or by column strategy (explicit counts are for structurally fixed regions only) |
 | `Column(c => ...)` / `Column(height, c => ...)` / `Column(IRowStrategy, c => ...)` | from `CellStrip` | One column; height discovered (`while any value`), explicit count, or by row strategy (explicit counts are for structurally fixed regions only) |
 | `Range(b => ...)` / `Range(w, h, ...)` / `Range(area, ...)` | from `CellBlock` | Rectangular block |
-| `Caption(text)` | matched text (verbatim) | A declared anchor: seeks its row by the content rule, consumes exactly that row, asserts the text (matcher-and-caption-spec) |
+| `Caption(text)` | matched text (verbatim) | A declared anchor: seeks its row by the content rule, consumes exactly that row, asserts the text |
 | `Fields(Field(a), Field(b), ...)` | `IReadOnlyDictionary<string, CellValue>` | Labeled-pair block (label column + value column); self-anchors on its first label; labels matched colon-tolerantly (`LabelEquals`) |
 | `Heading(text)` | — (a pipeline stage, not a value-yielding leaf) | Locates its row by content, asserts the text, consumes it at full width, places the section immediately below. Contributes NO node of its own — it mints the same `Caption` leaves internally, so a missing heading fails in the caption's own words. See "The placement pipeline" below |
 
@@ -87,6 +87,7 @@ Two notes the overloads earn:
 | `VerticalFlow(v => ...)` / `HorizontalFlow(v => ...)` | Stacked bands, one per child: each child's band spans the flow's full width, so no sibling ever shares it, even where the child's own content is narrower — but that is a claim on the band, not on what the flow reports consumed. Consumed across the axis is the max over children of their own consumed width (bounding box), not automatically the full width. `v.Next(projection)` declares the next child and returns its value; any arity |
 | `Overlay(o => ...)` | One shared band; each child finds its own place by its own placement; no advance between children; consumed = bounding box |
 | `VerticalRepeat(item, separatedBy:, atLeast:)` / `HorizontalRepeat(...)` | N items with separators (`sepBy`). A blank band is a separator, never a terminator — bound the repeat with `.Until` to end it at content. Both axes are marked, like the flows: no substrate's dominant axis is the unmarked normal case |
+| `VerticalBands(rows, each, onBlank:)` / `HorizontalBands(columns, ...)` | The extent cut into bands of a fixed stride, each projected by `each`. Nothing is searched for and no band can be a different size; the tiling ends when a whole band is no longer left, so a trailing part-band is not a band. It declares no extent of its own — how far it runs is whatever places it. The contrast with a repeat: a repeat repeats a *pattern* (occurrence size discovered from the item), a tiler repeats a *fixed-dimension space* |
 | `Choice(a, b, ...)` | The first alternative that fits; an Info per near-miss; a losing branch's diagnostics roll back |
 
 The composite you pick is the geometric claim you make: flows say "stacked, one after
@@ -169,8 +170,7 @@ operator has to pass; an operator that cannot be justified by one of them does n
    downward; the vocabulary does not assume it. `VerticalFlow`/`HorizontalFlow`,
    `VerticalRepeat`/`HorizontalRepeat`, `.Below`/`.RightOf` — both halves marked, neither
    the default. (`.Until`/`.UntilColumn` is the one pair that is not, and deliberately: its
-   argument does not have to be read to know the axis, so the row form carries no marking —
-   matcher-and-caption-spec §1.6.)
+   argument does not have to be read to know the axis, so the row form carries no marking.)
 
 ## The placement pipeline — the same declaration, position-first
 
@@ -316,8 +316,7 @@ it). All four describe a miss identically, because there is one matcher to descr
 a section can start at `.On(RowContaining("A"))` and end at `.Until(RowContaining("B"))`
 through the same matcher, the start and the end cannot disagree about what a caption is.
 
-Three matching rules exist in the library and deliberately never unify
-(typed-leaves-and-tables-spec §3): the **content rule** above (matchers, `Caption`, and
+Three matching rules exist in the library and deliberately never unify: the **content rule** above (matchers, `Caption`, and
 also `TableView`/`TableRow`'s by-caption row access — `row["Caption"]` resolves trimmed
 and case-insensitively, the same rule, so it has consumers beyond matchers and `Caption`
 — literal ↔ cell text), **`LabelEquals`** (`Field` only — content rule plus a trailing
@@ -365,7 +364,7 @@ foreach (var path in monthlyCloseOfFunds)
 }
 ```
 
-Streaming's cost is declaration-shaped, not a flat tax — see `docs/design/streaming-spec.md` §2.7
+Streaming's cost is declaration-shaped, not a flat tax — see `docs/streaming.md`
 for the full cost model and the sizing law (the window must be at least as tall as the tallest
 extent a declaration holds open at once).
 

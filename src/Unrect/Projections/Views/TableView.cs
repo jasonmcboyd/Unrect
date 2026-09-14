@@ -1,9 +1,6 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 
 using Unrect.Core;
-using Unrect.Strategies;
 
 namespace Unrect.Projections
 {
@@ -22,24 +19,31 @@ namespace Unrect.Projections
   public sealed class TableView
   {
     // Views are built per projection and are not covered by the projection thread-safety guarantee;
-    // the caches race benignly (reference assignment is atomic, so the worst case is duplicated
+    // the cache races benignly (reference assignment is atomic, so the worst case is duplicated
     // work).
-    private Dictionary<string, List<int>>? _columnsByName;
     private IReadOnlyList<TableRow>? _rows;
 
     internal TableView(ISpace space, int headerRows, ProjectionContext context)
     {
       Space = space;
       HeaderRows = headerRows;
-      Context = context;
 
       Header = new CellStrip(
         space.GetSubspace(new Offset(0, 0), new Area(HasHeader ? ColumnCount : 0, headerRows)),
         Orientation.Horizontal,
-        context.Origin);
+        context);
 
-      ColumnNames = Header.Select(cell => cell.TryGetString()?.Trim() ?? string.Empty).ToList();
+      Labels = LabelMap.FromHeader(Header, context);
+
+      // Publish the columns as the ambient Column labels for the body's subtree, but only when a
+      // header was actually declared: a headerless table pushes nothing, so a by-name lookup still
+      // finds no scope and reports the headerless message. The origin PushLabels captures is this
+      // table's own, the frame the header's ordinals are read in and every body row translates from.
+      Context = HasHeader ? context.PushLabels(LabelAxis.Column, Labels) : context;
     }
+
+    /// <summary>The table's own header parsed once: the labels the bind rung binds by, and their citations.</summary>
+    internal LabelMap Labels { get; }
 
     /// <summary>The table's full extent, header row(s) included.</summary>
     public ISpace Space { get; }
@@ -64,7 +68,7 @@ namespace Unrect.Projections
     public CellStrip Header { get; }
 
     /// <summary>Each column's header text, trimmed; the empty string for a column with no caption.</summary>
-    public IReadOnlyList<string> ColumnNames { get; }
+    public IReadOnlyList<string> ColumnNames => Labels.Labels;
 
     /// <summary>
     /// The address of the table's top-left cell, header included. It carries the extent the table
@@ -98,7 +102,7 @@ namespace Unrect.Projections
       var index = 0;
 
       foreach (var band in StreamBands(1))
-        yield return new TableRow(this, index++, new CellStrip(band.Space, Orientation.Horizontal, band.Context.Origin), band.Context);
+        yield return new TableRow(index++, new CellStrip(band.Space, Orientation.Horizontal, band.Context), band.Context);
     }
 
     /// <summary>
@@ -122,6 +126,64 @@ namespace Unrect.Projections
 
         yield return (Space.GetSubspace(offset, new Area(ColumnCount, bandHeight)), Context.Advance(offset));
       }
+    }
+
+    /// <summary>
+    /// The body rows that become records under the four preset blank-row policies
+    /// (Stop/Skip/Fault/Tolerate). Under <see cref="BlankRowStrategy.Stop"/> the extent already
+    /// excludes blank rows, so this delegates verbatim to <see cref="StreamRows"/> — no blank test,
+    /// no filter, byte-identical to the default path. The other policies walk to the enclosing edge
+    /// and act on each fully-blank row: Fault throws terminally, Tolerate records an Info and omits
+    /// the record, Skip simply omits it. Project is not here — it injects records and is handled by
+    /// the rung through <see cref="StreamClassifiedRows"/>.
+    /// </summary>
+    internal IEnumerable<TableRow> StreamBodyRows(BlankRowStrategy onBlank)
+    {
+      if (onBlank.IsStop)
+      {
+        foreach (var row in StreamRows())
+          yield return row;
+
+        yield break;
+      }
+
+      foreach (var row in StreamRows())
+      {
+        if (!IsBlankRow(row))
+        {
+          yield return row;
+          continue;
+        }
+
+        if (onBlank.IsFault)
+          throw Fault($"the row at {row.Location.A1} is blank, which is not allowed here");
+
+        if (onBlank.Diagnostic is DiagnosticSeverity severity)
+          Context.Report(severity, Failure($"the row at {row.Location.A1} is blank; it was skipped"));
+
+        // Skip and Tolerate both omit the record and keep reading.
+      }
+    }
+
+    /// <summary>
+    /// Every body row to the enclosing edge, each tagged blank or not — the source the Project
+    /// (<c>blankRecord</c>) rung maps: a blank row yields its blank record, a non-blank row its
+    /// normal one.
+    /// </summary>
+    internal IEnumerable<(TableRow Row, bool IsBlank)> StreamClassifiedRows()
+    {
+      foreach (var row in StreamRows())
+        yield return (row, IsBlankRow(row));
+    }
+
+    /// <summary>A fully-blank row: every cell <see cref="CellValue.IsBlank"/> — the complement of "any value".</summary>
+    private static bool IsBlankRow(TableRow row)
+    {
+      for (var column = 0; column < row.Count; column++)
+        if (!row.Cells[column].IsBlank)
+          return false;
+
+      return true;
     }
 
     private int HeaderRows { get; }
@@ -149,15 +211,7 @@ namespace Unrect.Projections
     /// The columns carrying <paramref name="columnName"/>; empty when there is no such column.
     /// Header names are matched by the content rule, applied to the key as well as to the header.
     /// </summary>
-    internal IReadOnlyList<int> IndicesOf(string columnName)
-    {
-      if (columnName is null)
-        throw new ArgumentNullException(nameof(columnName));
-
-      return (_columnsByName ??= BuildColumnsByName()).TryGetValue(columnName, out var indices)
-        ? indices
-        : Array.Empty<int>();
-    }
+    internal IReadOnlyList<int> IndicesOf(string columnName) => ((ILabelSource)Labels).IndicesOf(columnName);
 
     /// <summary>
     /// Every body row in one list, sized exactly. A caller of <see cref="Rows"/> is already paying
@@ -175,157 +229,5 @@ namespace Unrect.Projections
 
       return rows;
     }
-
-    /// <summary>
-    /// Header text to the columns carrying it, keyed by the content rule itself rather than by a
-    /// comparer that happens to agree with it — a lookup here and a <c>RowContaining</c> elsewhere
-    /// find a caption on the same terms, and go on doing so if those terms change.
-    /// </summary>
-    private Dictionary<string, List<int>> BuildColumnsByName()
-    {
-      var columns = new Dictionary<string, List<int>>(CellMatching.TextComparer);
-
-      for (var index = 0; index < ColumnNames.Count; index++)
-      {
-        var name = ColumnNames[index];
-
-        if (name.Length == 0)
-          continue;
-
-        if (!columns.TryGetValue(name, out var indices))
-          columns[name] = indices = new List<int>();
-
-        indices.Add(index);
-      }
-
-      return columns;
-    }
-  }
-
-  /// <summary>
-  /// One body row of a <see cref="TableView"/>.
-  /// </summary>
-  public sealed class TableRow
-  {
-    internal TableRow(TableView table, int index, CellStrip cells, ProjectionContext context)
-    {
-      Table = table;
-      Strip = cells;
-      Context = context;
-      Index = index;
-    }
-
-    /// <summary>This row's 0-based position among the table's body rows.</summary>
-    public int Index { get; }
-
-    /// <summary>How many columns wide the row is — the same as the table's <see cref="TableView.ColumnCount"/>.</summary>
-    public int Count => Strip.Count;
-
-    /// <summary>The row's cells, by column index.</summary>
-    public IReadOnlyList<CellValue> Cells => Strip;
-
-    /// <summary>
-    /// The cell in <paramref name="column"/>; an index outside the table is a declaration error.
-    /// </summary>
-    public CellValue this[int column]
-      => column >= 0 && column < Count
-        ? Strip[column]
-        : throw Failure($"column index {column} is out of range; the table has {Count} columns.");
-
-    /// <summary>
-    /// The cell in the column named <paramref name="columnName"/>, resolved by the content rule —
-    /// trimmed and case-insensitively, the same rule matchers and <c>Caption</c> use, not the
-    /// whitespace-stripping <c>CaptionComparer</c> that binds <c>Table&lt;T&gt;</c>. An
-    /// unknown, ambiguous, or headerless lookup is a declaration error.
-    /// </summary>
-    public CellValue this[string columnName] => Strip[Resolve(columnName)];
-
-    /// <summary>The address of the row's first cell.</summary>
-    public ProjectionLocation Location => Strip.Location;
-
-    /// <summary>
-    /// The row's own extent, one row tall and as wide as the table — the mirror of
-    /// <see cref="CellStrip.Space"/> and <see cref="CellBlock.Space"/>, and the reach-through a
-    /// projection asks a capability through:
-    /// <c>row.Space.Capability&lt;IFormulaSpace&gt;()?.FormulaAt(column, 0)</c>.
-    /// </summary>
-    public ISpace Space => Strip.Space;
-
-    /// <summary>
-    /// The address of one cell of the row, for citing it in a message — a data-quality complaint
-    /// can then read like a framework one.
-    /// </summary>
-    public ProjectionLocation AddressOf(int column)
-      => column >= 0 && column < Count
-        ? Strip.AddressOf(column)
-        : throw Failure($"column index {column} is out of range; the table has {Count} columns.");
-
-    /// <summary>
-    /// The address of one cell of the row by column name, resolved exactly as the indexer resolves
-    /// it — unknown, ambiguous, and headerless lookups fail the same way.
-    /// </summary>
-    public ProjectionLocation AddressOf(string columnName) => Strip.AddressOf(Resolve(columnName));
-
-    private TableView Table { get; }
-    private CellStrip Strip { get; }
-    private ProjectionContext Context { get; }
-
-    /// <summary>
-    /// Reads an optional column: false when the table simply has no such column. A lookup that
-    /// cannot mean anything — an ambiguous name, or a name against a table declared without a
-    /// header row — still throws, because that is a broken declaration rather than a missing value.
-    /// </summary>
-    public bool TryGet(string columnName, out CellValue value)
-    {
-      var indices = Resolvable(columnName);
-
-      if (indices.Count == 0)
-      {
-        value = CellValue.Blank;
-        return false;
-      }
-
-      value = Strip[indices[0]];
-      return true;
-    }
-
-    private int Resolve(string columnName)
-    {
-      var indices = Resolvable(columnName);
-
-      if (indices.Count == 1)
-        return indices[0];
-
-      var available = Table.ColumnNames.Where(name => name.Length > 0).Select(name => $"'{name}'").ToList();
-
-      throw Failure(
-        $"there is no column named '{columnName}'; available columns: {(available.Count == 0 ? "none" : string.Join(", ", available))}.");
-    }
-
-    /// <summary>
-    /// The columns the name resolves to, having rejected the lookups that cannot mean anything.
-    /// </summary>
-    private IReadOnlyList<int> Resolvable(string columnName)
-    {
-      var indices = Table.IndicesOf(columnName);
-
-      if (indices.Count > 1)
-        throw Ambiguous(columnName, indices);
-
-      if (indices.Count == 0 && !Table.HasHeader)
-        throw Failure($"column '{columnName}' cannot be resolved: the table was declared without a header row; use column indices.");
-
-      return indices;
-    }
-
-    private ProjectionException Ambiguous(string columnName, IReadOnlyList<int> indices)
-      => Failure($"column '{columnName}' appears at indices {Join(indices)}; use the index.");
-
-    private ProjectionException Failure(string problem) => Context.Failure(problem, Strip.Space);
-
-    private static string Join(IReadOnlyList<int> indices)
-      => indices.Count == 1
-        ? indices[0].ToString()
-        : string.Join(", ", indices.Take(indices.Count - 1)) + " and " + indices[indices.Count - 1];
   }
 }

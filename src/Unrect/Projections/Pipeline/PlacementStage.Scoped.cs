@@ -73,7 +73,7 @@ namespace Unrect.Projections
       IOffsetStrategy? separatedBy = null,
       int atLeast = 0,
       [CallerArgumentExpression("item")] string? declared = null)
-      => Close(Projection.VerticalRepeat(item, separatedBy, atLeast, declared));
+      => Close(Projection.VerticalRepeat(item, separatedBy, atLeast, declared: declared));
 
     /// <inheritdoc cref="Projection.HorizontalRepeat{T}"/>
     /// <typeparam name="T">What one occurrence reads.</typeparam>
@@ -86,7 +86,7 @@ namespace Unrect.Projections
       IOffsetStrategy? separatedBy = null,
       int atLeast = 0,
       [CallerArgumentExpression("item")] string? declared = null)
-      => Close(Projection.HorizontalRepeat(item, separatedBy, atLeast, declared));
+      => Close(Projection.HorizontalRepeat(item, separatedBy, atLeast, declared: declared));
 
     /// <inheritdoc cref="Projection.Choice{T}"/>
     /// <typeparam name="T">What every alternative reads.</typeparam>
@@ -106,14 +106,14 @@ namespace Unrect.Projections
     public IProjection<TSpace, IReadOnlyList<T>> Table<T>(Func<TableBinding<T>, TableBinding<T>> bind)
       => Close<IReadOnlyList<T>>(Projection.Table(bind));
 
-    /// <inheritdoc cref="Projection.Table{T}(int, Func{CaptionMap, IProjection{T}}, string)"/>
+    /// <inheritdoc cref="Projection.Table{T}(int, Func{LabelMap, IProjection{T}}, string)"/>
     /// <typeparam name="T">What one record reads.</typeparam>
     /// <param name="headerRows">How many rows to read as the header; a bind needs 1.</param>
     /// <param name="eachRow">Given this file's captions, the projection that reads one record.</param>
     /// <param name="declared">Supplied by the compiler as the text of the <paramref name="eachRow"/> argument.</param>
     public IProjection<TSpace, IReadOnlyList<T>> Table<T>(
       int headerRows,
-      Func<CaptionMap, IProjection<TSpace, T>> eachRow,
+      Func<LabelMap, IProjection<TSpace, T>> eachRow,
       [CallerArgumentExpression("eachRow")] string? declared = null)
       => Close(Projection.Table(headerRows, eachRow, declared));
 
@@ -353,6 +353,9 @@ namespace Unrect.Projections
     /// <inheritdoc cref="OffsetStage.AfterBlankColumns()"/>
     public OffsetStage<TSpace> AfterBlankColumns() => new OffsetStage<TSpace>(Steps.Then(Step.AfterBlankColumns()));
 
+    /// <inheritdoc cref="OffsetStage.SkipToFirstNonBlankCell()"/>
+    public OffsetStage<TSpace> SkipToFirstNonBlankCell() => new OffsetStage<TSpace>(Steps.Then(Step.SkipToFirstNonBlankCell()));
+
     /// <inheritdoc cref="OffsetStage.Sized(IAreaStrategy)"/>
     /// <param name="area">The extent.</param>
     public OffsetAndSizeStage<TSpace> Sized(IAreaStrategy area)
@@ -394,6 +397,10 @@ namespace Unrect.Projections
     /// <inheritdoc cref="OffsetAndSizeStage.Down(int)"/>
     [Obsolete(PipelineRefusals.OffsetComesFirst, error: true)]
     public OffsetAndSizeStage<TSpace> AfterBlankColumns() => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
+
+    /// <inheritdoc cref="OffsetAndSizeStage.Down(int)"/>
+    [Obsolete(PipelineRefusals.OffsetComesFirst, error: true)]
+    public OffsetAndSizeStage<TSpace> SkipToFirstNonBlankCell() => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
   }
 
   /// <summary>The scoped twin of <see cref="BoundStage"/>.</summary>

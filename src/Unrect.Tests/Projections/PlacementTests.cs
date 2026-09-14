@@ -79,6 +79,47 @@ namespace Unrect.Tests.Projections
       Assert.Equal(3, applied.Advance.Height);
     }
 
+    // --- Whether a placement fits is asked a row at a time -----------------------------------------
+    //
+    // The fit test reads the available space through the forward probes (its width, and whether it
+    // has a row at the far edge of what is being asked for) rather than off ISpace.Area, so that an
+    // extent still being discovered is asked for one row instead of for all of them. What it ANSWERS
+    // must not depend on which kind of space it was asked about — so every case below is asserted
+    // twice, over a measured grid and over a bound the engine is discovering, and the boundary case
+    // is in the table on purpose: an extent exactly as tall as what is available fits.
+
+    [Theory]
+    [InlineData(3, 4, true)]      // the whole extent, which is the boundary case: equal fits
+    [InlineData(3, 2, true)]
+    [InlineData(4, 4, false)]     // one column too wide
+    [InlineData(3, 5, false)]     // one row too tall
+    public void AnExtentFitsWhenItIsNoBiggerThanTheSpaceAvailable(int width, int height, bool fits)
+    {
+      var extent = $"{width}x{height}";
+      var block = Range(width, height, b => $"{b.Width}x{b.Height}");
+
+      AssertFit(fits, extent, block, CoordinateGrid());
+
+      // The same declaration inside a discovered bound of exactly the same 3x4, walked a row at a
+      // time. RowsWhileAnyValue takes every row of the coordinate grid, so the two spaces differ in
+      // how their extent is arrived at and in nothing else.
+      AssertFit(fits, extent, Sized(RowsWhileAnyValue()).Of(VerticalFlow(v => v.Next(block))), CoordinateGrid());
+    }
+
+    private static void AssertFit(bool fits, string extent, IProjection<string> declaration, ISpace space)
+    {
+      if (fits)
+      {
+        Assert.Equal(extent, declaration.Map(space));
+
+        return;
+      }
+
+      var failure = Assert.Throws<ProjectionException>(() => declaration.Map(space));
+
+      Assert.Contains($"an extent of {extent} does not fit here", failure.Message);
+    }
+
     // --- The placement is applied exactly once -----------------------------------------------------
 
     [Fact]
@@ -178,8 +219,7 @@ namespace Unrect.Tests.Projections
     // The anchors' half of the rule lives in AnchorModifierTests, beside what they anchor on; this
     // file pins the rule itself, through the modifier that states it with nothing else attached.
     // What a placement replaces is the projection's own definition — a Table's skipped blank rows, a
-    // Range's constructor extent — never a second modifier; that is refused at construction (owner
-    // decision, 2026-09-09; docs/design/modifier-congruence-survey.md §5).
+    // Range's constructor extent — never a second modifier; that is refused at construction.
 
     [Fact]
     public void RepeatedOffsetModifiers_Compose()
@@ -209,10 +249,12 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void AMovementComposesWithAProjectionsDefaultOffset()
+    public void AMovementReplacesAProjectionsDefaultOffset()
     {
-      // A Table already skips the blank rows in front of it; Down(1) carries on one row further.
-      // Were the modifier to replace, it would land on the blank row's successor instead.
+      // The law (spec §7): a pipeline offset REPLACES the shape's own constructor default; it does
+      // not compose onto it. A Table's default self-locates onto the first non-blank cell
+      // (SkipToFirstNonBlankCell); a bare Down(1) discards that self-locate and lands one row down
+      // from the origin — the header row here, not the data row a composing spelling would reach.
       var space = Mixed(new object?[,]
       {
         { null, null },
@@ -221,11 +263,100 @@ namespace Unrect.Tests.Projections
         { "Beta", "20" },
       });
 
+      // The default self-locates past the leading blank row onto the header.
       Assert.Equal(new[] { "Investor", "Amount" }, Table(t => t.ColumnNames).Map(space));
-      Assert.Equal(new[] { "Acme", "10" }, Down(1).Of(Table(t => t.ColumnNames)).Map(space));
 
-      // ...and OffsetBy discards the default outright, landing exactly one row down.
+      // Down(1) REPLACES the self-locate default: row 1 from the origin is the header, not the data
+      // row (["Acme", "10"]) the old composing semantics reached.
+      Assert.Equal(new[] { "Investor", "Amount" }, Down(1).Of(Table(t => t.ColumnNames)).Map(space));
+
+      // ...and OffsetBy discards the default outright likewise, landing exactly one row down.
       Assert.Equal(new[] { "Investor", "Amount" }, OffsetBy(SkipRows(1)).Of(Table(t => t.ColumnNames)).Map(space));
+
+      // The other half of the law: composition happens only when offsets are explicitly chained in
+      // the pipeline. Making the self-locate explicit marks the offset declared, so Down(1) then
+      // COMPOSES onto it — self-locate to the header, then one row down to the first data row.
+      Assert.Equal(
+        new[] { "Acme", "10" },
+        SkipToFirstNonBlankCell().Down(1).Of(Table(t => t.ColumnNames)).Map(space));
+    }
+
+    [Fact]
+    public void TheReplaceLaw_OnTheColumnAxis_TheThreeCanonicalScenarios()
+    {
+      // Spec §7's three canonical scenarios, on the column axis so replace and compose land on
+      // different columns. Content is indented one column (the leftmost column is entirely blank),
+      // so a bare Right(1) that REPLACES the self-locate reads a different column set than one that
+      // COMPOSES onto it.
+      var space = Mixed(new object?[,]
+      {
+        { null, "Investor", "Amount" },
+        { null, "Acme", 10 },
+        { null, "Beta", 20 },
+      });
+
+      // (1) Table() with no pipeline offset: SkipToFirstNonBlankCell self-locates onto the first
+      // content cell (column 1), so the discovered block reads both content columns.
+      Assert.Equal(new[] { "Investor", "Amount" }, Table(t => t.ColumnNames).Map(space));
+
+      // (2) Right(1).Of(Table()) REPLACES the default: the table's left edge is at column 1, NOT
+      // self-locate + 1. It reads the same two columns as the default. Were Right(1) to compose onto
+      // the self-locate (the old semantics), the origin would be column 2 and the read would be the
+      // single column ["Amount"].
+      Assert.Equal(new[] { "Investor", "Amount" }, Right(1).Of(Table(t => t.ColumnNames)).Map(space));
+
+      // (3) SkipToFirstNonBlankCell().Right(1).Of(Table()) COMPOSES: the explicit skip replaces the
+      // default and marks the offset declared, then Right(1) composes onto it — self-locate to
+      // column 1, then one column right to column 2 — reading the single column ["Amount"].
+      Assert.Equal(
+        new[] { "Amount" },
+        SkipToFirstNonBlankCell().Right(1).Of(Table(t => t.ColumnNames)).Map(space));
+    }
+
+    [Fact]
+    public void TheReplaceLaw_HoldsUniformlyForEveryShapeWithAConstructorDefault()
+    {
+      // Spec §7: "The law applies to EVERY one of them uniformly." Exactly three shapes carry a
+      // non-trivial constructor default — Table (SkipToFirstNonBlankCell), Caption (To(RowContaining))
+      // and Fields (Then(To(ColumnWhere), To(RowWhere))) — and all three obey the one rule: a bare
+      // declared movement REPLACES the default and starts the chain from the origin. Pinned side by
+      // side here so the "uniform across defaulted shapes" claim lives in one place (Caption and
+      // Fields each also carry their own pin in their own suites).
+      //
+      // Every fixture is DISCRIMINATING: row 0 is junk/blank so the default self-locates to row 1,
+      // where a COMPOSING Down(1) would reach row 2 while a REPLACING Down(1) lands at row 1 from the
+      // origin. The three read different content under the two semantics, so none can pass under both.
+
+      // Table: the default self-locates onto the first content row (the header at row 1). Down(1)
+      // replaces -> row 1 -> the header binds as the first content row; a compose would reach row 2
+      // and bind ["Acme", "10"] as the header.
+      var tableSheet = Mixed(new object?[,]
+      {
+        { null, null },
+        { "Investor", "Amount" },
+        { "Acme", "10" },
+      });
+      Assert.Equal(new[] { "Investor", "Amount" }, Down(1).Of(Table(t => t.ColumnNames)).Map(tableSheet));
+
+      // Caption: the default seeks the row containing its text (row 1). Down(1) replaces -> asserts
+      // at row 1 -> the verbatim "  EIN:  "; a compose would reach row 2 and yield the verbatim "EIN:".
+      var captionSheet = Mixed(new object?[,]
+      {
+        { "junk" },
+        { "  EIN:  " },
+        { "EIN:" },
+      });
+      Assert.Equal("  EIN:  ", Down(1).Of(Caption("ein:")).Map(captionSheet));
+
+      // Fields: the default self-anchors on the first label (row 1). Down(1) replaces -> reads the
+      // row-1 card ("target"); a compose would anchor to row 1 then reach row 2 ("other").
+      var fieldsSheet = Mixed(new object?[,]
+      {
+        { null, null },
+        { "EIN:", "target" },
+        { "EIN:", "other" },
+      });
+      Assert.Equal("target", Down(1).Of(Fields(Field("EIN"))).Map(fieldsSheet)["EIN"].GetString());
     }
 
     // --- Saying "no movement" out loud says nothing -----------------------------------------------------

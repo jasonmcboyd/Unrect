@@ -126,14 +126,14 @@ namespace Unrect.Projections
       [CallerArgumentExpression("eachRow")] string? declared = null)
       => Projection.Table(headerRows, eachRow, declared);
 
-    /// <inheritdoc cref="Projection.Table{T}(int, Func{CaptionMap, IProjection{T}}, string)"/>
+    /// <inheritdoc cref="Projection.Table{T}(int, Func{LabelMap, IProjection{T}}, string)"/>
     /// <typeparam name="TResult">What one record reads.</typeparam>
     /// <param name="headerRows">How many rows to read as the header; a bind needs 1.</param>
     /// <param name="eachRow">Given this file's captions, the projection that reads one record.</param>
     /// <param name="declared">Supplied by the compiler as the text of the <paramref name="eachRow"/> argument.</param>
     public IProjection<TSpace, IReadOnlyList<TResult>> Table<TResult>(
       int headerRows,
-      Func<CaptionMap, IProjection<TSpace, TResult>> eachRow,
+      Func<LabelMap, IProjection<TSpace, TResult>> eachRow,
       [CallerArgumentExpression("eachRow")] string? declared = null)
       => Projection.Table(headerRows, eachRow, declared);
 
@@ -217,6 +217,9 @@ namespace Unrect.Projections
 
     /// <inheritdoc cref="Projection.AfterBlankColumns()"/>
     public OffsetStage<TSpace> AfterBlankColumns() => Enter(Step.AfterBlankColumns());
+
+    /// <inheritdoc cref="Projection.SkipToFirstNonBlankCell()"/>
+    public OffsetStage<TSpace> SkipToFirstNonBlankCell() => Enter(Step.SkipToFirstNonBlankCell());
 
     /// <inheritdoc cref="Projection.SkipEmptyRowsAndColumns()"/>
     public OffsetStage<TSpace> SkipEmptyRowsAndColumns() => AfterBlankRows().AfterBlankColumns();

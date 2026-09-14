@@ -109,6 +109,51 @@ namespace Unrect.Tests.Spreadsheets
     }
 
     [Fact]
+    public void AndThroughTheTailOfOneAsWell()
+    {
+      // The second child of a composite inside a bound is not handed the bound: it is handed a TAIL
+      // of it, offset by what the first child consumed and with the height still the bound's to
+      // discover. That is a second chart in the stack, and the one that could go wrong QUIETLY — a
+      // tail whose coordinates had shifted would find the capability and answer about the wrong
+      // cell. Rows 2 and 3 of this file carry the same shared expression one row apart, so a
+      // one-row slip has a plausible-looking answer waiting for it.
+      var lines = Sized(RowsWhileAnyValue()).Of(VerticalFlow(Formulas, v =>
+      {
+        v.Next(Row(cells => cells.Count));
+
+        return (
+          First: v.Next(Overlay(Formulas, o => (Total: o.Next(Right(3).Of(Decimal())), Formula: o.Next(Right(3).Of(Formula()))))),
+          Second: v.Next(Overlay(Formulas, o => (Total: o.Next(Right(3).Of(Decimal())), Formula: o.Next(Right(3).Of(Formula()))))));
+      }));
+
+      var read = lines.Map(Sheet());
+
+      Assert.Equal(4.5m, read.First.Total);
+      Assert.Equal(@"IF(B2>0,ROUND(B2*$C$2,2)+SUM($B$2:B2),""B2"")", read.First.Formula);
+
+      // The one that matters: D3, read through a tail two rows into the bound, and reconstructed for
+      // its OWN row rather than for the master's.
+      Assert.Equal(9.5m, read.Second.Total);
+      Assert.Equal(@"IF(B3>0,ROUND(B3*$C$2,2)+SUM($B$2:B3),""B2"")", read.Second.Formula);
+    }
+
+    [Fact]
+    public void AndAMatcherStillLooksForAFormulaThroughATailToo()
+    {
+      // The boundary site's door through the same two charts: the matcher demands the capability of
+      // the space it is handed, which by then is a tail of a discovered bound. The first computed row
+      // past the consumed header is row 2, whose first cell says which one it found.
+      var firstComputed = Sized(RowsWhileAnyValue()).Of(VerticalFlow(Formulas, v =>
+      {
+        v.Next(Row(cells => cells.Count));
+
+        return v.Next(On(RowWithFormula()).Of(Row(cells => cells[0].GetString())));
+      }));
+
+      Assert.Equal("Widget", firstComputed.Map(Sheet()));
+    }
+
+    [Fact]
     public void ABoundaryThatCannotLookFaultsAndNoToleranceAbsorbsIt()
     {
       // The runtime path the typed layer cannot close: the plain lift, reached through Landmark,

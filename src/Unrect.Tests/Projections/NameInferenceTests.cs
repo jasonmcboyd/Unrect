@@ -346,6 +346,61 @@ namespace Unrect.Tests.Projections
       Assert.Equal("'totals'", Failure(VerticalFlow(v => v.Next(totals))).Subject);
     }
 
+    // --- A composition presented as one node climbs the same ladder --------------------------------------------
+    //
+    // Table(headerRows:, eachRow:) is built from the primitives — a ColumnLabels header over a
+    // VerticalBands body — and every part of that is marked scaffolding, so the ladder reads the
+    // table as ONE child. These pin the three rungs over it, which is what says the composition is
+    // an implementation detail rather than a shape the user has to know about.
+
+    [Fact]
+    public void Rung2_AComposedTableIsLabelledByTheLocalItWasHoistedInto()
+    {
+      // The failure is the table's own placement, so the table is the deepest segment and earns the
+      // kind suffix — the same rendering a leaf gets, over a projection that is really four.
+      var sheet = Mixed(new object?[,] { { "Investor" }, { 10m } });
+      var transactions = Down(5).Of(Table(1, Decimal()));
+
+      var failure = Assert.Throws<ProjectionException>(
+        () => VerticalFlow(v => string.Join(",", v.Next(transactions))).Map(sheet));
+
+      Assert.Equal("VerticalFlow -> 'transactions' (Table)", failure.Path);
+      Assert.Equal("'transactions'", failure.Subject);
+    }
+
+    [Fact]
+    public void AFailureInsideAComposedTableKeepsTheTablesSegmentAndItsRecordIndex()
+    {
+      // The band's occurrence index rides up onto the table's own segment, because the tiler that
+      // carried it is scaffolding. FullPath is where the parts are still readable.
+      var sheet = Mixed(new object?[,] { { "Investor" }, { "oops" } });
+      var transactions = Table(1, Decimal());
+
+      var failure = Assert.Throws<ProjectionException>(
+        () => VerticalFlow(v => string.Join(",", v.Next(transactions))).Map(sheet));
+
+      Assert.Equal("VerticalFlow -> 'transactions'[0] -> Decimal", failure.Path);
+      Assert.Equal("VerticalFlow -> 'transactions' -> VerticalFlow -> VerticalBands#2[0] -> Decimal", failure.FullPath);
+    }
+
+    [Fact]
+    public void Rung3_AnUnnamedComposedTableIsItsKindAndItsPosition()
+    {
+      // No identifier to borrow, so the table is the second child of the flow and says so — and the
+      // ordinal counts the table once, not the header and the tiler it was built from.
+      var sheet = Mixed(new object?[,]
+      {
+        { "Title", null },
+        { "Investor", "Amount" },
+        { "Acme", "oops" },
+      });
+
+      var failure = Assert.Throws<ProjectionException>(
+        () => VerticalFlow(v => $"{v.Next(Text())}|{string.Join(",", v.Next(Table(1, Decimal())))}").Map(sheet));
+
+      Assert.Equal("VerticalFlow -> Table#2[0] -> Decimal", failure.Path);
+    }
+
     private static IProjection<string> FullRow() => Cell(c => c.GetString());
 
     private static IProjection<string> NamedFullRow() => Cell(c => c.GetString()).Named("full row");

@@ -8,8 +8,8 @@ using Unrect.Projections;
 namespace PlacementGauntlet.Staged
 {
   /// <summary>
-  /// SPIKE — the inverted pipeline's intermediates, plain half (<c>staged-placement-note.md</c>
-  /// §5.2). Placement runs in execution order and the projection TERMINATES the pipeline:
+  /// SPIKE — the inverted pipeline's intermediates, plain half. Placement runs in execution order
+  /// and the projection TERMINATES the pipeline:
   /// <code>
   /// Below(mark)          // entry factory — anchors exist ONLY here
   ///   .Down(1)           // movement: stage -> stage
@@ -60,7 +60,7 @@ namespace PlacementGauntlet.Staged
       IOffsetStrategy? separatedBy = null,
       int atLeast = 0,
       [CallerArgumentExpression("item")] string? declared = null)
-      => Close(Projection.VerticalRepeat(item, separatedBy, atLeast, declared));
+      => Close(Projection.VerticalRepeat(item, separatedBy, atLeast, declared: declared));
 
     public IProjection<TSpace, IReadOnlyList<T>> VerticalRepeat<TSpace, T>(
       IProjection<TSpace, T> item,
@@ -68,14 +68,14 @@ namespace PlacementGauntlet.Staged
       int atLeast = 0,
       [CallerArgumentExpression("item")] string? declared = null)
       where TSpace : class, ISpace
-      => Close(Projection.VerticalRepeat(item, separatedBy, atLeast, declared));
+      => Close(Projection.VerticalRepeat(item, separatedBy, atLeast, declared: declared));
 
     public IProjection<IReadOnlyList<T>> HorizontalRepeat<T>(
       IProjection<T> item,
       IOffsetStrategy? separatedBy = null,
       int atLeast = 0,
       [CallerArgumentExpression("item")] string? declared = null)
-      => Close(Projection.HorizontalRepeat(item, separatedBy, atLeast, declared));
+      => Close(Projection.HorizontalRepeat(item, separatedBy, atLeast, declared: declared));
 
     // --- Tables -----------------------------------------------------------------------------------
 
@@ -99,7 +99,7 @@ namespace PlacementGauntlet.Staged
 
     public IProjection<IReadOnlyList<T>> Table<T>(
       int headerRows,
-      Func<CaptionMap, IProjection<T>> eachRow,
+      Func<LabelMap, IProjection<T>> eachRow,
       [CallerArgumentExpression("eachRow")] string? declared = null)
       => Close(Projection.Table(headerRows, eachRow, declared));
 

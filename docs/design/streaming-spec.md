@@ -33,10 +33,9 @@ reference implementation this document turns into a real one; §9 says exactly w
 carry over and which are rewritten. Every one of its measurements is quoted here as law
 (§1), because the design decisions below are consequences of those numbers.
 
-Conventions inherited: `wave2-shapes-spec.md` (engine rules, error-message template, file
-layout, test style), `flow-vocabulary-spec.md` (removal orders, `[decided here]` markers),
-`capability-seam-notes.md` (additive capability recipe; its default-interface-member escape
-hatch was withdrawn on 2026-09-05 — see that note's item 4),
+Conventions inherited from the project's established practice: engine rules, error-message
+template, file layout, test style, removal orders and `[decided here]` markers, and the additive
+capability recipe (its default-interface-member escape hatch was withdrawn on 2026-09-05),
 `docs/benchmarking.md` (benchmark family rules).
 
 Everything the owner settled is recorded as settled. Where a detail had to be decided to
@@ -270,8 +269,8 @@ namespace Unrect.Spreadsheets
 ```
 
 `WorkbookOptions` is a class with `init` accessors so a future option is additive and no
-existing call site is binary-broken (the discipline from `capability-seam-notes.md`:
-additive members are safe, new optional parameters on existing methods are not).
+existing call site is binary-broken (the additive-members discipline: additive members are safe,
+new optional parameters on existing methods are not).
 
 ### 2.3 Lifetime — the whole of it lives on `Workbook`
 
@@ -955,10 +954,10 @@ The raw material is already there:
 ### 11.2 The interfaces
 
 In `Unrect.Core`, additive, mirroring the existing three-layer strategy calculus exactly
-(row → size → area). Each layer's eager method is *defined* as the fold of its own scan, as a
-default interface member — so eager and lazy cannot disagree by construction, which is worth
-more than any number of equivalence tests. (netstandard2.1 supports DIMs; the capability-seam
-note already blesses them.)
+(row → size → area). Each layer's eager method is *defined* as the fold of its own scan — so
+eager and lazy cannot disagree by construction, which is worth more than any number of
+equivalence tests. (Delivered as one-line delegations to `Scans.Fold*` since 2026-09-05, when
+default interface members were withdrawn to keep netstandard2.0 support.)
 
 > **Corrected 2026-09-05 — the guarantee shifted when the libraries added netstandard2.0.**
 > .NET Framework's runtime cannot dispatch a default interface member, so the DIMs are gone:
@@ -1208,7 +1207,7 @@ at ~line 46, the results loop at ~line 130, the Bencher loop at ~line 386) and u
 | Concurrent chunk loads within one sheet | A measured parallel-map-over-one-sheet workload. |
 | A streaming *result* type (`TableRows` yielding `IEnumerable<T>`) | A caller whose result set, not whose input, is the memory problem. |
 | Lazy bounds for `Until`/landmark wrappers | After Part 2 step 8 lands. |
-| **Part 3: bound-aware composite placement** — a re-based `BoundedSpace` for `GetSubspace(offset)` (sharing the parent's scan at a row offset) and `Exceeds` answered via `HasRow`, so a sized composite's band settles when its last child finishes rather than before its first child is placed. DEFERRED (owner, 2026-09-04). This is principled completion of the lazy-extents thesis, not an edge case: the engine's remaining greed is one *necessary* force (`Repeat` items — the item's existence is the question), one *free* force (post-`Project` consumption, amortised by the root's unconsumed-space accounting), and this one *debt* (composite child placement, whose questions have lazy answers nobody asks for). `.Sized`'s irreplaceable role is exactly on composites — a composite has no intrinsic extent, and a declared band is what scopes its internal seeks and settles its consumption (the K-1 `Overlay` header is the corpus's one production use) — so the docs' "prefer the leaf spelling" is a partial answer, not a law. Priced at roughly steps 4–6 of Part 2; wrinkles: the offset-only `GetSubspace` extension lives in `Unrect.Strategies`, below `BoundedSpace`, so the engine routes around it rather than the extension type-testing upward; `Overlay` children force inherently (they ask dimension questions to place themselves), so the win is flow-shaped. | The first real declaration that pays the debt: a *tall* sized composite — a long heterogeneous region bounded by a content rule. Sized composites in the corpus are short (header bands), where forcing costs nothing. The K-1 campaign is the likely judge. Pinned meanwhile by the `LazyDenotationTests` census (`ASizedLayoutCompositeIsEagerBothWays…`), which must be flipped deliberately. |
+| **Part 3: bound-aware composite placement** — a re-based `BoundedSpace` for `GetSubspace(offset)` (sharing the parent's scan at a row offset) and `Exceeds` answered via `HasRow`, so a sized composite's band settles when its last child finishes rather than before its first child is placed. LANDED for flow/overlay/repeat child placement (uncommitted, 2026-09-14, branch `experiment/record-primitive`): `ProjectionEngine.Exceeds` now answers via `BoundedSpace.HasRow`/`WidthOf`, and offset slicing goes through the lazy `BoundedSpace.Tail`/`TailSpace`, so `VerticalFlow`/`HorizontalFlow`/`Overlay`/`VerticalRepeat` all stream a handed bound instead of forcing at first-child placement. What remains the *necessary* force this row originally scoped around: a CHILD's own declared, non-incremental area whose strategy itself reads `ISpace.Area` (`Record`'s `FullRow()` inside a bare `VerticalRepeat(Record(record))`, still forcing at the first occurrence) — recorded as its own open question in `docs/design/composing-primitives.md`. `.Sized`'s irreplaceable role is exactly on composites — a composite has no intrinsic extent, and a declared band is what scopes its internal seeks and settles its consumption (the K-1 `Overlay` header is the corpus's one production use) — so the docs' "prefer the leaf spelling" is a partial answer, not a law. | Landed. Pinned by the `LazyDenotationTests` census, flipped deliberately: `ASizedLayoutCompositeIsEagerBothWays…` (4 rows read) is now `ASizedLayoutCompositeStreamsItsBound` (1 row read). The remaining declared-area-child force is the trigger for closing that seam next — see `docs/design/composing-primitives.md`'s open questions. |
 | A reader budget shared across many open workbooks | Someone opens hundreds at once. |
 | `OperationCanceledException` in the fault list | An async or cancellable surface exists to produce it. |
 

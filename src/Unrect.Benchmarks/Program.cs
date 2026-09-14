@@ -14,7 +14,7 @@ namespace Unrect.Benchmarks
       // build and one forced collection, where a benchmark engine's whole job is to run an operation
       // thousands of times and keep none of the results. It rides the same matrix leg, the same
       // --artifacts convention and the same stored JSON shape as everything else; only the instrument
-      // differs. See Retention and docs/benchmarking.md.
+      // differs. See Retention.
       if (Array.IndexOf(args, "--retention") >= 0)
       {
         Retention.Run(args);

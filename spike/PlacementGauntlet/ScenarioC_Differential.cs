@@ -15,13 +15,13 @@ using static Unrect.Spreadsheets.SpreadsheetProjections;
 namespace PlacementGauntlet
 {
   /// <summary>
-  /// SPIKE, scenario C — the differential for <b>Entry C, the file-scoped vocabulary</b>
-  /// (<c>staged-placement-note.md</c> §5.5). Today's spellings live HERE, and the Entry C readings
+  /// SPIKE, scenario C — the differential for <b>Entry C, the file-scoped vocabulary</b>.
+  /// Today's spellings live HERE, and the Entry C readings
   /// live in their own files, for a reason that is itself the arm's first finding:
   /// <b>the two spellings cannot share a file.</b> This file imports <c>Projection</c> statically;
   /// an Entry C file cannot (CS0121 on every shared name, ledgered as (q)). So a differential is
   /// necessarily cross-file, and the acceptance reads are necessarily whole files — which is what
-  /// §5.5 claimed the unit of scoping would become.
+  /// the file-scoped-vocabulary direction claimed the unit of scoping would become.
   /// </summary>
   public static class ScenarioC
   {
@@ -60,7 +60,7 @@ namespace PlacementGauntlet
       // its text is captured by CallerArgumentExpression and becomes the record's path segment, so
       // an inline lambda would make the two declarations differ at L3 for a reason that is about
       // this comparison rather than about Entry C.
-      Func<CaptionMap, IProjection<ISpreadsheetSpace, AuditedSummaryRow>> auditedRow = captions => q.Overlay(o => new AuditedSummaryRow(
+      Func<LabelMap, IProjection<ISpreadsheetSpace, AuditedSummaryRow>> auditedRow = captions => q.Overlay(o => new AuditedSummaryRow(
         Investor: o.Next(Projection.Right(captions["Investors"]).Text()),
         EndBalance: o.Next(Projection.Right(captions["End Balance"]).Decimal()),
         AmountFormula: o.Next(Projection.Right(captions["End Balance"]).Of(Formula()))));
@@ -120,7 +120,7 @@ namespace PlacementGauntlet
         ReportDate: v.Next(Date()),
         ReportId: v.Next(Text())));
 
-      Func<CaptionMap, IProjection<PlainSummaryRow>> plainRow = captions => Projection.Overlay(o => new PlainSummaryRow(
+      Func<LabelMap, IProjection<PlainSummaryRow>> plainRow = captions => Projection.Overlay(o => new PlainSummaryRow(
         Investor: o.Next(Projection.Right(captions["Investors"]).Text()),
         EndBalance: o.Next(Projection.Right(captions["End Balance"]).Decimal())));
 
@@ -164,7 +164,7 @@ namespace PlacementGauntlet
     {
       var sheet = Sheets.K1();
 
-      Func<CaptionMap, IProjection<KLine>> kLine = captions => Projection.Overlay(o => new KLine(
+      Func<LabelMap, IProjection<KLine>> kLine = captions => Projection.Overlay(o => new KLine(
         Code: o.Next(Projection.Right(captions["Line"]).Text()),
         Amount: o.Next(Projection.Right(captions["Amount"]).Decimal())));
 

@@ -14,8 +14,7 @@ namespace Unrect.Tests.Projections
   /// <summary>
   /// v0.4 §14.4 asks whether a normal form for modifiers exists. This suite answers the half a
   /// normal form has to be built on: for an ordered pair of modifiers, does the order matter, and at
-  /// which observation level does the difference first show? The findings are the test names; the
-  /// full ordered-pair table is <c>docs/design/modifier-congruence-survey.md</c>.
+  /// which observation level does the difference first show? The findings are the test names.
   /// <para>
   /// <strong>The conjecture, and where it broke.</strong> Clone modifiers were expected to form a
   /// commuting record and wrappers an order-meaningful stack. Both halves hold with three
@@ -220,8 +219,8 @@ namespace Unrect.Tests.Projections
     // These four were the survey's loud hazard pins, and each was stated as an EQUIVALENCE to the
     // modifier-free form, because "the earlier one is discarded" is a weaker claim than "the
     // declaration reads as though it had never been written" — and the second was what was true,
-    // including for a landmark that was not there to be found. The owner judged the erasure a footgun
-    // on 2026-09-09 (docs/design/modifier-congruence-survey.md §5, the DECIDED block): every reading a
+    // including for a landmark that was not there to be found. The erasure was judged a footgun:
+    // every reading a
     // reasonable person brings to x.On(a).Below(b) is spelled some other way — the sequential reading
     // is nesting, the conjunctive one belongs at the matcher level — so declared-over-declared has no
     // legitimate use, and a contradiction with no denotation gets no spelling. The equivalences below

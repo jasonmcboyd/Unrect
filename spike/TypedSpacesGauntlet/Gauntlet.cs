@@ -12,8 +12,8 @@ using static Unrect.Spreadsheets.SpreadsheetProjections;
 namespace TypedSpacesGauntlet
 {
   /// <summary>
-  /// SPIKE. The seven scenarios of `docs/design/typed-spaces-experiment.md` §6, written the way a
-  /// user would write them, and one scenario per phase of `projection-model-spec.md` since: 8 is
+  /// SPIKE. The seven scenarios of the typed-spaces experiment, written the way a
+  /// user would write them, and one scenario per phase of the projection-model campaign since: 8 is
   /// phase 1's one-modifier-two-demands question, 9 is phase 4's row-projection slot and cells 3-4
   /// of the four-scenario matrix of its §6, 10 is phase 5's bind and cells 1-2, 11 is phase 6's
   /// scoped entry and workbook sugar — the first scenario that reads real files rather than

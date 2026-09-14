@@ -458,6 +458,121 @@ namespace Unrect.Tests.Projections
       Assert.Equal(new[] { 2, 2 }, HorizontalRepeat(Range(2, 1, b => b.Width)).Map(space));
     }
 
+    // --- A repeat inside a discovered bound reads forward only ------------------------------------------------------
+
+    /// <summary>Two two-row blocks, adjacent: a repeat walks them with nothing between.</summary>
+    private static ISpace TwoBlocks() => Mixed(new object?[,]
+    {
+      { "A-1", null },
+      { null, 10 },
+      { "A-2", null },
+      { null, 30 },
+    });
+
+    /// <summary>A code cell over a value one row down and one column across — two rows per block.</summary>
+    private static IProjection<(string Code, int Amount)> Section()
+      => VerticalFlow(v => (Code: v.Next(Cell(c => c.GetString())), Amount: v.Next(Right(1).Of(IntCell()))));
+
+    [Fact]
+    public void Repeat_InsideADiscoveredExtent_NeverReadsBehindTheFurthestRowRead()
+    {
+      // The cost claim behind placing a repeat over a bound: the item is handed a TAIL of the extent
+      // rather than a measured slice of it, so the walk advances in step with the scan and nothing
+      // reaches back. A declaration with this property is one a windowed reader can serve from one
+      // chunk, which is why it is measured rather than argued from the shape of the code.
+      var watched = new WatermarkSpace(TwoBlocks());
+
+      var blocks = Sized(RowsWhileAnyValue()).Of(VerticalRepeat(Section())).Map(watched);
+
+      Assert.Equal(new[] { "A-1", "A-2" }, blocks.Select(block => block.Code));
+      Assert.Equal(3, watched.HighWaterMark);
+      Assert.Equal(0, watched.BackwardReach);
+    }
+
+    /// <summary>
+    /// Three record rows, a blank row, and trailing content — the sheet a record walk has to stop
+    /// part way down.
+    /// </summary>
+    private static ISpace RecordsThenTrailingContent() => Mixed(new object?[,]
+    {
+      { "a", 1 },
+      { "b", 2 },
+      { "c", 3 },
+      { null, null },
+      { "trailing", 9 },
+    });
+
+    /// <summary>A landmark for "a row with nothing on it", spelled through the space predicate.</summary>
+    private static IRowLandmark BlankRow()
+      => RowWhere((space, row) => Enumerable.Range(0, space.Area.Width).All(column => space[column, row].IsBlank));
+
+    [Fact]
+    public void Repeat_OfRecords_IsEndedByALandmarkAndNotByABlankRow()
+    {
+      // A record's one-row band has no content rule of its own, so nothing about a blank row stops a
+      // repeat: the bare walk reads every row of the sheet, blank one included, and carries on into
+      // the trailing content. Ending the walk is a declared bound's job.
+      var sheet = RecordsThenTrailingContent();
+
+      Assert.Equal(new[] { 0, 1, 2, 3, 4 }, VerticalRepeat(Record((TableRow row) => row.Index)).Map(sheet));
+
+      // The same walk under .Until: the bound ends just before the blank row, and is consumed in
+      // full, so the trailing content is left where the next sibling would find it.
+      var bounded = Until(BlankRow()).Of(VerticalRepeat(Record((TableRow row) => row.Index))).Apply(sheet);
+
+      Assert.Equal(new[] { 0, 1, 2 }, bounded.Value);
+      Assert.Equal(2, bounded.Consumed.Width);
+      Assert.Equal(3, bounded.Consumed.Height);
+    }
+
+    [Fact]
+    public void Repeat_OfRecordsUnderALandmarkBound_ReadsAheadToTheLandmarkThenWalks()
+    {
+      // A landmark bound is located before the walk begins, so it reads ahead to the landmark and
+      // the walk then reads behind that high-water mark. What the bound costs is measured rather
+      // than argued; the forward-only spelling of "stop at a blank row" is the tiler's.
+      var watched = new WatermarkSpace(RecordsThenTrailingContent());
+
+      // Each record reads a cell of its row, so the watermark measures the walk itself and not only
+      // the landmark search that precedes it.
+      var records = Until(BlankRow()).Of(VerticalRepeat(Record((TableRow row) => { _ = row.Text(0); return row.Index; }))).Map(watched);
+
+      Assert.Equal(new[] { 0, 1, 2 }, records);
+
+      // The three records and the blank row the landmark search found — the trailing content is
+      // never reached.
+      Assert.Equal(3, watched.HighWaterMark);
+
+      // And the walk then reads from the top of the block, three rows behind the furthest row the
+      // landmark search reached: the bound is located first, the records are read after.
+      Assert.Equal(3, watched.BackwardReach);
+    }
+
+    [Fact]
+    public void ButASeparatorInsideADiscoveredExtentAsksHowTallTheTailIs()
+    {
+      // The specific, named exception to the two facts above, and it is the hybrid rule rather than a
+      // defect: a separator is an offset STRATEGY, and it asks the space it is handed for its extent.
+      // On a tail that question forces the enclosing scan one row past the cursor, so the next row
+      // the separator itself reads is one behind the furthest row already read. Nothing is read
+      // twice and the walk still ends where it ended; what costs is a window one row deep.
+      var watched = new WatermarkSpace(TwoBlocks());
+
+      var blocks = Sized(RowsWhileAnyValue()).Of(VerticalRepeat(Section(), separatedBy: BlankRows())).Map(watched);
+
+      Assert.Equal(new[] { "A-1", "A-2" }, blocks.Select(block => block.Code));
+      Assert.Equal(3, watched.HighWaterMark);
+      Assert.Equal(1, watched.BackwardReach);
+
+      // And the same declaration over a measured extent reaches back not at all, which is what says
+      // the reach belongs to the dimension query on the bound and to nothing else in the shape.
+      var measured = new WatermarkSpace(TwoBlocks());
+
+      VerticalRepeat(Section(), separatedBy: BlankRows()).Map(measured);
+
+      Assert.Equal(0, measured.BackwardReach);
+    }
+
     // --- Repeat as a projection ------------------------------------------------------------------------------------
 
     [Fact]

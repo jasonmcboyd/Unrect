@@ -17,12 +17,14 @@ namespace Unrect.Projections
       string subject,
       string message,
       string path,
+      string fullPath,
       ProjectionLocation location)
     {
       Severity = severity;
       Subject = subject;
       Message = OneLine(message);
       Path = path;
+      FullPath = fullPath;
       Location = location;
     }
 
@@ -37,6 +39,12 @@ namespace Unrect.Projections
 
     /// <summary>The declaration path of what caused the event, not of what handled it.</summary>
     public string Path { get; }
+
+    /// <summary>
+    /// The uncollapsed path: every enclosing projection, with no <c>.AsUnit</c> boundary folded.
+    /// Equals <see cref="Path"/> when no boundary is in play.
+    /// </summary>
+    public string FullPath { get; }
 
     /// <summary>Where on the sheet the event occurred.</summary>
     public ProjectionLocation Location { get; }

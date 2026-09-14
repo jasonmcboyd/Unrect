@@ -6,21 +6,8 @@ using Unrect.Strategies;
 namespace Unrect.Projections
 {
   /// <summary>
-  /// What a placement pipeline has declared so far, held as the modifier calls that will write it
-  /// onto the projection its terminal builds.
-  /// <para>
-  /// <b>The pipeline is a spelling, not a semantics.</b> A stage records the modifier the author
-  /// wrote and replays it once, in declaration order, rather than composing strategies itself. That
-  /// is what keeps <c>Down(2).Table&lt;T&gt;()</c> meaning exactly what <c>Table&lt;T&gt;().Down(2)</c>
-  /// means: a movement <em>composes</em> onto a shape's own default offset where <c>OffsetBy</c>
-  /// <em>replaces</em> it, and a pipeline that flattened both into one strategy would quietly change
-  /// every declaration that relies on the difference.
-  /// </para>
-  /// <para>
-  /// Each slot is written at most once, because the stage types make a second write unspellable —
-  /// so the declared-over-declared refusal in <see cref="ProjectionExtensions"/> can never fire from
-  /// inside a pipeline.
-  /// </para>
+  /// What a placement pipeline has declared so far, held as the modifier calls its terminal replays
+  /// onto the projection in declaration order. Each slot is written at most once.
   /// </summary>
   internal sealed class Steps
   {
@@ -43,13 +30,7 @@ namespace Unrect.Projections
 
     /// <summary>
     /// Records <paramref name="step"/> as the <em>innermost</em> one, whatever was declared before
-    /// it.
-    /// <para>
-    /// One step needs this: the headings. A heading and the section it announces are together the
-    /// thing an anchor places — the repeat-stop recipe puts the anchor on the heading-and-content
-    /// flow, so that running out of headings ends the repetition. Left to right on the page is top
-    /// to bottom on the sheet, and the replay is inside-out, which is what this prepend is for.
-    /// </para>
+    /// it — used by the headings, which must wrap the section they announce.
     /// </summary>
     internal Steps Before(Step step)
     {
@@ -85,6 +66,7 @@ namespace Unrect.Projections
     Right,
     AfterBlankRows,
     AfterBlankColumns,
+    SkipToFirstNonBlankCell,
     Sized,
     UntilRow,
     UntilColumn,
@@ -125,6 +107,8 @@ namespace Unrect.Projections
 
     internal static Step AfterBlankColumns() => new Step(StepKind.AfterBlankColumns);
 
+    internal static Step SkipToFirstNonBlankCell() => new Step(StepKind.SkipToFirstNonBlankCell);
+
     internal static Step Sized(IAreaStrategy area) => new Step(StepKind.Sized, NotNull(area, "area"));
 
     internal static Step UntilRow(IRowLandmark landmark, bool orEnd) => new Step(StepKind.UntilRow, NotNull(landmark), orEnd: orEnd);
@@ -138,12 +122,8 @@ namespace Unrect.Projections
     internal static Step Headings(IProjection<string>[] captions) => new Step(StepKind.Headings, captions);
 
     /// <summary>
-    /// Writes this step onto <paramref name="projection"/> by manipulating its <see cref="Placement"/>
-    /// directly — the offset/area/bound operation the retired postfix modifier used to wrap. There is
-    /// no public modifier to route through, and none is needed: geometry carries no
-    /// <c>CallerArgumentExpression</c> capture, so the modifier surface added nothing the step does
-    /// not. The pipeline stage types write each slot at most once, so the declared-over-declared
-    /// guards the modifiers carried can never fire here and are simply not replayed.
+    /// Writes this step's offset/area/bound operation onto <paramref name="projection"/>'s
+    /// <see cref="Placement"/>.
     /// </summary>
     internal IProjection<T> ApplyTo<T>(IProjection<T> projection)
     {
@@ -151,18 +131,17 @@ namespace Unrect.Projections
 
       return _kind switch
       {
-        // Anchors and the strategy door replace the offset outright.
-        StepKind.OnRow => Reoffset<T>(subject, OffsetStrategies.To((IRowLandmark)_subject!)),
-        StepKind.OnColumn => Reoffset<T>(subject, OffsetStrategies.To((IColumnLandmark)_subject!)),
-        StepKind.Below => Reoffset<T>(subject, OffsetStrategies.Past((IRowLandmark)_subject!)),
-        StepKind.RightOf => Reoffset<T>(subject, OffsetStrategies.Past((IColumnLandmark)_subject!)),
-        StepKind.OffsetBy => Reoffset<T>(subject, (IOffsetStrategy)_subject!),
-
-        // Movements compose onto whatever offset the projection already carries.
-        StepKind.Down => Move<T>(subject, OffsetStrategies.ExplicitOffset(0, _count)),
-        StepKind.Right => Move<T>(subject, OffsetStrategies.ExplicitOffset(_count, 0)),
-        StepKind.AfterBlankRows => Move<T>(subject, OffsetStrategies.SkipBlankRows()),
-        StepKind.AfterBlankColumns => Move<T>(subject, OffsetStrategies.SkipBlankColumns()),
+        // Every offset kind composes onto an earlier pipeline offset, or starts from the origin.
+        StepKind.OnRow => Offset<T>(subject, OffsetStrategies.To((IRowLandmark)_subject!)),
+        StepKind.OnColumn => Offset<T>(subject, OffsetStrategies.To((IColumnLandmark)_subject!)),
+        StepKind.Below => Offset<T>(subject, OffsetStrategies.Past((IRowLandmark)_subject!)),
+        StepKind.RightOf => Offset<T>(subject, OffsetStrategies.Past((IColumnLandmark)_subject!)),
+        StepKind.OffsetBy => Offset<T>(subject, (IOffsetStrategy)_subject!),
+        StepKind.Down => Offset<T>(subject, OffsetStrategies.ExplicitOffset(0, _count)),
+        StepKind.Right => Offset<T>(subject, OffsetStrategies.ExplicitOffset(_count, 0)),
+        StepKind.AfterBlankRows => Offset<T>(subject, OffsetStrategies.SkipBlankRows()),
+        StepKind.AfterBlankColumns => Offset<T>(subject, OffsetStrategies.SkipBlankColumns()),
+        StepKind.SkipToFirstNonBlankCell => Offset<T>(subject, OffsetStrategies.SkipToFirstNonBlankCell()),
 
         // An extent replaces the projection's derived one.
         StepKind.Sized => (IProjection<T>)subject.Replaced(subject.Placement.WithArea((IAreaStrategy)_subject!)),
@@ -176,26 +155,24 @@ namespace Unrect.Projections
       };
     }
 
-    /// <summary>Replaces the offset, recording it as declared — the anchors and the strategy door.</summary>
-    private static IProjection<T> Reoffset<T>(ProjectionBase subject, IOffsetStrategy offset)
-      => (IProjection<T>)subject.Replaced(subject.Placement.WithOffset(offset));
-
     /// <summary>
-    /// Composes <paramref name="offset"/> onto the offset already there, or takes it as the offset if
-    /// there is none yet — the movements, which add to a position rather than answering it.
+    /// The one offset rule for every offset step: <paramref name="offset"/> composes onto an offset an
+    /// earlier pipeline stage declared (placement both <see cref="Placement.OffsetWasDeclared"/> and
+    /// <see cref="Placement.HasDeclaredOffset"/>), otherwise starts from the origin.
     /// </summary>
-    private static IProjection<T> Move<T>(ProjectionBase subject, IOffsetStrategy offset)
+    private static IProjection<T> Offset<T>(ProjectionBase subject, IOffsetStrategy offset)
     {
       var placement = subject.Placement;
-      var moved = placement.HasDeclaredOffset ? OffsetStrategies.Then(placement.Offset, offset) : offset;
+      var composeOntoBase = placement.OffsetWasDeclared && placement.HasDeclaredOffset;
+      var composed = composeOntoBase ? OffsetStrategies.Then(placement.Offset, offset) : offset;
 
-      return (IProjection<T>)subject.Replaced(placement.WithOffset(moved));
+      return (IProjection<T>)subject.Replaced(placement.WithOffset(composed));
     }
 
     public override string ToString() => _kind switch
     {
       StepKind.Down or StepKind.Right => $"{_kind}({_count})",
-      StepKind.AfterBlankRows or StepKind.AfterBlankColumns => $"{_kind}()",
+      StepKind.AfterBlankRows or StepKind.AfterBlankColumns or StepKind.SkipToFirstNonBlankCell => $"{_kind}()",
       _ => $"{_kind}({Describe(_subject)})",
     };
 

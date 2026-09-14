@@ -148,6 +148,43 @@ namespace Unrect.Projections
       => Cloned<TProjection>(Base(projection).Renamed(name ?? throw new ArgumentNullException(nameof(name))));
 
     /// <summary>
+    /// Calls the projection <paramref name="name"/> in a failure or diagnostic path: the node renders
+    /// that label unquoted, as the kind of thing it is rather than as the factory that built it, and
+    /// it is opaque — a wrapper that would otherwise contribute no segment claims one here.
+    /// <para>
+    /// The label sits beside <c>.Named</c> rather than replacing it, so a unit that is also named
+    /// renders <c>label:name</c> — <c>Table:fruit</c>.
+    /// </para>
+    /// <para>
+    /// It folds nothing on its own. What collapses a path is <see cref="AsScaffolding"/>, marked on
+    /// the parts a factory assembled, and the uncollapsed path is kept on
+    /// <c>ProjectionException.FullPath</c> and <c>ProjectionDiagnostic.FullPath</c> either way.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="TProjection">The projection's own type, handed back unchanged.</typeparam>
+    /// <param name="projection">The declaration.</param>
+    /// <param name="name">What a path and a subject should call the unit.</param>
+    public static TProjection AsUnit<TProjection>(this TProjection projection, string name)
+      where TProjection : class, IProjection
+      => Cloned<TProjection>(Base(projection).AsUnitBoundary(name ?? throw new ArgumentNullException(nameof(name))));
+
+    /// <summary>
+    /// Marks the projection a composition's internal plumbing: in a failure or diagnostic path it
+    /// contributes no segment of its own, carrying only its occurrence index up onto the nearest
+    /// segment that was kept, while the full uncollapsed path keeps it for drill-through.
+    /// <para>
+    /// This is what a factory marks the parts it assembles with, so a declaration the user wrote as
+    /// one thing reads as one thing. Marking a projection the user wrote would hide it from every
+    /// path that goes through it.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="TProjection">The projection's own type, handed back unchanged.</typeparam>
+    /// <param name="projection">The declaration.</param>
+    public static TProjection AsScaffolding<TProjection>(this TProjection projection)
+      where TProjection : class, IProjection
+      => Cloned<TProjection>(Base(projection).AsScaffolding());
+
+    /// <summary>
     /// Falls back to <paramref name="fallback"/> when this projection fails, recording a
     /// <c>Warning</c> that carries the failing projection's own path, location, and problem.
     /// <para>

@@ -19,7 +19,7 @@ namespace Unrect.Projections
 
     public override ProjectionResult<T> Project(ISpace extent, ProjectionContext context)
     {
-      var value = Projection(new CellBlock(extent, context.Origin));
+      var value = Projection(new CellBlock(extent, context));
 
       // The extent is measured after the projection has run, never before: on a bound still being
       // discovered, asking first would settle it before the projection had read a row.

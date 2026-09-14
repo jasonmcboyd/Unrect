@@ -96,7 +96,7 @@ namespace Unrect.Projections
         return false;
       }
 
-      var inner = availableSpace.GetSubspace(offset);
+      var inner = BoundedSpace.Tail(availableSpace, offset);
       var scope = projection.IsTransparent ? context.Advance(offset) : context.Descend(projection, offset);
 
       if (projection.Placement.Area is null)
@@ -156,14 +156,14 @@ namespace Unrect.Projections
     /// Beginning the scan is the strategy call this replaces, so it fails exactly as measuring
     /// would.
     /// <para>
-    /// <b>What this buys, and where it stops.</b> Only a LEAF extent stays unresolved for long. The
-    /// moment a bound extent is handed to a composite, placing that composite's first child runs
-    /// <see cref="Exceeds"/> against it and then slices it with <c>GetSubspace(offset)</c> — two
-    /// questions about the parent's height, both asked before any child projects — so a
-    /// <c>.Sized(RowsWhileAnyValue())</c> on a flow or an overlay resolves in full and immediately.
-    /// Making those two sites bound-aware is future work, deliberately not attempted here; the
-    /// limit is pinned by <c>LazyDenotationTests</c>' census so that lifting it has to be a
-    /// decision.
+    /// <b>What this buys, and where it stops.</b> A composite streams over a bound: placing a child
+    /// asks <see cref="Exceeds"/> whether there is a row at the offset, and slices the extent with
+    /// <see cref="BoundedSpace.Tail"/>, which keeps an unsettled height unsettled. What still
+    /// settles a bound in full is a strategy reading <see cref="ISpace.Area"/> — which is what a
+    /// DECLARED area on the child is, since the strategy is handed the extent and asks it how tall
+    /// it is. So a shape that knows its own shape slices before it declares: a tiler cuts a band of
+    /// its stride and hands that measured band down, where a <c>.Sized(RowsWhileAnyValue())</c>
+    /// child of the same flow measures the whole tail first.
     /// </para>
     /// </summary>
     private static BoundedSpace? Bind(IProjection projection, ISpace inner, ProjectionContext scope, bool strict)
@@ -189,7 +189,7 @@ namespace Unrect.Projections
       // defined as — so the only way a discovered extent can fail to fit is its width, and saying
       // so needs the height the eager reading would have measured. Declining to bind hands that one
       // case to the measured path below, which is the only place that reports it.
-      if (scan.Width > inner.Area.Width)
+      if (scan.Width > BoundedSpace.WidthOf(inner))
         return null;
 
       return new BoundedSpace(inner, scan, exception => AreaFailure(scope, projection, inner, exception));
@@ -300,8 +300,11 @@ namespace Unrect.Projections
     // an unwrapped OutOfMemoryException is not a ProjectionException, so no tolerance boundary
     // catches it either. The property that matters holds by both routes: it is never absorbed.
 
+    // Asked as "is there a row at size.Height - 1" rather than "how tall are you": the same answer
+    // on a measured extent, and one row rather than all of them on one still being discovered.
     private static bool Exceeds(Size size, ISpace space)
-      => size.Width > space.Area.Width || size.Height > space.Area.Height;
+      => size.Width > BoundedSpace.WidthOf(space)
+      || (size.Height > 0 && !BoundedSpace.HasRow(space, size.Height - 1));
 
     private static string Describe(Size size) => $"{size.Width}x{size.Height}";
 

@@ -141,16 +141,53 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void AMovementComposesOntoTheAnchor()
+    public void AMovementReplacesTheAnchor()
     {
+      // The uniform offset-replace law:
+      // a bare declared movement REPLACES a shape's own constructor default and starts the chain from
+      // the origin — it does not compose onto the default. Fields' default self-anchors on its first
+      // label (Then(To(ColumnWhere), To(RowWhere))), so this pins the law for Fields the same way
+      // PlacementTests pins it for Table.
+      //
+      // The fixture is DISCRIMINATING — the anchor is NOT at row 0. Row 0 is blank; the first "EIN:"
+      // label sits at row 1 and a second at row 2, so replace and compose land on different rows and
+      // the pin cannot pass under both semantics:
+      //   * REPLACE (the law): Down(1) discards the self-anchor and lands at origin + 1 = row 1,
+      //     reading "target".
+      //   * COMPOSE (the retired semantics): the anchor would find the first label (row 1), then
+      //     Down(1) would carry on to row 2, reading "other".
       var space = Mixed(new object?[,]
       {
-        { "EIN:", "first" },
-        { "EIN:", "second" },
+        { null, null },
+        { "EIN:", "target" },
+        { "EIN:", "other" },
       });
 
-      // The anchor finds row 0; Down(1) carries on from there to the second card.
-      Assert.Equal("second", Down(1).Of(Fields(Field("EIN"))).Map(space).Values.Single().GetString());
+      // Non-vacuous: the two semantics read different cells, so a green here is the replace law and
+      // not a coincidence. (This is the very trap the old AMovementComposesOntoTheAnchor fell into —
+      // its anchor resolved to row 0, where replace (origin+1) and compose (anchor@0 + 1) coincide.)
+      Assert.Equal("target", Down(1).Of(Fields(Field("EIN"))).Map(space).Values.Single().GetString());
+    }
+
+    [Fact]
+    public void ExplicitlyChainedMovementsComposeWithinThePipeline()
+    {
+      // The other half of the same law (spec §7 scenario 3, mirroring the Table
+      // SkipToFirstNonBlankCell().Right(1) compose pin in PlacementTests): a movement composes only
+      // onto an offset the pipeline actually declared. OffsetBy(SkipRows(1)) replaces the self-anchor
+      // AND marks the offset declared, so Down(1) then composes onto it rather than replacing it.
+      var space = Mixed(new object?[,]
+      {
+        { null, null },
+        { "EIN:", "target" },
+        { "EIN:", "other" },
+      });
+
+      // SkipRows(1) -> row 1, then Down(1) COMPOSES -> row 2 -> "other". Were each step to replace,
+      // only the last (row 1 -> "target") would stand, so the composition is observable here.
+      Assert.Equal(
+        "other",
+        OffsetBy(SkipRows(1)).Down(1).Of(Fields(Field("EIN"))).Map(space).Values.Single().GetString());
     }
 
     [Fact]

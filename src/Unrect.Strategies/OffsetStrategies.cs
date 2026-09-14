@@ -50,6 +50,21 @@ namespace Unrect.Strategies
       => SkipColumnsWhileAll(v => v.IsBlank);
 
     /// <summary>
+    /// Onto the first non-blank cell scanning row-major from the top-left — down to the first row
+    /// that carries content, then across it to its first non-blank cell. The lazy corner heuristic:
+    /// a row at a time, reading across only as far as it takes to find content, never down a column.
+    /// <para>
+    /// It finds the first content row's first non-blank cell, the region's true corner only when
+    /// the region is top-left-aligned; a ragged region whose lower rows reach further left is the
+    /// accepted miss. An entirely
+    /// blank space resolves to its end, an empty subspace, exactly as <see cref="SkipBlankRows"/>
+    /// does.
+    /// </para>
+    /// </summary>
+    public static IOffsetStrategy SkipToFirstNonBlankCell()
+      => new SkipToFirstNonBlankCellStrategy();
+
+    /// <summary>
     /// Sequences <paramref name="offsets"/>: each is resolved against the space the one before it
     /// left, and the displacements sum — so <c>Then(SkipBlankRows(), ExplicitOffset(0, 1))</c>
     /// reads as "past the blank band, then one more row".

@@ -45,7 +45,7 @@ namespace PlacementGauntlet
         ReportDate: v.Next(Date()),
         ReportId:   v.Next(Text())));
 
-      Func<CaptionMap, IProjection<ISpace, PlainSummaryRow>> plainRow = captions => Overlay(o => new PlainSummaryRow(
+      Func<LabelMap, IProjection<ISpace, PlainSummaryRow>> plainRow = captions => Overlay(o => new PlainSummaryRow(
         Investor:   o.Next(Right(captions["Investors"]).Text()),
         EndBalance: o.Next(Right(captions["End Balance"]).Decimal())));
 

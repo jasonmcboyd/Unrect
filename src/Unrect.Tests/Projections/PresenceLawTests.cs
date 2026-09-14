@@ -13,26 +13,25 @@ using static Unrect.Tests.ProjectionTestSpaces;
 namespace Unrect.Tests.Projections
 {
   /// <summary>
-  /// Presence — what kind of something, or of nothing, a projection made of its extent — pinned as
-  /// the spec states it (<c>docs/design/presence-and-unit-spec.md</c>, DECIDED 2026-09-09). Four
-  /// claims, in the order the spec makes them:
+  /// Presence — what kind of something, or of nothing, a projection made of its extent. Four
+  /// claims:
   /// <list type="number">
-  /// <item>§4's classification table, one law per row: which spelling reports which presence.</item>
-  /// <item>The composite join rule from the status header — <em>Read if any child Read, else Empty;
+  /// <item>The classification table, one law per row: which spelling reports which presence.</item>
+  /// <item>The composite join rule — <em>Read if any child Read, else Empty;
   /// Absorbed arises only at tolerance boundaries</em> — over both layouts.</item>
   /// <item>The repetition's exit reasons, which are the whole reason the enum exists: an item that
   /// was <see cref="Presence.Empty"/> and one that was <see cref="Presence.Absorbed"/> both end the
-  /// run, and only the second is a declaration smell the repeat says anything about (D2).</item>
-  /// <item>The compatibility law behind the amended D5 — <em>presence explains a stop, the extent
+  /// run, and only the second is a declaration smell the repeat says anything about.</item>
+  /// <item>The compatibility law — <em>presence explains a stop, the extent
   /// decides one</em> — pinned on the shape that caught the earlier rule out: a tolerated item that
   /// still consumes its extent goes on repeating, and says nothing.</item>
-  /// <item>The flow-unit law over the internal ε (D4): a unit child is deletable.</item>
+  /// <item>The flow-unit law over the internal ε: a unit child is deletable.</item>
   /// </list>
   /// <para>
   /// Presence is internal, so it is read through <c>Apply</c>'s result — the same value the engine,
   /// the layouts and the repeat guard act on. These are plain asserts rather than
   /// <see cref="Observations"/> comparisons because presence is not one of the observation's facets:
-  /// it is metadata a caller cannot see, and the differential obligation (§6) is precisely that it
+  /// it is metadata a caller cannot see, and the differential obligation is precisely that it
   /// changes none of the facets. The harness is used where the claim IS an equivalence — the unit
   /// law — and the negative pins there name the specific difference, per its one rule.
   /// </para>
@@ -285,6 +284,31 @@ namespace Unrect.Tests.Projections
 
       Assert.Empty(result.Value);
       Assert.DoesNotContain(result.Diagnostics, d => d.Message.Contains("absorbed"));
+    }
+
+    [Fact]
+    public void ARepeatOverAnAcrossZeroBandEndsBeforeAttemptingItsItemRatherThanTrippingTolerance()
+    {
+      // The across-axis guard, pinned on the case it was added for. A horizontal repeat over a band
+      // with zero width has no across-extent to hand any occurrence, so the walk must END before the
+      // item is attempted. Without the guard the item runs against a zero-across slice, its Optional
+      // absorbs the failure, the productivity guard trips on the standstill, and a spurious D2 Info
+      // fires — an item nobody could have read is reported as a tolerated ending.
+      var band = GridSpace.Create(new[,] { { "a", "b", "c" } }).GetSubspace(new Offset(0, 0), new Area(new Size(3, 0)));
+
+      var horizontal = HorizontalRepeat(Text().Optional()).MapWithDiagnostics(band);
+
+      Assert.Empty(horizontal.Value);
+      Assert.DoesNotContain(horizontal.Diagnostics, d => d.Message.Contains("absorbed"));
+
+      // The mirror across the axis is unaffected and stays so: a vertical repeat over a zero-HEIGHT
+      // band ends the same quiet way, so the guard reads the same on both axes.
+      var column = GridSpace.Create(new[,] { { "a" }, { "b" }, { "c" } }).GetSubspace(new Offset(0, 0), new Area(new Size(1, 0)));
+
+      var vertical = VerticalRepeat(Text().Optional()).MapWithDiagnostics(column);
+
+      Assert.Empty(vertical.Value);
+      Assert.DoesNotContain(vertical.Diagnostics, d => d.Message.Contains("absorbed"));
     }
 
     [Fact]

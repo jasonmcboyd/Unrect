@@ -19,7 +19,9 @@ namespace Unrect.Projections
       ISpace space,
       DiagnosticCollector diagnostics,
       UseSite site,
-      UseSite pending)
+      UseSite pending,
+      LabelScope? labels,
+      int? ordinal)
     {
       Parent = parent;
       Space = space;
@@ -29,6 +31,8 @@ namespace Unrect.Projections
       Diagnostics = diagnostics;
       Site = site;
       Pending = pending;
+      Labels = labels;
+      Ordinal = ordinal;
     }
 
     /// <summary>
@@ -40,7 +44,7 @@ namespace Unrect.Projections
       if (space is null)
         throw new ArgumentNullException(nameof(space));
 
-      return new ProjectionContext(null, null, null, default, space, new DiagnosticCollector(), default, default);
+      return new ProjectionContext(null, null, null, default, space, new DiagnosticCollector(), default, default, null, null);
     }
 
     private ProjectionContext? Parent { get; }
@@ -57,6 +61,17 @@ namespace Unrect.Projections
 
     /// <summary>Which occurrence of <see cref="Projection"/> this is, where that is meaningful (e.g. inside a repeat).</summary>
     public int? Index { get; }
+
+    /// <summary>
+    /// The occurrence number the nearest enclosing repeat is on, or null outside one. Unlike
+    /// <see cref="Index"/> — which names the path segment and is cleared on <see cref="Descend"/> so
+    /// a repeat's item does not inherit its parent's ordinal into its own children — this is copied
+    /// unchanged through <see cref="Descend"/> and so persists into the whole subtree the repeat
+    /// manufactures. That is what lets a decoupled record recover the body row it is projecting when
+    /// the path index has already been consumed by the repeat's own segment. A nested repeat
+    /// overwrites it, so the nearest enclosing one wins.
+    /// </summary>
+    internal int? Ordinal { get; }
 
     /// <summary>Where this context sits, relative to the space the root <c>Map</c> call was given.</summary>
     public Offset Origin { get; }
@@ -78,12 +93,43 @@ namespace Unrect.Projections
     private UseSite Pending { get; }
 
     /// <summary>
+    /// The ambient label environment: a stack of <see cref="LabelScope"/> cons-cells a labelling
+    /// projection pushes for its declaration subtree, or null where none is in scope. Copied
+    /// unchanged through every in-tree move, so a label reaches every descendant a labelling
+    /// projection manufactures — the scope is the declaration subtree, not any region of the sheet.
+    /// </summary>
+    private LabelScope? Labels { get; }
+
+    /// <summary>
+    /// Pushes <paramref name="source"/> as the nearest set of labels along <paramref name="axis"/>,
+    /// capturing this context's <see cref="Origin"/> as the frame the labels' ordinals are relative
+    /// to. A leaf that later resolves one of these labels translates the ordinal from that captured
+    /// frame to its own.
+    /// </summary>
+    internal ProjectionContext PushLabels(LabelAxis axis, ILabelSource source)
+      => new ProjectionContext(Parent, Projection, Index, Origin, Space, Diagnostics, Site, Pending, new LabelScope(axis, source, Origin, Labels), Ordinal);
+
+    /// <summary>
+    /// The nearest labels along <paramref name="axis"/>, or null when none is in scope. Walks the
+    /// stack from the inside out, so an inner scope shadows an outer one on the same axis; a scope on
+    /// a different axis is skipped, so a row-labelled and a column-labelled scope coexist.
+    /// </summary>
+    internal LabelScope? NearestLabels(LabelAxis axis)
+    {
+      for (var scope = Labels; scope is not null; scope = scope.Outer)
+        if (scope.Axis == axis)
+          return scope;
+
+      return null;
+    }
+
+    /// <summary>
     /// Enters <paramref name="projection"/>, which claims whatever use site was waiting for it.
     /// Nothing is left over: a projection's own children are labelled by their own use sites, not
     /// by its.
     /// </summary>
     public ProjectionContext Descend(IProjection projection, Offset offset)
-      => new ProjectionContext(this, projection, null, Origin + offset, Space, Diagnostics, Pending, default);
+      => new ProjectionContext(this, projection, null, Origin + offset, Space, Diagnostics, Pending, default, Labels, Ordinal);
 
     /// <summary>
     /// Moves the origin without adding a path segment — how layouts and repeats track their cursor.
@@ -92,11 +138,11 @@ namespace Unrect.Projections
     /// reader would name.
     /// </summary>
     public ProjectionContext Advance(Offset offset)
-      => new ProjectionContext(Parent, Projection, Index, Origin + offset, Space, Diagnostics, Site, Pending);
+      => new ProjectionContext(Parent, Projection, Index, Origin + offset, Space, Diagnostics, Site, Pending, Labels, Ordinal);
 
     /// <summary>Declares where the next child was written, for it to claim on the way in.</summary>
     internal ProjectionContext WithUseSite(UseSite site)
-      => new ProjectionContext(Parent, Projection, Index, Origin, Space, Diagnostics, Site, site);
+      => new ProjectionContext(Parent, Projection, Index, Origin, Space, Diagnostics, Site, site, Labels, Ordinal);
 
     /// <summary>Where this context sits, expressed as an A1-style address against <paramref name="space"/>'s extent.</summary>
     public ProjectionLocation Locate(ISpace space) => ProjectionLocation.At(Origin, space.Area.Size);
@@ -128,7 +174,15 @@ namespace Unrect.Projections
         isFault);
 
     internal ProjectionContext WithIndex(int index)
-      => new ProjectionContext(Parent, Projection, index, Origin, Space, Diagnostics, Site, Pending);
+      => new ProjectionContext(Parent, Projection, index, Origin, Space, Diagnostics, Site, Pending, Labels, Ordinal);
+
+    /// <summary>
+    /// Stamps the occurrence number a repeat is applying, so the item's whole subtree can recover it
+    /// through <see cref="Ordinal"/>. Distinct from <see cref="WithIndex"/>, which sets the
+    /// path-rendering index: this survives the <see cref="Descend"/> into the item, that one does not.
+    /// </summary>
+    internal ProjectionContext WithOrdinal(int ordinal)
+      => new ProjectionContext(Parent, Projection, Index, Origin, Space, Diagnostics, Site, Pending, Labels, ordinal);
 
     internal ProjectionException Failure(
       IProjection projection,
@@ -137,16 +191,22 @@ namespace Unrect.Projections
       Size? requested,
       Exception? inner,
       bool isFault = false)
-      => new ProjectionException(Describe(projection, SiteOf(projection)), problem, Render(projection), Locate(space), requested, projection, inner, isFault);
+    {
+      var chain = Chain(projection);
+      var (path, subject) = Collapse(chain);
+
+      return new ProjectionException(subject, problem, path, RenderFull(chain), Locate(space), requested, projection, inner, isFault);
+    }
 
     /// <summary>
     /// Records something about <paramref name="projection"/> that happened here.
     /// </summary>
     internal void Report(DiagnosticSeverity severity, IProjection projection, string message, ISpace space)
     {
-      var reported = Through(projection);
+      var chain = Chain(Through(projection));
+      var (path, subject) = Collapse(chain);
 
-      Diagnostics.Add(new ProjectionDiagnostic(severity, Describe(reported, SiteOf(projection)), message, Render(reported), Locate(space)));
+      Diagnostics.Add(new ProjectionDiagnostic(severity, subject, message, path, RenderFull(chain), Locate(space)));
     }
 
     /// <summary>
@@ -168,6 +228,7 @@ namespace Unrect.Projections
         subject ?? failure.Subject,
         message ?? failure.Problem,
         failure.Path,
+        failure.FullPath,
         failure.Location));
 
     internal static string Describe(IProjection projection) => Describe(projection, default);
@@ -200,45 +261,123 @@ namespace Unrect.Projections
     internal static string DescribeThrough(IProjection projection) => Describe(Through(projection));
 
     /// <summary>
-    /// Renders the chain of enclosing projections, ending at <paramref name="failing"/> — which is
-    /// a child of this context when a projection fails before it is descended into.
+    /// The chain of enclosing projections, root to leaf, ending at <paramref name="failing"/> — a
+    /// child of this context when a projection fails before it is descended into. Transparent
+    /// wrappers say nothing about themselves and are left out.
     /// </summary>
-    private string Render(IProjection? failing)
+    private List<PathNode> Chain(IProjection? failing)
     {
-      var segments = new List<string>();
+      var chain = new List<PathNode>();
       IProjection? deepest = null;
-      var deepestSite = default(UseSite);
 
       for (var context = this; context is not null; context = context.Parent)
       {
         if (context.Projection is not IProjection projection || projection.IsTransparent)
           continue;
 
-        segments.Insert(0, Describe(projection, context.Site) + (context.Index is int index ? $"[{index}]" : string.Empty));
-
-        if (deepest is null)
-        {
-          deepest = projection;
-          deepestSite = context.Site;
-        }
+        chain.Insert(0, new PathNode(projection, context.Site, context.Index));
+        deepest ??= projection;
       }
 
       if (failing is not null && !ReferenceEquals(deepest, failing))
-      {
-        segments.Add(Describe(failing, Pending));
-        deepest = failing;
-        deepestSite = Pending;
-      }
+        chain.Add(new PathNode(failing, Pending, null));
 
-      if (deepest is null)
+      return chain;
+    }
+
+    /// <summary>
+    /// The whole path with no boundary folded — a debugger drill-through. A boundary renders its unit
+    /// name unquoted; everything else renders as it always has, including the trailing kind suffix a
+    /// named leaf earns.
+    /// </summary>
+    private static string RenderFull(List<PathNode> chain)
+    {
+      if (chain.Count == 0)
         return "(root)";
 
-      // A name hides what the projection is, so the last segment says so — whether the name was
-      // declared on the projection or read off the use site, since both render as a quoted name.
-      if (deepest.Name is not null || deepestSite.Name is not null)
-        segments[segments.Count - 1] += $" ({Kind(deepest.Description)})";
+      var segments = new List<string>(chain.Count);
+      foreach (var node in chain)
+        segments.Add(Segment(node));
 
+      ApplyKindSuffix(segments, chain[chain.Count - 1]);
       return string.Join(" -> ", segments);
+    }
+
+    /// <summary>
+    /// The collapsed path and its subject. A node a factory marked scaffolding contributes no
+    /// segment, carrying only its occurrence index up onto the nearest segment that was kept;
+    /// everything the declaration wrote keeps its own. With no scaffolding in the chain nothing
+    /// folds, so this is byte-identical to <see cref="RenderFull"/>, kind suffix and all. The
+    /// subject always names the deepest surviving segment, so it and the collapsed path's tail
+    /// agree.
+    /// </summary>
+    private static (string Path, string Subject) Collapse(List<PathNode> chain)
+    {
+      if (chain.Count == 0)
+        return ("(root)", "(root)");
+
+      var segments = new List<string>();
+      var lastKept = 0;
+      var surviving = chain[0];
+
+      foreach (var node in chain)
+      {
+        if (!IsScaffolding(node.Projection))
+          Keep(node);
+        // With nothing kept above it there is no segment to carry the index up onto, so it is
+        // dropped rather than moved down onto whatever the fold keeps next; RenderFull still has it.
+        else if (node.Index is int index && segments.Count > 0)
+          segments[lastKept] += $"[{index}]";
+      }
+
+      // Every node was scaffolding, so the fold left no segment to speak of or to suffix. The
+      // subject still names the root, which is the one thing left that a reader can act on.
+      if (segments.Count == 0)
+        return ("(root)", SegmentName(surviving));
+
+      // The suffix says what a quoted name hides, and the deepest node is what it would say — so
+      // scaffolding there has no name to speak for and nothing to add.
+      if (!IsScaffolding(chain[chain.Count - 1].Projection))
+        ApplyKindSuffix(segments, chain[chain.Count - 1]);
+
+      return (string.Join(" -> ", segments), SegmentName(surviving));
+
+      void Keep(PathNode kept)
+      {
+        segments.Add(Segment(kept));
+        lastKept = segments.Count - 1;
+        surviving = kept;
+      }
+    }
+
+    private static bool IsScaffolding(IProjection projection)
+      => projection is ProjectionBase node && node.IsUnitScaffolding;
+
+    /// <summary>What a projection contributes to a path: its name, plus its occurrence index if it has one.</summary>
+    private static string Segment(PathNode node)
+      => SegmentName(node) + (node.Index is int index ? $"[{index}]" : string.Empty);
+
+    /// <summary>
+    /// A boundary's unit label, unquoted, joined to its instance name as <c>label:name</c> when it
+    /// also carries one; anything else as a reader would name it.
+    /// </summary>
+    private static string SegmentName(PathNode node)
+    {
+      if (!node.Projection.IsUnitBoundary)
+        return Describe(node.Projection, node.Site);
+
+      var label = ((ProjectionBase)node.Projection).UnitName!;
+      return node.Projection.Name is string instance ? $"{label}:{instance}" : label;
+    }
+
+    /// <summary>
+    /// A name hides what the projection is, so the last segment says so — whether the name was
+    /// declared on the projection or read off the use site, since both render as a quoted name.
+    /// </summary>
+    private static void ApplyKindSuffix(List<string> segments, PathNode deepest)
+    {
+      if (deepest.Projection.Name is not null || deepest.Site.Name is not null)
+        segments[segments.Count - 1] += $" ({Kind(deepest.Projection.Description)})";
     }
 
     private static string Kind(string description)
@@ -246,6 +385,27 @@ namespace Unrect.Projections
       var parenthesis = description.IndexOf('(');
       return parenthesis < 0 ? description : description.Substring(0, parenthesis);
     }
+  }
+
+  /// <summary>
+  /// One projection in a rendered path: the projection, the use site that labels it, and its
+  /// occurrence index. Materialised once per failure so the collapsed path and the full path render
+  /// the same chain two ways.
+  /// </summary>
+  internal readonly struct PathNode
+  {
+    public PathNode(IProjection projection, UseSite site, int? index)
+    {
+      Projection = projection;
+      Site = site;
+      Index = index;
+    }
+
+    public IProjection Projection { get; }
+
+    public UseSite Site { get; }
+
+    public int? Index { get; }
   }
 
   /// <summary>
@@ -304,5 +464,58 @@ namespace Unrect.Projections
 
     private static bool IsLetterOrUnderscore(char character)
       => (character >= 'A' && character <= 'Z') || (character >= 'a' && character <= 'z') || character == '_';
+  }
+
+  /// <summary>
+  /// Which axis a set of labels names: a <see cref="Column"/> label answers a column, translating
+  /// along <c>Offset.Width</c>; a <see cref="Row"/> label answers a row, translating along
+  /// <c>Offset.Height</c>. Kept separate on the stack so a row-labelled and a column-labelled scope
+  /// coexist rather than shadow one another.
+  /// </summary>
+  internal enum LabelAxis
+  {
+    Column,
+    Row,
+  }
+
+  /// <summary>
+  /// Something that answers a label with the ordinals carrying it, in the frame it was captured in.
+  /// A <c>TableView</c> is one (its header); step 2's public <c>LabelMap</c> will be another, so the
+  /// context shape is already what a scope-introducer pushes.
+  /// </summary>
+  internal interface ILabelSource
+  {
+    /// <summary>Every label along the axis, in order — the values a resolver lists when a lookup misses.</summary>
+    IReadOnlyList<string> Labels { get; }
+
+    /// <summary>The ordinals carrying <paramref name="label"/>, in the captured frame; empty when none does.</summary>
+    IReadOnlyList<int> IndicesOf(string label);
+  }
+
+  /// <summary>
+  /// One entry in the ambient label environment: a set of labels along an axis, the origin they were
+  /// captured at, and the scope it shadows. Immutable — a cons-cell in the context's label stack.
+  /// </summary>
+  internal sealed class LabelScope
+  {
+    public LabelScope(LabelAxis axis, ILabelSource source, Offset captureOrigin, LabelScope? outer)
+    {
+      Axis = axis;
+      Source = source;
+      CaptureOrigin = captureOrigin;
+      Outer = outer;
+    }
+
+    /// <summary>Which axis these labels name.</summary>
+    public LabelAxis Axis { get; }
+
+    /// <summary>Where the labels' ordinals are read — the answer to <c>IndicesOf</c> is in this frame.</summary>
+    public ILabelSource Source { get; }
+
+    /// <summary>The <c>Origin</c> the scope was pushed at, the frame its ordinals translate from.</summary>
+    public Offset CaptureOrigin { get; }
+
+    /// <summary>The scope this one shadows, or null at the bottom of the stack.</summary>
+    public LabelScope? Outer { get; }
   }
 }

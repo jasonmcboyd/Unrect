@@ -29,7 +29,7 @@ namespace Unrect.Projections
       if (Orientation == Orientation.Vertical && size.Width != 1)
         throw context.Failure($"a Column must be exactly one column wide; this one is {size.Width} columns wide", extent);
 
-      return new ProjectionResult<T>(Projection(new CellStrip(extent, Orientation, context.Origin)), size);
+      return new ProjectionResult<T>(Projection(new CellStrip(extent, Orientation, context)), size);
     }
   }
 }

@@ -44,7 +44,7 @@ namespace PlacementGauntlet
         ReportDate: v.Next(Date()),
         ReportId:   v.Next(Text())));
 
-      Func<CaptionMap, IProjection<ISpace, PlainSummaryRow>> plainRow = captions => Overlay(o => new PlainSummaryRow(
+      Func<LabelMap, IProjection<ISpace, PlainSummaryRow>> plainRow = captions => Overlay(o => new PlainSummaryRow(
         Investor:   o.Next(Right(captions["Investors"]).Text()),
         EndBalance: o.Next(Right(captions["End Balance"]).Decimal())));
 
@@ -71,7 +71,7 @@ namespace PlacementGauntlet
     /// </summary>
     public static IProjection<ISpace, KSection> MissingAnchor { get; } = DeclareMissingAnchor();
 
-    private static IProjection<ISpace, KLine> KLineRow(CaptionMap captions) => Overlay(o => new KLine(
+    private static IProjection<ISpace, KLine> KLineRow(LabelMap captions) => Overlay(o => new KLine(
       Code: o.Next(Right(captions["Line"]).Text()),
       Amount: o.Next(Right(captions["Amount"]).Decimal())));
 
@@ -87,7 +87,7 @@ namespace PlacementGauntlet
 
     private static IProjection<ISpace, K1Report> DeclareK1()
     {
-      Func<CaptionMap, IProjection<ISpace, KLine>> kLine = captions => Overlay(o => new KLine(
+      Func<LabelMap, IProjection<ISpace, KLine>> kLine = captions => Overlay(o => new KLine(
         Code:   o.Next(Right(captions["Line"]).Text()),
         Amount: o.Next(Right(captions["Amount"]).Decimal())));
 

@@ -8,7 +8,7 @@ using Unrect.Projections;
 namespace PlacementGauntlet.Staged
 {
   /// <summary>
-  /// SPIKE — <b>Entry C, the file-scoped vocabulary</b> (<c>staged-placement-note.md</c> §5.5). A
+  /// SPIKE — <b>Entry C, the file-scoped vocabulary</b>. A
   /// closed generic static class imported once, which answers <typeparamref name="TSpace"/> at the
   /// top of the file, where C# already puts file-level bindings:
   /// <code>
@@ -80,14 +80,14 @@ namespace PlacementGauntlet.Staged
       IOffsetStrategy? separatedBy = null,
       int atLeast = 0,
       [CallerArgumentExpression("item")] string? declared = null)
-      => Scope.VerticalRepeat(item, separatedBy, atLeast, declared);
+      => Scope.VerticalRepeat(item, separatedBy, atLeast, declared: declared);
 
     public static IProjection<TSpace, IReadOnlyList<T>> HorizontalRepeat<T>(
       IProjection<TSpace, T> item,
       IOffsetStrategy? separatedBy = null,
       int atLeast = 0,
       [CallerArgumentExpression("item")] string? declared = null)
-      => Scope.HorizontalRepeat(item, separatedBy, atLeast, declared);
+      => Scope.HorizontalRepeat(item, separatedBy, atLeast, declared: declared);
 
     public static IProjection<TSpace, T> Choice<T>(params IProjection<TSpace, T>[] alternatives)
       => Scope.Choice(alternatives);
@@ -111,7 +111,7 @@ namespace PlacementGauntlet.Staged
 
     public static IProjection<TSpace, IReadOnlyList<T>> Table<T>(
       int headerRows,
-      Func<CaptionMap, IProjection<TSpace, T>> eachRow,
+      Func<LabelMap, IProjection<TSpace, T>> eachRow,
       [CallerArgumentExpression("eachRow")] string? declared = null)
       => Scope.Table(headerRows, eachRow, declared);
 
@@ -333,7 +333,7 @@ namespace PlacementGauntlet.Staged
       /// <summary>A slot rung, to show that the whole family has to follow the one that split.</summary>
       public static IProjection<TSpace, IReadOnlyList<T>> Rows<T>(
         int headerRows,
-        Func<CaptionMap, IProjection<TSpace, T>> eachRow,
+        Func<LabelMap, IProjection<TSpace, T>> eachRow,
         [CallerArgumentExpression("eachRow")] string? declared = null)
         => Projection.Over<TSpace>().Table(headerRows, eachRow, declared);
     }

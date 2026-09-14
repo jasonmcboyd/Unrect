@@ -420,6 +420,6 @@ entered by rule rather than by measurement.
    over offsets has to decide whether that distinction is part of the algebra.
 3. **`Presence` is not observable at any level.** The absorbed/empty distinction that §4.3's table
    turns on is carried internally beside the consumed extent; the harness could see the *number*
-   (`0x0`) but never the *reason*. If the presence work of `presence-and-unit-spec.md` surfaces it,
+   (`0x0`) but never the *reason*. If the presence work surfaces it,
    the L-levels should gain it, and several `✗` cells in §2 would gain a sharper statement than
    "the consumed extents differ".

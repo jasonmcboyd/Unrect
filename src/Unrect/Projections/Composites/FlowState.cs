@@ -61,7 +61,7 @@ namespace Unrect.Projections
 
       try
       {
-        applied = ProjectionEngine.Apply(projection, Extent.GetSubspace(cursor), scope);
+        applied = ProjectionEngine.Apply(projection, BoundedSpace.Tail(Extent, cursor), scope);
       }
       catch (ProjectionException failure) when (FollowsAnEmptySibling(failure, cursor))
       {

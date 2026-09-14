@@ -40,14 +40,31 @@ namespace Unrect.Projections
 
     public override IReadOnlyList<IProjection> Children { get; }
 
+    /// <summary>
+    /// The walk. Every attempt is handed the tail from the cursor, left unsettled, so a repeat over
+    /// an extent whose height is still being discovered streams as far as its item lets it: an item
+    /// that derives its extent takes a band at a time.
+    /// <para>
+    /// The honest limit is an item with its OWN declared area: that area's strategy is handed the
+    /// tail and asks how tall it is — <c>Record</c>'s full-width row among them — which settles the
+    /// extent before the first occurrence.
+    /// </para>
+    /// </summary>
     public override ProjectionResult<IReadOnlyList<T>> Project(ISpace extent, ProjectionContext context)
     {
+      // The across axis, read without settling a discovered extent: a vertical walk asks the width,
+      // a horizontal one the height. HasBand probes only the along axis, so without this a band with
+      // nothing across it would attempt an item over empty space and trip the productivity guard.
+      var acrossExtent = Orientation == Orientation.Vertical
+        ? BoundedSpace.WidthOf(extent)
+        : extent.Area.Height;
+
       var values = new List<T>();
       var along = 0;
       var across = 0;
       var absorbed = false;
 
-      while (true)
+      while (acrossExtent > 0)
       {
         var mark = context.Diagnostics.Mark();
 
@@ -107,17 +124,23 @@ namespace Unrect.Projections
       var cursor = along;
       var reach = across;
 
-      if (values.Count > 0 && !TrySeparate(extent.GetSubspace(Step(cursor)), context, ref cursor, ref reach))
+      if (values.Count > 0 && !TrySeparate(BoundedSpace.Tail(extent, Step(cursor)), context, ref cursor, ref reach))
         return false;
 
-      var remaining = extent.GetSubspace(Step(cursor));
-
-      if (IsEmpty(remaining))
+      // A forward probe: the extent has a band at the cursor, asked one band at a time so a
+      // discovered extent advances its scan only as far as the reading has reached.
+      if (!HasBand(extent, cursor))
         return false;
+
+      // The tail from the cursor, left unsettled so an item that derives its extent reads only the
+      // band it takes.
+      var remaining = BoundedSpace.Tail(extent, Step(cursor));
 
       // The index belongs to the repeat's own segment; the label belongs to the item, which claims
-      // it on the way in. Descend clears it afterwards, so the item's own children are unaffected.
-      var scope = context.Advance(Step(cursor)).WithIndex(values.Count).WithUseSite(ItemSite);
+      // it on the way in. Descend clears the index afterwards, so the item's own children are
+      // unaffected. The ordinal is the same occurrence number stamped so it survives that Descend —
+      // it is how a decoupled record recovers which body row it is projecting.
+      var scope = context.Advance(Step(cursor)).WithIndex(values.Count).WithOrdinal(values.Count).WithUseSite(ItemSite);
 
       // Only the item's own placement stops the repetition; a failure deeper inside it is an
       // error, so intra-block format drift is loud rather than silently truncating.
@@ -167,7 +190,8 @@ namespace Unrect.Projections
         throw context.Failure(ProjectionEngine.Threw("separator", exception), remaining, exception, ProjectionEngine.IsFault(exception));
       }
 
-      if (offset.Width > remaining.Area.Width || offset.Height > remaining.Area.Height)
+      if (offset.Width > BoundedSpace.WidthOf(remaining)
+        || (offset.Height > 0 && !BoundedSpace.HasRow(remaining, offset.Height - 1)))
         return false;
 
       cursor += Along(offset.Size);
@@ -175,7 +199,11 @@ namespace Unrect.Projections
       return true;
     }
 
-    private static bool IsEmpty(ISpace space) => space.Area.Width == 0 || space.Area.Height == 0;
+    /// <summary>Whether <paramref name="extent"/> has a band at <paramref name="cursor"/> along the repeat's axis.</summary>
+    private bool HasBand(ISpace extent, int cursor)
+      => Orientation == Orientation.Vertical
+        ? BoundedSpace.HasRow(extent, cursor)
+        : cursor < BoundedSpace.WidthOf(extent);
 
     private Offset Step(int along) => Orientation == Orientation.Vertical ? new Offset(0, along) : new Offset(along, 0);
 
