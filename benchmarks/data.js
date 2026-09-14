@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789408532779,
+  "lastUpdate": 1789408533051,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -1944,6 +1944,72 @@ window.BENCHMARK_DATA = {
             "value": 1605181.5733173077,
             "unit": "ns",
             "range": "± 2303.507922175638"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "d06708df60e381758b11dde07836c674565409b6",
+          "message": "Merge experiment/record-primitive: streaming composites over a bound, the band tiler, Table composed from primitives\n\nThe labels-as-context primitives (ColumnLabels, WithColumnLabels, Record),\nSkipToFirstNonBlankCell, and the uniform offset law; the engine streaming a\ndiscovered bound through a composite (TailSpace, a bound-aware Exceeds, lazy\nflow and repeat slices); VerticalBands/HorizontalBands, the tiler — a\nrepeating fixed-dimension space, distinct from the pattern repeat;\nTable(headerRows, eachRow) composed over the tiler under a UnitProjection,\nwith AsScaffolding and a mark-driven path fold giving it the leaf's own\ndiagnostics; ColumnLabels self-contained, its header parse the one home in\nLabelMap.FromHeader; and the repeat returned to a pure walk, onBlank living\non the tiler alone.\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01Wk5ZXojzv4hibCXDkjRu3g",
+          "timestamp": "2026-09-14T17:43:35Z",
+          "tree_id": "1c80a0bed7aeb311bb6e1bdb0933ac5a05562434",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/d06708df60e381758b11dde07836c674565409b6"
+        },
+        "date": 1789408532990,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Strategies.RowsWhileAnyValue_FullHeight",
+            "value": 938534.6659458706,
+            "unit": "ns",
+            "range": "± 3178.0353262141366"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.RowsWhileAnyValue_Sparse",
+            "value": 909090.1068960336,
+            "unit": "ns",
+            "range": "± 2496.5786476720705"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_HitAt10Percent",
+            "value": 305571.8028041295,
+            "unit": "ns",
+            "range": "± 405.3577751294936"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_HitAt90Percent",
+            "value": 2748130.901785714,
+            "unit": "ns",
+            "range": "± 6103.477007026456"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_MissWholeGrid",
+            "value": 3175321.6751802885,
+            "unit": "ns",
+            "range": "± 6922.531236902856"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Until_BoundResolution",
+            "value": 3644230.1497395835,
+            "unit": "ns",
+            "range": "± 22716.60381939452"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.BlankRows_Skip",
+            "value": 1575911.7297712055,
+            "unit": "ns",
+            "range": "± 2571.7380256339957"
           }
         ]
       }
