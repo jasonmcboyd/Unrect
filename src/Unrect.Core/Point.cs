@@ -90,7 +90,7 @@ namespace Unrect.Core
     /// coordinates, so a space that hashes itself by value cannot make two addresses collide.
     /// </summary>
     public override int GetHashCode()
-      => Combine(RuntimeHelpers.GetHashCode(Space), Combine(Column, Row));
+      => Hashes.Combine(RuntimeHelpers.GetHashCode(Space), Hashes.Combine(Column, Row));
 
     /// <summary>Same as <see cref="Equals(Point{TSpace})"/>.</summary>
     public static bool operator ==(Point<TSpace> first, Point<TSpace> second) => first.Equals(second);
@@ -104,14 +104,5 @@ namespace Unrect.Core
     /// this is never an A1 address.
     /// </summary>
     public override string ToString() => $"({Column},{Row})";
-
-    /// <summary>Two hashes mixed into one, written out because <c>System.HashCode</c> is netstandard2.1 and up.</summary>
-    private static int Combine(int first, int second)
-    {
-      unchecked
-      {
-        return (first * -1521134295) + second;
-      }
-    }
   }
 }
