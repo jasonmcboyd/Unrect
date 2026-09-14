@@ -36,18 +36,24 @@ namespace Unrect.Projections
     // map of literals, which has no header cells to point at.
     private readonly IHeaderCitations? _header;
 
-    /// <summary>
-    /// Minted by <see cref="Projection.Table{T}(int, Func{LabelMap, IProjection{T}}, string)"/> and
-    /// by <see cref="Projection.ColumnLabels(int)"/>. A test wanting a real one can take the table's
-    /// own view through the bottom rung — <c>Table(1, table =&gt; table)</c> — and mint it from that.
-    /// </summary>
-    internal LabelMap(TableView table)
+    private LabelMap(ILabelSource source, IHeaderCitations? header)
     {
-      _source = table;
-      _header = table;
+      _source = source;
+      _header = header;
     }
 
-    private LabelMap(ILabelSource source) => _source = source;
+    /// <summary>
+    /// Parses <paramref name="header"/> into the labels a table binds by — the one home of the header
+    /// parse, read by both <see cref="Projection.ColumnLabels(int)"/> and a built-in <c>Table</c>, so
+    /// the two mint byte-identical labels, ordinals and citations. Both the label source and the
+    /// header-citation face are the same <see cref="HeaderLabels"/>.
+    /// </summary>
+    internal static LabelMap FromHeader(CellStrip header, ProjectionContext context)
+    {
+      var labels = new HeaderLabels(header, context);
+
+      return new LabelMap(labels, labels);
+    }
 
     /// <summary>
     /// A label map of known columns, for the headerless-known-layout case: <c>LabelMap.Of(("EIN", 0),
@@ -56,7 +62,7 @@ namespace Unrect.Projections
     /// </summary>
     /// <param name="labels">Each label and the ordinal it names, in the frame the labels are read.</param>
     public static LabelMap Of(params (string Label, int Index)[] labels)
-      => new LabelMap(new LiteralLabels(labels ?? throw new ArgumentNullException(nameof(labels))));
+      => new LabelMap(new LiteralLabels(labels ?? throw new ArgumentNullException(nameof(labels))), null);
 
     /// <summary>
     /// Each column's label, in column order and trimmed, with the empty string where a column carries
@@ -166,8 +172,68 @@ namespace Unrect.Projections
   }
 
   /// <summary>
+  /// A header strip parsed into its labels: the trimmed names in column order, the content-rule lookup
+  /// the primitive path resolves through, and the header cells the bind rung cites. It is the single
+  /// home of the header parse — both a table and <see cref="Projection.ColumnLabels(int)"/> read a
+  /// header through here.
+  /// </summary>
+  internal sealed class HeaderLabels : ILabelSource, IHeaderCitations
+  {
+    private readonly CellStrip _header;
+    private readonly ProjectionContext _context;
+
+    // Built once on first lookup: the content-rule map keyed by CellMatching.TextComparer, the rule
+    // matchers and Caption use, so a lookup here and a RowContaining elsewhere find a caption on the
+    // same terms.
+    private Dictionary<string, List<int>>? _columnsByName;
+
+    internal HeaderLabels(CellStrip header, ProjectionContext context)
+    {
+      _header = header;
+      _context = context;
+      Labels = header.Select(cell => cell.TryGetString()?.Trim() ?? string.Empty).ToList();
+    }
+
+    public IReadOnlyList<string> Labels { get; }
+
+    public IReadOnlyList<int> IndicesOf(string label)
+    {
+      if (label is null)
+        throw new ArgumentNullException(nameof(label));
+
+      return (_columnsByName ??= BuildColumnsByName()).TryGetValue(label, out var indices)
+        ? indices
+        : Array.Empty<int>();
+    }
+
+    public ProjectionException Failure(string problem) => _context.Failure(problem, _header.Space);
+
+    public ProjectionLocation AddressOf(int column) => _header.AddressOf(column);
+
+    private Dictionary<string, List<int>> BuildColumnsByName()
+    {
+      var columns = new Dictionary<string, List<int>>(CellMatching.TextComparer);
+
+      for (var index = 0; index < Labels.Count; index++)
+      {
+        var name = Labels[index];
+
+        if (name.Length == 0)
+          continue;
+
+        if (!columns.TryGetValue(name, out var indices))
+          columns[name] = indices = new List<int>();
+
+        indices.Add(index);
+      }
+
+      return columns;
+    }
+  }
+
+  /// <summary>
   /// The header cells behind a table-minted <see cref="LabelMap"/>: how the bind rung cites an
-  /// ambiguous or missing caption. A <see cref="TableView"/> is the only implementation; a map of
+  /// ambiguous or missing caption. <see cref="HeaderLabels"/> is the only implementation; a map of
   /// literals has none.
   /// </summary>
   internal interface IHeaderCitations

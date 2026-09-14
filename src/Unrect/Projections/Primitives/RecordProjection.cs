@@ -30,7 +30,7 @@ namespace Unrect.Projections
     public override ProjectionResult<T> Project(ISpace extent, ProjectionContext context)
     {
       var strip = new CellStrip(extent, Orientation.Horizontal, context);
-      var row = new TableRow(null, context.Ordinal ?? 0, strip, context);
+      var row = new TableRow(context.Ordinal ?? 0, strip, context);
 
       return new ProjectionResult<T>(Record(row), extent.Area.Size);
     }

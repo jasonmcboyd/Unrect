@@ -191,7 +191,7 @@ namespace Unrect.Tests.Projections
     // Minted from a real view through the bottom rung — a real header, a real context, real failures —
     // which is the recipe the spec records rather than a synthetic factory nobody would ship.
 
-    private static LabelMap CaptionsOf(ISpace sheet) => new LabelMap(Table((TableView view) => view).Map(sheet));
+    private static LabelMap CaptionsOf(ISpace sheet) => Table((TableView view) => view.Labels).Map(sheet);
 
     [Fact]
     public void CaptionsAreTheColumnsOwnNamesInColumnOrder()

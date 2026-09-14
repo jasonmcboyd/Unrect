@@ -803,7 +803,7 @@ namespace Unrect.Projections
     /// the data stays absorbable.
     /// </summary>
     private static IProjection<T> BoundRow<T>(TableView table, Func<LabelMap, IProjection<T>> eachRow)
-      => eachRow(new LabelMap(table))
+      => eachRow(table.Labels)
         ?? throw table.Fault("the row bind returned null; it must return the projection that reads one record");
 
     private static IProjection<T> Strip<T>(Orientation orientation, Func<CellStrip, T> project, IAreaStrategy area, string description)

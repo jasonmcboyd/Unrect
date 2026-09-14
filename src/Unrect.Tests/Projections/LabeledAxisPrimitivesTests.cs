@@ -627,6 +627,113 @@ namespace Unrect.Tests.Projections
       Assert.Equal(new[] { 1 }, ((ILabelSource)map).IndicesOf("net income"));
     }
 
+    // Citation parity: the bind-rung indexer's failure — missing or ambiguous — is byte-identical
+    // between the primitive-minted map and a built-in Table's own map, because both are the one
+    // HeaderLabels parse over the same header. Only the declaration-path subject differs (ColumnLabels
+    // vs Table), which the Problem/A1 facets exclude — the same facets §5.4's differential asserts on.
+
+    [Fact]
+    public void ColumnLabelsCitesAMissingOrAmbiguousCaptionIdenticallyToATablesOwnMap()
+    {
+      // A caption the header does not carry — the missing citation, which lists the file's captions.
+      SameCitation(AbsentColumn(), "Investor");
+
+      // A caption two columns carry — the ambiguous citation, which names both header cells.
+      SameCitation(AmbiguousColumn(), "Amount");
+    }
+
+    // The built-in Table's own map, captured through the bind rung: eachRow is handed the table's
+    // LabelMap, and a record that reads only by index lets the Map complete so the capture survives.
+    private static LabelMap ATablesOwnMap(ISpace sheet)
+    {
+      LabelMap captured = null!;
+
+      Table(1, captions =>
+      {
+        captured = captions;
+        return Record((TableRow row) => row.Index);
+      }).Map(sheet);
+
+      return captured;
+    }
+
+    private static void SameCitation(ISpace sheet, string caption)
+    {
+      LabelMap fromPrimitive = ColumnLabels(1).Map(sheet);
+      LabelMap fromTable = ATablesOwnMap(sheet);
+
+      var primitive = Assert.Throws<ProjectionException>(() => fromPrimitive[caption]);
+      var table = Assert.Throws<ProjectionException>(() => fromTable[caption]);
+
+      // The citation itself — Problem and A1 — is identical; only the path subject differs.
+      Assert.Equal(table.Problem, primitive.Problem);
+      Assert.Equal(table.Location.A1, primitive.Location.A1);
+    }
+
+    // The extent a bind-rung caption failure cites (spec facet, owner-approved). The ColumnLabels
+    // decoupling refactor deliberately narrowed this: a missing/ambiguous caption failure now cites
+    // the HEADER BAND — ColumnCount x headerRows — not the full table (ColumnCount x (headerRows +
+    // bodyRows)). A caption fault is about the header, and citing the header avoids forcing a
+    // still-discovering BoundedSpace to yield its full height. The facet slipped the gate for want of
+    // a guard, so it is pinned here — for BOTH faces, the primitive-minted map and a built-in Table's
+    // own map, the same parity the SameCitation sibling asserts on Problem/A1.
+
+    [Fact]
+    public void ABindRungCaptionFailureCitesTheHeaderBandExtentNotTheFullTable()
+    {
+      // Several body rows so the header band and the full extent genuinely differ: a failure citing
+      // the full table would report 2x6 here, its height tracking the body. The header band is 2x1.
+      var absent = Mixed(new object?[,]
+      {
+        { "Client", "Amount" },
+        { "Acme", 10m },
+        { "Beta", 20m },
+        { "Gamma", 30m },
+        { "Delta", 40m },
+        { "Epsilon", 50m },
+      });
+
+      HeaderBandCitation(absent, caption: "Investor", expected: new Size(2, 1), fullHeight: 6);
+
+      // Ambiguous, three columns: the header band is 3x1, the full extent 3x5.
+      var ambiguous = Mixed(new object?[,]
+      {
+        { "Investor", "Amount", "Amount" },
+        { "Acme", 10m, 11m },
+        { "Beta", 20m, 21m },
+        { "Gamma", 30m, 31m },
+        { "Delta", 40m, 41m },
+      });
+
+      HeaderBandCitation(ambiguous, caption: "Amount", expected: new Size(3, 1), fullHeight: 5);
+    }
+
+    private static void HeaderBandCitation(ISpace sheet, string caption, Size expected, int fullHeight)
+    {
+      LabelMap fromPrimitive = ColumnLabels(1).Map(sheet);
+      LabelMap fromTable = ATablesOwnMap(sheet);
+
+      var primitive = Assert.Throws<ProjectionException>(() => fromPrimitive[caption]);
+      var table = Assert.Throws<ProjectionException>(() => fromTable[caption]);
+
+      // The header band — ColumnCount x headerRows (headerRows == 1) — for both faces. Asserted as
+      // the concrete Size the code produces, explicitly NOT the full-table height.
+      foreach (var available in new[] { primitive.Location.Available, table.Location.Available })
+      {
+        Assert.Equal(expected.Width, available.Width);
+        Assert.Equal(1, available.Height);
+        Assert.Equal(expected.Height, available.Height);
+        Assert.NotEqual(fullHeight, available.Height);
+      }
+
+      // Parity on this facet, matching how SameCitation asserts Problem/A1 parity: the two faces cite
+      // the same header-band extent, down to the message's "NxM available" tail.
+      Assert.Equal(table.Location.Available.Width, primitive.Location.Available.Width);
+      Assert.Equal(table.Location.Available.Height, primitive.Location.Available.Height);
+      Assert.Contains($"{expected.Width}x{expected.Height} available", primitive.Message);
+      Assert.Contains($"{expected.Width}x{expected.Height} available", table.Message);
+    }
+
     // Record standalone reuse: a decoupled Record reading a wrong-kind cell under a pushed scope
     // reports the compute-legal binder's own sentence — `column 'Amount': …` at the cell's A1 —
     // identical to what the built-in Table produces, because resolution flows through the one shared
