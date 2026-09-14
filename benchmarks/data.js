@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789408535295,
+  "lastUpdate": 1789408535583,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -9182,6 +9182,65 @@ window.BENCHMARK_DATA = {
           {
             "name": "Unrect.Benchmarks.Values.Sweep_Blankness",
             "value": 1,
+            "unit": "bytes"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "d06708df60e381758b11dde07836c674565409b6",
+          "message": "Merge experiment/record-primitive: streaming composites over a bound, the band tiler, Table composed from primitives\n\nThe labels-as-context primitives (ColumnLabels, WithColumnLabels, Record),\nSkipToFirstNonBlankCell, and the uniform offset law; the engine streaming a\ndiscovered bound through a composite (TailSpace, a bound-aware Exceeds, lazy\nflow and repeat slices); VerticalBands/HorizontalBands, the tiler — a\nrepeating fixed-dimension space, distinct from the pattern repeat;\nTable(headerRows, eachRow) composed over the tiler under a UnitProjection,\nwith AsScaffolding and a mark-driven path fold giving it the leaf's own\ndiagnostics; ColumnLabels self-contained, its header parse the one home in\nLabelMap.FromHeader; and the repeat returned to a pure walk, onBlank living\non the tiler alone.\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01Wk5ZXojzv4hibCXDkjRu3g",
+          "timestamp": "2026-09-14T17:43:35Z",
+          "tree_id": "1c80a0bed7aeb311bb6e1bdb0933ac5a05562434",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/d06708df60e381758b11dde07836c674565409b6"
+        },
+        "date": 1789408535523,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Values.Create_FromInts",
+            "value": 56000415,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Create_FromObjects",
+            "value": 30400166,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Sweep_GetDecimal",
+            "value": 12,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Sweep_GetString",
+            "value": 3,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Sweep_TryGetByKind",
+            "value": 1,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Sweep_Equality",
+            "value": 6,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Sweep_Blankness",
+            "value": 0,
             "unit": "bytes"
           }
         ]
