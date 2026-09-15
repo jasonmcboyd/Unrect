@@ -22,7 +22,7 @@ namespace Unrect.Strategies
   /// </summary>
   internal sealed class SkipToFirstNonBlankCellStrategy : IOffsetStrategy
   {
-    public Offset GetOffset(ICellValues space)
+    public Offset GetOffset(Plane<ISpace> space)
     {
       var area = space.Area;
 

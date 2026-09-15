@@ -64,8 +64,8 @@ namespace Unrect.Tests.Projections
         Measure(RowsWhileAnyValue()));
 
       Assert.Equal(
-        Measure(SizeStrategies.RowsWhileAny(v => v.TryGetInt() == 1).ToAreaStrategy()),
-        Measure(RowsWhileAny(v => v.TryGetInt() == 1)));
+        Measure(SizeStrategies.RowsWhileAny(v => v.AsText() == "1").ToAreaStrategy()),
+        Measure(RowsWhileAny(v => v.AsText() == "1")));
     }
 
     [Fact]
@@ -76,8 +76,8 @@ namespace Unrect.Tests.Projections
         Measure(ColumnsWhileAnyValue()));
 
       Assert.Equal(
-        Measure(SizeStrategies.ColumnsWhileAny(v => v.TryGetInt() == 1).ToAreaStrategy()),
-        Measure(ColumnsWhileAny(v => v.TryGetInt() == 1)));
+        Measure(SizeStrategies.ColumnsWhileAny(v => v.AsText() == "1").ToAreaStrategy()),
+        Measure(ColumnsWhileAny(v => v.AsText() == "1")));
     }
 
     [Fact]

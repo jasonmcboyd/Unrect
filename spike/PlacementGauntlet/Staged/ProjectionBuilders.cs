@@ -174,15 +174,15 @@ namespace PlacementGauntlet.Staged
     // means, which is why these are plain values rather than stages.
     // ============================================================================================
 
-    public static IRowLandmark RowWhere(Func<ICellValues, int, bool> predicate) => Projection.RowWhere(predicate);
+    public static IRowLandmark RowWhere(Func<Plane<ISpace>, int, bool> predicate) => Projection.RowWhere(predicate);
 
-    public static IRowLandmark RowWithCell(Func<CellValue, bool> anyCell) => Projection.RowWithCell(anyCell);
+    public static IRowLandmark RowWithCell(Func<Point<ISpace>, bool> anyCell) => Projection.RowWithCell(anyCell);
 
     public static IRowLandmark RowContaining(string text) => Projection.RowContaining(text);
 
-    public static IColumnLandmark ColumnWhere(Func<ICellValues, int, bool> predicate) => Projection.ColumnWhere(predicate);
+    public static IColumnLandmark ColumnWhere(Func<Plane<ISpace>, int, bool> predicate) => Projection.ColumnWhere(predicate);
 
-    public static IColumnLandmark ColumnWithCell(Func<CellValue, bool> anyCell) => Projection.ColumnWithCell(anyCell);
+    public static IColumnLandmark ColumnWithCell(Func<Point<ISpace>, bool> anyCell) => Projection.ColumnWithCell(anyCell);
 
     public static IColumnLandmark ColumnContaining(string text) => Projection.ColumnContaining(text);
 
@@ -212,11 +212,11 @@ namespace PlacementGauntlet.Staged
 
     public static IAreaStrategy RowsWhileAnyValue() => Projection.RowsWhileAnyValue();
 
-    public static IAreaStrategy RowsWhileAny(Func<CellValue, bool> anyCell) => Projection.RowsWhileAny(anyCell);
+    public static IAreaStrategy RowsWhileAny(Func<Point<ISpace>, bool> anyCell) => Projection.RowsWhileAny(anyCell);
 
     public static IAreaStrategy ColumnsWhileAnyValue() => Projection.ColumnsWhileAnyValue();
 
-    public static IAreaStrategy ColumnsWhileAny(Func<CellValue, bool> anyCell) => Projection.ColumnsWhileAny(anyCell);
+    public static IAreaStrategy ColumnsWhileAny(Func<Point<ISpace>, bool> anyCell) => Projection.ColumnsWhileAny(anyCell);
 
     public static IRowStrategy TakeRows(int count) => Projection.TakeRows(count);
 

@@ -15,21 +15,21 @@ namespace Unrect.Strategies
   /// </summary>
   internal sealed class TakeWhileAllColumnStrategy : IRowMajorColumnStrategy
   {
-    public TakeWhileAllColumnStrategy(Func<CellValue, bool> predicate)
+    public TakeWhileAllColumnStrategy(Func<Point<ISpace>, bool> predicate)
     {
       Predicate = predicate;
     }
 
-    private Func<CellValue, bool> Predicate { get; }
+    private Func<Point<ISpace>, bool> Predicate { get; }
 
     public IColumnAccumulator BeginColumns(int width) => new Accumulator(Predicate, width);
 
-    public int SelectColumns(ICellValues space)
-      => ColumnAccumulators.Fold(BeginColumns(space.Area.Width), space);
+    public int SelectColumns(Plane<ISpace> space)
+      => ColumnAccumulators.Fold(BeginColumns(space.Width), space);
 
     private sealed class Accumulator : IColumnAccumulator
     {
-      public Accumulator(Func<CellValue, bool> predicate, int width)
+      public Accumulator(Func<Point<ISpace>, bool> predicate, int width)
       {
         Predicate = predicate;
         Count = width;
@@ -41,9 +41,9 @@ namespace Unrect.Strategies
       /// <summary>Nothing is left to rule out once the run is empty, so zero is where it settles.</summary>
       public bool IsSettled => Count == 0;
 
-      private Func<CellValue, bool> Predicate { get; }
+      private Func<Point<ISpace>, bool> Predicate { get; }
 
-      public void Include(ICellValues space, int row)
+      public void Include(Plane<ISpace> space, int row)
       {
         // A failing cell in column c rules out c and every column after it, and no later row can
         // bring one back — so columns at or past the answer are never read again.

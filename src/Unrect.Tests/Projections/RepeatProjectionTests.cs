@@ -549,28 +549,37 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void ButASeparatorInsideADiscoveredExtentAsksHowTallTheTailIs()
+    public void AndASeparatorInsideADiscoveredExtentDoesNotAskHowTallTheTailIs()
     {
-      // The specific, named exception to the two facts above, and it is the hybrid rule rather than a
-      // defect: a separator is an offset STRATEGY, and it asks the space it is handed for its extent.
-      // On a tail that question forces the enclosing scan one row past the cursor, so the next row
-      // the separator itself reads is one behind the furthest row already read. Nothing is read
-      // twice and the walk still ends where it ended; what costs is a window one row deep.
+      // This used to be the named exception to the two facts above: a separator is an offset
+      // STRATEGY, and while a strategy could only ask a region for its whole extent, asking cost a
+      // row — the enclosing scan was forced one row past the cursor, so the separator's own next
+      // read landed one behind the furthest row already read, and the reach was 1.
+      //
+      // It is no longer an exception, and the reason is the law rather than this shape: a region
+      // answers a WIDTH without answering a height, and "skip the rows that are entirely blank"
+      // needs nothing but a width to walk with. A rule that never asks how tall the region is never
+      // settles its boundary, and a walk that never settles it never reaches back. 1 -> 0, and the
+      // repeat is now monotone from end to end — which is the property a windowed reader is priced
+      // on. A rule that DOES ask the height still costs what it always did; the pair in
+      // BoundedRegionTests is where both halves of that are stated together.
       var watched = new WatermarkSpace(TwoBlocks());
 
       var blocks = Sized(RowsWhileAnyValue()).Of(VerticalRepeat(Section(), separatedBy: BlankRows())).Map(watched);
 
       Assert.Equal(new[] { "A-1", "A-2" }, blocks.Select(block => block.Code));
       Assert.Equal(3, watched.HighWaterMark);
-      Assert.Equal(1, watched.BackwardReach);
+      Assert.Equal(0, watched.BackwardReach);
 
-      // And the same declaration over a measured extent reaches back not at all, which is what says
-      // the reach belongs to the dimension query on the bound and to nothing else in the shape.
+      // And the same declaration over a measured extent reaches back not at all either — which is
+      // now an agreement rather than a contrast, and is the better outcome: the discovered reading
+      // and the measured one cost the same order as well as saying the same thing.
       var measured = new WatermarkSpace(TwoBlocks());
 
       VerticalRepeat(Section(), separatedBy: BlankRows()).Map(measured);
 
       Assert.Equal(0, measured.BackwardReach);
+      Assert.Equal(watched.BackwardReach, measured.BackwardReach);
     }
 
     // --- Repeat as a projection ------------------------------------------------------------------------------------

@@ -379,29 +379,37 @@ namespace Unrect.Projections
 
     // --- Matchers ------------------------------------------------------------------------------
 
-    /// <inheritdoc cref="Projection.RowWhere(Func{ICellValues, int, bool})"/>
+    /// <inheritdoc cref="Projection.RowWhere(Func{Plane{ISpace}, int, bool})"/>
     /// <param name="predicate">What makes a row the one.</param>
-    public static IRowLandmark RowWhere(Func<ICellValues, int, bool> predicate) => Projection.RowWhere(predicate);
+    public static IRowLandmark RowWhere(Func<Plane<ISpace>, int, bool> predicate) => Projection.RowWhere(predicate);
 
-    /// <inheritdoc cref="Projection.RowWithCell(Func{CellValue, bool})"/>
+    /// <inheritdoc cref="Projection.RowWithCell(Func{Point{ISpace}, bool})"/>
     /// <param name="anyCell">What makes a cell the one.</param>
-    public static IRowLandmark RowWithCell(Func<CellValue, bool> anyCell) => Projection.RowWithCell(anyCell);
+    public static IRowLandmark RowWithCell(Func<Point<ISpace>, bool> anyCell) => Projection.RowWithCell(anyCell);
 
     /// <inheritdoc cref="Projection.RowContaining(string)"/>
     /// <param name="text">The whole cell value to look for.</param>
     public static IRowLandmark RowContaining(string text) => Projection.RowContaining(text);
 
-    /// <inheritdoc cref="Projection.ColumnWhere(Func{ICellValues, int, bool})"/>
-    /// <param name="predicate">What makes a column the one.</param>
-    public static IColumnLandmark ColumnWhere(Func<ICellValues, int, bool> predicate) => Projection.ColumnWhere(predicate);
+    /// <inheritdoc cref="Projection.RowSaying(string)"/>
+    /// <param name="text">The whole rendering to look for.</param>
+    public static IRowLandmark RowSaying(string text) => Projection.RowSaying(text);
 
-    /// <inheritdoc cref="Projection.ColumnWithCell(Func{CellValue, bool})"/>
+    /// <inheritdoc cref="Projection.ColumnWhere(Func{Plane{ISpace}, int, bool})"/>
+    /// <param name="predicate">What makes a column the one.</param>
+    public static IColumnLandmark ColumnWhere(Func<Plane<ISpace>, int, bool> predicate) => Projection.ColumnWhere(predicate);
+
+    /// <inheritdoc cref="Projection.ColumnWithCell(Func{Point{ISpace}, bool})"/>
     /// <param name="anyCell">What makes a cell the one.</param>
-    public static IColumnLandmark ColumnWithCell(Func<CellValue, bool> anyCell) => Projection.ColumnWithCell(anyCell);
+    public static IColumnLandmark ColumnWithCell(Func<Point<ISpace>, bool> anyCell) => Projection.ColumnWithCell(anyCell);
 
     /// <inheritdoc cref="Projection.ColumnContaining(string)"/>
     /// <param name="text">The whole cell value to look for.</param>
     public static IColumnLandmark ColumnContaining(string text) => Projection.ColumnContaining(text);
+
+    /// <inheritdoc cref="Projection.ColumnSaying(string)"/>
+    /// <param name="text">The whole rendering to look for.</param>
+    public static IColumnLandmark ColumnSaying(string text) => Projection.ColumnSaying(text);
 
     // --- Offsets -------------------------------------------------------------------------------
 
@@ -447,16 +455,16 @@ namespace Unrect.Projections
     /// <inheritdoc cref="Projection.RowsWhileAnyValue()"/>
     public static IAreaStrategy RowsWhileAnyValue() => Projection.RowsWhileAnyValue();
 
-    /// <inheritdoc cref="Projection.RowsWhileAny(Func{CellValue, bool})"/>
+    /// <inheritdoc cref="Projection.RowsWhileAny(Func{Point{ISpace}, bool})"/>
     /// <param name="anyCell">What one cell of a row must satisfy for the row to be taken.</param>
-    public static IAreaStrategy RowsWhileAny(Func<CellValue, bool> anyCell) => Projection.RowsWhileAny(anyCell);
+    public static IAreaStrategy RowsWhileAny(Func<Point<ISpace>, bool> anyCell) => Projection.RowsWhileAny(anyCell);
 
     /// <inheritdoc cref="Projection.ColumnsWhileAnyValue()"/>
     public static IAreaStrategy ColumnsWhileAnyValue() => Projection.ColumnsWhileAnyValue();
 
-    /// <inheritdoc cref="Projection.ColumnsWhileAny(Func{CellValue, bool})"/>
+    /// <inheritdoc cref="Projection.ColumnsWhileAny(Func{Point{ISpace}, bool})"/>
     /// <param name="anyCell">What one cell of a column must satisfy for the column to be taken.</param>
-    public static IAreaStrategy ColumnsWhileAny(Func<CellValue, bool> anyCell) => Projection.ColumnsWhileAny(anyCell);
+    public static IAreaStrategy ColumnsWhileAny(Func<Point<ISpace>, bool> anyCell) => Projection.ColumnsWhileAny(anyCell);
 
     /// <inheritdoc cref="Projection.TakeRows(int)"/>
     /// <param name="count">How many rows.</param>

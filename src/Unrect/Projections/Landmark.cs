@@ -21,7 +21,7 @@ namespace Unrect.Projections
     public abstract string Description { get; }
 
     /// <summary>How far along the axis the landmark is, or null when there is none.</summary>
-    public abstract int? Find(ICellValues space);
+    public abstract int? Find(Plane<ISpace> space);
 
     private sealed class OfRow : Landmark
     {
@@ -31,7 +31,7 @@ namespace Unrect.Projections
 
       public override Orientation Orientation => Orientation.Vertical;
       public override string Description => _landmark.Description;
-      public override int? Find(ICellValues space) => _landmark.FindRow(space);
+      public override int? Find(Plane<ISpace> space) => _landmark.FindRow(space);
     }
 
     private sealed class OfColumn : Landmark
@@ -42,7 +42,7 @@ namespace Unrect.Projections
 
       public override Orientation Orientation => Orientation.Horizontal;
       public override string Description => _landmark.Description;
-      public override int? Find(ICellValues space) => _landmark.FindColumn(space);
+      public override int? Find(Plane<ISpace> space) => _landmark.FindColumn(space);
     }
   }
 }

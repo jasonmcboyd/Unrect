@@ -27,6 +27,6 @@ namespace Unrect.Strategies
     bool IsSettled { get; }
 
     /// <summary>Takes row <paramref name="row"/> of <paramref name="space"/> into account.</summary>
-    void Include(ICellValues space, int row);
+    void Include(Plane<ISpace> space, int row);
   }
 }

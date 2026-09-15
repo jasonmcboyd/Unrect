@@ -24,7 +24,7 @@ namespace Unrect.Projections
     }
 
     private string Label { get; }
-    private Func<CellValue, bool> Match { get; }
+    private Func<Point<ISpace>, bool> Match { get; }
 
     public override string Description => $"Field(\"{Label}\")";
 
@@ -39,10 +39,10 @@ namespace Unrect.Projections
         throw context.Failure(
           $"a Field must be two cells wide and one row tall; this one is {size.Width}x{size.Height}", extent);
 
-      var label = extent.CellAt(0, 0);
-
-      if (!Match(label))
-        throw context.Failure($"expected a label reading '{Label}' here, but this cell {Describe(label)}", extent);
+      if (!Match(extent.AsCanonical()[0, 0]))
+        throw context.Failure(
+          $"expected a label reading '{Label}' here, but this cell {Describe(extent.CellAt(0, 0))}",
+          extent);
 
       return new ProjectionResult<CellValue>(extent.CellAt(1, 0), size);
     }

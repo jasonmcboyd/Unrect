@@ -100,11 +100,12 @@ namespace Unrect.Projections
     }
 
     /// <summary>
-    /// A space a strategy can be handed. A measured region is its own space; a region still being
-    /// discovered puts one on, because the strategy layer still speaks spaces.
+    /// The region as the strategy calculus sees it: the canonical four and nothing else. One struct
+    /// copy per strategy call — never per cell — and the discovered bottom edge rides along, so a
+    /// strategy handed a region still being discovered forces it by asking its extent, exactly where
+    /// it always did.
     /// </summary>
-    internal static ICellValues AsSpace(this Plane<ICellValues> extent)
-      => extent.Bound is null ? extent.Space : new BoundedView(extent);
+    internal static Plane<ISpace> AsCanonical(this Plane<ICellValues> extent) => extent.Erased();
 
     /// <summary>
     /// The space a region's cells actually come from — how a backend reaches past the region to ask

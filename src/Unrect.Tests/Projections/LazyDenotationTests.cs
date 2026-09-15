@@ -116,13 +116,21 @@ namespace Unrect.Tests.Projections
     // in each of the two runs — the runs consume different numbers of cells, which is the whole point
     // — and the suite would report a difference the engine did not cause.
 
-    /// <summary>A cell rule that breaks, absorbably, on the cell holding <paramref name="marker"/>.</summary>
-    private static Func<CellValue, bool> BreaksOn(int marker)
-      => cell => cell.TryGetInt() == marker ? throw new InvalidOperationException("no") : true;
+    /// <summary>
+    /// A cell rule that breaks, absorbably, on the cell holding <paramref name="marker"/>.
+    /// <para>
+    /// Written against what the cell says rather than against its kind: this grid is built from
+    /// ints, and <c>GridSpace.Create(int[,])</c> renders each one invariantly, so comparing the
+    /// rendering picks out exactly the cell the old <c>TryGetInt()</c> comparison did. The kind
+    /// predicate returns with the typed layer.
+    /// </para>
+    /// </summary>
+    private static Func<Point<ISpace>, bool> BreaksOn(int marker)
+      => cell => cell.AsText() == marker.ToString() ? throw new InvalidOperationException("no") : true;
 
     /// <summary>A cell rule whose failure is the environment's, not the data's.</summary>
-    private static Func<CellValue, bool> FaultsOn(int marker)
-      => cell => cell.TryGetInt() == marker ? throw new IOException("the disk stopped answering") : true;
+    private static Func<Point<ISpace>, bool> FaultsOn(int marker)
+      => cell => cell.AsText() == marker.ToString() ? throw new IOException("the disk stopped answering") : true;
 
     /// <summary>
     /// The sheet's 7 is the first cell of row 2, so a rule that breaks on it survives the first two
@@ -738,9 +746,9 @@ namespace Unrect.Tests.Projections
     /// </summary>
     private sealed class OverwideStrategy : IIncrementalAreaStrategy
     {
-      public IAreaScan BeginArea(ICellValues availableSpace) => new Scan(availableSpace.Area.Width + 1);
+      public IAreaScan BeginArea(Plane<ISpace> availableSpace) => new Scan(availableSpace.Area.Width + 1);
 
-      public Area GetArea(ICellValues availableSpace) => Scans.FoldArea(BeginArea(availableSpace), availableSpace);
+      public Area GetArea(Plane<ISpace> availableSpace) => Scans.FoldArea(BeginArea(availableSpace), availableSpace);
 
       private sealed class Scan : IAreaScan
       {
@@ -748,7 +756,7 @@ namespace Unrect.Tests.Projections
 
         public int Width { get; }
 
-        public bool IncludesRow(ICellValues space, int row) => !space[0, row].IsBlank;
+        public bool IncludesRow(Plane<ISpace> space, int row) => !space[0, row].IsBlank;
       }
     }
   }

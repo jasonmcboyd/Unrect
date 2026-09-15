@@ -4,6 +4,6 @@ namespace Unrect.Core
   public interface IAreaStrategy
   {
     /// <summary>The rectangle to use, measured from the top-left of <paramref name="availableSpace"/>. Throws <see cref="OutOfBoundsException"/> when none fits.</summary>
-    Area GetArea(ICellValues availableSpace);
+    Area GetArea(Plane<ISpace> availableSpace);
   }
 }

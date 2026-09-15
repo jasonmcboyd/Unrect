@@ -24,6 +24,6 @@ namespace Unrect.Core
     /// rather than merely slower. This is the invariant the interleaved strategy's replay rests on.
     /// </para>
     /// </summary>
-    bool IncludesRow(ICellValues space, int row);
+    bool IncludesRow(Plane<ISpace> space, int row);
   }
 }

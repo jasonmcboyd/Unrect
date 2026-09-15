@@ -19,23 +19,23 @@ namespace Unrect.Strategies
   /// </summary>
   internal sealed class TakeWhileAnyColumnStrategy : IRowMajorColumnStrategy
   {
-    public TakeWhileAnyColumnStrategy(Func<CellValue, bool> predicate)
+    public TakeWhileAnyColumnStrategy(Func<Point<ISpace>, bool> predicate)
     {
       Predicate = predicate;
     }
 
-    private Func<CellValue, bool> Predicate { get; }
+    private Func<Point<ISpace>, bool> Predicate { get; }
 
     public IColumnAccumulator BeginColumns(int width) => new Accumulator(Predicate, width);
 
-    public int SelectColumns(ICellValues space)
-      => ColumnAccumulators.Fold(BeginColumns(space.Area.Width), space);
+    public int SelectColumns(Plane<ISpace> space)
+      => ColumnAccumulators.Fold(BeginColumns(space.Width), space);
 
     private sealed class Accumulator : IColumnAccumulator
     {
       private readonly bool[] _matched;
 
-      public Accumulator(Func<CellValue, bool> predicate, int width)
+      public Accumulator(Func<Point<ISpace>, bool> predicate, int width)
       {
         Predicate = predicate;
         _matched = new bool[width];
@@ -47,9 +47,9 @@ namespace Unrect.Strategies
       /// <summary>A later row can only extend the run, so it is settled once it spans the full width.</summary>
       public bool IsSettled => Count == _matched.Length;
 
-      private Func<CellValue, bool> Predicate { get; }
+      private Func<Point<ISpace>, bool> Predicate { get; }
 
-      public void Include(ICellValues space, int row)
+      public void Include(Plane<ISpace> space, int row)
       {
         for (var column = Count; column < _matched.Length; column++)
         {

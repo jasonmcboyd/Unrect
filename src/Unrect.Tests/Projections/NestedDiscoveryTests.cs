@@ -71,8 +71,15 @@ namespace Unrect.Tests.Projections
         return declaration.Map(Disagreeing());
     }
 
-    /// <summary>The outer rule: rows while any cell of them is a number, which stops after row 2.</summary>
-    private static IAreaStrategy NumericRowsOnly() => RowsWhileAny(value => value.Kind == CellKind.Number);
+    /// <summary>
+    /// The outer rule: rows while any cell of them is a number, which stops after row 2.
+    /// <para>
+    /// Spelled over the canonical four as "has a value and is not text", which is exactly "is a
+    /// number" for this fixture — it holds numbers, strings and blanks and nothing else. The kind
+    /// predicate itself returns with the typed layer.
+    /// </para>
+    /// </summary>
+    private static IAreaStrategy NumericRowsOnly() => RowsWhileAny(value => !value.IsBlank && !value.IsText);
 
     /// <summary>
     /// The same rule as a row-and-column pair, which resolves to the interleaved strategy — the one
@@ -81,7 +88,7 @@ namespace Unrect.Tests.Projections
     /// </summary>
     private static IAreaStrategy NumericRowsAndValuedColumns()
       => AreaStrategies.RowsThenColumns(
-        RowStrategies.TakeRowsWhileAny(value => value.Kind == CellKind.Number),
+        RowStrategies.TakeRowsWhileAny(value => !value.IsBlank && !value.IsText),
         ColumnStrategies.TakeColumnsWhileAnyValue());
 
     [Theory]

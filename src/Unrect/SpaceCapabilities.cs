@@ -24,16 +24,22 @@ namespace Unrect
   /// Narrowing is not moving. A wrapper that hides rows past a boundary it has not admitted yet is
   /// still a chart, because every cell it does address is the same cell underneath.
   /// </para>
+  /// <para>
+  /// <b>Nothing in this library implements it any more.</b> The one wrapper that did was retired
+  /// when a region learned to carry its own undiscovered boundary; what is left is the contract a
+  /// backend outside this repository could still implement, and it goes with the whole capability
+  /// seam once a declaration names the space it needs in its own type.
+  /// </para>
   /// </summary>
   public interface ISpaceChart
   {
     /// <summary>The space this one charts, in the same coordinates.</summary>
-    ICellValues Underlying { get; }
+    ISpace Underlying { get; }
   }
 
   /// <summary>
   /// The capability transport seam: how a declaration asks a space for something
-  /// <see cref="ICellValues"/> does not promise.
+  /// <see cref="ISpace"/> does not promise.
   /// <para>
   /// Two doors, because absence means two different things. <see cref="Capability{TCapability}"/>
   /// answers null, which is what a <em>projection</em> site wants: a cell in a space that cannot
@@ -58,7 +64,7 @@ namespace Unrect
     /// </summary>
     /// <typeparam name="TCapability">The capability interface being asked for.</typeparam>
     /// <param name="space">The space, possibly charted.</param>
-    public static TCapability? Capability<TCapability>(this ICellValues? space)
+    public static TCapability? Capability<TCapability>(this ISpace? space)
       where TCapability : class
     {
       for (var current = space; current is not null; current = (current as ISpaceChart)?.Underlying)
@@ -81,7 +87,7 @@ namespace Unrect
     /// <param name="space">The space, possibly charted.</param>
     /// <param name="demandedBy">What is asking, as a failure should name it.</param>
     /// <exception cref="MissingCapabilityException">Nothing in the stack offers the capability.</exception>
-    public static TCapability RequiredCapability<TCapability>(this ICellValues? space, string demandedBy)
+    public static TCapability RequiredCapability<TCapability>(this ISpace? space, string demandedBy)
       where TCapability : class
       => space.Capability<TCapability>()
         ?? throw new MissingCapabilityException(typeof(TCapability), demandedBy);

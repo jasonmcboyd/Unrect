@@ -282,16 +282,25 @@ namespace Unrect.Tests.Projections
         ["ColumnContaining(string)"] = Strategy(
           s => B.ColumnContaining("Amount").FindColumn(s),
           s => ColumnContaining("Amount").FindColumn(s)),
-        ["ColumnsWhileAny(Func<CellValue, bool>)"] = Strategy(
+        ["ColumnSaying(string)"] = Strategy(
+          s => B.ColumnSaying("Amount").FindColumn(s),
+          s => ColumnSaying("Amount").FindColumn(s)),
+        ["ColumnsWhileAny(Func<Point<ISpace>, bool>)"] = Strategy(
           s => B.ColumnsWhileAny(v => v.HasValue).GetArea(s),
           s => ColumnsWhileAny(v => v.HasValue).GetArea(s)),
         ["ColumnsWhileAnyValue()"] = Strategy(s => B.ColumnsWhileAnyValue().GetArea(s), s => ColumnsWhileAnyValue().GetArea(s)),
-        ["ColumnWhere(Func<ICellValues, int, bool>)"] = Strategy(
+        ["ColumnWhere(Func<Plane<ISpace>, int, bool>)"] = Strategy(
           s => B.ColumnWhere((space, index) => index == space.Area.Width - 1).FindColumn(s),
           s => ColumnWhere((space, index) => index == space.Area.Width - 1).FindColumn(s)),
-        ["ColumnWithCell(Func<CellValue, bool>)"] = Strategy(
-          s => B.ColumnWithCell(v => v.Kind == CellKind.Number).FindColumn(s),
-          s => ColumnWithCell(v => v.Kind == CellKind.Number).FindColumn(s)),
+        // "Has a value and is not text" stands in for the kind predicate this used to write, and
+        // what it means is immaterial here twice over: a parity law runs the SAME predicate down
+        // both sides, so any rule that reads a cell states it; and over these three grids the two
+        // partition every row and column alike, because no row or column of them holds a boolean,
+        // date or error without holding a number too. (The kind predicate itself returns with the
+        // typed layer — point-and-line-spec §15.)
+        ["ColumnWithCell(Func<Point<ISpace>, bool>)"] = Strategy(
+          s => B.ColumnWithCell(v => !v.IsBlank && !v.IsText).FindColumn(s),
+          s => ColumnWithCell(v => !v.IsBlank && !v.IsText).FindColumn(s)),
         ["Extent(int, int)"] = Strategy(s => B.Extent(2, 2).GetArea(s), s => Extent(2, 2).GetArea(s)),
         // Space-indifferent, and the only member of the class that hands back neither a projection
         // nor a strategy: what a Field carries is its label, which is what keys a Fields result.
@@ -300,16 +309,17 @@ namespace Unrect.Tests.Projections
         ["FromRight(int)"] = Strategy(s => B.FromRight(1).GetOffset(s), s => FromRight(1).GetOffset(s)),
         ["NoExtent()"] = Strategy(s => B.NoExtent().GetArea(s), s => NoExtent().GetArea(s)),
         ["RowContaining(string)"] = Strategy(s => B.RowContaining("Beta").FindRow(s), s => RowContaining("Beta").FindRow(s)),
-        ["RowsWhileAny(Func<CellValue, bool>)"] = Strategy(
+        ["RowSaying(string)"] = Strategy(s => B.RowSaying("Beta").FindRow(s), s => RowSaying("Beta").FindRow(s)),
+        ["RowsWhileAny(Func<Point<ISpace>, bool>)"] = Strategy(
           s => B.RowsWhileAny(v => v.HasValue).GetArea(s),
           s => RowsWhileAny(v => v.HasValue).GetArea(s)),
         ["RowsWhileAnyValue()"] = Strategy(s => B.RowsWhileAnyValue().GetArea(s), s => RowsWhileAnyValue().GetArea(s)),
-        ["RowWhere(Func<ICellValues, int, bool>)"] = Strategy(
+        ["RowWhere(Func<Plane<ISpace>, int, bool>)"] = Strategy(
           s => B.RowWhere((space, index) => index == space.Area.Height - 1).FindRow(s),
           s => RowWhere((space, index) => index == space.Area.Height - 1).FindRow(s)),
-        ["RowWithCell(Func<CellValue, bool>)"] = Strategy(
-          s => B.RowWithCell(v => v.Kind == CellKind.Number).FindRow(s),
-          s => RowWithCell(v => v.Kind == CellKind.Number).FindRow(s)),
+        ["RowWithCell(Func<Point<ISpace>, bool>)"] = Strategy(
+          s => B.RowWithCell(v => !v.IsBlank && !v.IsText).FindRow(s),
+          s => RowWithCell(v => !v.IsBlank && !v.IsText).FindRow(s)),
         ["SkipColumns(int)"] = Strategy(s => B.SkipColumns(1).GetOffset(s), s => SkipColumns(1).GetOffset(s)),
         ["SkipRows(int)"] = Strategy(s => B.SkipRows(1).GetOffset(s), s => SkipRows(1).GetOffset(s)),
         ["TakeColumns(int)"] = Strategy(s => B.TakeColumns(2).SelectColumns(s), s => TakeColumns(2).SelectColumns(s)),

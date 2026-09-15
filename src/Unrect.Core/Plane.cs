@@ -202,6 +202,18 @@ namespace Unrect.Core
         : new Plane<TSpace>(Space, Origin + offset, remaining, _bound.Shift(offset.Height));
     }
 
+    /// <summary>
+    /// The same region, named over the canonical surface alone — how a region reaches the strategy
+    /// calculus, which asks only the four questions every space answers.
+    /// <para>
+    /// A copy of three fields and a reference: nothing is read, the discovered bottom edge rides
+    /// along, and the space is the same object, so a read through the result is the read it would
+    /// have been. Erasure is one-way, and it happens once per strategy call rather than once per
+    /// cell.
+    /// </para>
+    /// </summary>
+    internal Plane<ISpace> Erased() => new Plane<ISpace>(Space, Origin, _extent, _bound);
+
     /// <summary><paramref name="area"/>, from this region's own corner.</summary>
     /// <exception cref="OutOfBoundsException"><paramref name="area"/> does not fit inside this region.</exception>
     public Plane<TSpace> Slice(Area area) => Slice(default, area);

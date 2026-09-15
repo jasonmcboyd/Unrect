@@ -5,18 +5,18 @@ namespace Unrect.Strategies
 {
   internal sealed class TakeToRowStrategy : IIncrementalRowStrategy
   {
-    public TakeToRowStrategy(Func<ICellValues, int, bool> predicate, bool keepMatchingRow)
+    public TakeToRowStrategy(Func<Plane<ISpace>, int, bool> predicate, bool keepMatchingRow)
     {
       Predicate = predicate;
       KeepMatchingRow = keepMatchingRow;
     }
 
-    private Func<ICellValues, int, bool> Predicate { get; }
+    private Func<Plane<ISpace>, int, bool> Predicate { get; }
     private bool KeepMatchingRow { get; }
 
     public IRowScan BeginRows() => new Scan(this);
 
-    public int SelectRows(ICellValues space) => Scans.Fold(BeginRows(), space);
+    public int SelectRows(Plane<ISpace> space) => Scans.Fold(BeginRows(), space);
 
     /// <summary>
     /// The one stateful scan in the family, and the reason <see cref="IRowScan"/> is an object
@@ -33,7 +33,7 @@ namespace Unrect.Strategies
       private TakeToRowStrategy Strategy { get; }
       private bool Matched { get; set; }
 
-      public bool IncludesRow(ICellValues space, int row)
+      public bool IncludesRow(Plane<ISpace> space, int row)
       {
         // Only reachable when the match was kept — an unkept match ends the extent by returning
         // false, and nothing is asked after that.

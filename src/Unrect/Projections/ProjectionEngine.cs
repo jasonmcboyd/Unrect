@@ -78,7 +78,7 @@ namespace Unrect.Projections
       Offset offset;
       try
       {
-        offset = projection.Placement.Offset.GetOffset(availableSpace.AsSpace());
+        offset = projection.Placement.Offset.GetOffset(availableSpace.AsCanonical());
       }
       catch (ProjectionException)
       {
@@ -113,11 +113,11 @@ namespace Unrect.Projections
         return true;
       }
 
-      // Minted once and shared by the scan, the bound and the area strategy. They have to be the
-      // SAME object: a scan replays its state against the space it was begun with, and a bound reads
-      // its ceiling off the space it was built with — hand those two different objects and a nested
-      // discovery resumes on a space its parent had already excluded rows from.
-      var innerSpace = inner.AsSpace();
+      // Minted once and shared by the scan, the bound and the area strategy. They have to name the
+      // SAME region: a scan replays its state against the region it was begun with, and a bound reads
+      // its ceiling off the region it was built with — hand those two different regions and a nested
+      // discovery resumes on one its parent had already excluded rows from.
+      var innerSpace = inner.AsCanonical();
 
       if (Bind(projection, inner, innerSpace, scope, strict) is Bound bound)
       {
@@ -180,7 +180,7 @@ namespace Unrect.Projections
     /// child of the same flow measures the whole tail first.
     /// </para>
     /// </summary>
-    private static Bound? Bind(IProjection projection, Plane<ICellValues> inner, ICellValues innerSpace, ProjectionContext scope, bool strict)
+    private static Bound? Bind(IProjection projection, Plane<ICellValues> inner, Plane<ISpace> innerSpace, ProjectionContext scope, bool strict)
     {
       if (!strict || _forcedEager || projection.Placement.Area is not IIncrementalAreaStrategy incremental)
         return null;

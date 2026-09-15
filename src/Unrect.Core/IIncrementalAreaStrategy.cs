@@ -14,6 +14,6 @@ namespace Unrect.Core
     /// decided. Stateful strategies must return a fresh scan per call; stateless ones may return
     /// themselves.
     /// </summary>
-    IAreaScan BeginArea(ICellValues availableSpace);
+    IAreaScan BeginArea(Plane<ISpace> availableSpace);
   }
 }

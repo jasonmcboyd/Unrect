@@ -55,7 +55,7 @@ namespace Unrect.Projections
     public override ProjectionResult<TResult> Project(Plane<ICellValues> extent, ProjectionContext context)
     {
       var size = extent.Area.Size;
-      var found = Landmark.Find(extent.AsSpace());
+      var found = Landmark.Find(extent.AsCanonical());
       var limit = found ?? (IsVertical ? size.Height : size.Width);
 
       // A missing end is a disagreement about the shape of the data, not a bug in the reading code,

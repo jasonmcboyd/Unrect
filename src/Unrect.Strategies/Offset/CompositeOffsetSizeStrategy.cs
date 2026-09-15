@@ -23,7 +23,7 @@ namespace Unrect.Strategies
 
     private IOffsetStrategy[] Strategies { get; }
 
-    public Size GetSize(ICellValues availableSpace)
+    public Size GetSize(Plane<ISpace> availableSpace)
     {
       var total = new Size(0, 0);
 
@@ -31,11 +31,16 @@ namespace Unrect.Strategies
       {
         var offset = strategy.GetOffset(availableSpace);
 
-        if (offset.Width > availableSpace.Area.Width || offset.Height > availableSpace.Area.Height)
-          throw new OutOfBoundsException();
-
         total += offset.Size;
-        availableSpace = availableSpace.GetSubspace(offset);
+
+        // Arithmetic, not a new subspace object — a canonical region cannot cut one. The READS
+        // that follow are identical: the same cells of the same space at translated coordinates.
+        // What differs is the band a windowed space announces to its store, which is now the
+        // parent subspace object's rather than this step's. That is observable only where the
+        // first strategy of a composition reads nothing — RowsThenColumns(TakeRows(2), …) — and
+        // it is exactly what the engine will announce once it announces once per placement.
+        // Slice also makes the bounds check this used to make for itself, without settling a bound.
+        availableSpace = availableSpace.Slice(offset);
       }
 
       return total;

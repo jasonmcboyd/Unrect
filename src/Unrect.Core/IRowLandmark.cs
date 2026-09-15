@@ -14,6 +14,6 @@ namespace Unrect.Core
     string Description { get; }
 
     /// <summary>The index of the first row that is the landmark, or null when there is none.</summary>
-    int? FindRow(ICellValues space);
+    int? FindRow(Plane<ISpace> space);
   }
 }

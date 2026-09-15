@@ -27,7 +27,7 @@ namespace Unrect.Projections
     }
 
     private string Text { get; }
-    private Func<CellValue, bool> Match { get; }
+    private Func<Point<ISpace>, bool> Match { get; }
 
     public override string Description => $"Caption(\"{Text}\")";
 
@@ -41,8 +41,10 @@ namespace Unrect.Projections
       if (size.Height != 1)
         throw context.Failure($"a Caption must be exactly one row tall; this one is {size.Height} rows tall", extent);
 
+      var cells = extent.AsCanonical();
+
       for (var column = 0; column < size.Width; column++)
-        if (Match(extent.CellAt(column, 0)))
+        if (Match(cells[column, 0]))
           // The file's text, not the declaration's: the literal is the matcher, the cell is the
           // datum, and untrimmed because trimming is the matcher's business.
           return new ProjectionResult<string>(extent.CellAt(column, 0).GetString(), size);

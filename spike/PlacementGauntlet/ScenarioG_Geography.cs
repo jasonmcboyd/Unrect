@@ -213,7 +213,7 @@ namespace PlacementGauntlet
     {
       var sheet = Sheets.Regions();
 
-      var regionMark = RowWithCell(cell => cell.Kind == CellKind.Text && cell.GetString().StartsWith("Region "));
+      var regionMark = RowWithCell(cell => cell.IsText && cell.AsText()!.StartsWith("Region "));
       var regionName = Row(cells => cells[0].GetString());
       var lines = Table<Line>();
 

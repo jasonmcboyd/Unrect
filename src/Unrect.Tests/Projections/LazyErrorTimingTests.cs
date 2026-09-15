@@ -44,11 +44,16 @@ namespace Unrect.Tests.Projections
     /// call-count-based: the two paths read different numbers of cells, so a predicate that counted
     /// its own calls would break in different places and the comparison would be meaningless.
     /// </summary>
-    private static Func<CellValue, bool> BreaksOn(int marker)
-      => cell => cell.TryGetInt() == marker ? throw new InvalidOperationException("no") : true;
+    /// <para>
+    /// Written against what the cell says rather than against its kind: this grid is built from
+    /// ints and renders each one invariantly, so comparing the rendering picks out exactly the cell
+    /// the old <c>TryGetInt()</c> comparison did. The kind predicate returns with the typed layer.
+    /// </para>
+    private static Func<Point<ISpace>, bool> BreaksOn(int marker)
+      => cell => cell.AsText() == marker.ToString() ? throw new InvalidOperationException("no") : true;
 
-    private static Func<CellValue, bool> FaultsOn(int marker)
-      => cell => cell.TryGetInt() == marker ? throw new IOException("the disk stopped answering") : true;
+    private static Func<Point<ISpace>, bool> FaultsOn(int marker)
+      => cell => cell.AsText() == marker.ToString() ? throw new IOException("the disk stopped answering") : true;
 
     /// <summary>
     /// The sheet's 7 is the first cell of row 2, so a rule that breaks on it survives the first two

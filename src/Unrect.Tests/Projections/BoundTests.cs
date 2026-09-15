@@ -41,7 +41,7 @@ namespace Unrect.Tests.Projections
       /// <summary>The furthest row the scan was ever asked about, or -1 where it was never asked.</summary>
       internal int Asked { get; private set; } = -1;
 
-      public bool IncludesRow(ICellValues space, int row)
+      public bool IncludesRow(Plane<ISpace> space, int row)
       {
         if (row > Asked)
           Asked = row;
@@ -55,7 +55,7 @@ namespace Unrect.Tests.Projections
     {
       var scan = new CountingScan(height, width);
 
-      return (new Bound(CoordinateGrid(width, 10), scan, exception => throw exception), scan);
+      return (new Bound(CoordinateGrid(width, 10).Region(), scan, exception => throw exception), scan);
     }
 
     [Fact]
@@ -111,7 +111,7 @@ namespace Unrect.Tests.Projections
       // The loop's other exit. A scan whose rule admits everything would spin forever against a
       // height it is never told, so the bound stops it at the space's own last row.
       var scan = new CountingScan(int.MaxValue, 3);
-      var bound = new Bound(CoordinateGrid(3, 10), scan, exception => throw exception);
+      var bound = new Bound(CoordinateGrid(3, 10).Region(), scan, exception => throw exception);
 
       Assert.Equal(10, bound.Force());
       Assert.False(bound.HasRow(10));
@@ -190,7 +190,7 @@ namespace Unrect.Tests.Projections
       Exception? handed = null;
 
       var bound = new Bound(
-        CoordinateGrid(3, 10),
+        CoordinateGrid(3, 10).Region(),
         new BreakingScan(),
         exception =>
         {
@@ -213,7 +213,7 @@ namespace Unrect.Tests.Projections
     {
       public int Width => 3;
 
-      public bool IncludesRow(ICellValues space, int row) => throw new InvalidOperationException("the scan broke");
+      public bool IncludesRow(Plane<ISpace> space, int row) => throw new InvalidOperationException("the scan broke");
     }
   }
 }

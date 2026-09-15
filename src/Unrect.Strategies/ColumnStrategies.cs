@@ -7,15 +7,15 @@ namespace Unrect.Strategies
   public static class ColumnStrategies
   {
     /// <summary>Leading columns for which <paramref name="predicate"/> holds; stops at the first column it does not, keeping the match out.</summary>
-    public static IColumnStrategy TakeColumnsWhile(Func<ICellValues, int, bool> predicate)
+    public static IColumnStrategy TakeColumnsWhile(Func<Plane<ISpace>, int, bool> predicate)
       => new TakeWhileColumnStrategy(predicate);
 
     /// <summary>
     /// Columns while <paramref name="predicate"/> holds of the cell in <paramref name="row"/> — the
-    /// transpose of <see cref="RowStrategies.TakeRowsWhile(int, Func{CellValue, int, bool})"/>, for
+    /// transpose of <see cref="RowStrategies.TakeRowsWhile(int, Func{Point{ISpace}, int, bool})"/>, for
     /// reading a band off one caption row.
     /// </summary>
-    public static IColumnStrategy TakeColumnsWhile(int row, Func<CellValue, int, bool> predicate)
+    public static IColumnStrategy TakeColumnsWhile(int row, Func<Point<ISpace>, int, bool> predicate)
       => TakeColumnsWhile((space, column) => predicate(space[column, row], column));
 
     /// <summary>Exactly <paramref name="count"/> columns; throws <see cref="OutOfBoundsException"/> when that does not fit.</summary>
@@ -27,15 +27,20 @@ namespace Unrect.Strategies
     /// of <see cref="RowStrategies.TakeRowsTo"/>. The match is kept, where a while-strategy stops
     /// before it.
     /// </summary>
-    public static IColumnStrategy TakeColumnsTo(Func<ICellValues, int, bool> predicate)
+    public static IColumnStrategy TakeColumnsTo(Func<Plane<ISpace>, int, bool> predicate)
       => new TakeToColumnStrategy(predicate);
 
     /// <summary>
-    /// Columns up to and including the first whose cell in <paramref name="row"/> equals
-    /// <paramref name="value"/> — the transpose of <see cref="RowStrategies.TakeRowsToValue"/>.
+    /// Columns up to and including the first whose cell in <paramref name="row"/> is the text
+    /// <paramref name="text"/> — the transpose of <see cref="RowStrategies.TakeRowsToText"/>, and
+    /// a text cell only, for the same reason.
     /// </summary>
-    public static IColumnStrategy TakeColumnsToValue(int row, CellValue value)
-      => TakeColumnsTo((space, column) => space[column, row].Equals(value));
+    public static IColumnStrategy TakeColumnsToText(int row, string text)
+    {
+      var matches = CellMatching.TextEquals(text ?? throw new ArgumentNullException(nameof(text)));
+
+      return TakeColumnsTo((space, column) => matches(space[column, row]));
+    }
 
     /// <summary>
     /// Every column of the available space. The declared spelling of "the full width", which
@@ -44,36 +49,36 @@ namespace Unrect.Strategies
     public static IColumnStrategy AllColumns() => TakeColumnsWhile((_, _) => true);
 
     /// <summary>Leading columns in which every cell satisfies <paramref name="predicate"/>.</summary>
-    public static IColumnStrategy TakeColumnsWhileAll(Func<CellValue, bool> predicate)
+    public static IColumnStrategy TakeColumnsWhileAll(Func<Point<ISpace>, bool> predicate)
       => new TakeWhileAllColumnStrategy(predicate);
 
     /// <summary>Leading columns in which at least one cell satisfies <paramref name="predicate"/>.</summary>
-    public static IColumnStrategy TakeColumnsWhileAny(Func<CellValue, bool> predicate)
+    public static IColumnStrategy TakeColumnsWhileAny(Func<Point<ISpace>, bool> predicate)
       => new TakeWhileAnyColumnStrategy(predicate);
 
-    /// <summary>Leading columns that carry a value — <see cref="TakeColumnsWhileAny(Func{CellValue, bool})"/> with <c>HasValue</c> as the predicate.</summary>
+    /// <summary>Leading columns that carry a value — <see cref="TakeColumnsWhileAny(Func{Point{ISpace}, bool})"/> with <c>HasValue</c> as the predicate.</summary>
     public static IColumnStrategy TakeColumnsWhileAnyValue()
       => TakeColumnsWhileAny(v => v.HasValue);
 
-    /// <summary>Combines <paramref name="strategy"/>'s rows with columns selected by <see cref="TakeColumnsWhile(Func{ICellValues, int, bool})"/>, rows measured first.</summary>
+    /// <summary>Combines <paramref name="strategy"/>'s rows with columns selected by <see cref="TakeColumnsWhile(Func{Plane{ISpace}, int, bool})"/>, rows measured first.</summary>
     public static IAreaStrategy TakeColumnsWhile(
       this IRowStrategy strategy,
-      Func<ICellValues, int, bool> predicate)
+      Func<Plane<ISpace>, int, bool> predicate)
       => AreaStrategies.RowsThenColumns(strategy, TakeColumnsWhile(predicate));
 
-    /// <summary>Combines <paramref name="strategy"/>'s rows with columns selected by <see cref="TakeColumnsWhileAll(Func{CellValue, bool})"/>, rows measured first.</summary>
+    /// <summary>Combines <paramref name="strategy"/>'s rows with columns selected by <see cref="TakeColumnsWhileAll(Func{Point{ISpace}, bool})"/>, rows measured first.</summary>
     public static IAreaStrategy TakeColumnsWhileAll(
       this IRowStrategy strategy,
-      Func<CellValue, bool> predicate)
+      Func<Point<ISpace>, bool> predicate)
       => AreaStrategies.RowsThenColumns(strategy, TakeColumnsWhileAll(predicate));
 
-    /// <summary>Combines <paramref name="strategy"/>'s rows with columns selected by <see cref="TakeColumnsWhileAny(Func{CellValue, bool})"/>, rows measured first.</summary>
+    /// <summary>Combines <paramref name="strategy"/>'s rows with columns selected by <see cref="TakeColumnsWhileAny(Func{Point{ISpace}, bool})"/>, rows measured first.</summary>
     public static IAreaStrategy TakeColumnsWhileAny(
       this IRowStrategy strategy,
-      Func<CellValue, bool> predicate)
+      Func<Point<ISpace>, bool> predicate)
       => AreaStrategies.RowsThenColumns(strategy, TakeColumnsWhileAny(predicate));
 
-    /// <summary>Those rows, at the columns that carry values — <see cref="TakeColumnsWhileAny(Func{CellValue, bool})"/> with <c>HasValue</c> as the predicate.</summary>
+    /// <summary>Those rows, at the columns that carry values — <see cref="TakeColumnsWhileAny(Func{Point{ISpace}, bool})"/> with <c>HasValue</c> as the predicate.</summary>
     public static IAreaStrategy TakeColumnsWhileAnyValue(this IRowStrategy strategy)
       => strategy.TakeColumnsWhileAny(v => v.HasValue);
 

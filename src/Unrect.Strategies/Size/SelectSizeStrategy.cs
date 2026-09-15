@@ -5,13 +5,13 @@ namespace Unrect.Strategies
 {
   internal sealed class SelectSizeStrategy : ISizeStrategy
   {
-    public SelectSizeStrategy(Func<ICellValues, Size> areaSelector)
+    public SelectSizeStrategy(Func<Plane<ISpace>, Size> areaSelector)
     {
       AreaSelector = areaSelector;
     }
 
-    private Func<ICellValues, Size> AreaSelector { get; }
+    private Func<Plane<ISpace>, Size> AreaSelector { get; }
 
-    public Size GetSize(ICellValues availableSpace) => AreaSelector(availableSpace);
+    public Size GetSize(Plane<ISpace> availableSpace) => AreaSelector(availableSpace);
   }
 }

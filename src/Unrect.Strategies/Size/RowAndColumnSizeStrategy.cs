@@ -47,19 +47,21 @@ namespace Unrect.Strategies
     public static ISizeStrategy ColumnsThenRows(IColumnStrategy columns, IRowStrategy rows)
       => new RowAndColumnSizeStrategy(rows, columns, rowFirst: false);
 
-    public Size GetSize(ICellValues availableSpace)
+    // The two slices below are arithmetic for the reason CompositeOffsetSizeStrategy gives: the
+    // reads are identical, and the band announced to a windowed store is the parent object's.
+    public Size GetSize(Plane<ISpace> availableSpace)
     {
       if (RowFirst)
       {
         var rowCount = RowSelectionStrategy.SelectRows(availableSpace);
-        availableSpace = availableSpace.GetSubspace(new Area(availableSpace.Area.Width, rowCount));
+        availableSpace = availableSpace.Slice(new Area(availableSpace.Width, rowCount));
         var columnCount = ColumnSelectionStrategy.SelectColumns(availableSpace);
         return new Size(columnCount, rowCount);
       }
       else
       {
         var columnCount = ColumnSelectionStrategy.SelectColumns(availableSpace);
-        availableSpace = availableSpace.GetSubspace(new Area(columnCount, availableSpace.Area.Height));
+        availableSpace = availableSpace.Slice(new Area(columnCount, availableSpace.Area.Height));
         var rowCount = RowSelectionStrategy.SelectRows(availableSpace);
         return new Size(columnCount, rowCount);
       }

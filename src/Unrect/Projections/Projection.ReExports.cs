@@ -63,10 +63,10 @@ namespace Unrect.Projections
     // spelled with the raw lift there too.
 
     /// <summary>The first row satisfying <paramref name="predicate"/>.</summary>
-    public static IRowLandmark RowWhere(Func<ICellValues, int, bool> predicate) => RowLandmarks.RowWhere(predicate);
+    public static IRowLandmark RowWhere(Func<Plane<ISpace>, int, bool> predicate) => RowLandmarks.RowWhere(predicate);
 
     /// <summary>The first row with any cell satisfying <paramref name="anyCell"/>.</summary>
-    public static IRowLandmark RowWithCell(Func<CellValue, bool> anyCell) => RowLandmarks.RowWithCell(anyCell);
+    public static IRowLandmark RowWithCell(Func<Point<ISpace>, bool> anyCell) => RowLandmarks.RowWithCell(anyCell);
 
     /// <summary>
     /// The first row holding <paramref name="text"/> as a whole cell value, trimmed and
@@ -74,17 +74,27 @@ namespace Unrect.Projections
     /// </summary>
     public static IRowLandmark RowContaining(string text) => RowLandmarks.RowContaining(text);
 
+    /// <summary>
+    /// The first row in which some cell <em>says</em> <paramref name="text"/> — the same whole-cell
+    /// comparison as <see cref="RowContaining"/>, against every cell's rendering rather than against
+    /// text cells alone, so a numeric 42, a date, a boolean and an error are all reachable.
+    /// </summary>
+    public static IRowLandmark RowSaying(string text) => RowLandmarks.RowSaying(text);
+
     /// <summary>The first column satisfying <paramref name="predicate"/>.</summary>
-    public static IColumnLandmark ColumnWhere(Func<ICellValues, int, bool> predicate) => ColumnLandmarks.ColumnWhere(predicate);
+    public static IColumnLandmark ColumnWhere(Func<Plane<ISpace>, int, bool> predicate) => ColumnLandmarks.ColumnWhere(predicate);
 
     /// <summary>The first column with any cell satisfying <paramref name="anyCell"/>.</summary>
-    public static IColumnLandmark ColumnWithCell(Func<CellValue, bool> anyCell) => ColumnLandmarks.ColumnWithCell(anyCell);
+    public static IColumnLandmark ColumnWithCell(Func<Point<ISpace>, bool> anyCell) => ColumnLandmarks.ColumnWithCell(anyCell);
 
     /// <summary>
     /// The first column holding <paramref name="text"/> as a whole cell value, trimmed and
     /// case-insensitively.
     /// </summary>
     public static IColumnLandmark ColumnContaining(string text) => ColumnLandmarks.ColumnContaining(text);
+
+    /// <summary>The column twin of <see cref="RowSaying"/>, with the same rule.</summary>
+    public static IColumnLandmark ColumnSaying(string text) => ColumnLandmarks.ColumnSaying(text);
 
     // --- Extent vocabulary ----------------------------------------------------------------------
     //
@@ -108,7 +118,7 @@ namespace Unrect.Projections
     /// Full available width, and as many leading rows as have at least one cell satisfying
     /// <paramref name="anyCell"/>.
     /// </summary>
-    public static IAreaStrategy RowsWhileAny(Func<CellValue, bool> anyCell)
+    public static IAreaStrategy RowsWhileAny(Func<Point<ISpace>, bool> anyCell)
       => SizeStrategies.RowsWhileAny(anyCell).ToAreaStrategy();
 
     /// <summary>Full available height, and the leading columns that carry values.</summary>
@@ -118,7 +128,7 @@ namespace Unrect.Projections
     /// Full available height, and as many leading columns as have at least one cell satisfying
     /// <paramref name="anyCell"/>.
     /// </summary>
-    public static IAreaStrategy ColumnsWhileAny(Func<CellValue, bool> anyCell)
+    public static IAreaStrategy ColumnsWhileAny(Func<Point<ISpace>, bool> anyCell)
       => SizeStrategies.ColumnsWhileAny(anyCell).ToAreaStrategy();
 
     // The row/column selectors, for composing an extent from its two axes and for the leaf

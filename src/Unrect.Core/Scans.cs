@@ -18,11 +18,15 @@ namespace Unrect.Core
     /// The number of leading rows of <paramref name="space"/> that <paramref name="scan"/> includes,
     /// read to exhaustion.
     /// </summary>
-    public static int Fold(IRowScan scan, ICellValues space)
+    public static int Fold(IRowScan scan, Plane<ISpace> space)
     {
       int count = 0;
 
-      while (count < space.Area.Height && scan.IncludesRow(space, count))
+      // Asked as "is there a row here" rather than "how tall are you": the same answer on a
+      // measured region, and one row rather than all of them on one still being discovered. The
+      // fold therefore never settles a boundary itself; whether the whole reading stays that way
+      // is the scan's business, since a rule free to ask its region how tall it is will settle it.
+      while (space.HasRow(count) && scan.IncludesRow(space, count))
         count++;
 
       return count;
@@ -32,14 +36,14 @@ namespace Unrect.Core
     /// The size <paramref name="scan"/> denotes over <paramref name="space"/>: its settled width, and
     /// its rows folded to exhaustion.
     /// </summary>
-    public static Size FoldSize(IAreaScan scan, ICellValues space)
+    public static Size FoldSize(IAreaScan scan, Plane<ISpace> space)
       => new Size(scan.Width, Fold(scan, space));
 
     /// <summary>
     /// The area <paramref name="scan"/> denotes over <paramref name="space"/> — <see cref="FoldSize"/>
     /// at the area layer, which is the same rectangle under the other name.
     /// </summary>
-    public static Area FoldArea(IAreaScan scan, ICellValues space)
+    public static Area FoldArea(IAreaScan scan, Plane<ISpace> space)
       => new Area(FoldSize(scan, space));
   }
 }

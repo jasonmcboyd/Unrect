@@ -20,29 +20,36 @@ namespace Unrect.Strategies
   /// place the matched text is known to be a label, where a trailing colon is presentation.
   /// </para>
   /// <para>
-  /// A third rule lives elsewhere and must not be folded in here: <c>CaptionComparer</c> bridges a
+  /// <see cref="SaysEquals"/> is <b>rendering matching</b>, and the only rule here that looks past
+  /// a cell's kind. The other two ask what the cell <em>holds</em> and so see text cells alone —
+  /// which is why a numeric 42 is not a row containing "42". This one asks what the cell
+  /// <em>says</em>, and a declaration reaches it by writing <c>Saying</c> rather than
+  /// <c>Containing</c>, so the widening is always something someone asked for.
+  /// </para>
+  /// <para>
+  /// A fourth rule lives elsewhere and must not be folded in here: <c>CaptionComparer</c> bridges a
   /// caption and a C# identifier, and so ignores whitespace <em>everywhere</em>. That is meaningful
   /// between two identifier spaces and harmful in a content matcher, where it would let
-  /// <c>RowContaining("Net Income")</c> match a cell reading <c>"NetIncome"</c>. Three rules is two
+  /// <c>RowContaining("Net Income")</c> match a cell reading <c>"NetIncome"</c>. Four rules is three
   /// more than anyone wants; each is scoped on purpose, and they are not to be unified.
   /// </para>
   /// </summary>
   internal static class CellMatching
   {
-    public static Func<ICellValues, int, bool> AnyCellInRow(Func<CellValue, bool> cell)
+    public static Func<Plane<ISpace>, int, bool> AnyCellInRow(Func<Point<ISpace>, bool> cell)
       => (space, row) =>
       {
-        for (var column = 0; column < space.Area.Width; column++)
+        for (var column = 0; column < space.Width; column++)
           if (cell(space[column, row]))
             return true;
 
         return false;
       };
 
-    public static Func<ICellValues, int, bool> AnyCellInColumn(Func<CellValue, bool> cell)
+    public static Func<Plane<ISpace>, int, bool> AnyCellInColumn(Func<Point<ISpace>, bool> cell)
       => (space, column) =>
       {
-        for (var row = 0; row < space.Area.Height; row++)
+        for (var row = 0; space.HasRow(row); row++)
           if (cell(space[column, row]))
             return true;
 
@@ -59,12 +66,19 @@ namespace Unrect.Strategies
     /// is a character a label may no longer contain.
     /// </para>
     /// </summary>
-    public static Func<CellValue, bool> LabelEquals(string label)
+    public static Func<Point<ISpace>, bool> LabelEquals(string label)
     {
       var needle = TrimLabel(label);
 
-      return cell => cell.TryGetString() is string value && Comparison.Equals(TrimLabel(value), needle);
+      return point => point.IsText && Comparison.Equals(TrimLabel(point.AsText()!), needle);
     }
+
+    /// <summary>
+    /// The label rule between two strings, for a caller holding both — a declaration checking its
+    /// own labels apart before it has any cells to ask about. The same two halves the predicate is
+    /// built from, so the rule stays one implementation.
+    /// </summary>
+    public static bool LabelsMatch(string first, string second) => Comparison.Equals(TrimLabel(first), TrimLabel(second));
 
     /// <summary>Strips a trailing run of colons and whitespace, so "EIN: :" reduces to "EIN".</summary>
     private static string TrimLabel(string text)
@@ -81,17 +95,33 @@ namespace Unrect.Strategies
     /// Whole-cell equality, trimmed and case-insensitive. Not a substring: labels are cell values,
     /// and substring matching invites false anchors.
     /// </summary>
-    public static Func<CellValue, bool> TextEquals(string text)
+    public static Func<Point<ISpace>, bool> TextEquals(string text)
     {
       var needle = Trimmed(text);
 
-      return cell => cell.TryGetString() is string value && Comparison.Equals(Trimmed(value), needle);
+      return point => point.IsText && Comparison.Equals(Trimmed(point.AsText()!), needle);
     }
 
-    /// <summary>The trim both rules here begin with — what a cell's edges are allowed to carry.</summary>
+    /// <summary>
+    /// The same whole-cell comparison against what a cell <em>says</em>, whatever kind it is — the
+    /// rule behind <c>RowSaying</c>. It is the one rule here with no text guard, and that is the
+    /// whole of the difference: a numeric 42 says "42" and is found by this and by nothing else.
+    /// <para>
+    /// A rendering is the backend's choice rather than the cell's content, which is why this is the
+    /// opt-in rule and <see cref="TextEquals"/> is the default one. Nothing is widened to reach it.
+    /// </para>
+    /// </summary>
+    public static Func<Point<ISpace>, bool> SaysEquals(string text)
+    {
+      var needle = Trimmed(text);
+
+      return point => point.AsText() is string said && Comparison.Equals(Trimmed(said), needle);
+    }
+
+    /// <summary>The trim every rule here begins with — what a cell's edges are allowed to carry.</summary>
     private static string Trimmed(string text) => text.Trim();
 
-    /// <summary>How both rules compare two texts once they are trimmed — the case policy, in one place.</summary>
+    /// <summary>How every rule here compares two texts once they are trimmed — the case policy, in one place.</summary>
     private static readonly StringComparer Comparison = StringComparer.OrdinalIgnoreCase;
 
     /// <summary>

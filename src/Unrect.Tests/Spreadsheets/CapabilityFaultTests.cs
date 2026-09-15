@@ -215,7 +215,7 @@ namespace Unrect.Tests.Spreadsheets
 
       internal Chart(ICellValues inner) => _inner = inner;
 
-      public ICellValues Underlying => _inner;
+      public ISpace Underlying => _inner;
 
       public Area Area => _inner.Area;
 

@@ -274,7 +274,7 @@ namespace PlacementGauntlet
       // The repeat-stop recipe as the corpus actually writes it: the heading text VARIES per
       // occurrence, so it is read rather than asserted. Heading takes a string, so it cannot be
       // written here at all — and the Under entry is what remains.
-      var regionMark = RowWithCell(cell => cell.Kind == CellKind.Text && cell.GetString().StartsWith("Region "));
+      var regionMark = RowWithCell(cell => cell.IsText && cell.AsText()!.StartsWith("Region "));
       var regionName = Row(cells => cells[0].GetString());
 
       var discovered = Place.On(regionMark).Under(regionName).Of(lines);

@@ -54,9 +54,19 @@ namespace Unrect.Spreadsheets
     /// </para>
     /// </summary>
     public static IProjection<IFormulaSpace, string?> Formula()
-      => Projection.Range(1, 1, cell => cell.Space.Underlying().Capability<IFormulaSpace>()?.FormulaAt(0, 0))
+      => Projection.Range(1, 1, cell => Formula(cell.Space[0, 0]))
         .Named("Formula")
         .Demanding(Formulas);
+
+    /// <summary>
+    /// The formula behind <paramref name="cell"/>, or null. Asked at the point's own coordinates
+    /// rather than at (0, 0) of the region: a capability answers about the cells of the SPACE, and a
+    /// region may name a rectangle part-way into one. The two formula landmarks below ask the same
+    /// way, so there is one rule here rather than a rule and an assumption.
+    /// </summary>
+    private static string? Formula<TSpace>(Point<TSpace> cell)
+      where TSpace : class, ISpace
+      => cell.Space.Capability<IFormulaSpace>()?.FormulaAt(cell.Column, cell.Row);
 
     /// <summary>
     /// The first row holding a formula anywhere in it — the boundary form, for a section that
@@ -124,7 +134,7 @@ namespace Unrect.Spreadsheets
       /// The capability, or a fault. A boundary that cannot look must not answer "not there": that
       /// would be a claim about the document made by a reader describing itself.
       /// </summary>
-      protected IFormulaSpace Formulas(ICellValues space) => space.RequiredCapability<IFormulaSpace>(_demandedBy);
+      protected IFormulaSpace Formulas(ISpace space) => space.RequiredCapability<IFormulaSpace>(_demandedBy);
 
       protected bool Matches(string? formula)
         => formula is not null
@@ -140,14 +150,21 @@ namespace Unrect.Spreadsheets
 
       IRowLandmark IRowLandmark<IFormulaSpace>.Landmark => this;
 
-      public int? FindRow(ICellValues space)
+      public int? FindRow(Plane<ISpace> space)
       {
-        var formulas = Formulas(space);
+        var formulas = Formulas(space.Space);
 
+        // Through the region's own points, because a capability answers in the SPACE's coordinates
+        // and a region may name a rectangle part-way into it. The point carries the translation the
+        // region would otherwise have to do by hand.
         for (var row = 0; row < space.Area.Height; row++)
-          for (var column = 0; column < space.Area.Width; column++)
-            if (Matches(formulas.FormulaAt(column, row)))
+          for (var column = 0; column < space.Width; column++)
+          {
+            var cell = space[column, row];
+
+            if (Matches(formulas.FormulaAt(cell.Column, cell.Row)))
               return row;
+          }
 
         return null;
       }
@@ -162,14 +179,18 @@ namespace Unrect.Spreadsheets
 
       IColumnLandmark IColumnLandmark<IFormulaSpace>.Landmark => this;
 
-      public int? FindColumn(ICellValues space)
+      public int? FindColumn(Plane<ISpace> space)
       {
-        var formulas = Formulas(space);
+        var formulas = Formulas(space.Space);
 
-        for (var column = 0; column < space.Area.Width; column++)
+        for (var column = 0; column < space.Width; column++)
           for (var row = 0; row < space.Area.Height; row++)
-            if (Matches(formulas.FormulaAt(column, row)))
+          {
+            var cell = space[column, row];
+
+            if (Matches(formulas.FormulaAt(cell.Column, cell.Row)))
               return column;
+          }
 
         return null;
       }

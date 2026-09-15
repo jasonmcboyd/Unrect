@@ -36,15 +36,15 @@ namespace Unrect.Projections
     /// <summary>Whether the scan has stopped, at which point <see cref="_resolved"/> is the height.</summary>
     private bool _stopped;
 
-    internal Bound(ICellValues inner, IAreaScan scan, Func<Exception, ProjectionException> failure)
+    internal Bound(Plane<ISpace> inner, IAreaScan scan, Func<Exception, ProjectionException> failure)
     {
       Inner = inner;
       Scan = scan;
       Failure = failure;
     }
 
-    /// <summary>The measured space the scan is read against — already resolved for the offset.</summary>
-    private ICellValues Inner { get; }
+    /// <summary>The region the scan is read against — already resolved for the offset.</summary>
+    private Plane<ISpace> Inner { get; }
 
     private IAreaScan Scan { get; }
 

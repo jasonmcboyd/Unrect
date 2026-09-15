@@ -174,7 +174,7 @@ namespace Unrect.Projections
       Offset offset;
       try
       {
-        offset = Separator.GetOffset(remaining.AsSpace());
+        offset = Separator.GetOffset(remaining.AsCanonical());
       }
       catch (ProjectionException)
       {

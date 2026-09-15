@@ -5,21 +5,21 @@ namespace Unrect.Strategies
 {
   internal sealed class TakeWhileAnyRowStrategy : IIncrementalRowStrategy, IRowScan
   {
-    public TakeWhileAnyRowStrategy(Func<CellValue, bool> predicate)
+    public TakeWhileAnyRowStrategy(Func<Point<ISpace>, bool> predicate)
     {
       Predicate = predicate;
     }
 
-    private Func<CellValue, bool> Predicate { get; }
+    private Func<Point<ISpace>, bool> Predicate { get; }
 
     // The rule carries nothing from row to row, so one instance is every scan of it.
     public IRowScan BeginRows() => this;
 
-    public int SelectRows(ICellValues space) => Scans.Fold(BeginRows(), space);
+    public int SelectRows(Plane<ISpace> space) => Scans.Fold(BeginRows(), space);
 
-    public bool IncludesRow(ICellValues space, int row)
+    public bool IncludesRow(Plane<ISpace> space, int row)
     {
-      for (int i = 0; i < space.Area.Width; i++)
+      for (int i = 0; i < space.Width; i++)
       {
         if (Predicate(space[i, row]))
           return true;

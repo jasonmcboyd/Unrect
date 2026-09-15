@@ -65,8 +65,8 @@ namespace Unrect.Tests.Projections
     /// than call-count-based, so it breaks in the same place however many cells the reading asks
     /// for — the idiom <c>LazyErrorTimingTests</c> established and for the same reason.
     /// </summary>
-    private static Func<CellValue, bool> BreaksOn(int marker)
-      => cell => cell.TryGetInt() == marker ? throw new InvalidOperationException("no") : true;
+    private static Func<Point<ISpace>, bool> BreaksOn(int marker)
+      => cell => cell.AsText() == marker.ToString() ? throw new InvalidOperationException("no") : true;
 
     /// <summary>
     /// The third row of the first block. A scan that breaks here survives two rows first, so the

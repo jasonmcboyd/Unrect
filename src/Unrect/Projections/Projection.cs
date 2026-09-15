@@ -636,7 +636,7 @@ namespace Unrect.Projections
       for (var index = 0; index < declared.Length; index++)
         for (var earlier = 0; earlier < index; earlier++)
         {
-          if (CellMatching.LabelEquals(declared[earlier].Label)(CellValue.Of(declared[index].Label)))
+          if (CellMatching.LabelsMatch(declared[earlier].Label, declared[index].Label))
             throw new ArgumentException(
               $"Two fields carry the label '{declared[index].Label}'; "
               + "labels are matched ignoring case, surrounding whitespace and a trailing colon.",
