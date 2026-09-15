@@ -48,6 +48,42 @@ namespace Unrect.Tests.Strategies
     private const string ABoolean = "Boolean";
     private const string AnError = "Error";
 
+    /// <summary>
+    /// Every non-text kind paired with the text a reader would expect its cell to have — the one
+    /// list every refusal and every grounding pin below is stated over, so a kind cannot be added
+    /// to one family and forgotten in another.
+    /// <para>
+    /// It serves both axes: <see cref="ColumnsHolding"/> places the identical
+    /// <see cref="CellValue"/> that <see cref="RowsHolding"/> does, transposed, so a needle
+    /// grounded on one is grounded on the other.
+    /// </para>
+    /// </summary>
+    public static TheoryData<string, string> Needles => new TheoryData<string, string>
+    {
+      { ANumber, "42" },
+      { ATemporal, "2026-03-04" },
+      { ABoolean, "TRUE" },
+      { AnError, "#DIV/0!" },
+    };
+
+    /// <summary>
+    /// The same needles as text alone — what a positive twin spells into a text cell. Derived from
+    /// <see cref="Needles"/> rather than written out again, because a twin that had drifted from
+    /// its refusal would stop being a twin without anything saying so.
+    /// </summary>
+    public static TheoryData<string> NeedleTexts
+    {
+      get
+      {
+        var texts = new TheoryData<string>();
+
+        foreach (var needle in Needles)
+          texts.Add((string)needle[1]);
+
+        return texts;
+      }
+    }
+
     /// <summary>The cell one of the kind names above stands for.</summary>
     private static object CellOf(string kind) =>
       kind switch
@@ -89,10 +125,7 @@ namespace Unrect.Tests.Strategies
     // is still not a text cell.
 
     [Theory]
-    [InlineData(ANumber, "42")]
-    [InlineData(ATemporal, "2026-03-04")]
-    [InlineData(ABoolean, "TRUE")]
-    [InlineData(AnError, "#DIV/0!")]
+    [MemberData(nameof(Needles))]
     public void TheNeedleIsExactlyWhatTheNonTextCellSays(string kind, string text)
     {
       var cells = RowsHolding(CellOf(kind));
@@ -103,10 +136,7 @@ namespace Unrect.Tests.Strategies
     }
 
     [Theory]
-    [InlineData("42")]
-    [InlineData("2026-03-04")]
-    [InlineData("TRUE")]
-    [InlineData("#DIV/0!")]
+    [MemberData(nameof(NeedleTexts))]
     public void ATextCellSpellingTheSameThingSaysItAsItsOwnValue(string text)
     {
       // The positive twin: the same words, and this time they are the cell's own. IsText is the
@@ -120,20 +150,14 @@ namespace Unrect.Tests.Strategies
     // --- RowContaining ------------------------------------------------------------------------------
 
     [Theory]
-    [InlineData(ANumber, "42")]
-    [InlineData(ATemporal, "2026-03-04")]
-    [InlineData(ABoolean, "TRUE")]
-    [InlineData(AnError, "#DIV/0!")]
+    [MemberData(nameof(Needles))]
     public void RowContaining_DoesNotMatchANonTextCellsText(string kind, string text)
     {
       Assert.Null(RowLandmarks.RowContaining(text).FindRow(RowsHolding(CellOf(kind))));
     }
 
     [Theory]
-    [InlineData("42")]
-    [InlineData("2026-03-04")]
-    [InlineData("TRUE")]
-    [InlineData("#DIV/0!")]
+    [MemberData(nameof(NeedleTexts))]
     public void RowContaining_MatchesATextCellSpellingTheSameThing(string text)
     {
       Assert.Equal(1, RowLandmarks.RowContaining(text).FindRow(RowsHolding(text)));
@@ -142,18 +166,14 @@ namespace Unrect.Tests.Strategies
     // --- RowWithCell --------------------------------------------------------------------------------
 
     [Theory]
-    [InlineData(ANumber, "42")]
-    [InlineData(ATemporal, "2026-03-04")]
-    [InlineData(ABoolean, "TRUE")]
-    [InlineData(AnError, "#DIV/0!")]
+    [MemberData(nameof(Needles))]
     public void RowWithCell_DoesNotMatchANonTextCellsText(string kind, string text)
     {
       Assert.Null(RowLandmarks.RowWithCell(Says(text)).FindRow(RowsHolding(CellOf(kind))));
     }
 
     [Theory]
-    [InlineData("42")]
-    [InlineData("TRUE")]
+    [MemberData(nameof(NeedleTexts))]
     public void RowWithCell_MatchesATextCellSpellingTheSameThing(string text)
     {
       Assert.Equal(1, RowLandmarks.RowWithCell(Says(text)).FindRow(RowsHolding(text)));
@@ -162,18 +182,14 @@ namespace Unrect.Tests.Strategies
     // --- ColumnContaining ---------------------------------------------------------------------------
 
     [Theory]
-    [InlineData(ANumber, "42")]
-    [InlineData(ATemporal, "2026-03-04")]
-    [InlineData(ABoolean, "TRUE")]
-    [InlineData(AnError, "#DIV/0!")]
+    [MemberData(nameof(Needles))]
     public void ColumnContaining_DoesNotMatchANonTextCellsText(string kind, string text)
     {
       Assert.Null(ColumnLandmarks.ColumnContaining(text).FindColumn(ColumnsHolding(CellOf(kind))));
     }
 
     [Theory]
-    [InlineData("42")]
-    [InlineData("#DIV/0!")]
+    [MemberData(nameof(NeedleTexts))]
     public void ColumnContaining_MatchesATextCellSpellingTheSameThing(string text)
     {
       Assert.Equal(1, ColumnLandmarks.ColumnContaining(text).FindColumn(ColumnsHolding(text)));
@@ -182,18 +198,14 @@ namespace Unrect.Tests.Strategies
     // --- ColumnWithCell -----------------------------------------------------------------------------
 
     [Theory]
-    [InlineData(ANumber, "42")]
-    [InlineData(ATemporal, "2026-03-04")]
-    [InlineData(ABoolean, "TRUE")]
-    [InlineData(AnError, "#DIV/0!")]
+    [MemberData(nameof(Needles))]
     public void ColumnWithCell_DoesNotMatchANonTextCellsText(string kind, string text)
     {
       Assert.Null(ColumnLandmarks.ColumnWithCell(Says(text)).FindColumn(ColumnsHolding(CellOf(kind))));
     }
 
     [Theory]
-    [InlineData("42")]
-    [InlineData("2026-03-04")]
+    [MemberData(nameof(NeedleTexts))]
     public void ColumnWithCell_MatchesATextCellSpellingTheSameThing(string text)
     {
       Assert.Equal(1, ColumnLandmarks.ColumnWithCell(Says(text)).FindColumn(ColumnsHolding(text)));
@@ -206,10 +218,7 @@ namespace Unrect.Tests.Strategies
     // number.
 
     [Theory]
-    [InlineData(ANumber, "42")]
-    [InlineData(ATemporal, "2026-03-04")]
-    [InlineData(ABoolean, "TRUE")]
-    [InlineData(AnError, "#DIV/0!")]
+    [MemberData(nameof(Needles))]
     public void Caption_DoesNotMatchANonTextCellsText(string kind, string text)
     {
       var failure = Assert.Throws<ProjectionException>(() => Caption(text).Map(RowsHolding(CellOf(kind))));
@@ -218,8 +227,7 @@ namespace Unrect.Tests.Strategies
     }
 
     [Theory]
-    [InlineData("42")]
-    [InlineData("TRUE")]
+    [MemberData(nameof(NeedleTexts))]
     public void Caption_MatchesATextCellSpellingTheSameThing(string text)
     {
       Assert.Equal(text, Caption(text).Map(RowsHolding(text)));
@@ -228,10 +236,7 @@ namespace Unrect.Tests.Strategies
     // --- Field --------------------------------------------------------------------------------------
 
     [Theory]
-    [InlineData(ANumber, "42")]
-    [InlineData(ATemporal, "2026-03-04")]
-    [InlineData(ABoolean, "TRUE")]
-    [InlineData(AnError, "#DIV/0!")]
+    [MemberData(nameof(Needles))]
     public void Field_DoesNotMatchANonTextCellsText(string kind, string text)
     {
       var failure = Assert.Throws<ProjectionException>(() => Fields(Field(text)).Map(RowsHolding(CellOf(kind))));
@@ -240,8 +245,7 @@ namespace Unrect.Tests.Strategies
     }
 
     [Theory]
-    [InlineData("42")]
-    [InlineData("TRUE")]
+    [MemberData(nameof(NeedleTexts))]
     public void Field_MatchesATextCellSpellingTheSameThing(string text)
     {
       IReadOnlyDictionary<string, CellValue> read = Fields(Field(text)).Map(RowsHolding(text));

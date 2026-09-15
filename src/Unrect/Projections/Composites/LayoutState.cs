@@ -27,7 +27,7 @@ namespace Unrect.Projections
     private bool _closed;
     private bool _read;
 
-    protected LayoutState(IProjection owner, ICellValues extent, ProjectionContext context)
+    protected LayoutState(IProjection owner, Plane<ICellValues> extent, ProjectionContext context)
     {
       Owner = owner;
       Extent = extent;
@@ -35,7 +35,7 @@ namespace Unrect.Projections
     }
 
     protected IProjection Owner { get; }
-    protected ICellValues Extent { get; }
+    protected Plane<ICellValues> Extent { get; }
     protected ProjectionContext Context { get; }
 
     /// <summary>How many children the layout has taken.</summary>
@@ -106,10 +106,10 @@ namespace Unrect.Projections
     /// slice. A hole in the declaration has to be reportable from any position the layout reached,
     /// so the message and the location outrank an exact availability figure.
     /// </summary>
-    protected ICellValues RemainingAt(Offset at)
+    protected Plane<ICellValues> RemainingAt(Offset at)
       => at.Width > Extent.Area.Width || at.Height > Extent.Area.Height
         ? Extent
-        : Extent.GetSubspace(at);
+        : Extent.Tail(at);
 
     /// <summary>The one wording, so a flow and an overlay cannot drift apart on it.</summary>
     protected static string NothingDeclared(string noun)

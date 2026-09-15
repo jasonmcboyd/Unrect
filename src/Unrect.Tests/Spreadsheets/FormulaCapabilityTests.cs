@@ -102,7 +102,7 @@ namespace Unrect.Tests.Spreadsheets
     {
       // .Sized hands the projection a bound whose height is still being discovered — a chart, not
       // the sheet — so a raw type test inside the lambda would answer false over this very file.
-      var scaled = On(RowContaining("Scaled")).Of(Range(RowsWhileAnyValue(), block => block.Space.Capability<IFormulaSpace>()?.FormulaAt(1, 0)))
+      var scaled = On(RowContaining("Scaled")).Of(Range(RowsWhileAnyValue(), block => block.Space.Space.Capability<IFormulaSpace>()?.FormulaAt(1, 0)))
         .Demanding(Formulas);
 
       Assert.Equal("LOG10(B8)+B8", scaled.Map(Sheet()));

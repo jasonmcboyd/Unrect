@@ -20,7 +20,9 @@ namespace Unrect.Tests
   public class SpaceContractTests
   {
     /// <summary>
-    /// The same three-by-two grid, behind the two implementations that can be built from one.
+    /// The same three-by-two grid, behind the two implementations that can be built from one — the
+    /// doors the SHAPE rules below are stated over, which need a space whose extent the assertions
+    /// can name.
     /// <para>
     /// The windowed one is built over a synthetic row source rather than a file: a real workbook
     /// would work too, but the point here is the contract rather than the adapter, and a fake keeps
@@ -28,30 +30,15 @@ namespace Unrect.Tests
     /// constructor is private and whose content comes from a file — keeps the same rules against a
     /// real workbook at the bottom of this class.
     /// </para>
+    /// <para>
+    /// The arrangement itself lives in <see cref="ProjectionTestSpaces.Door"/>, because
+    /// <see cref="PlaneTests"/> states its own laws over the same three and two copies of a door
+    /// list are two things to keep in step.
+    /// </para>
     /// </summary>
     public static TheoryData<string> Doors => new TheoryData<string> { "grid", "windowed" };
 
-    /// <summary>The grid both in-memory doors are built from: every cell says its own coordinate.</summary>
-    private static CellValue[,] Cells() => new[,]
-    {
-      { CellValue.Of("0,0"), CellValue.Of("1,0"), CellValue.Of("2,0") },
-      { CellValue.Of("0,1"), CellValue.Of("1,1"), CellValue.Of("2,1") },
-    };
-
-    private static ICellValues Door(string door)
-    {
-      switch (door)
-      {
-        case "grid":
-          return new GridSpace(Cells());
-
-        default:
-          var source = new FakeRowSource(new FakeSheet("Data", 2, 3));
-          var pool = new ReaderPool(source, 1, warmReaders: false);
-
-          return new WindowedSpace(new SheetStore(pool, 0, "Data", 2, 3, chunkRows: 1, windowChunks: 4));
-      }
-    }
+    private static ICellValues Door(string door) => ProjectionTestSpaces.Door(door);
 
     [Theory]
     [MemberData(nameof(Doors))]
@@ -119,16 +106,84 @@ namespace Unrect.Tests
     // the reason the bounds rules are — a declaration cannot see which door it was handed — and the
     // eager reader joins the theory here, because the laws are about content and it has some.
 
-    /// <summary>Every door, including the eager reader, whose content comes from a file.</summary>
-    public static TheoryData<string> CanonicalDoors => new TheoryData<string> { "grid", "windowed", "xlsx" };
+    /// <summary>
+    /// Every door, each holding the <em>same awkward layout</em>: one cell of every kind, five
+    /// error codes, whitespace that looks empty, and cells that are not there at all. The two
+    /// spreadsheet doors are the same file read twice, plainly and with formulas asked for, because
+    /// asking for formulas hands back a different implementation of this very contract.
+    /// <para>
+    /// The layout matters as much as the door list does. Stated over a grid of labels these laws
+    /// are vacuous — <c>IsText</c> is true everywhere, <c>AsText</c> is never a rendering, and a
+    /// door that had stopped classifying entirely would pass — so every sweep below counts what it
+    /// saw and refuses to be vacuous.
+    /// </para>
+    /// </summary>
+    public static TheoryData<string> CanonicalDoors
+      => new TheoryData<string> { "grid", "windowed", "xlsx", "xlsx-formulas" };
 
-    /// <summary>Every door as the canonical surface alone — the eager one read from a real workbook.</summary>
-    private static ISpace CanonicalDoor(string door)
-      => door == "xlsx"
-        ? SpreadsheetSpace.Create(
-          System.IO.Path.Combine(AppContext.BaseDirectory, "TestData", "simple-report.xlsx"),
-          "Report")
-        : Door(door);
+    /// <summary>
+    /// The "Edges" layout, five columns by four rows, as <c>edge-cases.xlsx</c> holds it:
+    /// <code>
+    ///        0            1          2         3            4
+    ///   0    "text"       42         3.14      2026-01-15   TRUE
+    ///   1    #VALUE!      #DIV/0!    #N/A      #REF!        #NAME?
+    ///   2    "  "         " "        ""        (no cell)    "x"
+    ///   3    #NULL!       #NUM!      (none)    (none)       7
+    /// </code>
+    /// The doors do not agree about row 2, deliberately: the spreadsheet adapter's default
+    /// blankness rule calls whitespace-only text empty and the array adapter does not. Blankness is
+    /// the adapter's decision, so that is a difference between two configurations rather than a
+    /// disagreement about the contract — which is why every law below is stated <em>within</em> a
+    /// door and the cross-door theory names only the cells every adapter reads the same way.
+    /// </summary>
+    private static object?[][] EdgeRows() => new[]
+    {
+      new object?[] { "text", 42, 3.14, new DateTime(2026, 1, 15), true },
+      new object?[]
+      {
+        CellValue.OfError(CellError.Value),
+        CellValue.OfError(CellError.DivisionByZero),
+        CellValue.OfError(CellError.NotAvailable),
+        CellValue.OfError(CellError.Reference),
+        CellValue.OfError(CellError.Name),
+      },
+      new object?[] { "  ", " ", "", null, "x" },
+      new object?[] { CellValue.OfError(CellError.Null), CellValue.OfError(CellError.Number), null, null, 7 },
+    };
+
+    /// <summary>Every door as the canonical surface alone, over <see cref="EdgeRows"/>.</summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="door"/> names no door.</exception>
+    private static ICellValues CanonicalDoor(string door)
+    {
+      var file = System.IO.Path.Combine(AppContext.BaseDirectory, "TestData", "edge-cases.xlsx");
+
+      switch (door)
+      {
+        case "grid":
+          var rows = EdgeRows();
+          var cells = new object?[rows.Length, rows[0].Length];
+
+          for (var row = 0; row < rows.Length; row++)
+            for (var column = 0; column < rows[row].Length; column++)
+              cells[row, column] = rows[row][column];
+
+          return ProjectionTestSpaces.Mixed(cells);
+
+        case "windowed":
+          return ProjectionTestSpaces.Windowed(FakeSheet.Of("Edges", EdgeRows()));
+
+        case "xlsx":
+          return SpreadsheetSpace.Create(file, "Edges");
+
+        // The same file through the door that hands back a formula-carrying implementation: a
+        // second class answering this contract, which is the only reason it is swept separately.
+        case "xlsx-formulas":
+          return SpreadsheetSpace.CreateWithFormulas(file, "Edges");
+
+        default:
+          throw new ArgumentOutOfRangeException(nameof(door), door, "No such door.");
+      }
+    }
 
     [Theory]
     [MemberData(nameof(CanonicalDoors))]
@@ -139,9 +194,30 @@ namespace Unrect.Tests
       // different answers, and every skip-while-blank strategy would read differently through it.
       var cells = CanonicalDoor(door);
 
+      var blank = 0;
+      var text = 0;
+      var rendered = 0;
+
       for (var row = 0; row < cells.Area.Height; row++)
         for (var column = 0; column < cells.Area.Width; column++)
+        {
           Assert.Equal(cells.IsBlank(column, row), cells.AsText(column, row) is null);
+
+          if (cells.IsBlank(column, row))
+            blank++;
+          else if (cells.IsText(column, row))
+            text++;
+          else
+            rendered++;
+        }
+
+      // Non-vacuity, and the reason this layout is the one the sweep runs over: an equivalence
+      // between two properties is worth nothing until the sample contains cells on both sides of
+      // it, and a rendering cell — one that says something without being text — is the case a grid
+      // of labels cannot produce at all.
+      Assert.True(blank > 0, $"the '{door}' door held no blank cell");
+      Assert.True(text > 0, $"the '{door}' door held no text cell");
+      Assert.True(rendered > 0, $"the '{door}' door held no cell that renders without being text");
     }
 
     [Theory]
@@ -149,39 +225,124 @@ namespace Unrect.Tests
     public void OnlyACellWithAValueCanBeText(string door)
     {
       var cells = CanonicalDoor(door);
+      var text = 0;
 
       for (var row = 0; row < cells.Area.Height; row++)
         for (var column = 0; column < cells.Area.Width; column++)
           if (cells.IsText(column, row))
+          {
             Assert.False(cells.IsBlank(column, row));
+            text++;
+          }
+
+      Assert.True(text > 0, $"the '{door}' door held no text cell");
     }
 
-    [Fact]
-    public void TextIsTheOneKindWhoseTextIsItsOwnValue()
+    [Theory]
+    [MemberData(nameof(CanonicalDoors))]
+    public void TheIndexerAndTheCanonicalSurfaceAnswerAsOne(string door)
+    {
+      // The bridge, while there is one. Every canonical member is meant to be the value's own
+      // property asked of the space, so a door that computed either half separately — a windowed
+      // space answering IsBlank from a row it had not adapted, say — would read as two spaces at
+      // once. Swept rather than sampled, because the drift such a door would produce is per cell.
+      ICellValues cells = CanonicalDoor(door);
+
+      for (var row = 0; row < cells.Area.Height; row++)
+        for (var column = 0; column < cells.Area.Width; column++)
+        {
+          var value = cells[column, row];
+
+          Assert.Equal(value.IsBlank, cells.IsBlank(column, row));
+          Assert.Equal(value.IsText, cells.IsText(column, row));
+          Assert.Equal(value.AsText(), cells.AsText(column, row));
+        }
+    }
+
+    /// <summary>
+    /// The cells every adapter in the suite reads the same way, with what each of them says. Row 2
+    /// is absent on purpose — whitespace is where the doors are configured differently, and that is
+    /// blankness policy rather than contract.
+    /// </summary>
+    public static TheoryData<string, int, int, string> RenderedCells()
+    {
+      var cases = new TheoryData<string, int, int, string>();
+
+      foreach (var door in new[] { "grid", "windowed", "xlsx", "xlsx-formulas" })
+        foreach (var (column, row, said) in new[]
+        {
+          (1, 0, "42"),
+          (2, 0, "3.14"),
+          (3, 0, "2026-01-15"),
+          (4, 0, "TRUE"),
+          (0, 1, "#VALUE!"),
+          (1, 1, "#DIV/0!"),
+          (2, 1, "#N/A"),
+          (3, 1, "#REF!"),
+          (4, 1, "#NAME?"),
+          (0, 3, "#NULL!"),
+          (1, 3, "#NUM!"),
+          (4, 3, "7"),
+        })
+          cases.Add(door, column, row, said);
+
+      return cases;
+    }
+
+    [Theory]
+    [MemberData(nameof(RenderedCells))]
+    public void TextIsTheOneKindWhoseTextIsItsOwnValue(string door, int column, int row, string said)
     {
       // The sweeps above cannot say this: they check that the classification is consistent, not
       // that it classifies. Every other kind HAS a canonical text and none of them is text, which
-      // is exactly the difference a matcher reads through.
-      ISpace cells = GridSpace.Create(
-        new object?[,]
-        {
-          { "Total", null, 42 },
-          { new DateTime(2026, 3, 4), true, CellValue.OfError(CellError.DivisionByZero) },
-        },
-        ProjectionTestSpaces.Adapt);
+      // is exactly the difference a matcher reads through — and it has to be the same rendering at
+      // every door, or a declaration anchored on one would stop anchoring through another.
+      var cells = CanonicalDoor(door);
+
+      Assert.False(cells.IsBlank(column, row));
+      Assert.False(cells.IsText(column, row));
+      Assert.Equal(said, cells.AsText(column, row));
+    }
+
+    [Theory]
+    [MemberData(nameof(CanonicalDoors))]
+    public void ATextCellIsTheOnlyOneThatAnswersIsText(string door)
+    {
+      // The positive half of the theory above, at the one cell every door agrees is text.
+      var cells = CanonicalDoor(door);
 
       Assert.True(cells.IsText(0, 0));
-      Assert.Equal("Total", cells.AsText(0, 0));
+      Assert.Equal("text", cells.AsText(0, 0));
+    }
 
-      Assert.False(cells.IsText(1, 0));
-      Assert.True(cells.IsBlank(1, 0));
+    [Fact]
+    public void ACellCalledBlankIsNotTextEvenWhenItHoldsAString()
+    {
+      // The defining case, and the reason IsText is not a type test: it means "has a value and it
+      // is text". Blankness is decided by the adapter, so a string payload the adapter or a
+      // predicate calls empty is a cell with NO value — it says nothing, it is not text, and a
+      // matcher must not find it by the characters it happens to be made of.
+      ISpace empties = GridSpace.Create(new string?[,] { { "", "kept" } });
 
-      foreach (var (column, row, said) in new[] { (2, 0, "42"), (0, 1, "2026-03-04"), (1, 1, "TRUE"), (2, 1, "#DIV/0!") })
-      {
-        Assert.False(cells.IsText(column, row));
-        Assert.False(cells.IsBlank(column, row));
-        Assert.Equal(said, cells.AsText(column, row));
-      }
+      Assert.True(empties.IsBlank(0, 0));
+      Assert.False(empties.IsText(0, 0));
+      Assert.Null(empties.AsText(0, 0));
+
+      // The same string under a rule that says whitespace is empty space, which is the spreadsheet
+      // adapter's default and the case a real export produces by the thousand.
+      ISpace strict = GridSpace.Create(new[,] { { "  ", "kept" } }, text => string.IsNullOrWhiteSpace(text) ? CellValue.Blank : CellValue.Of(text));
+
+      Assert.True(strict.IsBlank(0, 0));
+      Assert.False(strict.IsText(0, 0));
+      Assert.Null(strict.AsText(0, 0));
+
+      // ...and under the array adapter's own default, where only null and "" are empty, the very
+      // same two spaces are a cell with a value, and that value is text.
+      ISpace kept = GridSpace.Create(new string?[,] { { "  ", "kept" } });
+
+      Assert.False(kept.IsBlank(0, 0));
+      Assert.True(kept.IsText(0, 0));
+      Assert.Equal("  ", kept.AsText(0, 0));
     }
 
     [Theory]
@@ -315,6 +476,24 @@ namespace Unrect.Tests
 
       Assert.Throws<OutOfBoundsException>(() => { _ = eager[0, 0]; });
       Assert.Throws<OutOfBoundsException>(() => { _ = streamed[0, 0]; });
+    }
+
+    [Fact]
+    public void AZeroWidthSpaceRefusesTheCanonicalFourAtItsOwnCorner()
+    {
+      // Zero rows or zero columns means there is no cell (0, 0), and the canonical members have to
+      // say so as loudly as the indexer does. The trap is that all three have a plausible wrong
+      // answer — "it is blank", "it is not text", "it says nothing" — and each would be a claim
+      // about a cell that is not there, made by a space that could not have looked.
+      ISpace eager = new GridSpace(new CellValue[10, 0]);
+      ISpace streamed = ProjectionTestSpaces.Windowed(new FakeSheet("Empty", 10, 0), chunkRows: 100);
+
+      foreach (var space in new[] { eager, streamed })
+      {
+        Assert.Throws<OutOfBoundsException>(() => { _ = space.IsBlank(0, 0); });
+        Assert.Throws<OutOfBoundsException>(() => { _ = space.IsText(0, 0); });
+        Assert.Throws<OutOfBoundsException>(() => { _ = space.AsText(0, 0); });
+      }
     }
 
     // --- The slicing law ----------------------------------------------------------------------------

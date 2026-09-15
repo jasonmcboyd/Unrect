@@ -28,7 +28,7 @@ namespace Unrect.Projections
 
     public override string Description => $"Field(\"{Label}\")";
 
-    public override ProjectionResult<CellValue> Project(ICellValues extent, ProjectionContext context)
+    public override ProjectionResult<CellValue> Project(Plane<ICellValues> extent, ProjectionContext context)
     {
       var size = extent.Area.Size;
 
@@ -39,12 +39,12 @@ namespace Unrect.Projections
         throw context.Failure(
           $"a Field must be two cells wide and one row tall; this one is {size.Width}x{size.Height}", extent);
 
-      var label = extent[0, 0];
+      var label = extent.CellAt(0, 0);
 
       if (!Match(label))
         throw context.Failure($"expected a label reading '{Label}' here, but this cell {Describe(label)}", extent);
 
-      return new ProjectionResult<CellValue>(extent[1, 0], size);
+      return new ProjectionResult<CellValue>(extent.CellAt(1, 0), size);
     }
 
     private static string Describe(CellValue cell)

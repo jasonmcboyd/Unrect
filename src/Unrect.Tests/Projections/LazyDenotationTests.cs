@@ -178,13 +178,13 @@ namespace Unrect.Tests.Projections
 
       // The boundary of the discovered extent, from both sides. Reading its last row is ordinary;
       // reading the row below it is an overrun, and must be the same overrun either way.
-      "last row of the bound read" => Scenario.Of(Range(RowsWhileAnyValue(), b => b.Space[0, 2].GetInt()), Sheet()),
-      "read past the bound" => Scenario.Of(Range(RowsWhileAnyValue(), b => b.Space[0, 4].TryGetInt()), Sheet()),
+      "last row of the bound read" => Scenario.Of(Range(RowsWhileAnyValue(), b => b.Space.CellAt(0, 2).GetInt()), Sheet()),
+      "read past the bound" => Scenario.Of(Range(RowsWhileAnyValue(), b => b.Space.CellAt(0, 4).TryGetInt()), Sheet()),
 
       // A hundred-row bound of which the projection reads three: the case the whole feature is for,
       // and the one where the two runs read the most different amounts of the sheet.
       "tall bound, three rows read" => Scenario.Of(
-        Range(RowsWhileAnyValue(), b => b.Space[0, 0].GetInt() + b.Space[0, 1].GetInt() + b.Space[0, 2].GetInt()),
+        Range(RowsWhileAnyValue(), b => b.Space.CellAt(0, 0).GetInt() + b.Space.CellAt(0, 1).GetInt() + b.Space.CellAt(0, 2).GetInt()),
         TallSheet()),
 
       // A scan that breaks immediately. Eagerly this is a placement failure before the projection

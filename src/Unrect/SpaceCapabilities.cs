@@ -4,9 +4,8 @@ namespace Unrect
 {
   /// <summary>
   /// A space that is a <em>chart</em> of another: the same geometry, the same coordinates, a
-  /// different view of it. <see cref="Unrect.Projections.BoundedSpace"/> is the one in the box — an
-  /// extent whose height is still being discovered — and any wrapper that neither moves the origin
-  /// nor changes what a cell is belongs here too.
+  /// different view of it. Any wrapper that neither moves the origin nor changes what a cell is
+  /// belongs here.
   /// <para>
   /// This is the unwrap protocol behind <see cref="SpaceCapabilities.Capability{TCapability}"/>,
   /// and the reason a raw <c>space is IFormulaSpace</c> is the wrong question: a wrapper cannot
@@ -22,9 +21,8 @@ namespace Unrect
   /// slicing law asks of every capable backend anyway; it must not implement this.
   /// </para>
   /// <para>
-  /// Narrowing is not moving. <see cref="Unrect.Projections.BoundedSpace"/> hides rows past a bound
-  /// it has not admitted yet and is still a chart, because every cell it does address is the same
-  /// cell underneath.
+  /// Narrowing is not moving. A wrapper that hides rows past a boundary it has not admitted yet is
+  /// still a chart, because every cell it does address is the same cell underneath.
   /// </para>
   /// </summary>
   public interface ISpaceChart

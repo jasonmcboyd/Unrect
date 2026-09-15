@@ -52,10 +52,10 @@ namespace Unrect.Projections
         + "replacing, so a Select or a Padded between the two leaves both ends in force.",
         "projection");
 
-    public override ProjectionResult<TResult> Project(ICellValues extent, ProjectionContext context)
+    public override ProjectionResult<TResult> Project(Plane<ICellValues> extent, ProjectionContext context)
     {
       var size = extent.Area.Size;
-      var found = Landmark.Find(extent);
+      var found = Landmark.Find(extent.AsSpace());
       var limit = found ?? (IsVertical ? size.Height : size.Width);
 
       // A missing end is a disagreement about the shape of the data, not a bug in the reading code,
@@ -68,7 +68,7 @@ namespace Unrect.Projections
       if (found is null)
         context.Report(DiagnosticSeverity.Info, this, $"{Landmark.Description} exists to end this projection, so it ran to the end of the space", extent);
 
-      var applied = ProjectionEngine.Apply(Inner, extent.GetSubspace(Bound(limit, size)), context);
+      var applied = ProjectionEngine.Apply(Inner, extent.Cut(Bound(limit, size)), context);
 
       // The bound is consumed whether or not the inner projection used it all, exactly as a
       // declared area is: that is what puts the next sibling ON the landmark rather than somewhere

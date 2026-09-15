@@ -54,7 +54,7 @@ namespace Unrect.Spreadsheets
     /// </para>
     /// </summary>
     public static IProjection<IFormulaSpace, string?> Formula()
-      => Projection.Range(1, 1, cell => cell.Space.Capability<IFormulaSpace>()?.FormulaAt(0, 0))
+      => Projection.Range(1, 1, cell => cell.Space.Underlying().Capability<IFormulaSpace>()?.FormulaAt(0, 0))
         .Named("Formula")
         .Demanding(Formulas);
 

@@ -7,12 +7,27 @@
 
       ISpace, the strategy interfaces,
       IRowLandmark/IColumnLandmark                                   the contracts themselves
-      Point                                                          the locator ISpace is read through
+      Plane                                                          the 2-D locator: the region a
+                                                                     projection is handed. Spoken by
+                                                                     the strategy signatures, and by
+                                                                     IProjection's Project once the
+                                                                     engine is generic
+      Point                                                          the 0-D locator Plane mints
+      IBound                                                         a region's bottom edge while it
+                                                                     is still being discovered; it
+                                                                     is public because Plane speaks
+                                                                     it, while MINTING one is the
+                                                                     engine's business — Plane.Bounded
+                                                                     is internal to it
       ICellValues                                                    the transitional CellValue
                                                                      bridge, and it retires with it
       CellValue (and CellKind/CellError through it)                  ICellValues' indexer
       Size, Offset, Area                                             the strategy signatures
       OutOfBoundsException                                           the throw ISpace mandates
+
+    Hashes is internal and exempt: the charter is about what this project's contracts SPEAK, and
+    nothing outside this assembly can name it. It exists because three of the value types here mix
+    a hash the same way and System.HashCode is netstandard2.1 and up.
 
     A type that merely USES those contracts belongs above them, in Unrect. That is why GridSpace
     (an implementation of the grid contract) and SpaceExtensions (sugar over one of its methods)
@@ -26,5 +41,15 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- So the engine can attach a discovered bottom edge to a region it just cut. Reading one is
+         public (a plane says whether it carries a bound); making one is not, because only the code
+         that owns the scan can honour the contract Plane.Bounded documents. The same grant
+         Unrect.Strategies makes for the same kind of reason. The suite gets the same reach, so a
+         contract law can be stated over a bounded region without going through the engine. -->
+    <InternalsVisibleTo Include="Unrect" />
+    <InternalsVisibleTo Include="Unrect.Tests" />
+  </ItemGroup>
 
 </Project>

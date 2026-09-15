@@ -23,7 +23,7 @@ namespace Unrect.Projections
     private int _across;
     private int _previous;
 
-    public FlowState(IProjection owner, Orientation orientation, ICellValues extent, ProjectionContext context)
+    public FlowState(IProjection owner, Orientation orientation, Plane<ICellValues> extent, ProjectionContext context)
       : base(owner, extent, context)
     {
       Orientation = orientation;
@@ -61,7 +61,7 @@ namespace Unrect.Projections
 
       try
       {
-        applied = ProjectionEngine.Apply(projection, BoundedSpace.Tail(Extent, cursor), scope);
+        applied = ProjectionEngine.Apply(projection, Extent.Tail(cursor), scope);
       }
       catch (ProjectionException failure) when (FollowsAnEmptySibling(failure, cursor))
       {

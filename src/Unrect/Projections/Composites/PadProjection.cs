@@ -36,7 +36,7 @@ namespace Unrect.Projections
 
     public override bool IsTransparent => Name is null && !IsUnitBoundary;
 
-    public override ProjectionResult<TResult> Project(ICellValues extent, ProjectionContext context)
+    public override ProjectionResult<TResult> Project(Plane<ICellValues> extent, ProjectionContext context)
     {
       var size = extent.Area.Size;
       var width = size.Width - Left - Right;
@@ -56,7 +56,7 @@ namespace Unrect.Projections
       // — transparency in the path must not mean absence from the coordinate arithmetic.
       var applied = ProjectionEngine.Apply(
         Inner,
-        extent.GetSubspace(new Offset(Left, Top), new Area(width, height)),
+        extent.Cut(new Offset(Left, Top), new Area(width, height)),
         context.Advance(new Offset(Left, Top)));
 
       return new ProjectionResult<TResult>(

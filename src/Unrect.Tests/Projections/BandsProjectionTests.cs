@@ -30,7 +30,7 @@ namespace Unrect.Tests.Projections
     private static IProjection<string> BandExtent() => Range(WholeExtent(), block => $"{block.Width}x{block.Height}");
 
     /// <summary>The first cell of a band, so an assertion reads as the row or column it was cut from.</summary>
-    private static IProjection<int> FirstCell() => Range(WholeExtent(), block => block.Space[0, 0].TryGetInt() ?? -1);
+    private static IProjection<int> FirstCell() => Range(WholeExtent(), block => block.Space.CellAt(0, 0).TryGetInt() ?? -1);
 
     // --- 1. What one band is -----------------------------------------------------------------------
 

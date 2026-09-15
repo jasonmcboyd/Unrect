@@ -45,7 +45,7 @@ namespace Unrect.Tests.Projections
 
       // The reading frame: the body row (row 1) shifted one column right of the capture frame.
       var reading = table.Context.Advance(new Offset(1, 1));
-      var strip = new CellStrip(sheet.GetSubspace(new Offset(1, 1), new Area(3, 1)), Orientation.Horizontal, reading);
+      var strip = new CellStrip(sheet.GetSubspace(new Offset(1, 1), new Area(3, 1)).Extent(), Orientation.Horizontal, reading);
       var row = new TableRow(0, strip, reading);
 
       // Translation applied: "Amount" lands on the absolute Amount cell, C2, holding 100.
@@ -70,7 +70,7 @@ namespace Unrect.Tests.Projections
       var table = TableOver(sheet);
 
       var reading = table.Context;
-      var strip = new CellStrip(sheet.GetSubspace(new Offset(0, 1), new Area(2, 1)), Orientation.Horizontal, reading);
+      var strip = new CellStrip(sheet.GetSubspace(new Offset(0, 1), new Area(2, 1)).Extent(), Orientation.Horizontal, reading);
       var row = new TableRow(0, strip, reading);
 
       var failure = Assert.Throws<ProjectionException>(() => row.Decimal("Amount"));
@@ -96,7 +96,7 @@ namespace Unrect.Tests.Projections
 
       // The reading frame is the last two columns (C, D); "X" (column A) is to their left.
       var reading = table.Context.Advance(new Offset(2, 1));
-      var strip = new CellStrip(sheet.GetSubspace(new Offset(2, 1), new Area(2, 1)), Orientation.Horizontal, reading);
+      var strip = new CellStrip(sheet.GetSubspace(new Offset(2, 1), new Area(2, 1)).Extent(), Orientation.Horizontal, reading);
       var row = new TableRow(0, strip, reading);
 
       var failure = Assert.Throws<ProjectionException>(() => row.Decimal("X"));

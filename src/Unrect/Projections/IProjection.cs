@@ -93,7 +93,7 @@ namespace Unrect.Projections
     /// Projects the projection's <em>resolved</em> extent: the placement has already been applied,
     /// so a projection can neither observe nor re-apply it.
     /// </summary>
-    ProjectionResult<TResult> Project(ICellValues extent, ProjectionContext context);
+    ProjectionResult<TResult> Project(Plane<ICellValues> extent, ProjectionContext context);
 
     /// <summary>A copy of this projection named <paramref name="name"/> — see <see cref="IProjection.Name"/>.</summary>
     IProjection<TResult> WithName(string name);

@@ -144,31 +144,31 @@ namespace Unrect.Projections
     internal ProjectionContext WithUseSite(UseSite site)
       => new ProjectionContext(Parent, Projection, Index, Origin, Space, Diagnostics, Site, site, Labels, Ordinal);
 
-    /// <summary>Where this context sits, expressed as an A1-style address against <paramref name="space"/>'s extent.</summary>
-    public ProjectionLocation Locate(ICellValues space) => ProjectionLocation.At(Origin, space.Area.Size);
+    /// <summary>Where this context sits, expressed as an A1-style address against <paramref name="extent"/>.</summary>
+    public ProjectionLocation Locate(Plane<ICellValues> extent) => ProjectionLocation.At(Origin, extent.Area.Size);
 
     /// <summary>
     /// A <see cref="ProjectionException"/> blaming this context's own projection, for a projection
     /// to throw when the data it was handed is not what the projection declared.
     /// </summary>
-    public ProjectionException Failure(string problem, ICellValues space, Exception? inner = null)
+    public ProjectionException Failure(string problem, Plane<ICellValues> extent, Exception? inner = null)
       => Failure(
         Projection ?? throw new InvalidOperationException("The root context has no projection to blame; report failures from within a projection's Project."),
         problem,
-        space,
+        extent,
         null,
         inner);
 
     /// <summary>
-    /// The same failure as the public <see cref="Failure(string, ICellValues, Exception?)"/>, carrying
+    /// The same failure as the public <see cref="Failure(string, Plane{ICellValues}, Exception?)"/>, carrying
     /// the fault flag. An overload rather than an optional parameter on the public method: adding a
     /// parameter there would be a binary break, and the flag is not a caller's to set.
     /// </summary>
-    internal ProjectionException Failure(string problem, ICellValues space, Exception? inner, bool isFault)
+    internal ProjectionException Failure(string problem, Plane<ICellValues> extent, Exception? inner, bool isFault)
       => Failure(
         Projection ?? throw new InvalidOperationException("The root context has no projection to blame; report failures from within a projection's Project."),
         problem,
-        space,
+        extent,
         null,
         inner,
         isFault);
@@ -187,7 +187,7 @@ namespace Unrect.Projections
     internal ProjectionException Failure(
       IProjection projection,
       string problem,
-      ICellValues space,
+      Plane<ICellValues> extent,
       Size? requested,
       Exception? inner,
       bool isFault = false)
@@ -195,18 +195,18 @@ namespace Unrect.Projections
       var chain = Chain(projection);
       var (path, subject) = Collapse(chain);
 
-      return new ProjectionException(subject, problem, path, RenderFull(chain), Locate(space), requested, projection, inner, isFault);
+      return new ProjectionException(subject, problem, path, RenderFull(chain), Locate(extent), requested, projection, inner, isFault);
     }
 
     /// <summary>
     /// Records something about <paramref name="projection"/> that happened here.
     /// </summary>
-    internal void Report(DiagnosticSeverity severity, IProjection projection, string message, ICellValues space)
+    internal void Report(DiagnosticSeverity severity, IProjection projection, string message, Plane<ICellValues> extent)
     {
       var chain = Chain(Through(projection));
       var (path, subject) = Collapse(chain);
 
-      Diagnostics.Add(new ProjectionDiagnostic(severity, subject, message, path, RenderFull(chain), Locate(space)));
+      Diagnostics.Add(new ProjectionDiagnostic(severity, subject, message, path, RenderFull(chain), Locate(extent)));
     }
 
     /// <summary>

@@ -212,7 +212,7 @@ namespace Unrect.Tests.Streaming
       // does not block a second open.)
       var space = Range(WholeExtent(), block => block.Space).MapWorkbook(Path("multi-sheet.xlsx"), "Detail");
 
-      Assert.Throws<ObjectDisposedException>(() => space[0, 0]);
+      Assert.Throws<ObjectDisposedException>(() => space.CellAt(0, 0));
     }
 
     [Fact]
@@ -222,7 +222,7 @@ namespace Unrect.Tests.Streaming
       // return away from losing. The probe captures the extent it was handed on the way past; the
       // sibling after it then fails, and the captured view is dead by the time the exception
       // surfaces.
-      ICellValues? captured = null;
+      Plane<ICellValues>? captured = null;
 
       var probe = Range(1, 1, block =>
       {
@@ -236,7 +236,43 @@ namespace Unrect.Tests.Streaming
       Assert.Throws<ProjectionException>(() => declaration.MapWorkbook(Path("multi-sheet.xlsx"), "Detail"));
 
       Assert.NotNull(captured);
-      Assert.Throws<ObjectDisposedException>(() => captured![0, 0]);
+      Assert.Throws<ObjectDisposedException>(() => captured!.Value.CellAt(0, 0));
+    }
+
+    [Fact]
+    public void AValueStillKnowsItsOwnExtentAfterTheBookIsClosed()
+    {
+      // Deliberate, and stated beside its opposite below so the pair reads as one rule. A region is
+      // WHERE a declaration was told to look — three numbers and a reference — so its extent is part
+      // of the value handed to the projection rather than something read out of the file, and
+      // answering it after the close costs nothing and touches nothing. Making it throw would mean
+      // the region carried a lifetime it does not have, and every dimension a projection had already
+      // been given would become a trap.
+      var block = Range(2, 3, cells => cells).MapWorkbook(Path("multi-sheet.xlsx"), "Detail");
+
+      Assert.Equal(2, block.Width);
+      Assert.Equal(3, block.Height);
+      Assert.Equal(2, block.Space.Area.Width);
+      Assert.Equal(3, block.Space.Area.Height);
+      Assert.Equal("A1", block.Location.A1);
+    }
+
+    [Fact]
+    public void AndIsStillDeadOnArrivalForAnythingThatWouldReadTheFile()
+    {
+      // The other half of the pair above: the extent survives, the cells do not. A read is the one
+      // thing that needs the workbook, so it is the one thing that fails — which is what makes the
+      // ObjectDisposedException proof that the close happened rather than an accident of what was
+      // cached.
+      var block = Range(2, 3, cells => cells).MapWorkbook(Path("multi-sheet.xlsx"), "Detail");
+
+      Assert.Throws<ObjectDisposedException>(() => block.Space.CellAt(0, 0));
+      Assert.Throws<ObjectDisposedException>(() => block[0, 0]);
+      Assert.Throws<ObjectDisposedException>(() => block.Row(0)[0]);
+
+      // Taking the row itself does not throw, for the same reason the extent above does not: a strip
+      // is another region, named and not read.
+      Assert.Equal(2, block.Row(0).Count);
     }
 
     [Fact]
@@ -247,7 +283,7 @@ namespace Unrect.Tests.Streaming
       // what you need inside the declaration — that is what a declaration is for.
       var view = Table(headerRows: 1, (TableView table) => table).MapWorkbook(Path("multi-sheet.xlsx"), "Detail");
 
-      Assert.Throws<ObjectDisposedException>(() => view.Space[0, 0]);
+      Assert.Throws<ObjectDisposedException>(() => view.Space.CellAt(0, 0));
       Assert.Throws<ObjectDisposedException>(() => view.Rows[0][0]);
     }
 

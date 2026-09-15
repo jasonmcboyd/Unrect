@@ -770,7 +770,7 @@ namespace Unrect.Tests.Projections
     // decoupling refactor deliberately narrowed this: a missing/ambiguous caption failure now cites
     // the HEADER BAND — ColumnCount x headerRows — not the full table (ColumnCount x (headerRows +
     // bodyRows)). A caption fault is about the header, and citing the header avoids forcing a
-    // still-discovering BoundedSpace to yield its full height. The facet slipped the gate for want of
+    // still-discovering region to yield its full height. The facet slipped the gate for want of
     // a guard, so it is pinned here — for BOTH faces, the primitive-minted map and a built-in Table's
     // own map, the same parity the SameCitation sibling asserts on Problem/A1.
 

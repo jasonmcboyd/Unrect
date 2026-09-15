@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 using Unrect.Core;
 
@@ -816,16 +817,37 @@ namespace Unrect.Tests
       Assert.Null(CellValue.Of((string?)null).AsText());
     }
 
-    [Fact]
-    public void AsText_OfANumber_SaysTheExactValueWhereOneWasKept()
+    /// <summary>
+    /// The number cells the rendering rule is stated over, named by the CLR type each arrived as —
+    /// which is the whole of what decides the answer, so it cannot be inferred from the value.
+    /// </summary>
+    private static CellValue Number(string arrivedAs) =>
+      arrivedAs switch
+      {
+        "int" => CellValue.Of(42),
+        "decimal" => CellValue.Of(42.50m),
+        "long" => CellValue.Of(-3L),
+        "double" => CellValue.Of(1.5),
+        "double-inexact" => CellValue.Of(0.1),
+        "double-large" => CellValue.Of(1e20),
+        _ => throw new ArgumentOutOfRangeException(nameof(arrivedAs), arrivedAs, "No such number.")
+      };
+
+    [Theory]
+    [InlineData("int", "42")]
+    [InlineData("decimal", "42.50")]
+    [InlineData("long", "-3")]
+    [InlineData("double", "1.5")]
+    [InlineData("double-inexact", "0.1")]
+    // A double too big to write out in full renders in exponent form, which is what "R" does and
+    // what any reader of this rendering has to be ready for: it is the double's own shortest
+    // round-trip spelling, not a decision about how big is big.
+    [InlineData("double-large", "1E+20")]
+    public void AsText_OfANumber_SaysTheExactValueWhereOneWasKept(string arrivedAs, string said)
     {
       // A number that arrived exact says its exact digits, trailing zeroes and all, because that is
       // what the file wrote; one that arrived as a double says what the double is.
-      Assert.Equal("42", CellValue.Of(42).AsText());
-      Assert.Equal("42.50", CellValue.Of(42.50m).AsText());
-      Assert.Equal("-3", CellValue.Of(-3L).AsText());
-      Assert.Equal("1.5", CellValue.Of(1.5).AsText());
-      Assert.Equal("0.1", CellValue.Of(0.1).AsText());
+      Assert.Equal(said, Number(arrivedAs).AsText());
     }
 
     [Fact]
@@ -835,61 +857,120 @@ namespace Unrect.Tests
       // asked for round-trip: .NET Framework's default is 15 significant digits, which rounds both
       // of these to something shorter and prettier than the double actually is. A declaration
       // matching on a rendered number would find it through one target and not the other.
+      //
+      // Only the Windows net48 leg can fail this. On Linux the suite builds net8.0 alone, where the
+      // default and "R" agree — so a regression here is invisible until somebody runs
+      // `dotnet test -f net48`, and this comment is the notice that it must be run.
       Assert.Equal("0.30000000000000004", CellValue.Of(0.1 + 0.2).AsText());
       Assert.Equal("0.3333333333333333", CellValue.Of(1.0 / 3.0).AsText());
     }
 
     [Fact]
-    public void AsText_OfANumber_DoesNotMoveWithTheReadersCulture()
+    public void AsText_OfNegativeZero_DiffersByFrameworkAndIsRecordedRatherThanChosen()
+    {
+      // The one rendering this library does not control and has not decided. IEEE has two zeroes;
+      // "R" preserves the sign on .NET Core and drops it on .NET Framework, and no argument from
+      // the cell model picks between them — so the pin states both spellings and names which one
+      // this run produced, rather than asserting a single answer that would fail on the other leg.
+      //
+      // What IS decided, and asserted below, is that the two zeroes are the same CELL: equality is
+      // over the number, so a declaration can never see one of them and not the other.
+      var rendered = CellValue.Of(-0.0).AsText();
+
+      Assert.True(
+        rendered == "-0" || rendered == "0",
+        $"negative zero rendered as '{rendered}' on {RuntimeInformation.FrameworkDescription}; "
+        + "the two known answers are '-0' (.NET Core) and '0' (.NET Framework)");
+
+      Assert.Equal(CellValue.Of(0.0), CellValue.Of(-0.0));
+      Assert.Equal(CellValue.Of(0.0).GetHashCode(), CellValue.Of(-0.0).GetHashCode());
+    }
+
+    /// <summary>
+    /// The cultures a rendering has to survive: one that writes numbers the other way round, and
+    /// one whose calendar is not the Gregorian one at all.
+    /// </summary>
+    public static TheoryData<string> Cultures => new TheoryData<string> { "de-DE", "th-TH" };
+
+    [Theory]
+    [MemberData(nameof(Cultures))]
+    public void AsText_DoesNotMoveWithTheReadersCulture(string culture)
     {
       // A rendering a matcher compares against has to be the same everywhere, or a declaration
-      // written in one office stops anchoring in another.
-      var culture = CultureInfo.CurrentCulture;
+      // written in one office stops anchoring in another. Every kind that renders is swept, not
+      // just the numeric ones: th-TH is here because its default calendar is Buddhist, so a date
+      // rendered through the ambient culture would say 2569 rather than 2026 — a four-digit
+      // difference no number-format test would ever catch.
+      var ambient = CultureInfo.CurrentCulture;
 
       try
       {
-        CultureInfo.CurrentCulture = new CultureInfo("de-DE");
+        CultureInfo.CurrentCulture = new CultureInfo(culture);
 
-        Assert.Equal("1.5", CellValue.Of(1.5).AsText());
+        Assert.Equal("Total", CellValue.Of("Total").AsText());
         Assert.Equal("42.50", CellValue.Of(42.50m).AsText());
+        Assert.Equal("1.5", CellValue.Of(1.5).AsText());
+        Assert.Equal("2026-03-04", CellValue.Of(new DateTime(2026, 3, 4)).AsText());
+        Assert.Equal("2026-03-04T09:30:00", CellValue.Of(new DateTime(2026, 3, 4, 9, 30, 0)).AsText());
+        Assert.Equal("TRUE", CellValue.Of(true).AsText());
+        Assert.Equal("FALSE", CellValue.Of(false).AsText());
+        Assert.Equal("#DIV/0!", CellValue.OfError(CellError.DivisionByZero).AsText());
+        Assert.Null(CellValue.Blank.AsText());
       }
       finally
       {
-        CultureInfo.CurrentCulture = culture;
+        CultureInfo.CurrentCulture = ambient;
       }
     }
 
-    [Fact]
-    public void AsText_OfATemporalCell_IsItsIsoForm()
+    [Theory]
+    [InlineData(0, 0, 0, 0, "2026-03-04")]
+    [InlineData(9, 30, 0, 0, "2026-03-04T09:30:00")]
+    [InlineData(9, 30, 0, 250, "2026-03-04T09:30:00.25")]
+    public void AsText_OfATemporalCell_IsItsIsoForm(int hour, int minute, int second, int milliseconds, string said)
     {
       // A date says its date; a moment within a day says the time too, rather than rendering as the
       // midnight it is not. Sub-second digits appear only where there are some, so the ordinary
       // whole-second case is unchanged by carrying them.
-      Assert.Equal("2026-03-04", CellValue.Of(new DateTime(2026, 3, 4)).AsText());
-      Assert.Equal("2026-03-04T09:30:00", CellValue.Of(new DateTime(2026, 3, 4, 9, 30, 0)).AsText());
-      Assert.Equal("2026-03-04T09:30:00.25", CellValue.Of(new DateTime(2026, 3, 4, 9, 30, 0).AddMilliseconds(250)).AsText());
+      var moment = new DateTime(2026, 3, 4, hour, minute, second).AddMilliseconds(milliseconds);
+
+      Assert.Equal(said, CellValue.Of(moment).AsText());
     }
 
-    [Fact]
-    public void AsText_OfABooleanCell_IsTheSpreadsheetSpelling()
-    {
-      Assert.Equal("TRUE", CellValue.Of(true).AsText());
-      Assert.Equal("FALSE", CellValue.Of(false).AsText());
-    }
+    [Theory]
+    [InlineData(true, "TRUE")]
+    [InlineData(false, "FALSE")]
+    public void AsText_OfABooleanCell_IsTheSpreadsheetSpelling(bool value, string said)
+      => Assert.Equal(said, CellValue.Of(value).AsText());
 
-    [Fact]
-    public void AsText_OfAnErrorCell_IsTheLiteralTheCellShows()
+    [Theory]
+    [InlineData(CellError.DivisionByZero, null, "#DIV/0!")]
+    [InlineData(CellError.NotAvailable, null, "#N/A")]
+    [InlineData(CellError.Value, "#value!", "#value!")]
+    [InlineData(CellError.Other, "Err:501", "Err:501")]
+    public void AsText_OfAnErrorCell_IsTheLiteralTheCellShows(CellError error, string? literal, string said)
     {
       // The same spelling Excel puts in the cell — and the literal the adapter kept, where it knew
       // one the error code does not carry.
-      Assert.Equal("#DIV/0!", CellValue.OfError(CellError.DivisionByZero).AsText());
-      Assert.Equal("#N/A", CellValue.OfError(CellError.NotAvailable).AsText());
-      Assert.Equal("Err:501", CellValue.OfError(CellError.Other, "Err:501").AsText());
+      Assert.Equal(said, CellValue.OfError(error, literal).AsText());
+    }
+
+    [Fact]
+    public void AsText_OfAnUnnamedOtherError_SaysOther_WhichIsProvisional()
+    {
+      // Split out and named for what it is: the one error rendering that is not a spelling any
+      // spreadsheet ever put in a cell. CellError.Other exists for the codes this vocabulary does
+      // not enumerate, and a cell that arrived without a literal has nothing to show — so "Other"
+      // is a placeholder standing where the file's own word would go.
+      //
+      // It is pinned so a change to it is deliberate rather than incidental, NOT because it is
+      // settled: the error vocabulary is decided in phase 7, and this is one of the things it
+      // decides. Expect this test to be rewritten there.
       Assert.Equal("Other", CellValue.OfError(CellError.Other).AsText());
     }
 
     [Fact]
-    public void AsText_IsNullForNoCellThatHasAValue()
+    public void AsText_OfACellWithAValue_IsNeverNull()
     {
       // The empty string, zero and false are all cells with something in them. A rendering that
       // came back null for any of them would make blankness mean "says nothing useful" rather than

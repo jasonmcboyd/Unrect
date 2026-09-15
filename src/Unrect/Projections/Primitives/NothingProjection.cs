@@ -29,7 +29,7 @@ namespace Unrect.Projections
 
     public override string Description => "Nothing";
 
-    public override ProjectionResult<T> Project(ICellValues extent, ProjectionContext context)
+    public override ProjectionResult<T> Project(Plane<ICellValues> extent, ProjectionContext context)
       => new ProjectionResult<T>(default!, new Size(0, 0), Presence.Empty);
   }
 }

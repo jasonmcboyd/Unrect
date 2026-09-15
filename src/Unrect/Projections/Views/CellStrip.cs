@@ -12,7 +12,7 @@ namespace Unrect.Projections
   /// </summary>
   public sealed class CellStrip : IReadOnlyList<CellValue>
   {
-    internal CellStrip(ICellValues space, Orientation orientation, ProjectionContext context)
+    internal CellStrip(Plane<ICellValues> space, Orientation orientation, ProjectionContext context)
     {
       Space = space;
       Orientation = orientation;
@@ -20,7 +20,7 @@ namespace Unrect.Projections
     }
 
     /// <summary>The strip's own extent — one cell wide or one cell tall, depending on its orientation.</summary>
-    public ICellValues Space { get; }
+    public Plane<ICellValues> Space { get; }
 
     private Orientation Orientation { get; }
 
@@ -38,7 +38,7 @@ namespace Unrect.Projections
     /// where the height is still being discovered; a column's is that height, and asking settles
     /// it.
     /// </summary>
-    public int Count => Orientation == Orientation.Horizontal ? BoundedSpace.WidthOf(Space) : Space.Area.Height;
+    public int Count => Orientation == Orientation.Horizontal ? Space.Width : Space.Area.Height;
 
     /// <summary>The cell at <paramref name="index"/> along the strip's own axis; an index outside it throws <see cref="ArgumentOutOfRangeException"/>.</summary>
     public CellValue this[int index]
@@ -47,7 +47,7 @@ namespace Unrect.Projections
       {
         Validate(index);
 
-        return Orientation == Orientation.Horizontal ? Space[index, 0] : Space[0, index];
+        return Orientation == Orientation.Horizontal ? Space.CellAt(index, 0) : Space.CellAt(0, index);
       }
     }
 

@@ -16,14 +16,14 @@ namespace Unrect.Projections
 
     public override string Description => "Cell";
 
-    public override ProjectionResult<T> Project(ICellValues extent, ProjectionContext context)
+    public override ProjectionResult<T> Project(Plane<ICellValues> extent, ProjectionContext context)
     {
       var size = extent.Area.Size;
 
       if (size.Width != 1 || size.Height != 1)
         throw context.Failure($"a Cell must be exactly one cell; this one is {size.Width}x{size.Height}", extent);
 
-      return new ProjectionResult<T>(Projection(extent[0, 0]), size);
+      return new ProjectionResult<T>(Projection(extent.CellAt(0, 0)), size);
     }
   }
 }

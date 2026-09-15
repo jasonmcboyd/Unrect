@@ -25,14 +25,14 @@ namespace Unrect.Projections
     private IReadOnlyList<CellStrip>? _rows;
     private IReadOnlyList<CellStrip>? _columns;
 
-    internal CellBlock(ICellValues space, ProjectionContext context)
+    internal CellBlock(Plane<ICellValues> space, ProjectionContext context)
     {
       Space = space;
       Context = context;
     }
 
     /// <summary>The block's own extent.</summary>
-    public ICellValues Space { get; }
+    public Plane<ICellValues> Space { get; }
 
     /// <summary>
     /// The context the block was projected in — where it sits, and the context its rows and columns
@@ -47,7 +47,7 @@ namespace Unrect.Projections
     /// How many columns wide the block is. Free on an extent still being discovered: a width is
     /// settled before the first row is read.
     /// </summary>
-    public int Width => BoundedSpace.WidthOf(Space);
+    public int Width => Space.Width;
 
     /// <summary>
     /// How many rows tall the block is. A dimension query, so on an extent still being discovered
@@ -67,7 +67,7 @@ namespace Unrect.Projections
       {
         Validate(column, row);
 
-        return Space[column, row];
+        return Space.CellAt(column, row);
       }
     }
 
@@ -98,11 +98,11 @@ namespace Unrect.Projections
     /// </summary>
     public CellStrip Row(int index)
     {
-      if (!BoundedSpace.HasRow(Space, index))
+      if (!Space.HasRow(index))
         throw new ArgumentOutOfRangeException(nameof(index), index, $"The block is {Height} rows tall.");
 
       var offset = new Offset(0, index);
-      return new CellStrip(Space.GetSubspace(offset, new Area(Width, 1)), Orientation.Horizontal, Context.Advance(offset));
+      return new CellStrip(Space.Cut(offset, new Area(Width, 1)), Orientation.Horizontal, Context.Advance(offset));
     }
 
     /// <summary>
@@ -116,7 +116,7 @@ namespace Unrect.Projections
         throw new ArgumentOutOfRangeException(nameof(index), index, $"The block is {Width} columns wide.");
 
       var offset = new Offset(index, 0);
-      return new CellStrip(Space.GetSubspace(offset, new Area(1, Height)), Orientation.Vertical, Context.Advance(offset));
+      return new CellStrip(Space.Cut(offset, new Area(1, Height)), Orientation.Vertical, Context.Advance(offset));
     }
 
     /// <summary>
@@ -139,7 +139,7 @@ namespace Unrect.Projections
 
       // Asked as "is there a row there", which on a discovered bound advances the scan through that
       // row alone. A row that is not there has settled the bound already, so the message is free.
-      if (!BoundedSpace.HasRow(Space, row))
+      if (!Space.HasRow(row))
         throw new ArgumentOutOfRangeException(nameof(row), row, $"The block is {Height} rows tall.");
     }
 

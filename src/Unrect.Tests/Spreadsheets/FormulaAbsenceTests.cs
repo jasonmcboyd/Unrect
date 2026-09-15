@@ -182,7 +182,7 @@ namespace Unrect.Tests.Spreadsheets
       // through as many wrappers as the engine cares to build.
       using var book = Workbook.Over(FakeRowSource.Of(rows: 8, columns: 3), new WorkbookOptions { WarmReaders = false });
 
-      var probe = Range(RowsWhileAnyValue(), block => block.Space.Capability<IFormulaSpace>());
+      var probe = Range(RowsWhileAnyValue(), block => block.Space.Space.Capability<IFormulaSpace>());
 
       Assert.Null(probe.Map(book.Sheet("Data")));
     }

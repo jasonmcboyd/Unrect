@@ -45,14 +45,14 @@ namespace Unrect.Projections
 
     public override string Description { get; }
 
-    public override ProjectionResult<T> Project(ICellValues extent, ProjectionContext context)
+    public override ProjectionResult<T> Project(Plane<ICellValues> extent, ProjectionContext context)
     {
       var size = extent.Area.Size;
 
       if (size.Width != 1 || size.Height != 1)
         throw context.Failure($"a {Description} must be exactly one cell; this one is {size.Width}x{size.Height}", extent);
 
-      var cell = extent[0, 0];
+      var cell = extent.CellAt(0, 0);
 
       // Quietly: the declaration said this cell may be absent, so its absence is the answer rather
       // than something to report. That is the whole difference from Optional, which absorbs a

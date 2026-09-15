@@ -25,9 +25,13 @@ namespace Unrect.Projections
     /// <summary>
     /// Resolves <paramref name="projection"/>'s placement against <paramref name="availableSpace"/>
     /// and projects it. Strict: a placement that does not fit throws rather than signalling failure
-    /// to the caller — use <see cref="TryApply{TResult}"/> where running out of space is expected.
+    /// to the caller — use <see cref="TryApply{TResult}(IProjection{TResult}, ICellValues, ProjectionContext, out AppliedResult{TResult})"/> where running out of space is expected.
     /// </summary>
     public static AppliedResult<TResult> Apply<TResult>(IProjection<TResult> projection, ICellValues availableSpace, ProjectionContext context)
+      => Apply(projection, availableSpace.Extent(), context);
+
+    /// <inheritdoc cref="Apply{TResult}(IProjection{TResult}, ICellValues, ProjectionContext)"/>
+    internal static AppliedResult<TResult> Apply<TResult>(IProjection<TResult> projection, Plane<ICellValues> availableSpace, ProjectionContext context)
       => Project(projection, Place(projection, availableSpace, context));
 
     /// <summary>
@@ -36,6 +40,10 @@ namespace Unrect.Projections
     /// — still propagate: format drift inside a block is an error, not a quiet truncation.
     /// </summary>
     public static bool TryApply<TResult>(IProjection<TResult> projection, ICellValues availableSpace, ProjectionContext context, out AppliedResult<TResult> result)
+      => TryApply(projection, availableSpace.Extent(), context, out result);
+
+    /// <inheritdoc cref="TryApply{TResult}(IProjection{TResult}, ICellValues, ProjectionContext, out AppliedResult{TResult})"/>
+    internal static bool TryApply<TResult>(IProjection<TResult> projection, Plane<ICellValues> availableSpace, ProjectionContext context, out AppliedResult<TResult> result)
     {
       if (!TryPlace(projection, availableSpace, context, strict: false, out var placed))
       {
@@ -47,7 +55,7 @@ namespace Unrect.Projections
       return true;
     }
 
-    private static Placed Place(IProjection projection, ICellValues availableSpace, ProjectionContext context)
+    private static Placed Place(IProjection projection, Plane<ICellValues> availableSpace, ProjectionContext context)
     {
       // Unreachable: TryPlace(strict: true) throws on every path that would return false. It stays
       // because it is the assertion that keeps the two modes' contract visible at the call site —
@@ -63,14 +71,14 @@ namespace Unrect.Projections
     /// <paramref name="strict"/> is false (that is what a repeat asks for); every other way a
     /// strategy can fail is a malformed declaration and throws either way.
     /// </summary>
-    private static bool TryPlace(IProjection projection, ICellValues availableSpace, ProjectionContext context, bool strict, out Placed placed)
+    private static bool TryPlace(IProjection projection, Plane<ICellValues> availableSpace, ProjectionContext context, bool strict, out Placed placed)
     {
       placed = default;
 
       Offset offset;
       try
       {
-        offset = projection.Placement.Offset.GetOffset(availableSpace);
+        offset = projection.Placement.Offset.GetOffset(availableSpace.AsSpace());
       }
       catch (ProjectionException)
       {
@@ -96,7 +104,7 @@ namespace Unrect.Projections
         return false;
       }
 
-      var inner = BoundedSpace.Tail(availableSpace, offset);
+      var inner = availableSpace.Tail(offset);
       var scope = projection.IsTransparent ? context.Advance(offset) : context.Descend(projection, offset);
 
       if (projection.Placement.Area is null)
@@ -105,16 +113,22 @@ namespace Unrect.Projections
         return true;
       }
 
-      if (Bind(projection, inner, scope, strict) is BoundedSpace bound)
+      // Minted once and shared by the scan, the bound and the area strategy. They have to be the
+      // SAME object: a scan replays its state against the space it was begun with, and a bound reads
+      // its ceiling off the space it was built with — hand those two different objects and a nested
+      // discovery resumes on a space its parent had already excluded rows from.
+      var innerSpace = inner.AsSpace();
+
+      if (Bind(projection, inner, innerSpace, scope, strict) is Bound bound)
       {
-        placed = new Placed(offset, bound, scope, hasDeclaredArea: true, bound: bound);
+        placed = new Placed(offset, inner.Bounded(bound, bound.Width), scope, hasDeclaredArea: true);
         return true;
       }
 
       Area area;
       try
       {
-        area = projection.Placement.Area.GetArea(inner);
+        area = projection.Placement.Area.GetArea(innerSpace);
       }
       catch (ProjectionException)
       {
@@ -140,7 +154,7 @@ namespace Unrect.Projections
         return false;
       }
 
-      placed = new Placed(offset, inner.GetSubspace(area), scope, true);
+      placed = new Placed(offset, inner.Cut(area), scope, true);
       return true;
     }
 
@@ -158,7 +172,7 @@ namespace Unrect.Projections
     /// <para>
     /// <b>What this buys, and where it stops.</b> A composite streams over a bound: placing a child
     /// asks <see cref="Exceeds"/> whether there is a row at the offset, and slices the extent with
-    /// <see cref="BoundedSpace.Tail"/>, which keeps an unsettled height unsettled. What still
+    /// <see cref="Extents.Tail"/>, which keeps an unsettled height unsettled. What still
     /// settles a bound in full is a strategy reading <see cref="ISpace.Area"/> — which is what a
     /// DECLARED area on the child is, since the strategy is handed the extent and asks it how tall
     /// it is. So a shape that knows its own shape slices before it declares: a tiler cuts a band of
@@ -166,7 +180,7 @@ namespace Unrect.Projections
     /// child of the same flow measures the whole tail first.
     /// </para>
     /// </summary>
-    private static BoundedSpace? Bind(IProjection projection, ICellValues inner, ProjectionContext scope, bool strict)
+    private static Bound? Bind(IProjection projection, Plane<ICellValues> inner, ICellValues innerSpace, ProjectionContext scope, bool strict)
     {
       if (!strict || _forcedEager || projection.Placement.Area is not IIncrementalAreaStrategy incremental)
         return null;
@@ -174,7 +188,7 @@ namespace Unrect.Projections
       IAreaScan scan;
       try
       {
-        scan = incremental.BeginArea(inner);
+        scan = incremental.BeginArea(innerSpace);
       }
       catch (ProjectionException)
       {
@@ -189,10 +203,10 @@ namespace Unrect.Projections
       // defined as — so the only way a discovered extent can fail to fit is its width, and saying
       // so needs the height the eager reading would have measured. Declining to bind hands that one
       // case to the measured path below, which is the only place that reports it.
-      if (scan.Width > BoundedSpace.WidthOf(inner))
+      if (scan.Width > inner.Width)
         return null;
 
-      return new BoundedSpace(inner, scan, exception => AreaFailure(scope, projection, inner, exception));
+      return new Bound(innerSpace, scan, exception => AreaFailure(scope, projection, inner, exception));
     }
 
     private static AppliedResult<TResult> Project<TResult>(IProjection<TResult> projection, Placed placed)
@@ -220,9 +234,7 @@ namespace Unrect.Projections
       // A declared area is consumed in full, even when the projection used less of it — which is
       // where a bound that was left to be discovered is read to exhaustion. A projection that read
       // every row has already settled it, so the canonical case forces nothing twice.
-      var consumed = placed.HasDeclaredArea
-        ? placed.Bound?.ForceResolved() ?? placed.Extent.Area.Size
-        : result.Consumed;
+      var consumed = placed.HasDeclaredArea ? placed.Extent.Area.Size : result.Consumed;
 
       return new AppliedResult<TResult>(result.Value, placed.Offset, consumed, Settled(result.Presence, placed.HasDeclaredArea, consumed));
     }
@@ -247,13 +259,13 @@ namespace Unrect.Projections
     /// How a declared extent's failure is reported: a strategy that ran out of room says so, and
     /// one that broke says what broke.
     /// <para>
-    /// Shared with <see cref="BoundedSpace"/>, which is handed it as the identity of the placement
+    /// Shared with <see cref="Bound"/>, which is handed it as the identity of the placement
     /// whose bound it discovers. That is what makes a deferred failure the placement's failure: the
     /// subject, path, location and fault flag are not merely alike, they are produced by this one
     /// expression from the same scope, projection and space. Only the moment differs.
     /// </para>
     /// </summary>
-    private static ProjectionException AreaFailure(ProjectionContext scope, IProjection projection, ICellValues inner, Exception exception)
+    private static ProjectionException AreaFailure(ProjectionContext scope, IProjection projection, Plane<ICellValues> inner, Exception exception)
       => exception is OutOfBoundsException
         ? scope.Failure(projection, "its area ran past the space available here", inner, null, exception)
         : scope.Failure(projection, Threw("area", exception), inner, null, exception, IsFault(exception));
@@ -272,7 +284,10 @@ namespace Unrect.Projections
     /// quietly wrong answer.
     /// </para>
     /// <para>
-    /// The membership is deliberate on both sides. <see cref="System.IO.FileNotFoundException"/>,
+    /// The membership is deliberate on both sides. <see cref="EngineInvariantException"/> is here
+    /// because it is the one entry that is not about the environment at all: it says this library
+    /// broke a rule it owes itself, and a tolerance boundary that swallowed one would report a bug
+    /// in the reader as a section that is not there. <see cref="System.IO.FileNotFoundException"/>,
     /// <see cref="System.IO.DirectoryNotFoundException"/> and the reader's own IO failures derive
     /// from <see cref="IOException"/> and are covered. <see cref="ObjectDisposedException"/>
     /// derives from <see cref="InvalidOperationException"/>, which is <em>not</em> listed and must
@@ -286,7 +301,8 @@ namespace Unrect.Projections
     /// </para>
     /// </summary>
     internal static bool IsFault(Exception exception)
-      => exception is NullReferenceException
+      => exception is EngineInvariantException  // a rule this library owes itself; never the data
+        or NullReferenceException
         or IndexOutOfRangeException
         or ArgumentOutOfRangeException
         or ArgumentNullException
@@ -302,9 +318,9 @@ namespace Unrect.Projections
 
     // Asked as "is there a row at size.Height - 1" rather than "how tall are you": the same answer
     // on a measured extent, and one row rather than all of them on one still being discovered.
-    private static bool Exceeds(Size size, ICellValues space)
-      => size.Width > BoundedSpace.WidthOf(space)
-      || (size.Height > 0 && !BoundedSpace.HasRow(space, size.Height - 1));
+    private static bool Exceeds(Size size, Plane<ICellValues> space)
+      => size.Width > space.Width
+      || (size.Height > 0 && !space.HasRow(size.Height - 1));
 
     private static string Describe(Size size) => $"{size.Width}x{size.Height}";
 
@@ -320,26 +336,18 @@ namespace Unrect.Projections
 
     private readonly struct Placed
     {
-      public Placed(Offset offset, ICellValues extent, ProjectionContext scope, bool hasDeclaredArea, BoundedSpace? bound = null)
+      public Placed(Offset offset, Plane<ICellValues> extent, ProjectionContext scope, bool hasDeclaredArea)
       {
         Offset = offset;
         Extent = extent;
         Scope = scope;
         HasDeclaredArea = hasDeclaredArea;
-        Bound = bound;
       }
 
       public Offset Offset { get; }
-      public ICellValues Extent { get; }
+      public Plane<ICellValues> Extent { get; }
       public ProjectionContext Scope { get; }
       public bool HasDeclaredArea { get; }
-
-      /// <summary>
-      /// The extent, when it is one still being discovered — the same object as <see
-      /// cref="Extent"/>, named separately so the rule that a declared area is consumed in full
-      /// does not depend on a property getter happening to force.
-      /// </summary>
-      public BoundedSpace? Bound { get; }
     }
 
     /// <summary>

@@ -62,5 +62,29 @@ namespace Unrect.Tests.Projections
       Assert.Equal(2, located.Available.Width);
       Assert.Equal(1, located.Available.Height);
     }
+
+    [Fact]
+    public void APointAndItsRegionAgreeOnWhereAndDisagreeOnHowMuchRoomThereWas()
+    {
+      // The two overloads answer the same question about WHERE and different questions about how
+      // much room there was, which is the distinction every "N available" clause in a failure
+      // message turns on. A point is a cell of a space, so what was available is the space; a
+      // region is what a declaration was HANDED, so what was available is the region — usually far
+      // less, and saying the sheet's figure there would tell a reader the declaration had room it
+      // never had.
+      var slice = Plane<ISpace>.Of(Grid()).Slice(new Offset(2, 1), new Area(1, 1));
+
+      var atTheCell = ProjectionLocation.At(slice[0, 0]);
+      var atTheRegion = ProjectionLocation.At(slice);
+
+      Assert.Equal("C2", atTheCell.A1);
+      Assert.Equal("C2", atTheRegion.A1);
+
+      Assert.Equal(3, atTheCell.Available.Width);
+      Assert.Equal(2, atTheCell.Available.Height);
+
+      Assert.Equal(1, atTheRegion.Available.Width);
+      Assert.Equal(1, atTheRegion.Available.Height);
+    }
   }
 }

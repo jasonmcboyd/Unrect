@@ -154,7 +154,7 @@ namespace Unrect.Projections
     }
 
     /// <inheritdoc/>
-    public abstract ProjectionResult<TResult> Project(ICellValues extent, ProjectionContext context);
+    public abstract ProjectionResult<TResult> Project(Plane<ICellValues> extent, ProjectionContext context);
 
     /// <inheritdoc/>
     public IProjection<TResult> WithName(string name)

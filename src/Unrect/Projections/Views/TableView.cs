@@ -23,13 +23,13 @@ namespace Unrect.Projections
     // work).
     private IReadOnlyList<TableRow>? _rows;
 
-    internal TableView(ICellValues space, int headerRows, ProjectionContext context)
+    internal TableView(Plane<ICellValues> space, int headerRows, ProjectionContext context)
     {
       Space = space;
       HeaderRows = headerRows;
 
       Header = new CellStrip(
-        space.GetSubspace(new Offset(0, 0), new Area(HasHeader ? ColumnCount : 0, headerRows)),
+        space.Cut(new Offset(0, 0), new Area(HasHeader ? ColumnCount : 0, headerRows)),
         Orientation.Horizontal,
         context);
 
@@ -46,13 +46,13 @@ namespace Unrect.Projections
     internal LabelMap Labels { get; }
 
     /// <summary>The table's full extent, header row(s) included.</summary>
-    public ICellValues Space { get; }
+    public Plane<ICellValues> Space { get; }
 
     /// <summary>
     /// How many columns wide the table is. Free on an extent still being discovered: a width is
     /// settled before the first row is read.
     /// </summary>
-    public int ColumnCount => BoundedSpace.WidthOf(Space);
+    public int ColumnCount => Space.Width;
 
     /// <summary>
     /// How many body rows the table has, header row(s) excluded. A dimension query, so on an extent
@@ -118,13 +118,13 @@ namespace Unrect.Projections
     /// undescribed.
     /// </para>
     /// </summary>
-    internal IEnumerable<(ICellValues Space, ProjectionContext Context)> StreamBands(int bandHeight)
+    internal IEnumerable<(Plane<ICellValues> Space, ProjectionContext Context)> StreamBands(int bandHeight)
     {
-      for (var row = HeaderRows; BoundedSpace.HasRow(Space, row + bandHeight - 1); row += bandHeight)
+      for (var row = HeaderRows; Space.HasRow(row + bandHeight - 1); row += bandHeight)
       {
         var offset = new Offset(0, row);
 
-        yield return (Space.GetSubspace(offset, new Area(ColumnCount, bandHeight)), Context.Advance(offset));
+        yield return (Space.Cut(offset, new Area(ColumnCount, bandHeight)), Context.Advance(offset));
       }
     }
 

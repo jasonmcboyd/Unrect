@@ -129,7 +129,7 @@ namespace Unrect.Tests.Projections
     public void ABreakInsideAFlowChildCarriesTheChildsPathBothWays()
     {
       // The path is the thing most likely to drift, because a deferred failure is thrown from a
-      // BoundedSpace built at placement time and raised while a different part of the tree is live.
+      // bound built at placement time and raised while a different part of the tree is live.
       var projection = VerticalFlow(v =>
       {
         var caption = v.Next(Range(1, 1, b => b[0, 0].GetInt()));

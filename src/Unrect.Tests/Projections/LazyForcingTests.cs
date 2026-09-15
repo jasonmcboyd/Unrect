@@ -66,7 +66,7 @@ namespace Unrect.Tests.Projections
     /// with what the whole application ended up consuming, which is the other half of every fact
     /// here.
     /// </summary>
-    private static (int RowsTouchedAtReadTime, Size Consumed) Observe(Action<ICellValues> read)
+    private static (int RowsTouchedAtReadTime, Size Consumed) Observe(Action<Plane<ICellValues>> read)
       => ObserveBlock(block => read(block.Space));
 
     /// <summary>
@@ -132,12 +132,75 @@ namespace Unrect.Tests.Projections
       // The bound is 100 rows and the sheet is 103, so row 100 exists and is still outside this
       // extent — exactly as it would be outside a measured one. Which is why it is OutOfBounds and
       // not the scan's own failure: nothing broke, the declaration ran out of room.
-      var extent = Range(RowsWhileAnyValue(), block => block.Space[0, BoundHeight].TryGetInt());
+      //
+      // And it is the REGION that refuses, not the space. The space underneath has a row 100 and
+      // would have handed it over; what the projection was given is the region, whose bottom edge
+      // is the declaration's own rule. A read that went to the space instead would silently return
+      // a cell from past the boundary the declaration drew.
+      var extent = Range(RowsWhileAnyValue(), block => block.Space.CellAt(0, BoundHeight).TryGetInt());
 
       var failure = Assert.Throws<ProjectionException>(() => extent.Map(TallSheet()));
 
       Assert.IsType<OutOfBoundsException>(failure.InnerException);
       Assert.False(failure.IsFault);
+
+      // The space it reads through answers for the very same coordinate without complaint, which is
+      // what makes the refusal the region's own rather than the sheet running out.
+      Assert.Equal(103, TallSheet().Area.Height);
+      Assert.True(TallSheet()[0, BoundHeight].IsBlank);
+    }
+
+    [Theory]
+    [InlineData(0, 1)]
+    [InlineData(2, 3)]
+    [InlineData(99, 100)]
+    public void MintingAPointAndReadingItThroughCostTheRowItNames(int row, int rowsTouched)
+    {
+      // The canonical four, asked of the region rather than of the space: minting the address
+      // admits the row one at a time, and each question about the cell there costs that row and
+      // nothing else. A locator that checked itself by asking the region how tall it was would
+      // settle the whole scan for every cell anybody looked at.
+      var (observed, _) = Observe(space =>
+      {
+        var point = space[0, row];
+
+        Assert.False(point.IsBlank);
+        Assert.False(point.IsText);
+        Assert.Equal($"{row + 1}", point.AsText());
+      });
+
+      Assert.Equal(rowsTouched, observed);
+    }
+
+    [Fact]
+    public void MintingAPointPastTheDiscoveredBoundRefusesWithoutEverReadingThatRow()
+    {
+      // The refusal happens where the address is made, which is the difference between "there is no
+      // such row here" and "let me go and look". Row 102 is a real row of the sheet and outside the
+      // region, so the scan runs to exhaustion saying so — 101 rows — and row 102 is never read at
+      // all. A check that had gone to the space to decide would have read it.
+      var counter = new CountingSpace(TallSheet());
+      var observed = -1;
+      Exception? refused = null;
+
+      Range(RowsWhileAnyValue(), block =>
+      {
+        try
+        {
+          _ = block.Space[0, 102];
+        }
+        catch (OutOfBoundsException overrun)
+        {
+          refused = overrun;
+        }
+
+        observed = counter.RowsTouched;
+
+        return 0;
+      }).Apply(counter);
+
+      Assert.IsType<OutOfBoundsException>(refused);
+      Assert.Equal(RowsToExhaustion, observed);
     }
 
     // --- GetSubspace: through the rows asked for ---------------------------------------------------
@@ -153,7 +216,7 @@ namespace Unrect.Tests.Projections
     {
       // An explicit request for part of the extent is not a question about the whole of it — so a
       // nested projection placed inside a discovered bound costs its own rows and not the bound's.
-      var (observed, _) = Observe(space => space.GetSubspace(new Offset(0, offset), new Area(2, height)));
+      var (observed, _) = Observe(space => space.Cut(new Offset(0, offset), new Area(2, height)));
 
       Assert.Equal(rowsTouched, observed);
     }
@@ -168,7 +231,7 @@ namespace Unrect.Tests.Projections
     {
       // Zero rows for a question about columns. This is where the width/height seam is observable —
       // ICellValues cannot give a free width (see AskingAPublicSpaceForItsWidthForcesTheHeightWithIt),
-      // and the view can, because it reads the bound through BoundedSpace.WidthOf.
+      // and the view can, because it holds a region and asks it for its width.
       var (observed, _) = ObserveBlock(block => Assert.Equal(2, block.Width));
 
       Assert.Equal(0, observed);
@@ -262,7 +325,7 @@ namespace Unrect.Tests.Projections
       // does force, because ICellValues.Area is ONE struct: there is no answering half of it, so a
       // public caller asking for a width asks for a height too. Step 6 did not change that and no
       // step will without surgery on ICellValues. What it changed is that the free width now exists one
-      // level up, internal, as BoundedSpace.WidthOf — so the 0 lives on the views, pinned by
+      // level up, on the region a view holds — so the 0 lives on the views, pinned by
       // TheBlocksWidthIsFreeOnADiscoveredBound and TheTablesColumnVocabularyIsFree below.
       var (observed, _) = Observe(space => Assert.Equal(2, space.Area.Width));
 
@@ -354,7 +417,7 @@ namespace Unrect.Tests.Projections
         {
           observed = counter.RowsTouched;
 
-          return block.Space[0, 0].GetInt();
+          return block.Space.CellAt(0, 0).GetInt();
         }).Apply(counter).Consumed;
       }
 

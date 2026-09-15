@@ -14,7 +14,7 @@ namespace Unrect.Projections
     private int _width;
     private int _height;
 
-    public OverlayState(IProjection owner, ICellValues extent, ProjectionContext context)
+    public OverlayState(IProjection owner, Plane<ICellValues> extent, ProjectionContext context)
       : base(owner, extent, context)
     {
     }

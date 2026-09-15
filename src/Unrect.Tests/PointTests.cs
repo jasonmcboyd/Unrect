@@ -161,6 +161,13 @@ namespace Unrect.Tests
       Assert.Equal(first.GetHashCode(), second.GetHashCode());
 
       Assert.NotEqual(new Point<AgreeableSpace>(first, 0, 0), new Point<AgreeableSpace>(second, 0, 0));
+
+      // The hash INequality is an assertion and not a hope, which is worth saying because unequal
+      // hashes are normally something a test may not demand. Here it is decidable: the two spaces
+      // have different RuntimeHelpers.GetHashCode values (that is what a reference hash is), the
+      // coordinates are identical, and the mix is `first * K + second` with K odd — which is a
+      // bijection on int for any fixed second. Distinct first terms therefore give distinct
+      // results, with no collision to allow for.
       Assert.NotEqual(
         new Point<AgreeableSpace>(first, 0, 0).GetHashCode(),
         new Point<AgreeableSpace>(second, 0, 0).GetHashCode());

@@ -19,12 +19,12 @@ namespace Unrect.Projections
 
     public override string Description { get; }
 
-    public override ProjectionResult<T> Project(ICellValues extent, ProjectionContext context)
+    public override ProjectionResult<T> Project(Plane<ICellValues> extent, ProjectionContext context)
     {
       // "Is there a row for the header" rather than "how tall are you": the same question of a
       // measured extent, and one row rather than all of them where the height is still being
       // discovered. Asking it the other way would settle every table's bound before it read a cell.
-      if (HeaderRows > 0 && (BoundedSpace.WidthOf(extent) == 0 || !BoundedSpace.HasRow(extent, 0)))
+      if (HeaderRows > 0 && (extent.Width == 0 || !extent.HasRow(0)))
         throw context.Failure("a header row was declared but the table's extent is empty", extent);
 
       var value = Projection(new TableView(extent, HeaderRows, context));

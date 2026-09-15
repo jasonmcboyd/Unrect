@@ -28,7 +28,7 @@ namespace Unrect.Projections
 
     public override bool IsTransparent => Name is null && !IsUnitBoundary;
 
-    public override ProjectionResult<TResult> Project(ICellValues extent, ProjectionContext context)
+    public override ProjectionResult<TResult> Project(Plane<ICellValues> extent, ProjectionContext context)
     {
       var applied = ProjectionEngine.Apply(Inner, extent, context);
       return new ProjectionResult<TResult>(Selector(applied.Value), applied.Advance, applied.Presence);

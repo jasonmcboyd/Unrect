@@ -27,7 +27,7 @@ namespace Unrect.Projections
 
     public override IReadOnlyList<IProjection> Children { get; }
 
-    public override ProjectionResult<T> Project(ICellValues extent, ProjectionContext context)
+    public override ProjectionResult<T> Project(Plane<ICellValues> extent, ProjectionContext context)
     {
       var applied = ProjectionEngine.Apply(Body, extent, context);
 

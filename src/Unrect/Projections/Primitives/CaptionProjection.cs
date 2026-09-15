@@ -31,7 +31,7 @@ namespace Unrect.Projections
 
     public override string Description => $"Caption(\"{Text}\")";
 
-    public override ProjectionResult<string> Project(ICellValues extent, ProjectionContext context)
+    public override ProjectionResult<string> Project(Plane<ICellValues> extent, ProjectionContext context)
     {
       var size = extent.Area.Size;
 
@@ -42,10 +42,10 @@ namespace Unrect.Projections
         throw context.Failure($"a Caption must be exactly one row tall; this one is {size.Height} rows tall", extent);
 
       for (var column = 0; column < size.Width; column++)
-        if (Match(extent[column, 0]))
+        if (Match(extent.CellAt(column, 0)))
           // The file's text, not the declaration's: the literal is the matcher, the cell is the
           // datum, and untrimmed because trimming is the matcher's business.
-          return new ProjectionResult<string>(extent[column, 0].GetString(), size);
+          return new ProjectionResult<string>(extent.CellAt(column, 0).GetString(), size);
 
       throw context.Failure($"expected a row containing '{Text}' here", extent);
     }

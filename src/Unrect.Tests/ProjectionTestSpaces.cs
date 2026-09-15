@@ -1,7 +1,12 @@
 using System;
+using System.IO;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
+using Unrect.Tests.Streaming;
+
+using Xunit;
 
 namespace Unrect.Tests
 {
@@ -17,6 +22,65 @@ namespace Unrect.Tests
 
     /// <summary>A grid of labels; the array adapter treats null and "" as empty cells.</summary>
     public static ICellValues Text(string?[,] values) => GridSpace.Create(values);
+
+    // --- The doors ----------------------------------------------------------------------------------
+    //
+    // Every way a grid can enter the library: built in memory, read whole from a file, read a window
+    // at a time. They live here rather than beside one suite because more than one suite states laws
+    // across all of them, and two copies of the arrangement are two things to keep in step — which
+    // is how a door once ended up shadowed by a nearer helper of the same name and quietly dropped
+    // out of a theory.
+
+    /// <summary>The three doors, as theory data: the name is what <see cref="Door"/> takes.</summary>
+    public static TheoryData<string> Doors => new TheoryData<string> { "grid", "windowed", "xlsx" };
+
+    /// <summary>
+    /// A space behind <paramref name="door"/>. The two in-memory doors hold the same three-by-two
+    /// grid, every cell saying its own <c>"c,r"</c>; the eager door is a real workbook, because a
+    /// file is the only way that one can be entered, and it therefore carries the report fixture's
+    /// own content rather than coordinates. What is stated across all three is shape and refusal,
+    /// never what a particular cell says.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="door"/> names no door.</exception>
+    public static ICellValues Door(string door)
+    {
+      switch (door)
+      {
+        case "grid":
+          return Text(new[,]
+          {
+            { "0,0", "1,0", "2,0" },
+            { "0,1", "1,1", "2,1" },
+          });
+
+        case "windowed":
+          return Windowed(new FakeSheet("Data", 2, 3), chunkRows: 1);
+
+        case "xlsx":
+          return Eager("simple-report.xlsx", "Report");
+
+        // Named rather than defaulted: a door that fell through to a neighbour would drop out of
+        // every theory it is in and take its laws with it, silently.
+        default:
+          throw new ArgumentOutOfRangeException(nameof(door), door, "No such door.");
+      }
+    }
+
+    /// <summary>
+    /// <paramref name="sheet"/> read a window at a time, over a synthetic row source rather than a
+    /// file: the streaming door's own machinery with nothing of the adapter's in the way.
+    /// </summary>
+    public static ICellValues Windowed(FakeSheet sheet, int chunkRows = 1, int windowChunks = 4)
+    {
+      var pool = new ReaderPool(new FakeRowSource(sheet), 1, warmReaders: false);
+
+      return new WindowedSpace(
+        new SheetStore(pool, 0, sheet.Name, sheet.RowCount, sheet.ColumnCount, chunkRows, windowChunks));
+    }
+
+    /// <summary>A sheet of <paramref name="file"/> in <c>TestData</c>, read whole.</summary>
+    public static ICellValues Eager(string file, string sheet)
+      => SpreadsheetSpace.Create(Path.Combine(AppContext.BaseDirectory, "TestData", file), sheet);
 
     /// <summary>
     /// A column of 1..<paramref name="height"/>, so an assertion reads as the row it came from.

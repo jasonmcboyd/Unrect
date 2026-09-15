@@ -16,7 +16,7 @@ namespace Unrect.Projections
 
     public override string Description => "Overlay";
 
-    protected override LayoutState NewState(ICellValues extent, ProjectionContext context)
+    protected override LayoutState NewState(Plane<ICellValues> extent, ProjectionContext context)
       => new OverlayState(this, extent, context);
   }
 }

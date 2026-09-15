@@ -28,9 +28,9 @@ namespace Unrect.Projections
     public string Reason => "declared by a cursor lambda; children are known only while it runs";
 
     /// <summary>The state that decides what this layout does with its extent between children.</summary>
-    protected abstract LayoutState NewState(ICellValues extent, ProjectionContext context);
+    protected abstract LayoutState NewState(Plane<ICellValues> extent, ProjectionContext context);
 
-    public override ProjectionResult<T> Project(ICellValues extent, ProjectionContext context)
+    public override ProjectionResult<T> Project(Plane<ICellValues> extent, ProjectionContext context)
     {
       var state = NewState(extent, context);
 
