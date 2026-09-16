@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789408536660,
+  "lastUpdate": 1789531988138,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -956,6 +956,66 @@ window.BENCHMARK_DATA = {
             "value": 22672191.198660713,
             "unit": "ns",
             "range": "± 33921.79297418954"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "33f1afa3496afb1fabd2e0242197d1c5d9889568",
+          "message": "Merge experiment/point-and-line: the Point substrate — one vocabulary over any ISpace, planes and points as the locators, the kinds in Unrect.Spreadsheets\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01Wk5ZXojzv4hibCXDkjRu3g",
+          "timestamp": "2026-09-16T04:05:17Z",
+          "tree_id": "09d4c757d0f1502df340fb2a2481c31f78e8d8b2",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/33f1afa3496afb1fabd2e0242197d1c5d9889568"
+        },
+        "date": 1789531987132,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Engine.VerticalFlow_ManyChildren",
+            "value": 1756096.8190569195,
+            "unit": "ns",
+            "range": "± 8030.393315833669"
+          },
+          {
+            "name": "Unrect.Benchmarks.Engine.Flow_Nested",
+            "value": 549372.2880483774,
+            "unit": "ns",
+            "range": "± 1042.796829738943"
+          },
+          {
+            "name": "Unrect.Benchmarks.Engine.Overlay_AnchoredChildren",
+            "value": 454106.14188058034,
+            "unit": "ns",
+            "range": "± 1062.1630859129766"
+          },
+          {
+            "name": "Unrect.Benchmarks.Engine.Repeat_SeparatedBlocks",
+            "value": 930229.7663736979,
+            "unit": "ns",
+            "range": "± 3825.0890972134066"
+          },
+          {
+            "name": "Unrect.Benchmarks.Engine.Under_CaptionedSection",
+            "value": 133347.87198893228,
+            "unit": "ns",
+            "range": "± 170.40501472608767"
+          },
+          {
+            "name": "Unrect.Benchmarks.Engine.Range_ReadAllCells",
+            "value": 14364354.085416667,
+            "unit": "ns",
+            "range": "± 90712.64290832733"
           }
         ]
       }
