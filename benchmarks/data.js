@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789531988696,
+  "lastUpdate": 1789531988966,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -4310,6 +4310,78 @@ window.BENCHMARK_DATA = {
             "value": 407757.4429274339,
             "unit": "ns",
             "range": "± 3738.5108424772857"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "33f1afa3496afb1fabd2e0242197d1c5d9889568",
+          "message": "Merge experiment/point-and-line: the Point substrate — one vocabulary over any ISpace, planes and points as the locators, the kinds in Unrect.Spreadsheets\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01Wk5ZXojzv4hibCXDkjRu3g",
+          "timestamp": "2026-09-16T04:05:17Z",
+          "tree_id": "09d4c757d0f1502df340fb2a2481c31f78e8d8b2",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/33f1afa3496afb1fabd2e0242197d1c5d9889568"
+        },
+        "date": 1789531988904,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Values.Create_FromInts",
+            "value": 16.17250609199206,
+            "unit": "ns",
+            "range": "± 0.22647055272329347"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Create_FromObjects",
+            "value": 31010945.894230768,
+            "unit": "ns",
+            "range": "± 159900.28973665374"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.IsBlank_Million",
+            "value": 1916572.0933314732,
+            "unit": "ns",
+            "range": "± 3688.1645715535533"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.IsText_Million",
+            "value": 1915752.9077845982,
+            "unit": "ns",
+            "range": "± 4341.47037563269"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.AsText_Million_Text",
+            "value": 4770284.9859375,
+            "unit": "ns",
+            "range": "± 9975.616515636564"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Decimal_Million",
+            "value": 19823991.99330357,
+            "unit": "ns",
+            "range": "± 65330.09250095602"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Point_Mint_Million",
+            "value": 1408513.0199497768,
+            "unit": "ns",
+            "range": "± 1534.7078942238916"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Slice_Million",
+            "value": 2414630.28359375,
+            "unit": "ns",
+            "range": "± 1537.6277696085472"
           }
         ]
       }
