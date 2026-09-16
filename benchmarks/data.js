@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789531991781,
+  "lastUpdate": 1789531992136,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -12683,6 +12683,65 @@ window.BENCHMARK_DATA = {
           {
             "name": "Unrect.Benchmarks.Streaming.Adversarial_Pooled",
             "value": 15530847,
+            "unit": "bytes"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "33f1afa3496afb1fabd2e0242197d1c5d9889568",
+          "message": "Merge experiment/point-and-line: the Point substrate — one vocabulary over any ISpace, planes and points as the locators, the kinds in Unrect.Spreadsheets\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01Wk5ZXojzv4hibCXDkjRu3g",
+          "timestamp": "2026-09-16T04:05:17Z",
+          "tree_id": "09d4c757d0f1502df340fb2a2481c31f78e8d8b2",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/33f1afa3496afb1fabd2e0242197d1c5d9889568"
+        },
+        "date": 1789531992073,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Streaming.Monotone_Eager",
+            "value": 832198832,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Monotone_Windowed",
+            "value": 960549976,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Monotone_Resident",
+            "value": 832198832,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Band_WindowFits",
+            "value": 2345,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Band_WindowTooSmall",
+            "value": 2345,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Adversarial_OneReader",
+            "value": 15531683,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Adversarial_Pooled",
+            "value": 15530869,
             "unit": "bytes"
           }
         ]
