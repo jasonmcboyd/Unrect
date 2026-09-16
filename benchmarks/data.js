@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789531990949,
+  "lastUpdate": 1789531991404,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -10373,6 +10373,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Unrect.Benchmarks.EndToEnd.Document_4000Investors",
             "value": 43855116,
+            "unit": "bytes"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "33f1afa3496afb1fabd2e0242197d1c5d9889568",
+          "message": "Merge experiment/point-and-line: the Point substrate — one vocabulary over any ISpace, planes and points as the locators, the kinds in Unrect.Spreadsheets\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01Wk5ZXojzv4hibCXDkjRu3g",
+          "timestamp": "2026-09-16T04:05:17Z",
+          "tree_id": "09d4c757d0f1502df340fb2a2481c31f78e8d8b2",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/33f1afa3496afb1fabd2e0242197d1c5d9889568"
+        },
+        "date": 1789531991285,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.EndToEnd.Document_400Investors",
+            "value": 10415964,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.EndToEnd.Document_4000Investors",
+            "value": 103983616,
             "unit": "bytes"
           }
         ]
