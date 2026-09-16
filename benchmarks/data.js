@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789531992136,
+  "lastUpdate": 1789531992399,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -13184,6 +13184,72 @@ window.BENCHMARK_DATA = {
             "name": "Unrect.Benchmarks.Retention.Eager_SpaceHeld_Shared",
             "value": 58223056,
             "range": "± 0 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · CONTROL/TARGET — the same values shared-string encoded, which the reader already dedups"
+          },
+          {
+            "name": "Unrect.Benchmarks.Retention.Eager_ResultHeld",
+            "value": 32319784,
+            "range": "± 0 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · Table over the eager grid; result held, grid released"
+          },
+          {
+            "name": "Unrect.Benchmarks.Retention.Streaming_ResultHeld",
+            "value": 32319784,
+            "range": "± 0 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · Table through a window; result held, workbook closed"
+          },
+          {
+            "name": "Unrect.Benchmarks.Retention.Streaming_ResultHeld_Unique",
+            "value": 86096872,
+            "range": "± 0 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · CONTROL — the same projection, every text distinct"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "33f1afa3496afb1fabd2e0242197d1c5d9889568",
+          "message": "Merge experiment/point-and-line: the Point substrate — one vocabulary over any ISpace, planes and points as the locators, the kinds in Unrect.Spreadsheets\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01Wk5ZXojzv4hibCXDkjRu3g",
+          "timestamp": "2026-09-16T04:05:17Z",
+          "tree_id": "09d4c757d0f1502df340fb2a2481c31f78e8d8b2",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/33f1afa3496afb1fabd2e0242197d1c5d9889568"
+        },
+        "date": 1789531992337,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Retention.Eager_SpaceHeld",
+            "value": 58223048,
+            "range": "± 0 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · SpreadsheetSpace.Create over a real .xlsx (inline strings); grid held"
+          },
+          {
+            "name": "Unrect.Benchmarks.Retention.Eager_SpaceHeld_Unique",
+            "value": 112000136,
+            "range": "± 0 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · CONTROL — the same file and reader, every text distinct"
+          },
+          {
+            "name": "Unrect.Benchmarks.Retention.Eager_SpaceHeld_Shared",
+            "value": 58223048,
+            "range": "± 5,608 bytes",
             "unit": "bytes",
             "extra": "median of 3 · CONTROL/TARGET — the same values shared-string encoded, which the reader already dedups"
           },
