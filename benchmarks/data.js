@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789531988138,
+  "lastUpdate": 1789531988416,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -2070,6 +2070,72 @@ window.BENCHMARK_DATA = {
             "value": 1575911.7297712055,
             "unit": "ns",
             "range": "± 2571.7380256339957"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "33f1afa3496afb1fabd2e0242197d1c5d9889568",
+          "message": "Merge experiment/point-and-line: the Point substrate — one vocabulary over any ISpace, planes and points as the locators, the kinds in Unrect.Spreadsheets\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01Wk5ZXojzv4hibCXDkjRu3g",
+          "timestamp": "2026-09-16T04:05:17Z",
+          "tree_id": "09d4c757d0f1502df340fb2a2481c31f78e8d8b2",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/33f1afa3496afb1fabd2e0242197d1c5d9889568"
+        },
+        "date": 1789531988354,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Strategies.RowsWhileAnyValue_FullHeight",
+            "value": 1278734.3587239583,
+            "unit": "ns",
+            "range": "± 937.2490684699335"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.RowsWhileAnyValue_Sparse",
+            "value": 1278399.013392857,
+            "unit": "ns",
+            "range": "± 3009.15650285855"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_HitAt10Percent",
+            "value": 512257.4171424279,
+            "unit": "ns",
+            "range": "± 1369.511901900653"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_HitAt90Percent",
+            "value": 4600230.8421875,
+            "unit": "ns",
+            "range": "± 3536.13086118767"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_MissWholeGrid",
+            "value": 4694166.650111607,
+            "unit": "ns",
+            "range": "± 4876.7249068348265"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Until_BoundResolution",
+            "value": 5879702.623325893,
+            "unit": "ns",
+            "range": "± 17696.427860261483"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.BlankRows_Skip",
+            "value": 1616162.5226004464,
+            "unit": "ns",
+            "range": "± 4438.74717351412"
           }
         ]
       }
