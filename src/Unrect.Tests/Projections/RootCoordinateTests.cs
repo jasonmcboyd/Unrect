@@ -146,7 +146,7 @@ namespace Unrect.Tests.Projections
         {
           for (var row = 0; row < block.Height; row++)
             for (var column = 0; column < block.Width; column++)
-              seen.Add($"{block.Space.AsCanonical()[column, row].Column},{block.Space.AsCanonical()[column, row].Row}");
+              seen.Add($"{block.Space.Erased()[column, row].Column},{block.Space.Erased()[column, row].Row}");
 
           return 0;
         }));

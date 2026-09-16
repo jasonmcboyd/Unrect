@@ -125,7 +125,7 @@ namespace Unrect.Projections
       var cursor = along;
       var reach = across;
 
-      if (values.Count > 0 && !TrySeparate(extent.Tail(Step(cursor)), context, ref cursor, ref reach))
+      if (values.Count > 0 && !TrySeparate(extent.Slice(Step(cursor)), context, ref cursor, ref reach))
         return false;
 
       // A forward probe: the extent has a band at the cursor, asked one band at a time so a
@@ -135,7 +135,7 @@ namespace Unrect.Projections
 
       // The tail from the cursor, left unsettled so an item that derives its extent reads only the
       // band it takes.
-      var remaining = extent.Tail(Step(cursor));
+      var remaining = extent.Slice(Step(cursor));
 
       // The index belongs to the repeat's own segment; the label belongs to the item, which claims
       // it on the way in. Descend clears the index afterwards, so the item's own children are
@@ -175,7 +175,7 @@ namespace Unrect.Projections
       Offset offset;
       try
       {
-        offset = Separator.GetOffset(remaining.AsCanonical());
+        offset = Separator.GetOffset(remaining.Erased());
       }
       catch (ProjectionException)
       {

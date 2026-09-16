@@ -66,7 +66,7 @@ namespace Unrect.Projections
       while (across > 0 && HasBand(extent, cursor))
       {
         var offset = Step(cursor);
-        var band = Cut(extent, offset, across);
+        var band = Band(extent, offset, across);
 
         if (OnBlank is BlankRowStrategy onBlank && IsBlank(band))
         {
@@ -112,8 +112,8 @@ namespace Unrect.Projections
     /// is, and no strategy is ever handed an unsettled tail.
     /// </para>
     /// </summary>
-    private Plane<TSpace> Cut(Plane<TSpace> extent, Offset offset, int across)
-      => extent.Cut(offset, new Area(Extent(Stride, across)));
+    private Plane<TSpace> Band(Plane<TSpace> extent, Offset offset, int across)
+      => extent.Slice(offset, new Area(Extent(Stride, across)));
 
     private void ReportBlank(BlankRowStrategy onBlank, Plane<TSpace> band, ProjectionContext scope)
     {

@@ -179,7 +179,7 @@ namespace Unrect.Tests.Projections
       var counter = new CountingSpace(Grid(values));
       var scan = new StopAtBlankScan();
 
-      return (counter.Extent().Bounded(new Bound(counter.Region(), scan, exception => throw exception), 2).AsCanonical(), counter);
+      return (counter.Region().Bounded(new Bound(counter.Region(), scan, exception => throw exception), 2), counter);
     }
 
     /// <summary>The rule "rows while any cell has a value", spelled out so the view has one to obey.</summary>
@@ -285,7 +285,7 @@ namespace Unrect.Tests.Projections
     {
       var bound = new CountingBound(height);
 
-      return (CoordinateGrid(2, 10).Extent().Bounded(bound, 2).AsCanonical(), bound);
+      return (CoordinateGrid(2, 10).Region().Bounded(bound, 2), bound);
     }
 
     /// <summary>A scan that stops after a fixed number of rows, whatever it is folded over.</summary>
@@ -360,7 +360,7 @@ namespace Unrect.Tests.Projections
       // The control. Nothing about the fold is conditional on the region being discovered, so over
       // an ordinary measured one it must count exactly what it always counted — otherwise every
       // eager reading in the library would have moved.
-      var measured = CoordinateGrid(2, 10).Extent().AsCanonical();
+      var measured = CoordinateGrid(2, 10).Region();
 
       Assert.Equal(3, Scans.Fold(new StopsAfter(3), measured));
       Assert.Equal(10, Scans.Fold(new StopsAfter(int.MaxValue), measured));

@@ -12,7 +12,7 @@ namespace Unrect.Core
   /// subregion is the same space with a composed origin: nothing is allocated, nothing wraps
   /// anything, and a point minted through a slice names the very same cell as one minted through
   /// the parent at the translated coordinate. Decomposing a sheet into a hundred regions costs a
-  /// hundred struct copies.
+  /// hundred struct copies and no reads.
   /// </para>
   /// <para>
   /// <b>It is also where coordinates are checked.</b> A space refuses a cell outside its own edge;

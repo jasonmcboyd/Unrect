@@ -29,7 +29,7 @@ namespace Unrect.Projections
     /// </summary>
     public static AppliedResult<TResult> Apply<TSpace, TResult>(IProjection<TSpace, TResult> projection, TSpace availableSpace, ProjectionContext context)
       where TSpace : class, ISpace
-      => Apply(projection, availableSpace.Extent(), context);
+      => Apply(projection, Plane<TSpace>.Of(availableSpace), context);
 
     /// <inheritdoc cref="Apply{TSpace, TResult}(IProjection{TSpace, TResult}, TSpace, ProjectionContext)"/>
     internal static AppliedResult<TResult> Apply<TSpace, TResult>(IProjection<TSpace, TResult> projection, Plane<TSpace> availableSpace, ProjectionContext context)
@@ -43,7 +43,7 @@ namespace Unrect.Projections
     /// </summary>
     public static bool TryApply<TSpace, TResult>(IProjection<TSpace, TResult> projection, TSpace availableSpace, ProjectionContext context, out AppliedResult<TResult> result)
       where TSpace : class, ISpace
-      => TryApply(projection, availableSpace.Extent(), context, out result);
+      => TryApply(projection, Plane<TSpace>.Of(availableSpace), context, out result);
 
     /// <inheritdoc cref="TryApply{TSpace, TResult}(IProjection{TSpace, TResult}, TSpace, ProjectionContext, out AppliedResult{TResult})"/>
     internal static bool TryApply<TSpace, TResult>(IProjection<TSpace, TResult> projection, Plane<TSpace> availableSpace, ProjectionContext context, out AppliedResult<TResult> result)
@@ -84,7 +84,7 @@ namespace Unrect.Projections
       Offset offset;
       try
       {
-        offset = projection.Placement.Offset.GetOffset(availableSpace.AsCanonical());
+        offset = projection.Placement.Offset.GetOffset(availableSpace.Erased());
       }
       catch (ProjectionException)
       {
@@ -110,7 +110,7 @@ namespace Unrect.Projections
         return false;
       }
 
-      var inner = availableSpace.Tail(offset);
+      var inner = availableSpace.Slice(offset);
       // A transparent projection is not entered — it contributes no path segment — so it reports
       // against whatever context it was called with. At the root there is nothing in that context to
       // report against, so the root is told who it is applying instead.
@@ -126,7 +126,7 @@ namespace Unrect.Projections
       // SAME region: a scan replays its state against the region it was begun with, and a bound reads
       // its ceiling off the region it was built with — hand those two different regions and a nested
       // discovery resumes on one its parent had already excluded rows from.
-      var innerSpace = inner.AsCanonical();
+      var innerSpace = inner.Erased();
 
       if (Bind(projection, inner, innerSpace, scope, strict) is Bound bound)
       {
@@ -163,7 +163,7 @@ namespace Unrect.Projections
         return false;
       }
 
-      placed = Announce(offset, inner.Cut(area), scope, hasDeclaredArea: true);
+      placed = Announce(offset, inner.Slice(area), scope, hasDeclaredArea: true);
       return true;
     }
 
@@ -181,7 +181,7 @@ namespace Unrect.Projections
     /// <para>
     /// <b>What this buys, and where it stops.</b> A composite streams over a bound: placing a child
     /// asks <see cref="Exceeds"/> whether there is a row at the offset, and slices the extent with
-    /// <see cref="Extents.Tail"/>, which keeps an unsettled height unsettled. What still
+    /// <see cref="Plane{TSpace}.Slice(Offset)"/>, which keeps an unsettled height unsettled. What still
     /// settles a bound in full is a strategy reading <see cref="ISpace.Area"/> — which is what a
     /// DECLARED area on the child is, since the strategy is handed the extent and asks it how tall
     /// it is. So a shape that knows its own shape slices before it declares: a tiler cuts a band of

@@ -41,7 +41,7 @@ namespace Unrect.Projections
         throw context.Failure(
           $"a Field must be two cells wide and one row tall; this one is {size.Width}x{size.Height}", extent);
 
-      if (!Match(extent.AsCanonical()[0, 0]))
+      if (!Match(extent.Erased()[0, 0]))
         throw context.Failure(
           $"expected a label reading '{Label}' here, but this cell {Describe(extent[0, 0])}",
           extent);

@@ -1,3 +1,4 @@
+using System;
 using System.Text;
 
 namespace Unrect.Spreadsheets
@@ -11,7 +12,7 @@ namespace Unrect.Spreadsheets
   /// which convention it is holding.
   /// </para>
   /// </summary>
-  internal static class A1Reference
+  public static class A1Reference
   {
     /// <summary>The last column a sheet has, 0-based: XFD.</summary>
     internal const int MaximumColumn = 16383;
@@ -21,10 +22,23 @@ namespace Unrect.Spreadsheets
 
     /// <summary>
     /// The 0-based cell <paramref name="reference"/> names, or false when it does not name one —
-    /// which covers the whole-column and whole-row forms a cell attribute never uses.
+    /// which covers the whole-column and whole-row forms a cell attribute never uses, and the
+    /// <c>$</c>-locked forms, which are a formula's business rather than a cell's.
+    /// <para>
+    /// Public because it is the one place the file's own way of naming a cell is read, and a script
+    /// reading a sheet interactively wants to say <c>"B4"</c> the way the sheet does. Letters are
+    /// case-insensitive; everything else about the class is the reader's own business.
+    /// </para>
     /// </summary>
-    internal static bool TryParse(string reference, out int column, out int row)
+    /// <param name="reference">The address to read, e.g. <c>AB12</c>.</param>
+    /// <param name="column">The 0-based column it names, when it names a cell.</param>
+    /// <param name="row">The 0-based row it names, when it names a cell.</param>
+    /// <returns>Whether <paramref name="reference"/> names a cell. A refusal leaves nothing behind.</returns>
+    public static bool TryParse(string reference, out int column, out int row)
     {
+      if (reference is null)
+        throw new ArgumentNullException(nameof(reference));
+
       column = 0;
       row = 0;
 

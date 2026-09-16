@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>Unrect.Interactive</PackageId>
+    <Description>Exploratory sugar for reading an unfamiliar sheet in a LINQPad script or a notebook: address a cell the way the file does (sheet.At("B4")), and scaffold a first record declaration from a header row and a handful of sample rows. A separate package because nothing in the library uses any of it — a declaration that ships should be written against Unrect's own vocabulary, not this one.</Description>
+    <PackageTags>excel;spreadsheet;xlsx;linqpad;notebook;scripting;exploration;scaffolding;unrect</PackageTags>
+  </PropertyGroup>
+
+  <!-- The Unrect and Unrect.Spreadsheets PROJECTS, so the package depends on both at the same MinVer
+       version. Core is referenced separately and privately for the same reason Unrect.Spreadsheets
+       does it: Unrect bundles Core with PrivateAssets="all", which by design stops its types flowing
+       transitively, so we compile against Core here while advertising only the dependencies a
+       consumer installs. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Unrect\Unrect.csproj" />
+    <ProjectReference Include="..\Unrect.Spreadsheets\Unrect.Spreadsheets.csproj" />
+    <ProjectReference Include="..\Unrect.Core\Unrect.Core.csproj" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>

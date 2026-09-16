@@ -49,7 +49,7 @@ namespace Unrect.Tests.Projections
       // frame is the REGION's now — a plane carries its own root origin — so the context is handed
       // down unchanged and what differs between the two frames is the strip's plane.
       var reading = table.Context;
-      var strip = new CellStrip<ISheetCells>(sheet.Extent().Slice(new Offset(1, 1), new Area(3, 1)), Orientation.Horizontal, reading);
+      var strip = new CellStrip<ISheetCells>(Plane<ISheetCells>.Of(sheet).Slice(new Offset(1, 1), new Area(3, 1)), Orientation.Horizontal, reading);
       var row = new TableRow<ISheetCells>(0, strip, reading);
 
       // Translation applied: "Amount" lands on the absolute Amount cell, C2, holding 100.
@@ -74,7 +74,7 @@ namespace Unrect.Tests.Projections
       var table = TableOver(sheet);
 
       var reading = table.Context;
-      var strip = new CellStrip<ISheetCells>(sheet.Extent().Slice(new Offset(0, 1), new Area(2, 1)), Orientation.Horizontal, reading);
+      var strip = new CellStrip<ISheetCells>(Plane<ISheetCells>.Of(sheet).Slice(new Offset(0, 1), new Area(2, 1)), Orientation.Horizontal, reading);
       var row = new TableRow<ISheetCells>(0, strip, reading);
 
       var failure = Assert.Throws<ProjectionException>(() => row["Amount"].Decimal());
@@ -100,7 +100,7 @@ namespace Unrect.Tests.Projections
 
       // The reading frame is the last two columns (C, D); "X" (column A) is to their left.
       var reading = table.Context;
-      var strip = new CellStrip<ISheetCells>(sheet.Extent().Slice(new Offset(2, 1), new Area(2, 1)), Orientation.Horizontal, reading);
+      var strip = new CellStrip<ISheetCells>(Plane<ISheetCells>.Of(sheet).Slice(new Offset(2, 1), new Area(2, 1)), Orientation.Horizontal, reading);
       var row = new TableRow<ISheetCells>(0, strip, reading);
 
       var failure = Assert.Throws<ProjectionException>(() => row["X"].Decimal());

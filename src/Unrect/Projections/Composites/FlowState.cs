@@ -62,7 +62,7 @@ namespace Unrect.Projections
 
       try
       {
-        applied = ProjectionEngine.Apply(projection, Extent.Tail(cursor), scope);
+        applied = ProjectionEngine.Apply(projection, Extent.Slice(cursor), scope);
       }
       catch (ProjectionException failure) when (FollowsAnEmptySibling(failure, cursor))
       {

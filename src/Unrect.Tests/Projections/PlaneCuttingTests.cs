@@ -12,14 +12,19 @@ using static Unrect.Tests.ProjectionTestSpaces;
 namespace Unrect.Tests.Projections
 {
   /// <summary>
-  /// How the engine cuts the region it is working in — the three cuts, and which of them carries a
-  /// bottom edge still being discovered.
+  /// How the engine cuts the region it is working in — <see cref="Plane{TSpace}"/>'s own verbs, and
+  /// which of them carries a bottom edge still being discovered.
   /// <para>
-  /// The distinction is the whole of it. <c>Tail</c> and <c>Narrow</c> say "the rest of this", which
-  /// is still a question about the region whose end nobody knows; <c>Cut</c> names a rectangle, and
-  /// a named rectangle is a measured one. Getting it the other way round would either settle every
-  /// bound at the first child (no streaming at all) or hand a nested declaration a region that
-  /// silently outgrew what it asked for.
+  /// The distinction is the whole of it. <c>Slice(offset)</c> and <c>Narrowed(width)</c> say "the
+  /// rest of this", which is still a question about the region whose end nobody knows;
+  /// <c>Slice(offset, area)</c> names a rectangle, and a named rectangle is a measured one. Getting
+  /// it the other way round would either settle every bound at the first child (no streaming at all)
+  /// or hand a nested declaration a region that silently outgrew what it asked for.
+  /// </para>
+  /// <para>
+  /// The verbs are the plane's since the <c>Extents</c> helper was deleted; the laws are unchanged,
+  /// and they are stated here over the sheet door and through the engine, where
+  /// <c>PlaneTests</c> states them over the canonical one.
   /// </para>
   /// <para>
   /// The other rule pinned here is what replaced the phase's own. Until phase 6 every plane the
@@ -30,7 +35,7 @@ namespace Unrect.Tests.Projections
   /// always wanted to be: the same space with a composed origin, allocating nothing.
   /// </para>
   /// </summary>
-  public class ExtentsTests
+  public class PlaneCuttingTests
   {
     /// <summary>
     /// A bottom edge that admits a fixed number of rows and remembers how far it was asked to look,
@@ -90,10 +95,10 @@ namespace Unrect.Tests.Projections
     {
       var bound = new CountingBound(height);
 
-      return (CoordinateGrid(4, 10).Extent().Bounded(bound, 4), bound);
+      return (Plane<ISheetCells>.Of(CoordinateGrid(4, 10)).Bounded(bound, 4), bound);
     }
 
-    // --- Tail: the rest of a region, still being discovered --------------------------------------------
+    // --- Slice(offset): the rest of a region, still being discovered ------------------------------------
 
     [Fact]
     public void TheTailOfARegionKeepsItsBottomEdgeUnsettled()
@@ -103,7 +108,7 @@ namespace Unrect.Tests.Projections
       // which is exactly the forcing the bound exists to avoid.
       var (extent, bound) = Discovering();
 
-      var rest = extent.Tail(new Offset(1, 2));
+      var rest = extent.Slice(new Offset(1, 2));
 
       Assert.NotNull(rest.Bound);
       Assert.Equal(3, rest.Width);
@@ -128,7 +133,7 @@ namespace Unrect.Tests.Projections
       // origin two rows down, so the ten rows are all still there to look through.
       var (extent, _) = Discovering();
 
-      var rest = extent.Tail(new Offset(0, 2));
+      var rest = extent.Slice(new Offset(0, 2));
 
       // Ten rows of sheet to look through, four rows of region: the boundary is at the parent's
       // row 6, and the tail starts two rows into it.
@@ -138,7 +143,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal(4, rest.Area.Height);
     }
 
-    // --- Cut: a named rectangle is a measured one -------------------------------------------------------
+    // --- Slice(offset, area): a named rectangle is a measured one ---------------------------------------
 
     [Fact]
     public void ANamedRectangleCarriesNoBottomEdgeToDiscover()
@@ -148,7 +153,7 @@ namespace Unrect.Tests.Projections
       // what comes back answers from its own height thereafter.
       var (extent, bound) = Discovering();
 
-      var cut = extent.Cut(new Offset(0, 1), new Area(2, 3));
+      var cut = extent.Slice(new Offset(0, 1), new Area(2, 3));
 
       Assert.Null(cut.Bound);
       Assert.Equal(3, cut.Area.Height);
@@ -165,11 +170,11 @@ namespace Unrect.Tests.Projections
     {
       var (extent, bound) = Discovering();
 
-      Assert.Throws<OutOfBoundsException>(() => extent.Cut(new Offset(0, 4), new Area(2, 4)));
+      Assert.Throws<OutOfBoundsException>(() => extent.Slice(new Offset(0, 4), new Area(2, 4)));
       Assert.Equal(0, bound.Forced);
     }
 
-    // --- Narrow: the horizontal twin --------------------------------------------------------------------
+    // --- Narrowed: the horizontal twin ------------------------------------------------------------------
 
     [Fact]
     public void NarrowingKeepsTheBottomEdgeUnshifted()
@@ -178,7 +183,7 @@ namespace Unrect.Tests.Projections
       // ends, so the discovery is carried across unchanged rather than re-based.
       var (extent, bound) = Discovering();
 
-      var narrow = extent.Narrow(2);
+      var narrow = extent.Narrowed(2);
 
       Assert.NotNull(narrow.Bound);
       Assert.Same(extent.Bound, narrow.Bound);
@@ -204,8 +209,8 @@ namespace Unrect.Tests.Projections
       // section or make an ordinary overrun unrecoverable.
       var (extent, bound) = Discovering();
 
-      Assert.Throws<OutOfBoundsException>(() => extent.Narrow(extent.Width + 1));
-      Assert.Throws<ArgumentOutOfRangeException>(() => extent.Narrow(-1));
+      Assert.Throws<OutOfBoundsException>(() => extent.Narrowed(extent.Width + 1));
+      Assert.Throws<ArgumentOutOfRangeException>(() => extent.Narrowed(-1));
 
       // And the same division one level down, where the width arrives beside the bound: a plane
       // narrowed to nothing-at-all is the caller's mistake, not the sheet's.
@@ -230,10 +235,10 @@ namespace Unrect.Tests.Projections
 
       foreach (var (cut, origin) in new[]
       {
-        (extent.Cut(new Offset(1, 1), new Area(2, 2)), new Offset(1, 1)),
-        (extent.Cut(new Area(2, 2)), default(Offset)),
-        (extent.Tail(new Offset(1, 1)), new Offset(1, 1)),
-        (extent.Narrow(2), default(Offset)),
+        (extent.Slice(new Offset(1, 1), new Area(2, 2)), new Offset(1, 1)),
+        (extent.Slice(new Area(2, 2)), default(Offset)),
+        (extent.Slice(new Offset(1, 1)), new Offset(1, 1)),
+        (extent.Narrowed(2), default(Offset)),
       })
       {
         Assert.Same(extent.Space, cut.Space);

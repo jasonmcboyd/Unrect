@@ -3,9 +3,11 @@
   <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll</Reference>
   <Reference Relative="..\src\Unrect\bin\Debug\netstandard2.1\Unrect.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect\bin\Debug\netstandard2.1\Unrect.dll</Reference>
   <Reference Relative="..\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll</Reference>
+  <Reference Relative="..\src\Unrect.Interactive\bin\Debug\netstandard2.1\Unrect.Interactive.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Interactive\bin\Debug\netstandard2.1\Unrect.Interactive.dll</Reference>
   <Namespace>Unrect.Core</Namespace>
   <Namespace>Unrect.Spreadsheets</Namespace>
   <Namespace>Unrect.Projections</Namespace>
+  <Namespace>Unrect.Interactive</Namespace>
   <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Spreadsheets.ISheetCells&gt;</Namespace>
   <Namespace>static Unrect.Spreadsheets.SheetProjectionBuilders&lt;Unrect.Spreadsheets.ISheetCells&gt;</Namespace>
 </Query>
@@ -27,8 +29,9 @@ var strictSpace = SpreadsheetSpace.Create(path, "Edges", isBlank: _ => false);
 
 // A space has no indexer: the locator does the addressing. A plane is the 2-D one, and asking it for
 // a cell mints a point — an address, not a value, which is what every read below is written at.
-// Inside a declaration the Point() leaf hands back the same thing.
-Point<ISheetCells> At(ISheetCells space, int column, int row) => Plane<ISheetCells>.Of(space)[column, row];
+// `space.At(column, row)` is Unrect.Interactive's spelling of exactly that (the whole sheet as one
+// plane, which is what checks the coordinate), and it is a script's tool: inside a declaration the
+// Point() leaf hands back the same thing without anyone naming a coordinate.
 
 // 1. The kind map — errors are first-class, never blank. Describe is the document's own vocabulary
 // for a cell, which is the vocabulary a complaint about one is written in.
@@ -40,7 +43,7 @@ Range(5, 4, b => Enumerable.Range(0, 4)
 
 // 2. An error cell, end to end. It is not blank and it says what the file says — but no kind agrees
 // with it, so every kinded read refuses in the document's words and cites the cell in A1.
-var err = At(defaultSpace, 0, 1);
+var err = defaultSpace.At(0, 1);
 new
 {
 	Describe = err.Describe(),
@@ -58,10 +61,10 @@ new
 string Say(Point<ISheetCells> p) => $"{p.Describe()}, says {p.AsText() ?? "null"}, IsBlank={p.IsBlank}, IsText={p.IsText}";
 new
 {
-	TwoSpaces_Default = Say(At(defaultSpace, 0, 2)),
-	TwoSpaces_Strict = Say(At(strictSpace, 0, 2)),
-	EmptyString_Strict = Say(At(strictSpace, 2, 2)),   // "" maps to Blank before the predicate — the fidelity floor
-	AbsentCell_Strict = Say(At(strictSpace, 3, 2)),
+	TwoSpaces_Default = Say(defaultSpace.At(0, 2)),
+	TwoSpaces_Strict = Say(strictSpace.At(0, 2)),
+	EmptyString_Strict = Say(strictSpace.At(2, 2)),   // "" maps to Blank before the predicate — the fidelity floor
+	AbsentCell_Strict = Say(strictSpace.At(3, 2)),
 }.Dump("whitespace vs empty vs absent");
 
 // 4. And it changes decomposition: the value-bearing block over cols A-D stops at the whitespace row

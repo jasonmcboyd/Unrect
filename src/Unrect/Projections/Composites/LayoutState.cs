@@ -110,7 +110,7 @@ namespace Unrect.Projections
     protected Plane<TSpace> RemainingAt(Offset at)
       => at.Width > Extent.Area.Width || at.Height > Extent.Area.Height
         ? Extent
-        : Extent.Tail(at);
+        : Extent.Slice(at);
 
     /// <summary>The one wording, so a flow and an overlay cannot drift apart on it.</summary>
     protected static string NothingDeclared(string noun)
