@@ -1,7 +1,7 @@
 using BenchmarkDotNet.Attributes;
 
-using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
 namespace Unrect.Benchmarks
 {
@@ -19,8 +19,8 @@ namespace Unrect.Benchmarks
   [BenchmarkCategory("EndToEnd")]
   public class EndToEnd
   {
-    private ISpace _small = default!;
-    private ISpace _large = default!;
+    private ISheetCells _small = default!;
+    private ISheetCells _large = default!;
 
     [GlobalSetup]
     public void Setup()

@@ -4,8 +4,10 @@ using BenchmarkDotNet.Attributes;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 
 namespace Unrect.Benchmarks
 {
@@ -34,16 +36,16 @@ namespace Unrect.Benchmarks
   [BenchmarkCategory("Tables")]
   public class Tables
   {
-    private static readonly IProjection<IReadOnlyList<decimal>> Projected =
-      Table(r => r["Contribution"].GetDecimal());
+    private static readonly IProjection<ISheetCells, IReadOnlyList<decimal>> Projected =
+      Table(r => r["Contribution"].Decimal());
 
-    private static readonly IProjection<IReadOnlyList<TabularRow>> Bound = Table<TabularRow>();
+    private static readonly IProjection<ISheetCells, IReadOnlyList<TabularRow>> Bound = Table<TabularRow>();
 
-    private static readonly IProjection<IReadOnlyList<IReadOnlyDictionary<string, CellValue>>> Dictionaries =
+    private static readonly IProjection<ISheetCells, IReadOnlyList<IReadOnlyDictionary<string, Point<ISheetCells>>>> Dictionaries =
       Table();
 
-    private ISpace _large = default!;
-    private ISpace _mega = default!;
+    private ISheetCells _large = default!;
+    private ISheetCells _mega = default!;
 
     [GlobalSetup]
     public void Setup()

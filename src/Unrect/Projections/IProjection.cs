@@ -45,60 +45,41 @@ namespace Unrect.Projections
   }
 
   /// <summary>
-  /// A projection together with the <em>demand</em> it makes of the
-  /// space it is applied to. <typeparamref name="TSpace"/> names the least capable space this
-  /// declaration can run on; it appears in no member, so it is a phantom — the whole of its job is
-  /// to be checked at the composition sites and at <c>Map</c>.
+  /// A projection together with the space it reads: <typeparamref name="TSpace"/> is what the
+  /// declaration is written over, and what <c>Map</c> must be handed.
   /// <para>
-  /// Contravariance is the load-bearing choice: a demand is an input, so a projection demanding
-  /// less runs wherever more is offered. <see cref="IProjection{TResult}"/> — every projection
-  /// written today — derives from <c>IProjection&lt;ISpace, TResult&gt;</c>, and variance therefore
-  /// makes it an <c>IProjection&lt;IFormulaSpace, TResult&gt;</c> too, with no ceremony.
-  /// Composition unifies to the most demanding child; the reverse conversion does not exist, which
-  /// is what makes applying a formula-reading declaration to a plain grid a compile error rather
-  /// than a fault.
+  /// It is the type the whole declaration agrees on. A file names its space once, and everything
+  /// built there — leaves, layouts, matchers, the lot — is a projection over that space, so
+  /// composing two of them is an ordinary type check rather than a bookkeeping exercise.
   /// </para>
   /// <para>
-  /// <typeparamref name="TResult"/> is invariant, unlike the <c>out T</c> the typed-spaces note sketched:
-  /// it is returned inside <see cref="ProjectionResult{TResult}"/>, which is an ordinary invariant
-  /// type. That is what a projection has always been, so nothing is lost.
+  /// <b>A shared helper states its minimum in a constraint, not in its return type.</b> Write it as
+  /// a generic method — <c>static IProjection&lt;TSpace, decimal&gt; Total&lt;TSpace&gt;() where
+  /// TSpace : class, ISheetCells</c> — and it composes into any file whose space can answer it,
+  /// instantiated at that file's own space. A helper that named a space outright would hand back a
+  /// projection over that space and nothing else, which is a different and much smaller thing.
   /// </para>
   /// <para>
-  /// Every instance is produced by this library and implements <see cref="IProjection{TResult}"/>,
-  /// which is what licenses the one cast the typed layer makes (see
-  /// <c>ProjectionExtensions.Plain</c>): the engine and the composites are written against the
-  /// untyped form throughout, exactly as before, and the demand lives only in the static type.
+  /// <typeparamref name="TResult"/> is what projecting produces, and the whole of what a caller gets
+  /// back: by the time <see cref="Project"/> runs the placement is resolved, so a projection can
+  /// neither observe nor re-apply where it sits.
   /// </para>
   /// </summary>
-  /// <typeparam name="TSpace">The least capable space this projection can be applied to.</typeparam>
+  /// <typeparam name="TSpace">The space this projection is written over.</typeparam>
   /// <typeparam name="TResult">What projecting this projection's extent produces.</typeparam>
-  public interface IProjection<in TSpace, TResult> : IProjection
+  public interface IProjection<TSpace, TResult> : IProjection
     where TSpace : class, ISpace
   {
-  }
-
-  /// <summary>
-  /// A projection that reads a <typeparamref name="TResult"/> — the form a declaration is written
-  /// and applied in. The untyped <see cref="IProjection"/> above it is what diagnostics and tooling
-  /// walk, where the result type is neither known nor needed.
-  /// <para>
-  /// It demands nothing of its space beyond <see cref="ISpace"/>, which is what
-  /// <c>IProjection&lt;ISpace, TResult&gt;</c> says, so it runs everywhere.
-  /// </para>
-  /// </summary>
-  /// <typeparam name="TResult">What projecting this projection's extent produces.</typeparam>
-  public interface IProjection<TResult> : IProjection<ISpace, TResult>
-  {
     /// <summary>
-    /// Projects the projection's <em>resolved</em> extent: the placement has already been applied,
-    /// so a projection can neither observe nor re-apply it.
+    /// Projects the projection's <em>resolved</em> extent — the region the engine cut for it, with
+    /// the placement already applied.
     /// </summary>
-    ProjectionResult<TResult> Project(ISpace extent, ProjectionContext context);
+    ProjectionResult<TResult> Project(Plane<TSpace> extent, ProjectionContext context);
 
     /// <summary>A copy of this projection named <paramref name="name"/> — see <see cref="IProjection.Name"/>.</summary>
-    IProjection<TResult> WithName(string name);
+    IProjection<TSpace, TResult> WithName(string name);
 
     /// <summary>A copy of this projection with <paramref name="placement"/> in place of its own.</summary>
-    IProjection<TResult> WithPlacement(Placement placement);
+    IProjection<TSpace, TResult> WithPlacement(Placement placement);
   }
 }

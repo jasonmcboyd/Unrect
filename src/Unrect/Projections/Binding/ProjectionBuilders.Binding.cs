@@ -1,0 +1,82 @@
+using System;
+using System.Collections.Generic;
+
+using Unrect.Core;
+using Unrect.Strategies;
+
+namespace Unrect.Projections
+{
+  /// <summary>
+  /// How the exploratory table rung and the labelled-pair block actually read a region. Kept apart
+  /// from the vocabulary so that file stays a list of what a user can say.
+  /// </summary>
+  public static partial class ProjectionBuilders<TSpace>
+    where TSpace : class, ISpace
+  {
+    private static IReadOnlyList<IReadOnlyDictionary<string, Point<TSpace>>> DictionaryRows(TableView<TSpace> table)
+    {
+      var captions = new string[table.ColumnCount];
+
+      for (var column = 0; column < table.ColumnCount; column++)
+      {
+        var caption = table.ColumnNames[column];
+
+        if (caption.Length == 0)
+          throw table.Failure(
+            $"the column at {table.Header.AddressOf(column).A1} has no caption; every column needs one to be read by name");
+
+        for (var earlier = 0; earlier < column; earlier++)
+          if (CaptionComparer.Default.Equals(captions[earlier], caption))
+            throw table.Failure(
+              $"the columns at {table.Header.AddressOf(earlier).A1} ('{captions[earlier]}') and "
+              + $"{table.Header.AddressOf(column).A1} ('{caption}') carry the same caption; "
+              + "captions are matched ignoring case and whitespace");
+
+        captions[column] = caption;
+      }
+
+      // The captions are settled from the header above; the body is read forward-only from here.
+      var rows = new List<IReadOnlyDictionary<string, Point<TSpace>>>();
+
+      foreach (var row in table.StreamRows())
+      {
+        var cells = new Dictionary<string, Point<TSpace>>(captions.Length, CaptionComparer.Default);
+
+        for (var column = 0; column < captions.Length; column++)
+          cells[captions[column]] = row[column];
+
+        rows.Add(cells);
+      }
+
+      // Grown rather than pre-sized, because asking how many rows there are is the forcing question
+      // streaming exists to avoid; the slack is given back here instead.
+      rows.TrimExcess();
+
+      return rows;
+    }
+
+    /// <summary>
+    /// The block finds its own first label, column then row — the order that works when the label
+    /// column sits far to the right of a wide sheet.
+    /// </summary>
+    private static Placement FieldsPlacement(string label)
+      => new Placement(
+        OffsetStrategies.Then(
+          OffsetStrategies.To(ColumnLandmarks.ColumnWhere(
+            CellMatching.AnyCellInColumn(CellMatching.LabelEquals(label)), $"no column with the label '{label}'")),
+          OffsetStrategies.To(RowLandmarks.RowWhere(
+            CellMatching.AnyCellInRow(CellMatching.LabelEquals(label)), $"no row with the label '{label}'"))),
+        null);
+
+    private static string NotEmptyLabel(string label)
+    {
+      if (label is null)
+        throw new ArgumentNullException(nameof(label));
+
+      if (label.Trim().Length == 0)
+        throw new ArgumentException("A field label cannot be empty or whitespace.", nameof(label));
+
+      return label;
+    }
+  }
+}

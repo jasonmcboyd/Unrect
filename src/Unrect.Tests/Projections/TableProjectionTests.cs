@@ -1,13 +1,14 @@
 using System;
 using System.Linq;
 
-using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -19,7 +20,7 @@ namespace Unrect.Tests.Projections
   /// </summary>
   public class TableProjectionTests
   {
-    private static ISpace SimpleTable() => Mixed(new object?[,]
+    private static ISheetCells SimpleTable() => Mixed(new object?[,]
     {
       { "Investor", "Amount" },
       { "Acme", 10 },
@@ -99,19 +100,19 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void Table_SplitsTheHeaderFromTheBody()
     {
-      var view = Table((TableView t) => t).Map(SimpleTable());
+      var view = Table((TableView<ISheetCells> t) => t).Map(SimpleTable());
 
       Assert.True(view.HasHeader);
       Assert.Equal(2, view.ColumnCount);
       Assert.Equal(3, view.RowCount);
       Assert.Equal(3, view.Rows.Count);
-      Assert.Equal(new[] { "Investor", "Amount" }, view.Header.Select(c => c.GetString()).ToArray());
+      Assert.Equal(new[] { "Investor", "Amount" }, view.Header.Select(c => c.Text()).ToArray());
     }
 
     [Fact]
     public void TableView_ExposesTheWholeExtentIncludingTheHeader()
     {
-      var view = Table((TableView t) => t).Map(SimpleTable());
+      var view = Table((TableView<ISheetCells> t) => t).Map(SimpleTable());
 
       Assert.Equal(2, view.Space.Area.Size.Width);
       Assert.Equal(4, view.Space.Area.Size.Height);
@@ -131,7 +132,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void Table_WithoutAHeader_TreatsEveryRowAsBody()
     {
-      var view = Table(0, (TableView t) => t).Map(SimpleTable());
+      var view = Table(0, (TableView<ISheetCells> t) => t).Map(SimpleTable());
 
       Assert.False(view.HasHeader);
       Assert.Equal(4, view.RowCount);
@@ -143,8 +144,8 @@ namespace Unrect.Tests.Projections
     public void ColumnNames_HasOneEntryPerHeaderCell()
     {
       // ColumnNames mirrors the header strip, so it is empty exactly when there is no header.
-      var withHeader = Table((TableView t) => t).Map(SimpleTable());
-      var withoutHeader = Table(0, (TableView t) => t).Map(SimpleTable());
+      var withHeader = Table((TableView<ISheetCells> t) => t).Map(SimpleTable());
+      var withoutHeader = Table(0, (TableView<ISheetCells> t) => t).Map(SimpleTable());
 
       Assert.Equal(withHeader.Header.Count, withHeader.ColumnNames.Count);
       Assert.Equal(withoutHeader.Header.Count, withoutHeader.ColumnNames.Count);
@@ -170,7 +171,7 @@ namespace Unrect.Tests.Projections
     {
       var space = Mixed(new object?[,] { { "Investor", "Amount" } });
 
-      var view = Table((TableView t) => t).Map(space);
+      var view = Table((TableView<ISheetCells> t) => t).Map(space);
 
       Assert.True(view.HasHeader);
       Assert.Equal(0, view.RowCount);
@@ -212,7 +213,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void TableRow_IsAddressableByColumnIndex()
     {
-      var values = Table(r => (r[0].GetString(), r[1].GetInt())).Map(SimpleTable());
+      var values = Table(r => (r[0].Text(), r[1].Integer())).Map(SimpleTable());
 
       Assert.Equal(("Acme", 10), values[0]);
       Assert.Equal(("Gamma", 30), values[2]);
@@ -225,13 +226,13 @@ namespace Unrect.Tests.Projections
 
       Assert.Equal(new[] { 0, 1, 2 }, rows.Select(r => r.Index).ToArray());
       Assert.All(rows, r => Assert.Equal(2, r.Count));
-      Assert.Equal(new[] { "Acme", "10" }, rows[0].Cells.Select(c => c.TryGetString() ?? c.GetInt().ToString()).ToArray());
+      Assert.Equal(new[] { "Acme", "10" }, new[] { rows[0][0].Text(), rows[0][1].Integer().ToString() });
     }
 
     [Fact]
     public void TableRow_WithAnOutOfRangeIndex_ThrowsAndSaysHowManyColumnsThereAre()
     {
-      var failure = Assert.Throws<ProjectionException>(() => Table(r => r[4].GetInt()).Map(SimpleTable()));
+      var failure = Assert.Throws<ProjectionException>(() => Table(r => r[4].Integer()).Map(SimpleTable()));
 
       Assert.Contains("column index 4 is out of range; the table has 2 columns.", failure.Message);
     }
@@ -241,7 +242,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void TableRow_IsAddressableByColumnName()
     {
-      var values = Table(r => (r["Investor"].GetString(), r["Amount"].GetInt())).Map(SimpleTable());
+      var values = Table(r => (r["Investor"].Text(), r["Amount"].Integer())).Map(SimpleTable());
 
       Assert.Equal(("Acme", 10), values[0]);
       Assert.Equal(("Beta", 20), values[1]);
@@ -256,7 +257,7 @@ namespace Unrect.Tests.Projections
         { "Acme", 10 },
       });
 
-      var values = Table(r => (r["investor"].GetString(), r["amount"].GetInt())).Map(space);
+      var values = Table(r => (r["investor"].Text(), r["amount"].Integer())).Map(space);
 
       Assert.Equal(("Acme", 10), values[0]);
     }
@@ -264,7 +265,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void UnknownColumnName_ThrowsAndListsTheColumnsThatExist()
     {
-      var failure = Assert.Throws<ProjectionException>(() => Table(r => r["Net"].GetInt()).Map(SimpleTable()));
+      var failure = Assert.Throws<ProjectionException>(() => Table(r => r["Net"].Integer()).Map(SimpleTable()));
 
       Assert.Contains("there is no column named 'Net'; available columns: 'Investor', 'Amount'.", failure.Message);
     }
@@ -279,7 +280,7 @@ namespace Unrect.Tests.Projections
         { "Acme", 10 },
       });
 
-      var view = Table((TableView t) => t).Map(space);
+      var view = Table((TableView<ISheetCells> t) => t).Map(space);
 
       Assert.Equal(2, view.ColumnCount);
       Assert.Equal(new[] { "Investor", "" }, view.ColumnNames);
@@ -296,7 +297,7 @@ namespace Unrect.Tests.Projections
         { "Acme", 10 },
       });
 
-      var values = Table(r => r["  Investor  "].GetString()).Map(space);
+      var values = Table(r => r["  Investor  "].Text()).Map(space);
 
       Assert.Equal(new[] { "Acme" }, values);
     }
@@ -320,7 +321,7 @@ namespace Unrect.Tests.Projections
         { "Acme", 10 },
       });
 
-      Assert.Equal(new[] { 10 }, Table(r => r[key].GetInt()).Map(space));
+      Assert.Equal(new[] { 10 }, Table(r => r[key].Integer()).Map(space));
     }
 
     [Fact]
@@ -334,7 +335,7 @@ namespace Unrect.Tests.Projections
         { 1, 2 },
       });
 
-      var failure = Assert.Throws<ProjectionException>(() => Table(r => r["Amount"].GetInt()).Map(space));
+      var failure = Assert.Throws<ProjectionException>(() => Table(r => r["Amount"].Integer()).Map(space));
 
       Assert.Contains("appears at indices 0 and 1", failure.Message);
     }
@@ -348,7 +349,7 @@ namespace Unrect.Tests.Projections
         { 1, "Acme", 3 },
       });
 
-      var failure = Assert.Throws<ProjectionException>(() => Table(r => r["Amount"].GetInt()).Map(space));
+      var failure = Assert.Throws<ProjectionException>(() => Table(r => r["Amount"].Integer()).Map(space));
 
       Assert.Contains("column 'Amount' appears at indices 0 and 2; use the index.", failure.Message);
     }
@@ -358,7 +359,7 @@ namespace Unrect.Tests.Projections
     {
       var space = Mixed(new object?[,] { { "Acme", 10 } });
 
-      var failure = Assert.Throws<ProjectionException>(() => Table(0, r => r["Investor"].GetString()).Map(space));
+      var failure = Assert.Throws<ProjectionException>(() => Table(0, r => r["Investor"].Text()).Map(space));
 
       Assert.Contains("the table was declared without a header row; use column indices.", failure.Message);
     }
@@ -372,47 +373,54 @@ namespace Unrect.Tests.Projections
         { "Acme", 10 },
       });
 
-      var failure = Assert.Throws<ProjectionException>(() => Table(r => r[""].GetInt()).Map(space));
+      var failure = Assert.Throws<ProjectionException>(() => Table(r => r[""].Integer()).Map(space));
 
       Assert.Contains("there is no column named ''; available columns: 'Investor'.", failure.Message);
     }
 
-    // --- TryGet ------------------------------------------------------------------------------------------------
+    // --- Has -----------------------------------------------------------------------------------------------------
+    //
+    // `TryGet` answered "is this optional column present, and what does it hold" in one call, with
+    // the value coming back as a Cell. There is no Cell to hand out any more — a row yields points,
+    // and reading one is the point's own business — so the question split: `Has` asks whether the
+    // column is there, and the indexer reads it.
 
     [Fact]
-    public void TryGet_FindsAKnownColumn()
+    public void Has_FindsAKnownColumn()
     {
-      var found = Table(r => r.TryGet("Amount", out var value) ? value.GetInt() : -1).Map(SimpleTable());
+      var found = Table(r => r.Has("Amount") ? r["Amount"].Integer() : -1).Map(SimpleTable());
 
       Assert.Equal(new[] { 10, 20, 30 }, found);
     }
 
     [Fact]
-    public void TryGet_ReturnsFalseForAnUnknownColumn()
+    public void Has_ReturnsFalseForAnUnknownColumn()
     {
-      var results = Table(r => r.TryGet("Net", out var value) ? "found" : value.IsBlank ? "missing" : "?").Map(SimpleTable());
+      var results = Table(r => r.Has("Net") ? "found" : "missing").Map(SimpleTable());
 
       Assert.All(results, r => Assert.Equal("missing", r));
     }
 
     [Fact]
-    public void TryGet_OnAHeaderlessTable_Throws()
+    public void Has_OnAHeaderlessTable_Throws()
     {
-      // TryGet answers "is this optional column present?". Without a header row no name can mean
+      // Has answers "is this optional column present?". Without a header row no name can mean
       // anything, so the question itself is broken — the same judgement the indexer makes, rather
       // than reporting every column as absent.
       var space = Mixed(new object?[,] { { "Acme", 10 } });
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        Table(0, r => r.TryGet("Investor", out _) ? 1 : 0).Map(space));
+        Table(0, r => r.Has("Investor") ? 1 : 0).Map(space));
 
       Assert.Contains("the table was declared without a header row; use column indices.", failure.Message);
     }
 
     [Fact]
-    public void TryGet_ThrowsForAnAmbiguousColumn()
+    public void Has_ThrowsForAnAmbiguousColumn()
     {
-      // An absent column is a question with an answer; an ambiguous one is a broken declaration.
+      // An absent column is a question with an answer; an ambiguous one is a broken declaration, and
+      // it is broken before the reading — so asking whether the column is there is already too late
+      // a place to be hearing about it.
       var space = Mixed(new object?[,]
       {
         { "Amount", "Amount" },
@@ -420,9 +428,31 @@ namespace Unrect.Tests.Projections
       });
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        Table(r => r.TryGet("Amount", out _) ? 1 : 0).Map(space));
+        Table(r => r.Has("Amount") ? 1 : 0).Map(space));
 
       Assert.Contains("appears at indices 0 and 1; use the index.", failure.Message);
+    }
+
+    [Fact]
+    public void Has_ThrowsForAColumnThatHasNarrowedOutOfThisRow()
+    {
+      // The third broken question, and the one that is easiest to mistake for an absence. A column
+      // the table carries but that THIS row's region does not reach is a label whose column is
+      // somewhere else — not a column the table does not have — so reporting it as absent would let
+      // a declaration read a narrowed row as though the export had simply dropped a field.
+      //
+      // The narrowing is the point: the record reads the last column only, and asks about the first.
+      var space = Mixed(new object?[,]
+      {
+        { "Investor", "Amount" },
+        { "Acme", 10 },
+      });
+
+      var failure = Assert.Throws<ProjectionException>(
+        () => Table(1, Right(1).Of(Record((TableRow<ISheetCells> row) => row.Has("Investor") ? 1 : 0))).Map(space));
+
+      Assert.Contains("column 'Investor' is not in this region", failure.Message);
+      Assert.False(failure.IsFault);
     }
 
     // --- Explicit placement --------------------------------------------------------------------------------------
@@ -453,8 +483,8 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void TheRowLambda_IsTheViewLambdaProjectedOverTheBodyRows()
     {
-      var viaViewLambda = Table(t => t.Rows.Select(r => r["Amount"].GetInt()).ToList()).Map(SimpleTable());
-      var viaRowLambda = Table(r => r["Amount"].GetInt()).Map(SimpleTable());
+      var viaViewLambda = Table(t => t.Rows.Select(r => r["Amount"].Integer()).ToList()).Map(SimpleTable());
+      var viaRowLambda = Table(r => r["Amount"].Integer()).Map(SimpleTable());
 
       Assert.Equal(viaViewLambda, viaRowLambda);
       Assert.Equal(new[] { 10, 20, 30 }, viaRowLambda);
@@ -463,7 +493,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void TheRowLambda_WithoutAHeader_ProjectsEveryRow()
     {
-      var values = Table(0, r => r[0].TryGetString() ?? "-").Map(SimpleTable());
+      var values = Table(0, r => r[0].IsText ? r[0].Text() : "-").Map(SimpleTable());
 
       Assert.Equal(new[] { "Investor", "Acme", "Beta", "Gamma" }, values);
     }
@@ -474,8 +504,8 @@ namespace Unrect.Tests.Projections
       // Cast in both, because Table<T> carries a binding overload and two lambda rungs, and an
       // untyped null is convertible to all three delegate types. A lambda still resolves without
       // help unless its body touches nothing distinctive — see the note at the top of this file.
-      Assert.Throws<ArgumentNullException>(() => Table((Func<TableView, int>)null!));
-      Assert.Throws<ArgumentNullException>(() => Table((Func<TableRow, int>)null!));
+      Assert.Throws<ArgumentNullException>(() => Table((Func<TableView<ISheetCells>, int>)null!));
+      Assert.Throws<ArgumentNullException>(() => Table((Func<TableRow<ISheetCells>, int>)null!));
     }
   }
 }

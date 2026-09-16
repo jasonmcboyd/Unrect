@@ -1,8 +1,10 @@
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -16,15 +18,25 @@ namespace Unrect.Tests.Projections
   /// twice gets two labels and its own <c>Name</c> stays null. It names the subject as well as the
   /// path — anything less would have one message call the same child two different things.
   /// </para>
+  /// <para>
+  /// <b>What rung 3 falls back to changed in phase 6, and it is not this file's law that changed.</b>
+  /// The description is the factory that produced the projection, and there is no longer a factory
+  /// called <c>Cell</c>: the untyped leaf retired for <c>Point()</c>, and what these tests read is a
+  /// KINDED leaf, so the fallback renders <c>Text</c>, <c>Integer</c>, <c>Decimal</c> — the leaf's
+  /// own name. Every <c>Cell</c> and <c>Cell#2</c> below is now its leaf's name and its ordinal, and
+  /// the ladder above it — a name beats an identifier beats a description-and-ordinal — is untouched.
+  /// A site written as <c>Point().Select(…)</c> renders <c>Select</c>, because that is the factory
+  /// that made the projection the use site was handed.
+  /// </para>
   /// </summary>
   public class NameInferenceTests
   {
-    private static IProjection<int> Number() => Cell(c => c.GetInt());
+    private static IProjection<ISheetCells, int> Number() => IntCell();
 
     /// <summary>A projection that always fails, so every test reads its label off the failure.</summary>
-    private static IProjection<string> Text() => Cell(c => c.GetString());
+    private static IProjection<ISheetCells, string> Text() => TextCell();
 
-    private static ProjectionException Failure<T>(IProjection<T> projection) => Assert.Throws<ProjectionException>(() => projection.Map(Ladder()));
+    private static ProjectionException Failure<T>(IProjection<ISheetCells, T> projection) => Assert.Throws<ProjectionException>(() => projection.Map(Ladder()));
 
     // --- The three rungs ---------------------------------------------------------------------------
 
@@ -36,7 +48,7 @@ namespace Unrect.Tests.Projections
       var failure = Failure(VerticalFlow(v => $"{v.Next(Number())}{v.Next(transactions.Named("summary"))}"));
 
       Assert.Equal("'summary'", failure.Subject);
-      Assert.Equal("VerticalFlow -> 'summary' (Cell)", failure.Path);
+      Assert.Equal("VerticalFlow -> 'summary' (Text)", failure.Path);
     }
 
     [Fact]
@@ -49,7 +61,7 @@ namespace Unrect.Tests.Projections
       var failure = Failure(VerticalFlow(v => $"{v.Next(Number())}{v.Next(transactions)}"));
 
       Assert.Equal("'transactions'", failure.Subject);
-      Assert.Equal("VerticalFlow -> 'transactions' (Cell)", failure.Path);
+      Assert.Equal("VerticalFlow -> 'transactions' (Text)", failure.Path);
     }
 
     [Fact]
@@ -69,10 +81,10 @@ namespace Unrect.Tests.Projections
     {
       // An inline factory call has no identifier to borrow, so the child is named by what it is and
       // where it sits — 1-based, because it is a position in a declaration a human wrote.
-      var failure = Failure(VerticalFlow(v => $"{v.Next(Number())}{v.Next(Cell(c => c.GetString()))}"));
+      var failure = Failure(VerticalFlow(v => $"{v.Next(Number())}{v.Next(TextCell())}"));
 
-      Assert.Equal("Cell#2", failure.Subject);
-      Assert.Equal("VerticalFlow -> Cell#2", failure.Path);
+      Assert.Equal("Text#2", failure.Subject);
+      Assert.Equal("VerticalFlow -> Text#2", failure.Path);
     }
 
     [Fact]
@@ -81,8 +93,8 @@ namespace Unrect.Tests.Projections
       // Neither is a bare identifier, so neither is mistaken for a name the user chose.
       var projections = new Projections();
 
-      Assert.Equal("Cell#1", Failure(VerticalFlow(v => v.Next(projections.Total))).Subject);
-      Assert.Equal("Cell#1", Failure(VerticalFlow(v => v.Next(Pick()))).Subject);
+      Assert.Equal("Text#1", Failure(VerticalFlow(v => v.Next(projections.Total))).Subject);
+      Assert.Equal("Text#1", Failure(VerticalFlow(v => v.Next(Pick()))).Subject);
     }
 
     [Fact]
@@ -93,7 +105,7 @@ namespace Unrect.Tests.Projections
 
       Assert.Equal("'chosen'", Failure(VerticalFlow(v => v.Next(labelled))).Subject);
       Assert.Equal("'identified'", Failure(VerticalFlow(v => v.Next(identified))).Subject);
-      Assert.Equal("Cell#1", Failure(VerticalFlow(v => v.Next(Cell(c => c.GetString())))).Subject);
+      Assert.Equal("Text#1", Failure(VerticalFlow(v => v.Next(TextCell()))).Subject);
     }
 
     // --- Ordinals ---------------------------------------------------------------------------------------
@@ -106,9 +118,9 @@ namespace Unrect.Tests.Projections
       var second = Number();
 
       var failure = Failure(VerticalFlow(v =>
-        $"{v.Next(Number())}{v.Next(second)}{v.Next(Cell(c => c.GetString()))}"));
+        $"{v.Next(Number())}{v.Next(second)}{v.Next(TextCell())}"));
 
-      Assert.Equal("Cell#3", failure.Subject);
+      Assert.Equal("Text#3", failure.Subject);
     }
 
     // --- The use site, not the projection -----------------------------------------------------------------------
@@ -136,9 +148,9 @@ namespace Unrect.Tests.Projections
       var padded = Text().Padded(0);
       var bounded = Until(RowContaining("Nothing here"), orEnd: true).Of(Text());
 
-      Assert.Equal("VerticalFlow -> 'selected' (Cell)", Failure(VerticalFlow(v => v.Next(selected))).Path);
-      Assert.Equal("VerticalFlow -> 'padded' (Cell)", Failure(VerticalFlow(v => v.Next(padded))).Path);
-      Assert.Equal("VerticalFlow -> 'bounded' (Cell)", Failure(VerticalFlow(v => v.Next(bounded))).Path);
+      Assert.Equal("VerticalFlow -> 'selected' (Text)", Failure(VerticalFlow(v => v.Next(selected))).Path);
+      Assert.Equal("VerticalFlow -> 'padded' (Text)", Failure(VerticalFlow(v => v.Next(padded))).Path);
+      Assert.Equal("VerticalFlow -> 'bounded' (Text)", Failure(VerticalFlow(v => v.Next(bounded))).Path);
       Assert.Equal("'selected'", Failure(VerticalFlow(v => v.Next(selected))).Subject);
     }
 
@@ -153,10 +165,10 @@ namespace Unrect.Tests.Projections
         Overlay(o => $"{o.Next(Number())}{o.Next(transactions)}").Map(Ladder()));
 
       var ordinal = Assert.Throws<ProjectionException>(() =>
-        Overlay(o => $"{o.Next(Number())}{o.Next(Cell(c => c.GetString()))}").Map(Ladder()));
+        Overlay(o => $"{o.Next(Number())}{o.Next(TextCell())}").Map(Ladder()));
 
-      Assert.Equal("Overlay -> 'transactions' (Cell)", identified.Path);
-      Assert.Equal("Overlay -> Cell#2", ordinal.Path);
+      Assert.Equal("Overlay -> 'transactions' (Text)", identified.Path);
+      Assert.Equal("Overlay -> Text#2", ordinal.Path);
     }
 
     // --- What the ladder does not touch ------------------------------------------------------------------------
@@ -171,7 +183,7 @@ namespace Unrect.Tests.Projections
 
       var failure = Failure(VerticalFlow(v => $"{string.Join(",", v.Next(items))}"));
 
-      Assert.Equal("VerticalFlow -> 'items'[0] -> Cell", failure.Path);
+      Assert.Equal("VerticalFlow -> 'items'[0] -> Text", failure.Path);
     }
 
     // --- Capture reaches a repeat's item as well as a Next call -------------------------------------------------
@@ -191,7 +203,7 @@ namespace Unrect.Tests.Projections
       var failure = Failure(VerticalRepeat(investorDetail));
 
       Assert.Equal("'investorDetail'", failure.Subject);
-      Assert.Equal("VerticalRepeat[0] -> 'investorDetail' (Cell)", failure.Path);
+      Assert.Equal("VerticalRepeat[0] -> 'investorDetail' (Text)", failure.Path);
     }
 
     [Fact]
@@ -199,7 +211,7 @@ namespace Unrect.Tests.Projections
     {
       var chosen = Text().Named("explicit");
 
-      Assert.Equal("VerticalRepeat[0] -> 'explicit' (Cell)", Failure(VerticalRepeat(chosen)).Path);
+      Assert.Equal("VerticalRepeat[0] -> 'explicit' (Text)", Failure(VerticalRepeat(chosen)).Path);
     }
 
     [Fact]
@@ -209,9 +221,12 @@ namespace Unrect.Tests.Projections
       // call, and a modifier chain are all "not a bare identifier" and all render the same way.
       var block = Text();
 
-      Assert.Equal("VerticalRepeat[0] -> Cell", Failure(VerticalRepeat(Cell(c => c.GetString()))).Path);
-      Assert.Equal("VerticalRepeat[0] -> Cell", Failure(VerticalRepeat(MakeBlock())).Path);
-      Assert.Equal("VerticalRepeat[0] -> Cell", Failure(VerticalRepeat(Down(1).Of(block))).Path);
+      // Left as an inline lambda on purpose: the three spellings this test enumerates are an
+      // inline lambda, an inline factory call and a modifier chain, so funnelling this one into
+      // TextCell() would leave the first of them untested.
+      Assert.Equal("VerticalRepeat[0] -> Text", Failure(VerticalRepeat(Text())).Path);
+      Assert.Equal("VerticalRepeat[0] -> Text", Failure(VerticalRepeat(MakeBlock())).Path);
+      Assert.Equal("VerticalRepeat[0] -> Text", Failure(VerticalRepeat(Down(1).Of(block))).Path);
     }
 
     [Fact]
@@ -222,7 +237,7 @@ namespace Unrect.Tests.Projections
       var failure = Assert.Throws<ProjectionException>(() =>
         HorizontalRepeat(detail).Map(Grid(new[,] { { 1, 2 } })));
 
-      Assert.Equal("HorizontalRepeat[0] -> 'detail' (Cell)", failure.Path);
+      Assert.Equal("HorizontalRepeat[0] -> 'detail' (Text)", failure.Path);
     }
 
     [Fact]
@@ -238,7 +253,7 @@ namespace Unrect.Tests.Projections
       var failure = Assert.Throws<ProjectionException>(() =>
         VerticalFlow(v => string.Join(",", v.Next(details))).Map(space));
 
-      Assert.Equal("VerticalFlow -> 'details'[2] -> 'detail' (Cell)", failure.Path);
+      Assert.Equal("VerticalFlow -> 'details'[2] -> 'detail' (Text)", failure.Path);
     }
 
     [Fact]
@@ -247,13 +262,13 @@ namespace Unrect.Tests.Projections
       // The label belongs to the item's segment and stops there; what is inside the item is named
       // by its own ladder, at its own use sites.
       var inner = Text();
-      var detailFlow = VerticalFlow(w => $"{w.Next(Cell(c => c.GetInt()))}{w.Next(inner)}");
+      var detailFlow = VerticalFlow(w => $"{w.Next(IntCell())}{w.Next(inner)}");
       var blocks = VerticalRepeat(detailFlow);
 
       var failure = Assert.Throws<ProjectionException>(() =>
         VerticalFlow(v => string.Join(",", v.Next(blocks))).Map(Ladder()));
 
-      Assert.Equal("VerticalFlow -> 'blocks'[0] -> 'detailFlow' -> 'inner' (Cell)", failure.Path);
+      Assert.Equal("VerticalFlow -> 'blocks'[0] -> 'detailFlow' -> 'inner' (Text)", failure.Path);
       Assert.Equal("'inner'", failure.Subject);
     }
 
@@ -274,7 +289,7 @@ namespace Unrect.Tests.Projections
     // --- Capture reaches a fallback as well -----------------------------------------------------------------------
     //
     // Else(fallback) captures its argument the same way Next and Repeat do, so a stand-in that
-    // fails names itself rather than hiding behind "Cell".
+    // fails names itself rather than hiding behind its bare kind.
 
     [Fact]
     public void Rung2_AFallbackIsLabelledByTheLocalItWasHoistedInto()
@@ -282,12 +297,12 @@ namespace Unrect.Tests.Projections
       // Both halves failed, so the fallback owns the failure — and it is the fallback's own
       // identifier that says which stand-in was being read when the parse gave up.
       var primary = Text().Named("primary");
-      var recovery = Cell(c => c.GetDateTime().ToString());
+      var recovery = Point().Select(p => p.Date().ToString());
 
       var failure = Failure(primary.Else(recovery));
 
       Assert.Equal("'recovery'", failure.Subject);
-      Assert.Equal("'recovery' (Cell)", failure.Path);
+      Assert.Equal("'recovery' (Select)", failure.Path);
       Assert.Contains("it stands in for 'primary', which failed too: ", failure.Message);
     }
 
@@ -297,7 +312,7 @@ namespace Unrect.Tests.Projections
       // The label is for the failure the fallback might raise. When it succeeds there is nothing to
       // blame it for, and the Warning still names the projection that actually went wrong.
       var primary = Text().Named("primary");
-      var recovery = Cell(c => c.GetInt().ToString());
+      var recovery = Point().Select(p => p.Integer().ToString());
 
       var result = primary.Else(recovery).MapWithDiagnostics(Ladder());
 
@@ -306,7 +321,7 @@ namespace Unrect.Tests.Projections
       var warning = Assert.Single(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Warning);
 
       Assert.Equal("'primary'", warning.Subject);
-      Assert.Equal("'primary' (Cell)", warning.Path);
+      Assert.Equal("'primary' (Text)", warning.Path);
     }
 
     [Fact]
@@ -316,10 +331,10 @@ namespace Unrect.Tests.Projections
       // no ordinal to count and rung 3 is the bare description.
       var primary = Text().Named("primary");
 
-      var failure = Failure(primary.Else(Cell(c => c.GetDateTime().ToString())));
+      var failure = Failure(primary.Else(Point().Select(p => p.Date().ToString())));
 
-      Assert.Equal("Cell", failure.Subject);
-      Assert.Equal("Cell", failure.Path);
+      Assert.Equal("Select", failure.Subject);
+      Assert.Equal("Select", failure.Path);
     }
 
     // --- The helper rule §6.1 makes a rule rather than advice -----------------------------------------------------
@@ -401,17 +416,17 @@ namespace Unrect.Tests.Projections
       Assert.Equal("VerticalFlow -> Table#2[0] -> Decimal", failure.Path);
     }
 
-    private static IProjection<string> FullRow() => Cell(c => c.GetString());
+    private static IProjection<ISheetCells, string> FullRow() => TextCell();
 
-    private static IProjection<string> NamedFullRow() => Cell(c => c.GetString()).Named("full row");
+    private static IProjection<ISheetCells, string> NamedFullRow() => TextCell().Named("full row");
 
-    private static IProjection<string> Pick() => Cell(c => c.GetString());
+    private static IProjection<ISheetCells, string> Pick() => TextCell();
 
-    private static IProjection<string> MakeBlock() => Cell(c => c.GetString());
+    private static IProjection<ISheetCells, string> MakeBlock() => TextCell();
 
     private sealed class Projections
     {
-      public IProjection<string> Total { get; } = Cell(c => c.GetString());
+      public IProjection<ISheetCells, string> Total { get; } = TextCell();
     }
   }
 }

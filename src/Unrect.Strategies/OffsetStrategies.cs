@@ -22,15 +22,15 @@ namespace Unrect.Strategies
       => ExplicitSize(width, height).ToOffsetStrategy();
 
     /// <summary>Whatever <paramref name="selector"/> computes from the available space.</summary>
-    public static IOffsetStrategy SelectOffset(Func<ISpace, Size> selector)
+    public static IOffsetStrategy SelectOffset(Func<Plane<ISpace>, Size> selector)
       => SelectSize(selector).ToOffsetStrategy();
 
     /// <summary>Past the leading rows in which every cell satisfies <paramref name="predicate"/>.</summary>
-    public static IOffsetStrategy SkipRowsWhileAll(Func<CellValue, bool> predicate)
+    public static IOffsetStrategy SkipRowsWhileAll(Func<Point<ISpace>, bool> predicate)
       => new RowOffsetSizeStrategy(RowStrategies.TakeRowsWhileAll(predicate)).ToOffsetStrategy();
 
     /// <summary>Past the leading rows in which at least one cell satisfies <paramref name="predicate"/>.</summary>
-    public static IOffsetStrategy SkipRowsWhileAny(Func<CellValue, bool> predicate)
+    public static IOffsetStrategy SkipRowsWhileAny(Func<Point<ISpace>, bool> predicate)
       => new RowOffsetSizeStrategy(RowStrategies.TakeRowsWhileAny(predicate)).ToOffsetStrategy();
 
     /// <summary>Past the leading entirely-blank rows — the zero-argument form of <see cref="SkipRowsWhileAll"/>.</summary>
@@ -38,11 +38,11 @@ namespace Unrect.Strategies
       => SkipRowsWhileAll(v => v.IsBlank);
 
     /// <summary>Past the leading columns in which every cell satisfies <paramref name="predicate"/>; the column twin of <see cref="SkipRowsWhileAll"/>.</summary>
-    public static IOffsetStrategy SkipColumnsWhileAll(Func<CellValue, bool> predicate)
+    public static IOffsetStrategy SkipColumnsWhileAll(Func<Point<ISpace>, bool> predicate)
       => new ColumnOffsetSizeStrategy(ColumnStrategies.TakeColumnsWhileAll(predicate)).ToOffsetStrategy();
 
     /// <summary>Past the leading columns in which at least one cell satisfies <paramref name="predicate"/>; the column twin of <see cref="SkipRowsWhileAny"/>.</summary>
-    public static IOffsetStrategy SkipColumnsWhileAny(Func<CellValue, bool> predicate)
+    public static IOffsetStrategy SkipColumnsWhileAny(Func<Point<ISpace>, bool> predicate)
       => new ColumnOffsetSizeStrategy(ColumnStrategies.TakeColumnsWhileAny(predicate)).ToOffsetStrategy();
 
     /// <summary>Past the leading entirely-blank columns — the zero-argument form of <see cref="SkipColumnsWhileAll"/>.</summary>
@@ -119,7 +119,7 @@ namespace Unrect.Strategies
     {
       NotNegative(width, nameof(width));
 
-      return SelectOffset(space => new Size(Reserve(space.Area.Width, width), 0));
+      return SelectOffset(space => new Size(Reserve(space.Width, width), 0));
     }
 
     /// <summary>The bottom <paramref name="height"/> rows of the available space.</summary>

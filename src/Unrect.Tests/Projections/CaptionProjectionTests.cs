@@ -1,11 +1,11 @@
 using System;
 
-using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -23,7 +23,7 @@ namespace Unrect.Tests.Projections
   public class CaptionProjectionTests
   {
     // A junk row, then the caption written as the file has it, then two data rows.
-    private static ISpace Sheet() => Mixed(new object?[,]
+    private static ISheetCells Sheet() => Mixed(new object?[,]
     {
       { "junk", null },
       { "  EIN:  ", null },
@@ -56,7 +56,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void TheNextSiblingStartsOnTheRowBelowTheCaption()
     {
-      var read = VerticalFlow(v => $"{v.Next(Caption("ein:"))}|{v.Next(Cell(c => c.GetString()))}").Map(Sheet());
+      var read = VerticalFlow(v => $"{v.Next(Caption("ein:"))}|{v.Next(TextCell())}").Map(Sheet());
 
       Assert.Equal("  EIN:  |a", read);
     }

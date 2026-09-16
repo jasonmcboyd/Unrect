@@ -1,6 +1,9 @@
 using System;
 
+using System.Globalization;
+
 using Unrect.Core;
+using Unrect.Spreadsheets;
 using Unrect.Strategies;
 
 using Xunit;
@@ -16,7 +19,7 @@ namespace Unrect.Tests.Strategies
   /// </summary>
   public class RowAndColumnStrategyTests
   {
-    private static bool HasValue(CellValue value) => value.HasValue;
+    private static bool HasValue(Point<ISpace> value) => value.HasValue;
 
     // --- Row strategies -------------------------------------------------------------------------
 
@@ -53,7 +56,7 @@ namespace Unrect.Tests.Strategies
     {
       var space = Grid(new[,] { { 1, 0 }, { 2, 0 }, { 3, 0 }, { 4, 0 } });
 
-      Assert.Equal(2, RowStrategies.TakeRowsWhile((s, row) => s[0, row].GetInt() < 3).SelectRows(space));
+      Assert.Equal(2, RowStrategies.TakeRowsWhile((s, row) => s[0, row].AsText() is string number && int.Parse(number, CultureInfo.InvariantCulture) < 3).SelectRows(space));
     }
 
     [Fact]
@@ -61,7 +64,7 @@ namespace Unrect.Tests.Strategies
     {
       var space = Grid(new[,] { { 1, 0 }, { 2, 0 }, { 3, 0 }, { 4, 0 } });
 
-      Assert.Equal(3, RowStrategies.TakeRowsTo((s, row) => s[0, row].GetInt() == 3).SelectRows(space));
+      Assert.Equal(3, RowStrategies.TakeRowsTo((s, row) => s[0, row].AsText() == "3").SelectRows(space));
     }
 
     [Fact]
@@ -69,15 +72,79 @@ namespace Unrect.Tests.Strategies
     {
       var space = Grid(new[,] { { 1, 0 }, { 2, 0 } });
 
-      Assert.Equal(2, RowStrategies.TakeRowsTo((s, row) => s[0, row].GetInt() == 99).SelectRows(space));
+      Assert.Equal(2, RowStrategies.TakeRowsTo((s, row) => s[0, row].AsText() == "99").SelectRows(space));
+    }
+
+    // --- TakeRowsToText: the band ends on a LABEL --------------------------------------------------
+    //
+    // The rename is the rule. The old spelling compared a whole Cell, so it would end a band on
+    // whatever kind of cell happened to equal the one written into the declaration; the new one asks
+    // the content question every other text matcher asks, and so sees text cells alone. That is the
+    // difference the fixtures below are chosen to show — an int grid cannot show it at all, which is
+    // why the pins these replace could not simply be un-skipped.
+
+    /// <summary>Labels down column 0 with the boundary at row 2, and a second column of noise.</summary>
+    private static ISheetCells LabelledRows() => Labels(new string?[,]
+    {
+      { "a", "x" },
+      { "b", "y" },
+      { "  Total  ", "z" },
+      { "c", "w" },
+    });
+
+    [Fact]
+    public void TakeRowsToText_IncludesTheRowHoldingTheText()
+    {
+      // Up to AND including the match, which is the whole of what distinguishes this from a
+      // while-rule: the boundary row is content the section reads, not a gap it stops before.
+      Assert.Equal(3, RowStrategies.TakeRowsToText(0, "Total").SelectRows(LabelledRows()));
     }
 
     [Fact]
-    public void TakeRowsToValue_IncludesTheRowHoldingTheValue()
+    public void TakeRowsToText_MatchesWholeCellTrimmedAndCaseInsensitively()
     {
-      var space = Grid(new[,] { { 1, 0 }, { 2, 0 }, { 3, 0 } });
+      // The one content rule, which this shares with RowContaining, Caption and Field: the fixture's
+      // cell is "  Total  " and the declaration writes "total".
+      Assert.Equal(3, RowStrategies.TakeRowsToText(0, "total").SelectRows(LabelledRows()));
 
-      Assert.Equal(2, RowStrategies.TakeRowsToValue(0, CellValue.Of(2)).SelectRows(space));
+      // ...and whole-cell, not substring: a band must not end on a row that merely mentions the word.
+      Assert.Equal(4, RowStrategies.TakeRowsToText(0, "Tot").SelectRows(LabelledRows()));
+    }
+
+    [Fact]
+    public void TakeRowsToText_ReadsTheColumnItWasGivenAndNoOther()
+    {
+      // The column argument is the whole of the addressing, so a match in another column is not one.
+      Assert.Equal(4, RowStrategies.TakeRowsToText(1, "Total").SelectRows(LabelledRows()));
+    }
+
+    [Fact]
+    public void TakeRowsToText_WhenNothingMatches_TakesEveryRow()
+    {
+      Assert.Equal(4, RowStrategies.TakeRowsToText(0, "no such label").SelectRows(LabelledRows()));
+    }
+
+    [Fact]
+    public void TakeRowsToText_DoesNotEndTheBandOnANumberRenderingTheSameDigits()
+    {
+      // The discriminating pin, and the reason for the rename. Row 1 holds the NUMBER 42 and says
+      // "42"; row 2 holds the TEXT "42". A rule that asked what a cell says would stop at row 1 and
+      // swallow a row of data as though it were a boundary label — silently, and on exactly the
+      // export where a total happens to be numeric.
+      var space = Mixed(new object?[,] { { "a" }, { 42 }, { "42" }, { "b" } });
+
+      // Non-vacuity: the numeric cell really does render the needle, so the refusal is about kind.
+      Assert.Equal("42", space.AsText(0, 1));
+      Assert.False(space.IsText(0, 1));
+      Assert.True(space.IsText(0, 2));
+
+      Assert.Equal(3, RowStrategies.TakeRowsToText(0, "42").SelectRows(space));
+    }
+
+    [Fact]
+    public void TakeRowsToText_NeedsSomethingToLookFor()
+    {
+      Assert.Throws<ArgumentNullException>(() => RowStrategies.TakeRowsToText(0, null!));
     }
 
     [Fact]
@@ -145,7 +212,7 @@ namespace Unrect.Tests.Strategies
     {
       var space = Grid(new[,] { { 1, 2, 3, 4 } });
 
-      Assert.Equal(2, ColumnStrategies.TakeColumnsWhile((s, column) => s[column, 0].GetInt() < 3).SelectColumns(space));
+      Assert.Equal(2, ColumnStrategies.TakeColumnsWhile((s, column) => s[column, 0].AsText() is string number && int.Parse(number, CultureInfo.InvariantCulture) < 3).SelectColumns(space));
     }
 
     [Fact]
@@ -178,7 +245,7 @@ namespace Unrect.Tests.Strategies
       // The mirror of TakeRowsWhile(column, predicate): read one row, count along it.
       var space = Grid(new[,] { { 1, 2, 3, 4 }, { 0, 0, 0, 0 } });
 
-      Assert.Equal(2, ColumnStrategies.TakeColumnsWhile(0, (cell, column) => cell.GetInt() < 3).SelectColumns(space));
+      Assert.Equal(2, ColumnStrategies.TakeColumnsWhile(0, (cell, column) => cell.AsText() is string number && int.Parse(number, CultureInfo.InvariantCulture) < 3).SelectColumns(space));
     }
 
     [Fact]
@@ -186,7 +253,7 @@ namespace Unrect.Tests.Strategies
     {
       var space = Grid(new[,] { { 1, 2, 3, 4 } });
 
-      Assert.Equal(3, ColumnStrategies.TakeColumnsTo((s, column) => s[column, 0].GetInt() == 3).SelectColumns(space));
+      Assert.Equal(3, ColumnStrategies.TakeColumnsTo((s, column) => s[column, 0].AsText() == "3").SelectColumns(space));
     }
 
     [Fact]
@@ -194,15 +261,61 @@ namespace Unrect.Tests.Strategies
     {
       var space = Grid(new[,] { { 1, 2 } });
 
-      Assert.Equal(2, ColumnStrategies.TakeColumnsTo((s, column) => s[column, 0].GetInt() == 99).SelectColumns(space));
+      Assert.Equal(2, ColumnStrategies.TakeColumnsTo((s, column) => s[column, 0].AsText() == "99").SelectColumns(space));
+    }
+
+    // --- TakeColumnsToText: the same rule, transposed ------------------------------------------------
+
+    /// <summary>The transpose of <see cref="LabelledRows"/>: labels along row 0, boundary at column 2.</summary>
+    private static ISheetCells LabelledColumns() => Labels(new string?[,]
+    {
+      { "a", "b", "  Total  ", "c" },
+      { "x", "y", "z", "w" },
+    });
+
+    [Fact]
+    public void TakeColumnsToText_IncludesTheColumnHoldingTheText()
+    {
+      Assert.Equal(3, ColumnStrategies.TakeColumnsToText(0, "Total").SelectColumns(LabelledColumns()));
     }
 
     [Fact]
-    public void TakeColumnsToValue_IncludesTheColumnHoldingTheValue()
+    public void TakeColumnsToText_MatchesWholeCellTrimmedAndCaseInsensitively()
     {
-      var space = Grid(new[,] { { 1, 2, 3 } });
+      Assert.Equal(3, ColumnStrategies.TakeColumnsToText(0, "total").SelectColumns(LabelledColumns()));
+      Assert.Equal(4, ColumnStrategies.TakeColumnsToText(0, "Tot").SelectColumns(LabelledColumns()));
+    }
 
-      Assert.Equal(2, ColumnStrategies.TakeColumnsToValue(0, CellValue.Of(2)).SelectColumns(space));
+    [Fact]
+    public void TakeColumnsToText_ReadsTheRowItWasGivenAndNoOther()
+    {
+      Assert.Equal(4, ColumnStrategies.TakeColumnsToText(1, "Total").SelectColumns(LabelledColumns()));
+    }
+
+    [Fact]
+    public void TakeColumnsToText_WhenNothingMatches_TakesEveryColumn()
+    {
+      Assert.Equal(4, ColumnStrategies.TakeColumnsToText(0, "no such label").SelectColumns(LabelledColumns()));
+    }
+
+    [Fact]
+    public void TakeColumnsToText_DoesNotEndTheBandOnANumberRenderingTheSameDigits()
+    {
+      // The column twin of the discriminating pin, over the transposed fixture: column 1 holds the
+      // NUMBER 42 and column 2 the TEXT "42".
+      var space = Mixed(new object?[,] { { "a", 42, "42", "b" } });
+
+      Assert.Equal("42", space.AsText(1, 0));
+      Assert.False(space.IsText(1, 0));
+      Assert.True(space.IsText(2, 0));
+
+      Assert.Equal(3, ColumnStrategies.TakeColumnsToText(0, "42").SelectColumns(space));
+    }
+
+    [Fact]
+    public void TakeColumnsToText_NeedsSomethingToLookFor()
+    {
+      Assert.Throws<ArgumentNullException>(() => ColumnStrategies.TakeColumnsToText(0, null!));
     }
 
     [Fact]

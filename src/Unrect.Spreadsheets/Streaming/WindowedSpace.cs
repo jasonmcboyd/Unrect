@@ -3,13 +3,16 @@ using Unrect.Core;
 namespace Unrect.Spreadsheets
 {
   /// <summary>
-  /// A sheet as a space, read a window at a time. The same shape as a grid — an offset and an
-  /// extent into shared backing data — except that the backing data is a file and only part of it
-  /// is in memory at once.
+  /// A whole sheet as a space, read a window at a time: the extent is the sheet's, the coordinates
+  /// are the sheet's, and only part of it is in memory at once.
   /// <para>
-  /// Slicing is free and slices share the store, so the engine's subspaces do not multiply the
-  /// resident set: a declaration that decomposes a sheet into a hundred regions still holds one
-  /// window.
+  /// A region of it is arithmetic done by a plane, so a declaration that decomposes a sheet into a
+  /// hundred regions allocates nothing, makes no second space, and still holds one window.
+  /// </para>
+  /// <para>
+  /// Which band is open is the one thing this layer cannot work out for itself, because a region is
+  /// arithmetic over the sheet rather than an object wrapping part of it. The engine says so
+  /// instead, once per placement, through <see cref="ISweepAware"/>.
   /// </para>
   /// <para>
   /// A view is a value, not a handle. It has no <c>Dispose</c>, no <c>Close</c>: it can be sliced,
@@ -23,56 +26,38 @@ namespace Unrect.Spreadsheets
   /// <see cref="OutOfBoundsException"/> as it is for any space.
   /// </para>
   /// </summary>
-  internal sealed class WindowedSpace : ISpace
+  internal sealed class WindowedSpace : SheetCellsBase, ISweepAware
   {
     internal WindowedSpace(SheetStore store)
-      : this(store, default, new Area(store.ColumnCount, store.RowCount))
-    {
-    }
-
-    private WindowedSpace(SheetStore store, Offset offset, Area area)
     {
       Store = store;
-      Offset = offset;
-      Area = area;
+      Area = new Area(store.ColumnCount, store.RowCount);
     }
 
     internal SheetStore Store { get; }
 
-    private Offset Offset { get; }
-
     /// <inheritdoc/>
-    public Area Area { get; }
+    public override Area Area { get; }
 
-    /// <inheritdoc/>
-    public CellValue this[int column, int row]
+    private protected override Cell CellAt(int column, int row)
     {
-      get
-      {
-        // OutOfBoundsException, not IndexOutOfRangeException: the engine's fault list classifies
-        // the latter as a bug in the reading code — non-absorbable, and rightly so — while running
-        // off the end of a space is an ordinary bounds condition that a declaration is allowed to
-        // recover from. Getting this wrong would make every overrun unrecoverable.
-        if (column < 0 || column >= Area.Width)
-          throw new OutOfBoundsException();
-
-        if (row < 0 || row >= Area.Height)
-          throw new OutOfBoundsException();
-
-        // The extent travels down with the cell. It is the one thing this layer knows and the store
-        // does not, and it is exactly what the store needs to tell a sweep of a bounded band apart
-        // from a walk down the sheet.
-        return Store.GetCell(Offset.Width + column, Offset.Height + row, Offset.Height, Area.Height);
-      }
-    }
-
-    /// <inheritdoc/>
-    public ISpace GetSubspace(Offset offset, Area area)
-    {
-      if (offset.Width + area.Width > Area.Width || offset.Height + area.Height > Area.Height)
+      // OutOfBoundsException, not IndexOutOfRangeException: the engine's fault list classifies the
+      // latter as a bug in the reading code — non-absorbable, and rightly so — while running off
+      // the end of a space is an ordinary bounds condition that a declaration is allowed to recover
+      // from. Getting this wrong would make every overrun unrecoverable.
+      if (column < 0 || column >= Area.Width || row < 0 || row >= Area.Height)
         throw new OutOfBoundsException();
 
-      return new WindowedSpace(Store, offset + Offset, area);
+      return Store.GetCell(column, row);
     }
+
+    /// <summary>
+    /// The band a placement has opened, passed to the store so its window keeps those rows while
+    /// the band is being swept. The origin is a sheet row already, because this space is the whole
+    /// sheet and a plane's coordinates are root.
+    /// </summary>
+    /// <param name="origin">Where the region starts.</param>
+    /// <param name="area">How big the region was declared.</param>
+    public void Sweeping(Offset origin, Area area) => Store.Sweeping(origin.Height, area.Height);
   }
 }

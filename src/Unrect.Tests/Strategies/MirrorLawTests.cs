@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 
 using Unrect.Core;
+using Unrect.Spreadsheets;
 using Unrect.Strategies;
 
 using Xunit;
@@ -37,7 +38,7 @@ namespace Unrect.Tests.Strategies
   /// </summary>
   public class MirrorLawTests
   {
-    private static bool HasValue(CellValue value) => value.HasValue;
+    private static bool HasValue(Point<ISpace> value) => value.HasValue;
 
     // --- The grids ------------------------------------------------------------------------------------
     //
@@ -103,16 +104,16 @@ namespace Unrect.Tests.Strategies
     /// transpose, and the other way round, asserting the two agree. Generic in the answer so a count
     /// (<c>int</c>) and a located index (<c>int?</c>) are pinned by the same helper.
     /// </summary>
-    private static void Mirrored<T>(Func<ISpace, T> alongRows, Func<ISpace, T> alongColumns)
+    private static void Mirrored<T>(Func<ISheetCells, T> alongRows, Func<ISheetCells, T> alongColumns)
       => Mirrored(Grids, alongRows, alongColumns);
 
     /// <summary>The same, over a chosen set of grids.</summary>
-    private static void Mirrored<T>(string?[][,] grids, Func<ISpace, T> alongRows, Func<ISpace, T> alongColumns)
+    private static void Mirrored<T>(string?[][,] grids, Func<ISheetCells, T> alongRows, Func<ISheetCells, T> alongColumns)
     {
       foreach (var grid in grids)
       {
-        var space = Text(grid);
-        var transposed = Text(Transposed(grid));
+        var space = Labels(grid);
+        var transposed = Labels(Transposed(grid));
 
         Assert.Equal(alongRows(space), alongColumns(transposed));
         Assert.Equal(alongColumns(space), alongRows(transposed));
@@ -128,8 +129,8 @@ namespace Unrect.Tests.Strategies
       // vacuously if both families answered 0 everywhere. This one spells the numbers out on the
       // asymmetric grid: the row form sees two rows before the blank band, the column form sees all
       // four columns, and transposing the grid swaps exactly those two answers.
-      var ragged = Text(WithCells[0]);
-      var transposed = Text(Transposed(WithCells[0]));
+      var ragged = Labels(WithCells[0]);
+      var transposed = Labels(Transposed(WithCells[0]));
 
       Assert.Equal(2, RowStrategies.TakeRowsWhileAnyValue().SelectRows(ragged));
       Assert.Equal(4, ColumnStrategies.TakeColumnsWhileAnyValue().SelectColumns(ragged));
@@ -182,8 +183,8 @@ namespace Unrect.Tests.Strategies
       // grids that have a cell to address. "Take while the leading cell is not m."
       Mirrored(
         WithCells,
-        RowStrategies.TakeRowsWhile((s, row) => s[0, row].TryGetString() != "m").SelectRows,
-        ColumnStrategies.TakeColumnsWhile((s, column) => s[column, 0].TryGetString() != "m").SelectColumns);
+        RowStrategies.TakeRowsWhile((s, row) => !s[0, row].IsText || s[0, row].AsText() != "m").SelectRows,
+        ColumnStrategies.TakeColumnsWhile((s, column) => !s[column, 0].IsText || s[column, 0].AsText() != "m").SelectColumns);
 
       // AllRows/AllColumns are the same pair with the constant predicate, which needs no cell to
       // address — so they are checked over every grid, degenerate ones included.
@@ -197,14 +198,14 @@ namespace Unrect.Tests.Strategies
       // keep-the-match flag the column class does not, so the shared denotation is this one.
       Mirrored(
         WithCells,
-        RowStrategies.TakeRowsTo((s, row) => s[0, row].TryGetString() == "m").SelectRows,
-        ColumnStrategies.TakeColumnsTo((s, column) => s[column, 0].TryGetString() == "m").SelectColumns);
+        RowStrategies.TakeRowsTo((s, row) => s[0, row].IsText && s[0, row].AsText() == "m").SelectRows,
+        ColumnStrategies.TakeColumnsTo((s, column) => s[column, 0].IsText && s[column, 0].AsText() == "m").SelectColumns);
 
-      // ...and the by-value spelling of the same pair, which addresses its own cell.
+      // ...and the by-text spelling of the same pair, which addresses its own cell.
       Mirrored(
         WithCells,
-        RowStrategies.TakeRowsToValue(0, CellValue.Of("m")).SelectRows,
-        ColumnStrategies.TakeColumnsToValue(0, CellValue.Of("m")).SelectColumns);
+        RowStrategies.TakeRowsToText(0, "m").SelectRows,
+        ColumnStrategies.TakeColumnsToText(0, "m").SelectColumns);
     }
 
     // --- Explicit counts ---------------------------------------------------------------------------------
@@ -214,8 +215,8 @@ namespace Unrect.Tests.Strategies
     {
       foreach (var grid in Grids)
       {
-        var space = Text(grid);
-        var transposed = Text(Transposed(grid));
+        var space = Labels(grid);
+        var transposed = Labels(Transposed(grid));
 
         for (var count = 0; count <= space.Area.Height; count++)
           Assert.Equal(
@@ -239,8 +240,8 @@ namespace Unrect.Tests.Strategies
       // this pin joins TheMirrorStopsAtTheDescription.
       foreach (var grid in Grids)
       {
-        var space = Text(grid);
-        var transposed = Text(Transposed(grid));
+        var space = Labels(grid);
+        var transposed = Labels(Transposed(grid));
 
         Assert.Throws<OutOfBoundsException>(
           () => RowStrategies.TakeRows(space.Area.Height + 1).SelectRows(space));
@@ -271,7 +272,7 @@ namespace Unrect.Tests.Strategies
       // declared on one axis can never quietly displace the other.
       foreach (var grid in Grids)
       {
-        var space = Text(grid);
+        var space = Labels(grid);
 
         Assert.Equal(0, OffsetStrategies.SkipBlankRows().GetOffset(space).Width);
         Assert.Equal(0, OffsetStrategies.SkipBlankColumns().GetOffset(space).Height);
@@ -302,8 +303,8 @@ namespace Unrect.Tests.Strategies
       // as (height, width) over the transpose.
       foreach (var grid in Grids)
       {
-        var space = Text(grid);
-        var transposed = Text(Transposed(grid));
+        var space = Labels(grid);
+        var transposed = Labels(Transposed(grid));
 
         var byRows = SizeStrategies.RowsWhileAny(HasValue).GetSize(space);
         var byColumns = SizeStrategies.ColumnsWhileAny(HasValue).GetSize(transposed);
@@ -348,8 +349,8 @@ namespace Unrect.Tests.Strategies
     public void RowWithCell_MirrorsColumnWithCell()
     {
       Mirrored(
-        RowLandmarks.RowWithCell(cell => cell.TryGetString() == "h").FindRow,
-        ColumnLandmarks.ColumnWithCell(cell => cell.TryGetString() == "h").FindColumn);
+        RowLandmarks.RowWithCell(cell => cell.IsText && cell.AsText() == "h").FindRow,
+        ColumnLandmarks.ColumnWithCell(cell => cell.IsText && cell.AsText() == "h").FindColumn);
     }
 
     [Fact]
@@ -359,8 +360,8 @@ namespace Unrect.Tests.Strategies
       // leading cell is m" against "the first column whose leading cell is m".
       Mirrored(
         WithCells,
-        RowLandmarks.RowWhere((s, row) => s[0, row].TryGetString() == "m").FindRow,
-        ColumnLandmarks.ColumnWhere((s, column) => s[column, 0].TryGetString() == "m").FindColumn);
+        RowLandmarks.RowWhere((s, row) => s[0, row].IsText && s[0, row].AsText() == "m").FindRow,
+        ColumnLandmarks.ColumnWhere((s, column) => s[column, 0].IsText && s[column, 0].AsText() == "m").FindColumn);
     }
 
     // --- Where the mirror deliberately stops --------------------------------------------------------------

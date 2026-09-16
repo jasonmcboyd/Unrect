@@ -1,6 +1,7 @@
 using System;
 
 using Unrect.Core;
+using Unrect.Spreadsheets;
 using Unrect.Strategies;
 
 using Xunit;
@@ -25,7 +26,7 @@ namespace Unrect.Tests.Strategies
     // absence and is defeated by anything inserted above the thing being looked for; these anchor on
     // presence, which is what survives an inserted proof row.
 
-    private static ISpace Labelled() => Text(new string?[,]
+    private static ISheetCells Labelled() => Labels(new string?[,]
     {
       { "junk", null },
       { "an inserted proof row", null },
@@ -33,7 +34,7 @@ namespace Unrect.Tests.Strategies
       { "a", "b" },
     });
 
-    private static ISpace LabelledColumns() => Text(new string?[,]
+    private static ISheetCells LabelledColumns() => Labels(new string?[,]
     {
       { "a", "b", "  TOTAL  ", "d" },
       { null, null, null, null },
@@ -56,7 +57,7 @@ namespace Unrect.Tests.Strategies
     public void To_RowWithCell_LandsOnTheFirstRowWithAMatchingCell()
     {
       // Column 1 is empty until the last row, so this finds a row by a cell that is not the first.
-      Assert.Equal(3, To(RowLandmarks.RowWithCell(cell => cell.TryGetString() == "b")).GetOffset(Labelled()).Size.Height);
+      Assert.Equal(3, To(RowLandmarks.RowWithCell(cell => cell.IsText && cell.AsText() == "b")).GetOffset(Labelled()).Size.Height);
     }
 
     [Fact]
@@ -64,7 +65,7 @@ namespace Unrect.Tests.Strategies
     {
       var space = Grid(new[,] { { 1, 0 }, { 2, 0 }, { 3, 0 } });
 
-      Assert.Equal(2, To(RowLandmarks.RowWhere((s, row) => s[0, row].GetInt() == 3)).GetOffset(space).Size.Height);
+      Assert.Equal(2, To(RowLandmarks.RowWhere((s, row) => s[0, row].AsText() == "3")).GetOffset(space).Size.Height);
     }
 
     [Fact]
@@ -79,7 +80,7 @@ namespace Unrect.Tests.Strategies
     [Fact]
     public void To_ColumnWithCell_LandsOnTheFirstColumnWithAMatchingCell()
     {
-      Assert.Equal(3, To(ColumnLandmarks.ColumnWithCell(cell => cell.TryGetString() == "d")).GetOffset(LabelledColumns()).Size.Width);
+      Assert.Equal(3, To(ColumnLandmarks.ColumnWithCell(cell => cell.IsText && cell.AsText() == "d")).GetOffset(LabelledColumns()).Size.Width);
     }
 
     [Fact]
@@ -87,7 +88,7 @@ namespace Unrect.Tests.Strategies
     {
       var space = Grid(new[,] { { 1, 2, 3 } });
 
-      Assert.Equal(1, To(ColumnLandmarks.ColumnWhere((s, column) => s[column, 0].GetInt() == 2)).GetOffset(space).Size.Width);
+      Assert.Equal(1, To(ColumnLandmarks.ColumnWhere((s, column) => s[column, 0].AsText() == "2")).GetOffset(space).Size.Width);
     }
 
     // --- Past lands one after -----------------------------------------------------------------------
@@ -121,7 +122,7 @@ namespace Unrect.Tests.Strategies
     {
       // The lift's job is the arithmetic; running out of rows is the caller's problem, and the
       // caller is what reports it.
-      var space = Text(new string?[,] { { "a" }, { "TARGET" } });
+      var space = Labels(new string?[,] { { "a" }, { "TARGET" } });
 
       Assert.Equal(2, Past(RowLandmarks.RowContaining("TARGET")).GetOffset(space).Size.Height);
       Assert.Equal(2, space.Area.Size.Height);
@@ -195,7 +196,7 @@ namespace Unrect.Tests.Strategies
     {
       // The K-1 entity anchor: find the column that says EIN:, then the row that does, and start
       // there. Neither lift knows about the other; Then is what puts them together.
-      var space = Text(new string?[,]
+      var space = Labels(new string?[,]
       {
         { "z", "q" },
         { "w", "EIN:" },
@@ -216,14 +217,14 @@ namespace Unrect.Tests.Strategies
     // seeks exactly and matches on the same rules; the difference is that a landmark reports "not
     // found" as null and lets the projection bounding itself decide, where a seek throws.
 
-    private static ISpace RowsWithATotal() => Text(new string?[,]
+    private static ISheetCells RowsWithATotal() => Labels(new string?[,]
     {
       { "x", "y" },
       { "  TOTAL  ", null },
       { "z", null },
     });
 
-    private static ISpace ColumnsWithATotal() => Text(new string?[,]
+    private static ISheetCells ColumnsWithATotal() => Labels(new string?[,]
     {
       { "a", "  TOTAL  ", "c" },
       { null, null, "z" },
@@ -232,7 +233,7 @@ namespace Unrect.Tests.Strategies
     [Fact]
     public void RowWhere_FindsTheFirstRowSatisfyingAPositionalPredicate()
     {
-      Assert.Equal(2, RowLandmarks.RowWhere((space, row) => space[0, row].TryGetString() == "z").FindRow(RowsWithATotal()));
+      Assert.Equal(2, RowLandmarks.RowWhere((space, row) => space[0, row].IsText && space[0, row].AsText() == "z").FindRow(RowsWithATotal()));
     }
 
     [Fact]
@@ -240,7 +241,7 @@ namespace Unrect.Tests.Strategies
     {
       // Column 1 is empty except on the first row, so this finds a row by a cell that is not its
       // first — the reason the "any cell" form exists at all.
-      Assert.Equal(0, RowLandmarks.RowWithCell(cell => cell.TryGetString() == "y").FindRow(RowsWithATotal()));
+      Assert.Equal(0, RowLandmarks.RowWithCell(cell => cell.IsText && cell.AsText() == "y").FindRow(RowsWithATotal()));
     }
 
     [Fact]
@@ -271,13 +272,13 @@ namespace Unrect.Tests.Strategies
     [Fact]
     public void ColumnWhere_FindsTheFirstColumnSatisfyingAPositionalPredicate()
     {
-      Assert.Equal(2, ColumnLandmarks.ColumnWhere((space, column) => space[column, 0].TryGetString() == "c").FindColumn(ColumnsWithATotal()));
+      Assert.Equal(2, ColumnLandmarks.ColumnWhere((space, column) => space[column, 0].IsText && space[column, 0].AsText() == "c").FindColumn(ColumnsWithATotal()));
     }
 
     [Fact]
     public void ColumnWithCell_FindsTheFirstColumnWithAMatchingCell()
     {
-      Assert.Equal(2, ColumnLandmarks.ColumnWithCell(cell => cell.TryGetString() == "z").FindColumn(ColumnsWithATotal()));
+      Assert.Equal(2, ColumnLandmarks.ColumnWithCell(cell => cell.IsText && cell.AsText() == "z").FindColumn(ColumnsWithATotal()));
     }
 
     [Fact]

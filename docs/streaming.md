@@ -8,6 +8,13 @@ the two doors differ only in the shape of their cost. This is the user-facing gu
 door: when to reach for it, the lifecycle rules, the sizing law, the statistics vocabulary,
 and the limits that are honestly still limits.
 
+`book.Sheet(name)` hands back an `ISheetCells` — the kinded, no-formulas face a streamed sheet
+answers — so a declaration file over it imports `SheetProjectionBuilders<ISheetCells>` beside
+`ProjectionBuilders<ISheetCells>`, never `SpreadsheetProjectionBuilders<TSpace>`: a streamed
+sheet carries no formulas, and a declaration that calls `Formula()` will not compile against
+one. Read formulas through the eager door instead
+(`SpreadsheetSpace.CreateWithFormulas(path, sheet)`).
+
 For the mechanics behind every claim here — the load loop, the reader pool's selection
 policy, the lock ordering — see `docs/design/streaming-spec.md`, the implementer's document.
 This file is the other one: what a caller needs to know to use `Workbook` correctly, not to
@@ -81,7 +88,8 @@ sheet determines whether streaming is cheap, free, or a bad idea:
   the bound before the first item, exactly as `HorizontalBands` does —
   no longer settles the bound before the first child projection runs: placing a child asks only
   whether there is a row at its offset (`ProjectionEngine.Exceeds`) and slices a lazy tail
-  (`BoundedSpace.Tail`) rather than reading `Area`, so the height stays undiscovered until
+  (`Plane.Slice(Offset)`, which carries an undiscovered bound forward rather than forcing it)
+  rather than reading `Area`, so the height stays undiscovered until
   something genuinely needs it. What still forces is a CHILD's own declared area whose strategy
   reads `ISpace.Area` to answer — a bare `VerticalRepeat(Record(record))` inside a bound still
   settles the whole extent at the first occurrence, because `Record`'s placement declares its own
@@ -104,15 +112,22 @@ sheet determines whether streaming is cheap, free, or a bad idea:
 
 ```csharp
 using var book = Workbook.Open(path);              // owns file handles, reader pool, chunk stores
-var result = projection.Map(book.Sheet("Data"));    // Sheet(name) vends a lent ISpace view
+var result = projection.Map(book.Sheet("Data"));    // Sheet(name) vends a lent ISheetCells view
 ```
 
 - **The workbook owns everything disposable**: file streams, readers, background warming
   tasks, and every sheet's chunk store.
-- **A vended view is a value, not a handle.** `Sheet(name)` returns an `ISpace` with no
-  `Dispose` of its own. It can be sliced (`GetSubspace` returns another view over the same
-  store, at no extra memory cost), passed to any projection, and held as long as the caller
-  likes. The only thing that invalidates it is the `Workbook` it came from being disposed.
+- **A vended view is a value, not a handle.** `Sheet(name)` returns an `ISheetCells` with no
+  `Dispose` of its own. Cutting a region of it (`Plane<TSpace>.Slice`) is arithmetic — a
+  composed origin over the same store, at no extra memory cost — so it can be sliced, passed
+  to any projection, and held as long as the caller likes. The only thing that invalidates it
+  is the `Workbook` it came from being disposed.
+- **Points have a lifetime, minting does not.** A `Point<ISheetCells>` is a space, a column
+  and a row — minting one touches nothing and costs nothing, disposed workbook or not.
+  *Reading* through one (`point.Decimal()`, `point.AsText()`, …) is what reaches the store,
+  and a read against a point whose `Workbook` has been disposed throws
+  `ObjectDisposedException` exactly as a direct cell read does — deterministically, whether or
+  not the chunk it wants happens still to be resident.
 - **`Sheet(name)` is idempotent.** Repeated calls for the same name return views over one
   store — this is the warm-reuse property the cost model above depends on. Resolution
   respects `WorkbookOptions.CaseSensitiveSheetNames` (default off, as the eager path); an
@@ -172,6 +187,16 @@ over a thirteen-chunk band at 29.5s — three orders of magnitude from one chunk
 shortfall (`docs/design/streaming-spec.md` §1.3); `Streaming.Band_WindowFits` vs
 `Streaming.Band_WindowTooSmall` is that law's benchmark trend line going forward.
 
+**How the window knows what to keep.** Cutting a region is arithmetic now, not an object that
+carries its own extent, so the store cannot infer which band is open by looking at what was
+handed around. Instead the engine announces it: `WindowedSpace` implements `ISweepAware`, an
+optional interface any backend may implement, and `ProjectionEngine` calls
+`Sweeping(origin, area)` on the root space once per placement — once per rung, not once per
+cell — telling the store which band a projection just opened so eviction can protect it. This
+is *less* machinery than the per-cell hint a slice used to carry, not more, and it changes
+nothing about the counters below: the same sizing law, the same statistics, arrived at with one
+announcement per placement instead of one gate acquisition per resident read.
+
 Two counters divide the diagnosis between them, both on `StreamingStatistics`:
 
 - **`WindowOverruns`** says a band **did not fit** — once per distinct extent too tall to be
@@ -184,24 +209,27 @@ Raise `WindowRows` when both are non-zero together; that pairing is the collapse
 
 ### The counterintuitive reading: a plain walk down a tall sheet reports one overrun that costs nothing
 
-`WindowOverruns` is counted against the *extent a view declares*, not against the access
-pattern read through it. `book.Sheet(name)` vends a view whose `Area` is the **whole
-sheet**, and that declared extent travels down to every cell read through it unless a
-narrower `GetSubspace` slice is in play. So a plain walk down a sheet taller than the
-window — no flow, no overlay, nothing that holds a band open on purpose — still reports
-exactly **one** `WindowOverruns`, because the root extent itself (the whole sheet) does not
-fit the window. It costs nothing, because nothing about a monotone walk ever asks for a
+`WindowOverruns` is counted against the *band each placement announces* (`ISweepAware.Sweeping`,
+called once per placement by `ProjectionEngine` — see above), not against the access pattern
+read through it. The engine resolves a projection's own placement at every level, including
+the root, so `book.Sheet(name)`'s whole-sheet extent is itself announced once at the top of any
+`Map` call, before any narrower child placement narrows it. So a plain walk down a sheet taller
+than the window — no flow, no overlay, nothing that holds a band open on purpose — still
+reports exactly **one** `WindowOverruns`, because the root band itself (the whole sheet) does
+not fit the window. It costs nothing, because nothing about a monotone walk ever asks for a
 chunk twice:
 
 ```csharp
 using var book = Workbook.Open(path, new WorkbookOptions { WindowRows = 256 });
 var space = book.Sheet("Ledger");              // 1,201 rows tall
 
-for (var row = 0; row < space.Area.Size.Height; row++)
-  _ = space[0, row];
+// Any projection walking the whole sheet does — Column(rows, ...), a Table left to its
+// discovered height, a plain VerticalRepeat. Its own placement is the whole sheet, resolved
+// and announced once at the top of the Map call.
+_ = Column(space.Area.Size.Height, column => column.Count).Map(space);
 
 var stats = book.Statistics("Ledger")!.Value;
-// stats.WindowOverruns == 1   (the whole-sheet extent did not fit the window — expected)
+// stats.WindowOverruns == 1   (the whole-sheet band did not fit the window — expected)
 // stats.ChunkReloads   == 0   (nothing was ever read twice — it cost nothing)
 ```
 
@@ -245,7 +273,7 @@ shared 1,014,999 | distinct 5,009/65,536 | saved ~32,319,976B (estimated)
 | `RowsMeasured` | Rows read by the survey that sized a sheet whose reader reported no extent (a sheet with no valued cell); `0` for a sheet that reported its own. Above zero means a whole extra forward pass over the file was paid for before the window saw anything. Appears in `ToString()` only when non-zero. |
 | `ResidentChunks` | Chunks held right now. |
 | `PeakResidentChunks` | The most chunks ever held at once; never exceeds `WindowChunks`. |
-| `ResidentBytes` | Bytes of `CellValue`s resident right now. |
+| `ResidentBytes` | Bytes of `Cell`s resident right now. |
 | `PeakResidentBytes` | The same at the peak. **Not the whole floor**: strings a `Text` cell points at are not counted here. Three things can hold one, and only the third shrinks with the window — the interning table, up to its cap; the reader's own shared-string table, for a file that spells its text that way; otherwise nothing but the chunk it sits in, which is why a string past the 256-character guard dies with its chunk (see [`InterningStatistics`](#interningstatistics--what-sharing-repeated-text-has-earned-one-workbook)). |
 
 ### `ReaderPoolStatistics` — what one workbook's readers have cost

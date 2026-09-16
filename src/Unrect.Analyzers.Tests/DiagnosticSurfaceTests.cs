@@ -15,16 +15,17 @@ namespace Unrect.Analyzers.Tests
   /// </summary>
   public class DiagnosticSurfaceTests
   {
+    /// <summary>
+    /// UNR001 was the unnecessary-scope rule and retired with the scopes it reported on: a file names
+    /// its space once, in its <c>using static</c>, and there is nothing left to call unnecessary. The
+    /// number stays spent so it cannot be handed to a second rule — which is the only thing left to
+    /// assert about it.
+    /// </summary>
     [Fact]
-    public void The_unnecessary_scope_message_is_the_librarys_sentence()
+    public void The_retired_scope_rule_spends_its_identifier_and_nothing_else()
     {
-      Assert.Equal("UNR001", UnrectDiagnostics.UnnecessaryScope.Id);
-      Assert.Equal("Unnecessary scope", UnrectDiagnostics.UnnecessaryScope.Title.ToString());
-      Assert.Equal(
-        "nothing here demands '{0}' — the plain spelling serves, and a scope should mark the doors a demand passes through",
-        UnrectDiagnostics.UnnecessaryScope.MessageFormat.ToString());
-      Assert.Equal(DiagnosticSeverity.Warning, UnrectDiagnostics.UnnecessaryScope.DefaultSeverity);
-      Assert.Equal("Unrect.Usage", UnrectDiagnostics.UnnecessaryScope.Category);
+      Assert.Equal("UNR001", UnrectDiagnostics.RetiredUnnecessaryScopeId);
+      Assert.DoesNotContain(Descriptors(), descriptor => descriptor.Id == UnrectDiagnostics.RetiredUnnecessaryScopeId);
     }
 
     [Fact]
@@ -60,10 +61,33 @@ namespace Unrect.Analyzers.Tests
         Assert.Contains($"{descriptor.Id} | {descriptor.Category} | {descriptor.DefaultSeverity} |", tracked);
     }
 
+    /// <summary>
+    /// The one fact both analyzers are built on, asserted against the assemblies this solution just
+    /// built: the types they look up are still there under the names they look them up by.
+    /// <para>
+    /// This is the dark-analyzer guard. Every rule here exits first on
+    /// <c>UnrectSymbols.TryLoad</c> returning null, which is correct for a compilation that does not
+    /// reference Unrect and catastrophic for one that does: a renamed Core interface — which is
+    /// exactly what phase 2 did to <c>ISpace</c> — turns both rules off and leaves every
+    /// silence-asserting test passing for the wrong reason. A name is not a contract the compiler
+    /// checks here, because these are strings; so it is checked here.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void The_types_the_rules_look_up_resolve_against_the_assemblies_they_ship_beside()
+    {
+      Assert.NotNull(typeof(Core.ISpace).FullName);
+      Assert.Equal("Unrect.Core.ISpace", typeof(Core.ISpace).FullName);
+      Assert.Equal("Unrect.Projections.IProjection`2", typeof(Projections.IProjection<,>).FullName);
+      Assert.Equal("Unrect.Projections.ProjectionBuilders`1", typeof(Projections.ProjectionBuilders<>).FullName);
+      Assert.Equal("Unrect.Projections.PlacementStage`1", typeof(Projections.PlacementStage<>).FullName);
+      Assert.Equal("Unrect.Projections.IRowLandmark`1", typeof(Projections.IRowLandmark<>).FullName);
+      Assert.Equal("Unrect.Projections.IColumnLandmark`1", typeof(Projections.IColumnLandmark<>).FullName);
+      Assert.Equal("Unrect.Projections.LayoutCursor`1", typeof(Projections.LayoutCursor<>).FullName);
+    }
+
     private static DiagnosticDescriptor[] Descriptors()
-      => new UnnecessaryScopeAnalyzer().SupportedDiagnostics
-        .Concat(new DemandsExceedOfferAnalyzer().SupportedDiagnostics)
-        .ToArray();
+      => new DemandsExceedOfferAnalyzer().SupportedDiagnostics.ToArray();
 
     /// <summary>The src directory, four levels above the test assembly's bin/Debug/net8.0.</summary>
     private static string Solution()

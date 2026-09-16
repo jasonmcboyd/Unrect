@@ -4,7 +4,8 @@
   <Reference Relative="..\src\Unrect\bin\Debug\netstandard2.1\Unrect.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect\bin\Debug\netstandard2.1\Unrect.dll</Reference>
   <Reference Relative="..\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll</Reference>
   <Reference Relative="..\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Core.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Core.dll</Reference>
-  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Core.ISpace&gt;</Namespace>
+  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Spreadsheets.ISheetCells&gt;</Namespace>
+  <Namespace>static Unrect.Spreadsheets.SheetProjectionBuilders&lt;Unrect.Spreadsheets.ISheetCells&gt;</Namespace>
   <Namespace>Unrect.Core</Namespace>
   <Namespace>Unrect.Projections</Namespace>
   <Namespace>Unrect.Spreadsheets</Namespace>
@@ -12,8 +13,10 @@
 
 var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\examples\investor-irr.xlsx");
 
-// The space is named once, in the query's namespace imports:
-// `using static Unrect.Projections.ProjectionBuilders<Unrect.Core.ISpace>`.
+// The space is named once, in the query's namespace imports: the canonical vocabulary as
+// `using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>`, and the
+// sheet's own readings — Text(), Date() and the Table<T> rungs — as
+// `using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>`.
 //
 // What this demonstrates: ONE projection declared once and PLACED TWICE, and Until — the dual of
 // On. The sheet carries the same per-investor blocks twice, under two headings:

@@ -16,12 +16,12 @@ namespace Unrect.Spreadsheets
   /// "that cell is a plain value" — a statement about the file — and a whole grid of them would say
   /// the file has no formulas when nobody looked. That is why the eager door has a second factory
   /// rather than a flag on the first: see
-  /// <see cref="SpreadsheetSpace.CreateWithFormulas(string, string, bool, System.Func{CellValue, bool})"/>.
+  /// <see cref="SpreadsheetSpace.CreateWithFormulas(string, string, bool, System.Func{Cell, bool})"/>.
   /// </para>
   /// <para>
-  /// <b>The slicing law.</b> An implementation's subspaces must be capable too, with translated
-  /// coordinates: a slice may never invent capability its parent lacked nor shed what its parent
-  /// had. Forgetting is safe in the type system and a lie in a space.
+  /// <b>Root coordinates, like every other read.</b> The coordinates are the whole sheet's; a region
+  /// of it is arithmetic done by a <see cref="Plane{TSpace}"/> rather than a second space, so there
+  /// is no slice that could shed the capability or translate away from it.
   /// </para>
   /// </summary>
   public interface IFormulaSpace : ISpace

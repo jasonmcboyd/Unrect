@@ -25,7 +25,7 @@ namespace Unrect.Strategies
     private IRowLandmark Landmark { get; }
     private bool Past { get; }
 
-    public int SelectRows(ISpace space)
+    public int SelectRows(Plane<ISpace> space)
       => Landmark.FindRow(space) is int row
         ? row + (Past ? 1 : 0)
         : throw new AnchorNotFoundException(Landmark.Description);

@@ -36,94 +36,7 @@ namespace Unrect.Projections
   /// <c>Heading(outer).Of(Heading(inner).Of(lines))</c>.
   /// </para>
   /// </summary>
-  public sealed class HeadingStage : PlacementStage
-  {
-    private readonly Steps _placement;
-    private readonly string[] _headings;
-
-    internal HeadingStage(Steps placement, string[] headings)
-      : base(placement.Before(Step.Headings(Headings.Captions(headings))))
-    {
-      _placement = placement;
-      _headings = headings;
-    }
-
-    /// <summary>
-    /// The next heading down the sheet, in document order — both above the same section.
-    /// </summary>
-    /// <param name="text">What the heading row says.</param>
-    public HeadingStage Heading(string text) => new HeadingStage(_placement, Headings.And(_headings, text));
-
-    /// <summary>Refused: a section announced by a heading is already located by it.</summary>
-    /// <param name="landmark">The row that would be anchored on.</param>
-    [Obsolete(PipelineRefusals.HeadingIsTheAnchor, error: true)]
-    public HeadingStage On(IRowLandmark landmark) => throw new NotSupportedException(PipelineRefusals.HeadingIsTheAnchor);
-
-    /// <inheritdoc cref="On(IRowLandmark)"/>
-    /// <param name="landmark">The column that would be anchored on.</param>
-    [Obsolete(PipelineRefusals.HeadingIsTheAnchor, error: true)]
-    public HeadingStage On(IColumnLandmark landmark) => throw new NotSupportedException(PipelineRefusals.HeadingIsTheAnchor);
-
-    /// <inheritdoc cref="On(IRowLandmark)"/>
-    /// <param name="landmark">The row that would be anchored below.</param>
-    [Obsolete(PipelineRefusals.HeadingIsTheAnchor, error: true)]
-    public HeadingStage Below(IRowLandmark landmark) => throw new NotSupportedException(PipelineRefusals.HeadingIsTheAnchor);
-
-    /// <inheritdoc cref="On(IRowLandmark)"/>
-    /// <param name="landmark">The column that would be anchored right of.</param>
-    [Obsolete(PipelineRefusals.HeadingIsTheAnchor, error: true)]
-    public HeadingStage RightOf(IColumnLandmark landmark) => throw new NotSupportedException(PipelineRefusals.HeadingIsTheAnchor);
-
-    /// <inheritdoc cref="On(IRowLandmark)"/>
-    /// <param name="offset">The offset that would replace the pipeline's.</param>
-    [Obsolete(PipelineRefusals.HeadingIsTheAnchor, error: true)]
-    public HeadingStage OffsetBy(IOffsetStrategy offset) => throw new NotSupportedException(PipelineRefusals.HeadingIsTheAnchor);
-
-    /// <summary>Refused: a bound and an extent come before the headings — or after the subject.</summary>
-    /// <param name="landmark">The row the extent would stop before.</param>
-    /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
-    [Obsolete(PipelineRefusals.GeometryComesBeforeTheHeadings, error: true)]
-    public HeadingStage Until(IRowLandmark landmark, bool orEnd = false)
-      => throw new NotSupportedException(PipelineRefusals.GeometryComesBeforeTheHeadings);
-
-    /// <inheritdoc cref="Until(IRowLandmark, bool)"/>
-    /// <param name="landmark">The column the extent would stop before.</param>
-    /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
-    [Obsolete(PipelineRefusals.GeometryComesBeforeTheHeadings, error: true)]
-    public HeadingStage UntilColumn(IColumnLandmark landmark, bool orEnd = false)
-      => throw new NotSupportedException(PipelineRefusals.GeometryComesBeforeTheHeadings);
-
-    /// <inheritdoc cref="Until(IRowLandmark, bool)"/>
-    /// <param name="area">The extent that would be declared.</param>
-    [Obsolete(PipelineRefusals.GeometryComesBeforeTheHeadings, error: true)]
-    public HeadingStage Sized(IAreaStrategy area)
-      => throw new NotSupportedException(PipelineRefusals.GeometryComesBeforeTheHeadings);
-
-    /// <summary>Refused: a movement belongs with the offset, ahead of the headings.</summary>
-    /// <param name="rows">How far down.</param>
-    [Obsolete(PipelineRefusals.OffsetComesFirst, error: true)]
-    public HeadingStage Down(int rows) => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
-
-    /// <inheritdoc cref="Down(int)"/>
-    /// <param name="columns">How far right.</param>
-    [Obsolete(PipelineRefusals.OffsetComesFirst, error: true)]
-    public HeadingStage Right(int columns) => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
-
-    /// <inheritdoc cref="Down(int)"/>
-    [Obsolete(PipelineRefusals.OffsetComesFirst, error: true)]
-    public HeadingStage AfterBlankRows() => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
-
-    /// <inheritdoc cref="Down(int)"/>
-    [Obsolete(PipelineRefusals.OffsetComesFirst, error: true)]
-    public HeadingStage AfterBlankColumns() => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
-
-    /// <inheritdoc cref="Down(int)"/>
-    [Obsolete(PipelineRefusals.OffsetComesFirst, error: true)]
-    public HeadingStage SkipToFirstNonBlankCell() => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
-  }
-
-  /// <summary>The scoped twin of <see cref="HeadingStage"/>, refusals and all.</summary>
-  /// <typeparam name="TSpace">What the pipeline's declaration demands of the space.</typeparam>
+  /// <typeparam name="TSpace">The space the pipeline's declaration is written over.</typeparam>
   public sealed class HeadingStage<TSpace> : PlacementStage<TSpace>
     where TSpace : class, ISpace
   {
@@ -131,85 +44,85 @@ namespace Unrect.Projections
     private readonly string[] _headings;
 
     internal HeadingStage(Steps placement, string[] headings)
-      : base(placement.Before(Step.Headings(Headings.Captions(headings))))
+      : base(placement.Before(Step.Headings(Headings.Captions<TSpace>(headings))))
     {
       _placement = placement;
       _headings = headings;
     }
 
-    /// <inheritdoc cref="HeadingStage.Heading(string)"/>
+    /// <summary>The next heading down the sheet, in document order — both above the same section.</summary>
     /// <param name="text">What the heading row says.</param>
     public HeadingStage<TSpace> Heading(string text) => new HeadingStage<TSpace>(_placement, Headings.And(_headings, text));
 
-    /// <inheritdoc cref="HeadingStage.On(IRowLandmark)"/>
+    /// <summary>Refused: a section announced by a heading is already located by it.</summary>
     /// <param name="landmark">The row that would be anchored on.</param>
     [Obsolete(PipelineRefusals.HeadingIsTheAnchor, error: true)]
     public HeadingStage<TSpace> On(IRowLandmark landmark) => throw new NotSupportedException(PipelineRefusals.HeadingIsTheAnchor);
 
-    /// <inheritdoc cref="HeadingStage.On(IRowLandmark)"/>
+    /// <inheritdoc cref="On(IRowLandmark)"/>
     /// <param name="landmark">The column that would be anchored on.</param>
     [Obsolete(PipelineRefusals.HeadingIsTheAnchor, error: true)]
     public HeadingStage<TSpace> On(IColumnLandmark landmark) => throw new NotSupportedException(PipelineRefusals.HeadingIsTheAnchor);
 
-    /// <inheritdoc cref="HeadingStage.On(IRowLandmark)"/>
+    /// <inheritdoc cref="On(IRowLandmark)"/>
     /// <param name="landmark">The row that would be anchored below.</param>
     [Obsolete(PipelineRefusals.HeadingIsTheAnchor, error: true)]
     public HeadingStage<TSpace> Below(IRowLandmark landmark) => throw new NotSupportedException(PipelineRefusals.HeadingIsTheAnchor);
 
-    /// <inheritdoc cref="HeadingStage.On(IRowLandmark)"/>
+    /// <inheritdoc cref="On(IRowLandmark)"/>
     /// <param name="landmark">The column that would be anchored right of.</param>
     [Obsolete(PipelineRefusals.HeadingIsTheAnchor, error: true)]
     public HeadingStage<TSpace> RightOf(IColumnLandmark landmark) => throw new NotSupportedException(PipelineRefusals.HeadingIsTheAnchor);
 
-    /// <inheritdoc cref="HeadingStage.On(IRowLandmark)"/>
+    /// <inheritdoc cref="On(IRowLandmark)"/>
     /// <param name="offset">The offset that would replace the pipeline's.</param>
     [Obsolete(PipelineRefusals.HeadingIsTheAnchor, error: true)]
     public HeadingStage<TSpace> OffsetBy(IOffsetStrategy offset) => throw new NotSupportedException(PipelineRefusals.HeadingIsTheAnchor);
 
-    /// <inheritdoc cref="HeadingStage.Until(IRowLandmark, bool)"/>
+    /// <summary>Refused: a bound and an extent come before the headings — or after the subject.</summary>
     /// <param name="landmark">The row the extent would stop before.</param>
     /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
     [Obsolete(PipelineRefusals.GeometryComesBeforeTheHeadings, error: true)]
     public HeadingStage<TSpace> Until(IRowLandmark landmark, bool orEnd = false)
       => throw new NotSupportedException(PipelineRefusals.GeometryComesBeforeTheHeadings);
 
-    /// <inheritdoc cref="HeadingStage.Until(IRowLandmark, bool)"/>
+    /// <inheritdoc cref="Until(IRowLandmark, bool)"/>
     /// <param name="landmark">The column the extent would stop before.</param>
     /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
     [Obsolete(PipelineRefusals.GeometryComesBeforeTheHeadings, error: true)]
     public HeadingStage<TSpace> UntilColumn(IColumnLandmark landmark, bool orEnd = false)
       => throw new NotSupportedException(PipelineRefusals.GeometryComesBeforeTheHeadings);
 
-    /// <inheritdoc cref="HeadingStage.Until(IRowLandmark, bool)"/>
+    /// <inheritdoc cref="Until(IRowLandmark, bool)"/>
     /// <param name="area">The extent that would be declared.</param>
     [Obsolete(PipelineRefusals.GeometryComesBeforeTheHeadings, error: true)]
     public HeadingStage<TSpace> Sized(IAreaStrategy area)
       => throw new NotSupportedException(PipelineRefusals.GeometryComesBeforeTheHeadings);
 
-    /// <inheritdoc cref="HeadingStage.Down(int)"/>
+    /// <summary>Refused: a movement belongs with the offset, ahead of the headings.</summary>
     /// <param name="rows">How far down.</param>
     [Obsolete(PipelineRefusals.OffsetComesFirst, error: true)]
     public HeadingStage<TSpace> Down(int rows) => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
 
-    /// <inheritdoc cref="HeadingStage.Down(int)"/>
+    /// <inheritdoc cref="Down(int)"/>
     /// <param name="columns">How far right.</param>
     [Obsolete(PipelineRefusals.OffsetComesFirst, error: true)]
     public HeadingStage<TSpace> Right(int columns) => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
 
-    /// <inheritdoc cref="HeadingStage.Down(int)"/>
+    /// <inheritdoc cref="Down(int)"/>
     [Obsolete(PipelineRefusals.OffsetComesFirst, error: true)]
     public HeadingStage<TSpace> AfterBlankRows() => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
 
-    /// <inheritdoc cref="HeadingStage.Down(int)"/>
+    /// <inheritdoc cref="Down(int)"/>
     [Obsolete(PipelineRefusals.OffsetComesFirst, error: true)]
     public HeadingStage<TSpace> AfterBlankColumns() => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
 
-    /// <inheritdoc cref="HeadingStage.Down(int)"/>
+    /// <inheritdoc cref="Down(int)"/>
     [Obsolete(PipelineRefusals.OffsetComesFirst, error: true)]
     public HeadingStage<TSpace> SkipToFirstNonBlankCell() => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
   }
 
-  /// <summary>The three operations both heading stages need, written once.</summary>
+  /// <summary>The three operations a heading stage needs, written once.</summary>
   internal static class Headings
   {
     internal static string[] One(string text) => new[] { NotBlank(text) };
@@ -229,12 +142,13 @@ namespace Unrect.Projections
     /// caption is still built for a value nobody reads, and it is inside the library rather than in
     /// a declaration — which is the whole of what the word moves.
     /// </summary>
-    internal static IProjection<string>[] Captions(string[] headings)
+    internal static IProjection<TSpace, string>[] Captions<TSpace>(string[] headings)
+      where TSpace : class, ISpace
     {
-      var captions = new IProjection<string>[headings.Length];
+      var captions = new IProjection<TSpace, string>[headings.Length];
 
       for (var index = 0; index < headings.Length; index++)
-        captions[index] = Projection.Caption(headings[index]);
+        captions[index] = ProjectionBuilders<TSpace>.Caption(headings[index]);
 
       return captions;
     }

@@ -6,13 +6,13 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text;
 
-using Unrect.Core;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.Observations;
 
 namespace Unrect.Tests.Streaming
@@ -255,8 +255,21 @@ namespace Unrect.Tests.Streaming
     /// <summary>What the report's table binds to. Note is a column no member claims, which is fine.</summary>
     private sealed record Entry(string Client, decimal Amount);
 
-    /// <summary>The same table asked for the wrong kind: Amount is a Number, not text.</summary>
-    private sealed record Mistyped(string Client, string Amount);
+    /// <summary>
+    /// The same table asked for the wrong kind, on the NOTE column: Note holds text, and a decimal
+    /// member refuses it.
+    /// <para>
+    /// It used to ask for Amount as a string, which described the very cell the record-projection
+    /// case above already fails on — and until phase 6 the two said different things about it,
+    /// because the binder prefixed its sentence with <c>column 'Amount': </c>. That prefix is gone
+    /// (the caption is a path segment now, pinned by CellReadingIdentityTests), so the two failures
+    /// became byte-identical and the census's "six DIFFERENT failures" collapsed to five. Moving
+    /// this one to another column and the opposite kind restores the distinction the census is
+    /// about — two readers reaching two different cells — without asking the two readers to
+    /// disagree about one, which is exactly the law the prefix's removal established.
+    /// </para>
+    /// </summary>
+    private sealed record Mistyped(string Client, decimal Note);
 
     /// <summary>One line of a deal block.</summary>
     private sealed record Holding(string Name, decimal Units);
@@ -265,11 +278,11 @@ namespace Unrect.Tests.Streaming
     private sealed record Ledger(int Entry, decimal Amount);
 
     /// <summary>A deal block: its name, and how many holdings are under it.</summary>
-    private static IProjection<string> DealBlock() =>
+    private static IProjection<ISheetCells, string> DealBlock() =>
       VerticalFlow(v => $"{v.Next(Text())}[{v.Next(Table<Holding>()).Count}]");
 
     /// <summary>The tall ledger, anchored on its caption and bounded by its terminator.</summary>
-    private static IProjection<IReadOnlyList<Ledger>> TallLedger() =>
+    private static IProjection<ISheetCells, IReadOnlyList<Ledger>> TallLedger() =>
       Below(RowContaining("Ledger")).Until(RowContaining("End")).Of(Table<Ledger>());
 
     // --- The matrix ----------------------------------------------------------------------------------
@@ -280,7 +293,7 @@ namespace Unrect.Tests.Streaming
       // has something to say about where the declaration stops.
       "one row of a report" => Scenario.Of(Row(cells => cells.Count), "report"),
       "a flow of two leaves" => Scenario.Of(
-        VerticalFlow(v => $"{v.Next(Text())}|{v.Next(Cell(cell => cell.IsBlank ? "-" : "x"))}"),
+        VerticalFlow(v => $"{v.Next(Text())}|{v.Next(Point().Select(point => point.IsBlank ? "-" : "x"))}"),
         "report"),
 
       // An overlay whose second child places itself three rows down and one across: an extent far
@@ -321,7 +334,7 @@ namespace Unrect.Tests.Streaming
       // bound in full, and leave the totals row for the unconsumed-space Info to notice — the same
       // value, extent and diagnostics through either.
       "a bounded skip table over interior blanks" => Scenario.Of(
-        Until(RowContaining("Total")).Of(Table<Entry>(BlankRowStrategy.Skip)),
+        Until(RowContaining("Total")).Of(Table(r => new Entry(r["Client"].Text(), r["Amount"].Decimal()), BlankRowStrategy.Skip)),
         "gapped"),
 
       // Repetition: two blocks with a blank separator between them, and a memo column the
@@ -347,8 +360,9 @@ namespace Unrect.Tests.Streaming
       "optional absorbing a failure" => Scenario.Of(Integer().Optional(), "report"),
       "else absorbing a failure" => Scenario.Of(Integer().Else(-1), "report"),
 
-      // Failures. A landmark that is not there, a kind mismatch deep inside a table record, the same
-      // mismatch reported by the binder instead, and a leaf placed off the end of the sheet.
+      // Failures. A landmark that is not there, a kind mismatch deep inside a table record, a kind
+      // mismatch in a different column reported by the binder instead, and a leaf placed off the end
+      // of the sheet.
       "a caption that is not there" => Scenario.Of(Caption("Annual Report"), "report"),
       "a kind mismatch inside a table record" => Scenario.Of(
         Heading("Quarterly Report").Of(Table(headerRows: 1, eachRow: HorizontalFlow(h => $"{h.Next(Text())}/{h.Next(Text())}"))),
@@ -506,21 +520,25 @@ namespace Unrect.Tests.Streaming
       using var book = Workbook.Open(path, Cold());
       var streamed = book.Sheet(SheetName);
 
-      Assert.True(eager[0, 1].IsBlank);
-      Assert.True(streamed[0, 1].IsBlank);
+      Assert.True(eager.IsBlank(0, 1));
+      Assert.True(streamed.IsBlank(0, 1));
 
-      // The whole cell, not just the verdict: blankness is decided AT ADAPTATION, so a cell the
-      // predicate calls blank arrives as Blank and its two spaces are gone. Both doors do the same
-      // thing to it, which is the stronger statement — a door that kept the text would be equal on
-      // IsBlank and different on everything a declaration could read out of the cell.
-      Assert.Equal(CellValue.Blank, eager[0, 1]);
-      Assert.Equal(eager[0, 1], streamed[0, 1]);
-      Assert.Null(streamed[0, 1].TryGetString());
+      // Not just the verdict: blankness is decided AT ADAPTATION, so a cell the predicate calls
+      // blank arrives as an empty cell and its two spaces are gone. Both doors do the same thing to
+      // it, which is the stronger statement — a door that kept the text would be equal on IsBlank
+      // and different on everything else a declaration could read out of the cell.
+      Assert.Equal("Blank", eager.Describe(0, 1));
+      Assert.Equal(eager.Describe(0, 1), streamed.Describe(0, 1));
+      Assert.Null(streamed.AsText(0, 1));
+      Assert.False(streamed.IsText(0, 1));
 
       // ...and the same characters through a door that decides nothing about whitespace: text, and
       // not blank. The agreement above is a shared decision, not an inevitability.
-      Assert.False(GridSpace.Create(new[,] { { "  " } })[0, 0].IsBlank);
-      Assert.Equal("  ", GridSpace.Create(new[,] { { "  " } })[0, 0].GetString());
+      var kept = GridSpace.Create(new[,] { { "  " } });
+
+      Assert.False(kept.IsBlank(0, 0));
+      Assert.True(kept.IsText(0, 0));
+      Assert.Equal("  ", kept.AsText(0, 0));
     }
 
     // --- The sheet that will not say how big it is --------------------------------------------------------
@@ -619,9 +637,9 @@ namespace Unrect.Tests.Streaming
     /// </summary>
     private sealed class Scenario
     {
-      private readonly Func<ISpace, Observation> _read;
+      private readonly Func<ISheetCells, Observation> _read;
 
-      private Scenario(string grid, Func<ISpace, Observation> read)
+      private Scenario(string grid, Func<ISheetCells, Observation> read)
       {
         Grid = grid;
         _read = read;
@@ -630,10 +648,10 @@ namespace Unrect.Tests.Streaming
       /// <summary>Which fixture this scenario is read over.</summary>
       public string Grid { get; }
 
-      public static Scenario Of<T>(IProjection<T> projection, string grid)
+      public static Scenario Of<T>(IProjection<ISheetCells, T> projection, string grid)
         => new Scenario(grid, space => Observe(projection, space));
 
-      public Observation Read(ISpace space) => _read(space);
+      public Observation Read(ISheetCells space) => _read(space);
     }
 
     // --- The fixture writer -------------------------------------------------------------------------------------

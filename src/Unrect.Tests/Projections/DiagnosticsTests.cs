@@ -2,12 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -19,9 +19,9 @@ namespace Unrect.Tests.Projections
   /// </summary>
   public class DiagnosticsTests
   {
-    private static ISpace Square() => Grid(new[,] { { 1, 2 }, { 3, 4 } });
+    private static ISheetCells Square() => Grid(new[,] { { 1, 2 }, { 3, 4 } });
 
-    private static IProjection<string> Title() => Cell(v => v.GetString()).Named("title");
+    private static IProjection<ISheetCells, string> Title() => TextCell().Named("title");
 
     // --- The two entry points ---------------------------------------------------------------------
 
@@ -53,7 +53,7 @@ namespace Unrect.Tests.Projections
     public void MapWithDiagnostics_RejectsNullArguments()
     {
       Assert.Throws<ArgumentNullException>(() => Title().MapWithDiagnostics(null!));
-      Assert.Throws<ArgumentNullException>(() => ((IProjection<int>)null!).MapWithDiagnostics(Square()));
+      Assert.Throws<ArgumentNullException>(() => ((IProjection<ISheetCells, int>)null!).MapWithDiagnostics(Square()));
     }
 
     [Fact]
@@ -105,7 +105,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void WhenBothAxesFallShort_BothAreReportedInOneDiagnostic()
     {
-      var info = Assert.Single(Cell(v => v.GetInt()).MapWithDiagnostics(Square()).Diagnostics);
+      var info = Assert.Single(IntCell().MapWithDiagnostics(Square()).Diagnostics);
 
       Assert.Equal(
         "the projection consumed 1 of 2 rows and 1 of 2 columns; rows 2+ and columns 2+ were not described",
@@ -119,7 +119,7 @@ namespace Unrect.Tests.Projections
       // after it. Reporting only the tail would say the leading gap was accounted for.
       var space = Grid(new[,] { { 1 }, { 2 }, { 3 }, { 4 } });
 
-      var info = Assert.Single(Down(2).Of(Cell(v => v.GetInt())).MapWithDiagnostics(space).Diagnostics);
+      var info = Assert.Single(Down(2).Of(IntCell()).MapWithDiagnostics(space).Diagnostics);
 
       Assert.Equal("the projection consumed 1 of 4 rows; rows 1-2 and 4+ were not described", info.Message);
 
@@ -132,7 +132,7 @@ namespace Unrect.Tests.Projections
     {
       var space = Grid(new[,] { { 1 }, { 2 }, { 3 }, { 4 } });
 
-      var info = Assert.Single(Down(1).Of(Cell(v => v.GetInt())).MapWithDiagnostics(space).Diagnostics);
+      var info = Assert.Single(Down(1).Of(IntCell()).MapWithDiagnostics(space).Diagnostics);
 
       Assert.Equal("the projection consumed 1 of 4 rows; rows 1 and 3+ were not described", info.Message);
     }
@@ -142,7 +142,7 @@ namespace Unrect.Tests.Projections
     {
       var space = Grid(new[,] { { 1, 2, 3, 4 } });
 
-      var info = Assert.Single(Right(2).Of(Cell(v => v.GetInt())).MapWithDiagnostics(space).Diagnostics);
+      var info = Assert.Single(Right(2).Of(IntCell()).MapWithDiagnostics(space).Diagnostics);
 
       Assert.Equal("the projection consumed 1 of 4 columns; columns 1-2 and 4+ were not described", info.Message);
       Assert.Equal("A1", info.Location.A1);
@@ -188,8 +188,8 @@ namespace Unrect.Tests.Projections
 
       var result = VerticalFlow(v =>
       {
-        v.Next(Cell(c => c.GetString()).Named("a").Optional());
-        return v.Next(Cell(c => c.GetString()).Named("b").Optional());
+        v.Next(TextCell().Named("a").Optional());
+        return v.Next(TextCell().Named("b").Optional());
       }).MapWithDiagnostics(space);
 
       Assert.Equal(2, result.Diagnostics.Count(d => d.Severity == DiagnosticSeverity.Warning));
@@ -202,7 +202,7 @@ namespace Unrect.Tests.Projections
       // The item absorbs, and so consumes nothing, and so is not collected — the repetition ends
       // having read nothing. A warning about a reading that was thrown away would describe a parse
       // that never happened, exactly as with a losing choice branch.
-      var result = VerticalRepeat(Cell(v => v.GetString()).Optional()).MapWithDiagnostics(Mixed(new object?[,] { { 1 }, { 2 }, { 3 } }));
+      var result = VerticalRepeat(TextCell().Optional()).MapWithDiagnostics(Mixed(new object?[,] { { 1 }, { 2 }, { 3 } }));
 
       Assert.Empty(result.Value);
       Assert.DoesNotContain(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Warning);
@@ -218,8 +218,8 @@ namespace Unrect.Tests.Projections
 
       var result = VerticalFlow(v =>
       {
-        v.Next(Cell(c => c.GetString()).Optional());
-        return v.Next(Cell(c => c.GetInt()));
+        v.Next(TextCell().Optional());
+        return v.Next(IntCell());
       }).MapWithDiagnostics(space);
 
       Assert.Contains(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Info && d.Message.Contains("not described"));
@@ -228,7 +228,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void UnconsumedSpace_IsAttributedToTheRootProjection()
     {
-      var info = Assert.Single(Cell(v => v.GetInt()).Named("just one cell").MapWithDiagnostics(Square()).Diagnostics);
+      var info = Assert.Single(IntCell().Named("just one cell").MapWithDiagnostics(Square()).Diagnostics);
 
       Assert.Equal("'just one cell'", info.Subject);
     }
@@ -243,8 +243,8 @@ namespace Unrect.Tests.Projections
       var space = Mixed(new object?[,] { { "x" }, { 5 } });
 
       var choice = Choice(
-        VerticalFlow(v => { v.Next(Cell(c => c.GetInt())); return v.Next(Cell(c => c.GetInt())); }).Named("A"),
-        VerticalFlow(v => { v.Next(Cell(c => c.GetString())); return v.Next(Cell(c => c.GetInt())); }).Named("B"));
+        VerticalFlow(v => { v.Next(IntCell()); return v.Next(IntCell()); }).Named("A"),
+        VerticalFlow(v => { v.Next(TextCell()); return v.Next(IntCell()); }).Named("B"));
 
       Assert.All(
         choice.MapWithDiagnostics(space).Diagnostics,
@@ -267,7 +267,7 @@ namespace Unrect.Tests.Projections
       var rendered = warning.ToString();
 
       Assert.StartsWith("Warning: 'title': ", rendered);
-      Assert.Contains(" — in 'title' (Cell) at row 1, column 1 (A1)", rendered);
+      Assert.Contains(" — in 'title' (Text) at row 1, column 1 (A1)", rendered);
     }
 
     // --- The documented recovery recipe -------------------------------------------------------------------
@@ -277,13 +277,13 @@ namespace Unrect.Tests.Projections
     // the repetition stops, so that one failure must never be tolerated, while anything wrong
     // inside an anchored section is exactly what the boundary is for.
 
-    private static IProjection<IReadOnlyList<string>> Sections()
+    private static IProjection<ISheetCells, IReadOnlyList<string>> Sections()
     {
       var section =
         VerticalFlow(v =>
         {
-          v.Next(Cell(c => c.GetString()).Named("label"));
-          return (string?)v.Next(Row(2, r => r[0].GetString()).Named("body"));
+          v.Next(TextCell().Named("label"));
+          return (string?)v.Next(Row(2, r => r[0].Text()).Named("body"));
         });
 
       var item = On(RowContaining("Section")).Of(section
@@ -350,7 +350,7 @@ namespace Unrect.Tests.Projections
         d => d.Severity == DiagnosticSeverity.Warning);
 
       Assert.Equal("'body'", warning.Subject);
-      Assert.Contains("Cell value is Number; expected Text", warning.Message);
+      Assert.Contains("expected Text at A4, found Number", warning.Message);
       Assert.Contains("VerticalRepeat[1]", warning.Path);
 
       // Row 4 is the malformed body row — the warning points into the junk, not at the repeat.

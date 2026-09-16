@@ -3,11 +3,12 @@ using System.Linq;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -27,27 +28,34 @@ namespace Unrect.Tests.Projections
     {
       var space = Grid(new[,] { { 7, 8 }, { 9, 10 } });
 
-      Assert.Equal(7, Cell(v => v.GetInt()).Map(space));
+      Assert.Equal(7, Point().Select(p => p.Integer()).Map(space));
     }
 
     [Fact]
     public void Cell_ConsumesExactlyOneCell()
     {
-      var applied = Cell(v => v.GetInt()).Apply(Grid(new[,] { { 7, 8 }, { 9, 10 } }));
+      var applied = Point().Select(p => p.Integer()).Apply(Grid(new[,] { { 7, 8 }, { 9, 10 } }));
 
       Assert.Equal(1, applied.Consumed.Width);
       Assert.Equal(1, applied.Consumed.Height);
     }
 
     [Fact]
-    public void Cell_SizedLargerThanOneCell_Throws()
+    public void Point_SizedLargerThanOneCell_Throws()
     {
+      // The leaf is a Point now, and it says so: a locator of one cell handed a two-cell region is
+      // a declaration that cannot mean anything, and the refusal names what it is rather than what
+      // it used to be called. Until phase 6 the sentence read "a Cell must be exactly one cell".
       var space = Grid(new[,] { { 7, 8 } });
 
+      // Declared on the Point itself, not through a Select: a Select is placed by the engine like
+      // any other projection, so it re-places its inner Point at the Point's own 1x1 default and the
+      // oversized region never reaches the leaf. Which is the honest shape of the rule — a leaf
+      // validates the extent IT was given — and the reason this spelling is the one that tests it.
       var failure = Assert.Throws<ProjectionException>(() =>
-        Sized(AreaStrategies.ExplicitArea(2, 1)).Of(Cell(v => v.GetInt())).Map(space));
+        Sized(AreaStrategies.ExplicitArea(2, 1)).Of(Point()).Map(space));
 
-      Assert.Contains("a Cell must be exactly one cell; this one is 2x1", failure.Message);
+      Assert.Contains("a Point must be exactly one cell; this one is 2x1", failure.Message);
     }
 
     // --- Row ----------------------------------------------------------------------------------------
@@ -61,7 +69,7 @@ namespace Unrect.Tests.Projections
         { 3, 4, 5, 6 },   // the row below is wider, but a Row is one row and counts its own columns
       });
 
-      Assert.Equal(new[] { 1, 2 }, Row(s => s.Select(v => v.GetInt()).ToArray()).Map(space));
+      Assert.Equal(new[] { 1, 2 }, Row(s => s.Select(v => v.Integer()).ToArray()).Map(space));
     }
 
     [Fact]
@@ -111,7 +119,7 @@ namespace Unrect.Tests.Projections
         { 0, 9 },   // the neighbouring column continues, but a Column counts its own rows
       });
 
-      Assert.Equal(new[] { 1, 2 }, Column(s => s.Select(v => v.GetInt()).ToArray()).Map(space));
+      Assert.Equal(new[] { 1, 2 }, Column(s => s.Select(v => v.Integer()).ToArray()).Map(space));
     }
 
     [Fact]
@@ -169,7 +177,7 @@ namespace Unrect.Tests.Projections
     {
       var space = Grid(new[,] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
 
-      var values = Range(2, 2, b => new[] { b[0, 0].GetInt(), b[1, 0].GetInt(), b[0, 1].GetInt(), b[1, 1].GetInt() }).Map(space);
+      var values = Range(2, 2, b => new[] { b[0, 0].Integer(), b[1, 0].Integer(), b[0, 1].Integer(), b[1, 1].Integer() }).Map(space);
 
       Assert.Equal(new[] { 1, 2, 4, 5 }, values);
     }
@@ -201,9 +209,9 @@ namespace Unrect.Tests.Projections
       var strip = Capture(Row(3, s => s), Grid(new[,] { { 1, 2, 3 }, { 4, 5, 6 } }));
 
       Assert.Equal(3, strip.Count);
-      Assert.Equal(1, strip[0].GetInt());
-      Assert.Equal(3, strip[2].GetInt());
-      Assert.Equal(new[] { 1, 2, 3 }, strip.Select(v => v.GetInt()).ToArray());
+      Assert.Equal(1, strip[0].Integer());
+      Assert.Equal(3, strip[2].Integer());
+      Assert.Equal(new[] { 1, 2, 3 }, strip.Select(v => v.Integer()).ToArray());
     }
 
     [Fact]
@@ -212,7 +220,7 @@ namespace Unrect.Tests.Projections
       var strip = Capture(Column(3, s => s), Grid(new[,] { { 1, 9 }, { 2, 9 }, { 3, 9 } }));
 
       Assert.Equal(3, strip.Count);
-      Assert.Equal(new[] { 1, 2, 3 }, strip.Select(v => v.GetInt()).ToArray());
+      Assert.Equal(new[] { 1, 2, 3 }, strip.Select(v => v.Integer()).ToArray());
     }
 
     [Theory]
@@ -243,8 +251,8 @@ namespace Unrect.Tests.Projections
 
       Assert.Equal(3, block.Width);
       Assert.Equal(2, block.Height);
-      Assert.Equal(2, block[1, 0].GetInt());
-      Assert.Equal(4, block[0, 1].GetInt());
+      Assert.Equal(2, block[1, 0].Integer());
+      Assert.Equal(4, block[0, 1].Integer());
     }
 
     [Fact]
@@ -252,15 +260,15 @@ namespace Unrect.Tests.Projections
     {
       var block = Capture(Range(b => b), Grid(new[,] { { 1, 2, 3 }, { 4, 5, 6 } }));
 
-      Assert.Equal(new[] { 1, 2, 3 }, block.Row(0).Select(v => v.GetInt()).ToArray());
-      Assert.Equal(new[] { 4, 5, 6 }, block.Row(1).Select(v => v.GetInt()).ToArray());
-      Assert.Equal(new[] { 1, 4 }, block.Column(0).Select(v => v.GetInt()).ToArray());
-      Assert.Equal(new[] { 3, 6 }, block.Column(2).Select(v => v.GetInt()).ToArray());
+      Assert.Equal(new[] { 1, 2, 3 }, block.Row(0).Select(v => v.Integer()).ToArray());
+      Assert.Equal(new[] { 4, 5, 6 }, block.Row(1).Select(v => v.Integer()).ToArray());
+      Assert.Equal(new[] { 1, 4 }, block.Column(0).Select(v => v.Integer()).ToArray());
+      Assert.Equal(new[] { 3, 6 }, block.Column(2).Select(v => v.Integer()).ToArray());
 
       Assert.Equal(2, block.Rows.Count);
       Assert.Equal(3, block.Columns.Count);
-      Assert.Equal(new[] { 1, 2, 3 }, block.Rows[0].Select(v => v.GetInt()).ToArray());
-      Assert.Equal(new[] { 2, 5 }, block.Columns[1].Select(v => v.GetInt()).ToArray());
+      Assert.Equal(new[] { 1, 2, 3 }, block.Rows[0].Select(v => v.Integer()).ToArray());
+      Assert.Equal(new[] { 2, 5 }, block.Columns[1].Select(v => v.Integer()).ToArray());
     }
 
     [Fact]
@@ -280,7 +288,6 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void Leaves_RejectANullProjection()
     {
-      Assert.Throws<ArgumentNullException>(() => Cell<int>(null!));
       Assert.Throws<ArgumentNullException>(() => Row<int>(null!));
       Assert.Throws<ArgumentNullException>(() => Column<int>(null!));
       Assert.Throws<ArgumentNullException>(() => Range<int>(null!));
@@ -298,6 +305,6 @@ namespace Unrect.Tests.Projections
     /// Runs a projection purely to get hold of the view it was handed, so the view can be exercised
     /// outside a projection — where its own exceptions are not wrapped by the engine.
     /// </summary>
-    private static TView Capture<TView>(IProjection<TView> projection, ISpace space) => projection.Map(space);
+    private static TView Capture<TView>(IProjection<ISheetCells, TView> projection, ISheetCells space) => projection.Map(space);
   }
 }

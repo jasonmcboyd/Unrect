@@ -1,84 +1,94 @@
 using System;
 
 using Unrect.Core;
+using Unrect.Projections;
 using Unrect.Spreadsheets;
 
 namespace Unrect.Tests
 {
   /// <summary>
-  /// A grid that also carries formulas: the second implementation of <see cref="IFormulaSpace"/>, so
-  /// the slicing-law theory in <see cref="SpaceContractTests"/> states a law rather than describing
+  /// A grid that also carries formulas: the second implementation of <see cref="ISpreadsheetSpace"/>,
+  /// so the contract theories in <see cref="SpaceContractTests"/> state a law rather than describing
   /// one class. Both arrays are indexed <c>[row, column]</c>, the way an array literal reads.
   /// <para>
   /// It is a <em>backend</em> and not a helper. The eager door's own capable space is internal to
   /// <c>Unrect.Spreadsheets</c> and reachable only through a file, so a theory written over it alone
   /// could not tell a law of the seam from a habit of that one reader. This one is written here, from
-  /// the interface's documented obligations and nothing else — which is the whole point of asserting
+  /// the interfaces' documented obligations and nothing else — which is the whole point of asserting
   /// against it: an implementor outside this repository has exactly this much to go on.
   /// </para>
   /// <para>
-  /// It mirrors the typed-spaces spike's space of the same name, and it obeys the law the same way
-  /// the eager door does: a subspace is one of these too, sharing the arrays and carrying a
-  /// translated origin, so <see cref="FormulaAt"/> answers about the cells the slice addresses and
-  /// never about its parent's.
+  /// The kinded reads forward to a <see cref="SheetGrid"/> of the same cells, because a backend that
+  /// answered a kind its own way would be stating a habit rather than obeying the contract; the
+  /// formulas are this type's own.
   /// </para>
   /// </summary>
   internal sealed class FormulaGridSpace : ISpreadsheetSpace
   {
-    private readonly CellValue[,] _values;
+    private readonly ISheetCells _values;
     private readonly string?[,] _formulas;
-    private readonly Offset _origin;
 
-    internal FormulaGridSpace(CellValue[,] values, string?[,] formulas)
-      : this(values, formulas, default, new Area(values.GetLength(1), values.GetLength(0)))
+    internal FormulaGridSpace(Cell[,] values, string?[,] formulas)
     {
       if (formulas.GetLength(0) != values.GetLength(0) || formulas.GetLength(1) != values.GetLength(1))
         throw new ArgumentException("The formula grid must be the same shape as the value grid.", nameof(formulas));
-    }
 
-    private FormulaGridSpace(CellValue[,] values, string?[,] formulas, Offset origin, Area area)
-    {
-      _values = values;
+      _values = SheetGrid.Of(values);
       _formulas = formulas;
-      _origin = origin;
-      Area = area;
     }
 
     /// <inheritdoc/>
-    public Area Area { get; }
+    public Area Area => _values.Area;
 
     /// <inheritdoc/>
-    public CellValue this[int column, int row]
-    {
-      get
-      {
-        Check(column, row);
-
-        return _values[_origin.Height + row, _origin.Width + column];
-      }
-    }
+    public bool IsBlank(int column, int row) => _values.IsBlank(column, row);
 
     /// <inheritdoc/>
-    public ISpace GetSubspace(Offset offset, Area area)
-    {
-      if (offset.Width + area.Width > Area.Width || offset.Height + area.Height > Area.Height)
-        throw new OutOfBoundsException();
+    public bool IsText(int column, int row) => _values.IsText(column, row);
 
-      return new FormulaGridSpace(_values, _formulas, offset + _origin, area);
-    }
+    /// <inheritdoc/>
+    public string? AsText(int column, int row) => _values.AsText(column, row);
+
+    /// <inheritdoc/>
+    public bool TextAt(int column, int row, out string value, out CellProblem? problem)
+      => _values.TextAt(column, row, out value, out problem);
+
+    /// <inheritdoc/>
+    public bool DecimalAt(int column, int row, out decimal value, out CellProblem? problem)
+      => _values.DecimalAt(column, row, out value, out problem);
+
+    /// <inheritdoc/>
+    public bool IntegerAt(int column, int row, out int value, out CellProblem? problem)
+      => _values.IntegerAt(column, row, out value, out problem);
+
+    /// <inheritdoc/>
+    public bool DoubleAt(int column, int row, out double value, out CellProblem? problem)
+      => _values.DoubleAt(column, row, out value, out problem);
+
+    /// <inheritdoc/>
+    public bool DateTimeAt(int column, int row, out DateTime value, out CellProblem? problem)
+      => _values.DateTimeAt(column, row, out value, out problem);
+
+    /// <inheritdoc/>
+    public bool BooleanAt(int column, int row, out bool value, out CellProblem? problem)
+      => _values.BooleanAt(column, row, out value, out problem);
+
+    /// <inheritdoc/>
+    public string Describe(int column, int row) => _values.Describe(column, row);
+
+    /// <inheritdoc/>
+    public bool IsErrorAt(int column, int row) => _values.IsErrorAt(column, row);
+
+    /// <inheritdoc/>
+    public string? ErrorTextAt(int column, int row) => _values.ErrorTextAt(column, row);
 
     /// <inheritdoc/>
     public string? FormulaAt(int column, int row)
     {
-      Check(column, row);
-
-      return _formulas[_origin.Height + row, _origin.Width + column];
-    }
-
-    private void Check(int column, int row)
-    {
       if (column < 0 || column >= Area.Width || row < 0 || row >= Area.Height)
         throw new OutOfBoundsException();
+
+      return _formulas[row, column];
     }
   }
 }

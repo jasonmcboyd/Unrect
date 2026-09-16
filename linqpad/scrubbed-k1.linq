@@ -3,7 +3,7 @@
   <Reference Relative="..\src\Unrect\bin\Debug\netstandard2.1\Unrect.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect\bin\Debug\netstandard2.1\Unrect.dll</Reference>
   <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll</Reference>
   <Reference Relative="..\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll</Reference>
-  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Core.ISpace&gt;</Namespace>
+  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Spreadsheets.ISheetCells&gt;</Namespace>
   <Namespace>Unrect.Core</Namespace>
   <Namespace>Unrect.Projections</Namespace>
   <Namespace>Unrect.Spreadsheets</Namespace>
@@ -12,15 +12,17 @@
 // NOTE: examples/scrubbed-k1.xlsx is a LOCAL-ONLY fixture (gitignored, never committed).
 //
 // ONE root projection, ZERO hard-coded coordinates. The space is named once, in the query's
-// namespace imports: `using static Unrect.Projections.ProjectionBuilders<Unrect.Core.ISpace>` —
-// this file reads text and numbers, so it is an ISpace file, whatever the workbook can do.
+// namespace imports: `using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>` —
+// this file declares nothing that asserts a kind, so it takes only the canonical vocabulary; the
+// kinded READS below (.Text(), .Double(), .DecimalOrBlank()) are extensions on a point over a sheet,
+// and come with the `Unrect.Spreadsheets` namespace import rather than with a second builder class.
 // The working style that survives real-world drift (extra rows, moved columns, varying fund
 // counts):
 //   - rows anchor by content matchers, written as the pipeline's entry: On(RowContaining(...));
 //   - the header is an Overlay — independent blocks sharing rows, placement rather than flow —
-//     bounded with .Sized so every seek inside it is unambiguous;
+//     bounded with Sized so every seek inside it is unambiguous;
 //   - each layout lambda DIGESTS ITSELF: the header resolves its own columns from content and
-//     hands back what the rest of the declaration needs, so no raw rows travel any further;
+//     hands back what the rest of the declaration needs, so no raw cells travel any further;
 //   - a section announces itself with Heading, which finds the row, asserts the text and consumes
 //     it — the row belongs to the section instead of being swallowed by an anchor's offset;
 //   - the entity card is a Fields block: labels declared once, extent from the child count, and
@@ -29,17 +31,19 @@
 var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\examples\scrubbed-k1.xlsx");
 var space = SpreadsheetSpace.Create(path, "Sheet1");
 
-string Code(CellValue v) => v.TryGetString() ?? v.TryGetInt()?.ToString() ?? "";
+// A cell comes back as a place, and the reading is written at it: an ATAX code is either the words
+// in a text cell or a whole number, and the cell's own kind says which.
+string Code(Point<ISheetCells> cell) => cell.IsText ? cell.Text() : cell.IntegerOrBlank()?.ToString() ?? "";
 
-int Find(CellValue[] row, string caption) => Array.FindIndex(row,
-	v => string.Equals(v.TryGetString()?.Trim(), caption, StringComparison.OrdinalIgnoreCase));
+int Find(Point<ISheetCells>[] row, string caption) => Array.FindIndex(row,
+	cell => cell.IsText && string.Equals(cell.Text().Trim(), caption, StringComparison.OrdinalIgnoreCase));
 
 // A full-width single row anchored by a content seek. AllColumns() is the declared spelling of
 // "the whole width" — Row's default discovers its width and would stop at the first gap, and a
 // caption band has gaps. The helper does NOT name what it returns: a name baked in here would call
 // every row the same thing at every use site, and the use site is the only place that knows which
 // row this is.
-IProjection<ISpace, CellValue[]> FullRow(string anchor) =>
+IProjection<ISheetCells, Point<ISheetCells>[]> FullRow(string anchor) =>
 	On(RowContaining(anchor))
 		.Row(AllColumns(), r => r.ToArray());
 
@@ -62,10 +66,14 @@ var fundNameRow = FullRow("Fund Short Name");
 var ownershipRow = Down(4).Of(FullRow("Fund Short Name"));
 
 // The header reads four independent blocks off the same band of rows and resolves the sheet's
-// column layout from them, so what leaves here is the answer, not the evidence.
-var header = Overlay(o =>
+// column layout from them, so what leaves here is the answer, not the evidence. It is bounded, so
+// every seek inside stays unambiguous — and the bound is declared where all geometry is, ahead of
+// the shape it places: Sized is the entry for an extent with no movement to its left.
+var header = Sized(RowsWhileAnyValue()).Of(Overlay(o =>
 {
-	var entityFields = o.Next(entity);
+	// Fields hands back each label's cell as a place; AsText is the total reading, so the card
+	// leaves here as what it says rather than as five addresses for someone else to read.
+	var entityFields = o.Next(entity).ToDictionary(f => f.Key, f => f.Value.AsText() ?? "");
 	var captions = o.Next(captionRow);
 	var fundNames = o.Next(fundNameRow);
 	var ownership = o.Next(ownershipRow);
@@ -75,16 +83,13 @@ var header = Overlay(o =>
 	// Federal rides along as a pseudo-fund at 100% so every consumer downstream is uniform.
 	var columns = new[] { (Code: "FEDERAL", Percent: 1.0, Column: Find(captions, "Federal")) }
 		.Concat(fundNames
-			.Select((v, i) => (Value: v, Index: i))
-			.Where(x => x.Index > label && x.Value.HasValue)
-			.Select(x => (Code: x.Value.GetString(), Percent: ownership[x.Index].GetDouble(), Column: x.Index)))
+			.Select((cell, i) => (Cell: cell, Index: i))
+			.Where(x => x.Index > label && x.Cell.HasValue)
+			.Select(x => (Code: x.Cell.Text(), Percent: ownership[x.Index].Double(), Column: x.Index)))
 		.ToArray();
 
 	return new { Entity = entityFields, AtaxColumn = Find(captions, "ATAX"), Columns = columns };
-})
-	// Bounded, so every seek inside stays unambiguous. An extent with nothing to its left is the
-	// one placement with no pipeline entry to enter by, so it keeps the postfix spelling.
-	.Sized(RowsWhileAnyValue());
+}));
 
 // One section projection: rows while any value, wherever it is anchored.
 var section = Range(RowsWhileAnyValue(), b => b.Rows.Select(r => r.ToArray()).ToArray());
@@ -103,7 +108,7 @@ var report = VerticalFlow(v =>
 	var portfolioRows = v.Next(portfolio);
 
 	// Every coded row across both sections, pivot-neutral.
-	var allRows = k1Rows.Concat(portfolioRows ?? Array.Empty<CellValue[]>())
+	var allRows = k1Rows.Concat(portfolioRows ?? Array.Empty<Point<ISheetCells>[]>())
 		.Where(r => r[head.AtaxColumn].HasValue)
 		.ToArray();
 
@@ -117,8 +122,8 @@ var report = VerticalFlow(v =>
 			.Select(r => new
 			{
 				Atax = Code(r[head.AtaxColumn]),
-				Label = r[head.AtaxColumn + 1].TryGetString() ?? "",
-				Amount = r[f.Column].TryGetDecimal(),
+				Label = r[head.AtaxColumn + 1].TextOrBlank() ?? "",
+				Amount = r[f.Column].DecimalOrBlank(),
 			})
 			.Where(i => i.Amount is decimal a && a != 0m)
 			.ToArray(),

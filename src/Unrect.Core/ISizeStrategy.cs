@@ -4,6 +4,6 @@ namespace Unrect.Core
   public interface ISizeStrategy
   {
     /// <summary>The extent to use, measured from the top-left of <paramref name="availableSpace"/>. Throws <see cref="OutOfBoundsException"/> when none fits.</summary>
-    Size GetSize(ISpace availableSpace);
+    Size GetSize(Plane<ISpace> availableSpace);
   }
 }

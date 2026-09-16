@@ -4,10 +4,12 @@ using System.Linq;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -44,7 +46,7 @@ namespace Unrect.Tests.Projections
     /// having had to read row 100 to find out — so "forced to exhaustion" is 101 rows touched for a
     /// bound of 100, and the difference between the two numbers is the row that ended it.
     /// </summary>
-    private static ISpace TallSheet()
+    private static ISheetCells TallSheet()
     {
       var values = new int[103, 2];
 
@@ -66,14 +68,14 @@ namespace Unrect.Tests.Projections
     /// with what the whole application ended up consuming, which is the other half of every fact
     /// here.
     /// </summary>
-    private static (int RowsTouchedAtReadTime, Size Consumed) Observe(Action<ISpace> read)
+    private static (int RowsTouchedAtReadTime, Size Consumed) Observe(Action<Plane<ISheetCells>> read)
       => ObserveBlock(block => read(block.Space));
 
     /// <summary>
     /// The same observation taken through the view rather than through the space beneath it — the
     /// reading a real projection does, and since step 6 the one the cost pins are about.
     /// </summary>
-    private static (int RowsTouchedAtReadTime, Size Consumed) ObserveBlock(Action<CellBlock> read)
+    private static (int RowsTouchedAtReadTime, Size Consumed) ObserveBlock(Action<CellBlock<ISheetCells>> read)
     {
       var counter = new CountingSpace(TallSheet());
       var observed = -1;
@@ -132,12 +134,75 @@ namespace Unrect.Tests.Projections
       // The bound is 100 rows and the sheet is 103, so row 100 exists and is still outside this
       // extent — exactly as it would be outside a measured one. Which is why it is OutOfBounds and
       // not the scan's own failure: nothing broke, the declaration ran out of room.
-      var extent = Range(RowsWhileAnyValue(), block => block.Space[0, BoundHeight].TryGetInt());
+      //
+      // And it is the REGION that refuses, not the space. The space underneath has a row 100 and
+      // would have handed it over; what the projection was given is the region, whose bottom edge
+      // is the declaration's own rule. A read that went to the space instead would silently return
+      // a cell from past the boundary the declaration drew.
+      var extent = Range(RowsWhileAnyValue(), block => block.Space[0, BoundHeight].IntegerOrBlank());
 
       var failure = Assert.Throws<ProjectionException>(() => extent.Map(TallSheet()));
 
       Assert.IsType<OutOfBoundsException>(failure.InnerException);
       Assert.False(failure.IsFault);
+
+      // The space it reads through answers for the very same coordinate without complaint, which is
+      // what makes the refusal the region's own rather than the sheet running out.
+      Assert.Equal(103, TallSheet().Area.Height);
+      Assert.True(TallSheet().IsBlank(0, BoundHeight));
+    }
+
+    [Theory]
+    [InlineData(0, 1)]
+    [InlineData(2, 3)]
+    [InlineData(99, 100)]
+    public void MintingAPointAndReadingItThroughCostTheRowItNames(int row, int rowsTouched)
+    {
+      // The canonical four, asked of the region rather than of the space: minting the address
+      // admits the row one at a time, and each question about the cell there costs that row and
+      // nothing else. A locator that checked itself by asking the region how tall it was would
+      // settle the whole scan for every cell anybody looked at.
+      var (observed, _) = Observe(space =>
+      {
+        var point = space[0, row];
+
+        Assert.False(point.IsBlank);
+        Assert.False(point.IsText);
+        Assert.Equal($"{row + 1}", point.AsText());
+      });
+
+      Assert.Equal(rowsTouched, observed);
+    }
+
+    [Fact]
+    public void MintingAPointPastTheDiscoveredBoundRefusesWithoutEverReadingThatRow()
+    {
+      // The refusal happens where the address is made, which is the difference between "there is no
+      // such row here" and "let me go and look". Row 102 is a real row of the sheet and outside the
+      // region, so the scan runs to exhaustion saying so — 101 rows — and row 102 is never read at
+      // all. A check that had gone to the space to decide would have read it.
+      var counter = new CountingSpace(TallSheet());
+      var observed = -1;
+      Exception? refused = null;
+
+      Range(RowsWhileAnyValue(), block =>
+      {
+        try
+        {
+          _ = block.Space[0, 102];
+        }
+        catch (OutOfBoundsException overrun)
+        {
+          refused = overrun;
+        }
+
+        observed = counter.RowsTouched;
+
+        return 0;
+      }).Apply(counter);
+
+      Assert.IsType<OutOfBoundsException>(refused);
+      Assert.Equal(RowsToExhaustion, observed);
     }
 
     // --- GetSubspace: through the rows asked for ---------------------------------------------------
@@ -153,7 +218,7 @@ namespace Unrect.Tests.Projections
     {
       // An explicit request for part of the extent is not a question about the whole of it — so a
       // nested projection placed inside a discovered bound costs its own rows and not the bound's.
-      var (observed, _) = Observe(space => space.GetSubspace(new Offset(0, offset), new Area(2, height)));
+      var (observed, _) = Observe(space => space.Cut(new Offset(0, offset), new Area(2, height)));
 
       Assert.Equal(rowsTouched, observed);
     }
@@ -167,8 +232,8 @@ namespace Unrect.Tests.Projections
     public void TheBlocksWidthIsFreeOnADiscoveredBound()
     {
       // Zero rows for a question about columns. This is where the width/height seam is observable —
-      // ISpace cannot give a free width (see AskingAPublicSpaceForItsWidthForcesTheHeightWithIt),
-      // and the view can, because it reads the bound through BoundedSpace.WidthOf.
+      // ISheetCells cannot give a free width (see AskingAPublicSpaceForItsWidthForcesTheHeightWithIt),
+      // and the view can, because it holds a region and asks it for its width.
       var (observed, _) = ObserveBlock(block => Assert.Equal(2, block.Width));
 
       Assert.Equal(0, observed);
@@ -208,7 +273,7 @@ namespace Unrect.Tests.Projections
       var (observed, consumed) = ObserveBlock(block =>
       {
         for (var index = 0; index < 3; index++)
-          Assert.Equal(index + 1, block.Row(index)[0].GetInt());
+          Assert.Equal(index + 1, block.Row(index)[0].Integer());
       });
 
       Assert.Equal(3, observed);
@@ -224,7 +289,7 @@ namespace Unrect.Tests.Projections
       // therefore on the fault list. Same row, same bound, different verdict — and the bound-aware
       // validation must not have quietly turned the second into the first.
       var failure = Assert.Throws<ProjectionException>(() =>
-        Range(RowsWhileAnyValue(), block => block[0, BoundHeight].GetInt()).Named("bad").Map(TallSheet()));
+        Range(RowsWhileAnyValue(), block => block[0, BoundHeight].Integer()).Named("bad").Map(TallSheet()));
 
       Assert.IsType<ArgumentOutOfRangeException>(failure.GetBaseException());
       Assert.True(failure.IsFault);
@@ -238,7 +303,7 @@ namespace Unrect.Tests.Projections
       // measured case. A reading bug reported as "this section was absent" would be the worst
       // outcome laziness could produce.
       var failure = Assert.Throws<ProjectionException>(() =>
-        Range(RowsWhileAnyValue(), block => block[0, BoundHeight].GetInt()).Named("bad").Optional().Map(TallSheet()));
+        Range(RowsWhileAnyValue(), block => block[0, BoundHeight].Integer()).Named("bad").Optional().Map(TallSheet()));
 
       Assert.IsType<ArgumentOutOfRangeException>(failure.GetBaseException());
       Assert.Equal("'bad'", failure.Subject);
@@ -258,11 +323,11 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AskingAPublicSpaceForItsWidthForcesTheHeightWithIt()
     {
-      // DECIDED, not pending. §11.5 says a width never forces the height, and through ISpace it
-      // does force, because ISpace.Area is ONE struct: there is no answering half of it, so a
+      // DECIDED, not pending. §11.5 says a width never forces the height, and through ISheetCells it
+      // does force, because ISheetCells.Area is ONE struct: there is no answering half of it, so a
       // public caller asking for a width asks for a height too. Step 6 did not change that and no
-      // step will without surgery on ISpace. What it changed is that the free width now exists one
-      // level up, internal, as BoundedSpace.WidthOf — so the 0 lives on the views, pinned by
+      // step will without surgery on ISheetCells. What it changed is that the free width now exists one
+      // level up, on the region a view holds — so the 0 lives on the views, pinned by
       // TheBlocksWidthIsFreeOnADiscoveredBound and TheTablesColumnVocabularyIsFree below.
       var (observed, _) = Observe(space => Assert.Equal(2, space.Area.Width));
 
@@ -354,7 +419,7 @@ namespace Unrect.Tests.Projections
         {
           observed = counter.RowsTouched;
 
-          return block.Space[0, 0].GetInt();
+          return block.Space[0, 0].Integer();
         }).Apply(counter).Consumed;
       }
 
@@ -374,7 +439,7 @@ namespace Unrect.Tests.Projections
     /// <see cref="TallSheet"/>. The declared extent is 101 rows with the header, and reaching
     /// exhaustion costs 102, the extra one being the blank row that ends the scan.
     /// </summary>
-    private static ISpace TallTable()
+    private static ISheetCells TallTable()
     {
       var values = new object?[104, 2];
 
@@ -402,7 +467,7 @@ namespace Unrect.Tests.Projections
     /// deferred branch and costs the same here; what it costs when the width is NOT free is
     /// <see cref="ADiscoveredWidthThatOnlySettlesLateForcesTheBoundToSettleIt"/>.
     /// </summary>
-    private static (int RowsTouchedAtReadTime, Size Consumed) ObserveTable(Action<TableView> read)
+    private static (int RowsTouchedAtReadTime, Size Consumed) ObserveTable(Action<TableView<ISheetCells>> read)
     {
       var counter = new CountingSpace(TallTable());
       var observed = -1;
@@ -438,7 +503,7 @@ namespace Unrect.Tests.Projections
             break;
 
           case "Header":
-            Assert.Equal("Client", table.Header[0].GetString());
+            Assert.Equal("Client", table.Header[0].Text());
             break;
 
           case "ColumnNames":
@@ -514,7 +579,7 @@ namespace Unrect.Tests.Projections
     /// <summary>
     /// How much of the sheet had been read at the moment each body row was projected.
     /// </summary>
-    private static IReadOnlyList<int> RowsReadAsEachBodyRowProjects(bool sized, ISpace? sheet = null)
+    private static IReadOnlyList<int> RowsReadAsEachBodyRowProjects(bool sized, ISheetCells? sheet = null)
     {
       var counter = new CountingSpace(sheet ?? TallTable());
       var observations = new List<int>();
@@ -566,7 +631,7 @@ namespace Unrect.Tests.Projections
     /// The same hundred body rows, with the second column empty until row 50 — so the width is not
     /// settled by the caption row and the walk that decides it has to go looking.
     /// </summary>
-    private static ISpace LateWideningTable()
+    private static ISheetCells LateWideningTable()
     {
       var values = new object?[104, 2];
 
@@ -663,8 +728,8 @@ namespace Unrect.Tests.Projections
       Table(table =>
       {
         Assert.Equal(
-          table.Rows.Select(row => $"{row["Client"].GetString()}={row["Amount"].GetInt()}").ToList(),
-          table.StreamRows().Select(row => $"{row["Client"].GetString()}={row["Amount"].GetInt()}").ToList());
+          table.Rows.Select(row => $"{row["Client"].Text()}={row["Amount"].Integer()}").ToList(),
+          table.StreamRows().Select(row => $"{row["Client"].Text()}={row["Amount"].Integer()}").ToList());
 
         Assert.Equal(
           table.Rows.Select(row => row.Index).ToList(),

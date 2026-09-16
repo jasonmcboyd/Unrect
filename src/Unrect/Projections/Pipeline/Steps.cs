@@ -43,7 +43,8 @@ namespace Unrect.Projections
     }
 
     /// <summary>Writes the declared placement onto <paramref name="projection"/>, each slot once.</summary>
-    internal IProjection<T> ApplyTo<T>(IProjection<T> projection)
+    internal IProjection<TSpace, T> ApplyTo<TSpace, T>(IProjection<TSpace, T> projection)
+      where TSpace : class, ISpace
     {
       foreach (var step in _steps)
         projection = step.ApplyTo(projection);
@@ -119,37 +120,38 @@ namespace Unrect.Projections
     /// The headings a section announces itself by, as the caption leaves the replay folds into one
     /// vertical flow. The array is the stage's own and is never handed out, so it is safe to hold.
     /// </summary>
-    internal static Step Headings(IProjection<string>[] captions) => new Step(StepKind.Headings, captions);
+    internal static Step Headings(IProjection[] captions) => new Step(StepKind.Headings, captions);
 
     /// <summary>
     /// Writes this step's offset/area/bound operation onto <paramref name="projection"/>'s
     /// <see cref="Placement"/>.
     /// </summary>
-    internal IProjection<T> ApplyTo<T>(IProjection<T> projection)
+    internal IProjection<TSpace, T> ApplyTo<TSpace, T>(IProjection<TSpace, T> projection)
+      where TSpace : class, ISpace
     {
       var subject = (ProjectionBase)projection;
 
       return _kind switch
       {
         // Every offset kind composes onto an earlier pipeline offset, or starts from the origin.
-        StepKind.OnRow => Offset<T>(subject, OffsetStrategies.To((IRowLandmark)_subject!)),
-        StepKind.OnColumn => Offset<T>(subject, OffsetStrategies.To((IColumnLandmark)_subject!)),
-        StepKind.Below => Offset<T>(subject, OffsetStrategies.Past((IRowLandmark)_subject!)),
-        StepKind.RightOf => Offset<T>(subject, OffsetStrategies.Past((IColumnLandmark)_subject!)),
-        StepKind.OffsetBy => Offset<T>(subject, (IOffsetStrategy)_subject!),
-        StepKind.Down => Offset<T>(subject, OffsetStrategies.ExplicitOffset(0, _count)),
-        StepKind.Right => Offset<T>(subject, OffsetStrategies.ExplicitOffset(_count, 0)),
-        StepKind.AfterBlankRows => Offset<T>(subject, OffsetStrategies.SkipBlankRows()),
-        StepKind.AfterBlankColumns => Offset<T>(subject, OffsetStrategies.SkipBlankColumns()),
-        StepKind.SkipToFirstNonBlankCell => Offset<T>(subject, OffsetStrategies.SkipToFirstNonBlankCell()),
+        StepKind.OnRow => Offset<TSpace, T>(subject, OffsetStrategies.To((IRowLandmark)_subject!)),
+        StepKind.OnColumn => Offset<TSpace, T>(subject, OffsetStrategies.To((IColumnLandmark)_subject!)),
+        StepKind.Below => Offset<TSpace, T>(subject, OffsetStrategies.Past((IRowLandmark)_subject!)),
+        StepKind.RightOf => Offset<TSpace, T>(subject, OffsetStrategies.Past((IColumnLandmark)_subject!)),
+        StepKind.OffsetBy => Offset<TSpace, T>(subject, (IOffsetStrategy)_subject!),
+        StepKind.Down => Offset<TSpace, T>(subject, OffsetStrategies.ExplicitOffset(0, _count)),
+        StepKind.Right => Offset<TSpace, T>(subject, OffsetStrategies.ExplicitOffset(_count, 0)),
+        StepKind.AfterBlankRows => Offset<TSpace, T>(subject, OffsetStrategies.SkipBlankRows()),
+        StepKind.AfterBlankColumns => Offset<TSpace, T>(subject, OffsetStrategies.SkipBlankColumns()),
+        StepKind.SkipToFirstNonBlankCell => Offset<TSpace, T>(subject, OffsetStrategies.SkipToFirstNonBlankCell()),
 
         // An extent replaces the projection's derived one.
-        StepKind.Sized => (IProjection<T>)subject.Replaced(subject.Placement.WithArea((IAreaStrategy)_subject!)),
+        StepKind.Sized => (IProjection<TSpace, T>)subject.Replaced(subject.Placement.WithArea((IAreaStrategy)_subject!)),
 
         // Bounds and headings wrap rather than reposition.
-        StepKind.UntilRow => (IProjection<T>)subject.BoundedBy(Landmark.Of((IRowLandmark)_subject!), _orEnd),
-        StepKind.UntilColumn => (IProjection<T>)subject.BoundedBy(Landmark.Of((IColumnLandmark)_subject!), _orEnd),
-        StepKind.Headings => (IProjection<T>)subject.WithHeadings((IProjection<string>[])_subject!),
+        StepKind.UntilRow => (IProjection<TSpace, T>)subject.BoundedBy(Landmark.Of((IRowLandmark)_subject!), _orEnd),
+        StepKind.UntilColumn => (IProjection<TSpace, T>)subject.BoundedBy(Landmark.Of((IColumnLandmark)_subject!), _orEnd),
+        StepKind.Headings => (IProjection<TSpace, T>)subject.WithHeadings((IProjection[])_subject!),
 
         _ => throw new InvalidOperationException($"Unknown placement step {_kind}."),
       };
@@ -160,13 +162,14 @@ namespace Unrect.Projections
     /// earlier pipeline stage declared (placement both <see cref="Placement.OffsetWasDeclared"/> and
     /// <see cref="Placement.HasDeclaredOffset"/>), otherwise starts from the origin.
     /// </summary>
-    private static IProjection<T> Offset<T>(ProjectionBase subject, IOffsetStrategy offset)
+    private static IProjection<TSpace, T> Offset<TSpace, T>(ProjectionBase subject, IOffsetStrategy offset)
+      where TSpace : class, ISpace
     {
       var placement = subject.Placement;
       var composeOntoBase = placement.OffsetWasDeclared && placement.HasDeclaredOffset;
       var composed = composeOntoBase ? OffsetStrategies.Then(placement.Offset, offset) : offset;
 
-      return (IProjection<T>)subject.Replaced(placement.WithOffset(composed));
+      return (IProjection<TSpace, T>)subject.Replaced(placement.WithOffset(composed));
     }
 
     public override string ToString() => _kind switch
@@ -180,7 +183,7 @@ namespace Unrect.Projections
     {
       IRowLandmark row => row.Description,
       IColumnLandmark column => column.Description,
-      IProjection<string>[] captions => string.Join(", ", Array.ConvertAll(captions, caption => caption.Description)),
+      IProjection[] captions => string.Join(", ", Array.ConvertAll(captions, caption => caption.Description)),
       null => "?",
       _ => subject.GetType().Name,
     };

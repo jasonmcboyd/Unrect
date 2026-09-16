@@ -2,11 +2,13 @@ using System;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -29,10 +31,10 @@ namespace Unrect.Tests.Projections
   public class AnchorModifierTests
   {
     // A junk row, the landmark row, two rows under it.
-    private static ISpace Rows() => Mixed(new object?[,] { { "junk" }, { "Detail" }, { "a" }, { "b" } });
+    private static ISheetCells Rows() => Mixed(new object?[,] { { "junk" }, { "Detail" }, { "a" }, { "b" } });
 
     // The same four cells turned on their side, so the column twins read identically.
-    private static ISpace Columns() => Mixed(new object?[,] { { "junk", "Detail", "a", "b" } });
+    private static ISheetCells Columns() => Mixed(new object?[,] { { "junk", "Detail", "a", "b" } });
 
     private static IRowLandmark Detail() => RowContaining("Detail");
 
@@ -295,8 +297,8 @@ namespace Unrect.Tests.Projections
     {
       Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => On((IRowLandmark)null!).Of(Text())).ParamName);
       Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => On((IColumnLandmark)null!).Of(Text())).ParamName);
-      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => Below(null!).Of(Text())).ParamName);
-      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => RightOf(null!).Of(Text())).ParamName);
+      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => Below((IRowLandmark)null!).Of(Text())).ParamName);
+      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => RightOf((IColumnLandmark)null!).Of(Text())).ParamName);
     }
 
     // The anchors' null-projection guard now lives on the pipeline terminal: .Of blames "projection"
@@ -318,16 +320,14 @@ namespace Unrect.Tests.Projections
         "projection",
         Assert.Throws<ArgumentNullException>(() => RightOf(DetailColumn()).Of<string>(null!)).ParamName);
 
-      // The demanding twin: a scoped pipeline's .Of carries the same guard on its own overload.
-      Assert.Equal(
-        "projection",
-        Assert.Throws<ArgumentNullException>(() => Over<ISpace>().On(Detail()).Of<string>(null!)).ParamName);
+      // (A fourth pin stood here, on the SCOPED pipeline's own .Of overload. There is one stage
+      // hierarchy now and it is the one above, so the pin said the same thing twice.)
     }
 
-    private static string Miss(IProjection<string> projection, ISpace space)
+    private static string Miss(IProjection<ISheetCells, string> projection, ISheetCells space)
       => Assert.Throws<ProjectionException>(() => projection.Map(space)).Message;
 
-    private static void AssertSameOffset(IProjection<string> lifted, IProjection<string> anchored, ISpace space)
+    private static void AssertSameOffset(IProjection<ISheetCells, string> lifted, IProjection<ISheetCells, string> anchored, ISheetCells space)
     {
       var expected = lifted.Apply(space);
       var actual = anchored.Apply(space);

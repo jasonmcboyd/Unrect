@@ -14,7 +14,7 @@ namespace Unrect.Strategies
     private IColumnLandmark Landmark { get; }
     private bool Past { get; }
 
-    public int SelectColumns(ISpace space)
+    public int SelectColumns(Plane<ISpace> space)
       => Landmark.FindColumn(space) is int column
         ? column + (Past ? 1 : 0)
         : throw new AnchorNotFoundException(Landmark.Description);

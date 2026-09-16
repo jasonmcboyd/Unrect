@@ -1,5 +1,6 @@
 using System;
 
+using Unrect.Core;
 using Unrect.Projections;
 
 namespace Unrect.Spreadsheets
@@ -40,13 +41,15 @@ namespace Unrect.Spreadsheets
     /// inside the declaration; that is what a declaration is for.
     /// </para>
     /// <para>
-    /// <b>A demanding projection has no overload here, deliberately.</b> A streamed sheet reads
-    /// values only — <see cref="Workbook.Sheet"/> hands back a plain <see cref="Core.ISpace"/>, the
-    /// honest absence — so there is no capable space for a declaration that reads formulas to be
-    /// applied to, and the receiver type says so: the compiler refuses
-    /// <c>formulaReadingProjection.MapWorkbook(…)</c> where an <c>ISpace</c>-only overload would
-    /// have had to fault at run time or read a file's formulas as absent. Read formulas through the
-    /// eager door instead — <c>projection.Map(SpreadsheetSpace.CreateWithFormulas(path,
+    /// <b>The receiver is a sheet declaration or a canonical one, and nothing else.</b> A streamed
+    /// sheet reads values only — <see cref="Workbook.Sheet"/> hands back a plain
+    /// <see cref="ISheetCells"/>, the honest absence — so there is an overload for a declaration
+    /// written over <c>ISheetCells</c> and one for a declaration written over the canonical
+    /// <see cref="ISpace"/>, which a sheet also is. A declaration over anything else the sheet
+    /// cannot be — <see cref="IFormulaSpace"/>, <see cref="ISpreadsheetSpace"/>, a grid of typed
+    /// values — matches neither, so <c>formulaReadingProjection.MapWorkbook(…)</c> is a compile
+    /// error rather than a run-time fault or a file's formulas quietly read as absent. Read formulas
+    /// through the eager door instead — <c>projection.Map(SpreadsheetSpace.CreateWithFormulas(path,
     /// sheet))</c>, which needs no sugar because it has no lifetime to hide.
     /// </para>
     /// </summary>
@@ -57,7 +60,7 @@ namespace Unrect.Spreadsheets
     /// <param name="options">How the file is read; the defaults where omitted.</param>
     /// <exception cref="ArgumentException">No sheet of that name exists.</exception>
     public static TResult MapWorkbook<TResult>(
-      this IProjection<TResult> projection,
+      this IProjection<ISheetCells, TResult> projection,
       string path,
       string sheetName,
       WorkbookOptions? options = null)
@@ -65,13 +68,30 @@ namespace Unrect.Spreadsheets
       if (projection is null)
         throw new ArgumentNullException(nameof(projection));
 
-      using var book = Workbook.Open(path, options ?? new WorkbookOptions());
+      return Over(path, sheetName, options, projection.Map);
+    }
 
-      return projection.Map(book.Sheet(sheetName));
+    /// <inheritdoc cref="MapWorkbook{TResult}(IProjection{ISheetCells, TResult}, string, string, WorkbookOptions)"/>
+    /// <remarks>
+    /// The canonical receiver: a declaration written over <see cref="ISpace"/> asks for nothing a
+    /// sheet does not answer, so it reads a workbook through the same door — and a projection type
+    /// is invariant, so it needs an overload of its own to say so.
+    /// </remarks>
+    public static TResult MapWorkbook<TResult>(
+      this IProjection<ISpace, TResult> projection,
+      string path,
+      string sheetName,
+      WorkbookOptions? options = null)
+    {
+      if (projection is null)
+        throw new ArgumentNullException(nameof(projection));
+
+      return Over(path, sheetName, options, projection.Map);
     }
 
     /// <summary>
-    /// <see cref="MapWorkbook{TResult}"/>, keeping what the decomposition noticed — every tolerance
+    /// <see cref="MapWorkbook{TResult}(IProjection{ISheetCells, TResult}, string, string, WorkbookOptions)"/>,
+    /// keeping what the decomposition noticed — every tolerance
     /// boundary that absorbed a failure, every alternative a choice passed over, and space the
     /// projection did not describe.
     /// <para>
@@ -87,7 +107,7 @@ namespace Unrect.Spreadsheets
     /// <param name="options">How the file is read; the defaults where omitted.</param>
     /// <exception cref="ArgumentException">No sheet of that name exists.</exception>
     public static MapResult<TResult> MapWorkbookWithDiagnostics<TResult>(
-      this IProjection<TResult> projection,
+      this IProjection<ISheetCells, TResult> projection,
       string path,
       string sheetName,
       WorkbookOptions? options = null)
@@ -95,9 +115,34 @@ namespace Unrect.Spreadsheets
       if (projection is null)
         throw new ArgumentNullException(nameof(projection));
 
+      return Over(path, sheetName, options, projection.MapWithDiagnostics);
+    }
+
+    /// <inheritdoc cref="MapWorkbookWithDiagnostics{TResult}(IProjection{ISheetCells, TResult}, string, string, WorkbookOptions)"/>
+    /// <remarks>
+    /// The canonical receiver, for the same reason its plain twin has one.
+    /// </remarks>
+    public static MapResult<TResult> MapWorkbookWithDiagnostics<TResult>(
+      this IProjection<ISpace, TResult> projection,
+      string path,
+      string sheetName,
+      WorkbookOptions? options = null)
+    {
+      if (projection is null)
+        throw new ArgumentNullException(nameof(projection));
+
+      return Over(path, sheetName, options, projection.MapWithDiagnostics);
+    }
+
+    /// <summary>
+    /// One open, one sheet, one read, one close — the shape all four entry points share, with the
+    /// read handed in so the book closes after it and never before.
+    /// </summary>
+    private static TResult Over<TResult>(string path, string sheetName, WorkbookOptions? options, Func<ISheetCells, TResult> read)
+    {
       using var book = Workbook.Open(path, options ?? new WorkbookOptions());
 
-      return projection.MapWithDiagnostics(book.Sheet(sheetName));
+      return read(book.Sheet(sheetName));
     }
   }
 }

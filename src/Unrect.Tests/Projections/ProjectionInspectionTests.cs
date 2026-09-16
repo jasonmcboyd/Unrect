@@ -2,12 +2,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -39,7 +40,8 @@ namespace Unrect.Tests.Projections
       Assert.Equal("Fields", Fields(Field("EIN")).Description);
       Assert.Equal("Caption(\"Total\")", Caption("Total").Description);
 
-      Assert.Equal("Cell", Cell(v => v.GetInt()).Description);
+      Assert.Equal("Point", Point().Description);
+      Assert.Equal("AsText", AsText().Description);
       Assert.Equal("Row", Row(s => s.Count).Description);
       Assert.Equal("Row(3)", Row(3, s => s.Count).Description);
       Assert.Equal("Column", Column(s => s.Count).Description);
@@ -67,7 +69,7 @@ namespace Unrect.Tests.Projections
       var projection = IntCell().Named("report id");
 
       Assert.Equal("report id", projection.Name);
-      Assert.Equal("Cell", projection.Description);
+      Assert.Equal("Integer", projection.Description);
     }
 
     [Fact]
@@ -219,7 +221,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AProjectionTreeCanBeWalkedWithoutASpaceUntilItMeetsALayout()
     {
-      // The dry-run traversal in miniature: no ISpace anywhere. It walks the wrappers and the
+      // The dry-run traversal in miniature: no ISheetCells anywhere. It walks the wrappers and the
       // repeat happily, and stops where a layout composite is — reporting why rather than
       // pretending the layout is a leaf.
       var projection = VerticalRepeat(
@@ -316,7 +318,7 @@ namespace Unrect.Tests.Projections
     }
 
     /// <summary>Renders a result as text so array identity never enters the comparison.</summary>
-    private static string Read(IProjection<(int, IReadOnlyList<int>)> projection, ISpace space)
+    private static string Read(IProjection<ISheetCells, (int, IReadOnlyList<int>)> projection, ISheetCells space)
     {
       var (first, rest) = projection.Map(space);
       return $"{first}:{string.Join(",", rest)}";

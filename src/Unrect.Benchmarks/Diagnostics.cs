@@ -1,9 +1,9 @@
 using BenchmarkDotNet.Attributes;
 
-using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 
 namespace Unrect.Benchmarks
 {
@@ -32,18 +32,18 @@ namespace Unrect.Benchmarks
   [BenchmarkCategory("Diagnostics")]
   public class Diagnostics
   {
-    private static readonly IProjection<int> Section = Range(RowsWhileAnyValue(), b => b.Height);
+    private static readonly IProjection<ISheetCells, int> Section = Range(RowsWhileAnyValue(), b => b.Height);
 
     // The loser goes first: a caption that is not in the document, so the choice pays for a full
     // failed attempt before the second alternative succeeds.
-    private static readonly IProjection<int> FirstAlternativeLoses = Choice(
+    private static readonly IProjection<ISheetCells, int> FirstAlternativeLoses = Choice(
       Heading("No Such Caption Exists Here").Of(Section),
       Heading(CanonicalSpaces.DetailsCaption).Of(Section));
 
-    private static readonly IProjection<int> AbsorbedFailure =
+    private static readonly IProjection<ISheetCells, int> AbsorbedFailure =
       Heading("No Such Caption Exists Here").Of(Section).Optional();
 
-    private ISpace _document = default!;
+    private ISheetCells _document = default!;
 
     [GlobalSetup]
     public void Setup() => _document = CanonicalSpaces.SmallDocument;

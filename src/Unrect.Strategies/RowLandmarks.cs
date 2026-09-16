@@ -20,7 +20,9 @@ namespace Unrect.Strategies
   /// <c>Where</c> or <c>While</c> takes a <em>space</em> predicate, <c>(space, index)</c>. A
   /// <em>cell</em> predicate is always marked in the name — <c>WithCell</c>, <c>WhileAll</c>,
   /// <c>WhileAny</c>. Text is <c>Containing</c>, and it means whole-cell equality, trimmed and
-  /// case-insensitive.
+  /// case-insensitive. <c>Saying</c> is that same equality against what a cell renders as,
+  /// whatever kind it is — the one rule here that looks past a cell's kind, and so the one a
+  /// declaration has to ask for by name.
   /// </para>
   /// </summary>
   public static class RowLandmarks
@@ -30,15 +32,15 @@ namespace Unrect.Strategies
     /// failure renders — "no row with the label 'EIN'" — so a projection that anchors on something
     /// other than a caption can still fail in the vocabulary's own voice.
     /// </summary>
-    public static IRowLandmark RowWhere(Func<ISpace, int, bool> predicate, string description)
+    public static IRowLandmark RowWhere(Func<Plane<ISpace>, int, bool> predicate, string description)
       => new PredicateRowLandmark(NotNull(predicate, nameof(predicate)), NotNull(description, nameof(description)));
 
     /// <summary>The first row satisfying <paramref name="predicate"/>, described generically as "no matching row" when it fails.</summary>
-    public static IRowLandmark RowWhere(Func<ISpace, int, bool> predicate)
+    public static IRowLandmark RowWhere(Func<Plane<ISpace>, int, bool> predicate)
       => new PredicateRowLandmark(NotNull(predicate, nameof(predicate)), "no matching row");
 
     /// <summary>The first row with any cell satisfying <paramref name="anyCell"/>.</summary>
-    public static IRowLandmark RowWithCell(Func<CellValue, bool> anyCell)
+    public static IRowLandmark RowWithCell(Func<Point<ISpace>, bool> anyCell)
       => new PredicateRowLandmark(
         CellMatching.AnyCellInRow(NotNull(anyCell, nameof(anyCell))),
         "no row with a matching cell");
@@ -52,6 +54,27 @@ namespace Unrect.Strategies
       => new PredicateRowLandmark(
         CellMatching.AnyCellInRow(CellMatching.TextEquals(NotNull(text, nameof(text)))),
         $"no row containing '{text}'");
+
+    /// <summary>
+    /// The first row in which some cell <em>says</em> <paramref name="text"/> — the same whole-cell
+    /// comparison as <see cref="RowContaining"/>, trimmed and case-insensitive, against every cell's
+    /// rendering rather than against text cells alone.
+    /// <para>
+    /// This is the opt-in one. A numeric 42 says "42", a date says its ISO form, a boolean says
+    /// <c>TRUE</c> and an error says <c>#DIV/0!</c>; none of them is found by <c>Containing</c>, and
+    /// all of them are found by this. That is deliberate both ways: a rendering is the backend's
+    /// choice rather than the cell's content, so a declaration that wants to anchor on one says so.
+    /// </para>
+    /// <para>
+    /// There is no numeric overload, and there will not be: it would make the declaration responsible
+    /// for knowing how the backend spells a number, which is the one thing this family exists to keep
+    /// out of a declaration.
+    /// </para>
+    /// </summary>
+    public static IRowLandmark RowSaying(string text)
+      => new PredicateRowLandmark(
+        CellMatching.AnyCellInRow(CellMatching.SaysEquals(NotNull(text, nameof(text)))),
+        $"no row saying '{text}'");
 
     private static T NotNull<T>(T value, string parameter) where T : class
       => value ?? throw new ArgumentNullException(parameter);

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
+using Unrect.Core;
 using Unrect.Strategies;
 
 namespace Unrect.Projections
@@ -10,8 +11,8 @@ namespace Unrect.Projections
   /// A set of labels along an axis: the result of a table projecting its own header, handed to a row
   /// bind so a declaration written once can find this file's columns, and — since it is public and
   /// implements <see cref="ILabelSource"/> — what a scope-introducer such as
-  /// <see cref="Projection.WithColumnLabels{T}(LabelMap, IProjection{T})"/> pushes so a decoupled
-  /// record reads by name.
+  /// <see cref="ProjectionBuilders{TSpace}.WithColumnLabels{T}(LabelMap, IProjection{TSpace, T})"/>
+  /// pushes so a decoupled record reads by name.
   /// <para>
   /// It is per-file data rather than geometry, which is why it arrives as an argument and not as
   /// something a space offers.
@@ -19,8 +20,7 @@ namespace Unrect.Projections
   /// <para>
   /// <b>Two matching rules, kept apart deliberately.</b> The bind-rung members
   /// (<see cref="this[string]"/>, <see cref="Has"/>) match by <see cref="CaptionComparer"/> — case
-  /// and whitespace ignored — the same rule that binds <c>Table&lt;T&gt;()</c>, and cite the header
-  /// cell behind an ambiguous or missing caption. The <see cref="ILabelSource"/> face the primitive
+  /// and whitespace ignored — and cite the header cell behind an ambiguous or missing caption. The <see cref="ILabelSource"/> face the primitive
   /// path resolves through matches by the source's own content rule (<c>CellMatching.TextComparer</c>),
   /// which is the rule <c>TableRow</c> and the matchers use. A table's own header answers both; a
   /// <see cref="Of"/> map of literals answers only the primitive face.
@@ -44,13 +44,14 @@ namespace Unrect.Projections
 
     /// <summary>
     /// Parses <paramref name="header"/> into the labels a table binds by — the one home of the header
-    /// parse, read by both <see cref="Projection.ColumnLabels(int)"/> and a built-in <c>Table</c>, so
+    /// parse, read by both <see cref="ProjectionBuilders{TSpace}.ColumnLabels(int)"/> and a built-in <c>Table</c>, so
     /// the two mint byte-identical labels, ordinals and citations. Both the label source and the
-    /// header-citation face are the same <see cref="HeaderLabels"/>.
+    /// header-citation face are the same <see cref="HeaderLabels{TSpace}"/>.
     /// </summary>
-    internal static LabelMap FromHeader(CellStrip header, ProjectionContext context)
+    internal static LabelMap FromHeader<TSpace>(CellStrip<TSpace> header)
+      where TSpace : class, ISpace
     {
-      var labels = new HeaderLabels(header, context);
+      var labels = new HeaderLabels<TSpace>(header);
 
       return new LabelMap(labels, labels);
     }
@@ -73,7 +74,7 @@ namespace Unrect.Projections
     IReadOnlyList<string> ILabelSource.Labels => Labels;
 
     // The primitive face: the source's own content-rule lookup, byte-identical with the pre-step-1
-    // TableRow resolution. Kept off the CaptionComparer the bind rung uses, deliberately.
+    // TableRow<TSpace> resolution. Kept off the CaptionComparer the bind rung uses, deliberately.
     IReadOnlyList<int> ILabelSource.IndicesOf(string label) => _source.IndicesOf(label);
 
     /// <summary>
@@ -123,9 +124,25 @@ namespace Unrect.Projections
       };
     }
 
+    /// <summary>
+    /// The columns <paramref name="caption"/> binds to under <see cref="CaptionComparer"/> — the
+    /// same lookup the indexer makes, handed over rather than answered, so a reflected binder can
+    /// name the MEMBER in a failure where the indexer can only name the caption.
+    /// </summary>
+    internal IReadOnlyList<int> Bound(string caption) => Matches(caption);
+
+    /// <summary>Where a column's caption cell is, for a failure of its own that cites the header.</summary>
+    internal ProjectionLocation AddressOf(int column) => Header.AddressOf(column);
+
     // The bind rung cites header cells; a map of literals has none, so it cannot answer here. In
     // practice this is unreachable — the bind rung is only ever handed a table's own map — but a
     // clear error beats a NullReferenceException if a literal map is ever bound by mistake.
+    /// <summary>
+    /// A failure blaming the table this map was read from — its origin, its extent. How a reading
+    /// built on these captions reports something the whole table is wrong about.
+    /// </summary>
+    internal ProjectionException Failure(string problem) => Header.Failure(problem);
+
     private IHeaderCitations Header => _header ?? throw new InvalidOperationException(
       "This LabelMap was created from literal labels and has no header cells to cite; the "
       + "caption-comparer members (the indexer, Has) are only meaningful for a table's own header.");
@@ -174,24 +191,28 @@ namespace Unrect.Projections
   /// <summary>
   /// A header strip parsed into its labels: the trimmed names in column order, the content-rule lookup
   /// the primitive path resolves through, and the header cells the bind rung cites. It is the single
-  /// home of the header parse — both a table and <see cref="Projection.ColumnLabels(int)"/> read a
+  /// home of the header parse — both a table and <see cref="ProjectionBuilders{TSpace}.ColumnLabels(int)"/> read a
   /// header through here.
   /// </summary>
-  internal sealed class HeaderLabels : ILabelSource, IHeaderCitations
+  /// <typeparam name="TSpace">The space the header strip reads through.</typeparam>
+  internal sealed class HeaderLabels<TSpace> : ILabelSource, IHeaderCitations
+    where TSpace : class, ISpace
   {
-    private readonly CellStrip _header;
-    private readonly ProjectionContext _context;
+    private readonly CellStrip<TSpace> _header;
 
     // Built once on first lookup: the content-rule map keyed by CellMatching.TextComparer, the rule
     // matchers and Caption use, so a lookup here and a RowContaining elsewhere find a caption on the
     // same terms.
     private Dictionary<string, List<int>>? _columnsByName;
 
-    internal HeaderLabels(CellStrip header, ProjectionContext context)
+    internal HeaderLabels(CellStrip<TSpace> header)
     {
       _header = header;
-      _context = context;
-      Labels = header.Select(cell => cell.TryGetString()?.Trim() ?? string.Empty).ToList();
+
+      // A caption is a cell that says a word of its own. Anything else — a number, a date, a blank —
+      // is a column with no caption, which is the empty string, and the rungs that promise one entry
+      // per column are the ones that refuse it.
+      Labels = header.Select(cell => cell.IsText ? cell.AsText()!.Trim() : string.Empty).ToList();
     }
 
     public IReadOnlyList<string> Labels { get; }
@@ -206,7 +227,7 @@ namespace Unrect.Projections
         : Array.Empty<int>();
     }
 
-    public ProjectionException Failure(string problem) => _context.Failure(problem, _header.Space);
+    public ProjectionException Failure(string problem) => _header.Failure(problem);
 
     public ProjectionLocation AddressOf(int column) => _header.AddressOf(column);
 
@@ -233,7 +254,7 @@ namespace Unrect.Projections
 
   /// <summary>
   /// The header cells behind a table-minted <see cref="LabelMap"/>: how the bind rung cites an
-  /// ambiguous or missing caption. <see cref="HeaderLabels"/> is the only implementation; a map of
+  /// ambiguous or missing caption. <see cref="HeaderLabels{TSpace}"/> is the only implementation; a map of
   /// literals has none.
   /// </summary>
   internal interface IHeaderCitations

@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-using Unrect.Core;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Streaming
 {
@@ -47,7 +48,7 @@ namespace Unrect.Tests.Streaming
     /// has already failed would fail differently the second time.
     /// </para>
     /// </summary>
-    private static ISpace Faulting(string fault, int faultRow = 4)
+    private static ISheetCells Faulting(string fault, int faultRow = 4)
     {
       var source = new FakeRowSource(FakeSheet.Of(
         "Data",
@@ -67,7 +68,7 @@ namespace Unrect.Tests.Streaming
       return new WindowedSpace(new SheetStore(pool, 0, "Data", 6, 2, chunkRows: 1, windowChunks: 4));
     }
 
-    private static void AssertSurfacedAsAFault(string fault, Func<ISpace, object?> map)
+    private static void AssertSurfacedAsAFault(string fault, Func<ISheetCells, object?> map)
     {
       var failure = Assert.Throws<ProjectionException>(() => { _ = map(Faulting(fault)); });
 
@@ -82,7 +83,7 @@ namespace Unrect.Tests.Streaming
     [MemberData(nameof(Faults))]
     public void AFailureInAProjectionIsAFault(string fault)
     {
-      AssertSurfacedAsAFault(fault, space => Table(row => row["Amount"].GetInt()).Map(space));
+      AssertSurfacedAsAFault(fault, space => Table(row => row["Amount"].Integer()).Map(space));
     }
 
     [Theory]
@@ -101,7 +102,7 @@ namespace Unrect.Tests.Streaming
     {
       // AfterBlankRows scanning into the row that cannot be read: the exact scenario in the spec's
       // statement of the bug.
-      AssertSurfacedAsAFault(fault, space => AfterBlankRows().Of(Cell(cell => cell.GetString())).Map(Faulting(fault, faultRow: 0)));
+      AssertSurfacedAsAFault(fault, space => AfterBlankRows().Of(TextCell()).Map(Faulting(fault, faultRow: 0)));
     }
 
     [Theory]
@@ -110,7 +111,7 @@ namespace Unrect.Tests.Streaming
     {
       // A landmark searches for a row, so it reads its way down the sheet; a search that fails
       // because the disk did is not the same as a search that finished and found nothing.
-      AssertSurfacedAsAFault(fault, space => On(RowContaining("nowhere")).Of(Cell(cell => cell.GetString())).Map(space));
+      AssertSurfacedAsAFault(fault, space => On(RowContaining("nowhere")).Of(TextCell()).Map(space));
     }
 
     [Theory]
@@ -119,7 +120,7 @@ namespace Unrect.Tests.Streaming
     {
       // The fourth wrapping site, and the one that needed a fault-carrying overload of Failure to
       // reach at all.
-      AssertSurfacedAsAFault(fault, space => VerticalRepeat(Row(row => row[0].GetString()), separatedBy: BlankRows()).Map(space));
+      AssertSurfacedAsAFault(fault, space => VerticalRepeat(Row(row => row[0].Text()), separatedBy: BlankRows()).Map(space));
     }
 
     [Theory]
@@ -129,7 +130,7 @@ namespace Unrect.Tests.Streaming
       // The consequence for a repeat's ITEM. Non-strict placement returns false only for
       // OutOfBoundsException — running out of room is how a repeat stops — so an IO failure inside
       // an item is not a stopping condition and must not be mistaken for the end of the sections.
-      AssertSurfacedAsAFault(fault, space => VerticalRepeat(Row(row => row[0].GetString())).Map(space));
+      AssertSurfacedAsAFault(fault, space => VerticalRepeat(Row(row => row[0].Text())).Map(space));
     }
 
     // --- What must not absorb it -------------------------------------------------------------------
@@ -138,7 +139,7 @@ namespace Unrect.Tests.Streaming
     [MemberData(nameof(Faults))]
     public void OptionalDoesNotAbsorbAFault(string fault)
     {
-      AssertSurfacedAsAFault(fault, space => Table(row => row["Amount"].GetInt()).Optional().Map(space));
+      AssertSurfacedAsAFault(fault, space => Table(row => row["Amount"].Integer()).Optional().Map(space));
     }
 
     [Theory]
@@ -147,7 +148,7 @@ namespace Unrect.Tests.Streaming
     {
       AssertSurfacedAsAFault(
         fault,
-        space => Table(row => row["Amount"].GetInt()).Else((IReadOnlyList<int>)new[] { 0 }).Map(space));
+        space => Table(row => row["Amount"].Integer()).Else((IReadOnlyList<int>)new[] { 0 }).Map(space));
     }
 
     [Theory]
@@ -156,7 +157,7 @@ namespace Unrect.Tests.Streaming
     {
       AssertSurfacedAsAFault(
         fault,
-        space => Table(row => row["Amount"].GetInt())
+        space => Table(row => row["Amount"].Integer())
           .Else(Range(block => (IReadOnlyList<int>)new[] { block.Height }))
           .Map(space));
     }
@@ -171,7 +172,7 @@ namespace Unrect.Tests.Streaming
       AssertSurfacedAsAFault(
         fault,
         space => Choice(
-          Table(row => row["Amount"].GetInt()),
+          Table(row => row["Amount"].Integer()),
           Range(block => (IReadOnlyList<int>)new[] { block.Height })).Map(space));
     }
 
@@ -188,11 +189,11 @@ namespace Unrect.Tests.Streaming
 
       AssertSurfacedAsAFault(
         fault,
-        space => On(RowContaining("nowhere")).Of(Cell(cell => cell.GetString())).Optional().Map(space));
+        space => On(RowContaining("nowhere")).Of(TextCell()).Optional().Map(space));
 
       AssertSurfacedAsAFault(
         fault,
-        space => VerticalRepeat(Row(row => row[0].GetString()), separatedBy: BlankRows()).Optional().Map(space));
+        space => VerticalRepeat(Row(row => row[0].Text()), separatedBy: BlankRows()).Optional().Map(space));
     }
 
     [Fact]
@@ -201,7 +202,7 @@ namespace Unrect.Tests.Streaming
       // MapWithDiagnostics is where an absorbed failure would show up as a Warning saying the
       // section was absent. It must throw instead: there is no diagnostic that can honestly
       // describe a sheet nobody could read.
-      var declaration = Table(row => row["Amount"].GetInt()).Named("amounts").Optional();
+      var declaration = Table(row => row["Amount"].Integer()).Named("amounts").Optional();
 
       Assert.Throws<ProjectionException>(() => declaration.MapWithDiagnostics(Faulting("io")));
     }
@@ -213,7 +214,7 @@ namespace Unrect.Tests.Streaming
       // reading and where. "The disk failed" without that is a stack trace; with it, it is a bug
       // report.
       var failure = Assert.Throws<ProjectionException>(
-        () => Table(row => row["Amount"].GetInt()).Named("amounts").Map(Faulting("io")));
+        () => Table(row => row["Amount"].Integer()).Named("amounts").Map(Faulting("io")));
 
       Assert.Contains("'amounts'", failure.Message);
       Assert.Contains("IOException", failure.Message);
@@ -222,7 +223,7 @@ namespace Unrect.Tests.Streaming
 
     // --- The controls: what a boundary IS still for --------------------------------------------------
 
-    private static ISpace Sound() => ProjectionTestSpaces.Mixed(new object?[,]
+    private static ISheetCells Sound() => ProjectionTestSpaces.Mixed(new object?[,]
     {
       { "Name", "Amount" },
       { "a", 1 },
@@ -234,7 +235,7 @@ namespace Unrect.Tests.Streaming
     {
       // "Amount is text where a number was declared" is a disagreement about the data, which is
       // exactly what a tolerance boundary is for.
-      var value = Cell(cell => cell.GetInt()).Optional().Map(Sound());
+      var value = IntCell().Optional().Map(Sound());
 
       Assert.Equal(0, value);
     }
@@ -242,7 +243,7 @@ namespace Unrect.Tests.Streaming
     [Fact]
     public void AMissingAnchorIsStillAbsorbed()
     {
-      var value = On(RowContaining("absent")).Of(Cell(cell => cell.GetString())).Optional().Map(Sound());
+      var value = On(RowContaining("absent")).Of(TextCell()).Optional().Map(Sound());
 
       Assert.Null(value);
     }
@@ -259,7 +260,7 @@ namespace Unrect.Tests.Streaming
     public void ARepeatStillStopsAtTheEndOfItsSections()
     {
       // Running out of room is how a repeat ends, and no part of the fault work may change that.
-      var rows = VerticalRepeat(Row(row => row[0].GetString())).Map(Sound());
+      var rows = VerticalRepeat(Row(row => row[0].Text())).Map(Sound());
 
       Assert.Equal(new[] { "Name", "a", "b" }, rows.ToArray());
     }
@@ -268,8 +269,8 @@ namespace Unrect.Tests.Streaming
     public void AChoiceStillFallsBackWhenTheDataDisagrees()
     {
       var value = Choice(
-        Cell(cell => cell.GetInt()).Named("a number"),
-        Cell(cell => cell.GetString().Length).Named("its length")).Map(Sound());
+        IntCell().Named("a number"),
+        Point().Select(point => point.Text().Length).Named("its length")).Map(Sound());
 
       Assert.Equal(4, value);
     }

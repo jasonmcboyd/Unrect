@@ -13,9 +13,10 @@ namespace Unrect.Projections
   /// transparent node, so the body reads at the wrapper's own frame and column translation is the
   /// identity in the canonical table composition.
   /// </summary>
-  internal sealed class WithLabelsProjection<T> : ProjectionBase<T>
+  internal sealed class WithLabelsProjection<TSpace, T> : ProjectionBase<TSpace, T>
+    where TSpace : class, ISpace
   {
-    public WithLabelsProjection(LabelAxis axis, LabelMap map, IProjection<T> body, Placement placement)
+    public WithLabelsProjection(LabelAxis axis, LabelMap map, IProjection<TSpace, T> body, Placement placement)
       : base(placement)
     {
       Axis = axis;
@@ -26,7 +27,7 @@ namespace Unrect.Projections
 
     private LabelAxis Axis { get; }
     private LabelMap Map { get; }
-    private IProjection<T> Body { get; }
+    private IProjection<TSpace, T> Body { get; }
 
     public override string Description => Axis == LabelAxis.Column ? "WithColumnLabels" : "WithRowLabels";
 
@@ -34,17 +35,17 @@ namespace Unrect.Projections
 
     public override bool IsTransparent => Name is null && !IsUnitBoundary;
 
-    public override ProjectionResult<T> Project(ISpace extent, ProjectionContext context)
+    public override ProjectionResult<T> Project(Plane<TSpace> extent, ProjectionContext context)
     {
       // Bound the body to the labelled width only when the extent is wider, so a sheet with trailing
       // blank columns reads under the same columns the labels describe. On an exact-width extent the
       // body is handed through untouched, forcing nothing.
       var width = Map.Labels.Count;
-      var body = BoundedSpace.WidthOf(extent) > width
-        ? BoundedSpace.Narrow(extent, width)
+      var body = extent.Width > width
+        ? extent.Narrow(width)
         : extent;
 
-      var applied = ProjectionEngine.Apply(Body, body, context.PushLabels(Axis, Map));
+      var applied = ProjectionEngine.Apply(Body, body, context.PushLabels(Axis, Map, body.Origin));
 
       return new ProjectionResult<T>(applied.Value, applied.Advance, applied.Presence);
     }

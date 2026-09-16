@@ -10,11 +10,13 @@ namespace Unrect.Projections
   /// immediately to its right. Two wide, one tall, and nothing else — a wider value region or a gap
   /// would be a different shape, and this one says which it is.
   /// <para>
-  /// The value is handed back as a <see cref="CellValue"/>: the labels are the structure, the
-  /// values are data, so a blank value is <c>Blank</c> rather than a failure.
+  /// The value is handed back as the cell itself: the labels are the structure, the values are data,
+  /// so a blank value is a blank cell rather than a failure.
   /// </para>
   /// </summary>
-  internal sealed class FieldProjection : ProjectionBase<CellValue>
+  /// <typeparam name="TSpace">The space the pair's cells belong to.</typeparam>
+  internal sealed class FieldProjection<TSpace> : ProjectionBase<TSpace, Point<TSpace>>
+    where TSpace : class, ISpace
   {
     public FieldProjection(string label, Placement placement)
       : base(placement)
@@ -24,11 +26,11 @@ namespace Unrect.Projections
     }
 
     private string Label { get; }
-    private Func<CellValue, bool> Match { get; }
+    private Func<Point<ISpace>, bool> Match { get; }
 
     public override string Description => $"Field(\"{Label}\")";
 
-    public override ProjectionResult<CellValue> Project(ISpace extent, ProjectionContext context)
+    public override ProjectionResult<Point<TSpace>> Project(Plane<TSpace> extent, ProjectionContext context)
     {
       var size = extent.Area.Size;
 
@@ -39,19 +41,21 @@ namespace Unrect.Projections
         throw context.Failure(
           $"a Field must be two cells wide and one row tall; this one is {size.Width}x{size.Height}", extent);
 
-      var label = extent[0, 0];
+      if (!Match(extent.AsCanonical()[0, 0]))
+        throw context.Failure(
+          $"expected a label reading '{Label}' here, but this cell {Describe(extent[0, 0])}",
+          extent);
 
-      if (!Match(label))
-        throw context.Failure($"expected a label reading '{Label}' here, but this cell {Describe(label)}", extent);
-
-      return new ProjectionResult<CellValue>(extent[1, 0], size);
+      return new ProjectionResult<Point<TSpace>>(extent[1, 0], size);
     }
 
-    private static string Describe(CellValue cell)
-      => cell.IsBlank ? "is blank"
-       : cell.TryGetString() is string text ? $"reads '{text}'"
-       // An error says which error it is, in Core's own spelling, rather than "holds a Error".
-       : cell.Kind == CellKind.Error ? $"holds {cell}"
-       : $"holds a {cell.Kind}";
+    /// <summary>
+    /// What the cell that should have carried the label does instead, in the canonical vocabulary: a
+    /// cell that says a word of its own quotes it, and anything else says what it renders as.
+    /// </summary>
+    private static string Describe(Point<TSpace> cell)
+      => cell.AsText() is not string text ? "is blank"
+       : cell.IsText ? $"reads '{text}'"
+       : $"renders as '{text}'";
   }
 }

@@ -9,14 +9,14 @@ namespace Unrect.Strategies
   /// </summary>
   internal sealed class ColumnsWhileAnySizeStrategy : ISizeStrategy
   {
-    public ColumnsWhileAnySizeStrategy(Func<CellValue, bool> predicate)
+    public ColumnsWhileAnySizeStrategy(Func<Point<ISpace>, bool> predicate)
     {
       ColumnSelectionStrategy = ColumnStrategies.TakeColumnsWhileAny(predicate);
     }
 
     private IColumnStrategy ColumnSelectionStrategy { get; }
 
-    public Size GetSize(ISpace availableSpace)
+    public Size GetSize(Plane<ISpace> availableSpace)
       => new Size(ColumnSelectionStrategy.SelectColumns(availableSpace), availableSpace.Area.Height);
   }
 }

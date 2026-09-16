@@ -9,9 +9,10 @@ namespace Unrect.Projections
   /// Backs <c>Select</c>. Its own placement is applied by the engine like any other projection's,
   /// so <c>x.Select(f).OffsetBy(o)</c> and <c>x.OffsetBy(o).Select(f)</c> land in the same place.
   /// </summary>
-  internal sealed class MapProjection<TSource, TResult> : ProjectionBase<TResult>
+  internal sealed class MapProjection<TSpace, TSource, TResult> : ProjectionBase<TSpace, TResult>
+    where TSpace : class, ISpace
   {
-    public MapProjection(IProjection<TSource> inner, Func<TSource, TResult> selector, Placement placement)
+    public MapProjection(IProjection<TSpace, TSource> inner, Func<TSource, TResult> selector, Placement placement)
       : base(placement)
     {
       Inner = inner ?? throw new ArgumentNullException(nameof(inner));
@@ -19,7 +20,7 @@ namespace Unrect.Projections
       Children = new IProjection[] { inner };
     }
 
-    private IProjection<TSource> Inner { get; }
+    private IProjection<TSpace, TSource> Inner { get; }
     private Func<TSource, TResult> Selector { get; }
 
     public override string Description => "Select";
@@ -28,10 +29,18 @@ namespace Unrect.Projections
 
     public override bool IsTransparent => Name is null && !IsUnitBoundary;
 
-    public override ProjectionResult<TResult> Project(ISpace extent, ProjectionContext context)
+    public override ProjectionResult<TResult> Project(Plane<TSpace> extent, ProjectionContext context)
     {
       var applied = ProjectionEngine.Apply(Inner, extent, context);
-      return new ProjectionResult<TResult>(Selector(applied.Value), applied.Advance, applied.Presence);
+
+      try
+      {
+        return new ProjectionResult<TResult>(Selector(applied.Value), applied.Advance, applied.Presence);
+      }
+      catch (CellReadException failure)
+      {
+        throw context.Reading(failure, extent);
+      }
     }
   }
 }

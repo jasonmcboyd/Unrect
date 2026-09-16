@@ -75,7 +75,7 @@ namespace Unrect.Tests.Strategies
         { 2, 3 },   // no cell is blank or 1: stop
       });
 
-      var offset = SkipRowsWhileAny(v => v.IsBlank || v.TryGetInt() == 1).GetOffset(space);
+      var offset = SkipRowsWhileAny(v => v.IsBlank || v.AsText() == "1").GetOffset(space);
 
       Assert.Equal(2, offset.Size.Height);
     }
@@ -89,7 +89,7 @@ namespace Unrect.Tests.Strategies
         { 0, 1, 2 },
       });
 
-      var offset = SkipColumnsWhileAny(v => v.TryGetInt() == 1).GetOffset(space);
+      var offset = SkipColumnsWhileAny(v => v.AsText() == "1").GetOffset(space);
 
       Assert.Equal(2, offset.Size.Width);
       Assert.Equal(0, offset.Size.Height);

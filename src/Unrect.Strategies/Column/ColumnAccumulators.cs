@@ -14,9 +14,11 @@ namespace Unrect.Strategies
     /// rows taken into account in order, stopping as soon as the answer is settled or the rows run
     /// out.
     /// </summary>
-    internal static int Fold(IColumnAccumulator accumulator, ISpace space)
+    internal static int Fold(IColumnAccumulator accumulator, Plane<ISpace> space)
     {
-      for (var row = 0; !accumulator.IsSettled && row < space.Area.Height; row++)
+      // Asked a row at a time, as the row twin is: the same answer on a measured region, and on
+      // one still being discovered it reads no further than the fold itself reaches.
+      for (var row = 0; !accumulator.IsSettled && space.HasRow(row); row++)
         accumulator.Include(space, row);
 
       return accumulator.Count;

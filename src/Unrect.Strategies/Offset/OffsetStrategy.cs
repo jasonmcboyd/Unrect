@@ -11,6 +11,6 @@ namespace Unrect.Strategies
 
     private ISizeStrategy Strategy { get; }
 
-    public Offset GetOffset(ISpace availableSpace) => new Offset(Strategy.GetSize(availableSpace));
+    public Offset GetOffset(Plane<ISpace> availableSpace) => new Offset(Strategy.GetSize(availableSpace));
   }
 }

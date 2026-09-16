@@ -3,11 +3,12 @@ using System.Collections.Generic;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -21,9 +22,9 @@ namespace Unrect.Tests.Projections
   public class UntilProjectionTests
   {
     // A, B, Total, C, End — two rows, a caption, two more.
-    private static ISpace Sections() => Mixed(new object?[,] { { "A" }, { "B" }, { "Total" }, { "C" }, { "End" } });
+    private static ISheetCells Sections() => Mixed(new object?[,] { { "A" }, { "B" }, { "Total" }, { "C" }, { "End" } });
 
-    private static IProjection<IReadOnlyList<string>> Lines() => VerticalRepeat(Cell(c => c.GetString()));
+    private static IProjection<ISheetCells, IReadOnlyList<string>> Lines() => VerticalRepeat(TextCell());
 
     // --- The bound ------------------------------------------------------------------------------
 
@@ -44,7 +45,7 @@ namespace Unrect.Tests.Projections
       // Consumed is the bound, not what the inner projection read, so the next child's own seek
       // finds the caption at distance zero. This is what Until is for.
       var section = Until(RowContaining("Total")).Of(Lines());
-      var caption = On(RowContaining("Total")).Of(Cell(c => c.GetString()));
+      var caption = On(RowContaining("Total")).Of(TextCell());
 
       var read = VerticalFlow(v => $"[{string.Join(",", v.Next(section))}]+{v.Next(caption)}").Map(Sections());
 
@@ -63,7 +64,7 @@ namespace Unrect.Tests.Projections
       Assert.Empty(applied.Value);
       Assert.Equal(0, applied.Consumed.Height);
 
-      Assert.Throws<ProjectionException>(() => Until(RowContaining("Total")).Of(Cell(c => c.GetString())).Map(space));
+      Assert.Throws<ProjectionException>(() => Until(RowContaining("Total")).Of(TextCell()).Map(space));
     }
 
     [Fact]
@@ -76,11 +77,11 @@ namespace Unrect.Tests.Projections
 
       Assert.Equal(
         new[] { "A", "B", "Total", "C" },
-        VerticalRepeat(Cell(c => c.GetString()), separatedBy: BlankRows()).Map(space));
+        VerticalRepeat(TextCell(), separatedBy: BlankRows()).Map(space));
 
       Assert.Equal(
         new[] { "A", "B" },
-        Until(RowContaining("Total")).Of(VerticalRepeat(Cell(c => c.GetString()), separatedBy: BlankRows())).Map(space));
+        Until(RowContaining("Total")).Of(VerticalRepeat(TextCell(), separatedBy: BlankRows())).Map(space));
     }
 
     // --- A missing landmark ----------------------------------------------------------------------------
@@ -133,7 +134,7 @@ namespace Unrect.Tests.Projections
       // A missing start is exhaustion; a missing end is drift. The item was found, so the failure
       // is deeper than the item's own placement.
       var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalRepeat(Until(RowContaining("Nope")).Of(Cell(c => c.GetString()))).Map(Sections()));
+        VerticalRepeat(Until(RowContaining("Nope")).Of(TextCell())).Map(Sections()));
 
       Assert.Contains("VerticalRepeat[0]", failure.Path);
       Assert.Contains("no row containing 'Nope' exists to end this projection", failure.Message);
@@ -276,7 +277,7 @@ namespace Unrect.Tests.Projections
     {
       var space = Mixed(new object?[,] { { "a", "b", "Total", "d" } });
 
-      var cells = UntilColumn(ColumnContaining("Total")).Of(HorizontalRepeat(Cell(c => c.GetString())));
+      var cells = UntilColumn(ColumnContaining("Total")).Of(HorizontalRepeat(TextCell()));
       var applied = HorizontalFlow(h => string.Join(",", h.Next(cells))).Apply(space);
 
       Assert.Equal("a,b", applied.Value);
@@ -293,14 +294,14 @@ namespace Unrect.Tests.Projections
     // spelled by nesting, which the last test in this section pins.
 
     // 3 columns by 3 rows: a b Total / c d e / Stop f g.
-    private static ISpace BothAxes() => Mixed(new object?[,]
+    private static ISheetCells BothAxes() => Mixed(new object?[,]
     {
       { "a", "b", "Total" },
       { "c", "d", "e" },
       { "Stop", "f", "g" },
     });
 
-    private static IProjection<string> BlockExtent() => Range(b => $"{b.Width}x{b.Height}");
+    private static IProjection<ISheetCells, string> BlockExtent() => Range(b => $"{b.Width}x{b.Height}");
 
     [Fact]
     public void AColumnBoundOverARowBoundIsRefused()
@@ -419,7 +420,7 @@ namespace Unrect.Tests.Projections
 
       const string Inception = "By inception date";
 
-      var series = VerticalRepeat(Cell(c => c.GetString()), separatedBy: BlankRows());
+      var series = VerticalRepeat(TextCell(), separatedBy: BlankRows());
 
       var report = VerticalFlow(v => new
       {
@@ -458,8 +459,8 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ABoundRejectsANullLandmark()
     {
-      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => Until(null!).Of(Lines())).ParamName);
-      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => UntilColumn(null!).Of(Lines())).ParamName);
+      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => Until((IRowLandmark)null!).Of(Lines())).ParamName);
+      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => UntilColumn((IColumnLandmark)null!).Of(Lines())).ParamName);
     }
   }
 }

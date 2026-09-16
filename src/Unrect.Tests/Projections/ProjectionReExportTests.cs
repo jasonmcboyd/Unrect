@@ -2,17 +2,19 @@ using System;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
 {
   /// <summary>
-  /// The single-import claim: <c>using static Unrect.Projections.Projection;</c> is all a
+  /// The single-import claim: <c>using static Unrect.Projections.ProjectionBuilders&lt;Unrect.Core.ISheetCells&gt;;</c> is all a
   /// declaration needs. Every re-export here forwards to a strategy factory, and each test proves
   /// the forwarding by behaviour rather than by reference — a re-export wired to the wrong strategy
   /// would compile.
@@ -34,9 +36,9 @@ namespace Unrect.Tests.Projections
 
     // 3 columns by 2 rows: 1 0 3 / 2 0 4 — a blank middle column, so column-wise and row-wise
     // discovery give different answers and a mis-wired re-export cannot hide.
-    private static ISpace Patchy() => Grid(new[,] { { 1, 0, 3 }, { 2, 0, 4 } });
+    private static ISheetCells Patchy() => Grid(new[,] { { 1, 0, 3 }, { 2, 0, 4 } });
 
-    private static ISpace Block() => Grid(new[,] { { 1, 2, 3 }, { 4, 5, 6 } });
+    private static ISheetCells Block() => Grid(new[,] { { 1, 2, 3 }, { 4, 5, 6 } });
 
     /// <summary>The extent a strategy resolves to on the patchy grid, as "WxH".</summary>
     private static string Measure(IAreaStrategy area)
@@ -64,8 +66,8 @@ namespace Unrect.Tests.Projections
         Measure(RowsWhileAnyValue()));
 
       Assert.Equal(
-        Measure(SizeStrategies.RowsWhileAny(v => v.TryGetInt() == 1).ToAreaStrategy()),
-        Measure(RowsWhileAny(v => v.TryGetInt() == 1)));
+        Measure(SizeStrategies.RowsWhileAny(v => v.AsText() == "1").ToAreaStrategy()),
+        Measure(RowsWhileAny(v => v.AsText() == "1")));
     }
 
     [Fact]
@@ -76,8 +78,8 @@ namespace Unrect.Tests.Projections
         Measure(ColumnsWhileAnyValue()));
 
       Assert.Equal(
-        Measure(SizeStrategies.ColumnsWhileAny(v => v.TryGetInt() == 1).ToAreaStrategy()),
-        Measure(ColumnsWhileAny(v => v.TryGetInt() == 1)));
+        Measure(SizeStrategies.ColumnsWhileAny(v => v.AsText() == "1").ToAreaStrategy()),
+        Measure(ColumnsWhileAny(v => v.AsText() == "1")));
     }
 
     [Fact]
@@ -147,11 +149,11 @@ namespace Unrect.Tests.Projections
       });
 
       var section = Heading("Detail").Of(Range(b => b.Height));
-      var anchored = Below(RowContaining("Detail")).Of(Cell(c => c.GetString()));
+      var anchored = Below(RowContaining("Detail")).Of(TextCell());
 
       Assert.Equal(2, section.Map(space));
       Assert.Equal("a", anchored.Map(space));
-      Assert.Equal("Detail", On(RowContaining("Detail")).Of(Cell(c => c.GetString())).Map(space));
+      Assert.Equal("Detail", On(RowContaining("Detail")).Of(TextCell()).Map(space));
     }
 
     [Fact]
@@ -174,7 +176,7 @@ namespace Unrect.Tests.Projections
         Lines = v.Next(Table<Line>(bind => bind.Column(t => t.When, "Transaction Date"))),
       }).Map(card);
 
-      Assert.Equal("12-3456789", report.Entity["EIN"].GetString());
+      Assert.Equal("12-3456789", report.Entity["EIN"].Text());
       Assert.Equal(new DateTime(2026, 3, 4), report.Lines[0].When);
       Assert.Equal(10m, report.Lines[0].Amount);
 

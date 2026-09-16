@@ -1,4 +1,3 @@
-using Unrect.Core;
 using Unrect.Spreadsheets;
 
 namespace Unrect.Benchmarks
@@ -63,32 +62,32 @@ namespace Unrect.Benchmarks
     /// two headline rows only mean something as a ratio, and a ratio between different data means
     /// nothing.
     /// </summary>
-    public static CellValue Cell(int column, int row)
+    public static Cell At(int column, int row)
     {
       if (row == 0)
-        return CellValue.Of(Caption(column));
+        return Cell.Of(Caption(column));
 
       // A mix of kinds, so the parse pays what a real one pays rather than reading a column of
       // identical numbers.
       return (column % 4) switch
       {
-        0 => CellValue.Of("r" + row.ToString(System.Globalization.CultureInfo.InvariantCulture)),
-        1 => CellValue.Of(row * 10 + column),
-        2 => CellValue.Of((decimal)(row + column) / 4m),
-        _ => CellValue.Of(row % 2 == 0),
+        0 => Cell.Of("r" + row.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+        1 => Cell.Of(row * 10 + column),
+        2 => Cell.Of((decimal)(row + column) / 4m),
+        _ => Cell.Of(row % 2 == 0),
       };
     }
 
     /// <summary>The same rows as a materialised grid: the eager side of the headline ratio.</summary>
-    public static ISpace Grid(int rows = Rows, int columns = Columns)
+    public static ISheetCells Grid(int rows = Rows, int columns = Columns)
     {
-      var cells = new CellValue[rows, columns];
+      var cells = new Cell[rows, columns];
 
       for (var row = 0; row < rows; row++)
         for (var column = 0; column < columns; column++)
-          cells[row, column] = Cell(column, row);
+          cells[row, column] = At(column, row);
 
-      return new GridSpace(cells);
+      return SheetGrid.Of(cells);
     }
 
     /// <summary>A pool over a fresh synthetic source.</summary>
@@ -103,7 +102,7 @@ namespace Unrect.Benchmarks
     }
 
     /// <summary>A window over a synthetic sheet, sized in rows.</summary>
-    public static ISpace Windowed(ReaderPool pool, int windowRows = WindowRows, int rows = Rows, int columns = Columns)
+    public static ISheetCells Windowed(ReaderPool pool, int windowRows = WindowRows, int rows = Rows, int columns = Columns)
     {
       var chunkRows = SheetStore.DefaultChunkRows(columns);
 
@@ -159,8 +158,8 @@ namespace Unrect.Benchmarks
         return true;
       }
 
-      public CellValue this[int column] =>
-        column < 0 || column >= ColumnCount ? CellValue.Blank : Cell(column, _row);
+      public Cell this[int column] =>
+        column < 0 || column >= ColumnCount ? Cell.Blank : At(column, _row);
 
       public void Dispose()
       {

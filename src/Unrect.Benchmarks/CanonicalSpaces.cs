@@ -1,7 +1,7 @@
 using System;
 using System.Globalization;
 
-using Unrect.Core;
+using Unrect.Spreadsheets;
 
 namespace Unrect.Benchmarks
 {
@@ -28,7 +28,7 @@ namespace Unrect.Benchmarks
   /// <para><b>Why fixtures are lazy per-property, not a static initializer.</b> BenchmarkDotNet
   /// runs each benchmark in its own process, so a class-wide static initializer would build every
   /// Mega fixture in every process to serve the one that process needs -- several hundred megabytes
-  /// of <see cref="CellValue"/> for nothing. Each fixture caches itself on first touch, and each
+  /// of <see cref="Cell"/> for nothing. Each fixture caches itself on first touch, and each
   /// benchmark class touches what it needs from a <c>[GlobalSetup]</c>, which BenchmarkDotNet
   /// excludes from measurement. The rule: <b>no benchmark may build a fixture inside a measured
   /// operation</b> -- construction is the subject of exactly one family (Values), where it is
@@ -59,18 +59,18 @@ namespace Unrect.Benchmarks
 
     // ----- Dense numeric: every cell a number. The engine's cheapest possible content. -----
 
-    private static ISpace? _megaDenseNumeric;
-    public static ISpace MegaDenseNumeric => _megaDenseNumeric ??= new GridSpace(DenseNumericCells(MegaRows));
+    private static ISheetCells? _megaDenseNumeric;
+    public static ISheetCells MegaDenseNumeric => _megaDenseNumeric ??= SheetGrid.Of(DenseNumericCells(MegaRows));
 
     // ----- Dense mixed: kinds cycle by column, so a sweep sees every branch of the value model. -----
 
-    private static ISpace? _megaDenseMixed;
-    public static ISpace MegaDenseMixed => _megaDenseMixed ??= new GridSpace(DenseMixedCells(MegaRows));
+    private static ISheetCells? _megaDenseMixed;
+    public static ISheetCells MegaDenseMixed => _megaDenseMixed ??= SheetGrid.Of(DenseMixedCells(MegaRows));
 
     // ----- Sparse: the K-1 shape. Same extent as dense, a quarter of the values. -----
 
-    private static ISpace? _megaSparse;
-    public static ISpace MegaSparse => _megaSparse ??= new GridSpace(SparseCells(MegaRows));
+    private static ISheetCells? _megaSparse;
+    public static ISheetCells MegaSparse => _megaSparse ??= SheetGrid.Of(SparseCells(MegaRows));
 
     // ----- Raw arrays, for the adaptation benchmarks that measure GridSpace.Create itself. -----
 
@@ -80,32 +80,26 @@ namespace Unrect.Benchmarks
     private static object?[,]? _megaObjects;
     public static object?[,] MegaObjects => _megaObjects ??= Objects(MegaRows);
 
-    // ----- Flat cell arrays: the value model with no space in the way. -----
+    // ----- Dense text: every cell its own string, for the rendering read. -----
 
-    private static CellValue[]? _megaNumberCells;
-    public static CellValue[] MegaNumberCells => _megaNumberCells ??= Cells(MegaCells, i => CellValue.Of(i * 1.5));
-
-    private static CellValue[]? _megaTextCells;
-    public static CellValue[] MegaTextCells => _megaTextCells ??= Cells(MegaCells, i => CellValue.Of(Label(i)));
-
-    private static CellValue[]? _megaMixedCells;
-    public static CellValue[] MegaMixedCells => _megaMixedCells ??= Cells(MegaCells, MixedCell);
+    private static ISheetCells? _megaDenseText;
+    public static ISheetCells MegaDenseText => _megaDenseText ??= SheetGrid.Of(DenseTextCells(MegaRows));
 
     // ----- Tabular: a header row over typed columns that bind to SummaryRow by caption. -----
 
-    private static ISpace? _largeTabular;
-    public static ISpace LargeTabular => _largeTabular ??= new GridSpace(TabularCells(LargeRows));
+    private static ISheetCells? _largeTabular;
+    public static ISheetCells LargeTabular => _largeTabular ??= SheetGrid.Of(TabularCells(LargeRows));
 
-    private static ISpace? _megaTabular;
-    public static ISpace MegaTabular => _megaTabular ??= new GridSpace(TabularCells(MegaRows));
+    private static ISheetCells? _megaTabular;
+    public static ISheetCells MegaTabular => _megaTabular ??= SheetGrid.Of(TabularCells(MegaRows));
 
     // ----- Documents: the investor-IRR shape, the end-to-end subject. -----
 
-    private static ISpace? _smallDocument;
-    public static ISpace SmallDocument => _smallDocument ??= new GridSpace(DocumentCells(SmallDocumentInvestors));
+    private static ISheetCells? _smallDocument;
+    public static ISheetCells SmallDocument => _smallDocument ??= SheetGrid.Of(DocumentCells(SmallDocumentInvestors));
 
-    private static ISpace? _largeDocument;
-    public static ISpace LargeDocument => _largeDocument ??= new GridSpace(DocumentCells(LargeDocumentInvestors));
+    private static ISheetCells? _largeDocument;
+    public static ISheetCells LargeDocument => _largeDocument ??= SheetGrid.Of(DocumentCells(LargeDocumentInvestors));
 
     /// <summary>
     /// The smaller of the two end-to-end sizes, at roughly 2 ms a parse.
@@ -135,15 +129,15 @@ namespace Unrect.Benchmarks
     /// <summary>The text a <c>RowContaining</c> seek looks for in the landmark fixtures.</summary>
     public const string Landmark = "LANDMARK";
 
-    private static ISpace? _landmarkNear;
-    public static ISpace LandmarkNear => _landmarkNear ??= new GridSpace(LandmarkCells(MegaRows, MegaRows / 10));
+    private static ISheetCells? _landmarkNear;
+    public static ISheetCells LandmarkNear => _landmarkNear ??= SheetGrid.Of(LandmarkCells(MegaRows, MegaRows / 10));
 
-    private static ISpace? _landmarkFar;
-    public static ISpace LandmarkFar => _landmarkFar ??= new GridSpace(LandmarkCells(MegaRows, MegaRows * 9 / 10));
+    private static ISheetCells? _landmarkFar;
+    public static ISheetCells LandmarkFar => _landmarkFar ??= SheetGrid.Of(LandmarkCells(MegaRows, MegaRows * 9 / 10));
 
     /// <summary>No landmark anywhere: the seek that scans the whole grid and finds nothing.</summary>
-    private static ISpace? _landmarkAbsent;
-    public static ISpace LandmarkAbsent => _landmarkAbsent ??= new GridSpace(LandmarkCells(MegaRows, -1));
+    private static ISheetCells? _landmarkAbsent;
+    public static ISheetCells LandmarkAbsent => _landmarkAbsent ??= SheetGrid.Of(LandmarkCells(MegaRows, -1));
 
     // ----- Blocks: many small regions separated by blank rows, the Repeat subject. -----
 
@@ -152,22 +146,33 @@ namespace Unrect.Benchmarks
 
     public const int BlockRows = 4;
 
-    private static ISpace? _repeatBlocks;
-    public static ISpace RepeatBlocks => _repeatBlocks ??= new GridSpace(BlockCells(BlockCount, BlockRows));
+    private static ISheetCells? _repeatBlocks;
+    public static ISheetCells RepeatBlocks => _repeatBlocks ??= SheetGrid.Of(BlockCells(BlockCount, BlockRows));
 
     /// <summary>A leading run of blank rows, sized so skipping it is the whole measurement.</summary>
-    private static ISpace? _blankLed;
-    public static ISpace BlankLed => _blankLed ??= new GridSpace(BlankLedCells(MegaRows, MegaRows / 2));
+    private static ISheetCells? _blankLed;
+    public static ISheetCells BlankLed => _blankLed ??= SheetGrid.Of(BlankLedCells(MegaRows, MegaRows / 2));
 
     // ----- Builders -----
 
-    private static CellValue[,] DenseNumericCells(int rows)
+    private static Cell[,] DenseNumericCells(int rows)
     {
-      var cells = new CellValue[rows, Columns];
+      var cells = new Cell[rows, Columns];
 
       for (int row = 0; row < rows; row++)
         for (int column = 0; column < Columns; column++)
-          cells[row, column] = CellValue.Of(row * Columns + column);
+          cells[row, column] = Cell.Of(row * Columns + column);
+
+      return cells;
+    }
+
+    private static Cell[,] DenseTextCells(int rows)
+    {
+      var cells = new Cell[rows, Columns];
+
+      for (int row = 0; row < rows; row++)
+        for (int column = 0; column < Columns; column++)
+          cells[row, column] = Cell.Of(Label(row * Columns + column));
 
       return cells;
     }
@@ -182,9 +187,9 @@ namespace Unrect.Benchmarks
     /// cycle one column per row, so the blanks fall on a diagonal instead.
     /// </para>
     /// </summary>
-    private static CellValue[,] DenseMixedCells(int rows)
+    private static Cell[,] DenseMixedCells(int rows)
     {
-      var cells = new CellValue[rows, Columns];
+      var cells = new Cell[rows, Columns];
 
       for (int row = 0; row < rows; row++)
         for (int column = 0; column < Columns; column++)
@@ -204,82 +209,82 @@ namespace Unrect.Benchmarks
     /// it is labelled, and the amounts against it are sparse.
     /// </para>
     /// </summary>
-    private static CellValue[,] SparseCells(int rows)
+    private static Cell[,] SparseCells(int rows)
     {
-      var cells = new CellValue[rows, Columns];
+      var cells = new Cell[rows, Columns];
       var random = new Random(20260903);
 
       for (int row = 0; row < rows; row++)
       {
-        cells[row, 0] = CellValue.Of(Label(row));
+        cells[row, 0] = Cell.Of(Label(row));
 
         for (int column = 1; column < Columns; column++)
           cells[row, column] = random.NextDouble() < SparseDensity
-            ? CellValue.Of(row * Columns + column)
-            : CellValue.Blank;
+            ? Cell.Of(row * Columns + column)
+            : Cell.Blank;
       }
 
       return cells;
     }
 
-    private static CellValue[,] LandmarkCells(int rows, int landmarkRow)
+    private static Cell[,] LandmarkCells(int rows, int landmarkRow)
     {
       var cells = DenseNumericCells(rows);
 
       // The seek reads column 0 of every row until it matches, so only column 0 can carry the
       // landmark -- putting it anywhere else would make the "hit" fixtures scan to the end too.
       if (landmarkRow >= 0)
-        cells[landmarkRow, 0] = CellValue.Of(Landmark);
+        cells[landmarkRow, 0] = Cell.Of(Landmark);
 
       return cells;
     }
 
-    private static CellValue[,] BlankLedCells(int rows, int blankRows)
+    private static Cell[,] BlankLedCells(int rows, int blankRows)
     {
-      var cells = new CellValue[rows, Columns];
+      var cells = new Cell[rows, Columns];
 
       for (int row = 0; row < rows; row++)
         for (int column = 0; column < Columns; column++)
-          cells[row, column] = row < blankRows ? CellValue.Blank : CellValue.Of(row * Columns + column);
+          cells[row, column] = row < blankRows ? Cell.Blank : Cell.Of(row * Columns + column);
 
       return cells;
     }
 
-    private static CellValue[,] BlockCells(int blocks, int blockRows)
+    private static Cell[,] BlockCells(int blocks, int blockRows)
     {
       // Every block is blockRows tall and followed by one blank separator row.
-      var cells = new CellValue[blocks * (blockRows + 1), Columns];
+      var cells = new Cell[blocks * (blockRows + 1), Columns];
 
       for (int block = 0; block < blocks; block++)
         for (int row = 0; row < blockRows; row++)
           for (int column = 0; column < Columns; column++)
-            cells[block * (blockRows + 1) + row, column] = CellValue.Of(block * blockRows + row + column);
+            cells[block * (blockRows + 1) + row, column] = Cell.Of(block * blockRows + row + column);
 
 
       return cells;
     }
 
-    private static CellValue[,] TabularCells(int rows)
+    private static Cell[,] TabularCells(int rows)
     {
       // One header row, then rows that bind to SummaryRow: text, four decimals, a double. The
       // captions are what Table<T>() matches members against.
-      var cells = new CellValue[rows + 1, 6];
+      var cells = new Cell[rows + 1, 6];
 
-      cells[0, 0] = CellValue.Of("Investor");
-      cells[0, 1] = CellValue.Of("Contribution");
-      cells[0, 2] = CellValue.Of("Distribution");
-      cells[0, 3] = CellValue.Of("Fee");
-      cells[0, 4] = CellValue.Of("End Balance");
-      cells[0, 5] = CellValue.Of("Irr");
+      cells[0, 0] = Cell.Of("Investor");
+      cells[0, 1] = Cell.Of("Contribution");
+      cells[0, 2] = Cell.Of("Distribution");
+      cells[0, 3] = Cell.Of("Fee");
+      cells[0, 4] = Cell.Of("End Balance");
+      cells[0, 5] = Cell.Of("Irr");
 
       for (int row = 1; row <= rows; row++)
       {
-        cells[row, 0] = CellValue.Of(Label(row));
-        cells[row, 1] = CellValue.Of(1000m + row);
-        cells[row, 2] = CellValue.Of(250m + row);
-        cells[row, 3] = CellValue.Of(15m + row % 40);
-        cells[row, 4] = CellValue.Of(800m + row);
-        cells[row, 5] = CellValue.Of(0.05 + row % 100 / 1000.0);
+        cells[row, 0] = Cell.Of(Label(row));
+        cells[row, 1] = Cell.Of(1000m + row);
+        cells[row, 2] = Cell.Of(250m + row);
+        cells[row, 3] = Cell.Of(15m + row % 40);
+        cells[row, 4] = Cell.Of(800m + row);
+        cells[row, 5] = Cell.Of(0.05 + row % 100 / 1000.0);
       }
 
       return cells;
@@ -291,68 +296,68 @@ namespace Unrect.Benchmarks
     /// <c>examples/investor-irr.xlsx</c> -- gap sizes included, since the gaps are what the
     /// placement defaults and the <c>Until</c> bound actually resolve against.
     /// </summary>
-    private static CellValue[,] DocumentCells(int investors)
+    private static Cell[,] DocumentCells(int investors)
     {
       var series = investors * (1 + DocumentBlockRows + 1);   // header + rows + separator, per block
-      var cells = new CellValue[4 + 1 + 1 + investors + 3 + 2 + series + 1 + 1 + series, 6];
+      var cells = new Cell[4 + 1 + 1 + investors + 3 + 2 + series + 1 + 1 + series, 6];
       int row = 0;
 
-      cells[row++, 0] = CellValue.Of("Investor IRR Report");
-      cells[row++, 0] = CellValue.Of("Growth Fund II, LP");
-      cells[row++, 0] = CellValue.Of(new DateTime(2026, 6, 30));
-      cells[row++, 0] = CellValue.Of("RPT-00214");
+      cells[row++, 0] = Cell.Of("Investor IRR Report");
+      cells[row++, 0] = Cell.Of("Growth Fund II, LP");
+      cells[row++, 0] = Cell.Of(new DateTime(2026, 6, 30));
+      cells[row++, 0] = Cell.Of("RPT-00214");
       row++;                                                   // the gap the table's placement absorbs
 
-      cells[row, 0] = CellValue.Of("Investors");
-      cells[row, 1] = CellValue.Of("Contribution ITD");
-      cells[row, 2] = CellValue.Of("Distribution ITD");
-      cells[row, 3] = CellValue.Of("Management Fee ITD");
-      cells[row, 4] = CellValue.Of("End Balance");
-      cells[row, 5] = CellValue.Of("IRR");
+      cells[row, 0] = Cell.Of("Investors");
+      cells[row, 1] = Cell.Of("Contribution ITD");
+      cells[row, 2] = Cell.Of("Distribution ITD");
+      cells[row, 3] = Cell.Of("Management Fee ITD");
+      cells[row, 4] = Cell.Of("End Balance");
+      cells[row, 5] = Cell.Of("IRR");
       row++;
 
       for (int investor = 0; investor < investors; investor++)
       {
-        cells[row, 0] = CellValue.Of(Investor(investor));
-        cells[row, 1] = CellValue.Of(500000m + investor);
-        cells[row, 2] = CellValue.Of(125000m + investor);
-        cells[row, 3] = CellValue.Of(15000m + investor);
-        cells[row, 4] = CellValue.Of(402500m + investor);
-        cells[row, 5] = CellValue.Of(0.08 + investor % 50 / 1000.0);
+        cells[row, 0] = Cell.Of(Investor(investor));
+        cells[row, 1] = Cell.Of(500000m + investor);
+        cells[row, 2] = Cell.Of(125000m + investor);
+        cells[row, 3] = Cell.Of(15000m + investor);
+        cells[row, 4] = Cell.Of(402500m + investor);
+        cells[row, 5] = Cell.Of(0.08 + investor % 50 / 1000.0);
         row++;
       }
 
       row += 3;
-      cells[row++, 0] = CellValue.Of(DetailsCaption);
-      cells[row++, 0] = CellValue.Of(TransferDateCaption);
+      cells[row++, 0] = Cell.Of(DetailsCaption);
+      cells[row++, 0] = Cell.Of(TransferDateCaption);
       row = WriteBlocks(cells, row, investors, 2024);
 
       // Two blank rows before the caption, as in the real workbook: the last block's own separator
       // supplies the first, so only one more is written here.
       row += 1;
-      cells[row++, 0] = CellValue.Of(InceptionCaption);
+      cells[row++, 0] = Cell.Of(InceptionCaption);
       WriteBlocks(cells, row, investors, 2023);
 
 
       return cells;
     }
 
-    private static int WriteBlocks(CellValue[,] cells, int row, int investors, int year)
+    private static int WriteBlocks(Cell[,] cells, int row, int investors, int year)
     {
       for (int investor = 0; investor < investors; investor++)
       {
-        cells[row, 0] = CellValue.Of("Investor Name");
-        cells[row, 1] = CellValue.Of("Date");
-        cells[row, 2] = CellValue.Of("Transaction");
-        cells[row, 3] = CellValue.Of("IRR");
+        cells[row, 0] = Cell.Of("Investor Name");
+        cells[row, 1] = Cell.Of("Date");
+        cells[row, 2] = Cell.Of("Transaction");
+        cells[row, 3] = Cell.Of("IRR");
         row++;
 
         for (int flow = 0; flow < DocumentBlockRows; flow++)
         {
-          cells[row, 0] = CellValue.Of(Investor(investor));
-          cells[row, 1] = CellValue.Of(new DateTime(year + flow % 2, 1 + flow % 12, 1 + flow));
-          cells[row, 2] = CellValue.Of(flow % 2 == 0 ? "Contribution" : "Distribution");
-          cells[row, 3] = CellValue.Of(0.03 + flow / 100.0);
+          cells[row, 0] = Cell.Of(Investor(investor));
+          cells[row, 1] = Cell.Of(new DateTime(year + flow % 2, 1 + flow % 12, 1 + flow));
+          cells[row, 2] = Cell.Of(flow % 2 == 0 ? "Contribution" : "Distribution");
+          cells[row, 3] = Cell.Of(0.03 + flow / 100.0);
           row++;
         }
 
@@ -391,24 +396,14 @@ namespace Unrect.Benchmarks
       return values;
     }
 
-    private static CellValue[] Cells(int count, Func<int, CellValue> map)
-    {
-      var cells = new CellValue[count];
-
-      for (int i = 0; i < count; i++)
-        cells[i] = map(i);
-
-      return cells;
-    }
-
     /// <summary>Kinds cycle, including blanks, so a sweep pays for every branch in proportion.</summary>
-    private static CellValue MixedCell(int i) => (i % 5) switch
+    private static Cell MixedCell(int i) => (i % 5) switch
     {
-      0 => CellValue.Of(Label(i)),
-      1 => CellValue.Of(i * 1.5),
-      2 => CellValue.Of(new DateTime(2020, 1, 1).AddDays(i % 3650)),
-      3 => CellValue.Of(i % 2 == 0),
-      _ => CellValue.Blank,
+      0 => Cell.Of(Label(i)),
+      1 => Cell.Of(i * 1.5),
+      2 => Cell.Of(new DateTime(2020, 1, 1).AddDays(i % 3650)),
+      3 => Cell.Of(i % 2 == 0),
+      _ => Cell.Blank,
     };
 
     private static string Label(int i) => "row-" + i.ToString(CultureInfo.InvariantCulture);

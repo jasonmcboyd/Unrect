@@ -1,7 +1,6 @@
 using System;
 using System.Runtime.CompilerServices;
 
-using Unrect.Core;
 using Unrect.Spreadsheets;
 
 using Xunit;
@@ -34,7 +33,7 @@ namespace Unrect.Tests.Streaming
     /// at all. A literal would be interned by the runtime and every assertion here would pass for
     /// the wrong reason.
     /// </summary>
-    private static CellValue Fresh(string value) => CellValue.Of(new string(value.ToCharArray()));
+    private static Cell Fresh(string value) => Cell.Of(new string(value.ToCharArray()));
 
     /// <summary>A sheet whose every cell is a fresh copy of one repeated value.</summary>
     private static FakeSheet Repeating(string name, int rows, int columns, string value = "Capital Call") =>
@@ -80,7 +79,7 @@ namespace Unrect.Tests.Streaming
       // the case the table cannot help, and it must say that rather than appear to have helped: no
       // hits, no bytes, and every cell still holding the instance it arrived with.
       var table = new StringInterner(1024);
-      var cells = new CellValue[20];
+      var cells = new Cell[20];
 
       for (var index = 0; index < cells.Length; index++)
         cells[index] = table.Share(Fresh($"ACCT-{index:D5}"));
@@ -99,7 +98,7 @@ namespace Unrect.Tests.Streaming
     [Fact]
     public void EveryKindButTextIsHandedBackExactlyAsItArrived()
     {
-      // Strings only. Every other kind is inline in the 24-byte CellValue and has no heap object to
+      // Strings only. Every other kind is inline in the 24-byte Cell and has no heap object to
       // share, so the table must pass it through untouched and enter nothing on its account.
       //
       // Two of these cannot arrive through the spreadsheet door at all — a reader hands the adapter a
@@ -111,15 +110,15 @@ namespace Unrect.Tests.Streaming
 
       var values = new[]
       {
-        CellValue.Blank,
-        CellValue.Of(1.5),
-        CellValue.Of(12.34m),
-        CellValue.Of(7),
-        CellValue.Of(long.MaxValue),
-        CellValue.Of(new DateTime(2026, 3, 31)),
-        CellValue.Of(true),
-        CellValue.OfError(CellError.Value),
-        CellValue.OfError(CellError.Other, "#SPILL!")
+        Cell.Blank,
+        Cell.Of(1.5),
+        Cell.Of(12.34m),
+        Cell.Of(7),
+        Cell.Of(long.MaxValue),
+        Cell.Of(new DateTime(2026, 3, 31)),
+        Cell.Of(true),
+        Cell.OfError(CellError.Value),
+        Cell.OfError(CellError.Other, "#SPILL!")
       };
 
       // Twice each, so a table that had entered one of them would show it as a hit on the second.
@@ -129,7 +128,7 @@ namespace Unrect.Tests.Streaming
         Assert.Equal(value, table.Share(value));
       }
 
-      Assert.Equal(12.34m, table.Share(CellValue.Of(12.34m)).GetDecimal());
+      Assert.Equal(12.34m, table.Share(Cell.Of(12.34m)).GetDecimal());
 
       var statistics = table.Snapshot();
 
@@ -327,8 +326,8 @@ namespace Unrect.Tests.Streaming
       // chunk fill hands out avoidable duplicates.
       var store = Store(new FakeRowSource(Repeating("Data", 20, 1)), rows: 20, columns: 1, chunkRows: 5, windowChunks: 4);
 
-      var first = store.GetCell(0, 0, 0, 1).GetString();
-      var acrossTheBoundary = store.GetCell(0, 9, 9, 1).GetString();
+      var first = store.GetCell(0, 0).AsText();
+      var acrossTheBoundary = store.GetCell(0, 9).AsText();
 
       Assert.Same(first, acrossTheBoundary);
       Assert.Equal(2, store.Snapshot().ChunkLoads);   // two fills, so the two cells really were adapted apart
@@ -344,12 +343,12 @@ namespace Unrect.Tests.Streaming
       // pass. The reload is real: the counter says so.
       var store = Store(new FakeRowSource(Repeating("Data", 60, 1)), rows: 60, columns: 1, chunkRows: 5, windowChunks: 4);
 
-      var first = store.GetCell(0, 0, 0, 1).GetString();
+      var first = store.GetCell(0, 0).AsText();
 
       for (var row = 0; row < 60; row++)
-        _ = store.GetCell(0, row, row, 1);
+        _ = store.GetCell(0, row);
 
-      var afterTheReload = store.GetCell(0, 0, 0, 1).GetString();
+      var afterTheReload = store.GetCell(0, 0).AsText();
 
       Assert.Equal(1, store.Snapshot().ChunkReloads);
       Assert.Same(first, afterTheReload);
@@ -368,7 +367,7 @@ namespace Unrect.Tests.Streaming
       var summary = book.Sheet("Summary");
       var detail = book.Sheet("Detail");
 
-      Assert.Same(summary[0, 0].GetString(), detail[0, 0].GetString());
+      Assert.Same(summary.AsText(0, 0), detail.AsText(0, 0));
 
       // One distinct value for two sheets of three cells each: five of the six joined the first.
       var statistics = book.InterningStatistics;
@@ -387,7 +386,7 @@ namespace Unrect.Tests.Streaming
       // whose pinned renders this change does not touch), and the book's line is where the story is.
       using var book = Book(new FakeRowSource(Repeating("Data", 8, 2)));
 
-      _ = book.Sheet("Data")[0, 0];
+      _ = book.Sheet("Data").AsText(0, 0);
 
       var sheetLine = book.Statistics("Data")!.Value.ToString();
 
@@ -419,8 +418,8 @@ namespace Unrect.Tests.Streaming
 
       var sheet = book.Sheet("Data");
 
-      Assert.NotSame(sheet[0, 0].GetString(), sheet[0, 1].GetString());
-      Assert.Equal(sheet[0, 0], sheet[0, 1]);
+      Assert.NotSame(sheet.AsText(0, 0), sheet.AsText(0, 1));
+      Assert.Equal(sheet.AsText(0, 0), sheet.AsText(0, 1));
 
       var statistics = book.InterningStatistics;
 
@@ -444,7 +443,7 @@ namespace Unrect.Tests.Streaming
       var sheet = book.Sheet("Data");
 
       for (var row = 0; row < 4; row++)
-        Assert.Equal($"Fund {row}", sheet[0, row].GetString());
+        Assert.Equal($"Fund {row}", sheet.AsText(0, row));
 
       var statistics = book.InterningStatistics;
 
@@ -479,7 +478,7 @@ namespace Unrect.Tests.Streaming
       // of asking.
       var book = Book(new FakeRowSource(Repeating("Data", 6, 2)));
 
-      _ = book.Sheet("Data")[0, 0];
+      _ = book.Sheet("Data").AsText(0, 0);
 
       var before = book.InterningStatistics;
 
@@ -524,7 +523,7 @@ namespace Unrect.Tests.Streaming
     private static WeakReference ReadThenDispose()
     {
       var book = Book(new FakeRowSource(Repeating("Data", 6, 2)));
-      var reference = new WeakReference(book.Sheet("Data")[0, 0].GetString());
+      var reference = new WeakReference(book.Sheet("Data").AsText(0, 0));
 
       book.Dispose();
 

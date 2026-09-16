@@ -1,11 +1,11 @@
 using System;
 
-using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -25,7 +25,7 @@ namespace Unrect.Tests.Projections
   public class UnderTests
   {
     // A junk row, a caption, two data rows.
-    private static ISpace Sheet() => Mixed(new object?[,]
+    private static ISheetCells Sheet() => Mixed(new object?[,]
     {
       { "junk", null },
       { "Detail", null },
@@ -33,7 +33,7 @@ namespace Unrect.Tests.Projections
       { "b", 2 },
     });
 
-    private static IProjection<int> Lines() => Range(b => b.Height);
+    private static IProjection<ISheetCells, int> Lines() => Range(b => b.Height);
 
     // --- The desugared tree ---------------------------------------------------------------------------
 
@@ -75,9 +75,9 @@ namespace Unrect.Tests.Projections
     public void TheSectionIsTheChildAfterTheCaptions()
     {
       var failure = Assert.Throws<ProjectionException>(() =>
-        Heading("Detail").Of(Cell(c => c.GetInt())).Map(Sheet()));
+        Heading("Detail").Of(IntCell()).Map(Sheet()));
 
-      Assert.Equal("Heading -> Cell#2", failure.Path);
+      Assert.Equal("Heading -> Integer#2", failure.Path);
     }
 
     // --- Value and extent ------------------------------------------------------------------------------
@@ -151,14 +151,14 @@ namespace Unrect.Tests.Projections
       // ever wrote.
       var captionMiss = Assert.Throws<ProjectionException>(() => Heading("Nope").Of(Lines()).Map(Sheet()));
       var sectionMiss = Assert.Throws<ProjectionException>(() =>
-        Heading("Detail").Of(Cell(c => c.GetInt())).Map(Sheet()));
+        Heading("Detail").Of(IntCell()).Map(Sheet()));
 
       Assert.DoesNotContain("'caption'", captionMiss.Path);
       Assert.DoesNotContain("'projection'", sectionMiss.Path);
 
       // ...and what they render as instead is rung 3, the description and the ordinal.
       Assert.Contains("Caption(\"Nope\")#1", captionMiss.Path);
-      Assert.Contains("Cell#2", sectionMiss.Path);
+      Assert.Contains("Integer#2", sectionMiss.Path);
     }
 
     // --- Composition ---------------------------------------------------------------------------------------

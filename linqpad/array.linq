@@ -5,14 +5,17 @@
   <Namespace>Unrect</Namespace>
   <Namespace>Unrect.Core</Namespace>
   <Namespace>Unrect.Projections</Namespace>
-  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Core.ISpace&gt;</Namespace>
+  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Core.IValueCells&lt;int&gt;&gt;</Namespace>
 </Query>
 
 // Projections over an in-memory array. The adapter decides blankness where data enters
 // the system — in this grid, zero means empty — and everything above it is the same
 // vocabulary the spreadsheet scripts use — down to the header. The query's namespace imports name
-// this file's space once, `using static Unrect.Projections.ProjectionBuilders<Unrect.Core.ISpace>`,
-// which is the line the spreadsheet scripts carry too: an ISpace is an ISpace.
+// this file's space once, `using static Unrect.Projections.ProjectionBuilders<Unrect.Core.IValueCells<int>>`,
+// which is the same line the spreadsheet scripts carry with ISheetCells in it: one vocabulary, each
+// file naming the space it is written over. What differs is only what a cell can be asked — a point
+// over a grid of values answers Value(), a point over a sheet answers Decimal() — because the
+// reading a space can promise is the space's own.
 var nums = new[,]
 {
 	{ 1,  2,  3,  4 },
@@ -32,9 +35,9 @@ var space = GridSpace.Create(nums, isBlank: v => v == 0);
 // investors-by-deal, in miniature. Nothing here counts rows: firstRow takes one, rest discovers
 // the remainder of the block by running out of values at the separator, and the separator itself
 // is what carries the repeat across the gap to the next block.
-var firstRow = Row(r => r.Select(v => v.GetInt()).ToArray());
+var firstRow = Row(r => r.Select(p => p.Value()).ToArray());
 
-var rest = Range(b => b.Rows.Select(r => r.Select(v => v.GetInt()).ToArray()).ToArray());
+var rest = Range(b => b.Rows.Select(r => r.Select(p => p.Value()).ToArray()).ToArray());
 
 var block = VerticalFlow(v => new
 {

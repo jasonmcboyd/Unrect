@@ -3,10 +3,12 @@ using System.Linq;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -20,15 +22,81 @@ namespace Unrect.Tests.Projections
   {
     // One column, two rows: a label over a number. The winning alternative below consumes both, so
     // these tests see no unconsumed-space diagnostic to filter out.
-    private static ISpace Pair() => Mixed(new object?[,] { { "x" }, { 5 } });
+    private static ISheetCells Pair() => Mixed(new object?[,] { { "x" }, { 5 } });
 
     /// <summary>Reads the pair as text-then-number: what the file actually is.</summary>
-    private static IProjection<int> TextFirst(string name = "vendor A layout")
-      => VerticalFlow(v => { v.Next(Cell(c => c.GetString())); return v.Next(Cell(c => c.GetInt())); }).Named(name);
+    private static IProjection<ISheetCells, int> TextFirst(string name = "vendor A layout")
+      => VerticalFlow(v => { v.Next(TextCell()); return v.Next(IntCell()); }).Named(name);
 
     /// <summary>Reads the pair as number-then-number: a layout this file is not in.</summary>
-    private static IProjection<int> NumberFirst(string name = "vendor B layout")
-      => VerticalFlow(v => { v.Next(Cell(c => c.GetInt())); return v.Next(Cell(c => c.GetInt())); }).Named(name);
+    private static IProjection<ISheetCells, int> NumberFirst(string name = "vendor B layout")
+      => VerticalFlow(v => { v.Next(IntCell()); return v.Next(IntCell()); }).Named(name);
+
+    // --- The degeneracy, named ----------------------------------------------------------------------
+    //
+    // A Choice discriminates only as far as its alternatives can fail. AsText() is TOTAL over a cell
+    // that has anything in it — every space renders every cell — so an AsText() alternative wins
+    // against any data the later arms could have read, and the Choice is a Choice in spelling only.
+    // It is not refused, because refusing it would mean the vocabulary deciding which readings are
+    // worth alternating over; it is pinned by name, so the shape is on record and a reader who meets
+    // it in the wild can grep for why.
+
+    [Fact]
+    public void AsTextFirstIsDegenerate()
+    {
+      // The degenerate spelling. The cell holds a number, the second arm reads numbers, and the
+      // first arm still wins — because "what does this cell say" has an answer for a number too.
+      // Nothing is even reported: a Choice raises an Info per alternative it PASSED OVER, and this
+      // one passed over none.
+      var readEither = Choice(
+        AsText().Select(text => $"text:{text}"),
+        Decimal().Select(amount => $"number:{amount}"));
+
+      var read = readEither.MapWithDiagnostics(Mixed(new object?[,] { { 1.5m } }));
+
+      Assert.Equal("text:1.5", read.Value);
+      Assert.DoesNotContain(read.Diagnostics, d => d.Severity == DiagnosticSeverity.Info);
+
+      // And over text, which is the only data the declaration's author can have meant it to pick
+      // the first arm for — the same answer, so the second arm is unreachable rather than unlucky.
+      Assert.Equal("text:n/a", readEither.Map(Mixed(new object?[,] { { "n/a" } })));
+    }
+
+    [Fact]
+    public void AndTheOnlyThingItStillDiscriminatesOnIsAbsence()
+    {
+      // The exception that proves the rule, and the reason AsText() is total rather than infallible:
+      // a blank cell says nothing, so the first arm does fail, and the Choice does choose. Nothing
+      // else about the cell can make it.
+      var readEither = Choice(
+        AsText().Select(text => $"text:{text}"),
+        Point().Select(_ => "absent"));
+
+      Assert.Equal("absent", readEither.Map(Mixed(new object?[,] { { null } })));
+    }
+
+    [Fact]
+    public void WhereAKindedLeafFirstStillDiscriminates()
+    {
+      // The contrast, and the thing a reader should write instead. Text() asserts a KIND, so it
+      // fails on a number and the Choice picks the arm that can read one — which is the whole
+      // purpose of declaring a kind, seen from the alternation side.
+      var readEither = Choice(
+        Text().Select(text => $"text:{text}"),
+        Decimal().Select(amount => $"number:{amount}"));
+
+      var read = readEither.MapWithDiagnostics(Mixed(new object?[,] { { 1.5m } }));
+
+      Assert.Equal("number:1.5", read.Value);
+
+      var info = Assert.Single(read.Diagnostics, d => d.Severity == DiagnosticSeverity.Info);
+      Assert.StartsWith("alternative 1 (Text) did not match: ", info.Message);
+      Assert.Contains("expected Text at A1, found Number", info.Message);
+
+      // And the other way round, so the discrimination is two-sided rather than a first arm that
+      // never wins.
+      Assert.Equal("text:n/a", readEither.Map(Mixed(new object?[,] { { "n/a" } })));
+    }
 
     // --- Choosing ------------------------------------------------------------------------------------
 
@@ -64,7 +132,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal(DiagnosticSeverity.Info, info.Severity);
       Assert.Equal("Choice", info.Subject);
       Assert.StartsWith("alternative 1 ('vendor B layout') did not match: ", info.Message);
-      Assert.Contains("Cell value is Text; expected Number", info.Message);
+      Assert.Contains("expected Number at A1, found Text", info.Message);
     }
 
     [Fact]
@@ -76,7 +144,7 @@ namespace Unrect.Tests.Projections
 
       var info = Assert.Single(result.Diagnostics);
 
-      Assert.Equal("Choice -> 'vendor B layout' -> Cell#1", info.Path);
+      Assert.Equal("Choice -> 'vendor B layout' -> Integer#1", info.Path);
       Assert.Equal("A1", info.Location.A1);
     }
 
@@ -99,7 +167,7 @@ namespace Unrect.Tests.Projections
     public void AnUnnamedAlternative_IsDescribedStructurally()
     {
       var alternatives = Choice(
-        VerticalFlow(v => { v.Next(Cell(c => c.GetInt())); return v.Next(Cell(c => c.GetInt())); }),
+        VerticalFlow(v => { v.Next(IntCell()); return v.Next(IntCell()); }),
         TextFirst());
 
       var info = Assert.Single(alternatives.MapWithDiagnostics(Pair()).Diagnostics);
@@ -139,7 +207,7 @@ namespace Unrect.Tests.Projections
       Assert.Contains("no alternative matched", failure.Message);
       Assert.Contains("alternative 1 ('first try'): ", failure.Message);
       Assert.Contains("alternative 2 ('second try'): ", failure.Message);
-      Assert.Contains("Cell value is Text; expected Number", failure.Message);
+      Assert.Contains("expected Number at A1, found Text", failure.Message);
       Assert.Contains("at row 1, column 1 (A1)", failure.Message);
     }
 
@@ -150,7 +218,7 @@ namespace Unrect.Tests.Projections
         Choice(NumberFirst("first try"), NumberFirst("second try")).Map(Pair()));
 
       var inner = Assert.IsType<ProjectionException>(failure.InnerException);
-      Assert.Equal("Choice -> 'second try' -> Cell#1", inner.Path);
+      Assert.Equal("Choice -> 'second try' -> Integer#1", inner.Path);
     }
 
     [Fact]
@@ -160,8 +228,8 @@ namespace Unrect.Tests.Projections
       // the next alternative would turn it into a silently different parse.
       var failure = Assert.Throws<ProjectionException>(() =>
         Choice(
-          Cell<int>(_ => throw new NullReferenceException("boom")).Named("first"),
-          Cell(v => v.GetInt()).Named("second"))
+          Point().Select<ISheetCells, Point<ISheetCells>, int>(_ => throw new NullReferenceException("boom")).Named("first"),
+          IntCell().Named("second"))
           .Map(Mixed(new object?[,] { { 5 } })));
 
       Assert.Equal("'first'", failure.Subject);
@@ -177,9 +245,9 @@ namespace Unrect.Tests.Projections
     // AlternationLawProbeTests deliberately asserts no layout — this is the file it defers to.
 
     /// <summary>A typed leaf, named — one clause of a problem, so a tally's line is predictable.</summary>
-    private static IProjection<int> Number(string name) => Integer().Named(name);
+    private static IProjection<ISheetCells, int> Number(string name) => Integer().Named(name);
 
-    private static ISpace OneText() => Mixed(new object?[,] { { "text" } });
+    private static ISheetCells OneText() => Mixed(new object?[,] { { "text" } });
 
     private const string Wrong = "expected Number at A1, found Text";
 
@@ -259,8 +327,8 @@ namespace Unrect.Tests.Projections
       var space = Mixed(new object?[,] { { "text" } });
 
       var choice = Choice(
-        Cell(v => v.GetInt().ToString()).Named("a"),
-        Cell(v => v.GetDateTime().ToString()).Named("b"));
+        Point().Select(p => p.Integer().ToString()).Named("a"),
+        Point().Select(p => p.Date().ToString()).Named("b"));
 
       var reported = Assert.Single(choice.Optional().MapWithDiagnostics(space).Diagnostics);
 
@@ -280,8 +348,8 @@ namespace Unrect.Tests.Projections
       // reading that was thrown away, so keeping it would describe a parse that never happened.
       var losing = VerticalFlow(v =>
       {
-        v.Next(Cell(c => c.GetString()).Optional());
-        v.Next(Cell(c => c.GetString()));
+        v.Next(TextCell().Optional());
+        v.Next(TextCell());
         return 0;
       }).Named("losing");
 
@@ -298,9 +366,9 @@ namespace Unrect.Tests.Projections
       // Tolerance exercised by the branch that actually produced the result is part of the result.
       var winning = VerticalFlow(v =>
       {
-        v.Next(Cell(c => c.GetString()));
-        v.Next(Cell(c => c.GetString()).Optional());
-        return v.Next(Cell(c => c.GetInt()));
+        v.Next(TextCell());
+        v.Next(TextCell().Optional());
+        return v.Next(IntCell());
       }).Named("winning");
 
       var result = Choice(NumberFirst(), winning).MapWithDiagnostics(Pair());
@@ -309,7 +377,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal(2, result.Diagnostics.Count);
 
       var warning = Assert.Single(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Warning);
-      Assert.Equal("Choice -> 'winning' -> Cell#2", warning.Path);
+      Assert.Equal("Choice -> 'winning' -> Text#2", warning.Path);
     }
 
     // --- Inspection ----------------------------------------------------------------------------------------

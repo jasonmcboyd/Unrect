@@ -114,7 +114,8 @@ namespace Unrect.Tests
     /// twice rather than two readings.
     /// </para>
     /// </summary>
-    public static Observation Observe<T>(IProjection<T> projection, ISpace space)
+    public static Observation Observe<TSpace, T>(IProjection<TSpace, T> projection, TSpace space)
+      where TSpace : class, ISpace
     {
       try
       {
@@ -196,7 +197,7 @@ namespace Unrect.Tests
     /// <para>
     /// <strong>What still speaks for itself.</strong> A type carrying a HAND-WRITTEN
     /// <c>ToString</c> override keeps it, because that override is nearly always more informative than
-    /// its properties are: <c>CellValue</c> prints the number in the cell, while its three public
+    /// its properties are: <c>Cell</c> prints the number in the cell, while its three public
     /// properties (<c>Kind</c>, <c>IsBlank</c>, <c>HasValue</c>) would print everything about it except
     /// the value. The line between the two is drawn at <see cref="CompilerGeneratedAttribute"/>, which
     /// is exactly what a record's synthesized <c>ToString</c> and an anonymous type both carry, so the

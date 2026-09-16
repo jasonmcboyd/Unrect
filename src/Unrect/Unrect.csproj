@@ -15,6 +15,12 @@
     <!-- So the tests can reach IOpaqueComposite, which marks a composite whose children exist only
          while it runs; asserting that through reflection was the alternative. -->
     <InternalsVisibleTo Include="Unrect.Tests" />
+
+    <!-- So a backend can be a first-class part of this vocabulary rather than a consumer of it:
+         ProjectionBase's private-protected constructor (a backend's leaves are real primitives, not
+         Select wrappers), the Tolerating seam OrBlank dispatches through, and the pipeline stage
+         internals its terminals close. -->
+    <InternalsVisibleTo Include="Unrect.Spreadsheets" />
   </ItemGroup>
 
   <!-- One package, three assemblies. A consumer installs "Unrect" and has the whole vocabulary;

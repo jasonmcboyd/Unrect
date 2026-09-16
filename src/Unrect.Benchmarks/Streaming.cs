@@ -6,7 +6,8 @@ using Unrect.Core;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 
 namespace Unrect.Benchmarks
 {
@@ -40,7 +41,7 @@ namespace Unrect.Benchmarks
   [BenchmarkCategory("Streaming")]
   public class Streaming
   {
-    private static readonly IProjection<IReadOnlyList<StreamedRow>> Rows = Table<StreamedRow>();
+    private static readonly IProjection<ISheetCells, IReadOnlyList<StreamedRow>> Rows = Table<StreamedRow>();
 
     // One range over a band, swept five times — once per column read. Each sweep walks the band
     // end to end, so the whole band is open across all five: the access pattern the window has to
@@ -49,7 +50,7 @@ namespace Unrect.Benchmarks
     // A flow is not used here because its children would have to divide the band's WIDTH between
     // them, which changes what is being measured; five passes over one extent is the same demand on
     // the window with nothing else in the way.
-    private static readonly IProjection<long> Band = Range(Extent(StreamingSpaces.Columns, StreamingSpaces.BandRows), block =>
+    private static readonly IProjection<ISheetCells, long> Band = Range(Extent(StreamingSpaces.Columns, StreamingSpaces.BandRows), block =>
     {
       long sum = 0;
 
@@ -60,8 +61,8 @@ namespace Unrect.Benchmarks
       return sum;
     });
 
-    private ISpace _grid = default!;
-    private ISpace _resident = default!;
+    private ISheetCells _grid = default!;
+    private ISheetCells _resident = default!;
     private ReaderPool _residentPool = default!;
 
     [GlobalSetup]
@@ -151,7 +152,7 @@ namespace Unrect.Benchmarks
       // The smallest window on purpose: the two ends cannot both be resident, so each turn really
       // does have to go back for what the last one evicted. With a window that holds both, this
       // measures memory reads and says nothing about the pool.
-      var space = StreamingSpaces.Windowed(pool, StreamingSpaces.SmallestWindowRows);
+      var sheet = Plane<ISheetCells>.Of(StreamingSpaces.Windowed(pool, StreamingSpaces.SmallestWindowRows));
       long sum = 0;
 
       for (var turn = 0; turn < StreamingSpaces.ReachTurns; turn++)
@@ -159,7 +160,7 @@ namespace Unrect.Benchmarks
         var top = turn % 2 == 0;
 
         for (var row = 0; row < StreamingSpaces.ReachRows; row++)
-          sum += space[0, top ? row + 1 : StreamingSpaces.Rows - 1 - row].GetHashCode();
+          sum += sheet[0, top ? row + 1 : StreamingSpaces.Rows - 1 - row].AsText()!.Length;
       }
 
       return sum;

@@ -1,5 +1,3 @@
-using Unrect.Core;
-
 namespace Unrect.Spreadsheets
 {
   /// <summary>
@@ -23,11 +21,11 @@ namespace Unrect.Spreadsheets
   /// </para>
   /// <para>
   /// Not every space this package vends is one of these. The streaming door reads values only, so
-  /// <see cref="Workbook.Sheet"/> hands back a plain <see cref="ISpace"/>; that is the honest
+  /// <see cref="Workbook.Sheet"/> hands back a plain <see cref="ISheetCells"/>; that is the honest
   /// absence rule, not an oversight.
   /// </para>
   /// </summary>
-  public interface ISpreadsheetSpace : ISpace, IFormulaSpace
+  public interface ISpreadsheetSpace : ISheetCells, IFormulaSpace
   {
   }
 }

@@ -9,11 +9,12 @@ namespace Unrect.Spreadsheets
   /// What a declaration can say about a spreadsheet that it could not say about any grid: the
   /// formula behind a cell, and the two matchers that look for one.
   /// <para>
-  /// Import it beside the vocabulary itself — <c>using static Unrect.Projections.Projection;</c>
-  /// and <c>using static Unrect.Spreadsheets.SpreadsheetProjections;</c> — and the demand climbs
-  /// out of the leaves by inference, with the space named nowhere until <c>Map</c>. A declaration
-  /// that uses any of these cannot be applied to a space that does not carry formulas: that is a
-  /// compile error, not a run-time surprise.
+  /// These are the narrowest forms — each demands the one capability it reads, so a shared helper
+  /// written against them composes into any file whose space can answer. A file that names its
+  /// space once imports <see cref="SpreadsheetProjectionBuilders{TSpace}"/> instead, where every
+  /// member is already closed over that space. Either way a declaration that uses one of these
+  /// cannot be applied to a space that does not carry formulas: that is a compile error, not a
+  /// run-time surprise.
   /// </para>
   /// <para>
   /// <b>There is no reach-through.</b> A <c>row.FormulaAt(2)</c> extension would compile against
@@ -22,15 +23,69 @@ namespace Unrect.Spreadsheets
   /// is spelled as a leaf so that composing it raises a demand.
   /// </para>
   /// </summary>
-  public static class SpreadsheetProjections
+  public static partial class SpreadsheetProjections
   {
+    // --- The kinded leaves ------------------------------------------------------------------------
+    //
+    // A cell whose kind the declaration states. The family is closed over what a sheet can be asked
+    // and mirrors it 1:1 — six readings over six kinds, because a number is read three ways and two
+    // kinds have no leaf at all: Blank and Error are conditions, not values a leaf projects. There
+    // is no Long(), Single(), Money() or Enum<T>(): a CLR conversion beyond that set is Select
+    // territory (Integer().Select(i => (long)i)), one-way and honest about it.
+    //
+    // Each is written at the narrowest space that can answer it, so a shared helper composes into
+    // any file whose space is a sheet. A file that names its space once imports the closed twins on
+    // SpreadsheetProjectionBuilders instead.
+
+    /// <summary>One cell holding text.</summary>
+    /// <typeparam name="TSpace">The sheet the leaf is declared over.</typeparam>
+    public static IProjection<TSpace, string> Text<TSpace>()
+      where TSpace : class, ISheetCells
+      => Kinded<TSpace, string>("Text", (ISheetCells s, int c, int r, out string v, out CellProblem? p) => s.TextAt(c, r, out v, out p));
+
     /// <summary>
-    /// The formula capability's witness: <c>VerticalFlow(Formulas, v =&gt; …)</c> and
-    /// <c>rows.Demanding(Formulas)</c> state the requirement where nothing in the surrounding types
-    /// could say it — a layout whose demand lives in its lambda's body, or a projection lambda that
-    /// reaches a capability the type system cannot see into.
+    /// One cell holding a number, read as a <see cref="decimal"/> — the accessor that keeps a
+    /// spreadsheet's exact decimal where the file carried one.
     /// </summary>
-    public static Demand<IFormulaSpace> Formulas => Demand<IFormulaSpace>.Instance;
+    /// <typeparam name="TSpace">The sheet the leaf is declared over.</typeparam>
+    public static IProjection<TSpace, decimal> Decimal<TSpace>()
+      where TSpace : class, ISheetCells
+      => Kinded<TSpace, decimal>("Decimal", (ISheetCells s, int c, int r, out decimal v, out CellProblem? p) => s.DecimalAt(c, r, out v, out p));
+
+    /// <summary>
+    /// One cell holding a whole number. A number that is really there but is fractional or out of
+    /// range fails as a conversion, not as a kind — the cell is a number either way.
+    /// </summary>
+    /// <typeparam name="TSpace">The sheet the leaf is declared over.</typeparam>
+    public static IProjection<TSpace, int> Integer<TSpace>()
+      where TSpace : class, ISheetCells
+      => Kinded<TSpace, int>("Integer", (ISheetCells s, int c, int r, out int v, out CellProblem? p) => s.IntegerAt(c, r, out v, out p));
+
+    /// <summary>One cell holding a number, read as a <see cref="double"/>.</summary>
+    /// <typeparam name="TSpace">The sheet the leaf is declared over.</typeparam>
+    public static IProjection<TSpace, double> Double<TSpace>()
+      where TSpace : class, ISheetCells
+      => Kinded<TSpace, double>("Double", (ISheetCells s, int c, int r, out double v, out CellProblem? p) => s.DoubleAt(c, r, out v, out p));
+
+    /// <summary>
+    /// One cell holding a date or time, verbatim. The time of day is kept: truncating is
+    /// consumer-side (<c>Date().Select(d =&gt; d.Date)</c>), because a leaf that silently handed
+    /// back less than the cell holds would be the only one in the vocabulary that did.
+    /// </summary>
+    /// <typeparam name="TSpace">The sheet the leaf is declared over.</typeparam>
+    public static IProjection<TSpace, DateTime> Date<TSpace>()
+      where TSpace : class, ISheetCells
+      => Kinded<TSpace, DateTime>("Date", (ISheetCells s, int c, int r, out DateTime v, out CellProblem? p) => s.DateTimeAt(c, r, out v, out p));
+
+    /// <summary>One cell holding a boolean.</summary>
+    /// <typeparam name="TSpace">The sheet the leaf is declared over.</typeparam>
+    public static IProjection<TSpace, bool> Boolean<TSpace>()
+      where TSpace : class, ISheetCells
+      => Kinded<TSpace, bool>("Boolean", (ISheetCells s, int c, int r, out bool v, out CellProblem? p) => s.BooleanAt(c, r, out v, out p));
+
+    internal static IProjection<TSpace, T> Kinded<TSpace, T>(string description, KindRead<T> read)
+      where TSpace : class, ISheetCells
+      => new KindedCellProjection<TSpace, T>(description, read, Placement.Of(ProjectionBuilders<TSpace>.Extent(1, 1)), blankIsNull: false);
 
     /// <summary>
     /// One cell, read as the formula behind it: the file's own expression without the leading
@@ -53,10 +108,24 @@ namespace Unrect.Spreadsheets
     /// <c>Formula()</c> cannot borrow the identifier at its use site the way <c>Text()</c> can.
     /// </para>
     /// </summary>
-    public static IProjection<IFormulaSpace, string?> Formula()
-      => Projection.Range(1, 1, cell => cell.Space.Capability<IFormulaSpace>()?.FormulaAt(0, 0))
-        .Named("Formula")
-        .Demanding(Formulas);
+    /// <typeparam name="TSpace">The space the leaf is declared over; anything carrying formulas.</typeparam>
+    public static IProjection<TSpace, string?> Formula<TSpace>()
+      where TSpace : class, IFormulaSpace
+      => ProjectionBuilders<TSpace>.Range(1, 1, cell => FormulaAt(cell.Space)).Named("Formula");
+
+    /// <summary>
+    /// The formula behind the region's first cell, or null. Asked at the point's own coordinates
+    /// rather than at (0, 0): a space answers about its own cells, and a region may name a
+    /// rectangle part-way into one. The two formula landmarks below ask the same way, so there is
+    /// one rule here rather than a rule and an assumption.
+    /// </summary>
+    private static string? FormulaAt<TSpace>(Plane<TSpace> region)
+      where TSpace : class, IFormulaSpace
+    {
+      var cell = region[0, 0];
+
+      return cell.Space.FormulaAt(cell.Column, cell.Row);
+    }
 
     /// <summary>
     /// The first row holding a formula anywhere in it — the boundary form, for a section that
@@ -106,12 +175,10 @@ namespace Unrect.Spreadsheets
     private abstract class FormulaLandmark
     {
       private readonly string? _containing;
-      private readonly string _demandedBy;
 
       protected FormulaLandmark(string axis, string? containing)
       {
         _containing = containing;
-        _demandedBy = containing is null ? $"{axis}WithFormula()" : $"{axis}WithFormula(\"{containing}\")";
         Description = containing is null
           ? $"no {axis.ToLowerInvariant()} with a formula"
           : $"no {axis.ToLowerInvariant()} with a formula mentioning '{containing}'";
@@ -121,10 +188,13 @@ namespace Unrect.Spreadsheets
       public string Description { get; }
 
       /// <summary>
-      /// The capability, or a fault. A boundary that cannot look must not answer "not there": that
-      /// would be a claim about the document made by a reader describing itself.
+      /// The space as the one this matcher was built for. A cast rather than a test: the matcher's
+      /// own type names the capability, and the only pipeline that accepts it is closed over a space
+      /// that has it — so the only way here is a declaration that cast the demand away, and a
+      /// boundary that could not look must not answer "not there". The failure is an
+      /// <see cref="InvalidCastException"/>, which no tolerance boundary absorbs.
       /// </summary>
-      protected IFormulaSpace Formulas(ISpace space) => space.RequiredCapability<IFormulaSpace>(_demandedBy);
+      protected IFormulaSpace Formulas(ISpace space) => (IFormulaSpace)space;
 
       protected bool Matches(string? formula)
         => formula is not null
@@ -140,14 +210,21 @@ namespace Unrect.Spreadsheets
 
       IRowLandmark IRowLandmark<IFormulaSpace>.Landmark => this;
 
-      public int? FindRow(ISpace space)
+      public int? FindRow(Plane<ISpace> space)
       {
-        var formulas = Formulas(space);
+        var formulas = Formulas(space.Space);
 
+        // Through the region's own points, because a capability answers in the SPACE's coordinates
+        // and a region may name a rectangle part-way into it. The point carries the translation the
+        // region would otherwise have to do by hand.
         for (var row = 0; row < space.Area.Height; row++)
-          for (var column = 0; column < space.Area.Width; column++)
-            if (Matches(formulas.FormulaAt(column, row)))
+          for (var column = 0; column < space.Width; column++)
+          {
+            var cell = space[column, row];
+
+            if (Matches(formulas.FormulaAt(cell.Column, cell.Row)))
               return row;
+          }
 
         return null;
       }
@@ -162,14 +239,18 @@ namespace Unrect.Spreadsheets
 
       IColumnLandmark IColumnLandmark<IFormulaSpace>.Landmark => this;
 
-      public int? FindColumn(ISpace space)
+      public int? FindColumn(Plane<ISpace> space)
       {
-        var formulas = Formulas(space);
+        var formulas = Formulas(space.Space);
 
-        for (var column = 0; column < space.Area.Width; column++)
+        for (var column = 0; column < space.Width; column++)
           for (var row = 0; row < space.Area.Height; row++)
-            if (Matches(formulas.FormulaAt(column, row)))
+          {
+            var cell = space[column, row];
+
+            if (Matches(formulas.FormulaAt(cell.Column, cell.Row)))
               return column;
+          }
 
         return null;
       }

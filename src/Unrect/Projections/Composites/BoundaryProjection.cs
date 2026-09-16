@@ -15,11 +15,12 @@ namespace Unrect.Projections
   /// <c>x.Optional().On(anchor)</c> does not.
   /// </para>
   /// </summary>
-  internal sealed class BoundaryProjection<T> : ProjectionBase<T>
+  internal sealed class BoundaryProjection<TSpace, T> : ProjectionBase<TSpace, T>
+    where TSpace : class, ISpace
   {
     public BoundaryProjection(
-      IProjection<T> inner,
-      IProjection<T>? fallback,
+      IProjection<TSpace, T> inner,
+      IProjection<TSpace, T>? fallback,
       T fallbackValue,
       Placement placement,
       string description,
@@ -34,8 +35,8 @@ namespace Unrect.Projections
       Children = fallback is null ? new IProjection[] { inner } : new IProjection[] { inner, fallback };
     }
 
-    private IProjection<T> Inner { get; }
-    private IProjection<T>? Fallback { get; }
+    private IProjection<TSpace, T> Inner { get; }
+    private IProjection<TSpace, T>? Fallback { get; }
     private T FallbackValue { get; }
 
     /// <summary>What the declaration called the fallback, so a stand-in names itself as written.</summary>
@@ -47,7 +48,7 @@ namespace Unrect.Projections
 
     public override bool IsTransparent => Name is null && !IsUnitBoundary;
 
-    public override ProjectionResult<T> Project(ISpace extent, ProjectionContext context)
+    public override ProjectionResult<T> Project(Plane<TSpace> extent, ProjectionContext context)
     {
       var mark = context.Diagnostics.Mark();
 

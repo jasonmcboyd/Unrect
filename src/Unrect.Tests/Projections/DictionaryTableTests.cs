@@ -4,10 +4,12 @@ using System.Linq;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -24,14 +26,14 @@ namespace Unrect.Tests.Projections
   /// </summary>
   public class DictionaryTableTests
   {
-    private static ISpace Sheet() => Mixed(new object?[,]
+    private static ISheetCells Sheet() => Mixed(new object?[,]
     {
       { "Investor Name", "Transaction Date", "Amount" },
       { "Acme", new DateTime(2026, 3, 4), 10m },
       { "Beta", null, 20m },
     });
 
-    private static IReadOnlyList<IReadOnlyDictionary<string, CellValue>> Rows() => Table().Map(Sheet());
+    private static IReadOnlyList<IReadOnlyDictionary<string, Point<ISheetCells>>> Rows() => Table().Map(Sheet());
 
     // --- Keys and values ---------------------------------------------------------------------------
 
@@ -46,12 +48,13 @@ namespace Unrect.Tests.Projections
     {
       var rows = Rows();
 
-      Assert.Equal(CellKind.Text, rows[0]["Investor Name"].Kind);
-      Assert.Equal(CellKind.Temporal, rows[0]["Transaction Date"].Kind);
-      Assert.Equal(CellKind.Number, rows[0]["Amount"].Kind);
+      Assert.Equal("Acme", rows[0]["Investor Name"].Text());
+      Assert.Equal(new DateTime(2026, 3, 4), rows[0]["Transaction Date"].Date());
+      Assert.Equal(10m, rows[0]["Amount"].Decimal());
 
-      // A blank cell is a blank value rather than an absent key or an empty string.
-      Assert.Equal(CellKind.Blank, rows[1]["Transaction Date"].Kind);
+      // A blank cell is a blank cell rather than an absent key or an empty string.
+      Assert.True(rows[1]["Transaction Date"].IsBlank);
+      Assert.Null(rows[1]["Transaction Date"].AsText());
       Assert.True(rows[1].ContainsKey("Transaction Date"));
     }
 
@@ -61,13 +64,14 @@ namespace Unrect.Tests.Projections
       var space = Mixed(new object?[,]
       {
         { "Amount" },
-        { CellValue.OfError(CellError.DivisionByZero) },
+        { Cell.OfError(CellError.DivisionByZero) },
       });
 
       var cell = Table().Map(space)[0]["Amount"];
 
-      Assert.Equal(CellKind.Error, cell.Kind);
-      Assert.Equal(CellError.DivisionByZero, cell.GetError());
+      Assert.True(cell.IsError());
+      Assert.Equal("#DIV/0!", cell.AsText());
+      Assert.Equal("Error(#DIV/0!)", cell.Describe());
     }
 
     [Fact]
@@ -76,9 +80,30 @@ namespace Unrect.Tests.Projections
       // The exploratory spelling should not make a reader retype a caption exactly.
       var row = Rows()[0];
 
-      Assert.Equal("Acme", row["investorname"].GetString());
-      Assert.Equal("Acme", row["  Investor  Name  "].GetString());
-      Assert.Equal(10m, row["amount"].GetDecimal());
+      Assert.Equal("Acme", row["investorname"].Text());
+      Assert.Equal("Acme", row["  Investor  Name  "].Text());
+      Assert.Equal(10m, row["amount"].Decimal());
+    }
+
+    [Fact]
+    public void TheElementTypeIsADictionaryOfPoints()
+    {
+      // The rung's declared element type, pinned rather than inferred from a var: one
+      // IReadOnlyDictionary<string, Point<TSpace>> per body row, and the values really are
+      // ADDRESSES rather than anything that renders like a value — so what a caller can ask of one
+      // is whatever their own space answers. The static side of this assertion is the local's type;
+      // the runtime side is the closed interface the factory's projection implements, so the pin
+      // holds even if the factory is later composed out of other projections.
+      IProjection<ISheetCells, IReadOnlyList<IReadOnlyDictionary<string, Point<ISheetCells>>>> table = Table();
+
+      Assert.Contains(
+        typeof(IProjection<ISheetCells, IReadOnlyList<IReadOnlyDictionary<string, Point<ISheetCells>>>>),
+        table.GetType().GetInterfaces());
+
+      IReadOnlyDictionary<string, Point<ISheetCells>> row = table.Map(Sheet())[0];
+      object value = row["Amount"];
+
+      Assert.IsType<Point<ISheetCells>>(value);
     }
 
     [Fact]
@@ -86,7 +111,7 @@ namespace Unrect.Tests.Projections
     {
       var row = Rows()[0];
 
-      Assert.IsAssignableFrom<IReadOnlyDictionary<string, CellValue>>(row);
+      Assert.IsAssignableFrom<IReadOnlyDictionary<string, Point<ISheetCells>>>(row);
       Assert.True(row.ContainsKey("TRANSACTIONDATE"));
       Assert.False(row.ContainsKey("Nope"));
     }
@@ -155,7 +180,7 @@ namespace Unrect.Tests.Projections
       var applied = Table().Apply(space);
 
       Assert.Single(applied.Value);
-      Assert.Equal("Acme", applied.Value[0]["Investor Name"].GetString());
+      Assert.Equal("Acme", applied.Value[0]["Investor Name"].Text());
       Assert.Equal(2, applied.Consumed.Width);
       Assert.Equal(2, applied.Consumed.Height);
     }

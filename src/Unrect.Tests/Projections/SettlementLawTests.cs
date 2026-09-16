@@ -2,10 +2,11 @@ using System;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -50,7 +51,7 @@ namespace Unrect.Tests.Projections
     /// Two blocks of values with one blank row between them, so a repeat finds exactly two and a
     /// discovered extent has somewhere to stop.
     /// </summary>
-    private static ISpace TwoBlocks() => Grid(new[,]
+    private static ISheetCells TwoBlocks() => Grid(new[,]
     {
       { 1, 2 },
       { 3, 4 },
@@ -65,8 +66,8 @@ namespace Unrect.Tests.Projections
     /// than call-count-based, so it breaks in the same place however many cells the reading asks
     /// for — the idiom <c>LazyErrorTimingTests</c> established and for the same reason.
     /// </summary>
-    private static Func<CellValue, bool> BreaksOn(int marker)
-      => cell => cell.TryGetInt() == marker ? throw new InvalidOperationException("no") : true;
+    private static Func<Point<ISpace>, bool> BreaksOn(int marker)
+      => cell => cell.AsText() == marker.ToString() ? throw new InvalidOperationException("no") : true;
 
     /// <summary>
     /// The third row of the first block. A scan that breaks here survives two rows first, so the
@@ -123,7 +124,7 @@ namespace Unrect.Tests.Projections
     // --- Site 2: a flow child settles by the advance ----------------------------------------------
 
     /// <summary>Three rows of values, a blank one, and a tail — so a discovered band has a successor.</summary>
-    private static ISpace BlockThenGapThenTail() => Mixed(new object?[,] { { 1 }, { 2 }, { 3 }, { null }, { 9 } });
+    private static ISheetCells BlockThenGapThenTail() => Mixed(new object?[,] { { 1 }, { 2 }, { 3 }, { null }, { 9 } });
 
     [Fact]
     public void AFlowChildSettlesByTheAdvance()
@@ -139,11 +140,11 @@ namespace Unrect.Tests.Projections
       {
         v.Next(Range(RowsWhileAnyValue(), _ => 0).Named("body"));
 
-        return v.Next(AfterBlankRows().Of(Cell(c =>
+        return v.Next(AfterBlankRows().Of(Point().Select(point =>
         {
           rowsReadInsideTheSibling = counter.RowsTouched;
 
-          return c.GetInt();
+          return point.Integer();
         })).Named("next"));
       });
 
@@ -164,11 +165,11 @@ namespace Unrect.Tests.Projections
       {
         v.Next(Range(RowsWhileAny(BreaksOn(MarkerInTheThirdRow)), _ => 0).Named("body"));
 
-        return v.Next(Cell(c =>
+        return v.Next(Point().Select(point =>
         {
           siblingRuns++;
 
-          return c.GetInt();
+          return point.Integer();
         }).Named("next"));
       });
 
@@ -214,7 +215,7 @@ namespace Unrect.Tests.Projections
       Assert.Contains("alternative 1 ('first')", note.Message);
     }
 
-    private static MapResult<T> Read<T>(IProjection<T> projection, ISpace space, bool eager)
+    private static MapResult<T> Read<T>(IProjection<ISheetCells, T> projection, ISheetCells space, bool eager)
     {
       if (!eager)
         return projection.MapWithDiagnostics(space);

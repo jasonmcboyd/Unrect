@@ -1,6 +1,9 @@
 using System;
 
+using System.Globalization;
+
 using Unrect.Core;
+using Unrect.Spreadsheets;
 using Unrect.Strategies;
 
 using Xunit;
@@ -30,7 +33,7 @@ namespace Unrect.Tests.Strategies
   /// </summary>
   public class ColumnStrategyRewriteTests
   {
-    private static Func<CellValue, bool> Predicate(string name) => name switch
+    private static Func<Point<ISpace>, bool> Predicate(string name) => name switch
     {
       "has-value" => value => value.HasValue,
       "blank" => value => value.IsBlank,
@@ -38,12 +41,14 @@ namespace Unrect.Tests.Strategies
       // Neither total nor the negation of the others, so a strategy that quietly substituted one
       // predicate for another — the shape of the inversion bug this family has a history of — has
       // nowhere to hide.
-      "even" => value => value.TryGetInt() % 2 == 0,
+      // Every grid here is built from ints with 0 as blank, and a grid renders an int
+      // invariantly, so parsing the rendering is the exact round trip the old TryGetInt was.
+      "even" => value => value.AsText() is string number && int.Parse(number, CultureInfo.InvariantCulture) % 2 == 0,
 
       _ => throw new ArgumentOutOfRangeException(nameof(name), name, "No such predicate."),
     };
 
-    private static ISpace Space(string name) => name switch
+    private static ISheetCells Space(string name) => name switch
     {
       "dense" => Grid(new[,]
       {
@@ -121,14 +126,14 @@ namespace Unrect.Tests.Strategies
     /// Column <c>c</c> is included when at least one of its cells satisfies the predicate, and
     /// columns are taken while that holds contiguously from 0.
     /// </summary>
-    private static int LeadingColumnsWhereSomeRowMatches(ISpace space, Func<CellValue, bool> predicate)
+    private static int LeadingColumnsWhereSomeRowMatches(ISheetCells space, Func<Point<ISpace>, bool> predicate)
     {
       for (var column = 0; column < space.Area.Width; column++)
       {
         var matched = false;
 
         for (var row = 0; row < space.Area.Height; row++)
-          matched |= predicate(space[column, row]);
+          matched |= predicate(space.Region()[column, row]);
 
         if (!matched)
           return column;
@@ -141,13 +146,13 @@ namespace Unrect.Tests.Strategies
     /// Column <c>c</c> is included when every one of its cells satisfies the predicate, and columns
     /// are taken while that holds contiguously from 0.
     /// </summary>
-    private static int LeadingColumnsWhereEveryRowMatches(ISpace space, Func<CellValue, bool> predicate)
+    private static int LeadingColumnsWhereEveryRowMatches(ISheetCells space, Func<Point<ISpace>, bool> predicate)
     {
       for (var column = 0; column < space.Area.Width; column++)
       {
         for (var row = 0; row < space.Area.Height; row++)
         {
-          if (!predicate(space[column, row]))
+          if (!predicate(space.Region()[column, row]))
             return column;
         }
       }

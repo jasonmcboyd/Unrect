@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using System.Threading;
 
-using Unrect.Core;
 using Unrect.Spreadsheets;
 
 namespace Unrect.Tests.Streaming
@@ -147,8 +146,8 @@ namespace Unrect.Tests.Streaming
         return true;
       }
 
-      public CellValue this[int column] =>
-        column < 0 || column >= Sheet.ColumnCount ? CellValue.Blank : Sheet.Cell(column, _row);
+      public Cell this[int column] =>
+        column < 0 || column >= Sheet.ColumnCount ? Cell.Blank : Sheet.At(column, _row);
 
       public void Dispose() => _source.Closed();
     }
@@ -160,7 +159,7 @@ namespace Unrect.Tests.Streaming
   /// </summary>
   internal sealed class FakeSheet
   {
-    private readonly Func<int, int, CellValue>? _cell;
+    private readonly Func<int, int, Cell>? _cell;
 
     /// <summary>
     /// A sheet whose cells are their own coordinates — <c>"c,r"</c> as text — so any test can name
@@ -174,7 +173,7 @@ namespace Unrect.Tests.Streaming
       ReadableRows = readableRows ?? rowCount;
     }
 
-    internal FakeSheet(string name, int rowCount, int columnCount, Func<int, int, CellValue> cell, int? readableRows = null)
+    internal FakeSheet(string name, int rowCount, int columnCount, Func<int, int, Cell> cell, int? readableRows = null)
       : this(name, rowCount, columnCount, readableRows)
     {
       _cell = cell;
@@ -190,7 +189,7 @@ namespace Unrect.Tests.Streaming
         name,
         rows.Length,
         columns,
-        (column, row) => column < cells[row].Length ? ProjectionTestSpaces.Adapt(cells[row][column]) : CellValue.Blank);
+        (column, row) => column < cells[row].Length ? ProjectionTestSpaces.Adapt(cells[row][column]) : Cell.Blank);
     }
 
     internal string Name { get; }
@@ -210,7 +209,11 @@ namespace Unrect.Tests.Streaming
     /// </summary>
     internal bool ReportsDimension { get; set; } = true;
 
-    internal CellValue Cell(int column, int row)
-      => _cell is null ? CellValue.Of($"{column},{row}") : _cell(column, row);
+    /// <summary>
+    /// The cell at <paramref name="column"/>, <paramref name="row"/>. Not called <c>Cell</c>: a
+    /// member of that name would shadow the type inside this class, where both are written.
+    /// </summary>
+    internal Cell At(int column, int row)
+      => _cell is null ? Cell.Of($"{column},{row}") : _cell(column, row);
   }
 }

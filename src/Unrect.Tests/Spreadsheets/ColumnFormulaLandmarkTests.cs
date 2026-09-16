@@ -1,13 +1,12 @@
 using System;
 
-using Unrect.Core;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
-using static Unrect.Spreadsheets.SpreadsheetProjections;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>;
+using static Unrect.Spreadsheets.SpreadsheetProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Spreadsheets
@@ -17,7 +16,7 @@ namespace Unrect.Tests.Spreadsheets
   /// <para>
   /// It exists because the mirror is law, not because a caller asked for it — which is exactly the
   /// shape that goes untested and rots. Everything the row half is pinned for lives in three other
-  /// classes (<see cref="FormulaCapabilityTests"/>, <see cref="CapabilityFaultTests"/> and the
+  /// classes (<see cref="FormulaCapabilityTests"/>, <see cref="FormulaAbsenceTests"/> and the
   /// acceptance suite's lift test) and none of them says the word "column"; a
   /// <c>base("Row", …)</c> left behind in the column landmark's constructor, or a transposed loop in
   /// its search, would have passed the whole suite.
@@ -55,7 +54,7 @@ namespace Unrect.Tests.Spreadsheets
         { "Beta", 250m, 0.5m, 125m },
       };
 
-      var values = new CellValue[cells.GetLength(0), cells.GetLength(1)];
+      var values = new Cell[cells.GetLength(0), cells.GetLength(1)];
 
       for (var row = 0; row < cells.GetLength(0); row++)
         for (var column = 0; column < cells.GetLength(1); column++)
@@ -72,14 +71,14 @@ namespace Unrect.Tests.Spreadsheets
     }
 
     /// <summary>A space that holds no formulas and cannot be asked about them.</summary>
-    private static ISpace Plain() => GridSpace.Create(new[,] { { "a", "b" } });
+    private static ISheetCells Plain() => SheetGrid.Of(new object?[,] { { "a", "b" } });
 
     /// <summary>
     /// A space that CAN be asked and has nothing to report — the only way to reach the bare
     /// matcher's absence noun, since over <see cref="Sheet"/> the bare matcher always finds one.
     /// </summary>
     private static ISpreadsheetSpace Barren()
-      => new FormulaGridSpace(new CellValue[1, 2] { { Adapt("a"), Adapt("b") } }, new string?[1, 2]);
+      => new FormulaGridSpace(new Cell[1, 2] { { Adapt("a"), Adapt("b") } }, new string?[1, 2]);
 
     // --- The matcher locates ------------------------------------------------------------------------
 
@@ -124,11 +123,11 @@ namespace Unrect.Tests.Spreadsheets
     [Fact]
     public void ALiftRaisesTheProjectionItTouches()
     {
-      // The column half of the acceptance suite's demand-climbing test. Written plain, read
-      // demanding, annotated nowhere: the annotation on the local is what the compiler inferred, and
-      // it would not compile if the column lift had been left off the demanding family.
-      IProjection<IFormulaSpace, string> firstComputedColumn =
-        On(ColumnWithFormula()).Of(Column(cells => cells[0].GetString()));
+      // The column half of the acceptance suite's demand-climbing test. The demand is the file's
+      // space, and the pipeline accepts this matcher only because that space can answer it — which
+      // would not compile if the column lift had been left off the demanding family.
+      IProjection<ISpreadsheetSpace, string> firstComputedColumn =
+        On(ColumnWithFormula()).Of(Column(cells => cells[0].Text()));
 
       Assert.Equal("Rate", firstComputedColumn.Map(Sheet()));
     }
@@ -140,18 +139,20 @@ namespace Unrect.Tests.Spreadsheets
     {
       // Reached the only way it can be: through Landmark, the plain lift, where the typed layer has
       // handed the demand off and the mismatch survives to run time.
-      var cannotLook = On(ColumnWithFormula().Landmark).Of(Text());
+      var cannotLook = PlainLift().Of(SpreadsheetProjections.Text<ISheetCells>());
 
       var failure = Assert.Throws<ProjectionException>(() => cannotLook.Map(Plain()));
 
       Assert.True(failure.IsFault, "a boundary that could not look must be a fault");
-      Assert.IsType<MissingCapabilityException>(failure.InnerException);
+      Assert.IsType<InvalidCastException>(failure.GetBaseException());
+      Assert.Contains("IFormulaSpace", failure.Message, StringComparison.Ordinal);
 
       // "I could not look" is not "the section is absent", so none of the three tolerances may
       // quietly turn a wrong backend into an empty answer.
       Assert.Throws<ProjectionException>(() => cannotLook.Optional().Map(Plain()));
       Assert.Throws<ProjectionException>(() => cannotLook.Else("fallback").Map(Plain()));
-      Assert.Throws<ProjectionException>(() => Choice(cannotLook, Text()).Map(Plain()));
+      Assert.Throws<ProjectionException>(
+        () => ProjectionBuilders<ISheetCells>.Choice(cannotLook, SpreadsheetProjections.Text<ISheetCells>()).Map(Plain()));
     }
 
     [Fact]
@@ -160,7 +161,9 @@ namespace Unrect.Tests.Spreadsheets
       // The other lift and the other strategy slot: UntilColumn bounds an extent rather than placing
       // it, so the demand is made from the area strategy instead of the offset strategy. Two code
       // paths wrap a foreign exception and the fault list is consulted at both.
-      var bounded = UntilColumn(ColumnWithFormula().Landmark).Of(HorizontalFlow(h => h.Next(Text())))
+      var bounded = ProjectionBuilders<ISheetCells>
+        .UntilColumn(SpreadsheetProjections.ColumnWithFormula().Landmark)
+        .Of(ProjectionBuilders<ISheetCells>.HorizontalFlow(h => h.Next(SpreadsheetProjections.Text<ISheetCells>())))
         .Optional();
 
       var failure = Assert.Throws<ProjectionException>(() => bounded.Map(Plain()));
@@ -194,19 +197,11 @@ namespace Unrect.Tests.Spreadsheets
       // The landmarks share a base that builds both of these strings from one axis argument, so a
       // copy-pasted "Row" would be invisible everywhere else in the suite. Both overloads, because
       // they take different branches of that constructor.
-      var bare = Assert.Throws<ProjectionException>(
-        () => On(ColumnWithFormula().Landmark).Of(Text()).Map(Plain()));
-
-      var named = Assert.Throws<ProjectionException>(
-        () => On(ColumnWithFormula("SUM").Landmark).Of(Text()).Map(Plain()));
-
-      Assert.Equal("ColumnWithFormula()", Assert.IsType<MissingCapabilityException>(bare.InnerException).DemandedBy);
-      Assert.Equal(
-        "ColumnWithFormula(\"SUM\")",
-        Assert.IsType<MissingCapabilityException>(named.InnerException).DemandedBy);
-
-      // ...and the absence noun is the matcher family's own voice, on the column axis. The bare form
-      // needs a space that can answer and has nothing to report; over Sheet() it always finds one.
+      //
+      // (The fault said the axis too, until the capability seam went: what a boundary that could not
+      // look throws now is a failed cast, which speaks of the TYPE rather than of the matcher.)
+      // The absence noun is the matcher family's own voice, on the column axis. The bare form needs
+      // a space that can answer and has nothing to report; over Sheet() it always finds one.
       Assert.Contains(
         "no column with a formula",
         Assert.Throws<ProjectionException>(() => On(ColumnWithFormula()).Of(Text()).Map(Barren())).Message,
@@ -218,14 +213,21 @@ namespace Unrect.Tests.Spreadsheets
         StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// The plain lift of the bare column matcher, over the canonical vocabulary: the one way a
+    /// declaration can reach a boundary its space cannot answer.
+    /// </summary>
+    private static OffsetStage<ISheetCells> PlainLift()
+      => ProjectionBuilders<ISheetCells>.On(SpreadsheetProjections.ColumnWithFormula().Landmark);
+
     [Fact]
     public void ItRefusesAnEmptyThingToLookFor()
     {
       // A matcher with nothing to look for would match the first formula anywhere and read as though
       // it had been asked a question. The guard is shared with the row twin; this pins the column
       // overload reaches it.
-      Assert.Equal("containing", Assert.Throws<ArgumentException>(() => ColumnWithFormula("")).ParamName);
-      Assert.Equal("containing", Assert.Throws<ArgumentException>(() => ColumnWithFormula(null!)).ParamName);
+      Assert.Equal("containing", Assert.Throws<ArgumentException>(() => SpreadsheetProjections.ColumnWithFormula("")).ParamName);
+      Assert.Equal("containing", Assert.Throws<ArgumentException>(() => SpreadsheetProjections.ColumnWithFormula(null!)).ParamName);
     }
   }
 }

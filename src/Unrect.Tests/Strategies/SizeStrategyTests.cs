@@ -18,7 +18,7 @@ namespace Unrect.Tests.Strategies
   /// </summary>
   public class SizeStrategyTests
   {
-    private static bool HasValue(CellValue value) => value.HasValue;
+    private static bool HasValue(Point<ISpace> value) => value.HasValue;
 
     // --- SizeStrategies.RowsWhileAny ------------------------------------------------------------
 
@@ -73,7 +73,7 @@ namespace Unrect.Tests.Strategies
         { 5, 5 },
       });
 
-      var size = RowsWhileAny(v => v.TryGetInt() == 5).GetSize(space);
+      var size = RowsWhileAny(v => v.AsText() == "5").GetSize(space);
 
       Assert.Equal(2, size.Width);
       Assert.Equal(2, size.Height);
@@ -127,7 +127,7 @@ namespace Unrect.Tests.Strategies
         { 1, 5, 1, 5 },
       });
 
-      var size = ColumnsWhileAny(v => v.TryGetInt() == 5).GetSize(space);
+      var size = ColumnsWhileAny(v => v.AsText() == "5").GetSize(space);
 
       Assert.Equal(2, size.Width);    // no cell of column 2 is 5: stop
       Assert.Equal(2, size.Height);

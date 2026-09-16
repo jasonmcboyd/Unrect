@@ -33,7 +33,7 @@ namespace Unrect.Strategies
       => RowAndColumnSizeStrategy.ColumnsThenRows(columns, rows).ToAreaStrategy();
 
     /// <summary>Whatever <paramref name="selector"/> computes from the available space. See <see cref="SizeStrategies.SelectSize"/>.</summary>
-    public static IAreaStrategy SelectArea(Func<ISpace, Size> selector)
+    public static IAreaStrategy SelectArea(Func<Plane<ISpace>, Size> selector)
       => SelectSize(selector).ToAreaStrategy();
   }
 }

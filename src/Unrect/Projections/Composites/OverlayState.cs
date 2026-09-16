@@ -9,12 +9,13 @@ namespace Unrect.Projections
   /// extent and finds its own place in it, so all that accumulates is how far out the children
   /// reached.
   /// </summary>
-  internal sealed class OverlayState : LayoutState
+  internal sealed class OverlayState<TSpace> : LayoutState<TSpace>
+    where TSpace : class, ISpace
   {
     private int _width;
     private int _height;
 
-    public OverlayState(IProjection owner, ISpace extent, ProjectionContext context)
+    public OverlayState(IProjection owner, Plane<TSpace> extent, ProjectionContext context)
       : base(owner, extent, context)
     {
     }
@@ -27,7 +28,7 @@ namespace Unrect.Projections
 
     public override string DeclaredNothing => NothingDeclared("an overlay");
 
-    public override T Next<T>(IProjection<T> projection, string? declared)
+    public override T Next<T>(IProjection<TSpace, T> projection, string? declared)
     {
       // Children are independent: the same extent and the same unadvanced context every time, so
       // each child's own placement decides where it lands and the engine records its true offset.

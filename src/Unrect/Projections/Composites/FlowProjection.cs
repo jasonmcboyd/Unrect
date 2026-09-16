@@ -6,9 +6,10 @@ namespace Unrect.Projections
   /// A flow: children laid out one after another along an axis, each starting where the one before
   /// it left off, so the space is divided into bands nobody shares.
   /// </summary>
-  internal sealed class FlowProjection<T> : LayoutProjection<T>
+  internal sealed class FlowProjection<TSpace, T> : LayoutProjection<TSpace, T>
+    where TSpace : class, ISpace
   {
-    public FlowProjection(Orientation orientation, Layout<T> build, Placement placement, string? description = null)
+    public FlowProjection(Orientation orientation, Layout<TSpace, T> build, Placement placement, string? description = null)
       : base(build, placement)
     {
       Orientation = orientation;
@@ -28,7 +29,7 @@ namespace Unrect.Projections
     public override string Description
       => Declared ?? (Orientation == Orientation.Vertical ? "VerticalFlow" : "HorizontalFlow");
 
-    protected override LayoutState NewState(ISpace extent, ProjectionContext context)
-      => new FlowState(this, Orientation, extent, context);
+    protected override LayoutState<TSpace> NewState(Plane<TSpace> extent, ProjectionContext context)
+      => new FlowState<TSpace>(this, Orientation, extent, context);
   }
 }

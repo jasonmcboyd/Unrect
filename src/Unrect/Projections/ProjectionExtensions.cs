@@ -10,12 +10,11 @@ namespace Unrect.Projections
   /// <para>
   /// <b>Geometry is the pipeline's, and the pipeline's alone.</b> Where a section starts, how big it
   /// is, and where it ends are declared with the placement pipeline — the entries on
-  /// <see cref="Projection"/> (<c>On</c>, <c>Below</c>, <c>RightOf</c>, <c>OffsetBy</c>, <c>Down</c>,
-  /// <c>Right</c>, <c>AfterBlankRows</c>, <c>AfterBlankColumns</c>, <c>Until</c>, <c>UntilColumn</c>,
-  /// <c>Heading</c>) and the stages that follow them. The postfix forms those entries replay still
-  /// exist here, but they are <c>internal</c>: making a contradiction such as <c>x.On(a).On(b)</c>
-  /// unspellable at compile time is only possible once the modifiers that carry the erasure are gone
-  /// from the surface. See <see cref="PlacementStage"/> and the entries on <see cref="Projection"/>.
+  /// <see cref="ProjectionBuilders{TSpace}"/> (<c>On</c>, <c>Below</c>, <c>RightOf</c>,
+  /// <c>OffsetBy</c>, <c>Down</c>, <c>Right</c>, <c>AfterBlankRows</c>, <c>AfterBlankColumns</c>,
+  /// <c>Until</c>, <c>UntilColumn</c>, <c>Heading</c>) and the stages that follow them
+  /// (<see cref="PlacementStage{TSpace}"/>). Making a contradiction such as <c>x.On(a).On(b)</c>
+  /// unspellable at compile time is only possible while no modifier here can carry that erasure.
   /// </para>
   /// <para>
   /// <b>What stays public here is not geometry.</b> <c>Named</c> labels; <c>Select</c> transforms;
@@ -25,13 +24,11 @@ namespace Unrect.Projections
   /// erasure vector and needs no pipeline stage to be made safe.
   /// </para>
   /// <para>
-  /// <b>A modifier keeps the demand it is applied to.</b> Each one is generic in the
-  /// <em>projection's own type</em> and hands that type back, so <c>Text().Named("t")</c> is an
-  /// <c>IProjection&lt;string&gt;</c> exactly as it always was, and the same modifier on a
-  /// formula-reading declaration hands back a formula-reading declaration. That is why there is one
-  /// of each here rather than one per demand. Raising a demand is a different act with its own
-  /// overloads — see <c>ProjectionExtensions.Typed</c> — because only a matcher, not a modifier,
-  /// can add one.
+  /// <b>A modifier keeps the space it is applied to.</b> Each one is generic in the
+  /// <em>projection's own type</em> and hands that type back, so <c>Text().Named("t")</c> is the
+  /// same <c>IProjection&lt;TSpace, string&gt;</c> it was. The three that cannot —
+  /// <c>Optional</c>, <c>Select</c> and <c>Else(value)</c> — read the space as a separate type
+  /// parameter, because C# has no way to say "this projection with its result swapped".
   /// </para>
   /// </summary>
   public static partial class ProjectionExtensions
@@ -40,9 +37,8 @@ namespace Unrect.Projections
     /// Decomposes <paramref name="space"/> and projects it in one call. The projection's own
     /// placement is applied here too, exactly as it would be nested inside another projection.
     /// <para>
-    /// <paramref name="space"/> must satisfy whatever the projection demands, which for a
-    /// declaration that names no capability is any <see cref="ISpace"/> at all. A declaration that
-    /// reads formulas will not compile against a grid that has none.
+    /// <paramref name="space"/> is the very type the declaration was written over, so a
+    /// declaration that reads formulas will not compile against a grid that has none.
     /// </para>
     /// <para>
     /// Coordinates in failures are relative to <paramref name="space"/>, so a <c>Map</c> called
@@ -57,7 +53,7 @@ namespace Unrect.Projections
     /// path should carry it.
     /// </para>
     /// </summary>
-    /// <typeparam name="TSpace">What the projection demands of the space.</typeparam>
+    /// <typeparam name="TSpace">The space the projection is written over.</typeparam>
     /// <typeparam name="TResult">What the projection reads.</typeparam>
     /// <param name="projection">The declaration.</param>
     /// <param name="space">The space to decompose.</param>
@@ -69,7 +65,7 @@ namespace Unrect.Projections
     /// <see cref="Map{TSpace, TResult}"/> plus where the projection landed and how much it
     /// consumed.
     /// </summary>
-    /// <typeparam name="TSpace">What the projection demands of the space.</typeparam>
+    /// <typeparam name="TSpace">The space the projection is written over.</typeparam>
     /// <typeparam name="TResult">What the projection reads.</typeparam>
     /// <param name="projection">The declaration.</param>
     /// <param name="space">The space to decompose.</param>
@@ -81,7 +77,7 @@ namespace Unrect.Projections
       if (space is null)
         throw new ArgumentNullException(nameof(space));
 
-      return ProjectionEngine.Apply(Plain(projection), space, ProjectionContext.Root(space));
+      return ProjectionEngine.Apply(projection, Plane<TSpace>.Of(space), ProjectionContext.Root(space));
     }
 
     /// <summary>
@@ -103,7 +99,7 @@ namespace Unrect.Projections
     /// compose projections rather than nest calls.
     /// </para>
     /// </summary>
-    /// <typeparam name="TSpace">What the projection demands of the space.</typeparam>
+    /// <typeparam name="TSpace">The space the projection is written over.</typeparam>
     /// <typeparam name="TResult">What the projection reads.</typeparam>
     /// <param name="projection">The declaration.</param>
     /// <param name="space">The space to decompose.</param>
@@ -115,15 +111,15 @@ namespace Unrect.Projections
       if (space is null)
         throw new ArgumentNullException(nameof(space));
 
-      var plain = Plain(projection);
       var context = ProjectionContext.Root(space);
       var mark = context.Diagnostics.Mark();
-      var applied = ProjectionEngine.Apply(plain, space, context);
+      var extent = Plane<TSpace>.Of(space);
+      var applied = ProjectionEngine.Apply(projection, extent, context);
 
       // Suppressed only when the whole parse is one absorbed failure: two boundaries that each
       // absorbed something have left a gap worth mentioning, even though neither consumed anything.
       if (!(applied.Advance.Width == 0 && applied.Advance.Height == 0 && context.Diagnostics.AbsorbedAt(mark)))
-        ReportUnconsumed(plain, space, applied.Offset.Size, applied.Consumed, context);
+        ReportUnconsumed(projection, extent, applied.Offset.Size, applied.Consumed, context);
 
       return new MapResult<TResult>(applied.Value, context.Diagnostics.Snapshot());
     }
@@ -248,36 +244,42 @@ namespace Unrect.Projections
     /// </para>
     /// <para>
     /// A filler value is not a declaration, so this is one of the few modifiers whose result type
-    /// differs from its receiver's; see <c>ProjectionExtensions.Typed</c> for the demanding form.
+    /// differs from its receiver's: it hands back an <see cref="IProjection{TSpace, TResult}"/>
+    /// rather than the receiver's own projection type, which is why a placement modifier goes before
+    /// it and not after.
     /// </para>
     /// </summary>
+    /// <typeparam name="TSpace">The space the projection is written over.</typeparam>
     /// <typeparam name="T">What the projection reads.</typeparam>
     /// <param name="projection">The declaration.</param>
     /// <param name="fallbackValue">What to yield instead.</param>
-    public static IProjection<T> Else<T>(this IProjection<T> projection, T fallbackValue)
-      => new BoundaryProjection<T>(NotNull(projection), null, fallbackValue, Placement.Default, "Else");
+    public static IProjection<TSpace, T> Else<TSpace, T>(this IProjection<TSpace, T> projection, T fallbackValue)
+      where TSpace : class, ISpace
+      => new BoundaryProjection<TSpace, T>(NotNull(projection), null, fallbackValue, Placement.Default, "Else");
 
     /// <summary>
     /// Yields the default value when this projection fails, recording a <c>Warning</c> that carries
     /// the failing projection's own path, location, and problem — the spelling for a section that
     /// may simply not be there.
     /// <para>
-    /// Like <see cref="Else{T}(IProjection{T}, T)"/>, an absorbed projection consumes nothing. For
+    /// Like <see cref="Else{TSpace, T}(IProjection{TSpace, T}, T)"/>, an absorbed projection consumes nothing. For
     /// a value type the filler is <c>default</c> — <c>0</c>, not null — so where the difference
     /// between "absent" and "zero" matters, either give the filler explicitly with
     /// <c>Else(value)</c> or project to a nullable first.
     /// </para>
     /// </summary>
+    /// <typeparam name="TSpace">The space the projection is written over.</typeparam>
     /// <typeparam name="T">What the projection reads.</typeparam>
     /// <param name="projection">The declaration.</param>
-    public static IProjection<T?> Optional<T>(this IProjection<T> projection)
-      => new BoundaryProjection<T?>(NotNull(projection).Select(value => (T?)value), null, default, Placement.Default, "Optional");
+    public static IProjection<TSpace, T?> Optional<TSpace, T>(this IProjection<TSpace, T> projection)
+      where TSpace : class, ISpace
+      => new BoundaryProjection<TSpace, T?>(NotNull(projection).Select(value => (T?)value), null, default, Placement.Default, "Optional");
 
     /// <summary>
     /// Reads a blank cell as null, quietly — the leaf's way of saying "this field may be absent".
     /// <para>
     /// It is not tolerance and it records nothing: an expected blank is a value the declaration
-    /// allowed for, where <see cref="Optional{T}"/> absorbs a <em>failure</em> and says so with a
+    /// allowed for, where <see cref="Optional{TSpace, T}"/> absorbs a <em>failure</em> and says so with a
     /// <c>Warning</c>. Everything else about the leaf is unchanged — a cell of the wrong kind fails
     /// exactly as loudly, and a number that will not fit still fails as a conversion. Blankness is
     /// about the data; a kind is about the format, and no format tolerates the wrong one.
@@ -292,28 +294,33 @@ namespace Unrect.Projections
     /// </code>
     /// </para>
     /// <para>
-    /// It belongs to the typed cell leaves — <c>Text</c>, <c>Decimal</c>, <c>Integer</c>,
-    /// <c>Double</c>, <c>Date</c>, <c>Boolean</c> — because a blank is only a value in a reading
-    /// that asserts a kind; on anything else it is a declaration error, raised where the projection
-    /// is built rather than per file. The modifiers commute with it: <c>Decimal().Right(6)
-    /// .OrBlank()</c> and <c>Decimal().OrBlank().Right(6)</c> are the same declaration.
+    /// It belongs to a cell leaf and nothing else: <c>AsText</c>, the canonical one, and whatever
+    /// kinded leaves a backend publishes — <c>Text</c>, <c>Decimal</c>, <c>Integer</c>,
+    /// <c>Double</c>, <c>Date</c>, <c>Boolean</c> in <c>Unrect.Spreadsheets</c>. A blank is a value
+    /// in a reading of one cell and a declaration error on anything else, raised where the
+    /// projection is built rather than per file. The modifiers commute with it —
+    /// <c>Decimal().Right(6).OrBlank()</c> and <c>Decimal().OrBlank().Right(6)</c> are the same
+    /// declaration — because the widening carries the leaf's placement and its naming across.
     /// </para>
     /// </summary>
+    /// <typeparam name="TSpace">The space the leaf is written over.</typeparam>
     /// <typeparam name="T">What the leaf reads.</typeparam>
-    /// <param name="projection">The typed cell leaf.</param>
-    public static IProjection<T?> OrBlank<T>(this IProjection<T> projection)
+    /// <param name="projection">The cell leaf.</param>
+    public static IProjection<TSpace, T?> OrBlank<TSpace, T>(this IProjection<TSpace, T> projection)
+      where TSpace : class, ISpace
       where T : struct
       => Leaf(projection).Tolerating<T?>(value => value);
 
-    /// <inheritdoc cref="OrBlank{T}(IProjection{T})"/>
-    /// <param name="projection">The <c>Text</c> leaf.</param>
+    /// <inheritdoc cref="OrBlank{TSpace, T}(IProjection{TSpace, T})"/>
+    /// <typeparam name="TSpace">The space the leaf is written over.</typeparam>
+    /// <param name="projection">The <c>AsText</c> leaf, or a backend's <c>Text</c>.</param>
     /// <remarks>
-    /// The reference-typed half of the family, and there is exactly one leaf in it. A backend's
-    /// <c>Formula()</c> is deliberately not reachable here: its null already means <em>that cell is
-    /// not computed</em>, and a second null meaning <em>that cell is empty</em> would put two
-    /// answers behind one spelling.
+    /// The reference-typed half of the family. A backend's <c>Formula()</c> is deliberately not
+    /// reachable here: its null already means <em>that cell is not computed</em>, and a second null
+    /// meaning <em>that cell is empty</em> would put two answers behind one spelling.
     /// </remarks>
-    public static IProjection<string?> OrBlank(this IProjection<string> projection)
+    public static IProjection<TSpace, string?> OrBlank<TSpace>(this IProjection<TSpace, string> projection)
+      where TSpace : class, ISpace
       => Leaf(projection).Tolerating<string?>(value => value);
 
     /// <summary>
@@ -321,12 +328,14 @@ namespace Unrect.Projections
     /// projection like any other, so <c>Named</c> and the placement modifiers work on either side
     /// of it.
     /// </summary>
+    /// <typeparam name="TSpace">The space the projection is written over.</typeparam>
     /// <typeparam name="T">What the projection reads.</typeparam>
     /// <typeparam name="TResult">What the selector produces.</typeparam>
     /// <param name="projection">The declaration.</param>
     /// <param name="selector">The transformation applied to what it reads.</param>
-    public static IProjection<TResult> Select<T, TResult>(this IProjection<T> projection, Func<T, TResult> selector)
-      => new MapProjection<T, TResult>(NotNull(projection), selector, Placement.Default);
+    public static IProjection<TSpace, TResult> Select<TSpace, T, TResult>(this IProjection<TSpace, T> projection, Func<T, TResult> selector)
+      where TSpace : class, ISpace
+      => new MapProjection<TSpace, T, TResult>(NotNull(projection), selector, Placement.Default);
 
     /// <summary>
     /// Insets the projection's extent by <paramref name="all"/> cells on every side.
@@ -391,32 +400,18 @@ namespace Unrect.Projections
       return Pad(projection, left, top, right, bottom);
     }
 
-    /// <summary>
-    /// The projection as the engine sees it. Sound because every <see cref="IProjection{TSpace,
-    /// TResult}"/> this library produces is a <see cref="ProjectionBase{TResult}"/>, which
-    /// implements <see cref="IProjection{TResult}"/>; the demand lives only in the static type, so
-    /// forgetting it here is the identity.
-    /// </summary>
-    internal static IProjection<T> Plain<TSpace, T>(IProjection<TSpace, T> projection)
-      where TSpace : class, ISpace
-      => projection as IProjection<T> ?? throw NotOurs(projection, nameof(projection));
-
     private static TProjection Pad<TProjection>(TProjection projection, int left, int top, int right, int bottom)
       where TProjection : class, IProjection
       => Wrapped<TProjection>(Base(projection).Inset(left, top, right, bottom));
 
     /// <summary>
-    /// The receiver as the typed cell leaf <c>OrBlank</c> needs it to be. A leaf keeps its own class
-    /// through every clone-returning modifier, so this recognises a placed and named one as well as
-    /// a bare one; anything else never asserted a kind, and reading a blank as null there would be
-    /// inventing a meaning the declaration never stated.
+    /// The receiver as the projection base <c>OrBlank</c> dispatches through. A leaf that can
+    /// tolerate a blank overrides <c>Tolerating</c>; everything else refuses there, so the
+    /// distinction is the leaf's to make rather than a list kept here.
     /// </summary>
-    private static TypedCellProjection<T> Leaf<T>(IProjection<T> projection)
-      => NotNull(projection) as TypedCellProjection<T>
-        ?? throw new ArgumentException(
-          $"OrBlank reads a blank cell as null, so it belongs on a cell leaf that declares a kind — "
-          + $"Text, Decimal, Integer, Double, Date or Boolean. {ProjectionContext.Describe(projection)} is not one.",
-          nameof(projection));
+    private static ProjectionBase<TSpace, T> Leaf<TSpace, T>(IProjection<TSpace, T> projection)
+      where TSpace : class, ISpace
+      => NotNull(projection) as ProjectionBase<TSpace, T> ?? throw NotOurs(projection, nameof(projection));
 
     /// <summary>The projection as this library builds them, which is the only kind a modifier can modify.</summary>
     private static ProjectionBase Base<TProjection>(TProjection projection)
@@ -442,7 +437,7 @@ namespace Unrect.Projections
       => wrapper as TProjection
         ?? throw new InvalidOperationException(
           $"A modifier that wraps hands back a {wrapper.GetType().Name}, which is not a {typeof(TProjection).Name}. "
-          + "Hold the projection as IProjection<T> — or, where it demands a capability, as IProjection<TSpace, T> — rather than as its own class.");
+          + "Hold the projection as IProjection<TSpace, T> rather than as its own class.");
 
     private static ArgumentException NotOurs(IProjection? projection, string parameter)
       => new ArgumentException(

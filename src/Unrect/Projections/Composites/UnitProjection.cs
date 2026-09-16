@@ -11,9 +11,10 @@ namespace Unrect.Projections
   /// was built from. The parts fold out of a rendered path by being marked scaffolding, so nothing
   /// here depends on what the body happens to be.
   /// </summary>
-  internal sealed class UnitProjection<T> : ProjectionBase<T>
+  internal sealed class UnitProjection<TSpace, T> : ProjectionBase<TSpace, T>
+    where TSpace : class, ISpace
   {
-    public UnitProjection(IProjection<T> body, IReadOnlyList<IProjection> children, string description, Placement placement)
+    public UnitProjection(IProjection<TSpace, T> body, IReadOnlyList<IProjection> children, string description, Placement placement)
       : base(placement)
     {
       Body = body ?? throw new ArgumentNullException(nameof(body));
@@ -21,13 +22,13 @@ namespace Unrect.Projections
       Description = description;
     }
 
-    private IProjection<T> Body { get; }
+    private IProjection<TSpace, T> Body { get; }
 
     public override string Description { get; }
 
     public override IReadOnlyList<IProjection> Children { get; }
 
-    public override ProjectionResult<T> Project(ISpace extent, ProjectionContext context)
+    public override ProjectionResult<T> Project(Plane<TSpace> extent, ProjectionContext context)
     {
       var applied = ProjectionEngine.Apply(Body, extent, context);
 

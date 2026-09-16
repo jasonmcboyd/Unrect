@@ -8,7 +8,8 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 
 namespace Unrect.Tests.Streaming
 {
@@ -37,6 +38,52 @@ namespace Unrect.Tests.Streaming
     /// a column no member claims, which is the strict-one-way rule doing its job.
     /// </summary>
     private sealed record FundAmount(string Fund, decimal Amount);
+
+    // --- Which declarations it takes, and which it refuses at COMPILE time ----------------------------
+
+    [Fact]
+    public void ACanonicalDeclarationIsTakenToo_BecauseASheetIsASpace()
+    {
+      // Two overloads, and the second is not a convenience. The streaming door hands back a plain
+      // ISheetCells — the honest absence, because a streamed sheet reads values and has no formulas
+      // — and an ISheetCells IS an ISpace, so a declaration written over the canonical surface is a
+      // declaration this file can answer. Without the overload, the whole canonical vocabulary would
+      // be unusable through the sugar for no reason a reader could name.
+      IProjection<ISpace, string?> canonical = ProjectionBuilders<ISpace>.AsText().OrBlank();
+
+      Assert.Equal("Fund", canonical.MapWorkbook(Path("multi-sheet.xlsx"), "Detail", Cold()));
+    }
+
+    [Fact]
+    public void AndADeclarationTheSheetCannotAnswerDoesNotCompile()
+    {
+      // MUST NOT COMPILE, and there is no way to assert that from inside a test — so it is recorded
+      // here instead, beside the two overloads that make it true:
+      //
+      //   IProjection<IFormulaSpace, string?> formula = SpreadsheetProjections.Formula<IFormulaSpace>();
+      //   formula.MapWorkbook(path, sheet);          // CS1929/CS0411 — no overload takes it
+      //
+      // The receiver is IProjection<ISheetCells, T> on one overload and IProjection<ISpace, T> on the
+      // other, and IProjection is INVARIANT in its space (phase-6 ruling (i): `in TSpace` and a real
+      // Project(Plane<TSpace>, …) are mutually exclusive), so a declaration over IFormulaSpace,
+      // ISpreadsheetSpace or IValueCells<T> matches neither. That is the whole guard: the alternative
+      // to a compile error here is a file's formulas quietly reading as absent, which is the failure
+      // mode the capability seam exists to make unspellable.
+      //
+      // What the analyzers do with it: UNR003 names both spaces beside the compiler's inference
+      // failure (Unrect.Analyzers.Tests.DemandsExceedOfferTests), and UNR002 offers the vocabulary
+      // that could carry the demand (DemandDoorTests). Neither is a rule of its own — the refusal is
+      // the type system's, and they only make it legible.
+      //
+      // The positive half, asserted rather than described: the two receivers the overloads name.
+      Assert.Equal(
+        new[] { "ISheetCells", "ISpace" },
+        typeof(SpreadsheetProjectionExtensions)
+          .GetMethods()
+          .Where(method => method.Name == nameof(SpreadsheetProjectionExtensions.MapWorkbook) && method.GetParameters().Length == 4)
+          .Select(method => method.GetParameters()[0].ParameterType.GetGenericArguments()[0].Name)
+          .OrderBy(name => name, StringComparer.Ordinal));
+    }
 
     // --- The same reading as the idiom it abbreviates ------------------------------------------------
 
@@ -150,7 +197,7 @@ namespace Unrect.Tests.Streaming
       // Blankness belongs to the adapter, and through this door the adapter is configured by the
       // options argument: the same cell reads as an absence under the default and as its own two
       // spaces under strict fidelity.
-      var cell = Down(2).Of(Cell(value => value.TryGetString() ?? "<blank>"));
+      var cell = Down(2).Of(Point().Select(point => point.IsText ? point.Text() : "<blank>"));
 
       Assert.Equal("<blank>", cell.MapWorkbook(Path("edge-cases.xlsx"), "Edges"));
       Assert.Equal(
@@ -194,8 +241,8 @@ namespace Unrect.Tests.Streaming
       // to be an ArgumentNullException rather than whatever opening a missing file would have been.
       var missing = Path("no-such-workbook.xlsx");
 
-      Assert.Throws<ArgumentNullException>(() => ((IProjection<string>)null!).MapWorkbook(missing, "Any"));
-      Assert.Throws<ArgumentNullException>(() => ((IProjection<string>)null!).MapWorkbookWithDiagnostics(missing, "Any"));
+      Assert.Throws<ArgumentNullException>(() => ((IProjection<ISheetCells, string>)null!).MapWorkbook(missing, "Any"));
+      Assert.Throws<ArgumentNullException>(() => ((IProjection<ISheetCells, string>)null!).MapWorkbookWithDiagnostics(missing, "Any"));
 
       // ...and the path really is one that would have failed, so the assertion above is not vacuous.
       Assert.ThrowsAny<IOException>(() => Text().MapWorkbook(missing, "Any"));
@@ -212,7 +259,7 @@ namespace Unrect.Tests.Streaming
       // does not block a second open.)
       var space = Range(WholeExtent(), block => block.Space).MapWorkbook(Path("multi-sheet.xlsx"), "Detail");
 
-      Assert.Throws<ObjectDisposedException>(() => space[0, 0]);
+      Assert.Throws<ObjectDisposedException>(() => space[0, 0].AsText());
     }
 
     [Fact]
@@ -222,7 +269,7 @@ namespace Unrect.Tests.Streaming
       // return away from losing. The probe captures the extent it was handed on the way past; the
       // sibling after it then fails, and the captured view is dead by the time the exception
       // surfaces.
-      ISpace? captured = null;
+      Plane<ISheetCells>? captured = null;
 
       var probe = Range(1, 1, block =>
       {
@@ -236,7 +283,90 @@ namespace Unrect.Tests.Streaming
       Assert.Throws<ProjectionException>(() => declaration.MapWorkbook(Path("multi-sheet.xlsx"), "Detail"));
 
       Assert.NotNull(captured);
-      Assert.Throws<ObjectDisposedException>(() => captured![0, 0]);
+      Assert.Throws<ObjectDisposedException>(() => captured!.Value[0, 0].AsText());
+    }
+
+    [Fact]
+    public void AValueStillKnowsItsOwnExtentAfterTheBookIsClosed()
+    {
+      // Deliberate, and stated beside its opposite below so the pair reads as one rule. A region is
+      // WHERE a declaration was told to look — three numbers and a reference — so its extent is part
+      // of the value handed to the projection rather than something read out of the file, and
+      // answering it after the close costs nothing and touches nothing. Making it throw would mean
+      // the region carried a lifetime it does not have, and every dimension a projection had already
+      // been given would become a trap.
+      var block = Range(2, 3, cells => cells).MapWorkbook(Path("multi-sheet.xlsx"), "Detail");
+
+      Assert.Equal(2, block.Width);
+      Assert.Equal(3, block.Height);
+      Assert.Equal(2, block.Space.Area.Width);
+      Assert.Equal(3, block.Space.Area.Height);
+      Assert.Equal("A1", block.Location.A1);
+    }
+
+    [Fact]
+    public void AndIsStillDeadOnArrivalForAnythingThatWouldReadTheFile()
+    {
+      // The other half of the pair above: the extent survives, the cells do not. A read is the one
+      // thing that needs the workbook, so it is the one thing that fails — which is what makes the
+      // ObjectDisposedException proof that the close happened rather than an accident of what was
+      // cached.
+      var block = Range(2, 3, cells => cells).MapWorkbook(Path("multi-sheet.xlsx"), "Detail");
+
+      Assert.Throws<ObjectDisposedException>(() => block.Space[0, 0].AsText());
+      Assert.Throws<ObjectDisposedException>(() => block[0, 0].AsText());
+      Assert.Throws<ObjectDisposedException>(() => block.Row(0)[0].AsText());
+
+      // Taking the row itself does not throw, for the same reason the extent above does not: a strip
+      // is another region, named and not read. Nor does NAMING a cell of it — a point is an address,
+      // and an address of a cell in a closed workbook is a perfectly good address with nothing to
+      // read through.
+      Assert.Equal(2, block.Row(0).Count);
+      _ = block[0, 0];
+      _ = block.Row(0)[0];
+    }
+
+    [Fact]
+    public void ThePointsTheExploringRungsYieldAreAddressesThatOutliveTheBook()
+    {
+      // The two rungs that hand back POINTS rather than values — the dictionary table and the
+      // labelled card — read through the same rule as everything else here, and it is worth stating
+      // on them because a dictionary of points looks like data and is not.
+      //
+      // What a point is: a space, a column and a row. Minting one costs nothing and touches nothing,
+      // so the dictionary survives the close intact and can be counted, keyed and looked up
+      // afterwards. Reading through one needs the file, so that is what fails — and it fails as a
+      // FAULT, which is the half that matters: a workbook that is gone must never be reported as a
+      // section that was not there.
+      var rows = Table().MapWorkbook(Path("multi-sheet.xlsx"), "Detail", Cold());
+
+      Assert.Equal(5, rows.Count);
+      Assert.True(rows[0].ContainsKey("Fund"));
+
+      var fund = rows[0]["Fund"];
+
+      Assert.Equal(0, fund.Column);
+      Assert.Equal(1, fund.Row);
+
+      Assert.Throws<ObjectDisposedException>(() => fund.AsText());
+      Assert.Throws<ObjectDisposedException>(() => fund.Text());
+      Assert.True(ProjectionEngine.IsFault(new ObjectDisposedException("Workbook")));
+    }
+
+    [Fact]
+    public void AndSoAreTheOnesALabelledCardYields()
+    {
+      // The same rule through Fields, whose element type is the same dictionary of points. Stated
+      // separately because the two rungs find their cells by completely different means — a header
+      // row versus a label column — and share only what they hand back.
+      var card = Fields(Field("Fund")).MapWorkbook(Path("multi-sheet.xlsx"), "Detail", Cold());
+
+      var value = card["Fund"];
+
+      Assert.Equal(1, value.Column);
+      Assert.Equal(0, value.Row);
+
+      Assert.Throws<ObjectDisposedException>(() => value.AsText());
     }
 
     [Fact]
@@ -245,10 +375,10 @@ namespace Unrect.Tests.Streaming
       // The documented trap, pinned as documented: the whole-table rung hands back a TableView, which
       // is a reader over the sheet rather than a value read from it, and the sheet is gone. Project
       // what you need inside the declaration — that is what a declaration is for.
-      var view = Table(headerRows: 1, (TableView table) => table).MapWorkbook(Path("multi-sheet.xlsx"), "Detail");
+      var view = Table(headerRows: 1, (TableView<ISheetCells> table) => table).MapWorkbook(Path("multi-sheet.xlsx"), "Detail");
 
-      Assert.Throws<ObjectDisposedException>(() => view.Space[0, 0]);
-      Assert.Throws<ObjectDisposedException>(() => view.Rows[0][0]);
+      Assert.Throws<ObjectDisposedException>(() => view.Space[0, 0].AsText());
+      Assert.Throws<ObjectDisposedException>(() => view.Rows[0][0].AsText());
     }
 
     [Fact]
@@ -256,7 +386,7 @@ namespace Unrect.Tests.Streaming
     {
       // The other half of the trap, so it reads as a rule rather than a defect: the same rung asked
       // for VALUES comes back with values, and nothing about the lifetime is a problem.
-      var captions = Table(headerRows: 1, (TableView table) => table.ColumnNames.ToArray())
+      var captions = Table(headerRows: 1, (TableView<ISheetCells> table) => table.ColumnNames.ToArray())
         .MapWorkbook(Path("multi-sheet.xlsx"), "Detail");
 
       Assert.Equal(new[] { "Fund", "Date", "Amount" }, captions);
@@ -276,7 +406,7 @@ namespace Unrect.Tests.Streaming
     //
     // The refusal is the point and the tail is misleading: no import would help, because there is no
     // demanding overload to find. A streamed sheet reads values only — Workbook.Sheet hands back a
-    // plain ISpace — so a formula-reading declaration has no capable space here to be applied to, and
+    // plain ISheetCells — so a formula-reading declaration has no capable space here to be applied to, and
     // the alternatives were a run-time fault or a file's formulas quietly read as absent. Read
     // formulas through the eager door instead: projection.Map(SpreadsheetSpace.CreateWithFormulas(…)).
   }

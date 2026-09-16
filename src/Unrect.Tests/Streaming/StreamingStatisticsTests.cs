@@ -122,9 +122,9 @@ namespace Unrect.Tests.Streaming
         using var pool = new ReaderPool(source, readers, warmReaders: false);
         var store = Store(pool, 400, 2, chunkRows: 10, windowChunks: 4);
 
-        for (var row = 0; row < 400; row++) _ = store.GetCell(0, row, row, 1);
-        for (var row = 0; row < 50; row++) _ = store.GetCell(0, row, row, 1);
-        for (var row = 350; row < 400; row++) _ = store.GetCell(0, row, row, 1);
+        for (var row = 0; row < 400; row++) _ = store.GetCell(0, row);
+        for (var row = 0; row < 50; row++) _ = store.GetCell(0, row);
+        for (var row = 350; row < 400; row++) _ = store.GetCell(0, row);
 
         skipped[readers - 1] = store.Snapshot().RowsSkipped;
         loads[readers - 1] = store.Snapshot().ChunkLoads;
@@ -150,7 +150,7 @@ namespace Unrect.Tests.Streaming
       var store = Store(pool, 95, 3, chunkRows: 10, windowChunks: 4);
 
       for (var row = 0; row < 95; row++)
-        _ = store.GetCell(0, row, row, 1);
+        _ = store.GetCell(0, row);
 
       var stats = store.Snapshot();
 
@@ -185,9 +185,11 @@ namespace Unrect.Tests.Streaming
       using var pool = new ReaderPool(source, 2, warmReaders: false);
       var store = Store(pool, 200, 2, chunkRows: 10, windowChunks: 6);
 
+      store.Sweeping(50, 70);
+
       for (var pass = 0; pass < 2; pass++)
         for (var offset = 0; offset < 70; offset++)
-          _ = store.GetCell(0, 50 + offset, 50, 70);
+          _ = store.GetCell(0, 50 + offset);
 
       var rendered = store.Snapshot().ToString();
 
@@ -212,7 +214,7 @@ namespace Unrect.Tests.Streaming
       var store = Store(pool, 1500, 2, chunkRows: 100, windowChunks: 4, rowsMeasured: 1500);
 
       for (var row = 0; row < 1500; row++)
-        _ = store.GetCell(0, row, row, 1);
+        _ = store.GetCell(0, row);
 
       // Rendered in full rather than by its suffix, so the clause is pinned in its place — after the
       // resident figures, where a reader looking for what a run cost finds the rest of the costs.

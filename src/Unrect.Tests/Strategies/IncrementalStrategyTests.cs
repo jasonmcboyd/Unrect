@@ -1,6 +1,9 @@
 using System;
 
+using System.Globalization;
+
 using Unrect.Core;
+using Unrect.Spreadsheets;
 using Unrect.Strategies;
 
 using Xunit;
@@ -36,11 +39,11 @@ namespace Unrect.Tests.Strategies
   /// </summary>
   public class IncrementalStrategyTests
   {
-    private static bool HasValue(CellValue value) => value.HasValue;
+    private static bool HasValue(Point<ISpace> value) => value.HasValue;
 
     // --- The four grids every fold is folded over ------------------------------------------------
 
-    private static ISpace Space(string name) => name switch
+    private static ISheetCells Space(string name) => name switch
     {
       // Every cell carries a value, so every row-wise rule runs to the bottom.
       "dense" => Grid(new[,]
@@ -102,6 +105,21 @@ namespace Unrect.Tests.Strategies
         { 0, 0, 0 },
       }),
 
+      // --- and one of labels, for the rule that only text can end ---------------------------------
+      //
+      // Every grid above is built from ints, and a text rule cannot be stated over one at all: the
+      // needle would have to be a rendering, which is the very thing TakeRowsToText refuses to match.
+      // So the rule that ends a band on a LABEL gets a grid of labels, with a numeric cell beside the
+      // boundary saying the same digits as a row further down — the case that separates "what a cell
+      // holds" from "what a cell says", and the case an int grid cannot pose.
+      "labels" => Mixed(new object?[,]
+      {
+        { "a", 1 },
+        { 42, 2 },
+        { "Total", 3 },
+        { "b", 4 },
+      }),
+
       _ => throw new ArgumentOutOfRangeException(nameof(name), name, "No such grid."),
     };
 
@@ -109,7 +127,7 @@ namespace Unrect.Tests.Strategies
     /// The fold, written out here rather than called from <see cref="Scans.Fold"/>, so the test
     /// says independently what every implementation's one-line delegation claims.
     /// </summary>
-    private static int Fold(IRowScan scan, ISpace space)
+    private static int Fold(IRowScan scan, ISheetCells space)
     {
       var count = 0;
 
@@ -129,13 +147,13 @@ namespace Unrect.Tests.Strategies
       "TakeRowsWhileAny" => RowStrategies.TakeRowsWhileAny(HasValue),
       "TakeRowsWhileAnyValue" => RowStrategies.TakeRowsWhileAnyValue(),
       "TakeRowsTo" => RowStrategies.TakeRowsTo((space, row) => space[0, row].IsBlank),
-      "TakeRowsToValue" => RowStrategies.TakeRowsToValue(0, CellValue.Of(7)),
+      "TakeRowsToText" => RowStrategies.TakeRowsToText(0, "Total"),
       "AllRows" => RowStrategies.AllRows(),
 
       _ => throw new ArgumentOutOfRangeException(nameof(name), name, "No such strategy."),
     };
 
-    private static void AssertRowFoldIdentity(IRowStrategy strategy, ISpace space, int expected)
+    private static void AssertRowFoldIdentity(IRowStrategy strategy, ISheetCells space, int expected)
     {
       var incremental = Assert.IsAssignableFrom<IIncrementalRowStrategy>(strategy);
 
@@ -172,10 +190,17 @@ namespace Unrect.Tests.Strategies
     [InlineData("TakeRowsTo", "sparse", 2)]
     [InlineData("TakeRowsTo", "empty", 0)]
     [InlineData("TakeRowsTo", "blank", 1)]
-    [InlineData("TakeRowsToValue", "dense", 3)]
-    [InlineData("TakeRowsToValue", "sparse", 4)]
-    [InlineData("TakeRowsToValue", "empty", 0)]
-    [InlineData("TakeRowsToValue", "blank", 2)]
+    // The text-ending rule, back in the theory it left when it stopped comparing whole cell values.
+    // On the grids of ints there is no text to find, so it runs to the bottom every time — which is
+    // itself the fold identity's claim, that a rule that never stops and a fold that never stops
+    // agree. The labels grid is where it does stop: the boundary is at row 2 and the band is three
+    // rows, and the NUMBER 42 at row 1 does not end it even though it says the same digits as a
+    // needle written that way would.
+    [InlineData("TakeRowsToText", "dense", 4)]
+    [InlineData("TakeRowsToText", "sparse", 4)]
+    [InlineData("TakeRowsToText", "empty", 0)]
+    [InlineData("TakeRowsToText", "blank", 2)]
+    [InlineData("TakeRowsToText", "labels", 3)]
     // The constant rule, which stops only because the rows do.
     [InlineData("AllRows", "dense", 4)]
     [InlineData("AllRows", "sparse", 4)]
@@ -195,7 +220,19 @@ namespace Unrect.Tests.Strategies
     private static ISizeStrategy SizeStrategy(string name) => name switch
     {
       "RowsWhileAnyValue" => SizeStrategies.RowsWhileAnyValue(),
-      "RowsWhileAny" => SizeStrategies.RowsWhileAny(value => value.TryGetInt() < 7),
+      // The law is SelectRows == the hand-written fold, whatever the rule is; the rule's own
+      // content is immaterial to it, so a canonical predicate that partitions the same rows is a
+      // faithful pin.
+      //
+      // MARKER (spec §15, phase 7): this is a kind/value rule spelled over the canonical four
+      // because Point<ISpace> cannot say "is a number". It comes back as a typed-layer lift.
+      //
+      // TryParse rather than Parse, and that is the faithful half: the rule this replaced was
+      // `TryGetInt() < 7`, which answers FALSE for a cell that is not a whole number rather than
+      // throwing. Parsing strictly would agree over the grids of ints and throw the moment one of
+      // these rules met the labels grid below — a fixture coupling with no upside.
+      "RowsWhileAny" => SizeStrategies.RowsWhileAny(
+        value => int.TryParse(value.AsText(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var number) && number < 7),
 
       _ => throw new ArgumentOutOfRangeException(nameof(name), name, "No such strategy."),
     };
@@ -370,7 +407,7 @@ namespace Unrect.Tests.Strategies
       // Not the space it is folded over and not the strategy's own idea of a width: BeginSize takes
       // the available space and the answer comes from it, so a narrower band gives a narrower
       // extent.
-      var band = Space("dense").GetSubspace(default, new Area(2, 4));
+      var band = Space("dense").Region().Slice(default, new Area(2, 4));
       var strategy = Assert.IsAssignableFrom<IIncrementalSizeStrategy>(SizeStrategies.RowsWhileAnyValue());
 
       Assert.Equal(2, strategy.BeginSize(band).Width);
@@ -444,7 +481,7 @@ namespace Unrect.Tests.Strategies
     [InlineData("TakeRowsWhileAny")]
     [InlineData("TakeRowsWhileAnyValue")]
     [InlineData("TakeRowsTo")]
-    [InlineData("TakeRowsToValue")]
+    [InlineData("TakeRowsToText")]
     [InlineData("AllRows")]
     public void EveryRowStrategyThatIsAPerRowRuleIsIncremental(string strategy)
     {

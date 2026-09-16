@@ -2,11 +2,13 @@ using System.Collections.Generic;
 using System.Linq;
 
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.Observations;
 using static Unrect.Tests.ProjectionTestSpaces;
 
@@ -47,9 +49,9 @@ namespace Unrect.Tests.Projections
         { "Beta", 20m },
       });
 
-      var newDefault = Table(r => new Line(r.Text("Name"), r.Decimal("Amount")));
+      var newDefault = Table(r => new Line(r["Name"].Text(), r["Amount"].Decimal()));
       var oldOffset = OffsetBy(OffsetStrategies.SkipBlankRows())
-        .Of(Table(r => new Line(r.Text("Name"), r.Decimal("Amount"))));
+        .Of(Table(r => new Line(r["Name"].Text(), r["Amount"].Decimal())));
 
       AssertL3(Observe(oldOffset, sheet), Observe(newDefault, sheet));
     }
@@ -75,7 +77,7 @@ namespace Unrect.Tests.Projections
         { 99m, 20m },      // r1: reaches back to column 0, LEFT of the first row's corner
       });
 
-      IReadOnlyList<decimal> read = Table(0, r => r.Decimal(0)).Map(ragged);
+      IReadOnlyList<decimal> read = Table(0, r => r[0].Decimal()).Map(ragged);
 
       // Column 1 read for both rows; the 99m in column 0 is lost. A non-ragged read would have
       // included it — the miss is silent by design, which is why it is pinned here.
@@ -99,7 +101,7 @@ namespace Unrect.Tests.Projections
         { null, "Gamma", 300m },
       });
 
-      var records = Table(r => new Line(r.Text("Name"), r.Decimal("Amount")), onBlank: BlankRowStrategy.Skip)
+      var records = Table(r => new Line(r["Name"].Text(), r["Amount"].Decimal()), onBlank: BlankRowStrategy.Skip)
         .Map(sheet);
 
       // Corner located (Name/Amount bind at columns B/C) and the interior blank skipped, not stopped

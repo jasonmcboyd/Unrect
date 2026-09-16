@@ -39,13 +39,13 @@ namespace Unrect.Strategies
     private IIncrementalRowStrategy RowSelectionStrategy { get; }
     private IRowMajorColumnStrategy ColumnSelectionStrategy { get; }
 
-    public IAreaScan BeginSize(ISpace availableSpace)
+    public IAreaScan BeginSize(Plane<ISpace> availableSpace)
       => new Scan(
         availableSpace,
         RowSelectionStrategy.BeginRows(),
-        ColumnSelectionStrategy.BeginColumns(availableSpace.Area.Width));
+        ColumnSelectionStrategy.BeginColumns(availableSpace.Width));
 
-    public Size GetSize(ISpace availableSpace) => Scans.FoldSize(BeginSize(availableSpace), availableSpace);
+    public Size GetSize(Plane<ISpace> availableSpace) => Scans.FoldSize(BeginSize(availableSpace), availableSpace);
 
     private sealed class Scan : IAreaScan
     {
@@ -61,7 +61,7 @@ namespace Unrect.Strategies
       /// </summary>
       private bool _stopped;
 
-      public Scan(ISpace space, IRowScan rows, IColumnAccumulator columns)
+      public Scan(Plane<ISpace> space, IRowScan rows, IColumnAccumulator columns)
       {
         Rows = rows;
         Width = DecideWidth(space, rows, columns);
@@ -73,7 +73,7 @@ namespace Unrect.Strategies
       private IRowScan Rows { get; }
 
       /// <inheritdoc/>
-      public bool IncludesRow(ISpace space, int row)
+      public bool IncludesRow(Plane<ISpace> space, int row)
       {
         // Replayed, not re-read. A row rule is told each row once — some carry state that says so —
         // and the width phase already told this one about every row up to and including the one that
@@ -91,7 +91,7 @@ namespace Unrect.Strategies
       /// The one forward walk: the row rule's verdicts, with every accepted row fed to the column
       /// accumulator, for as long as the accumulator could still change its mind.
       /// </summary>
-      private int DecideWidth(ISpace space, IRowScan rows, IColumnAccumulator columns)
+      private int DecideWidth(Plane<ISpace> space, IRowScan rows, IColumnAccumulator columns)
       {
         var height = space.Area.Height;
 

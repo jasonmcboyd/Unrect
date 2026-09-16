@@ -23,6 +23,22 @@ namespace Unrect.Projections
       => new ProjectionLocation(origin.Height + 1, origin.Width + 1, available);
 
     /// <summary>
+    /// Where <paramref name="point"/> is. A point carries its space's own coordinates, so the
+    /// conversion is the one above and the space itself is what was available there.
+    /// </summary>
+    internal static ProjectionLocation At<TSpace>(Point<TSpace> point)
+      where TSpace : class, ISpace
+      => At(new Offset(point.Column, point.Row), point.Space.Area.Size);
+
+    /// <summary>
+    /// Where <paramref name="plane"/> starts, with the plane's own extent as the space available
+    /// there — the region a declaration was handed, cited as the room it had.
+    /// </summary>
+    internal static ProjectionLocation At<TSpace>(Plane<TSpace> plane)
+      where TSpace : class, ISpace
+      => At(plane.Origin, plane.Area.Size);
+
+    /// <summary>
     /// Whether this is the cell at <paramref name="origin"/>, however much space was available
     /// there — the same conversion, asked the other way round.
     /// </summary>

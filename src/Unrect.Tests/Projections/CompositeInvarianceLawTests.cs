@@ -1,10 +1,12 @@
 using System;
 
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.Observations;
 using static Unrect.Tests.ProjectionTestSpaces;
 
@@ -43,7 +45,7 @@ namespace Unrect.Tests.Projections
     /// A flow spelling and an overlay spelling built to land on the same cells. The overlay's
     /// children carry the offsets the flow's cursor would have supplied.
     /// </summary>
-    private static (IProjection<string> Flow, IProjection<string> Overlay) Pair(string spelling) => spelling switch
+    private static (IProjection<ISheetCells, string> Flow, IProjection<ISheetCells, string> Overlay) Pair(string spelling) => spelling switch
     {
       // Two single cells side by side: the flow's second band is the second column, and the overlay
       // says so with .Right(1).
@@ -61,8 +63,8 @@ namespace Unrect.Tests.Projections
       // Children of different heights, so the consumed extent is not simply the first child's: the
       // flow takes the tallest across its axis, the overlay the furthest reach down.
       "children of different heights" => (
-        HorizontalFlow(h => $"{h.Next(Column(2, s => s[0].GetInt()))}/{h.Next(IntCell())}"),
-        Overlay(o => $"{o.Next(Column(2, s => s[0].GetInt()))}/{o.Next(Right(1).Of(IntCell()))}")),
+        HorizontalFlow(h => $"{h.Next(Column(2, s => s[0].Integer()))}/{h.Next(IntCell())}"),
+        Overlay(o => $"{o.Next(Column(2, s => s[0].Integer()))}/{o.Next(Right(1).Of(IntCell()))}")),
 
       _ => throw new ArgumentOutOfRangeException(nameof(spelling), spelling, "No such spelling."),
     };

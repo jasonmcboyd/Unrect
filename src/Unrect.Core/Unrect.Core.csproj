@@ -5,14 +5,35 @@
 
     Every type here appears in a contract signature, or in behaviour a contract documents:
 
-      ISpace, the strategy interfaces, IRowLandmark/IColumnLandmark  the contracts themselves
-      CellValue (and CellKind/CellError through it)                  ISpace's indexer
+      ISpace, the strategy interfaces,
+      IRowLandmark/IColumnLandmark                                   the contracts themselves
+      Plane                                                          the 2-D locator: the region a
+                                                                     projection is handed. Spoken by
+                                                                     the strategy signatures and by
+                                                                     IProjection's Project
+      Point                                                          the 0-D locator Plane mints
+      IBound                                                         a region's bottom edge while it
+                                                                     is still being discovered; it
+                                                                     is public because Plane speaks
+                                                                     it, while MINTING one is the
+                                                                     engine's business — Plane.Bounded
+                                                                     is internal to it
+      IValueCells                                                    what a grid of one CLR type
+                                                                     answers beyond the canonical
+                                                                     four; spoken by the Value read
       Size, Offset, Area                                             the strategy signatures
       OutOfBoundsException                                           the throw ISpace mandates
 
+    Hashes is internal and exempt: the charter is about what this project's contracts SPEAK, and
+    nothing outside this package can name it. It exists because the value types here — and the cell
+    struct in Unrect.Spreadsheets, which is granted the same reach — mix a hash the same way, and
+    System.HashCode is netstandard2.1 and up. Renderings is internal and exempt for the same
+    reason: the in-memory grid and the spreadsheet cell must write a double as the same digits,
+    and neither target's own rendering agrees with the other's.
+
     A type that merely USES those contracts belongs above them, in Unrect. That is why GridSpace
-    (an implementation of ISpace) and SpaceExtensions (sugar over one of its methods) left on
-    2026-09-03: both were reachable from here, neither was spoken of by anything here.
+    (an implementation of the grid contract) and SpaceExtensions (sugar over one of its methods)
+    left on 2026-09-03: both were reachable from here, neither was spoken of by anything here.
 
     The test before adding a type: name the contract it appears in. If you cannot, it goes in
     Unrect — which ships in the same package, so nothing about the move reaches a consumer but
@@ -22,5 +43,16 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- So the engine can attach a discovered bottom edge to a region it just cut. Reading one is
+         public (a plane says whether it carries a bound); making one is not, because only the code
+         that owns the scan can honour the contract Plane.Bounded documents. The same grant
+         Unrect.Strategies makes for the same kind of reason. The suite gets the same reach, so a
+         contract law can be stated over a bounded region without going through the engine. -->
+    <InternalsVisibleTo Include="Unrect" />
+    <InternalsVisibleTo Include="Unrect.Spreadsheets" />
+    <InternalsVisibleTo Include="Unrect.Tests" />
+  </ItemGroup>
 
 </Project>

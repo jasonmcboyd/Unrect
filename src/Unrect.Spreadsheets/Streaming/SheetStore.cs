@@ -2,8 +2,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Threading;
 
-using Unrect.Core;
-
 namespace Unrect.Spreadsheets
 {
   /// <summary>
@@ -34,12 +32,12 @@ namespace Unrect.Spreadsheets
   internal sealed class SheetStore : IDisposable
   {
     /// <summary>
-    /// The size of one <see cref="CellValue"/>, and the reason chunks are sized the way they are.
+    /// The size of one <see cref="Cell"/>, and the reason chunks are sized the way they are.
     /// <para>
-    /// It was 8 while <c>CellValue</c> was a class holding a reference. Leaving it at 8 after the
+    /// It was 8 while <c>Cell</c> was a class holding a reference. Leaving it at 8 after the
     /// struct merge would have tripled every chunk — a default 8-column chunk would have been
     /// 196,608 bytes, straight onto the Large Object Heap that the 64 KB target exists to avoid.
-    /// A test asserts this against <c>Unsafe.SizeOf&lt;CellValue&gt;()</c> so the next
+    /// A test asserts this against <c>Unsafe.SizeOf&lt;Cell&gt;()</c> so the next
     /// representation change cannot repeat it.
     /// </para>
     /// </summary>
@@ -80,8 +78,15 @@ namespace Unrect.Spreadsheets
     private long _tick;
     private int _locusFrom;
     private int _locusTo;
+
+    /// <summary>
+    /// The last band found too tall to anchor, so the next announcement of the same one is not
+    /// counted again. Minus one because a zero-row band never reaches the counting branch, so the
+    /// pair has to start at something no real band can equal.
+    /// </summary>
     private int _oversizedFrom = -1;
     private int _oversizedTo = -1;
+
     private int _liveResident;
     private int _peakResident;
     private bool _disposed;
@@ -181,14 +186,11 @@ namespace Unrect.Spreadsheets
     }
 
     /// <summary>
-    /// One cell, loading its chunk if the window no longer holds it.
-    /// <para>
-    /// <paramref name="extentTop"/> and <paramref name="extentHeight"/> are the locus signal. They
-    /// are the one thing the view knows and this store does not: whether the read belongs to a
-    /// bounded sweep of a band, or a walk down the sheet.
-    /// </para>
+    /// One cell, loading its chunk if the window no longer holds it. Which band the read belongs to
+    /// is not asked here: the engine announces that once per placement, through
+    /// <see cref="Sweeping"/>.
     /// </summary>
-    internal CellValue GetCell(int column, int row, int extentTop, int extentHeight)
+    internal Cell GetCell(int column, int row)
     {
       // Before everything, including the resident fast path: a read after the workbook is disposed
       // must fail whether or not the chunk happens still to be in memory.
@@ -196,7 +198,7 @@ namespace Unrect.Spreadsheets
         throw new ObjectDisposedException("Workbook", $"The workbook owning sheet '{SheetName}' has been disposed.");
 
       var index = row / ChunkRows;
-      var cells = Resident(index, extentTop, extentHeight) ?? Load(index, extentTop, extentHeight);
+      var cells = Resident(index) ?? Load(index);
 
       return cells[((row - (index * ChunkRows)) * ColumnCount) + column];
     }
@@ -206,7 +208,7 @@ namespace Unrect.Spreadsheets
     /// residency bookkeeping — and null if it does not, which costs the caller one trip through the
     /// gate that re-checks.
     /// </summary>
-    private CellValue[]? Resident(int index, int extentTop, int extentHeight)
+    private Cell[]? Resident(int index)
     {
       if (!_chunks.TryGetValue(index, out var chunk))
         return null;
@@ -218,29 +220,18 @@ namespace Unrect.Spreadsheets
 
       Touch(chunk);
 
-      // The locus is recorded on every resident read, not only when the chunk changes. Gating it on
-      // a chunk transition read an unsynchronised field to decide whether to apply the residency law
-      // at all — so under two threads the law was applied or skipped by a race, and a band could
-      // lose its anchor precisely when it was being swept. Recency bookkeeping stays deliberately
-      // unsynchronised because a lost increment picks a slightly worse victim; dropping an anchor is
-      // not that harmless.
-      lock (_gate)
-        Anchor(extentTop, extentHeight);
-
       return cells;
     }
 
-    private CellValue[] Load(int index, int extentTop, int extentHeight)
+    private Cell[] Load(int index)
     {
       lock (_gate)
       {
-        Anchor(extentTop, extentHeight);
-
         // The slot, made if this chunk has never been held. Another thread may have filled it
         // between the read that missed and this gate.
         var chunk = _chunks.GetOrAdd(index, _ => new Chunk());
 
-        if (chunk.Cells is CellValue[] existing)
+        if (chunk.Cells is Cell[] existing)
         {
           Touch(chunk);
           return existing;
@@ -253,9 +244,9 @@ namespace Unrect.Spreadsheets
         // here on the way to being caught.
         var rows = Math.Min(ChunkRows, Math.Max(0, RowCount - start));
 
-        // No pre-fill: default(CellValue) IS Blank, so a freshly allocated chunk is already an
+        // No pre-fill: default(Cell) IS Blank, so a freshly allocated chunk is already an
         // all-blank band and a short row leaves the cells it never reached exactly right.
-        var cells = new CellValue[rows * ColumnCount];
+        var cells = new Cell[rows * ColumnCount];
 
         var lease = _pool.Borrow(_sheetIndex, start, out var skipped);
         _rowsSkipped += skipped;
@@ -364,26 +355,48 @@ namespace Unrect.Spreadsheets
     }
 
     /// <summary>
-    /// Records the band a read belongs to. The locus grows by union, so nested single-row extents
-    /// inside a band do not shrink it to a row, and re-anchors when the union would exceed the
-    /// budget — an extent too big to hold cannot be pinned, and anchoring on it would pin the wrong
-    /// thing.
+    /// Records the band a placement has opened, which is the band <see cref="Evict"/> then protects.
     /// <para>
-    /// An extent that does not fit the window at all is the sizing law being broken, and counts a
+    /// A band that OVERLAPS the one already open grows it by union, so a child extent inside its
+    /// parent's band does not shrink the locus to itself; one that lies clear of it replaces it,
+    /// because a region the walk has moved past is not being swept any more. That distinction is the
+    /// whole of the rule: the engine announces once per placement rather than once per read, so
+    /// unioning consecutive bands would accumulate the walk's history until it filled the window and
+    /// left nothing evictable.
+    /// </para>
+    /// <para>
+    /// A band that does not fit the window at all is the sizing law being broken, and counts a
     /// <see cref="StreamingStatistics.WindowOverruns"/>: the window is smaller than the band the
-    /// declaration is sweeping. Counted once per band rather than once per cell.
+    /// declaration is sweeping. <b>The same band announced again, consecutively, is not counted
+    /// again</b> — a placement is not a band, since every transparent wrapper (<c>Optional</c>,
+    /// <c>Padded</c>, <c>Until</c>, <c>WithColumnLabels</c>, a unit, a <c>Select</c>) places the
+    /// same region again, so one band arrives here as many times as it has wrappers. Consecutively,
+    /// and no further: an oversized band, then one that fits, then the first band again is two
+    /// overruns, because the declaration went away and came back. The counter is the store's and
+    /// outlives any single <c>Map</c>.
+    /// </para>
+    /// <para>
+    /// <see cref="Evict"/> is a second producer and is not deduplicated at all: it counts each
+    /// eviction forced from inside the band currently open, which is a cost paid every time rather
+    /// than a band described once.
     /// </para>
     /// </summary>
-    private void Anchor(int extentTop, int extentHeight)
+    internal void Sweeping(int extentTop, int extentHeight)
     {
       if (extentHeight <= 0)
         return;
 
+      lock (_gate)
+        Anchor(extentTop, extentHeight);
+    }
+
+    private void Anchor(int extentTop, int extentHeight)
+    {
       var from = extentTop;
       var to = extentTop + extentHeight;
       var budget = WindowChunks * ChunkRows;
 
-      if (_locusTo > _locusFrom)
+      if (Overlaps(from, to))
       {
         var unionFrom = Math.Min(_locusFrom, from);
         var unionTo = Math.Max(_locusTo, to);
@@ -400,13 +413,20 @@ namespace Unrect.Spreadsheets
       {
         _locusFrom = from;
         _locusTo = to;
+
+        // A band that fits ends the run of announcements the deduplication is against: the next
+        // oversized band is a new one even if it is the same rows, because something else was swept
+        // in between.
+        _oversizedFrom = -1;
+        _oversizedTo = -1;
       }
       else
       {
         // The band cannot be held at all, so there is nothing to anchor: this is the sizing law
-        // being broken, and it is the event WindowOverruns counts. Deduplicated on the extent,
-        // because the view hands the same extent down with every cell of it — one band that did
-        // not fit is one overrun, not one per read.
+        // being broken, and it is the event WindowOverruns counts. Deduplicated against the LAST
+        // oversized band only, because every transparent wrapper around a shape announces that
+        // shape's band again — one band that did not fit is one overrun, not one per placement
+        // that named it.
         if (from != _oversizedFrom || to != _oversizedTo)
         {
           _oversizedFrom = from;
@@ -418,6 +438,9 @@ namespace Unrect.Spreadsheets
         _locusTo = 0;
       }
     }
+
+    /// <summary>Whether a band shares a row with the one currently open.</summary>
+    private bool Overlaps(int from, int to) => from < _locusTo && to > _locusFrom;
 
     private bool InLocus(int chunk)
     {
@@ -489,7 +512,7 @@ namespace Unrect.Spreadsheets
       /// and read that way off the gate — the reads taken under the gate are plain, since the gate
       /// already orders them. A field rather than a property so it can be.
       /// </summary>
-      internal CellValue[]? Cells;
+      internal Cell[]? Cells;
 
       /// <summary>
       /// The tick this chunk was last touched, and zero until it is first loaded — which is how a

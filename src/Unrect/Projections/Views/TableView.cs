@@ -16,43 +16,45 @@ namespace Unrect.Projections
   /// three built-in row projections are written against <see cref="StreamRows"/>.
   /// </para>
   /// </summary>
-  public sealed class TableView
+  /// <typeparam name="TSpace">The space the table's cells belong to.</typeparam>
+  public sealed class TableView<TSpace>
+    where TSpace : class, ISpace
   {
     // Views are built per projection and are not covered by the projection thread-safety guarantee;
     // the cache races benignly (reference assignment is atomic, so the worst case is duplicated
     // work).
-    private IReadOnlyList<TableRow>? _rows;
+    private IReadOnlyList<TableRow<TSpace>>? _rows;
 
-    internal TableView(ISpace space, int headerRows, ProjectionContext context)
+    internal TableView(Plane<TSpace> space, int headerRows, ProjectionContext context)
     {
       Space = space;
       HeaderRows = headerRows;
 
-      Header = new CellStrip(
-        space.GetSubspace(new Offset(0, 0), new Area(HasHeader ? ColumnCount : 0, headerRows)),
+      Header = new CellStrip<TSpace>(
+        space.Cut(new Offset(0, 0), new Area(HasHeader ? ColumnCount : 0, headerRows)),
         Orientation.Horizontal,
         context);
 
-      Labels = LabelMap.FromHeader(Header, context);
+      Labels = LabelMap.FromHeader(Header);
 
       // Publish the columns as the ambient Column labels for the body's subtree, but only when a
       // header was actually declared: a headerless table pushes nothing, so a by-name lookup still
       // finds no scope and reports the headerless message. The origin PushLabels captures is this
       // table's own, the frame the header's ordinals are read in and every body row translates from.
-      Context = HasHeader ? context.PushLabels(LabelAxis.Column, Labels) : context;
+      Context = HasHeader ? context.PushLabels(LabelAxis.Column, Labels, space.Origin) : context;
     }
 
     /// <summary>The table's own header parsed once: the labels the bind rung binds by, and their citations.</summary>
     internal LabelMap Labels { get; }
 
     /// <summary>The table's full extent, header row(s) included.</summary>
-    public ISpace Space { get; }
+    public Plane<TSpace> Space { get; }
 
     /// <summary>
     /// How many columns wide the table is. Free on an extent still being discovered: a width is
     /// settled before the first row is read.
     /// </summary>
-    public int ColumnCount => BoundedSpace.WidthOf(Space);
+    public int ColumnCount => Space.Width;
 
     /// <summary>
     /// How many body rows the table has, header row(s) excluded. A dimension query, so on an extent
@@ -61,11 +63,11 @@ namespace Unrect.Projections
     /// </summary>
     public int RowCount => Space.Area.Height - HeaderRows;
 
-    /// <summary>Whether a header row was declared. By-name lookups (<see cref="TableRow.this[string]"/>) need one.</summary>
+    /// <summary>Whether a header row was declared. By-name lookups (<see cref="TableRow{TSpace}.this[string]"/>) need one.</summary>
     public bool HasHeader => HeaderRows > 0;
 
     /// <summary>The header row(s), when <see cref="HasHeader"/>; a zero-width strip when the table has none.</summary>
-    public CellStrip Header { get; }
+    public CellStrip<TSpace> Header { get; }
 
     /// <summary>Each column's header text, trimmed; the empty string for a column with no caption.</summary>
     public IReadOnlyList<string> ColumnNames => Labels.Labels;
@@ -74,14 +76,14 @@ namespace Unrect.Projections
     /// The address of the table's top-left cell, header included. It carries the extent the table
     /// was found in, so on one still being discovered this settles the bound.
     /// </summary>
-    public ProjectionLocation Location => ProjectionLocation.At(Context.Origin, Space.Area.Size);
+    public ProjectionLocation Location => ProjectionLocation.At(Space);
 
     /// <summary>
     /// The table's body rows, header row(s) excluded, built once per view. Materialising them is a
     /// dimension query, so on an extent still being discovered this settles the bound — use
     /// <see cref="StreamRows"/> to read a tall table a row at a time.
     /// </summary>
-    public IReadOnlyList<TableRow> Rows => _rows ??= BuildRows();
+    public IReadOnlyList<TableRow<TSpace>> Rows => _rows ??= BuildRows();
 
     /// <summary>
     /// The table's body rows, header row(s) excluded, read one at a time as the enumeration
@@ -92,23 +94,23 @@ namespace Unrect.Projections
     /// This is what the built-in row readings — <c>Table&lt;T&gt;()</c>, <c>Table()</c>
     /// and <c>Table(row =&gt; …)</c> — are written against, and what a projection of your own
     /// should use where the sheet is tall. The rows it hands back are the same <see
-    /// cref="TableRow"/> views <see cref="Rows"/> holds; unlike <see cref="Rows"/> they are not
+    /// cref="TableRow{TSpace}"/> views <see cref="Rows"/> holds; unlike <see cref="Rows"/> they are not
     /// cached, so enumerating twice builds them twice — a second enumeration costs no extra rows of
     /// the sheet, the bound having been settled by the first.
     /// </para>
     /// </summary>
-    public IEnumerable<TableRow> StreamRows()
+    public IEnumerable<TableRow<TSpace>> StreamRows()
     {
       var index = 0;
 
       foreach (var band in StreamBands(1))
-        yield return new TableRow(index++, new CellStrip(band.Space, Orientation.Horizontal, band.Context), band.Context);
+        yield return new TableRow<TSpace>(index++, new CellStrip<TSpace>(band.Space, Orientation.Horizontal, band.Context), band.Context);
     }
 
     /// <summary>
     /// The body as bands of <paramref name="bandHeight"/> rows, each with the context to project it
     /// in — what a row projection is applied to, and what <see cref="StreamRows"/> wraps in a
-    /// <see cref="TableRow"/>. Forward-only in the same way: each step asks whether the band's last
+    /// <see cref="TableRow{TSpace}"/>. Forward-only in the same way: each step asks whether the band's last
     /// row is there and stops when it is not, so an extent still being discovered is consumed in
     /// step with the reading.
     /// <para>
@@ -118,13 +120,13 @@ namespace Unrect.Projections
     /// undescribed.
     /// </para>
     /// </summary>
-    internal IEnumerable<(ISpace Space, ProjectionContext Context)> StreamBands(int bandHeight)
+    internal IEnumerable<(Plane<TSpace> Space, ProjectionContext Context)> StreamBands(int bandHeight)
     {
-      for (var row = HeaderRows; BoundedSpace.HasRow(Space, row + bandHeight - 1); row += bandHeight)
+      for (var row = HeaderRows; Space.HasRow(row + bandHeight - 1); row += bandHeight)
       {
         var offset = new Offset(0, row);
 
-        yield return (Space.GetSubspace(offset, new Area(ColumnCount, bandHeight)), Context.Advance(offset));
+        yield return (Space.Cut(offset, new Area(ColumnCount, bandHeight)), Context);
       }
     }
 
@@ -137,7 +139,7 @@ namespace Unrect.Projections
     /// the record, Skip simply omits it. Project is not here — it injects records and is handled by
     /// the rung through <see cref="StreamClassifiedRows"/>.
     /// </summary>
-    internal IEnumerable<TableRow> StreamBodyRows(BlankRowStrategy onBlank)
+    internal IEnumerable<TableRow<TSpace>> StreamBodyRows(BlankRowStrategy onBlank)
     {
       if (onBlank.IsStop)
       {
@@ -170,17 +172,17 @@ namespace Unrect.Projections
     /// (<c>blankRecord</c>) rung maps: a blank row yields its blank record, a non-blank row its
     /// normal one.
     /// </summary>
-    internal IEnumerable<(TableRow Row, bool IsBlank)> StreamClassifiedRows()
+    internal IEnumerable<(TableRow<TSpace> Row, bool IsBlank)> StreamClassifiedRows()
     {
       foreach (var row in StreamRows())
         yield return (row, IsBlankRow(row));
     }
 
-    /// <summary>A fully-blank row: every cell <see cref="CellValue.IsBlank"/> — the complement of "any value".</summary>
-    private static bool IsBlankRow(TableRow row)
+    /// <summary>A fully-blank row: every cell blank — the complement of "any value".</summary>
+    private static bool IsBlankRow(TableRow<TSpace> row)
     {
       for (var column = 0; column < row.Count; column++)
-        if (!row.Cells[column].IsBlank)
+        if (row[column].HasValue)
           return false;
 
       return true;
@@ -220,9 +222,9 @@ namespace Unrect.Projections
     /// deliberately do the opposite and grow their lists, because for them asking how many
     /// rows there are is the forcing question streaming exists to avoid.
     /// </summary>
-    private List<TableRow> BuildRows()
+    private List<TableRow<TSpace>> BuildRows()
     {
-      var rows = new List<TableRow>(RowCount);
+      var rows = new List<TableRow<TSpace>>(RowCount);
 
       foreach (var row in StreamRows())
         rows.Add(row);

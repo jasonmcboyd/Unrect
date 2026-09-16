@@ -14,9 +14,10 @@ namespace Unrect.Projections
   /// arithmetic underneath is the same "rows up to the landmark by full width" a strategy would do.
   /// </para>
   /// </summary>
-  internal sealed class UntilProjection<TResult> : ProjectionBase<TResult>
+  internal sealed class UntilProjection<TSpace, TResult> : ProjectionBase<TSpace, TResult>
+    where TSpace : class, ISpace
   {
-    public UntilProjection(IProjection<TResult> inner, Landmark landmark, bool orEnd, Placement placement)
+    public UntilProjection(IProjection<TSpace, TResult> inner, Landmark landmark, bool orEnd, Placement placement)
       : base(placement)
     {
       Inner = inner ?? throw new ArgumentNullException(nameof(inner));
@@ -25,7 +26,7 @@ namespace Unrect.Projections
       Children = new IProjection[] { inner };
     }
 
-    private IProjection<TResult> Inner { get; }
+    private IProjection<TSpace, TResult> Inner { get; }
     private Landmark Landmark { get; }
     private bool OrEnd { get; }
 
@@ -52,10 +53,10 @@ namespace Unrect.Projections
         + "replacing, so a Select or a Padded between the two leaves both ends in force.",
         "projection");
 
-    public override ProjectionResult<TResult> Project(ISpace extent, ProjectionContext context)
+    public override ProjectionResult<TResult> Project(Plane<TSpace> extent, ProjectionContext context)
     {
       var size = extent.Area.Size;
-      var found = Landmark.Find(extent);
+      var found = Landmark.Find(extent.AsCanonical());
       var limit = found ?? (IsVertical ? size.Height : size.Width);
 
       // A missing end is a disagreement about the shape of the data, not a bug in the reading code,
@@ -68,7 +69,7 @@ namespace Unrect.Projections
       if (found is null)
         context.Report(DiagnosticSeverity.Info, this, $"{Landmark.Description} exists to end this projection, so it ran to the end of the space", extent);
 
-      var applied = ProjectionEngine.Apply(Inner, extent.GetSubspace(Bound(limit, size)), context);
+      var applied = ProjectionEngine.Apply(Inner, extent.Cut(Bound(limit, size)), context);
 
       // The bound is consumed whether or not the inner projection used it all, exactly as a
       // declared area is: that is what puts the next sibling ON the landmark rather than somewhere

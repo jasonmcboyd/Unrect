@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 
 using Unrect.Core;
@@ -46,8 +45,8 @@ namespace Unrect.Tests.Spreadsheets
     private static ISpreadsheetSpace Sheet() => new FormulaGridSpace(
       new[,]
       {
-        { CellValue.Of("Amount"), CellValue.Blank },
-        { CellValue.Of(100m), CellValue.Of(250m) },
+        { Cell.Of("Amount"), Cell.Blank },
+        { Cell.Of(100m), Cell.Of(250m) },
       },
       new string?[,]
       {
@@ -58,18 +57,43 @@ namespace Unrect.Tests.Spreadsheets
     // --- 1. The six members, each against its plain twin ---------------------------------------------
 
     [Fact]
-    public void TheWitnessIsTheSameSingleton_RaisedToTheFilesSpace()
+    public void AKindedLeafReadsAsItsPlainTwin()
     {
-      // `Formulas` is the one member that is not a factory, and the one whose TYPE deliberately
-      // differs: the plain witness names the capability, the closed one names the file's space. What
-      // has to be the same is that both are the singleton and both discharge a demand.
-      Assert.Same(Demand<ISpreadsheetSpace>.Instance, Formulas);
-      Assert.Same(Demand<IFormulaSpace>.Instance, SpreadsheetProjections.Formulas);
+      // The six kinded members, each one line to the plain family. A forwarder that named the wrong
+      // factory would still compile and still read a cell, which is why the comparison is the
+      // reading rather than the type.
+      var sheet = Sheet();
 
-      var throughBuilders = Projection.VerticalFlow(Formulas, v => v.Next(Formula()));
-      var plain = Projection.VerticalFlow(SpreadsheetProjections.Formulas, v => v.Next(SpreadsheetProjections.Formula()));
+      Observations.AssertL3(
+        Observations.Observe(SpreadsheetProjections.Text<ISpreadsheetSpace>(), sheet),
+        Observations.Observe(Text(), sheet));
 
-      Assert.Equal(plain.Map(Sheet()), throughBuilders.Map(Sheet()));
+      Observations.AssertL3(
+        Observations.Observe(Down(1).Of(SpreadsheetProjections.Decimal<ISpreadsheetSpace>()), sheet),
+        Observations.Observe(Down(1).Of(Decimal()), sheet));
+
+      Assert.Equal("Amount", Text().Map(sheet));
+      Assert.Equal(100m, Down(1).Of(Decimal()).Map(sheet));
+    }
+
+    [Fact]
+    public void ATerminalIsThePipelineClosedOverTheSameLeaf()
+    {
+      // The kinded leaves are also pipeline terminals — `Down(1).Decimal()`, the placement said
+      // before the subject. Each closes through the public `Of`, so the terminal and the hoisted
+      // spelling must be the same declaration: same reading, same path, same description.
+      var sheet = Sheet();
+
+      Observations.AssertL3(
+        Observations.Observe(Down(1).Of(Decimal()), sheet),
+        Observations.Observe(Down(1).Decimal(), sheet));
+
+      Observations.AssertL3(
+        Observations.Observe(Down(1).Of(Formula()), sheet),
+        Observations.Observe(Down(1).Formula(), sheet));
+
+      Assert.Equal(100m, Down(1).Decimal().Map(sheet));
+      Assert.Equal("SUM(A1:A1)", Down(1).Formula().Map(sheet));
     }
 
     [Fact]
@@ -80,8 +104,8 @@ namespace Unrect.Tests.Spreadsheets
       // the parse noticed would show as well as one in the text.
       var sheet = Sheet();
 
-      var throughBuilders = (IProjection<string?>)Down(1).Of(Formula());
-      var plain = (IProjection<string?>)Down(1).Of(SpreadsheetProjections.Formula());
+      var throughBuilders = Down(1).Of(Formula());
+      var plain = Down(1).Of(SpreadsheetProjections.Formula<ISpreadsheetSpace>());
 
       Observations.AssertL3(Observations.Observe(plain, sheet), Observations.Observe(throughBuilders, sheet));
 
@@ -96,8 +120,8 @@ namespace Unrect.Tests.Spreadsheets
       // cell noticing: absence is an honest per-cell null, not a failure.
       var sheet = Sheet();
 
-      var throughBuilders = (IProjection<string?>)Formula();
-      var plain = (IProjection<string?>)SpreadsheetProjections.Formula();
+      var throughBuilders = Formula();
+      var plain = SpreadsheetProjections.Formula<ISpreadsheetSpace>();
 
       Observations.AssertL3(Observations.Observe(plain, sheet), Observations.Observe(throughBuilders, sheet));
       Assert.Null(Formula().Map(sheet));
@@ -121,29 +145,18 @@ namespace Unrect.Tests.Spreadsheets
         ? SpreadsheetProjections.ColumnWithFormula()
         : SpreadsheetProjections.ColumnWithFormula(containing);
 
-      Assert.Equal(rowPlain.Landmark.FindRow(sheet), rowThroughBuilders.Landmark.FindRow(sheet));
-      Assert.Equal(columnPlain.Landmark.FindColumn(sheet), columnThroughBuilders.Landmark.FindColumn(sheet));
+      var region = Plane<ISpace>.Of(sheet);
+
+      Assert.Equal(rowPlain.Landmark.FindRow(region), rowThroughBuilders.Landmark.FindRow(region));
+      Assert.Equal(columnPlain.Landmark.FindColumn(region), columnThroughBuilders.Landmark.FindColumn(region));
 
       // Non-vacuity: the first two cases find something and the third finds nothing, so the equality
       // above is not two nulls agreeing.
-      Assert.Equal(containing == "PRODUCT" ? null : (int?)1, rowThroughBuilders.Landmark.FindRow(sheet));
-      Assert.Equal(containing == "PRODUCT" ? null : (int?)0, columnThroughBuilders.Landmark.FindColumn(sheet));
+      Assert.Equal(containing == "PRODUCT" ? null : (int?)1, rowThroughBuilders.Landmark.FindRow(region));
+      Assert.Equal(containing == "PRODUCT" ? null : (int?)0, columnThroughBuilders.Landmark.FindColumn(region));
     }
 
     // --- 2. The two rules that make the pair usable ---------------------------------------------------
-
-    [Fact]
-    public void TheTwoClassesPublishDisjointNames()
-    {
-      // The backend rule made CI. A member repeated across the two would be ambiguous in every file
-      // that imported both — which is every file that reads a spreadsheet with a formula in it — and
-      // the ambiguity would be reported at the use site, not here, so nothing but this pin would
-      // catch a re-export that drifted.
-      var core = Names(typeof(ProjectionBuilders<>));
-      var backend = Names(typeof(SpreadsheetProjectionBuilders<>));
-
-      Assert.Empty(core.Intersect(backend, StringComparer.Ordinal));
-    }
 
     [Fact]
     public void AndOneDeclarationWrittenThroughBothImportsReadsTheSheet()
@@ -182,13 +195,6 @@ namespace Unrect.Tests.Spreadsheets
 
       Assert.Equal(expected, actual);
     }
-
-    private static IReadOnlyCollection<string> Names(Type vocabulary)
-      => Unrect.Tests.Projections.ProjectionBuildersParityTests
-        .Signatures(vocabulary)
-        .Select(Name)
-        .Distinct(StringComparer.Ordinal)
-        .ToList();
 
     private static string Shape(string signature)
     {

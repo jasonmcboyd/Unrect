@@ -1,6 +1,5 @@
 using System.Globalization;
 
-using Unrect.Core;
 using Unrect.Spreadsheets;
 
 namespace Unrect.Benchmarks
@@ -27,7 +26,7 @@ namespace Unrect.Benchmarks
   /// <c>.xlsx</c>, generated at setup by <see cref="RetentionWorkbooks"/> from these same cells.</para>
   ///
   /// <para><b>Numbers are doubles here, unlike the streaming family's fixture.</b> A real reader hands
-  /// the adapter a <c>double</c> for every numeric cell, so <c>CellValue.Of(decimal)</c> would put a
+  /// the adapter a <c>double</c> for every numeric cell, so <c>Cell.Of(decimal)</c> would put a
   /// boxed decimal in the fixture's cells that no real read produces — 16 MB of it at this size, in a
   /// measurement whose whole subject is retained bytes. (<c>StreamingSpaces</c> is deliberately left
   /// alone: it measures durations, where the box is noise, and changing it would re-baseline that
@@ -90,25 +89,25 @@ namespace Unrect.Benchmarks
     /// two doors' rows are only worth reading against each other, and a difference between two
     /// different sheets means nothing.
     /// </summary>
-    public static CellValue Cell(int column, int row, bool unique)
+    public static Cell At(int column, int row, bool unique)
     {
       if (row == 0)
-        return CellValue.Of(Captions[column]);
+        return Cell.Of(Captions[column]);
 
       return column switch
       {
-        0 => CellValue.Of(Text("C", row, DistinctClients, unique)),
-        1 => CellValue.Of(Text("Region-", row, DistinctRegions, unique)),
-        2 => CellValue.Of(Text("Capital call for period ", row, DistinctDescriptions, unique)),
+        0 => Cell.Of(Text("C", row, DistinctClients, unique)),
+        1 => Cell.Of(Text("Region-", row, DistinctRegions, unique)),
+        2 => Cell.Of(Text("Capital call for period ", row, DistinctDescriptions, unique)),
         // Unique in BOTH flavours: the part of a real sheet no dedup can touch.
-        3 => CellValue.Of(Text("TX-", row, Rows, unique: true)),
+        3 => Cell.Of(Text("TX-", row, Rows, unique: true)),
         // Doubles, because that is what a reader yields — see the type's note. Both land on quarters
         // and whole numbers, so they survive the file round trip exactly and bind to `decimal` and
         // `int` members without a conversion failure.
-        4 => CellValue.Of(row / 4d),
-        5 => CellValue.Of((double)(row % 97)),
-        6 => CellValue.Of(row % 2 == 0),
-        _ => CellValue.Of(Text("CUR", row, DistinctCurrencies, unique)),
+        4 => Cell.Of(row / 4d),
+        5 => Cell.Of((double)(row % 97)),
+        6 => Cell.Of(row % 2 == 0),
+        _ => Cell.Of(Text("CUR", row, DistinctCurrencies, unique)),
       };
     }
 
@@ -133,7 +132,7 @@ namespace Unrect.Benchmarks
     /// reader hands back one instance per distinct value and there is nothing left to intern.
     /// </para>
     /// </summary>
-    public static ISpace EagerSpace(bool unique, bool sharedStrings, int rows = Rows, int columns = Columns) =>
+    public static ISheetCells EagerSpace(bool unique, bool sharedStrings, int rows = Rows, int columns = Columns) =>
       SpreadsheetSpace.Create(
         RetentionWorkbooks.Path(unique, sharedStrings, rows, columns),
         RetentionWorkbooks.SheetName);
@@ -150,7 +149,7 @@ namespace Unrect.Benchmarks
     }
 
     /// <summary>A window over a synthetic ledger sheet, sized in rows.</summary>
-    public static ISpace Windowed(ReaderPool pool, int windowRows = WindowRows, int rows = Rows, int columns = Columns)
+    public static ISheetCells Windowed(ReaderPool pool, int windowRows = WindowRows, int rows = Rows, int columns = Columns)
     {
       var chunkRows = SheetStore.DefaultChunkRows(columns);
 
@@ -210,8 +209,8 @@ namespace Unrect.Benchmarks
         return true;
       }
 
-      public CellValue this[int column] =>
-        column < 0 || column >= ColumnCount ? CellValue.Blank : Cell(column, _row, _unique);
+      public Cell this[int column] =>
+        column < 0 || column >= ColumnCount ? Cell.Blank : At(column, _row, _unique);
 
       public void Dispose()
       {

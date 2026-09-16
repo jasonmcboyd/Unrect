@@ -19,7 +19,7 @@ namespace Unrect.Strategies
       => new ExplicitSizeStrategy(width, height);
 
     /// <summary>Full available width, and as many leading rows as have at least one cell satisfying <paramref name="predicate"/>.</summary>
-    public static ISizeStrategy RowsWhileAny(Func<CellValue, bool> predicate)
+    public static ISizeStrategy RowsWhileAny(Func<Point<ISpace>, bool> predicate)
       => new RowsWhileAnySizeStrategy(predicate);
 
     /// <summary>Full available width, and the leading rows that carry values — <see cref="RowsWhileAny"/> with <c>HasValue</c> as the predicate.</summary>
@@ -30,7 +30,7 @@ namespace Unrect.Strategies
     /// Full available height, and as many leading columns as have at least one cell satisfying
     /// <paramref name="predicate"/> — the transpose of <see cref="RowsWhileAny"/>.
     /// </summary>
-    public static ISizeStrategy ColumnsWhileAny(Func<CellValue, bool> predicate)
+    public static ISizeStrategy ColumnsWhileAny(Func<Point<ISpace>, bool> predicate)
       => new ColumnsWhileAnySizeStrategy(predicate);
 
     /// <summary>Full available height, and the leading columns that carry values.</summary>
@@ -38,7 +38,7 @@ namespace Unrect.Strategies
       => ColumnsWhileAny(v => v.HasValue);
 
     /// <summary>Whatever <paramref name="selector"/> computes from the available space — the escape hatch when no other strategy fits.</summary>
-    public static ISizeStrategy SelectSize(Func<ISpace, Size> selector)
+    public static ISizeStrategy SelectSize(Func<Plane<ISpace>, Size> selector)
       => new SelectSizeStrategy(selector);
   }
 }

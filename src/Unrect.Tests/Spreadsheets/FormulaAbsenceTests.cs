@@ -11,7 +11,7 @@ using Unrect.Tests.Streaming;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 
 namespace Unrect.Tests.Spreadsheets
 {
@@ -64,13 +64,15 @@ namespace Unrect.Tests.Spreadsheets
       // of the format. Nothing about .xls is unreadable; one capability over it is.
       var sheet = SpreadsheetSpace.Create(TestData("legacy.xls"), "Legacy");
 
-      Assert.Equal("Widget", sheet[0, 0].GetString());
-      Assert.Equal(4, sheet[1, 0].GetInt());
-      Assert.Equal("Gadget", sheet[0, 1].GetString());
-      Assert.Equal(6, sheet[1, 1].GetInt());
-      Assert.Equal("Total", sheet[0, 2].GetString());
+      var cells = Plane<ISheetCells>.Of(sheet);
 
-      Assert.Null(sheet.Capability<IFormulaSpace>());
+      Assert.Equal("Widget", cells[0, 0].Text());
+      Assert.Equal(4, cells[1, 0].Integer());
+      Assert.Equal("Gadget", cells[0, 1].Text());
+      Assert.Equal(6, cells[1, 1].Integer());
+      Assert.Equal("Total", cells[0, 2].Text());
+
+      Assert.False(sheet is IFormulaSpace);
     }
 
     // --- .xlsb: a package whose parts are binary ----------------------------------------------------
@@ -169,22 +171,30 @@ namespace Unrect.Tests.Spreadsheets
       var sheet = book.Sheet("Data");
 
       Assert.False(sheet is IFormulaSpace);
-      Assert.Null(sheet.Capability<IFormulaSpace>());
-      Assert.Null(sheet.GetSubspace(new Offset(1, 2), new Area(2, 4)).Capability<IFormulaSpace>());
+
+      // ...and a region of it names the same space, so there is no wrapper anywhere in the
+      // decomposition that could have answered differently — which is what used to need asking.
+      var region = Plane<ISheetCells>.Of(sheet).Slice(new Offset(1, 2), new Area(2, 4));
+
+      Assert.Same(sheet, region.Space);
+      Assert.False(region.Space is IFormulaSpace);
     }
 
     [Fact]
-    public void ADiscoveredExtentOverAStreamedSheetInventsNoCapabilityEither()
+    public void ADiscoveredExtentOverAStreamedSheetNamesTheSameSheetToo()
     {
-      // The seam's other direction. Capability<T>() walks charts precisely so a bound whose height is
-      // still being discovered does not HIDE a capability the sheet has — and the walk must not
-      // manufacture one for a sheet that has none. Over the streaming door it finds nothing to find,
-      // through as many wrappers as the engine cares to build.
+      // The same claim from inside a declaration, where it used to be hardest: a region whose height
+      // is still being discovered is a locator over the sheet rather than a wrapper around it, so
+      // the space a projection reads through is the very object the door vended. There is nothing
+      // left that could hide a capability the sheet has, or manufacture one it has not.
       using var book = Workbook.Over(FakeRowSource.Of(rows: 8, columns: 3), new WorkbookOptions { WarmReaders = false });
 
-      var probe = Range(RowsWhileAnyValue(), block => block.Space.Capability<IFormulaSpace>());
+      var sheet = book.Sheet("Data");
 
-      Assert.Null(probe.Map(book.Sheet("Data")));
+      var probe = Range(RowsWhileAnyValue(), block => block.Space.Space);
+
+      Assert.Same(sheet, probe.Map(sheet));
+      Assert.False(probe.Map(sheet) is IFormulaSpace);
     }
   }
 }

@@ -9,7 +9,8 @@ namespace Unrect.Projections
   /// a sibling that consumed nothing. Every spelling of a flow runs through this, so the arithmetic
   /// they do and the diagnostics they produce cannot drift apart.
   /// </summary>
-  internal sealed class FlowState : LayoutState
+  internal sealed class FlowState<TSpace> : LayoutState<TSpace>
+    where TSpace : class, ISpace
   {
     // The spec's §3.4 wanted this sentence to say WHICH kind of nothing the sibling was — absent
     // because a boundary absorbed it, or an empty region genuinely read. It stays one sentence, and
@@ -23,7 +24,7 @@ namespace Unrect.Projections
     private int _across;
     private int _previous;
 
-    public FlowState(IProjection owner, Orientation orientation, ISpace extent, ProjectionContext context)
+    public FlowState(IProjection owner, Orientation orientation, Plane<TSpace> extent, ProjectionContext context)
       : base(owner, extent, context)
     {
       Orientation = orientation;
@@ -51,17 +52,17 @@ namespace Unrect.Projections
     /// Takes the next child, knowing its result type — what a cursor lambda declares, and the
     /// reason it costs neither a box nor a cast.
     /// </summary>
-    public override T Next<T>(IProjection<T> projection, string? declared)
+    public override T Next<T>(IProjection<TSpace, T> projection, string? declared)
     {
       var cursor = Cursor;
       Admit(projection, cursor);
 
-      var scope = Context.Advance(cursor).WithUseSite(UseSite.From(declared, Count + 1));
+      var scope = Context.WithUseSite(UseSite.From(declared, Count + 1));
       AppliedResult<T> applied;
 
       try
       {
-        applied = ProjectionEngine.Apply(projection, BoundedSpace.Tail(Extent, cursor), scope);
+        applied = ProjectionEngine.Apply(projection, Extent.Tail(cursor), scope);
       }
       catch (ProjectionException failure) when (FollowsAnEmptySibling(failure, cursor))
       {
@@ -85,7 +86,7 @@ namespace Unrect.Projections
     /// </para>
     /// </summary>
     private bool FollowsAnEmptySibling(ProjectionException failure, Offset cursor)
-      => Count > 0 && _previous == 0 && failure.Location.IsAt(Context.Origin + cursor);
+      => Count > 0 && _previous == 0 && failure.Location.IsAt(Extent.Origin + cursor);
 
     private void Advance(Size advance, Presence presence)
     {

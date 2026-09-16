@@ -5,7 +5,8 @@ using Unrect.Projections;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.Observations;
 using static Unrect.Tests.ProjectionTestSpaces;
 
@@ -78,7 +79,7 @@ namespace Unrect.Tests.Projections
     {
       // The L1 half: same problem, same cell, same fault flag, same inner exception. Only the two
       // labels move, and they are asserted below.
-      var failing = Cell(c => c.GetString());
+      var failing = TextCell();
 
       AssertL2(Observe(failing, Ladder()), Observe(failing.Named("client"), Ladder()));
     }

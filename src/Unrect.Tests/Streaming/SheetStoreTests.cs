@@ -39,12 +39,12 @@ namespace Unrect.Tests.Streaming
     [Fact]
     public void BytesPerCell_IsTheSizeOfACellValue()
     {
-      // The regression guard the spec asks for by name. The constant was 8 while CellValue was a
+      // The regression guard the spec asks for by name. The constant was 8 while Cell was a
       // class; leaving it at 8 after the struct merge would have tripled every chunk and sent a
       // default 8-column chunk (196,608 bytes) straight to the Large Object Heap that the 64 KB
       // target exists to avoid. This is the assertion that makes the next representation change
       // announce itself.
-      Assert.Equal(SheetStore.BytesPerCell, Unsafe.SizeOf<CellValue>());
+      Assert.Equal(SheetStore.BytesPerCell, Unsafe.SizeOf<Cell>());
     }
 
     [Theory]
@@ -120,26 +120,26 @@ namespace Unrect.Tests.Streaming
       // chunk boundaries at ChunkRows = 10.
       var store = Store(rows: 100, columns: 4, chunkRows: 10, windowChunks: 4);
 
-      Assert.Equal("0,0", store.GetCell(0, 0, 0, 1).GetString());
-      Assert.Equal("3,9", store.GetCell(3, 9, 9, 1).GetString());
-      Assert.Equal("0,10", store.GetCell(0, 10, 10, 1).GetString());
-      Assert.Equal("2,19", store.GetCell(2, 19, 19, 1).GetString());
-      Assert.Equal("2,20", store.GetCell(2, 20, 20, 1).GetString());
-      Assert.Equal("3,99", store.GetCell(3, 99, 99, 1).GetString());
+      Assert.Equal("0,0", store.GetCell(0, 0).AsText());
+      Assert.Equal("3,9", store.GetCell(3, 9).AsText());
+      Assert.Equal("0,10", store.GetCell(0, 10).AsText());
+      Assert.Equal("2,19", store.GetCell(2, 19).AsText());
+      Assert.Equal("2,20", store.GetCell(2, 20).AsText());
+      Assert.Equal("3,99", store.GetCell(3, 99).AsText());
     }
 
     [Fact]
     public void AChunkOverAShortSheetIsBlankWhereTheSourceRanOut()
     {
-      // No pre-fill: default(CellValue) IS Blank since the struct merge, so a freshly allocated
+      // No pre-fill: default(Cell) IS Blank since the struct merge, so a freshly allocated
       // chunk is already an all-blank band and the rows a short sheet never yields are right
       // without a second pass over them. This is the observable form of "the fill loop was doing
       // nothing" — a sheet claiming 20 rows and yielding 14.
       var store = Store(rows: 20, columns: 3, chunkRows: 10, windowChunks: 4, readableRows: 14);
 
-      Assert.Equal("0,13", store.GetCell(0, 13, 10, 10).GetString());
-      Assert.True(store.GetCell(0, 14, 10, 10).IsBlank);
-      Assert.True(store.GetCell(2, 19, 10, 10).IsBlank);
+      Assert.Equal("0,13", store.GetCell(0, 13).AsText());
+      Assert.True(store.GetCell(0, 14).IsBlank);
+      Assert.True(store.GetCell(2, 19).IsBlank);
 
       // One chunk, four rows in it: the store read what there was and stopped.
       var stats = store.Snapshot();
@@ -172,8 +172,8 @@ namespace Unrect.Tests.Streaming
 
       Assert.Equal(3, sheet.Area.Size.Width);
       Assert.Equal(25, sheet.Area.Size.Height);
-      Assert.Equal("0,0", sheet[0, 0].GetString());
-      Assert.Equal("2,24", sheet[2, 24].GetString());
+      Assert.Equal("0,0", sheet.AsText(0, 0));
+      Assert.Equal("2,24", sheet.AsText(2, 24));
     }
 
     [Fact]
@@ -186,7 +186,7 @@ namespace Unrect.Tests.Streaming
       var sheet = book.Sheet("Ledger");
 
       for (var row = 0; row < 100; row++)
-        _ = sheet[0, row];
+        _ = sheet.AsText(0, row);
 
       var stats = book.Statistics("Ledger")!.Value;
 
@@ -205,8 +205,8 @@ namespace Unrect.Tests.Streaming
       using var book = Book(new FakeRowSource(new FakeSheet("Ledger", 6, 2) { ReportsDimension = false }));
       var sheet = book.Sheet("Ledger");
 
-      Assert.Throws<OutOfBoundsException>(() => sheet[0, 6]);
-      Assert.Throws<OutOfBoundsException>(() => sheet[2, 0]);
+      Assert.Throws<OutOfBoundsException>(() => sheet.AsText(0, 6));
+      Assert.Throws<OutOfBoundsException>(() => sheet.AsText(2, 0));
     }
 
     [Fact]
@@ -244,7 +244,7 @@ namespace Unrect.Tests.Streaming
       var sheet = book.Sheet("Ledger");
 
       Assert.Equal(0, sheet.Area.Size.Height);
-      Assert.Throws<OutOfBoundsException>(() => sheet[0, 0]);
+      Assert.Throws<OutOfBoundsException>(() => sheet.AsText(0, 0));
     }
 
     // --- The window ------------------------------------------------------------------------------
@@ -258,7 +258,7 @@ namespace Unrect.Tests.Streaming
       var store = Store(rows: 1000, columns: 2, chunkRows: 10, windowChunks: 4);
 
       for (var row = 0; row < 1000; row++)
-        _ = store.GetCell(0, row, row, 1);
+        _ = store.GetCell(0, row);
 
       var stats = store.Snapshot();
 
@@ -277,7 +277,7 @@ namespace Unrect.Tests.Streaming
       var store = Store(rows: 500, columns: 2, chunkRows: 10, windowChunks: 4);
 
       for (var row = 0; row < 500; row++)
-        _ = store.GetCell(0, row, row, 1);
+        _ = store.GetCell(0, row);
 
       var stats = store.Snapshot();
 
@@ -295,11 +295,11 @@ namespace Unrect.Tests.Streaming
       var store = Store(rows: 500, columns: 2, chunkRows: 10, windowChunks: 4);
 
       for (var row = 0; row < 500; row++)
-        _ = store.GetCell(0, row, row, 1);
+        _ = store.GetCell(0, row);
 
       Assert.Equal(0, store.Snapshot().ChunkReloads);
 
-      _ = store.GetCell(0, 0, 0, 1);
+      _ = store.GetCell(0, 0);
 
       Assert.Equal(1, store.Snapshot().ChunkReloads);
     }
@@ -312,13 +312,13 @@ namespace Unrect.Tests.Streaming
       var store = Store(rows: 500, columns: 2, chunkRows: 10, windowChunks: 4);
 
       for (var row = 0; row < 40; row++)
-        _ = store.GetCell(0, row, row, 1);
+        _ = store.GetCell(0, row);
 
       var loads = store.Snapshot().ChunkLoads;
 
       for (var repeat = 0; repeat < 5; repeat++)
         for (var row = 0; row < 40; row++)
-          _ = store.GetCell(0, row, row, 1);
+          _ = store.GetCell(0, row);
 
       Assert.Equal(loads, store.Snapshot().ChunkLoads);
       Assert.Equal(0, store.Snapshot().ChunkReloads);
@@ -335,10 +335,14 @@ namespace Unrect.Tests.Streaming
       const int BandTop = 50;
       const int BandHeight = 30;   // three chunks, inside a four-chunk budget
 
+      // The band, announced once — which is what a placement does, and the whole of what the store
+      // is ever told about why a read is happening.
+      store.Sweeping(BandTop, BandHeight);
+
       void Sweep(Func<int, int> order)
       {
         for (var index = 0; index < BandHeight; index++)
-          _ = store.GetCell(0, BandTop + order(index), BandTop, BandHeight);
+          _ = store.GetCell(0, BandTop + order(index));
       }
 
       Sweep(index => index);                        // forwards
@@ -352,6 +356,163 @@ namespace Unrect.Tests.Streaming
       Assert.Equal(0, stats.Evictions);
     }
 
+    // --- The union rule, at its four boundaries ----------------------------------------------------
+    //
+    // `Anchor` takes one decision per announcement: a band that OVERLAPS the open one grows it by
+    // union, a band clear of it REPLACES it. Everything the store does about residency follows from
+    // that one line — `Overlaps(from, to) => from < _locusTo && to > _locusFrom` — and the four cases
+    // below are its boundaries, announced directly rather than provoked through a declaration.
+    //
+    // Why directly: through the engine an announcement is a consequence of a placement, so a test
+    // that arranges two particular bands is really a test of the declaration that produced them, and
+    // it breaks when the declaration's shape changes for unrelated reasons. These four are about the
+    // rule, so they state the rule's inputs.
+
+    [Fact]
+    public void AnAdjacentBandReplacesTheOpenOneRatherThanUnioningWithIt()
+    {
+      // (a) The half-open boundary, and the case the overlap test was written for: [0,40) and
+      // [40,80) share no row — 40 is past the end of the first — so the second REPLACES the first.
+      //
+      // Unioning them instead would make a 80-row locus against a 40-row budget, which cannot be
+      // held: the store would count an overrun and give up the locus entirely, on a pair of bands
+      // each of which fits perfectly. A monotone walk announces exactly this pair at every step, so
+      // the wrong answer here is not an edge case — it is the whole walk, and it read as hundreds of
+      // overruns before the rule said `from < _locusTo` rather than `from <= _locusTo`.
+      var store = Store(rows: 200, columns: 2, chunkRows: 10, windowChunks: 4);
+
+      store.Sweeping(0, 40);
+      store.Sweeping(40, 40);
+
+      for (var row = 40; row < 80; row++)
+        _ = store.GetCell(0, row);
+
+      var stats = store.Snapshot();
+
+      Assert.Equal(0, stats.WindowOverruns);
+      Assert.Equal(0, stats.ChunkReloads);
+      Assert.Equal(4, stats.ChunkLoads);
+      Assert.Equal(0, stats.Evictions);
+    }
+
+    [Fact]
+    public void AContainedBandGrowsToItsParentRatherThanShrinkingTheLocusToItself()
+    {
+      // (b) The residency law, stated at the rule rather than through a declaration: a child extent
+      // announced inside its parent's band must not shrink the locus to itself. A HorizontalFlow's
+      // children each announce a sub-band of the band the flow opened, and the flow still needs the
+      // whole of it — so [0,40) then [10,20) unions back to [0,40).
+      //
+      // Observed through eviction, because that is the only thing the locus governs. Six chunks fit;
+      // the band takes four and three reads elsewhere want three more, so one chunk is evicted. With
+      // the parent's band held, the victim comes from outside it and the band survives; had the locus
+      // shrunk to [10,20), chunk 0 would have been the oldest unprotected chunk and re-reading row 0
+      // would cost a reload.
+      var store = Store(rows: 400, columns: 2, chunkRows: 10, windowChunks: 6);
+
+      store.Sweeping(0, 40);
+      store.Sweeping(10, 10);
+
+      for (var row = 0; row < 40; row++)
+        _ = store.GetCell(0, row);
+
+      foreach (var row in new[] { 100, 110, 120 })
+        _ = store.GetCell(0, row);
+
+      _ = store.GetCell(0, 0);
+
+      var stats = store.Snapshot();
+
+      Assert.Equal(0, stats.WindowOverruns);
+      Assert.Equal(1, stats.Evictions);
+      Assert.Equal(0, stats.ChunkReloads);
+    }
+
+    [Fact]
+    public void TheSameBandAnnouncedTwiceIsTheIdentity()
+    {
+      // (c) The case every transparent wrapper produces: Optional, Padded, Until, WithColumnLabels,
+      // a unit and a Select all place the same region again, so one band arrives as many times as it
+      // has wrappers. The union of a band with itself is itself — nothing grows, nothing is given up,
+      // and nothing is counted.
+      var store = Store(rows: 200, columns: 2, chunkRows: 10, windowChunks: 4);
+
+      store.Sweeping(0, 40);
+      store.Sweeping(0, 40);
+      store.Sweeping(0, 40);
+
+      for (var pass = 0; pass < 3; pass++)
+        for (var row = 0; row < 40; row++)
+          _ = store.GetCell(0, row);
+
+      var stats = store.Snapshot();
+
+      Assert.Equal(0, stats.WindowOverruns);
+      Assert.Equal(0, stats.ChunkReloads);
+      Assert.Equal(4, stats.ChunkLoads);
+      Assert.Equal(0, stats.Evictions);
+    }
+
+    [Fact]
+    public void AnOversizedBandAnnouncedTwiceCountsOneOverrun()
+    {
+      // (d), first half — and the reason the counter is worth reading at all. A band that cannot be
+      // held is one broken sizing law however many placements name it, and a wrapped shape names it
+      // once per wrapper. A counter that ticked per announcement would report the declaration's
+      // SPELLING, which is not something a caller can act on.
+      var store = Store(rows: 200, columns: 2, chunkRows: 10, windowChunks: 4);
+
+      store.Sweeping(0, 50);
+      store.Sweeping(0, 50);
+      store.Sweeping(0, 50);
+
+      Assert.Equal(1, store.Snapshot().WindowOverruns);
+    }
+
+    [Fact]
+    public void AndTwoDifferentOversizedBandsCountTwo()
+    {
+      // (d), second half: the dedup is on the band, not on the condition. Two declarations each
+      // sweeping more than the window can hold are two things to fix, and a caller raising
+      // WindowRows wants to know that.
+      var store = Store(rows: 200, columns: 2, chunkRows: 10, windowChunks: 4);
+
+      store.Sweeping(0, 50);
+      store.Sweeping(100, 50);
+
+      Assert.Equal(2, store.Snapshot().WindowOverruns);
+    }
+
+    [Fact]
+    public void AndTheDedupIsAgainstCONSECUTIVEAnnouncementsSoABandThatFitsEndsTheRun()
+    {
+      // (d), the corner between the two halves above, and the one a reader is likeliest to guess
+      // wrong. The dedup is against the run of announcements, not against the oversized band ever
+      // seen: a band that FITS, arriving between two announcements of the same oversized one, ends
+      // the run, so the second announcement is a fresh overrun.
+      //
+      // The reason is that something else was swept in between — the declaration went away and came
+      // back, which is two occasions on which the window was too small, not one. `Anchor`'s fitting
+      // branch clears `_oversizedFrom`/`_oversizedTo` to say so.
+      var store = Store(rows: 200, columns: 2, chunkRows: 10, windowChunks: 4);
+
+      store.Sweeping(0, 50);
+      store.Sweeping(0, 20);
+      store.Sweeping(0, 50);
+
+      Assert.Equal(2, store.Snapshot().WindowOverruns);
+
+      // And the same pair with a DIFFERENT oversized band in the middle counts all three, which is
+      // what makes the assertion above about the dedup rather than about the counter being stuck.
+      var moving = Store(rows: 400, columns: 2, chunkRows: 10, windowChunks: 4);
+
+      moving.Sweeping(0, 50);
+      moving.Sweeping(100, 50);
+      moving.Sweeping(0, 50);
+
+      Assert.Equal(3, moving.Snapshot().WindowOverruns);
+    }
+
     [Fact]
     public void ABandThatFitsTheWindowReportsNoOverrun()
     {
@@ -359,9 +520,11 @@ namespace Unrect.Tests.Streaming
       // anchored, nothing is evicted from inside it, and neither counter has anything to say.
       var store = Store(rows: 200, columns: 2, chunkRows: 10, windowChunks: 6);
 
+      store.Sweeping(50, 50);
+
       for (var pass = 0; pass < 3; pass++)
         for (var offset = 0; offset < 50; offset++)
-          _ = store.GetCell(0, 50 + offset, 50, 50);
+          _ = store.GetCell(0, 50 + offset);
 
       var stats = store.Snapshot();
 
@@ -375,14 +538,16 @@ namespace Unrect.Tests.Streaming
     {
       // The sizing law being broken, and the two counters dividing the labour between them. The
       // overrun says WHY — a seven-chunk band cannot be held in six chunks — and it is counted once
-      // for the band rather than once for each of the 210 cells that carry the same extent down.
+      // for the band, because the band is announced once for the placement that opened it.
       // The reloads say WHAT IT COST: the band is swept three times and re-read almost entirely
       // each time. This pairing is the diagnostic a caller acts on by raising WindowRows.
       var store = Store(rows: 200, columns: 2, chunkRows: 10, windowChunks: 6);
 
+      store.Sweeping(50, 70);
+
       for (var pass = 0; pass < 3; pass++)
         for (var offset = 0; offset < 70; offset++)
-          _ = store.GetCell(0, 50 + offset, 50, 70);
+          _ = store.GetCell(0, 50 + offset);
 
       var stats = store.Snapshot();
 
@@ -403,9 +568,11 @@ namespace Unrect.Tests.Streaming
       const int BandTop = 50;
       const int BandHeight = 50;   // five chunks against a four-chunk budget
 
+      store.Sweeping(BandTop, BandHeight);
+
       for (var pass = 0; pass < 3; pass++)
         for (var offset = 0; offset < BandHeight; offset++)
-          _ = store.GetCell(0, BandTop + offset, BandTop, BandHeight);
+          _ = store.GetCell(0, BandTop + offset);
 
       var stats = store.Snapshot();
 
@@ -424,13 +591,27 @@ namespace Unrect.Tests.Streaming
       for (var read = 0; read < 2000; read++)
       {
         var row = random.Next(1000);
-        _ = store.GetCell(0, row, row, 1);
+        _ = store.GetCell(0, row);
 
         Assert.True(store.Snapshot().ResidentChunks <= 4);
       }
 
       Assert.Equal(4, store.Snapshot().PeakResidentChunks);
     }
+
+    // --- What is NOT asserted here, and where it is instead -----------------------------------------
+    //
+    // RETENTION. The bytes below are what the store HOLDS; what the process keeps alive while a
+    // result is held is a different question, and it is not a test's to answer — a duplicate string
+    // is allocated by the reader before the adapter ever sees it, so an allocation counter measures
+    // the wrong thing and a live-bytes measurement needs a settled heap. That is the Benchmarks
+    // project's `Retention` leg: a deterministic one-shot measurement of LIVE bytes with a result
+    // held, run as its own CI leg rather than as part of the suite.
+    //
+    // The phase-6 obligation on it is a NO-MOVE, not a new number: planes and points are structs
+    // over the same cells, so the three floor rows and the `_Unique` controls must read what they
+    // read before. It is not run from here and nothing here would notice if it moved — recorded so
+    // that "the suite is green" is not mistaken for "retention was checked".
 
     [Fact]
     public void ResidentBytesAreTheCellsHeld()
@@ -441,7 +622,7 @@ namespace Unrect.Tests.Streaming
       var store = Store(rows: 1000, columns: 5, chunkRows: 10, windowChunks: 4);
 
       for (var row = 0; row < 100; row++)
-        _ = store.GetCell(0, row, row, 1);
+        _ = store.GetCell(0, row);
 
       var stats = store.Snapshot();
 
@@ -460,11 +641,11 @@ namespace Unrect.Tests.Streaming
       // history, and "it worked on my machine" is exactly what a lifetime bug looks like.
       var store = Store(rows: 100, columns: 2, chunkRows: 10, windowChunks: 4);
 
-      Assert.Equal("0,0", store.GetCell(0, 0, 0, 1).GetString());
+      Assert.Equal("0,0", store.GetCell(0, 0).AsText());
 
       store.Dispose();
 
-      Assert.Throws<ObjectDisposedException>(() => store.GetCell(0, 0, 0, 1));
+      Assert.Throws<ObjectDisposedException>(() => store.GetCell(0, 0));
     }
 
     [Fact]
