@@ -1,6 +1,6 @@
 # The Point Substrate — design spec, revision 5
 
-**Status:** for owner review. Revision 5 is a *reduction* of rev 4: the CRTP contract is gone, replaced by **three locator structs over one interface**. Rev 4's conclusions stand except where restated.
+**Status:** landed, on branch `experiment/point-and-line`, 2026-09-16 (the squashed commit to be named later). This document is a record of what shipped, not a plan — read it as history; where the tree and this file disagree, the tree is right.
 **Base:** branch `experiment/point-and-line` @ `e6e1d10` + the uncommitted phase‑2 build (2,322 green).
 **Deferred:** `Line` (shape stated, not built); `IProjection` → Core.
 

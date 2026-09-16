@@ -7,23 +7,28 @@
   <Namespace>Unrect.Core</Namespace>
   <Namespace>Unrect.Spreadsheets</Namespace>
   <Namespace>Unrect.Projections</Namespace>
-  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Core.ICellValues&gt;</Namespace>
+  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Spreadsheets.ISheetCells&gt;</Namespace>
+  <Namespace>static Unrect.Spreadsheets.SheetProjectionBuilders&lt;Unrect.Spreadsheets.ISheetCells&gt;</Namespace>
 </Query>
 
-// The space is named once, in the query's namespace imports:
-// `using static Unrect.Projections.ProjectionBuilders<Unrect.Core.ICellValues>`.
+// The space is named once, in the query's namespace imports: the canonical vocabulary as
+// `using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>`, and the
+// sheet's own readings as `using static Unrect.Spreadsheets.SheetProjectionBuilders<...>`. The cell
+// reads below — .Text(), .Date(), .Decimal() on a point — come with the same package
+// (Unrect.Spreadsheets), and for the same reason: a kind is a sheet's claim about its own cells.
 var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\examples\investor-summary.xlsx");
 
 // Per-investor detail block: a name cell over a transaction table.
-// The tables below deliberately keep their lambda form: the corpus needs one worked example of
-// the escape hatch that survives for columns whose kind varies or whose value needs a Try*.
+// The tables below deliberately keep their lambda form: the corpus needs one worked example of the
+// escape hatch that survives for a row no record type describes — the view hands back the cell as a
+// place, and the reading is written at it.
 var investorName = Text();
 
 var detailTransactions = Table(r => new
 {
-	Date = r["Date"].GetDateTime(),
-	Type = r["Transaction Type"].GetString(),
-	Amount = r["Amount"].GetDecimal(),
+	Date = r["Date"].Date(),
+	Type = r["Transaction Type"].Text(),
+	Amount = r["Amount"].Decimal(),
 });
 
 var investorDetail = VerticalFlow(v => new
@@ -34,17 +39,17 @@ var investorDetail = VerticalFlow(v => new
 
 var reportHeader = Column(c => new
 {
-	Title = c[0].GetString(),
-	ReportDate = c[1].GetDateTime(),
-	ReportId = c[2].GetString(),
+	Title = c[0].Text(),
+	ReportDate = c[1].Date(),
+	ReportId = c[2].Text(),
 });
 
 var summary = Table(r => new
 {
-	Investor = r["Investor"].GetString(),
-	Contributions = r["Contributions"].GetDecimal(),
-	Distributions = r["Distributions"].GetDecimal(),
-	Net = r["Net"].GetDecimal(),
+	Investor = r["Investor"].Text(),
+	Contributions = r["Contributions"].Decimal(),
+	Distributions = r["Distributions"].Decimal(),
+	Net = r["Net"].Decimal(),
 });
 
 // Position first: the blank gap in front of the section is declared where the reader meets it,

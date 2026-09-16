@@ -27,7 +27,9 @@ records the conventions that keep the numbers honest.
   bugs found while building the rig (a sparse fixture whose all-blank rows truncated
   scans; a kind-cycle resonance blanking two columns in every row) produced plausible
   timings of the wrong thing.
-- **Fixtures are GridSpace-built synthetics** (`CanonicalSpaces`, `IrrReport`) — CI
+- **Fixtures are synthetic sheets built through `SheetGrid`** (`CanonicalSpaces`, `IrrReport`
+  — `CanonicalSpaces` keeps its pre-arc name, but every fixture on it is `SheetGrid.Of(...)`,
+  the kinded in-memory `ISheetCells`, not the canonical `GridSpace<T>`) — CI
   runners get no workbooks. The 1M-row xlsx load measurements live outside the rig as
   scratch probes; the rig measures the layers we control. `Streaming`'s fixture keeps the
   same rule a different way: a synthetic `IRowSource` (`StreamingSpaces`) stands in for
@@ -173,6 +175,17 @@ number is deterministic; CI's run is what goes on the trend line.
   `Map_Plain`.
 - `Values.Create_FromInts` allocating ~96 MB/op (class-`CellValue` era) is the number the
   representation work targets; its trend line is the decision's receipt.
+- **`Values` was rebuilt around the point substrate** (the `Plane<TSpace>`/`Point<TSpace>`
+  locators): `Point_Mint_Million` and `Slice_Million` are new rows, priced against minting and
+  cutting rather than against an object graph; `Create_FromInts` and `Create_FromObjects` are
+  **re-baselined at this commit**, and now measure two different adapters rather than two
+  settings of one — `Create_FromInts` is the canonical `GridSpace.Create(int[,])` door (no kind
+  vocabulary at all), `Create_FromObjects` is the kinded `SheetGrid.Of(object?[,])` door (one
+  cell kind decided per value). `Streaming.PoolReach` is re-baselined the same commit. Read any
+  of the four against their own trend line from this commit forward; a comparison to a value
+  from before it is comparing two different mechanisms, not a regression or an improvement.
+  `Retention`'s rows are untouched — they measure `SpreadsheetSpace.Create`/`SheetStore`'s fill,
+  neither of which this arc's substrate change reached.
 - **The retention floor, recorded the day it was measured** (2026-09-04, local, .NET 8.0.419,
   250k x 8 fixture, before any interning work):
 

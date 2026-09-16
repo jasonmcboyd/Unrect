@@ -6,13 +6,18 @@
   <Namespace>Unrect.Core</Namespace>
   <Namespace>Unrect.Spreadsheets</Namespace>
   <Namespace>Unrect.Projections</Namespace>
-  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Core.ICellValues&gt;</Namespace>
+  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Spreadsheets.ISheetCells&gt;</Namespace>
+  <Namespace>static Unrect.Spreadsheets.SheetProjectionBuilders&lt;Unrect.Spreadsheets.ISheetCells&gt;</Namespace>
 </Query>
 
-// The space this file is written over is named ONCE, in the query's namespace imports:
-// `using static Unrect.Projections.ProjectionBuilders<Unrect.Core.ICellValues>`. Everything below is
-// spelled with no prefix and no type argument. A file that read formulas would name
-// ISpreadsheetSpace there instead — and nothing else in it would change.
+// The space this file is written over is named ONCE — in two imports that say the same name:
+// `using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>` is the
+// vocabulary every space has, and `using static Unrect.Spreadsheets.SheetProjectionBuilders<...>`
+// adds the readings only a sheet can promise: Text(), Date(), Decimal(), and the Table<T> rungs
+// that assert a kind per member. Everything below is spelled with no prefix and no type argument.
+// A file that read formulas would name ISpreadsheetSpace in both lines and take its second from
+// SpreadsheetProjectionBuilders instead — never both sheet classes at once — and nothing else in
+// it would change.
 var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\examples\simple-report.xlsx");
 
 // The report definition: the region and the reading of it, fused into one value independent of

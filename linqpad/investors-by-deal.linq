@@ -6,11 +6,14 @@
   <Namespace>Unrect.Core</Namespace>
   <Namespace>Unrect.Spreadsheets</Namespace>
   <Namespace>Unrect.Projections</Namespace>
-  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Core.ICellValues&gt;</Namespace>
+  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Spreadsheets.ISheetCells&gt;</Namespace>
+  <Namespace>static Unrect.Spreadsheets.SheetProjectionBuilders&lt;Unrect.Spreadsheets.ISheetCells&gt;</Namespace>
 </Query>
 
-// The space is named once, in the query's namespace imports:
-// `using static Unrect.Projections.ProjectionBuilders<Unrect.Core.ICellValues>`.
+// The space is named once, in the query's namespace imports: the canonical vocabulary as
+// `using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>`, and the
+// sheet's own readings — Text() and the Table<T> rungs used below — as
+// `using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>`.
 var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\examples\investors-by-deal.xlsx");
 
 // One deal block: a deal-code cell over a table. Block extents are derived from what the
