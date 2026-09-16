@@ -9,10 +9,11 @@ namespace Unrect.Projections
   /// One declared item applied as many times as the space supports. The separator sits between
   /// items and never before the first; a leading gap is the repeat's own offset.
   /// </summary>
-  internal sealed class RepeatProjection<T> : ProjectionBase<IReadOnlyList<T>>
+  internal sealed class RepeatProjection<TSpace, T> : ProjectionBase<TSpace, IReadOnlyList<T>>
+    where TSpace : class, ISpace
   {
     public RepeatProjection(
-      IProjection<T> item,
+      IProjection<TSpace, T> item,
       IOffsetStrategy? separator,
       Orientation orientation,
       int atLeast,
@@ -28,7 +29,7 @@ namespace Unrect.Projections
       Children = new IProjection[] { item };
     }
 
-    private IProjection<T> Item { get; }
+    private IProjection<TSpace, T> Item { get; }
 
     /// <summary>What the declaration called the item, for every occurrence of it to be labelled by.</summary>
     private UseSite ItemSite { get; }
@@ -50,7 +51,7 @@ namespace Unrect.Projections
     /// extent before the first occurrence.
     /// </para>
     /// </summary>
-    public override ProjectionResult<IReadOnlyList<T>> Project(Plane<ICellValues> extent, ProjectionContext context)
+    public override ProjectionResult<IReadOnlyList<T>> Project(Plane<TSpace> extent, ProjectionContext context)
     {
       // The across axis, read without settling a discovered extent: a vertical walk asks the width,
       // a horizontal one the height. HasBand probes only the along axis, so without this a band with
@@ -117,7 +118,7 @@ namespace Unrect.Projections
     /// whatever the attempt did is discarded by the caller — which is why <paramref name="absorbed"/>
     /// travels back out here rather than being reported in place.
     /// </summary>
-    private bool TryCollect(Plane<ICellValues> extent, ProjectionContext context, List<T> values, ref int along, ref int across, ref bool absorbed)
+    private bool TryCollect(Plane<TSpace> extent, ProjectionContext context, List<T> values, ref int along, ref int across, ref bool absorbed)
     {
       // The cursor is tentative until an item is collected, so a separator followed by nothing
       // (a trailing blank band) is not counted as consumed.
@@ -140,7 +141,7 @@ namespace Unrect.Projections
       // it on the way in. Descend clears the index afterwards, so the item's own children are
       // unaffected. The ordinal is the same occurrence number stamped so it survives that Descend —
       // it is how a decoupled record recovers which body row it is projecting.
-      var scope = context.Advance(Step(cursor)).WithIndex(values.Count).WithOrdinal(values.Count).WithUseSite(ItemSite);
+      var scope = context.WithIndex(values.Count).WithOrdinal(values.Count).WithUseSite(ItemSite);
 
       // Only the item's own placement stops the repetition; a failure deeper inside it is an
       // error, so intra-block format drift is loud rather than silently truncating.
@@ -166,7 +167,7 @@ namespace Unrect.Projections
       return true;
     }
 
-    private bool TrySeparate(Plane<ICellValues> remaining, ProjectionContext context, ref int cursor, ref int reach)
+    private bool TrySeparate(Plane<TSpace> remaining, ProjectionContext context, ref int cursor, ref int reach)
     {
       if (Separator is null)
         return true;
@@ -200,7 +201,7 @@ namespace Unrect.Projections
     }
 
     /// <summary>Whether <paramref name="extent"/> has a band at <paramref name="cursor"/> along the repeat's axis.</summary>
-    private bool HasBand(Plane<ICellValues> extent, int cursor)
+    private bool HasBand(Plane<TSpace> extent, int cursor)
       => Orientation == Orientation.Vertical
         ? extent.HasRow(cursor)
         : cursor < extent.Width;

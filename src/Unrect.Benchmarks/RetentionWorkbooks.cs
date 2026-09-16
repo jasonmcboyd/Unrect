@@ -5,7 +5,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Text;
 
-using Unrect.Core;
+using Unrect.Spreadsheets;
 
 namespace Unrect.Benchmarks
 {
@@ -169,7 +169,7 @@ namespace Unrect.Benchmarks
 
         for (var column = 0; column < columns; column++)
         {
-          var cell = RetentionSpaces.Cell(column, row, unique);
+          var cell = RetentionSpaces.At(column, row, unique);
           var reference = Reference(column, row);
 
           switch (cell.Kind)

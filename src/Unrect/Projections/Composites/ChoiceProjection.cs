@@ -12,12 +12,13 @@ namespace Unrect.Projections
   /// it absorbed on its way to failing is rolled back — a branch that did not win says nothing
   /// beyond the one line explaining itself.
   /// </summary>
-  internal sealed class ChoiceProjection<T> : ProjectionBase<T>
+  internal sealed class ChoiceProjection<TSpace, T> : ProjectionBase<TSpace, T>
+    where TSpace : class, ISpace
   {
-    public ChoiceProjection(IReadOnlyList<IProjection<T>> alternatives, Placement placement)
+    public ChoiceProjection(IReadOnlyList<IProjection<TSpace, T>> alternatives, Placement placement)
       : base(placement)
     {
-      var copy = new IProjection<T>[alternatives.Count];
+      var copy = new IProjection<TSpace, T>[alternatives.Count];
 
       for (var index = 0; index < copy.Length; index++)
         // The factory validates its own parameters; this is the invariant behind it.
@@ -27,13 +28,13 @@ namespace Unrect.Projections
       Children = copy;
     }
 
-    private IProjection<T>[] Alternatives { get; }
+    private IProjection<TSpace, T>[] Alternatives { get; }
 
     public override string Description => "Choice";
 
     public override IReadOnlyList<IProjection> Children { get; }
 
-    public override ProjectionResult<T> Project(Plane<ICellValues> extent, ProjectionContext context)
+    public override ProjectionResult<T> Project(Plane<TSpace> extent, ProjectionContext context)
     {
       ProjectionException[]? failures = null;
 

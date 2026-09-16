@@ -3,10 +3,9 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Tests.Observations;
 
 // THE SECOND SPACE, AND THEREFORE THE SECOND FILE. The declaration below demands a capability, so
-// its file closes the vocabulary over ISpreadsheetSpace rather than over ICellValues — and that is why it
+// its file closes the vocabulary over ISpreadsheetSpace rather than over ISheetCells — and that is why it
 // cannot live beside the plain twins in ProjectionModelAcceptanceTests.EntryC.cs: two closings of
 // ProjectionBuilders<> in one file would make every shared name ambiguous (CS0121 on invocation,
 // every signature being identical), so a declaration file names ONE space. The split is the
@@ -40,8 +39,8 @@ namespace Unrect.Tests.Projections
   public partial class ProjectionModelAcceptanceTests
   {
     /// <summary>
-    /// The audited ledger through the closed vocabularies and the pipeline. Three column offsets
-    /// written position-first, and the total line's anchor-then-movement read as one phrase —
+    /// The audited ledger, and the fourth acceptance declaration. Three column offsets written
+    /// position-first, and the total line's anchor-then-movement read as one phrase —
     /// <c>On(RowContaining("Total")).Right(3).Of(Formula())</c>, which is where the section is,
     /// then what it reads.
     /// <para>
@@ -69,29 +68,35 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void TheAuditedLedgerThroughTheBuildersIsTheSameDeclaration()
+    public void AndAModifierChainOverThisSpaceIsTypedByThisSpace()
     {
+      // The demanding half of ProjectionModelAcceptanceTests.OneModifierChainIsTypedByWhateverSpace-
+      // ItIsWrittenOver, and it is HERE for the reason this file exists: the chain is the same chain,
+      // written once in the library, and what types it is the space the file named. Its plain twin
+      // reads a decimal off the same coordinates over a sheet with no formulas in it.
       var sheet = SpreadsheetSpace.CreateWithFormulas(TestData("formulas.xlsx"), "Formulas");
 
-      // Both sides are read as plain projections, which is the cast the typed layer makes internally
-      // and the only way a differential can compare a demanding declaration at all: the demand lives
-      // in the static type, and the harness reads what a reading produces. The describer is what
-      // makes the four lines and their four formulas visible to the value facet rather than only the
-      // record's shape — see the plain half's class remarks.
-      AssertL3(
-        Read((IProjection<AuditedLedger>)AuditedLedgerDeclaration(), sheet),
-        Read((IProjection<AuditedLedger>)AuditedLedgerThroughTheBuilders(), sheet));
+      IProjection<ISpreadsheetSpace, string?> demanding =
+        On(RowContaining("Widget")).Right(3).Of(Formula().Named("line formula"));
+
+      Assert.Equal(@"IF(B2>0,ROUND(B2*$C$2,2)+SUM($B$2:B2),""B2"")", demanding.Map(sheet));
+      Assert.Equal("line formula", demanding.Name);
     }
 
+    // (A differential stood here, comparing this declaration against a second spelling of it that
+    // answered its demand in prose position — `var p = Projection.Over<ISpreadsheetSpace>()`. That
+    // entry is deleted and so is the witness form beside it: a file names its space in the import,
+    // and there is no second spelling left to be the same declaration AS.)
+
     [Fact]
-    public void AndTheTwinReadsValuesAndTheFormulasBehindThem()
+    public void TheAuditedLedgerReadsValuesAndTheFormulasBehindThem()
     {
-      // Non-vacuity, and the two readings that make this file worth a whole declaration: a value and
-      // the formula behind it in one record, and a shared FOLLOWER whose text the reader
-      // reconstructs for its own row rather than reporting the master's.
+      // The two readings that make this file worth a whole declaration: a value and the formula
+      // behind it in one record, and a shared FOLLOWER whose text the reader reconstructs for its
+      // own row rather than reporting the master's.
       var sheet = SpreadsheetSpace.CreateWithFormulas(TestData("formulas.xlsx"), "Formulas");
 
-      var ledger = ((IProjection<AuditedLedger>)AuditedLedgerThroughTheBuilders()).Map(sheet);
+      var ledger = AuditedLedgerThroughTheBuilders().Map(sheet);
 
       Assert.Equal(4, ledger.Lines.Count);
 
@@ -101,8 +106,10 @@ namespace Unrect.Tests.Projections
       Assert.Equal(@"IF(B2>0,ROUND(B2*$C$2,2)+SUM($B$2:B2),""B2"")", ledger.Lines[0].Formula);
 
       Assert.Equal("Doodad", ledger.Lines[3].Item);
+      Assert.Equal(21.5, ledger.Lines[3].Total);
       Assert.Equal(@"IF(B5>0,ROUND(B5*$C$2,2)+SUM($B$2:B5),""B2"")", ledger.Lines[3].Formula);
 
+      // And the total line, below the gap, read as a formula and nothing else.
       Assert.Equal("SUM(D2:D5)", ledger.TotalFormula);
     }
   }

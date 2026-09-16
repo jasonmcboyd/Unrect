@@ -2,6 +2,7 @@ using System;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
 using Xunit;
 
@@ -198,7 +199,7 @@ namespace Unrect.Tests.Projections
 
           return new ProjectionException(
             "'section'", "its area ran past the space available here", "section", "section",
-            default, null, Projection.Text(), exception);
+            default, null, ProjectionBuilders<ISheetCells>.AsText(), exception);
         });
 
       var failure = Assert.Throws<ProjectionException>(() => bound.HasRow(0));

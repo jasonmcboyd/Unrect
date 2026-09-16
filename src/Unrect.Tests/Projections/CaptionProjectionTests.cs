@@ -1,11 +1,11 @@
 using System;
 
-using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -23,7 +23,7 @@ namespace Unrect.Tests.Projections
   public class CaptionProjectionTests
   {
     // A junk row, then the caption written as the file has it, then two data rows.
-    private static ICellValues Sheet() => Mixed(new object?[,]
+    private static ISheetCells Sheet() => Mixed(new object?[,]
     {
       { "junk", null },
       { "  EIN:  ", null },

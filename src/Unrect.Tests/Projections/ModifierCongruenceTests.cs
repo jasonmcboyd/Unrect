@@ -2,10 +2,12 @@ using System;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.Observations;
 using static Unrect.Tests.ProjectionTestSpaces;
 
@@ -60,7 +62,7 @@ namespace Unrect.Tests.Projections
     // --- The sheets --------------------------------------------------------------------------------
 
     /// <summary>Four rows, two columns, the landmark on row 3 (index 2).</summary>
-    private static ICellValues Rows() => Mixed(new object?[,]
+    private static ISheetCells Rows() => Mixed(new object?[,]
     {
       { "a0", "a1" },
       { "b0", "b1" },
@@ -69,7 +71,7 @@ namespace Unrect.Tests.Projections
     });
 
     /// <summary>The same sheet with the landmark on the FIRST row, so a bound leaves nothing.</summary>
-    private static ICellValues MarkFirst() => Mixed(new object?[,]
+    private static ISheetCells MarkFirst() => Mixed(new object?[,]
     {
       { "Mark", "a1" },
       { "b0", "b1" },
@@ -78,7 +80,7 @@ namespace Unrect.Tests.Projections
     });
 
     /// <summary>A wholly blank first row — the filler a content-sensitive movement steps over.</summary>
-    private static ICellValues BlankLead() => Mixed(new object?[,]
+    private static ISheetCells BlankLead() => Mixed(new object?[,]
     {
       { null, null },
       { "b0", "b1" },
@@ -91,7 +93,7 @@ namespace Unrect.Tests.Projections
     /// IS blank; unsliced it is not — which is what makes a column movement change what "blank row"
     /// means.
     /// </summary>
-    private static ICellValues Ragged() => Mixed(new object?[,]
+    private static ISheetCells Ragged() => Mixed(new object?[,]
     {
       { "a0", null },
       { "b0", "b1" },
@@ -100,7 +102,7 @@ namespace Unrect.Tests.Projections
     });
 
     /// <summary>Column 1 is numbers all the way down, so a <c>Text</c> leaf fails wherever it lands.</summary>
-    private static ICellValues Numbers() => Mixed(new object?[,]
+    private static ISheetCells Numbers() => Mixed(new object?[,]
     {
       { 1, "a1" },
       { 2, "b1" },
@@ -113,7 +115,7 @@ namespace Unrect.Tests.Projections
     private static IRowLandmark Missing() => RowContaining("Nope");
 
     /// <summary>A region that renders its own extent and contents, so every geometric difference shows.</summary>
-    private static IProjection<string> Block() => Range(block =>
+    private static IProjection<ISheetCells, string> Block() => Range(block =>
     {
       var parts = new string[block.Width * block.Height];
 
@@ -124,8 +126,8 @@ namespace Unrect.Tests.Projections
       return $"({block.Width}x{block.Height}:{string.Join(",", parts)})";
     });
 
-    private static string Describe(CellValue cell)
-      => cell.IsBlank ? "_" : cell.Kind == CellKind.Text ? cell.GetString() : cell.Kind.ToString();
+    private static string Describe(Point<ISheetCells> cell)
+      => cell.IsBlank ? "_" : cell.IsText ? cell.Text() : cell.Describe();
 
     /// <summary>
     /// One modifier, by name — so a theory can name a pair rather than carry two lambdas. The
@@ -133,7 +135,7 @@ namespace Unrect.Tests.Projections
     /// of geometry now; <c>Entry.Of(x)</c> writes the same placement field the retired postfix
     /// modifier wrote, so <c>With(b, With(a, x))</c> still reads as "a inside, b outside".
     /// </summary>
-    private static IProjection<string> With(string modifier, IProjection<string> projection) => modifier switch
+    private static IProjection<ISheetCells, string> With(string modifier, IProjection<ISheetCells, string> projection) => modifier switch
     {
       "Named" => projection.Named("n"),
       "Sized" => Sized(Extent(2, 2)).Of(projection),
@@ -650,7 +652,7 @@ namespace Unrect.Tests.Projections
       // reading would be "top"; were the inner one dropped it would be "m1".
       Assert.Equal(
         "bottom",
-        On(Mark()).Of(On(RowContaining("x")).Of(Row(strip => strip[1].GetString())).Select(value => value)).Map(twice));
+        On(Mark()).Of(On(RowContaining("x")).Of(Row(strip => strip[1].Text())).Select(value => value)).Map(twice));
 
       // The extent family says the same thing one field over, and needs Apply to show it: the inner
       // extent is what the block reads, the outer is what the parent steps past. Adjacent, two extents
@@ -748,17 +750,9 @@ namespace Unrect.Tests.Projections
       Assert.NotNull(With(wrapper, Text().OrBlank()!));
     }
 
-    [Fact]
-    public void DemandingIsTheIdentitySoItCommutesWithEverythingItTypeChecksAgainst()
-    {
-      // An ascription states a demand in the static type and hands back the SAME OBJECT, so there is
-      // nothing for an order to change at any observation level. The only ordering constraint it has
-      // is a type-level one: its receiver must be an IProjection<T>, so OrBlank and a second
-      // Demanding must be written before it, not after. (CS1929 at the use site; there is nothing to
-      // observe, so nothing to pin beyond this identity.)
-      var projection = Down(1).Of(Text());
-
-      Assert.Same(projection, projection.Demanding(Demand<ICellValues>.Instance));
-    }
+    // A congruence pin stood here for `Demanding` — the ascription that stated a demand in the
+    // static type and handed back the SAME OBJECT, so there was nothing for an order to change. Both
+    // the modifier and the witness it took are deleted: a declaration is typed by the space its file
+    // named, so there is nothing left to ascribe.
   }
 }

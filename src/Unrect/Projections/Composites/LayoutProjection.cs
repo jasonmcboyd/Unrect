@@ -9,28 +9,29 @@ namespace Unrect.Projections
   /// being passed in. Running the lambda is the only way to learn what it contains, which is why
   /// every layout is opaque to anything that walks a declaration without a space.
   /// <para>
-  /// Subclasses differ in one thing: the <see cref="LayoutState"/> they run on, which is what
+  /// Subclasses differ in one thing: the <see cref="LayoutState{TSpace}"/> they run on, which is what
   /// decides whether a child moves the next one along. Everything else about declaring children
   /// this way — the single pass, closing the layout, and refusing one that declared nothing — is
   /// the same for all of them and lives here.
   /// </para>
   /// </summary>
-  internal abstract class LayoutProjection<T> : ProjectionBase<T>, IOpaqueComposite
+  internal abstract class LayoutProjection<TSpace, T> : ProjectionBase<TSpace, T>, IOpaqueComposite
+    where TSpace : class, ISpace
   {
-    protected LayoutProjection(Layout<T> build, Placement placement)
+    protected LayoutProjection(Layout<TSpace, T> build, Placement placement)
       : base(placement)
     {
       Build = build ?? throw new ArgumentNullException(nameof(build));
     }
 
-    private Layout<T> Build { get; }
+    private Layout<TSpace, T> Build { get; }
 
     public string Reason => "declared by a cursor lambda; children are known only while it runs";
 
     /// <summary>The state that decides what this layout does with its extent between children.</summary>
-    protected abstract LayoutState NewState(Plane<ICellValues> extent, ProjectionContext context);
+    protected abstract LayoutState<TSpace> NewState(Plane<TSpace> extent, ProjectionContext context);
 
-    public override ProjectionResult<T> Project(Plane<ICellValues> extent, ProjectionContext context)
+    public override ProjectionResult<T> Project(Plane<TSpace> extent, ProjectionContext context)
     {
       var state = NewState(extent, context);
 
@@ -41,7 +42,11 @@ namespace Unrect.Projections
 
       try
       {
-        value = Build(new LayoutCursor(state));
+        value = Build(new LayoutCursor<TSpace>(state));
+      }
+      catch (CellReadException failure)
+      {
+        throw context.Reading(failure, extent);
       }
       finally
       {

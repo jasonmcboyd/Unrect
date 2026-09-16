@@ -2,10 +2,11 @@ using System;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -21,10 +22,12 @@ namespace Unrect.Tests.Projections
   /// silently outgrew what it asked for.
   /// </para>
   /// <para>
-  /// The other rule pinned here is the phase's own: every plane the engine makes has its origin at
-  /// (0, 0) over a real subspace object, because the streaming window's locus rides on that object's
-  /// extent. A cut that translated arithmetically instead would stop telling the store which band is
-  /// open — moving the eviction counters and not the answers, the worst kind of change.
+  /// The other rule pinned here is what replaced the phase's own. Until phase 6 every plane the
+  /// engine made had its origin at (0, 0) over a real subspace object, because the streaming
+  /// window's locus rode on that object's extent — so a cut was forbidden from translating
+  /// arithmetically, and three tests enforced that (see the note further down, where they were).
+  /// The store is told which band is open directly now (<c>ISweepAware</c>), so a cut is what it
+  /// always wanted to be: the same space with a composed origin, allocating nothing.
   /// </para>
   /// </summary>
   public class ExtentsTests
@@ -83,7 +86,7 @@ namespace Unrect.Tests.Projections
     }
 
     /// <summary>A four-wide, ten-tall grid under a bottom edge that will admit only six of its rows.</summary>
-    private static (Plane<ICellValues> Extent, CountingBound Bound) Discovering(int height = 6)
+    private static (Plane<ISheetCells> Extent, CountingBound Bound) Discovering(int height = 6)
     {
       var bound = new CountingBound(height);
 
@@ -120,14 +123,18 @@ namespace Unrect.Tests.Projections
     {
       // The subtlety that makes the tail work at all: the bound hides the rows below the boundary,
       // so the space underneath must stay its own full height — otherwise the scan would have
-      // nowhere left to look when it goes hunting for the boundary it has not found yet.
+      // nowhere left to look when it goes hunting for the boundary it has not found yet. It is
+      // structural now rather than something a cut has to preserve: a tail names the SHEET, at an
+      // origin two rows down, so the ten rows are all still there to look through.
       var (extent, _) = Discovering();
 
       var rest = extent.Tail(new Offset(0, 2));
 
-      // Eight rows of space to look through, four rows of region: the boundary is at the parent's
+      // Ten rows of sheet to look through, four rows of region: the boundary is at the parent's
       // row 6, and the tail starts two rows into it.
-      Assert.Equal(8, rest.Space.Area.Height);
+      Assert.Same(extent.Space, rest.Space);
+      Assert.Equal(10, rest.Space.Area.Height);
+      Assert.Equal(2, rest.Origin.Height);
       Assert.Equal(4, rest.Area.Height);
     }
 
@@ -213,115 +220,69 @@ namespace Unrect.Tests.Projections
     // --- The origin rule --------------------------------------------------------------------------------
 
     [Fact]
-    public void EveryCutIsARealSubspaceObjectAndNotAnArithmeticTranslation()
+    public void EveryCutIsAnArithmeticTranslationOfTheSameSpace()
     {
-      // The phase's rule, stated where it can be broken. A plane can translate arithmetically — that
-      // is what an origin is for — but until the streaming store is told directly which band is
-      // open, it learns that from the subspace object's own extent. So each cut must hand back a
-      // DIFFERENT space, with its origin back at zero, and not the parent space with an origin added.
+      // The rule, the other way up. A cut used to have to hand back a DIFFERENT space with its
+      // origin back at zero, because the streaming store learned which band was open from the
+      // subspace object's own extent. The store is told directly now, once per placement, so a cut
+      // is what it always wanted to be: the same space with a composed origin, allocating nothing.
       var (extent, _) = Discovering();
 
-      foreach (var cut in new[]
+      foreach (var (cut, origin) in new[]
       {
-        extent.Cut(new Offset(1, 1), new Area(2, 2)),
-        extent.Cut(new Area(2, 2)),
-        extent.Tail(new Offset(1, 1)),
-        extent.Narrow(2),
+        (extent.Cut(new Offset(1, 1), new Area(2, 2)), new Offset(1, 1)),
+        (extent.Cut(new Area(2, 2)), default(Offset)),
+        (extent.Tail(new Offset(1, 1)), new Offset(1, 1)),
+        (extent.Narrow(2), default(Offset)),
       })
       {
-        Assert.NotSame(extent.Space, cut.Space);
-        Assert.Equal(0, cut.Origin.Width);
-        Assert.Equal(0, cut.Origin.Height);
+        Assert.Same(extent.Space, cut.Space);
+        Assert.Equal(origin.Width, cut.Origin.Width);
+        Assert.Equal(origin.Height, cut.Origin.Height);
       }
     }
 
-    /// <summary>
-    /// The three cuts, as theory data, so the guard is stated once per door rather than once per
-    /// method — a cut that forgot it would be the only one with a hole in it.
-    /// </summary>
-    public static TheoryData<string> Cuts => new TheoryData<string> { "cut", "tail", "narrow" };
-
-    [Theory]
-    [MemberData(nameof(Cuts))]
-    public void ATranslatedRegionCannotBeCutAtAll(string cut)
-    {
-      // The rule enforced rather than remembered. A plane CAN translate arithmetically, and a
-      // translated one cut here would read exactly the right cells — the origin composes correctly —
-      // while telling the streaming store the wrong band was open. Right answers, wrong counters:
-      // the failure mode nothing downstream can notice, which is why the door refuses instead of
-      // trusting the rule to be kept.
-      var translated = CoordinateGrid(4, 10).Extent().Slice(new Offset(1, 1));
-
-      Assert.Equal(1, translated.Origin.Width);
-      Assert.Equal(1, translated.Origin.Height);
-
-      Assert.Throws<EngineInvariantException>(() => Cutting(cut, translated));
-
-      // ...and the same cut over an untranslated region is ordinary business, so the refusal is
-      // about the origin and not about the arguments.
-      _ = Cutting(cut, CoordinateGrid(4, 10).Extent());
-    }
-
-    [Theory]
-    [MemberData(nameof(Cuts))]
-    public void TheGuardHoldsAtEveryDoor(string cut)
-    {
-      // Stated across the three ways a space can enter the library for the reason every contract law
-      // here is: the engine cannot see which door it was handed, and a guard kept by one backend and
-      // not another is not a guard. The windowed door is the one it exists for — the locus rides on
-      // its subspace objects — and the other two are what make it a rule rather than a special case.
-      foreach (var door in new[] { "grid", "windowed", "xlsx" })
-      {
-        var whole = Door(door).Extent();
-
-        Assert.True(whole.Width >= 2 && whole.Area.Height >= 2, $"the '{door}' door needs a 2x2 space");
-
-        Assert.Throws<EngineInvariantException>(() => Cutting(cut, whole.Slice(new Offset(1, 1))));
-      }
-    }
-
-    /// <summary>One of the three cuts, applied to <paramref name="extent"/> at its own corner.</summary>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="cut"/> names no cut.</exception>
-    private static Plane<ICellValues> Cutting(string cut, Plane<ICellValues> extent) =>
-      cut switch
-      {
-        "cut" => extent.Cut(default, new Area(1, 1)),
-        "tail" => extent.Tail(default),
-        "narrow" => extent.Narrow(1),
-        _ => throw new ArgumentOutOfRangeException(nameof(cut), cut, "No such cut.")
-      };
+    // Three tests stood here and are gone with the rule they enforced: `Extents` REFUSED to cut a
+    // translated region at all — every plane the engine made had its origin at (0, 0) over a real
+    // subspace object, and a cut of one that did not was an EngineInvariantException, a fault no
+    // tolerance absorbed. They were a theory over the three cuts, the same theory over every door,
+    // and the classification pin beneath them. The refusal, the exception type and the transitional
+    // rule are all deleted: a region is a locator over the root space now, translation is the normal
+    // case, and the band a declaration is sweeping is announced rather than inferred.
 
     [Fact]
-    public void AndABrokenInvariantIsAFaultThatNoToleranceAbsorbs()
+    public void MapMintsARootPlaneOverTheWholeSpace()
     {
-      // The classification, which matters more than the message. An invariant this library owes
-      // itself is never a statement about the document, so `Optional` — whose whole job is to say
-      // "that section is not there" — must not be allowed to say it about a bug in the reader. That
-      // would be the worst answer in the taxonomy: a wrong result with nothing anywhere reporting it.
+      // Where every region in a reading comes from. Map does not wrap, adapt or measure anything: it
+      // mints the one plane that names the whole of the space at its own corner, and hands it to the
+      // declaration. Everything below is arithmetic on that.
       //
-      // Provoked from inside a projection, because that is the only place a declaration can reach a
-      // cut at all, and through Optional specifically because the measured-extent case it wraps
-      // would otherwise absorb anything.
-      var probe = Range(3, 3, block => block.Space.Slice(new Offset(1, 1)).Tail(default).Width).Named("probe");
+      // Both halves matter. The ORIGIN is the default — a root region starts where the space does,
+      // which is what makes every coordinate underneath it the sheet's own — and the AREA is the
+      // space's, unqualified, so nothing is hidden from a declaration before it has said anything.
+      var space = CoordinateGrid(4, 10);
 
-      var failure = Assert.Throws<ProjectionException>(() => probe.Optional().Map(CoordinateGrid(4, 10)));
+      var root = Range(WholeExtent(), block => block.Space).Map(space);
 
-      Assert.True(failure.IsFault, "a broken engine invariant must be a fault");
-      Assert.IsType<EngineInvariantException>(failure.GetBaseException());
-      Assert.Equal("'probe'", failure.Subject);
-
-      // Non-vacuity: the same tolerance over the same shape absorbs an ordinary absence perfectly
-      // well, so "not absorbed" above is about the exception and not about Optional being inert.
-      Assert.Null(On(RowContaining("no such caption")).Of(Text()).Optional().Map(CoordinateGrid(4, 10)));
+      Assert.Same(space, root.Space);
+      Assert.Equal(default(Offset).Width, root.Origin.Width);
+      Assert.Equal(default(Offset).Height, root.Origin.Height);
+      Assert.Equal(space.Area.Size.Width, root.Area.Size.Width);
+      Assert.Equal(space.Area.Size.Height, root.Area.Size.Height);
     }
 
     [Fact]
-    public void AProjectionIsHandedARegionWhoseOriginIsItsOwnCorner()
+    public void AProjectionIsHandedARegionWhoseOriginIsWhereThePlacementPutIt()
     {
-      // The same rule seen from the declaration's side, through the engine rather than the helper:
-      // a block placed two rows down still reports (0, 0), because what it was handed is a space of
-      // its own. A plane that had been translated instead would report (0, 2) here, and every A1 the
-      // engine cites would be counted twice.
+      // The same rule seen from the declaration's side, through the engine rather than the helper: a
+      // block placed after two consumed rows reports (0, 2), because what it was handed is a locator
+      // over the sheet and not a space of its own. That IS the A1 the engine cites — one origin, one
+      // frame, nothing to add it to.
+      //
+      // Until phase 6 this read (0, 0): a placed region was a fresh subspace object whose corner was
+      // its own, and the engine carried the sheet position separately in ProjectionContext.Origin.
+      // The context no longer accumulates one, so a plane that reported (0, 0) here would now lose
+      // the two rows rather than duplicate them.
       var origin = VerticalFlow(v =>
       {
         v.Next(Row(cells => cells.Count));
@@ -331,7 +292,7 @@ namespace Unrect.Tests.Projections
       }).Map(CoordinateGrid(4, 10));
 
       Assert.Equal(0, origin.Width);
-      Assert.Equal(0, origin.Height);
+      Assert.Equal(2, origin.Height);
     }
   }
 }

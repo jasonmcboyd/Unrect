@@ -101,6 +101,14 @@ namespace Unrect.Core
     public IBound? Bound => _bound;
 
     /// <summary>
+    /// The extent as declared: what the region claims, which for a bottom edge still being
+    /// discovered is the ceiling that edge sits under rather than where it turns out to be. Free,
+    /// because it asks nothing — which is what makes it the honest answer where
+    /// <see cref="Area"/> would read a file to give one.
+    /// </summary>
+    internal Area Declared => _extent;
+
+    /// <summary>
     /// How big the region is — and <b>asking settles a discovered bottom edge</b>, reading the
     /// discovery to exhaustion. An extent is a pair of numbers and there is no answering half of
     /// one, so a reader that must not force asks <see cref="Width"/> and <see cref="HasRow"/>
@@ -112,9 +120,14 @@ namespace Unrect.Core
     /// Whether the region has a row at <paramref name="row"/> — the question a forward-only reader
     /// asks instead of "how tall are you". A discovered bottom edge reads only as far as it takes to
     /// answer; a measured one compares against its height.
+    /// <para>
+    /// A discovered edge is bounded by the declared height too. The discovery cannot run past the
+    /// ceiling it was begun under, so the test is redundant with what the scan does — and stating it
+    /// here makes that a property of the region rather than something taken on trust from elsewhere.
+    /// </para>
     /// </summary>
     public bool HasRow(int row)
-      => row >= 0 && (_bound is null ? row < _extent.Height : _bound.HasRow(row));
+      => row >= 0 && row < _extent.Height && (_bound is null || _bound.HasRow(row));
 
     /// <summary>
     /// This region, <paramref name="width"/> columns wide, with its bottom edge discovered by
@@ -213,6 +226,22 @@ namespace Unrect.Core
     /// </para>
     /// </summary>
     internal Plane<ISpace> Erased() => new Plane<ISpace>(Space, Origin, _extent, _bound);
+
+    /// <summary>
+    /// The leading <paramref name="width"/> columns, with everything else about the region left
+    /// alone — including a bottom edge still being discovered, which is what makes this different
+    /// from slicing to a rectangle: narrowing asks nothing about the height.
+    /// </summary>
+    /// <exception cref="OutOfBoundsException"><paramref name="width"/> is wider than this region.</exception>
+    internal Plane<TSpace> Narrowed(int width)
+    {
+      // A width past the edge is a bounds condition; a negative one is an argument bug, which is
+      // what Area says about it a line later — the same division the constructor draws.
+      if (width > Width)
+        throw new OutOfBoundsException();
+
+      return new Plane<TSpace>(Space, Origin, new Area(width, _extent.Height), _bound);
+    }
 
     /// <summary><paramref name="area"/>, from this region's own corner.</summary>
     /// <exception cref="OutOfBoundsException"><paramref name="area"/> does not fit inside this region.</exception>

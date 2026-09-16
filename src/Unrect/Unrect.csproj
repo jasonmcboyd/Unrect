@@ -16,8 +16,10 @@
          while it runs; asserting that through reflection was the alternative. -->
     <InternalsVisibleTo Include="Unrect.Tests" />
 
-    <!-- So a backend's projection can reach a region's space through the one named door
-         (Extents.Underlying) rather than open-coding the reach-through at each site. -->
+    <!-- So a backend can be a first-class part of this vocabulary rather than a consumer of it:
+         ProjectionBase's private-protected constructor (a backend's leaves are real primitives, not
+         Select wrappers), the Tolerating seam OrBlank dispatches through, and the pipeline stage
+         internals its terminals close. -->
     <InternalsVisibleTo Include="Unrect.Spreadsheets" />
   </ItemGroup>
 

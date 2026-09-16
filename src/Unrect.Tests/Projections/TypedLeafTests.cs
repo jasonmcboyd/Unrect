@@ -1,11 +1,12 @@
 using System;
 
-using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -23,7 +24,7 @@ namespace Unrect.Tests.Projections
   /// </summary>
   public class TypedLeafTests
   {
-    private static ICellValues One(object? value) => Mixed(new object?[,] { { value } });
+    private static ISheetCells One(object? value) => Mixed(new object?[,] { { value } });
 
     // --- Each leaf reads its kind ------------------------------------------------------------------
 
@@ -89,7 +90,7 @@ namespace Unrect.Tests.Projections
     public void AnErrorCellIsNamedAsTheErrorItIs()
     {
       var failure = Assert.Throws<ProjectionException>(() =>
-        Decimal().Map(One(CellValue.OfError(CellError.DivisionByZero))));
+        Decimal().Map(One(Cell.OfError(CellError.DivisionByZero))));
 
       Assert.Equal("expected Number at A1, found Error(#DIV/0!)", Problem(failure));
     }
@@ -243,7 +244,7 @@ namespace Unrect.Tests.Projections
         Id = v.Next(Text()),
       }).Apply(space);
 
-      var byColumn = Column(4, c => c[0].GetString()).Apply(space);
+      var byColumn = Column(4, c => c[0].Text()).Apply(space);
 
       Assert.Equal(byColumn.Consumed.Width, byLeaves.Consumed.Width);
       Assert.Equal(byColumn.Consumed.Height, byLeaves.Consumed.Height);

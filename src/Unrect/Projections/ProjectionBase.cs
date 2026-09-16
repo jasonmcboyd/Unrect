@@ -12,14 +12,14 @@ namespace Unrect.Projections
   /// (<c>TProjection Named&lt;TProjection&gt;(this TProjection, string)</c>), and a method generic
   /// in the projection's type can only see it as an <see cref="IProjection"/>. So the operations
   /// that need to know the <em>result</em> type live here, where <see
-  /// cref="ProjectionBase{TResult}"/> supplies it. That is the whole reason this non-generic half
+  /// cref="ProjectionBase{TSpace, TResult}"/> supplies it. That is the whole reason this non-generic half
   /// exists, and it is why the modifier surface is written once instead of once per demand.
   /// </para>
   /// <para>
   /// The clone-returning operations (<see cref="Renamed"/>, <see cref="Replaced"/>) hand back a
   /// copy of the same runtime type, so a modifier's cast back to <c>TProjection</c> cannot fail.
   /// The wrapper-returning ones hand back a new projection, which is a <see
-  /// cref="ProjectionBase{TResult}"/> for the same result type and therefore converts to any
+  /// cref="ProjectionBase{TSpace, TResult}"/> for the same result type and therefore converts to any
   /// <em>interface</em> the receiver was seen through — but not to a projection class of its own,
   /// which is what a modifier's cast checks.
   /// </para>
@@ -99,6 +99,28 @@ namespace Unrect.Projections
       return clone;
     }
 
+    /// <summary>
+    /// <paramref name="rewritten"/> given this projection's naming — its <see cref="Name"/> and its
+    /// unit marks — and handed back for the caller to return.
+    /// <para>
+    /// The clone-returning modifiers keep all of it for free. A widening that has to build a new
+    /// projection rather than clone one — <c>OrBlank</c>, which changes the result type — is the one
+    /// place it has to be carried across by hand, and a leaf that carried only the name would
+    /// silently change its own path by being made tolerant. Mutation is safe here and nowhere else:
+    /// <paramref name="rewritten"/> was constructed by the caller one line ago and has not escaped.
+    /// </para>
+    /// </summary>
+    internal TProjection Naming<TProjection>(TProjection rewritten)
+      where TProjection : ProjectionBase
+    {
+      rewritten.Name = Name;
+      rewritten.UnitName = UnitName;
+      rewritten.IsUnitBoundary = IsUnitBoundary;
+      rewritten.IsUnitScaffolding = IsUnitScaffolding;
+
+      return rewritten;
+    }
+
     /// <summary>This projection placed by <paramref name="placement"/> — a copy, of this same type.</summary>
     internal ProjectionBase Replaced(Placement placement)
     {
@@ -118,7 +140,7 @@ namespace Unrect.Projections
     /// <c>Heading</c> stage builds directly. The captions are the heading rows, read and discarded;
     /// this projection is the section they announce.
     /// </summary>
-    internal abstract IProjection WithHeadings(IProjection<string>[] captions);
+    internal abstract IProjection WithHeadings(IProjection[] captions);
 
     /// <summary>
     /// This projection with <paramref name="fallback"/> to stand in for it — the boundary
@@ -137,8 +159,10 @@ namespace Unrect.Projections
   /// subclass that mutates state after construction breaks the guarantee that one projection can be
   /// applied to many spaces concurrently.
   /// </summary>
+  /// <typeparam name="TSpace">The space this projection is written over.</typeparam>
   /// <typeparam name="TResult">What projecting this projection's extent produces.</typeparam>
-  public abstract class ProjectionBase<TResult> : ProjectionBase, IProjection<TResult>
+  public abstract class ProjectionBase<TSpace, TResult> : ProjectionBase, IProjection<TSpace, TResult>
+    where TSpace : class, ISpace
   {
     /// <inheritdoc cref="ProjectionBase(Placement)"/>
     /// <remarks>
@@ -154,18 +178,18 @@ namespace Unrect.Projections
     }
 
     /// <inheritdoc/>
-    public abstract ProjectionResult<TResult> Project(Plane<ICellValues> extent, ProjectionContext context);
+    public abstract ProjectionResult<TResult> Project(Plane<TSpace> extent, ProjectionContext context);
 
     /// <inheritdoc/>
-    public IProjection<TResult> WithName(string name)
-      => (IProjection<TResult>)Renamed(name ?? throw new ArgumentNullException(nameof(name)));
+    public IProjection<TSpace, TResult> WithName(string name)
+      => (IProjection<TSpace, TResult>)Renamed(name ?? throw new ArgumentNullException(nameof(name)));
 
     /// <inheritdoc/>
-    public IProjection<TResult> WithPlacement(Placement placement)
-      => (IProjection<TResult>)Replaced(placement ?? throw new ArgumentNullException(nameof(placement)));
+    public IProjection<TSpace, TResult> WithPlacement(Placement placement)
+      => (IProjection<TSpace, TResult>)Replaced(placement ?? throw new ArgumentNullException(nameof(placement)));
 
     internal sealed override IProjection Inset(int left, int top, int right, int bottom)
-      => new PadProjection<TResult>(this, left, top, right, bottom, Placement.Default);
+      => new PadProjection<TSpace, TResult>(this, left, top, right, bottom, Placement.Default);
 
     /// <summary>
     /// Refuses a second end rather than replacing the first, so <c>Until(A).Until(B)</c> is not a
@@ -175,14 +199,14 @@ namespace Unrect.Projections
     /// </summary>
     internal sealed override IProjection BoundedBy(Landmark landmark, bool orEnd)
     {
-      if (this is UntilProjection<TResult> bounded)
+      if (this is UntilProjection<TSpace, TResult> bounded)
         throw bounded.AlreadyEnded(landmark);
 
-      return new UntilProjection<TResult>(this, landmark, orEnd, Placement.Default);
+      return new UntilProjection<TSpace, TResult>(this, landmark, orEnd, Placement.Default);
     }
 
-    internal sealed override IProjection WithHeadings(IProjection<string>[] captions)
-      => new FlowProjection<TResult>(
+    internal sealed override IProjection WithHeadings(IProjection[] captions)
+      => new FlowProjection<TSpace, TResult>(
         Orientation.Vertical,
         cursor =>
         {
@@ -191,17 +215,37 @@ namespace Unrect.Projections
           // and the section 'projection' — identifiers the user never wrote. Capture reads the
           // immediate call site, so a helper has to opt out.
           foreach (var caption in captions)
-            cursor.Next(caption, declared: null);
+            cursor.Next((IProjection<TSpace, string>)caption, declared: null);
 
           return cursor.Next(this, declared: null);
         },
         Placement.Default,
         description: "Heading");
 
+    /// <summary>
+    /// The same reading, tolerating a blank cell — what <c>OrBlank</c> declares. Only a cell leaf
+    /// can: a blank is a value in a reading of one cell, and on anything else it is a declaration
+    /// error, which is why refusing here is where that error is raised.
+    /// <para>
+    /// The widening comes from the caller because C# cannot say "this same reading, of
+    /// <typeparamref name="TValue"/>"; at run time it is the identity. Everything else — the
+    /// placement, the name, the kind a backend's leaf asserts — is the receiver's own, so
+    /// <c>Decimal().Right(6).OrBlank()</c> and <c>Decimal().OrBlank().Right(6)</c> declare the same
+    /// thing.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="TValue">The nullable form of <typeparamref name="TResult"/>.</typeparam>
+    /// <param name="widen">The widening, which is the identity conversion at run time.</param>
+    internal virtual IProjection<TSpace, TValue> Tolerating<TValue>(Func<TResult, TValue> widen)
+      => throw new ArgumentException(
+        "OrBlank reads a blank cell as null, so it belongs on a cell leaf — AsText, or one of a "
+        + $"backend's kinded leaves. {ProjectionContext.Describe(this)} is not one.",
+        "projection");
+
     internal sealed override IProjection Otherwise(IProjection fallback, string? declared)
-      => new BoundaryProjection<TResult>(
+      => new BoundaryProjection<TSpace, TResult>(
         this,
-        fallback as IProjection<TResult>
+        fallback as IProjection<TSpace, TResult>
           ?? throw new ArgumentException(
             $"A fallback must read what the projection it stands in for reads ({typeof(TResult).Name}).",
             nameof(fallback)),

@@ -19,7 +19,7 @@ namespace Unrect.Projections
   /// <b>It runs in the engine's order, which is also the sheet's.</b> Where the section starts, how
   /// big it is, what announces it, then what it reads — so reading the declaration left to right is
   /// reading the document top to bottom, and every stage is optional. The bare terminal is exactly
-  /// today's factory: silence is adjacency, and a projection with no declared extent sizes to its
+  /// the plain factory: silence is adjacency, and a projection with no declared extent sizes to its
   /// children or to its content as it always did.
   /// </para>
   /// <para>
@@ -35,14 +35,16 @@ namespace Unrect.Projections
   /// cannot be an extension method on a stage generic in the space: C# infers a method's type
   /// arguments all or none, so the space would have to be written too. Instance members take the
   /// space from the receiver's type and leave the method generic only in what it reads, which is the
-  /// same reason <see cref="ProjectionScope{TSpace}"/> exists.
+  /// same reason <see cref="ProjectionBuilders{TSpace}"/> is a generic class.
   /// </para>
   /// <para>
   /// A stage is a value: it holds what has been declared and nothing else, so one may be held in a
   /// local and closed twice.
   /// </para>
   /// </summary>
-  public abstract class PlacementStage
+  /// <typeparam name="TSpace">The space the pipeline's declaration is written over.</typeparam>
+  public abstract class PlacementStage<TSpace>
+    where TSpace : class, ISpace
   {
     private protected PlacementStage(Steps steps) => Steps = steps;
 
@@ -52,205 +54,190 @@ namespace Unrect.Projections
     public override string ToString() => $"{GetType().Name} {Steps}";
 
     // --- Layouts ---------------------------------------------------------------------------------
+    //
+    // The three terminals that exist for INFERENCE: a lambda body cannot drive inference, so a flow
+    // whose result type lives inside its own lambda has to be told what space it is over, and the
+    // receiver's type is the telling.
 
-    /// <inheritdoc cref="Projection.VerticalFlow{T}(Layout{T})"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.VerticalFlow{T}(Layout{TSpace, T})"/>
     /// <typeparam name="T">What the layout builds.</typeparam>
     /// <param name="build">The layout, declaring its children by calling <c>Next</c>.</param>
-    public IProjection<T> VerticalFlow<T>(Layout<T> build) => Close(Projection.VerticalFlow(build));
+    public IProjection<TSpace, T> VerticalFlow<T>(Layout<TSpace, T> build)
+      => Close(ProjectionBuilders<TSpace>.VerticalFlow(build));
 
-    /// <inheritdoc cref="Projection.HorizontalFlow{T}(Layout{T})"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.HorizontalFlow{T}(Layout{TSpace, T})"/>
     /// <typeparam name="T">What the layout builds.</typeparam>
     /// <param name="build">The layout, declaring its children by calling <c>Next</c>.</param>
-    public IProjection<T> HorizontalFlow<T>(Layout<T> build) => Close(Projection.HorizontalFlow(build));
+    public IProjection<TSpace, T> HorizontalFlow<T>(Layout<TSpace, T> build)
+      => Close(ProjectionBuilders<TSpace>.HorizontalFlow(build));
 
-    /// <inheritdoc cref="Projection.Overlay{T}(Layout{T})"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Overlay{T}(Layout{TSpace, T})"/>
     /// <typeparam name="T">What the layout builds.</typeparam>
     /// <param name="build">The layout, declaring its children by calling <c>Next</c>.</param>
-    public IProjection<T> Overlay<T>(Layout<T> build) => Close(Projection.Overlay(build));
+    public IProjection<TSpace, T> Overlay<T>(Layout<TSpace, T> build)
+      => Close(ProjectionBuilders<TSpace>.Overlay(build));
 
     // --- Repetition and alternation ----------------------------------------------------------------
 
-    /// <inheritdoc cref="Projection.VerticalRepeat{T}"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.VerticalRepeat{T}"/>
     /// <typeparam name="T">What one occurrence reads.</typeparam>
     /// <param name="item">The projection to apply repeatedly.</param>
     /// <param name="separatedBy">The offset between occurrences; never applied before the first.</param>
     /// <param name="atLeast">How many occurrences make a well-formed section.</param>
     /// <param name="declared">Supplied by the compiler as the text of the <paramref name="item"/> argument.</param>
-    public IProjection<IReadOnlyList<T>> VerticalRepeat<T>(
-      IProjection<T> item,
+    public IProjection<TSpace, IReadOnlyList<T>> VerticalRepeat<T>(
+      IProjection<TSpace, T> item,
       IOffsetStrategy? separatedBy = null,
       int atLeast = 0,
       [CallerArgumentExpression("item")] string? declared = null)
-      => Close(Projection.VerticalRepeat(item, separatedBy, atLeast, declared: declared));
+      => Close(ProjectionBuilders<TSpace>.VerticalRepeat(item, separatedBy, atLeast, declared: declared));
 
-    /// <inheritdoc cref="Projection.HorizontalRepeat{T}"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.HorizontalRepeat{T}"/>
     /// <typeparam name="T">What one occurrence reads.</typeparam>
     /// <param name="item">The projection to apply repeatedly.</param>
     /// <param name="separatedBy">The offset between occurrences; never applied before the first.</param>
     /// <param name="atLeast">How many occurrences make a well-formed section.</param>
     /// <param name="declared">Supplied by the compiler as the text of the <paramref name="item"/> argument.</param>
-    public IProjection<IReadOnlyList<T>> HorizontalRepeat<T>(
-      IProjection<T> item,
+    public IProjection<TSpace, IReadOnlyList<T>> HorizontalRepeat<T>(
+      IProjection<TSpace, T> item,
       IOffsetStrategy? separatedBy = null,
       int atLeast = 0,
       [CallerArgumentExpression("item")] string? declared = null)
-      => Close(Projection.HorizontalRepeat(item, separatedBy, atLeast, declared: declared));
+      => Close(ProjectionBuilders<TSpace>.HorizontalRepeat(item, separatedBy, atLeast, declared: declared));
 
-    /// <inheritdoc cref="Projection.Choice{T}"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Choice{T}"/>
     /// <typeparam name="T">What every alternative reads.</typeparam>
     /// <param name="alternatives">The alternatives, tried in declaration order.</param>
-    public IProjection<T> Choice<T>(params IProjection<T>[] alternatives) => Close(Projection.Choice(alternatives));
+    public IProjection<TSpace, T> Choice<T>(params IProjection<TSpace, T>[] alternatives)
+      => Close(ProjectionBuilders<TSpace>.Choice(alternatives));
 
     // --- Tables ------------------------------------------------------------------------------------
 
-    /// <inheritdoc cref="Projection.Table{T}()"/>
-    /// <typeparam name="T">What one record reads.</typeparam>
-    public IProjection<IReadOnlyList<T>> Table<T>() => Close(Projection.Table<T>());
-
-    /// <inheritdoc cref="Projection.Table{T}(Func{TableBinding{T}, TableBinding{T}})"/>
-    /// <typeparam name="T">What one record reads.</typeparam>
-    /// <param name="bind">The per-member declarations applied to what reflection would have written.</param>
-    public IProjection<IReadOnlyList<T>> Table<T>(Func<TableBinding<T>, TableBinding<T>> bind)
-      => Close(Projection.Table(bind));
-
-    /// <inheritdoc cref="Projection.Table{T}(int, Func{LabelMap, IProjection{T}}, string)"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Table{T}(int, Func{LabelMap, IProjection{TSpace, T}}, string)"/>
     /// <typeparam name="T">What one record reads.</typeparam>
     /// <param name="headerRows">How many rows to read as the header; a bind needs 1.</param>
     /// <param name="eachRow">Given this file's captions, the projection that reads one record.</param>
     /// <param name="declared">Supplied by the compiler as the text of the <paramref name="eachRow"/> argument.</param>
-    public IProjection<IReadOnlyList<T>> Table<T>(
+    public IProjection<TSpace, IReadOnlyList<T>> Table<T>(
       int headerRows,
-      Func<LabelMap, IProjection<T>> eachRow,
+      Func<LabelMap, IProjection<TSpace, T>> eachRow,
       [CallerArgumentExpression("eachRow")] string? declared = null)
-      => Close(Projection.Table(headerRows, eachRow, declared));
+      => Close(ProjectionBuilders<TSpace>.Table(headerRows, eachRow, declared));
 
-    /// <inheritdoc cref="Projection.Table{T}(int, IProjection{T}, string)"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Table{T}(int, IProjection{TSpace, T}, string)"/>
     /// <typeparam name="T">What one record reads.</typeparam>
     /// <param name="headerRows">How many rows to consume as the header, 0 or 1.</param>
     /// <param name="eachRow">The projection applied to each body row.</param>
     /// <param name="declared">Supplied by the compiler as the text of the <paramref name="eachRow"/> argument.</param>
-    public IProjection<IReadOnlyList<T>> Table<T>(
+    public IProjection<TSpace, IReadOnlyList<T>> Table<T>(
       int headerRows,
-      IProjection<T> eachRow,
+      IProjection<TSpace, T> eachRow,
       [CallerArgumentExpression("eachRow")] string? declared = null)
-      => Close(Projection.Table(headerRows, eachRow, declared));
+      => Close(ProjectionBuilders<TSpace>.Table(headerRows, eachRow, declared));
 
-    /// <inheritdoc cref="Projection.Table()"/>
-    public IProjection<IReadOnlyList<IReadOnlyDictionary<string, CellValue>>> Table() => Close(Projection.Table());
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Table()"/>
+    public IProjection<TSpace, IReadOnlyList<IReadOnlyDictionary<string, Point<TSpace>>>> Table()
+      => Close<IReadOnlyList<IReadOnlyDictionary<string, Point<TSpace>>>>(ProjectionBuilders<TSpace>.Table());
 
-    /// <inheritdoc cref="Projection.Table{T}(Func{TableRow, T})"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Table{T}(Func{TableRow{TSpace}, T})"/>
     /// <typeparam name="T">What one row reads.</typeparam>
     /// <param name="project">The reading applied to each body row.</param>
-    public IProjection<IReadOnlyList<T>> Table<T>(Func<TableRow, T> project) => Close(Projection.Table(project));
+    public IProjection<TSpace, IReadOnlyList<T>> Table<T>(Func<TableRow<TSpace>, T> project)
+      => Close<IReadOnlyList<T>>(ProjectionBuilders<TSpace>.Table(project));
 
-    /// <inheritdoc cref="Projection.Table{T}(int, Func{TableRow, T})"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Table{T}(int, Func{TableRow{TSpace}, T})"/>
     /// <typeparam name="T">What one row reads.</typeparam>
     /// <param name="headerRows">How many rows to consume as the header, 0 or 1.</param>
     /// <param name="project">The reading applied to each body row.</param>
-    public IProjection<IReadOnlyList<T>> Table<T>(int headerRows, Func<TableRow, T> project)
-      => Close(Projection.Table(headerRows, project));
+    public IProjection<TSpace, IReadOnlyList<T>> Table<T>(int headerRows, Func<TableRow<TSpace>, T> project)
+      => Close<IReadOnlyList<T>>(ProjectionBuilders<TSpace>.Table(headerRows, project));
 
-    /// <inheritdoc cref="Projection.Table{T}(Func{TableView, T})"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Table{T}(Func{TableView{TSpace}, T})"/>
     /// <typeparam name="T">What the table reads.</typeparam>
     /// <param name="project">The reading applied to the table as a whole.</param>
-    public IProjection<T> Table<T>(Func<TableView, T> project) => Close(Projection.Table(project));
+    public IProjection<TSpace, T> Table<T>(Func<TableView<TSpace>, T> project) => Close<T>(ProjectionBuilders<TSpace>.Table(project));
 
-    /// <inheritdoc cref="Projection.Table{T}(int, Func{TableView, T})"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Table{T}(int, Func{TableView{TSpace}, T})"/>
     /// <typeparam name="T">What the table reads.</typeparam>
     /// <param name="headerRows">How many rows to consume as the header, 0 or 1.</param>
     /// <param name="project">The reading applied to the table as a whole.</param>
-    public IProjection<T> Table<T>(int headerRows, Func<TableView, T> project)
-      => Close(Projection.Table(headerRows, project));
+    public IProjection<TSpace, T> Table<T>(int headerRows, Func<TableView<TSpace>, T> project)
+      => Close<T>(ProjectionBuilders<TSpace>.Table(headerRows, project));
 
     // --- Leaves ------------------------------------------------------------------------------------
 
-    /// <inheritdoc cref="Projection.Cell{T}(Func{CellValue, T})"/>
-    /// <typeparam name="T">What the cell reads.</typeparam>
-    /// <param name="project">The reading applied to the cell.</param>
-    public IProjection<T> Cell<T>(Func<CellValue, T> project) => Close(Projection.Cell(project));
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Point()"/>
+    public IProjection<TSpace, Point<TSpace>> Point() => Close(ProjectionBuilders<TSpace>.Point());
 
-    /// <inheritdoc cref="Projection.Text()"/>
-    public IProjection<string> Text() => Close(Projection.Text());
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.AsText()"/>
+    public IProjection<TSpace, string> AsText() => Close(ProjectionBuilders<TSpace>.AsText());
 
-    /// <inheritdoc cref="Projection.Decimal()"/>
-    public IProjection<decimal> Decimal() => Close(Projection.Decimal());
-
-    /// <inheritdoc cref="Projection.Integer()"/>
-    public IProjection<int> Integer() => Close(Projection.Integer());
-
-    /// <inheritdoc cref="Projection.Double()"/>
-    public IProjection<double> Double() => Close(Projection.Double());
-
-    /// <inheritdoc cref="Projection.Date()"/>
-    public IProjection<DateTime> Date() => Close(Projection.Date());
-
-    /// <inheritdoc cref="Projection.Boolean()"/>
-    public IProjection<bool> Boolean() => Close(Projection.Boolean());
-
-    /// <inheritdoc cref="Projection.Caption(string)"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Caption(string)"/>
     /// <param name="text">What the row must say.</param>
-    public IProjection<string> Caption(string text) => Close(Projection.Caption(text));
+    public IProjection<TSpace, string> Caption(string text) => Close<string>(ProjectionBuilders<TSpace>.Caption(text));
 
-    /// <inheritdoc cref="Projection.Row{T}(Func{CellStrip, T})"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Row{T}(Func{CellStrip{TSpace}, T})"/>
     /// <typeparam name="T">What the row reads.</typeparam>
     /// <param name="project">The reading applied to the row's cells.</param>
-    public IProjection<T> Row<T>(Func<CellStrip, T> project) => Close(Projection.Row(project));
+    public IProjection<TSpace, T> Row<T>(Func<CellStrip<TSpace>, T> project) => Close<T>(ProjectionBuilders<TSpace>.Row(project));
 
-    /// <inheritdoc cref="Projection.Row{T}(int, Func{CellStrip, T})"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Row{T}(int, Func{CellStrip{TSpace}, T})"/>
     /// <typeparam name="T">What the row reads.</typeparam>
     /// <param name="width">How many columns the row spans.</param>
     /// <param name="project">The reading applied to the row's cells.</param>
-    public IProjection<T> Row<T>(int width, Func<CellStrip, T> project) => Close(Projection.Row(width, project));
+    public IProjection<TSpace, T> Row<T>(int width, Func<CellStrip<TSpace>, T> project)
+      => Close<T>(ProjectionBuilders<TSpace>.Row(width, project));
 
-    /// <inheritdoc cref="Projection.Row{T}(IColumnStrategy, Func{CellStrip, T})"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Row{T}(IColumnStrategy, Func{CellStrip{TSpace}, T})"/>
     /// <typeparam name="T">What the row reads.</typeparam>
     /// <param name="columns">The columns the row spans.</param>
     /// <param name="project">The reading applied to the row's cells.</param>
-    public IProjection<T> Row<T>(IColumnStrategy columns, Func<CellStrip, T> project)
-      => Close(Projection.Row(columns, project));
+    public IProjection<TSpace, T> Row<T>(IColumnStrategy columns, Func<CellStrip<TSpace>, T> project)
+      => Close<T>(ProjectionBuilders<TSpace>.Row(columns, project));
 
-    /// <inheritdoc cref="Projection.Column{T}(Func{CellStrip, T})"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Column{T}(Func{CellStrip{TSpace}, T})"/>
     /// <typeparam name="T">What the column reads.</typeparam>
     /// <param name="project">The reading applied to the column's cells.</param>
-    public IProjection<T> Column<T>(Func<CellStrip, T> project) => Close(Projection.Column(project));
+    public IProjection<TSpace, T> Column<T>(Func<CellStrip<TSpace>, T> project) => Close<T>(ProjectionBuilders<TSpace>.Column(project));
 
-    /// <inheritdoc cref="Projection.Column{T}(int, Func{CellStrip, T})"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Column{T}(int, Func{CellStrip{TSpace}, T})"/>
     /// <typeparam name="T">What the column reads.</typeparam>
     /// <param name="height">How many rows the column spans.</param>
     /// <param name="project">The reading applied to the column's cells.</param>
-    public IProjection<T> Column<T>(int height, Func<CellStrip, T> project) => Close(Projection.Column(height, project));
+    public IProjection<TSpace, T> Column<T>(int height, Func<CellStrip<TSpace>, T> project)
+      => Close<T>(ProjectionBuilders<TSpace>.Column(height, project));
 
-    /// <inheritdoc cref="Projection.Column{T}(IRowStrategy, Func{CellStrip, T})"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Column{T}(IRowStrategy, Func{CellStrip{TSpace}, T})"/>
     /// <typeparam name="T">What the column reads.</typeparam>
     /// <param name="rows">The rows the column spans.</param>
     /// <param name="project">The reading applied to the column's cells.</param>
-    public IProjection<T> Column<T>(IRowStrategy rows, Func<CellStrip, T> project)
-      => Close(Projection.Column(rows, project));
+    public IProjection<TSpace, T> Column<T>(IRowStrategy rows, Func<CellStrip<TSpace>, T> project)
+      => Close<T>(ProjectionBuilders<TSpace>.Column(rows, project));
 
-    /// <inheritdoc cref="Projection.Range{T}(Func{CellBlock, T})"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Range{T}(Func{CellBlock{TSpace}, T})"/>
     /// <typeparam name="T">What the region reads.</typeparam>
     /// <param name="project">The reading applied to the region's cells.</param>
-    public IProjection<T> Range<T>(Func<CellBlock, T> project) => Close(Projection.Range(project));
+    public IProjection<TSpace, T> Range<T>(Func<CellBlock<TSpace>, T> project) => Close<T>(ProjectionBuilders<TSpace>.Range(project));
 
-    /// <inheritdoc cref="Projection.Range{T}(int, int, Func{CellBlock, T})"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Range{T}(int, int, Func{CellBlock{TSpace}, T})"/>
     /// <typeparam name="T">What the region reads.</typeparam>
     /// <param name="width">How many columns the region spans.</param>
     /// <param name="height">How many rows the region spans.</param>
     /// <param name="project">The reading applied to the region's cells.</param>
-    public IProjection<T> Range<T>(int width, int height, Func<CellBlock, T> project)
-      => Close(Projection.Range(width, height, project));
+    public IProjection<TSpace, T> Range<T>(int width, int height, Func<CellBlock<TSpace>, T> project)
+      => Close<T>(ProjectionBuilders<TSpace>.Range(width, height, project));
 
-    /// <inheritdoc cref="Projection.Range{T}(IAreaStrategy, Func{CellBlock, T})"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Range{T}(IAreaStrategy, Func{CellBlock{TSpace}, T})"/>
     /// <typeparam name="T">What the region reads.</typeparam>
     /// <param name="area">How far the region extends.</param>
     /// <param name="project">The reading applied to the region's cells.</param>
-    public IProjection<T> Range<T>(IAreaStrategy area, Func<CellBlock, T> project)
-      => Close(Projection.Range(area, project));
+    public IProjection<TSpace, T> Range<T>(IAreaStrategy area, Func<CellBlock<TSpace>, T> project)
+      => Close<T>(ProjectionBuilders<TSpace>.Range(area, project));
 
-    /// <inheritdoc cref="Projection.Fields(Field[])"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Fields(Field[])"/>
     /// <param name="fields">The labelled pairs, in the order they sit on the sheet.</param>
-    public IProjection<IReadOnlyDictionary<string, CellValue>> Fields(params Field[] fields)
-      => Close(Projection.Fields(fields));
+    public IProjection<TSpace, IReadOnlyDictionary<string, Point<TSpace>>> Fields(params Field[] fields)
+      => Close(ProjectionBuilders<TSpace>.Fields(fields));
 
     // --- The hoisted-reuse terminal ------------------------------------------------------------------
 
@@ -258,32 +245,23 @@ namespace Unrect.Projections
     /// Places a projection declared elsewhere — <c>Below(mark).Of(transactions)</c>, the pipeline's
     /// spelling of "this section, there".
     /// <para>
-    /// It is also the door for everything the terminals above do not spell: a projection that demands
-    /// a capability, a backend's own leaf, anything a helper built. Declare it, then place it.
+    /// It is also the door for everything the terminals above do not spell: a backend's own leaf,
+    /// anything a helper built. Declare it, then place it.
     /// </para>
     /// </summary>
     /// <typeparam name="T">What the projection reads.</typeparam>
     /// <param name="projection">The declaration to place.</param>
-    public IProjection<T> Of<T>(IProjection<T> projection)
+    public IProjection<TSpace, T> Of<T>(IProjection<TSpace, T> projection)
       => Close(projection ?? throw new ArgumentNullException(nameof(projection)));
 
-    /// <inheritdoc cref="Of{T}(IProjection{T})"/>
-    /// <typeparam name="TSpace">What the projection demands of the space, carried out to the result.</typeparam>
-    /// <typeparam name="T">What the projection reads.</typeparam>
-    /// <param name="projection">The declaration to place.</param>
-    public IProjection<TSpace, T> Of<TSpace, T>(IProjection<TSpace, T> projection)
-      where TSpace : class, ICellValues
-      => Steps.ApplyTo(ProjectionExtensions.Plain(
-        projection ?? throw new ArgumentNullException(nameof(projection))));
-
-    private IProjection<T> Close<T>(IProjection<T> projection) => Steps.ApplyTo(projection);
+    private IProjection<TSpace, T> Close<T>(IProjection<TSpace, T> projection) => Steps.ApplyTo(projection);
   }
 
-  /// <summary>
-  /// A pipeline whose extent is still open: a bound or an extent may still be declared, and the
-  /// headings and the subject are still to come.
-  /// </summary>
-  public abstract class UnboundedStage : PlacementStage
+  /// <summary>A pipeline whose extent is still open: a bound or an extent may still be declared, and
+  /// the headings and the subject are still to come.</summary>
+  /// <typeparam name="TSpace">The space the pipeline's declaration is written over.</typeparam>
+  public abstract class UnboundedStage<TSpace> : PlacementStage<TSpace>
+    where TSpace : class, ISpace
   {
     private protected UnboundedStage(Steps steps) : base(steps)
     {
@@ -293,11 +271,11 @@ namespace Unrect.Projections
     /// What announces the section — <c>On(mark).Heading("Portfolio Income").Of(lines)</c>.
     /// <para>
     /// Chained headings read in document order and are one statement rather than nested sections;
-    /// see <see cref="HeadingStage"/> for what a heading is and what it is not.
+    /// see <see cref="HeadingStage{TSpace}"/> for what a heading is and what it is not.
     /// </para>
     /// </summary>
     /// <param name="text">What the heading row says.</param>
-    public HeadingStage Heading(string text) => new HeadingStage(Steps, Headings.One(text));
+    public HeadingStage<TSpace> Heading(string text) => new HeadingStage<TSpace>(Steps, Headings.One(text));
 
     /// <summary>
     /// Ends the section just before the row <paramref name="landmark"/> matches, which it therefore
@@ -311,15 +289,13 @@ namespace Unrect.Projections
     /// </summary>
     /// <param name="landmark">The row the extent stops before.</param>
     /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
-    public BoundStage Until(IRowLandmark landmark, bool orEnd = false)
-      => new BoundStage(Steps.Then(Step.UntilRow(landmark, orEnd)));
+    public BoundStage<TSpace> Until(IRowLandmark landmark, bool orEnd = false)
+      => new BoundStage<TSpace>(Steps.Then(Step.UntilRow(landmark, orEnd)));
 
     /// <inheritdoc cref="Until(IRowLandmark, bool)"/>
-    /// <typeparam name="TSpace">The demand the matcher raises, carried on to the terminal.</typeparam>
-    /// <param name="landmark">The row the extent stops before.</param>
+    /// <param name="landmark">The row the extent stops before. A matcher demanding less is accepted as it is.</param>
     /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
-    public BoundStage<TSpace> Until<TSpace>(IRowLandmark<TSpace> landmark, bool orEnd = false)
-      where TSpace : class, ICellValues
+    public BoundStage<TSpace> Until(IRowLandmark<TSpace> landmark, bool orEnd = false)
       => new BoundStage<TSpace>(Steps.Then(Step.UntilRow(
         (landmark ?? throw new ArgumentNullException(nameof(landmark))).Landmark,
         orEnd)));
@@ -331,15 +307,13 @@ namespace Unrect.Projections
     /// </summary>
     /// <param name="landmark">The column the extent stops before.</param>
     /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
-    public BoundStage UntilColumn(IColumnLandmark landmark, bool orEnd = false)
-      => new BoundStage(Steps.Then(Step.UntilColumn(landmark, orEnd)));
+    public BoundStage<TSpace> UntilColumn(IColumnLandmark landmark, bool orEnd = false)
+      => new BoundStage<TSpace>(Steps.Then(Step.UntilColumn(landmark, orEnd)));
 
     /// <inheritdoc cref="UntilColumn(IColumnLandmark, bool)"/>
-    /// <typeparam name="TSpace">The demand the matcher raises, carried on to the terminal.</typeparam>
-    /// <param name="landmark">The column the extent stops before.</param>
+    /// <param name="landmark">The column the extent stops before. A matcher demanding less is accepted as it is.</param>
     /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
-    public BoundStage<TSpace> UntilColumn<TSpace>(IColumnLandmark<TSpace> landmark, bool orEnd = false)
-      where TSpace : class, ICellValues
+    public BoundStage<TSpace> UntilColumn(IColumnLandmark<TSpace> landmark, bool orEnd = false)
       => new BoundStage<TSpace>(Steps.Then(Step.UntilColumn(
         (landmark ?? throw new ArgumentNullException(nameof(landmark))).Landmark,
         orEnd)));
@@ -347,77 +321,82 @@ namespace Unrect.Projections
     /// <summary>Refused: a pipeline's anchor is its entry, so a second one is not a declaration.</summary>
     /// <param name="landmark">The row that would be anchored on.</param>
     [Obsolete(PipelineRefusals.SecondAnchor, error: true)]
-    public OffsetStage On(IRowLandmark landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
+    public OffsetStage<TSpace> On(IRowLandmark landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
 
-    /// <inheritdoc cref="On(IRowLandmark)"/>
+    /// <inheritdoc cref="UnboundedStage{TSpace}.On(IRowLandmark)"/>
     /// <param name="landmark">The column that would be anchored on.</param>
     [Obsolete(PipelineRefusals.SecondAnchor, error: true)]
-    public OffsetStage On(IColumnLandmark landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
+    public OffsetStage<TSpace> On(IColumnLandmark landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
 
-    /// <inheritdoc cref="On(IRowLandmark)"/>
+    /// <inheritdoc cref="UnboundedStage{TSpace}.On(IRowLandmark)"/>
     /// <param name="landmark">The row that would be anchored below.</param>
     [Obsolete(PipelineRefusals.SecondAnchor, error: true)]
-    public OffsetStage Below(IRowLandmark landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
+    public OffsetStage<TSpace> Below(IRowLandmark landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
 
-    /// <inheritdoc cref="On(IRowLandmark)"/>
+    /// <inheritdoc cref="UnboundedStage{TSpace}.On(IRowLandmark)"/>
     /// <param name="landmark">The column that would be anchored right of.</param>
     [Obsolete(PipelineRefusals.SecondAnchor, error: true)]
-    public OffsetStage RightOf(IColumnLandmark landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
+    public OffsetStage<TSpace> RightOf(IColumnLandmark landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
 
-    /// <inheritdoc cref="On(IRowLandmark)"/>
+    /// <inheritdoc cref="UnboundedStage{TSpace}.On(IRowLandmark)"/>
     /// <param name="offset">The offset that would replace the pipeline's.</param>
     [Obsolete(PipelineRefusals.SecondAnchor, error: true)]
-    public OffsetStage OffsetBy(IOffsetStrategy offset) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
+    public OffsetStage<TSpace> OffsetBy(IOffsetStrategy offset) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
   }
 
   /// <summary>
   /// Where the section starts is declared; how big it is, what announces it and what it reads are
   /// still open. Movements compose onto the offset; anchors are refused, because an anchor is a root.
   /// </summary>
-  public sealed class OffsetStage : UnboundedStage
+  /// <typeparam name="TSpace">The space the pipeline's declaration is written over.</typeparam>
+  public sealed class OffsetStage<TSpace> : UnboundedStage<TSpace>
+    where TSpace : class, ISpace
   {
     internal OffsetStage(Steps steps) : base(steps)
     {
     }
 
-    /// <inheritdoc cref="Projection.Down(int)"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Down(int)"/>
     /// <param name="rows">How far down.</param>
-    public OffsetStage Down(int rows) => new OffsetStage(Steps.Then(Step.Down(rows)));
+    public OffsetStage<TSpace> Down(int rows) => new OffsetStage<TSpace>(Steps.Then(Step.Down(rows)));
 
-    /// <inheritdoc cref="Projection.Right(int)"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Right(int)"/>
     /// <param name="columns">How far right.</param>
-    public OffsetStage Right(int columns) => new OffsetStage(Steps.Then(Step.Right(columns)));
+    public OffsetStage<TSpace> Right(int columns) => new OffsetStage<TSpace>(Steps.Then(Step.Right(columns)));
 
-    /// <inheritdoc cref="Projection.AfterBlankRows()"/>
-    public OffsetStage AfterBlankRows() => new OffsetStage(Steps.Then(Step.AfterBlankRows()));
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.AfterBlankRows()"/>
+    public OffsetStage<TSpace> AfterBlankRows() => new OffsetStage<TSpace>(Steps.Then(Step.AfterBlankRows()));
 
-    /// <inheritdoc cref="Projection.AfterBlankColumns()"/>
-    public OffsetStage AfterBlankColumns() => new OffsetStage(Steps.Then(Step.AfterBlankColumns()));
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.AfterBlankColumns()"/>
+    public OffsetStage<TSpace> AfterBlankColumns() => new OffsetStage<TSpace>(Steps.Then(Step.AfterBlankColumns()));
 
-    /// <inheritdoc cref="Projection.SkipToFirstNonBlankCell()"/>
-    public OffsetStage SkipToFirstNonBlankCell() => new OffsetStage(Steps.Then(Step.SkipToFirstNonBlankCell()));
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.SkipToFirstNonBlankCell()"/>
+    public OffsetStage<TSpace> SkipToFirstNonBlankCell() => new OffsetStage<TSpace>(Steps.Then(Step.SkipToFirstNonBlankCell()));
 
     /// <summary>
     /// Declares the section's extent, replacing the derived one — after which the extent is consumed
     /// in full whether the section reads all of it or not. Extents do not stack, so a second
-    /// <c>Sized</c> is refused: the pipeline goes on to <see cref="OffsetAndSizeStage"/>, where
-    /// <c>Sized</c> is an <c>[Obsolete(error)]</c> stub.
+    /// <c>Sized</c> is refused: the pipeline goes on to <see cref="OffsetAndSizeStage{TSpace}"/>,
+    /// where <c>Sized</c> is an <c>[Obsolete(error)]</c> stub.
     /// </summary>
     /// <param name="area">The extent.</param>
-    public OffsetAndSizeStage Sized(IAreaStrategy area) => new OffsetAndSizeStage(Steps.Then(Step.Sized(area)));
+    public OffsetAndSizeStage<TSpace> Sized(IAreaStrategy area)
+      => new OffsetAndSizeStage<TSpace>(Steps.Then(Step.Sized(area)));
 
     /// <summary>
     /// The extent stated and left as it is — optional explicitness, never ceremony: the terminal
     /// sizes to its children, or to its content, whether this is written or not.
     /// </summary>
-    public OffsetAndSizeStage SizedToChildren() => new OffsetAndSizeStage(Steps);
+    public OffsetAndSizeStage<TSpace> SizedToChildren() => new OffsetAndSizeStage<TSpace>(Steps);
   }
 
   /// <summary>
   /// Where the section starts and how big it is are both declared: only a bound, the headings and
   /// the subject remain.
   /// </summary>
-  public sealed class OffsetAndSizeStage : UnboundedStage
+  /// <typeparam name="TSpace">The space the pipeline's declaration is written over.</typeparam>
+  public sealed class OffsetAndSizeStage<TSpace> : UnboundedStage<TSpace>
+    where TSpace : class, ISpace
   {
     internal OffsetAndSizeStage(Steps steps) : base(steps)
     {
@@ -426,29 +405,30 @@ namespace Unrect.Projections
     /// <summary>Refused: extents do not stack, so a second one erases the first rather than narrowing it.</summary>
     /// <param name="area">The extent that would replace the pipeline's.</param>
     [Obsolete(PipelineRefusals.ExtentsDoNotStack, error: true)]
-    public OffsetAndSizeStage Sized(IAreaStrategy area) => throw new NotSupportedException(PipelineRefusals.ExtentsDoNotStack);
+    public OffsetAndSizeStage<TSpace> Sized(IAreaStrategy area)
+      => throw new NotSupportedException(PipelineRefusals.ExtentsDoNotStack);
 
     /// <summary>Refused: a movement belongs with the offset, ahead of the extent.</summary>
     /// <param name="rows">How far down.</param>
     [Obsolete(PipelineRefusals.OffsetComesFirst, error: true)]
-    public OffsetAndSizeStage Down(int rows) => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
+    public OffsetAndSizeStage<TSpace> Down(int rows) => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
 
     /// <inheritdoc cref="Down(int)"/>
     /// <param name="columns">How far right.</param>
     [Obsolete(PipelineRefusals.OffsetComesFirst, error: true)]
-    public OffsetAndSizeStage Right(int columns) => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
+    public OffsetAndSizeStage<TSpace> Right(int columns) => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
 
     /// <inheritdoc cref="Down(int)"/>
     [Obsolete(PipelineRefusals.OffsetComesFirst, error: true)]
-    public OffsetAndSizeStage AfterBlankRows() => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
+    public OffsetAndSizeStage<TSpace> AfterBlankRows() => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
 
     /// <inheritdoc cref="Down(int)"/>
     [Obsolete(PipelineRefusals.OffsetComesFirst, error: true)]
-    public OffsetAndSizeStage AfterBlankColumns() => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
+    public OffsetAndSizeStage<TSpace> AfterBlankColumns() => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
 
     /// <inheritdoc cref="Down(int)"/>
     [Obsolete(PipelineRefusals.OffsetComesFirst, error: true)]
-    public OffsetAndSizeStage SkipToFirstNonBlankCell() => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
+    public OffsetAndSizeStage<TSpace> SkipToFirstNonBlankCell() => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
   }
 
   /// <summary>
@@ -456,68 +436,90 @@ namespace Unrect.Projections
   /// extent after a bound would become the frame the landmark is sought in rather than a narrowing
   /// of it, and is refused for saying so.
   /// </summary>
-  public sealed class BoundStage : PlacementStage
+  /// <typeparam name="TSpace">The space the pipeline's declaration is written over.</typeparam>
+  public sealed class BoundStage<TSpace> : PlacementStage<TSpace>
+    where TSpace : class, ISpace
   {
     internal BoundStage(Steps steps) : base(steps)
     {
     }
 
-    /// <inheritdoc cref="UnboundedStage.Heading(string)"/>
+    /// <inheritdoc cref="UnboundedStage{TSpace}.Heading(string)"/>
     /// <param name="text">What the heading row says.</param>
-    public HeadingStage Heading(string text) => new HeadingStage(Steps, Headings.One(text));
+    public HeadingStage<TSpace> Heading(string text) => new HeadingStage<TSpace>(Steps, Headings.One(text));
 
     /// <summary>Refused: a projection has one end, and the axis comes with the landmark.</summary>
     /// <param name="landmark">The row that would be the second end.</param>
     /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
     [Obsolete(PipelineRefusals.ProjectionHasOneEnd, error: true)]
-    public BoundStage Until(IRowLandmark landmark, bool orEnd = false)
+    public BoundStage<TSpace> Until(IRowLandmark landmark, bool orEnd = false)
+      => throw new NotSupportedException(PipelineRefusals.ProjectionHasOneEnd);
+
+    /// <inheritdoc cref="Until(IRowLandmark, bool)"/>
+    /// <param name="landmark">The row that would be the second end, demanding a space of its own.</param>
+    /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
+    /// <remarks>
+    /// The refusal is doubled exactly as the declaration is, so a demanding landmark is turned away
+    /// by the reason rather than by the argument type: without this the compiler would say only that
+    /// an <c>IRowLandmark&lt;TSpace&gt;</c> is not an <c>IRowLandmark</c>, which is true and useless.
+    /// </remarks>
+    [Obsolete(PipelineRefusals.ProjectionHasOneEnd, error: true)]
+    public BoundStage<TSpace> Until(IRowLandmark<TSpace> landmark, bool orEnd = false)
       => throw new NotSupportedException(PipelineRefusals.ProjectionHasOneEnd);
 
     /// <inheritdoc cref="Until(IRowLandmark, bool)"/>
     /// <param name="landmark">The column that would be the second end.</param>
     /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
     [Obsolete(PipelineRefusals.ProjectionHasOneEnd, error: true)]
-    public BoundStage UntilColumn(IColumnLandmark landmark, bool orEnd = false)
+    public BoundStage<TSpace> UntilColumn(IColumnLandmark landmark, bool orEnd = false)
+      => throw new NotSupportedException(PipelineRefusals.ProjectionHasOneEnd);
+
+    /// <inheritdoc cref="Until(IRowLandmark{TSpace}, bool)"/>
+    /// <param name="landmark">The column that would be the second end, demanding a space of its own.</param>
+    /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
+    [Obsolete(PipelineRefusals.ProjectionHasOneEnd, error: true)]
+    public BoundStage<TSpace> UntilColumn(IColumnLandmark<TSpace> landmark, bool orEnd = false)
       => throw new NotSupportedException(PipelineRefusals.ProjectionHasOneEnd);
 
     /// <summary>Refused: an extent declared after a bound frames the search rather than narrowing it.</summary>
     /// <param name="area">The extent that would frame the search.</param>
     [Obsolete(PipelineRefusals.BoundFramesTheExtent, error: true)]
-    public BoundStage Sized(IAreaStrategy area) => throw new NotSupportedException(PipelineRefusals.BoundFramesTheExtent);
+    public BoundStage<TSpace> Sized(IAreaStrategy area)
+      => throw new NotSupportedException(PipelineRefusals.BoundFramesTheExtent);
 
     /// <summary>Refused: a movement belongs with the offset, ahead of the bound.</summary>
     /// <param name="rows">How far down.</param>
     [Obsolete(PipelineRefusals.OffsetComesFirst, error: true)]
-    public BoundStage Down(int rows) => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
+    public BoundStage<TSpace> Down(int rows) => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
 
     /// <inheritdoc cref="Down(int)"/>
     /// <param name="columns">How far right.</param>
     [Obsolete(PipelineRefusals.OffsetComesFirst, error: true)]
-    public BoundStage Right(int columns) => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
+    public BoundStage<TSpace> Right(int columns) => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
 
-    /// <summary>Refused: a pipeline's anchor is its entry, so a second one is not a declaration.</summary>
+    /// <inheritdoc cref="UnboundedStage{TSpace}.On(IRowLandmark)"/>
     /// <param name="landmark">The row that would be anchored on.</param>
     [Obsolete(PipelineRefusals.SecondAnchor, error: true)]
-    public BoundStage On(IRowLandmark landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
+    public BoundStage<TSpace> On(IRowLandmark landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
 
-    /// <inheritdoc cref="On(IRowLandmark)"/>
+    /// <inheritdoc cref="UnboundedStage{TSpace}.On(IRowLandmark)"/>
     /// <param name="landmark">The column that would be anchored on.</param>
     [Obsolete(PipelineRefusals.SecondAnchor, error: true)]
-    public BoundStage On(IColumnLandmark landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
+    public BoundStage<TSpace> On(IColumnLandmark landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
 
-    /// <inheritdoc cref="On(IRowLandmark)"/>
+    /// <inheritdoc cref="UnboundedStage{TSpace}.On(IRowLandmark)"/>
     /// <param name="landmark">The row that would be anchored below.</param>
     [Obsolete(PipelineRefusals.SecondAnchor, error: true)]
-    public BoundStage Below(IRowLandmark landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
+    public BoundStage<TSpace> Below(IRowLandmark landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
 
-    /// <inheritdoc cref="On(IRowLandmark)"/>
+    /// <inheritdoc cref="UnboundedStage{TSpace}.On(IRowLandmark)"/>
     /// <param name="landmark">The column that would be anchored right of.</param>
     [Obsolete(PipelineRefusals.SecondAnchor, error: true)]
-    public BoundStage RightOf(IColumnLandmark landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
+    public BoundStage<TSpace> RightOf(IColumnLandmark landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
 
-    /// <inheritdoc cref="On(IRowLandmark)"/>
+    /// <inheritdoc cref="UnboundedStage{TSpace}.On(IRowLandmark)"/>
     /// <param name="offset">The offset that would replace the pipeline's.</param>
     [Obsolete(PipelineRefusals.SecondAnchor, error: true)]
-    public BoundStage OffsetBy(IOffsetStrategy offset) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
+    public BoundStage<TSpace> OffsetBy(IOffsetStrategy offset) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
   }
 }

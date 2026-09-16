@@ -6,8 +6,8 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
-using static Unrect.Spreadsheets.SpreadsheetProjections;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>;
+using static Unrect.Spreadsheets.SpreadsheetProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>;
 
 namespace Unrect.Tests.Spreadsheets
 {
@@ -22,8 +22,12 @@ namespace Unrect.Tests.Spreadsheets
   /// beside it, so it states a law rather than a habit); the shifter's adversarial set is
   /// <see cref="SharedFormulaShiftTests"/> and the coordinate arithmetic under it
   /// <see cref="A1ReferenceTests"/>; the .xls, .xlsb and streaming absences are
-  /// <see cref="FormulaAbsenceTests"/>; and the unabsorbability of a boundary that could not look is
-  /// <see cref="CapabilityFaultTests"/>.
+  /// <see cref="FormulaAbsenceTests"/>.
+  /// </para>
+  /// <para>
+  /// The file is scoped to <see cref="ISpreadsheetSpace"/>, which is the whole of what used to be a
+  /// capability seam: a declaration that reads a formula says so in its own type, there is no
+  /// witness to pass and nothing to ask a space for at run time.
   /// </para>
   /// </summary>
   public class FormulaCapabilityTests
@@ -70,26 +74,25 @@ namespace Unrect.Tests.Spreadsheets
     {
       var plain = SpreadsheetSpace.Create(Path(), "Formulas");
 
-      // Honest absence: present-and-null everywhere would say the file has no formulas.
+      // Honest absence: present-and-null everywhere would say the file has no formulas. The type is
+      // the whole of the answer now — a declaration written over this door cannot name Formula() at
+      // all, which is the static half the run-time query used to stand in for.
       Assert.False(plain is IFormulaSpace);
-      Assert.Null(plain.Capability<IFormulaSpace>());
     }
 
     [Fact]
-    public void SlicingKeepsTheCapabilityAndTranslatesIt()
+    public void ARegionOfASheetReadsItsOwnCellsFormula()
     {
-      var band = Sheet().GetSubspace(new Offset(3, 1), new Area(1, 4));    // D2:D5
+      var band = Plane<ISpreadsheetSpace>.Of(Sheet()).Slice(new Offset(3, 1), new Area(1, 4));    // D2:D5
 
-      var formulas = Assert.IsAssignableFrom<IFormulaSpace>(band);
-
-      Assert.Equal(@"IF(B4>0,ROUND(B4*$C$2,2)+SUM($B$2:B4),""B2"")", formulas.FormulaAt(0, 2));
+      Assert.Equal(@"IF(B4>0,ROUND(B4*$C$2,2)+SUM($B$2:B4),""B2"")", FormulaOf(band[0, 2]));      // D4
     }
 
     [Fact]
     public void TheLeafReadsAFormulaWhereTheCellReadsAValue()
     {
       // A cell has both, so reading both is an overlay's job: the same cell, twice.
-      var cell = On(RowContaining("Text")).Right(1).Of(Overlay(Formulas, o => (Value: o.Next(Text()), Formula: o.Next(Formula()))));
+      var cell = On(RowContaining("Text")).Right(1).Of(Overlay(o => (Value: o.Next(Text()), Formula: o.Next(Formula()))));
 
       var read = cell.Map(Sheet());
 
@@ -98,15 +101,18 @@ namespace Unrect.Tests.Spreadsheets
     }
 
     [Fact]
-    public void TheSeamFindsTheCapabilityThroughADiscoveredExtent()
+    public void ARegionStillBeingDiscoveredStillAddressesTheSheetItself()
     {
-      // .Sized hands the projection a bound whose height is still being discovered — a chart, not
-      // the sheet — so a raw type test inside the lambda would answer false over this very file.
-      var scaled = On(RowContaining("Scaled")).Of(Range(RowsWhileAnyValue(), block => block.Space.Space.Capability<IFormulaSpace>()?.FormulaAt(1, 0)))
-        .Demanding(Formulas);
+      // Sizing by a strategy hands the projection a region whose height is not yet settled. Its
+      // points are still the SHEET's cells at the sheet's own coordinates, so reading a formula off
+      // one needs nothing looked up and nothing unwrapped — which is what replaced the seam.
+      var scaled = On(RowContaining("Scaled")).Of(Range(RowsWhileAnyValue(), block => FormulaOf(block[1, 0])));
 
       Assert.Equal("LOG10(B8)+B8", scaled.Map(Sheet()));
     }
+
+    /// <summary>The formula behind the cell a point addresses, read through the point's own space.</summary>
+    private static string? FormulaOf(Point<ISpreadsheetSpace> point) => point.Space.FormulaAt(point.Column, point.Row);
 
     [Fact]
     public void AndThroughTheTailOfOneAsWell()
@@ -117,13 +123,13 @@ namespace Unrect.Tests.Spreadsheets
       // tail whose coordinates had shifted would find the capability and answer about the wrong
       // cell. Rows 2 and 3 of this file carry the same shared expression one row apart, so a
       // one-row slip has a plausible-looking answer waiting for it.
-      var lines = Sized(RowsWhileAnyValue()).Of(VerticalFlow(Formulas, v =>
+      var lines = Sized(RowsWhileAnyValue()).Of(VerticalFlow(v =>
       {
         v.Next(Row(cells => cells.Count));
 
         return (
-          First: v.Next(Overlay(Formulas, o => (Total: o.Next(Right(3).Of(Decimal())), Formula: o.Next(Right(3).Of(Formula()))))),
-          Second: v.Next(Overlay(Formulas, o => (Total: o.Next(Right(3).Of(Decimal())), Formula: o.Next(Right(3).Of(Formula()))))));
+          First: v.Next(Overlay(o => (Total: o.Next(Right(3).Of(Decimal())), Formula: o.Next(Right(3).Of(Formula()))))),
+          Second: v.Next(Overlay(o => (Total: o.Next(Right(3).Of(Decimal())), Formula: o.Next(Right(3).Of(Formula()))))));
       }));
 
       var read = lines.Map(Sheet());
@@ -143,11 +149,11 @@ namespace Unrect.Tests.Spreadsheets
       // The boundary site's door through the same two charts: the matcher demands the capability of
       // the space it is handed, which by then is a tail of a discovered bound. The first computed row
       // past the consumed header is row 2, whose first cell says which one it found.
-      var firstComputed = Sized(RowsWhileAnyValue()).Of(VerticalFlow(Formulas, v =>
+      var firstComputed = Sized(RowsWhileAnyValue()).Of(VerticalFlow(v =>
       {
         v.Next(Row(cells => cells.Count));
 
-        return v.Next(On(RowWithFormula()).Of(Row(cells => cells[0].GetString())));
+        return v.Next(On(RowWithFormula()).Of(Row(cells => cells[0].Text())));
       }));
 
       Assert.Equal("Widget", firstComputed.Map(Sheet()));
@@ -156,18 +162,26 @@ namespace Unrect.Tests.Spreadsheets
     [Fact]
     public void ABoundaryThatCannotLookFaultsAndNoToleranceAbsorbsIt()
     {
-      // The runtime path the typed layer cannot close: the plain lift, reached through Landmark,
-      // over a space that carries no formulas.
-      var plain = On(RowWithFormula().Landmark).Of(Text());
+      // The run-time path the typed layer cannot close: the matcher's own type names the capability,
+      // so the only pipeline that accepts it is closed over a space that has one — unless a
+      // declaration reaches through `Landmark` for the plain lift and casts the demand away. It is
+      // then a space with no formulas, inside a boundary that is about to look for one.
+      //
+      // A cast this library owes itself, failing: that says the reader is wrong, never that a
+      // section is missing, so it arrives as a fault and NO tolerance boundary absorbs it.
+      var plain = ProjectionBuilders<ISheetCells>.On(SpreadsheetProjections.RowWithFormula().Landmark)
+        .Of(SpreadsheetProjections.Text<ISheetCells>());
 
-      var failure = Assert.Throws<ProjectionException>(() => plain.Map(GridSpace.Create(new[,] { { "a" } })));
+      ISheetCells sheet = SheetGrid.Of(new object?[,] { { "a" } });
 
+      var failure = Assert.Throws<ProjectionException>(() => plain.Map(sheet));
+
+      Assert.True(failure.IsFault, "a boundary that could not look must be a fault");
+      Assert.IsType<InvalidCastException>(failure.GetBaseException());
       Assert.Contains("IFormulaSpace", failure.Message, StringComparison.Ordinal);
-      Assert.Contains("RowWithFormula", failure.Message, StringComparison.Ordinal);
 
       // "I could not look" is not "the section is absent", so tolerance must not swallow it.
-      Assert.Throws<ProjectionException>(
-        () => plain.Optional().Map(GridSpace.Create(new[,] { { "a" } })));
+      Assert.Throws<ProjectionException>(() => plain.Optional().Map(sheet));
     }
   }
 }

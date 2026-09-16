@@ -3,7 +3,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Text;
 
-using Unrect.Core;
+using Unrect.Projections;
 using Unrect.Spreadsheets;
 
 using Xunit;
@@ -39,7 +39,7 @@ namespace Unrect.Tests.Spreadsheets
         File.Delete(_path);
     }
 
-    private ICellValues Durations() => SpreadsheetSpace.Create(_path, "Durations");
+    private ISheetCells Durations() => SpreadsheetSpace.Create(_path, "Durations");
 
     [Fact]
     public void ADurationCellIsANumberOfDays()
@@ -47,8 +47,8 @@ namespace Unrect.Tests.Spreadsheets
       // A2 holds the serial 1.5 under built-in format 46 ([h]:mm:ss) — 36 hours.
       var space = Durations();
 
-      Assert.Equal(CellKind.Number, space[0, 1].Kind);
-      Assert.Equal(1.5, space[0, 1].GetDouble());
+      Assert.Equal("Number", space.Describe(0, 1));
+      Assert.Equal(1.5, space.Extent()[0, 1].Double());
     }
 
     [Fact]
@@ -58,8 +58,8 @@ namespace Unrect.Tests.Spreadsheets
       // from the format code, so both routes must arrive at the same canonical value.
       var space = Durations();
 
-      Assert.Equal(CellKind.Number, space[0, 2].Kind);
-      Assert.Equal(0.25, space[0, 2].GetDouble());
+      Assert.Equal("Number", space.Describe(0, 2));
+      Assert.Equal(0.25, space.Extent()[0, 2].Double());
     }
 
     [Fact]
@@ -70,8 +70,12 @@ namespace Unrect.Tests.Spreadsheets
       // change what the cell is worth.
       var space = Durations();
 
-      Assert.Equal(space[1, 1], space[0, 1]);
-      Assert.Equal(space[1, 2], space[0, 2]);
+      var cells = space.Extent();
+
+      Assert.Equal(cells[1, 1].Double(), cells[0, 1].Double());
+      Assert.Equal(cells[1, 2].Double(), cells[0, 2].Double());
+      Assert.Equal(space.Describe(1, 1), space.Describe(0, 1));
+      Assert.Equal(space.AsText(1, 1), space.AsText(0, 1));
     }
 
     [Fact]
@@ -81,8 +85,9 @@ namespace Unrect.Tests.Spreadsheets
       // 1900 — a real number that means nothing.
       var space = Durations();
 
-      Assert.Null(space[0, 1].TryGetDate());
-      Assert.Throws<InvalidOperationException>(() => space[0, 1].GetDate());
+      Assert.False(space.DateTimeAt(0, 1, out _, out var problem));
+      Assert.Equal("expected Temporal at A2, found Number", problem!("A2"));
+      Assert.Throws<CellReadException>(() => space.Extent()[0, 1].Date());
     }
 
     [Fact]
@@ -92,8 +97,8 @@ namespace Unrect.Tests.Spreadsheets
       // duration would end a region early and the failure would be a silently short table.
       var space = Durations();
 
-      Assert.True(space[0, 1].HasValue);
-      Assert.False(space[0, 1].IsBlank);
+      Assert.False(space.IsBlank(0, 1));
+      Assert.True(space.Extent()[0, 1].HasValue);
     }
 
     // --- The fixture ----------------------------------------------------------------------------

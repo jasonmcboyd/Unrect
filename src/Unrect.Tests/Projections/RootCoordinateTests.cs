@@ -8,6 +8,7 @@ using Unrect.Tests.Streaming;
 
 using Xunit;
 
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Spreadsheets.SpreadsheetProjections;
 using static Unrect.Tests.ProjectionTestSpaces;
 
@@ -25,13 +26,12 @@ namespace Unrect.Tests.Projections
   /// entirely plausible doing it, which is the failure mode this file exists for.
   /// </para>
   /// <para>
-  /// <b>The regions here are sliced by hand, not placed by the engine</b>, and that is not a
-  /// convenience. Through phase 5 the engine still cuts real subspace objects and hands down planes
-  /// whose origin is (0, 0), because the streaming window's locus rides on the subspace's own
-  /// extent; arithmetic placement arrives in phase 6. So a hand-cut region is the only region with a
-  /// non-zero origin there is, and pinning the calculus against one now is what stops phase 6 from
-  /// being the first time anybody finds out. <see cref="APlacedRegionStillReportsItsOwnCoordinates"/>
-  /// records the transitional half and re-bases when that lands.
+  /// <b>Most regions here are sliced by hand</b>, which is how they were written when a hand-cut
+  /// region was the only one with a non-zero origin: through phase 5 the engine cut real subspace
+  /// objects and handed down planes whose origin was (0, 0), because the streaming window's locus
+  /// rode on the subspace's own extent. Placement is arithmetic now, so the hand-cut and the placed
+  /// region answer alike, and <see cref="APlacedRegionsPointsCarryTheSheetsCoordinatesToo"/> — which
+  /// was the tripwire for exactly this change — says so through the engine.
   /// </para>
   /// </summary>
   public class RootCoordinateTests
@@ -60,7 +60,7 @@ namespace Unrect.Tests.Projections
     /// A grid whose every cell is <c>row * 10 + column + 1</c>, at each door — so a point's address
     /// and the cell it names can be checked against each other without a table of literals.
     /// </summary>
-    private static ICellValues Sheet(string door)
+    private static ISheetCells Sheet(string door)
       => door == "grid"
         ? CoordinateGrid(5, 8)
         : Windowed(FakeSheet.Of("Data", Rows()));
@@ -129,20 +129,20 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void APlacedRegionStillReportsItsOwnCoordinates()
+    public void APlacedRegionsPointsCarryTheSheetsCoordinatesToo()
     {
-      // The transitional half, recorded rather than left to be discovered. Through the engine a
-      // region is a real subspace object with its origin at that object's corner, so a predicate
-      // inside a placed section is shown 0,0 — the region's frame, not the sheet's. That is
-      // deliberate for as long as the streaming store learns which band is open from the subspace's
-      // own extent, and it changes when the store is told directly.
+      // The half the hand-cut regions above were the tripwire for, now landed. Placement is
+      // arithmetic: the engine slices the plane it was handed instead of cutting a subspace object,
+      // so a region placed three down and two right has origin (2, 3) in the sheet and every point
+      // minted inside it says so. There is no second frame left in the system to translate between.
       //
-      // RE-BASE IN PHASE 6: when placement becomes arithmetic this expectation becomes the sheet's
-      // coordinates, and this test is the tripwire that says so rather than a silent behaviour swap.
+      // Until phase 6 this read "0,0", "1,0", "0,1", "1,1" — the subspace object's own corner —
+      // because the streaming store learned which band was open from that object's extent. The store
+      // is told directly now (ISweepAware), which is what freed placement to be arithmetic.
       var seen = new List<string>();
 
-      var probe = Projection.Down(3).Right(2).Of(
-        Projection.Range(2, 2, block =>
+      var probe = Down(3).Right(2).Of(
+        Range(2, 2, block =>
         {
           for (var row = 0; row < block.Height; row++)
             for (var column = 0; column < block.Width; column++)
@@ -153,7 +153,7 @@ namespace Unrect.Tests.Projections
 
       probe.Map(CoordinateGrid(5, 8));
 
-      Assert.Equal(new[] { "0,0", "1,0", "0,1", "1,1" }, seen);
+      Assert.Equal(new[] { "2,3", "3,3", "2,4", "3,4" }, seen);
     }
 
     // --- A capability reaches past the region, so it is addressed in the space's coordinates --------
@@ -204,15 +204,18 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void ACapabilityIsFoundThroughARegionWhereverItStarts()
+    public void ARegionNamesItsSpaceWhereverItStarts()
     {
-      // The seam underneath both: a region does not wrap its space, so asking the space for a
-      // capability is asking the sheet — the same answer from any corner of it.
-      var whole = Plane<ISpace>.Of(FormulaSheet());
+      // The seam underneath both, and what replaced asking a space what it can do: a region does not
+      // WRAP its space, it names it — so the sheet a band reads through is the sheet, from any
+      // corner of it, and whatever that sheet can be asked is what the band can be asked.
+      var sheet = FormulaSheet();
+      var whole = Plane<ISpace>.Of(sheet);
       var band = whole.Slice(new Offset(1, 6), new Area(3, 4));
 
-      Assert.NotNull(whole.Space.Capability<IFormulaSpace>());
-      Assert.Same(whole.Space.Capability<IFormulaSpace>(), band.Space.Capability<IFormulaSpace>());
+      Assert.Same(sheet, whole.Space);
+      Assert.Same(whole.Space, band.Space);
+      Assert.True(band.Space is IFormulaSpace);
     }
   }
 }

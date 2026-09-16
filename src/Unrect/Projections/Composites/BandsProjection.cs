@@ -14,10 +14,11 @@ namespace Unrect.Projections
   /// the stride and the bound stay two separate declarations.
   /// </para>
   /// </summary>
-  internal sealed class BandsProjection<T> : ProjectionBase<IReadOnlyList<T>>
+  internal sealed class BandsProjection<TSpace, T> : ProjectionBase<TSpace, IReadOnlyList<T>>
+    where TSpace : class, ISpace
   {
     public BandsProjection(
-      IProjection<T> each,
+      IProjection<TSpace, T> each,
       Orientation orientation,
       int stride,
       UseSite eachSite,
@@ -33,7 +34,7 @@ namespace Unrect.Projections
       Children = new IProjection[] { each };
     }
 
-    private IProjection<T> Each { get; }
+    private IProjection<TSpace, T> Each { get; }
 
     /// <summary>What the declaration called the band projection, for every band to be labelled by.</summary>
     private UseSite EachSite { get; }
@@ -50,7 +51,7 @@ namespace Unrect.Projections
 
     public override IReadOnlyList<IProjection> Children { get; }
 
-    public override ProjectionResult<IReadOnlyList<T>> Project(Plane<ICellValues> extent, ProjectionContext context)
+    public override ProjectionResult<IReadOnlyList<T>> Project(Plane<TSpace> extent, ProjectionContext context)
     {
       // The across axis, measured once. A vertical tiler takes the width, which is free even on an
       // extent still being discovered; a horizontal one takes the height, which on such an extent
@@ -72,11 +73,11 @@ namespace Unrect.Projections
           if (onBlank.IsStop)
             break;
 
-          ReportBlank(onBlank, band, context.Advance(offset));
+          ReportBlank(onBlank, band, context);
         }
         else
         {
-          var scope = context.Advance(offset).WithIndex(bands).WithOrdinal(bands).WithUseSite(EachSite);
+          var scope = context.WithIndex(bands).WithOrdinal(bands).WithUseSite(EachSite);
 
           values.Add(ProjectionEngine.Apply(Each, band, scope).Value);
         }
@@ -96,7 +97,7 @@ namespace Unrect.Projections
     }
 
     /// <summary>Whether a whole band is left at <paramref name="cursor"/>; a part-band is not one.</summary>
-    private bool HasBand(Plane<ICellValues> extent, int cursor)
+    private bool HasBand(Plane<TSpace> extent, int cursor)
       => Orientation == Orientation.Vertical
         ? extent.HasRow(cursor + Stride - 1)
         : cursor + Stride - 1 < extent.Width;
@@ -104,17 +105,17 @@ namespace Unrect.Projections
     /// <summary>
     /// The band at <paramref name="offset"/>, spanning the other axis in full.
     /// <para>
-    /// Naming the extent is what makes this work over a bound still being discovered: the two-
-    /// argument <c>GetSubspace</c> advances the scan through exactly the rows named and hands back
-    /// an ordinary measured subspace, so whatever the band projection declares — an area of its own,
-    /// or an extent derived from what it reads — is resolved against a space that knows how tall it
+    /// Naming the extent is what makes this work over a bound still being discovered:
+    /// cutting a named region advances the discovery through exactly the rows named and
+    /// hands back a measured region, so whatever the band projection declares — an area of its own,
+    /// or an extent derived from what it reads — is resolved against a region that knows how tall it
     /// is, and no strategy is ever handed an unsettled tail.
     /// </para>
     /// </summary>
-    private Plane<ICellValues> Cut(Plane<ICellValues> extent, Offset offset, int across)
+    private Plane<TSpace> Cut(Plane<TSpace> extent, Offset offset, int across)
       => extent.Cut(offset, new Area(Extent(Stride, across)));
 
-    private void ReportBlank(BlankRowStrategy onBlank, Plane<ICellValues> band, ProjectionContext scope)
+    private void ReportBlank(BlankRowStrategy onBlank, Plane<TSpace> band, ProjectionContext scope)
     {
       var noun = Stride == 1 ? "row" : "band";
       var at = scope.Locate(band).A1;
@@ -127,7 +128,7 @@ namespace Unrect.Projections
     }
 
     /// <summary>Whether every cell of a cut band is blank. The band is measured, so its extent is free.</summary>
-    private static bool IsBlank(Plane<ICellValues> band)
+    private static bool IsBlank(Plane<TSpace> band)
     {
       var area = band.Area;
 

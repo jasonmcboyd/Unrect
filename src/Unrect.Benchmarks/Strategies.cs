@@ -1,9 +1,9 @@
 using BenchmarkDotNet.Attributes;
 
-using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 
 namespace Unrect.Benchmarks
 {
@@ -22,25 +22,25 @@ namespace Unrect.Benchmarks
   [BenchmarkCategory("Strategies")]
   public class Strategies
   {
-    private static readonly IProjection<int> WholeHeight = Range(RowsWhileAnyValue(), b => b.Height);
+    private static readonly IProjection<ISheetCells, int> WholeHeight = Range(RowsWhileAnyValue(), b => b.Height);
 
-    private static readonly IProjection<int> Seek =
+    private static readonly IProjection<ISheetCells, int> Seek =
       On(RowContaining(CanonicalSpaces.Landmark)).Row(r => r.Count);
 
     // The miss: absorbed, so the row measures the full-grid scan and not the throw.
-    private static readonly IProjection<int> SeekMiss = Seek.Optional();
+    private static readonly IProjection<ISheetCells, int> SeekMiss = Seek.Optional();
 
-    private static readonly IProjection<int> Bounded =
+    private static readonly IProjection<ISheetCells, int> Bounded =
       Until(RowContaining(CanonicalSpaces.Landmark)).Range(RowsWhileAnyValue(), b => b.Height);
 
-    private static readonly IProjection<int> SkipBlanks = OffsetBy(BlankRows()).Row(r => r.Count);
+    private static readonly IProjection<ISheetCells, int> SkipBlanks = OffsetBy(BlankRows()).Row(r => r.Count);
 
-    private ICellValues _dense = default!;
-    private ICellValues _sparse = default!;
-    private ICellValues _near = default!;
-    private ICellValues _far = default!;
-    private ICellValues _absent = default!;
-    private ICellValues _blankLed = default!;
+    private ISheetCells _dense = default!;
+    private ISheetCells _sparse = default!;
+    private ISheetCells _near = default!;
+    private ISheetCells _far = default!;
+    private ISheetCells _absent = default!;
+    private ISheetCells _blankLed = default!;
 
     [GlobalSetup]
     public void Setup()

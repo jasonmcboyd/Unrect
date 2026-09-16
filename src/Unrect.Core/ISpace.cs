@@ -17,7 +17,16 @@ namespace Unrect.Core
   /// </summary>
   public interface ISpace
   {
-    /// <summary>The space's own extent.</summary>
+    /// <summary>
+    /// The space's own extent.
+    /// <para>
+    /// It must be already known: answering it may neither throw nor go and measure anything. A space
+    /// is asked how big it is on paths that cannot fail — building an exception's message is one
+    /// (<c>CellReadException</c> cites a cell, and citing it needs the extent it sits in), and a
+    /// backend whose extent were discovered lazily would turn a read failure into a second failure
+    /// raised from inside the first one's <c>Message</c>.
+    /// </para>
+    /// </summary>
     Area Area { get; }
 
     /// <summary>

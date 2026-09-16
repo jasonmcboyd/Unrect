@@ -17,7 +17,13 @@ namespace Unrect.Analyzers.Tests
   /// </summary>
   internal static class Verify
   {
-    /// <summary>What every test source may use, so that no test spends lines on imports.</summary>
+    /// <summary>
+    /// What every test source may use, so that no test spends lines on imports — and, since phase 6,
+    /// the file scope itself: there is no <c>Projection.Over&lt;T&gt;()</c> to open a scope with any
+    /// more, so a source's space is named once here, in the <c>using static</c> every fixture shares.
+    /// <c>ISheetCells</c> is the narrow one on purpose: it is what the streaming door vends and
+    /// what a formula-reading child out-demands.
+    /// </summary>
     public const string Usings = """
       using System.Collections.Generic;
 
@@ -25,12 +31,15 @@ namespace Unrect.Analyzers.Tests
       using Unrect.Projections;
       using Unrect.Spreadsheets;
 
+      using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+      using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+
       """;
 
     private static readonly MetadataReference[] Unrect =
     {
-      MetadataReference.CreateFromFile(typeof(Core.ICellValues).Assembly.Location),
-      MetadataReference.CreateFromFile(typeof(Projections.Projection).Assembly.Location),
+      MetadataReference.CreateFromFile(typeof(Core.ISpace).Assembly.Location),
+      MetadataReference.CreateFromFile(typeof(Projections.ProjectionEngine).Assembly.Location),
       MetadataReference.CreateFromFile(typeof(Strategies.SizeStrategies).Assembly.Location),
       MetadataReference.CreateFromFile(typeof(Spreadsheets.SpreadsheetProjections).Assembly.Location),
     };
@@ -59,12 +68,32 @@ namespace Unrect.Analyzers.Tests
     public static Task Fixes<TAnalyzer, TCodeFix>(string source, string fixedSource, params DiagnosticResult[] expected)
       where TAnalyzer : DiagnosticAnalyzer, new()
       where TCodeFix : CodeFixProvider, new()
+      => Fixes<TAnalyzer, TCodeFix>(source, fixedSource, titled: null, expected);
+
+    /// <inheritdoc cref="Fixes{TAnalyzer, TCodeFix}(string, string, DiagnosticResult[])"/>
+    /// <param name="source">The source, with the expectation written in it as markup.</param>
+    /// <param name="fixedSource">What the source must read as once the fix is applied.</param>
+    /// <param name="titled">
+    /// The exact title the offer must carry, or null to leave it unpinned. Where a fix's whole value
+    /// is the sentence it offers, the edit alone is not the assertion.
+    /// </param>
+    /// <param name="expected">The diagnostics of our own the source must report.</param>
+    public static Task Fixes<TAnalyzer, TCodeFix>(
+      string source,
+      string fixedSource,
+      string? titled,
+      params DiagnosticResult[] expected)
+      where TAnalyzer : DiagnosticAnalyzer, new()
+      where TCodeFix : CodeFixProvider, new()
     {
       var test = new CSharpCodeFixTest<TAnalyzer, TCodeFix, DefaultVerifier>
       {
         TestCode = Usings + source,
         FixedCode = Usings + fixedSource,
       };
+
+      if (titled is object)
+        test.CodeActionVerifier = (action, verifier) => verifier.Equal(titled, action.Title);
 
       test.ExpectedDiagnostics.AddRange(expected);
       Configure(test);
@@ -76,9 +105,9 @@ namespace Unrect.Analyzers.Tests
     /// The same, for a fix on a diagnostic the COMPILER reports: there is no analyzer of ours in
     /// play, and the expectation is written in the source as markup naming the compiler's own error.
     /// </summary>
-    public static Task FixesCompilerError<TCodeFix>(string source, string fixedSource)
+    public static Task FixesCompilerError<TCodeFix>(string source, string fixedSource, string? titled = null)
       where TCodeFix : CodeFixProvider, new()
-      => Fixes<EmptyDiagnosticAnalyzer, TCodeFix>(source, fixedSource);
+      => Fixes<EmptyDiagnosticAnalyzer, TCodeFix>(source, fixedSource, titled);
 
     /// <summary>
     /// Asserts that the diagnostics stand and nothing is offered for them — the assertion behind

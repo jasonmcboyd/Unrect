@@ -1,11 +1,12 @@
 using System;
 
-using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -137,7 +138,7 @@ namespace Unrect.Tests.Projections
 
     // --- TableView and TableRow -----------------------------------------------------------------------------
 
-    private static ICellValues Sheet() => Mixed(new object?[,]
+    private static ISheetCells Sheet() => Mixed(new object?[,]
     {
       { null, null },
       { "Name", "Amount" },
@@ -149,13 +150,13 @@ namespace Unrect.Tests.Projections
     public void ATableKnowsWhereItStartsHeaderIncluded()
     {
       // The blank row above is skipped by the table's default offset, so the table starts at A2.
-      Assert.Equal("A2", Projection.Table((TableView t) => t.Location.A1).Map(Sheet()));
+      Assert.Equal("A2", Table((TableView<ISheetCells> t) => t.Location.A1).Map(Sheet()));
     }
 
     [Fact]
     public void ATableRowKnowsWhereItStarts()
     {
-      Assert.Equal(new[] { "A3", "A4" }, Table((TableRow r) => r.Location.A1).Map(Sheet()));
+      Assert.Equal(new[] { "A3", "A4" }, Table((TableRow<ISheetCells> r) => r.Location.A1).Map(Sheet()));
     }
 
     [Fact]

@@ -2,11 +2,13 @@ using System.Linq;
 using System.Threading.Tasks;
 
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -49,7 +51,7 @@ namespace Unrect.Tests.Projections
     {
       // Deliberately no z-order and no occlusion: reading a cell twice is not a conflict.
       var read = Overlay(o =>
-        $"{o.Next(Range(2, 2, b => b[1, 0].GetInt()))}|{o.Next(Right(1).Of(IntCell()))}|{o.Next(Right(1).Of(IntCell()))}");
+        $"{o.Next(Range(2, 2, b => b[1, 0].Integer()))}|{o.Next(Right(1).Of(IntCell()))}|{o.Next(Right(1).Of(IntCell()))}");
 
       Assert.Equal("2|2|2", read.Map(CoordinateGrid()));
     }
@@ -145,7 +147,7 @@ namespace Unrect.Tests.Projections
       var failure = Assert.Throws<ProjectionException>(() =>
         Overlay(o => $"{o.Next(IntCell())}|{o.Next(title)}").Map(CoordinateGrid()));
 
-      Assert.Equal("Overlay -> 'title' (Cell)", failure.Path);
+      Assert.Equal("Overlay -> 'title' (Text)", failure.Path);
       Assert.Equal("C2", failure.Location.A1);
       Assert.Equal(2, failure.Location.Row);
       Assert.Equal(3, failure.Location.Column);
@@ -227,7 +229,7 @@ namespace Unrect.Tests.Projections
 
       var entity = TextCell();
       var year = Right(3).Of(TextCell());
-      var items = Table(r => r["Amount"].GetInt());
+      var items = Table(r => r["Amount"].Integer());
 
       var projection = VerticalFlow(v =>
         $"{v.Next(Overlay(o => $"{o.Next(entity)}/{o.Next(year)}"))}|{string.Join(",", v.Next(items))}");
@@ -258,7 +260,7 @@ namespace Unrect.Tests.Projections
     {
       // Every overlay child starts from the same origin, so there is no cursor position to report
       // one against — unlike a flow, where the hole is where the child would have gone.
-      IProjection<int>? missing = null;
+      IProjection<ISheetCells, int>? missing = null;
 
       var failure = Assert.Throws<ProjectionException>(() =>
         Overlay(o => $"{o.Next(Down(1).Of(IntCell()))}|{o.Next(missing!)}").Map(CoordinateGrid()));
@@ -271,7 +273,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ANullChild_ResistsAToleranceBoundary()
     {
-      IProjection<int>? missing = null;
+      IProjection<ISheetCells, int>? missing = null;
 
       Assert.Throws<ProjectionException>(() =>
         Overlay(o => $"{o.Next(IntCell())}|{o.Next(missing!)}").Optional().Map(CoordinateGrid()));

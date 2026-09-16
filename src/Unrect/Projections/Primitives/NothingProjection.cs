@@ -14,13 +14,14 @@ namespace Unrect.Projections
   /// named — so it is available to the law tests and to whatever mints one while rewriting later.
   /// </para>
   /// </summary>
-  internal sealed class NothingProjection<T> : ProjectionBase<T>
+  internal sealed class NothingProjection<TSpace, T> : ProjectionBase<TSpace, T>
+    where TSpace : class, ISpace
   {
     /// <summary>
     /// The one of them. A projection is an immutable value applied to many spaces, and this one has
     /// no state to vary, so there is nothing for a second instance to be.
     /// </summary>
-    public static readonly IProjection<T> Instance = new NothingProjection<T>();
+    public static readonly IProjection<TSpace, T> Instance = new NothingProjection<TSpace, T>();
 
     private NothingProjection()
       : base(Placement.Default)
@@ -29,7 +30,7 @@ namespace Unrect.Projections
 
     public override string Description => "Nothing";
 
-    public override ProjectionResult<T> Project(Plane<ICellValues> extent, ProjectionContext context)
+    public override ProjectionResult<T> Project(Plane<TSpace> extent, ProjectionContext context)
       => new ProjectionResult<T>(default!, new Size(0, 0), Presence.Empty);
   }
 }

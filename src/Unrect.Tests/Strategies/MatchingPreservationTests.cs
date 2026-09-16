@@ -3,11 +3,13 @@ using System.Collections.Generic;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Strategies
@@ -54,7 +56,7 @@ namespace Unrect.Tests.Strategies
     /// to one family and forgotten in another.
     /// <para>
     /// It serves both axes: <see cref="ColumnsHolding"/> places the identical
-    /// <see cref="CellValue"/> that <see cref="RowsHolding"/> does, transposed, so a needle
+    /// <see cref="Cell"/> that <see cref="RowsHolding"/> does, transposed, so a needle
     /// grounded on one is grounded on the other.
     /// </para>
     /// </summary>
@@ -91,7 +93,7 @@ namespace Unrect.Tests.Strategies
         ANumber => 42,
         ATemporal => new DateTime(2026, 3, 4),
         ABoolean => true,
-        AnError => CellValue.OfError(CellError.DivisionByZero),
+        AnError => Cell.OfError(CellError.DivisionByZero),
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "No cell for that kind.")
       };
 
@@ -103,14 +105,14 @@ namespace Unrect.Tests.Strategies
     private static Func<Point<ISpace>, bool> Says(string text) => cell => cell.IsText && cell.AsText()!.Trim() == text;
 
     /// <summary>A junk row, then <paramref name="value"/> at A2 with a neighbour at B2.</summary>
-    private static ICellValues RowsHolding(object? value) => Mixed(new object?[,]
+    private static ISheetCells RowsHolding(object? value) => Mixed(new object?[,]
     {
       { "junk", null },
       { value, "x" },
     });
 
     /// <summary>A junk column, then <paramref name="value"/> at B1 with a neighbour at B2.</summary>
-    private static ICellValues ColumnsHolding(object? value) => Mixed(new object?[,]
+    private static ISheetCells ColumnsHolding(object? value) => Mixed(new object?[,]
     {
       { "junk", value },
       { null, "x" },
@@ -248,9 +250,9 @@ namespace Unrect.Tests.Strategies
     [MemberData(nameof(NeedleTexts))]
     public void Field_MatchesATextCellSpellingTheSameThing(string text)
     {
-      IReadOnlyDictionary<string, CellValue> read = Fields(Field(text)).Map(RowsHolding(text));
+      IReadOnlyDictionary<string, Point<ISheetCells>> read = Fields(Field(text)).Map(RowsHolding(text));
 
-      Assert.Equal("x", read[text].GetString());
+      Assert.Equal("x", read[text].Text());
     }
 
     // --- Saying: the widening, and the only way to reach it -------------------------------------------
@@ -358,7 +360,7 @@ namespace Unrect.Tests.Strategies
     /// Four rows whose second holds the NUMBER 42 — the anchor only `Saying` can find — with a
     /// labelled row after it and a labelled row before, so a landing row is unambiguous.
     /// </summary>
-    private static ICellValues NumericAnchor() => Mixed(new object?[,]
+    private static ISheetCells NumericAnchor() => Mixed(new object?[,]
     {
       { "header", null },
       { 42, "the anchor row" },
@@ -407,7 +409,7 @@ namespace Unrect.Tests.Strategies
     }
 
     /// <summary>A cell read as whatever it says, so an anchored column can report a non-text cell.</summary>
-    private static IProjection<string?> AsSaid() => Cell(value => value.AsText());
+    private static IProjection<ISheetCells, string?> AsSaid() => Point().Select(point => point.AsText());
 
     // --- The header parse behind a label map ----------------------------------------------------------
     //

@@ -2,11 +2,12 @@ using System;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -20,7 +21,7 @@ namespace Unrect.Tests.Projections
   public class BoundaryProjectionTests
   {
     // One column of numbers, so a projection asking for text is a guaranteed, well-located failure.
-    private static ICellValues Numbers(int height = 3)
+    private static ISheetCells Numbers(int height = 3)
     {
       var values = new int[height, 1];
 
@@ -30,10 +31,10 @@ namespace Unrect.Tests.Projections
       return Grid(values);
     }
 
-    private static IProjection<string> Title() => TextCell().Named("title");
+    private static IProjection<ISheetCells, string> Title() => TextCell().Named("title");
 
     /// <summary>Two levels below the boundary: the flow whose second child is the one that fails.</summary>
-    private static IProjection<string> Inner()
+    private static IProjection<ISheetCells, string> Inner()
       => VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(TextCell())}");
 
     /// <summary>
@@ -69,7 +70,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ElseProjection_YieldsTheFallbacksReadingWhenTheProjectionFails()
     {
-      Assert.Equal("1", Title().Else(Cell(v => v.GetInt().ToString()).Named("plan B")).Map(Numbers()));
+      Assert.Equal("1", Title().Else(Point().Select(p => p.Integer().ToString()).Named("plan B")).Map(Numbers()));
     }
 
     [Fact]
@@ -98,13 +99,13 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AnAbsorbedFailure_IsDescribedByTheProjectionThatFailedNotTheBoundary()
     {
-      // The boundary caught it; the Cell caused it. A warning is only actionable if it names the
+      // The boundary caught it; the leaf caused it. A warning is only actionable if it names the
       // latter.
       var warning = Warning(Title().Optional().MapWithDiagnostics(Numbers(1)));
 
       Assert.Equal("'title'", warning.Subject);
-      Assert.Equal("'title' (Cell)", warning.Path);
-      Assert.Contains("Cell value is Number; expected Text", warning.Message);
+      Assert.Equal("'title' (Text)", warning.Path);
+      Assert.Contains("expected Text at A1, found Number", warning.Message);
       Assert.Equal("A1", warning.Location.A1);
     }
 
@@ -113,11 +114,11 @@ namespace Unrect.Tests.Projections
     {
       var optional = Warning(Title().Optional().MapWithDiagnostics(Numbers(1)));
       var elseValue = Warning(Title().Else("x").MapWithDiagnostics(Numbers(1)));
-      var elseProjection = Warning(Title().Else(Cell(v => "y").Named("plan B")).MapWithDiagnostics(Numbers(1)));
+      var elseProjection = Warning(Title().Else(Point().Select(_ => "y").Named("plan B")).MapWithDiagnostics(Numbers(1)));
 
       Assert.Equal(optional.Message, elseValue.Message);
       Assert.Equal(optional.Message, elseProjection.Message);
-      Assert.Equal("'title' (Cell)", elseProjection.Path);
+      Assert.Equal("'title' (Text)", elseProjection.Path);
       Assert.All(
         new[] { optional, elseValue, elseProjection },
         d => Assert.Equal(DiagnosticSeverity.Warning, d.Severity));
@@ -161,7 +162,7 @@ namespace Unrect.Tests.Projections
       // A fallback projection did read something, so it reports an honest extent and the next
       // sibling clears it.
       var read = VerticalFlow(v =>
-        $"{v.Next(Title().Else(Cell(c => c.GetInt().ToString()).Named("plan B")))}|{v.Next(IntCell())}")
+        $"{v.Next(Title().Else(Point().Select(p => p.Integer().ToString()).Named("plan B")))}|{v.Next(IntCell())}")
         .Map(Numbers());
 
       Assert.Equal("1|2", read);
@@ -201,7 +202,7 @@ namespace Unrect.Tests.Projections
         projection.MapWithDiagnostics(Numbers()).Diagnostics,
         d => d.Severity == DiagnosticSeverity.Warning);
 
-      Assert.Equal("VerticalFlow -> VerticalFlow#2 -> Cell#2", warning.Path);
+      Assert.Equal("VerticalFlow -> VerticalFlow#2 -> Text#2", warning.Path);
       Assert.Equal("A3", warning.Location.A1);
     }
 
@@ -245,7 +246,7 @@ namespace Unrect.Tests.Projections
     public void ANullReferenceInAProjection_IsNotAbsorbed()
     {
       var failure = Assert.Throws<ProjectionException>(() =>
-        Cell<string>(_ => throw new NullReferenceException("boom")).Named("bad").Optional().Map(Numbers(1)));
+        Point().Select<ISheetCells, Point<ISheetCells>, string>(_ => throw new NullReferenceException("boom")).Named("bad").Optional().Map(Numbers(1)));
 
       Assert.Equal("'bad'", failure.Subject);
       Assert.IsType<NullReferenceException>(failure.GetBaseException());
@@ -256,7 +257,7 @@ namespace Unrect.Tests.Projections
     public void AnIndexOutOfRangeInAProjection_IsNotAbsorbed()
     {
       var failure = Assert.Throws<ProjectionException>(() =>
-        Cell<string>(_ => throw new IndexOutOfRangeException("boom")).Named("bad").Optional().Map(Numbers(1)));
+        Point().Select<ISheetCells, Point<ISheetCells>, string>(_ => throw new IndexOutOfRangeException("boom")).Named("bad").Optional().Map(Numbers(1)));
 
       Assert.IsType<IndexOutOfRangeException>(failure.GetBaseException());
     }
@@ -268,7 +269,7 @@ namespace Unrect.Tests.Projections
       // wrong, not the file — so the view's ArgumentOutOfRangeException must propagate, not read
       // as "this section was absent".
       var failure = Assert.Throws<ProjectionException>(() =>
-        Range(b => b[9, 0].GetInt()).Named("bad").Optional().Map(Numbers(1)));
+        Range(b => b[9, 0].Integer()).Named("bad").Optional().Map(Numbers(1)));
 
       Assert.IsType<ArgumentOutOfRangeException>(failure.GetBaseException());
       Assert.Equal("'bad'", failure.Subject);
@@ -279,9 +280,9 @@ namespace Unrect.Tests.Projections
     {
       // Else would otherwise hide the bug behind a perfectly good fallback reading.
       var failure = Assert.Throws<ProjectionException>(() =>
-        Cell<string>(_ => throw new NullReferenceException("boom"))
+        Point().Select<ISheetCells, Point<ISheetCells>, string>(_ => throw new NullReferenceException("boom"))
           .Named("bad")
-          .Else(Cell(v => "the fallback would have worked"))
+          .Else(Point().Select(_ => "the fallback would have worked"))
           .Map(Numbers(1)));
 
       Assert.IsType<NullReferenceException>(failure.GetBaseException());
@@ -297,9 +298,9 @@ namespace Unrect.Tests.Projections
 
     // --- When the fallback fails too ------------------------------------------------------------------------------------
 
-    private static IProjection<string> PrimaryAndFallbackBothWrong()
+    private static IProjection<ISheetCells, string> PrimaryAndFallbackBothWrong()
       => TextCell().Named("primary")
-        .Else(Cell(v => v.GetDateTime().ToString()).Named("fallback"));
+        .Else(Point().Select(p => p.Date().ToString()).Named("fallback"));
 
     [Fact]
     public void WhenAFallbackFailsToo_TheFallbackOwnsTheFailure()
@@ -309,7 +310,7 @@ namespace Unrect.Tests.Projections
       var failure = Assert.Throws<ProjectionException>(() => PrimaryAndFallbackBothWrong().Map(Numbers(1)));
 
       Assert.Equal("'fallback'", failure.Subject);
-      Assert.Equal("'fallback' (Cell)", failure.Path);
+      Assert.Equal("'fallback' (Select)", failure.Path);
     }
 
     [Fact]
@@ -320,8 +321,8 @@ namespace Unrect.Tests.Projections
       var failure = Assert.Throws<ProjectionException>(() => PrimaryAndFallbackBothWrong().Map(Numbers(1)));
 
       Assert.Contains("it stands in for 'primary', which failed too: ", failure.Message);
-      Assert.Contains("Cell value is Number; expected Text", failure.Message);
-      Assert.Contains("Cell value is Number; expected Temporal", failure.Message);
+      Assert.Contains("expected Text at A1, found Number", failure.Message);
+      Assert.Contains("expected Temporal at A1, found Number", failure.Message);
     }
 
     [Fact]
@@ -332,7 +333,10 @@ namespace Unrect.Tests.Projections
       var original = Assert.IsType<ProjectionException>(failure.InnerException);
       Assert.Equal("'fallback'", original.Subject);
       Assert.DoesNotContain("stands in for", original.Message);
-      Assert.IsType<InvalidOperationException>(failure.GetBaseException());
+
+      // The base cause is the backend's own read failure. Until phase 6 a wrong-kind read surfaced
+      // as an InvalidOperationException, which is the exception a bug throws too.
+      Assert.IsType<CellReadException>(failure.GetBaseException());
     }
 
     // --- The same-origin trap -------------------------------------------------------------------------------------------
@@ -341,9 +345,9 @@ namespace Unrect.Tests.Projections
     // failed — and fails the same way, for the same reason, while blaming itself. The note is the
     // framework saying "the projection before me read nothing, which is probably why I am here".
 
-    private static ICellValues TextOverNumber() => Mixed(new object?[,] { { "x" }, { 5 } });
+    private static ISheetCells TextOverNumber() => Mixed(new object?[,] { { "x" }, { 5 } });
 
-    private static IProjection<string> AbsorbedThenSameCell()
+    private static IProjection<ISheetCells, string> AbsorbedThenSameCell()
       => VerticalFlow(v => $"{v.Next(IntCell().Optional())}|{v.Next(IntCell())}");
 
     [Fact]
@@ -352,7 +356,7 @@ namespace Unrect.Tests.Projections
       var failure = Assert.Throws<ProjectionException>(() => AbsorbedThenSameCell().Map(TextOverNumber()));
 
       Assert.EndsWith(
-        "Cell value is Text; expected Number; note: the preceding sibling consumed nothing at this position",
+        "expected Number at A1, found Text; note: the preceding sibling consumed nothing at this position",
         FirstLine(failure));
     }
 
@@ -364,8 +368,12 @@ namespace Unrect.Tests.Projections
       var plain = FirstLine(Assert.Throws<ProjectionException>(() =>
         VerticalFlow(v => $"{v.Next(TextCell())}|{v.Next(TextCell())}").Map(TextOverNumber())));
 
-      Assert.EndsWith("expected Text.", plain);
-      Assert.DoesNotContain("Number.;", noted);
+      // The reading sentence carries no full stop of its own, so there is none to replace — the
+      // note simply follows it. The rule is still worth pinning: what must never appear is the
+      // doubled punctuation a quoted exception message used to bring with it.
+      Assert.EndsWith("found Number", plain);
+      Assert.DoesNotContain("Text.;", noted);
+      Assert.DoesNotContain(".;", noted);
       Assert.DoesNotContain("note:", plain);
     }
 
@@ -376,9 +384,9 @@ namespace Unrect.Tests.Projections
       var failure = Assert.Throws<ProjectionException>(() => AbsorbedThenSameCell().Map(TextOverNumber()));
 
       // The inferred use-site label names the subject as well as the path, so an inline child is
-      // "Cell#2" in both halves of the message rather than disagreeing with itself.
-      Assert.Equal("Cell#2", failure.Subject);
-      Assert.Equal("VerticalFlow -> Cell#2", failure.Path);
+      // "Integer#2" in both halves of the message rather than disagreeing with itself.
+      Assert.Equal("Integer#2", failure.Subject);
+      Assert.Equal("VerticalFlow -> Integer#2", failure.Path);
       Assert.Equal("A1", failure.Location.A1);
     }
 
@@ -392,9 +400,13 @@ namespace Unrect.Tests.Projections
       Assert.Equal(failure.Subject, original.Subject);
       Assert.Equal(failure.Path, original.Path);
 
-      // ...and the root cause is still one hop away from anyone who wants it.
-      var cause = Assert.IsType<InvalidOperationException>(failure.GetBaseException());
-      Assert.Equal("Cell value is Text; expected Number.", cause.Message);
+      // ...and the root cause is still one hop away from anyone who wants it. It is the unannotated
+      // failure itself now: a kinded leaf reports its own read, so there is nothing thrown beneath
+      // it to unwrap. Until phase 6 the base was the InvalidOperationException the leaf threw,
+      // whose message was "Cell value is Text; expected Number.".
+      var cause = Assert.IsType<ProjectionException>(failure.GetBaseException());
+      Assert.Same(original, cause);
+      Assert.Equal("expected Number at A1, found Text", cause.Problem);
     }
 
     [Fact]
@@ -485,8 +497,8 @@ namespace Unrect.Tests.Projections
       var failure = Assert.Throws<ProjectionException>(() => Choice(tolerant, strict).Map(TextOverNumber()));
 
       Assert.Contains(
-        "alternative 1 ('tolerant branch'): the projection threw InvalidOperationException: "
-        + "Cell value is Text; expected Number; note: the preceding sibling consumed nothing at this position",
+        "alternative 1 ('tolerant branch'): "
+        + "expected Number at A1, found Text; note: the preceding sibling consumed nothing at this position",
         failure.Message);
 
       // The branch that tolerated nothing says so by having nothing to say.
@@ -513,7 +525,7 @@ namespace Unrect.Tests.Projections
     {
       var warning = Warning(Title().Optional().Named("the header").MapWithDiagnostics(Numbers(1)));
 
-      Assert.Equal("'the header' -> 'title' (Cell)", warning.Path);
+      Assert.Equal("'the header' -> 'title' (Text)", warning.Path);
     }
 
     [Fact]
@@ -544,15 +556,15 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void Else_RejectsANullFallbackProjection()
     {
-      Assert.Equal("fallback", Assert.Throws<ArgumentNullException>(() => Title().Else((IProjection<string>)null!)).ParamName);
+      Assert.Equal("fallback", Assert.Throws<ArgumentNullException>(() => Title().Else((IProjection<ISheetCells, string>)null!)).ParamName);
     }
 
     [Fact]
     public void BoundariesRejectANullProjection()
     {
-      Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjection<int>)null!).Optional()).ParamName);
-      Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjection<int>)null!).Else(0)).ParamName);
-      Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjection<int>)null!).Else(IntCell())).ParamName);
+      Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjection<ISheetCells, int>)null!).Optional()).ParamName);
+      Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjection<ISheetCells, int>)null!).Else(0)).ParamName);
+      Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjection<ISheetCells, int>)null!).Else(IntCell())).ParamName);
     }
   }
 }

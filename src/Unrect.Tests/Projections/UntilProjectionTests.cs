@@ -3,11 +3,12 @@ using System.Collections.Generic;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -21,9 +22,9 @@ namespace Unrect.Tests.Projections
   public class UntilProjectionTests
   {
     // A, B, Total, C, End — two rows, a caption, two more.
-    private static ICellValues Sections() => Mixed(new object?[,] { { "A" }, { "B" }, { "Total" }, { "C" }, { "End" } });
+    private static ISheetCells Sections() => Mixed(new object?[,] { { "A" }, { "B" }, { "Total" }, { "C" }, { "End" } });
 
-    private static IProjection<IReadOnlyList<string>> Lines() => VerticalRepeat(TextCell());
+    private static IProjection<ISheetCells, IReadOnlyList<string>> Lines() => VerticalRepeat(TextCell());
 
     // --- The bound ------------------------------------------------------------------------------
 
@@ -293,14 +294,14 @@ namespace Unrect.Tests.Projections
     // spelled by nesting, which the last test in this section pins.
 
     // 3 columns by 3 rows: a b Total / c d e / Stop f g.
-    private static ICellValues BothAxes() => Mixed(new object?[,]
+    private static ISheetCells BothAxes() => Mixed(new object?[,]
     {
       { "a", "b", "Total" },
       { "c", "d", "e" },
       { "Stop", "f", "g" },
     });
 
-    private static IProjection<string> BlockExtent() => Range(b => $"{b.Width}x{b.Height}");
+    private static IProjection<ISheetCells, string> BlockExtent() => Range(b => $"{b.Width}x{b.Height}");
 
     [Fact]
     public void AColumnBoundOverARowBoundIsRefused()
@@ -458,8 +459,8 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ABoundRejectsANullLandmark()
     {
-      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => Until(null!).Of(Lines())).ParamName);
-      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => UntilColumn(null!).Of(Lines())).ParamName);
+      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => Until((IRowLandmark)null!).Of(Lines())).ParamName);
+      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => UntilColumn((IColumnLandmark)null!).Of(Lines())).ParamName);
     }
   }
 }

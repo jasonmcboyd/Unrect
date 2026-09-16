@@ -17,7 +17,8 @@ namespace Unrect.Projections
   /// written again.
   /// </para>
   /// </summary>
-  internal sealed class CaptionProjection : ProjectionBase<string>
+  internal sealed class CaptionProjection<TSpace> : ProjectionBase<TSpace, string>
+    where TSpace : class, ISpace
   {
     public CaptionProjection(string text, Placement placement)
       : base(placement)
@@ -31,7 +32,7 @@ namespace Unrect.Projections
 
     public override string Description => $"Caption(\"{Text}\")";
 
-    public override ProjectionResult<string> Project(Plane<ICellValues> extent, ProjectionContext context)
+    public override ProjectionResult<string> Project(Plane<TSpace> extent, ProjectionContext context)
     {
       var size = extent.Area.Size;
 
@@ -46,8 +47,9 @@ namespace Unrect.Projections
       for (var column = 0; column < size.Width; column++)
         if (Match(cells[column, 0]))
           // The file's text, not the declaration's: the literal is the matcher, the cell is the
-          // datum, and untrimmed because trimming is the matcher's business.
-          return new ProjectionResult<string>(extent.CellAt(column, 0).GetString(), size);
+          // datum, and untrimmed because trimming is the matcher's business. Non-null because the
+          // match is a text match, and a blank cell never matches one.
+          return new ProjectionResult<string>(extent[column, 0].AsText()!, size);
 
       throw context.Failure($"expected a row containing '{Text}' here", extent);
     }

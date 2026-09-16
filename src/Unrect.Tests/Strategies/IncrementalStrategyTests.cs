@@ -3,6 +3,7 @@ using System;
 using System.Globalization;
 
 using Unrect.Core;
+using Unrect.Spreadsheets;
 using Unrect.Strategies;
 
 using Xunit;
@@ -42,7 +43,7 @@ namespace Unrect.Tests.Strategies
 
     // --- The four grids every fold is folded over ------------------------------------------------
 
-    private static ICellValues Space(string name) => name switch
+    private static ISheetCells Space(string name) => name switch
     {
       // Every cell carries a value, so every row-wise rule runs to the bottom.
       "dense" => Grid(new[,]
@@ -126,7 +127,7 @@ namespace Unrect.Tests.Strategies
     /// The fold, written out here rather than called from <see cref="Scans.Fold"/>, so the test
     /// says independently what every implementation's one-line delegation claims.
     /// </summary>
-    private static int Fold(IRowScan scan, ICellValues space)
+    private static int Fold(IRowScan scan, ISheetCells space)
     {
       var count = 0;
 
@@ -152,7 +153,7 @@ namespace Unrect.Tests.Strategies
       _ => throw new ArgumentOutOfRangeException(nameof(name), name, "No such strategy."),
     };
 
-    private static void AssertRowFoldIdentity(IRowStrategy strategy, ICellValues space, int expected)
+    private static void AssertRowFoldIdentity(IRowStrategy strategy, ISheetCells space, int expected)
     {
       var incremental = Assert.IsAssignableFrom<IIncrementalRowStrategy>(strategy);
 
@@ -406,7 +407,7 @@ namespace Unrect.Tests.Strategies
       // Not the space it is folded over and not the strategy's own idea of a width: BeginSize takes
       // the available space and the answer comes from it, so a narrower band gives a narrower
       // extent.
-      var band = Space("dense").GetSubspace(default, new Area(2, 4));
+      var band = Space("dense").Region().Slice(default, new Area(2, 4));
       var strategy = Assert.IsAssignableFrom<IIncrementalSizeStrategy>(SizeStrategies.RowsWhileAnyValue());
 
       Assert.Equal(2, strategy.BeginSize(band).Width);

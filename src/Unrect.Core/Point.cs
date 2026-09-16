@@ -76,6 +76,16 @@ namespace Unrect.Core
     public string? AsText() => Space.AsText(Column, Row);
 
     /// <summary>
+    /// The same cell, named over the canonical surface alone — how a point travels in a value that
+    /// cannot be generic in the space, such as the exception a failed read throws.
+    /// <para>
+    /// A copy of a reference and two integers: nothing is read, and the space is the same object, so
+    /// a read through the result is the read it would have been. Erasure is one-way.
+    /// </para>
+    /// </summary>
+    public Point<ISpace> Erased() => new Point<ISpace>(Space, Column, Row);
+
+    /// <summary>
     /// Whether <paramref name="other"/> names the same cell of the same space — see the type's own
     /// summary for why this is not a comparison of values.
     /// </summary>

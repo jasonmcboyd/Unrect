@@ -5,10 +5,12 @@ using System.Reflection;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.Observations;
 using static Unrect.Tests.ProjectionTestSpaces;
 
@@ -74,7 +76,7 @@ namespace Unrect.Tests.Projections
     /// hoisted <c>series</c> placed twice the natural declaration — and therefore what makes the two
     /// spellings of the placement worth comparing.
     /// </summary>
-    private static ICellValues Report() => Mixed(new object?[,]
+    private static ISheetCells Report() => Mixed(new object?[,]
     {
       { "Investor IRR", null, null },
       { "IRR Details", null, null },
@@ -90,11 +92,11 @@ namespace Unrect.Tests.Projections
     });
 
     /// <summary>One investor's run of rows, read as its name and its height.</summary>
-    private static IProjection<string> InvestorBlock()
-      => Range(RowsWhileAnyValue(), block => $"{block[0, 0].GetString()}x{block.Height}");
+    private static IProjection<ISheetCells, string> InvestorBlock()
+      => Range(RowsWhileAnyValue(), block => $"{block[0, 0].Text()}x{block.Height}");
 
     /// <summary>The repeated series both headings announce — hoisted, because it is declared once.</summary>
-    private static IProjection<IReadOnlyList<string>> Series()
+    private static IProjection<ISheetCells, IReadOnlyList<string>> Series()
       => VerticalRepeat(InvestorBlock(), separatedBy: BlankRows());
 
     // --- 1. The denotation sweep: the pipeline against the modifiers it replays ----------------------
@@ -302,7 +304,7 @@ namespace Unrect.Tests.Projections
     // and is indistinguishable wherever the caller's identifier happens to match.
 
     /// <summary>The ledger the capture pins fail over — a text column where a number is asked for.</summary>
-    private static ICellValues Ledger() => Mixed(new object?[,]
+    private static ISheetCells Ledger() => Mixed(new object?[,]
     {
       { "Fund", "Amount" },
       { "Alpha", 100m },
@@ -312,7 +314,7 @@ namespace Unrect.Tests.Projections
     private static IRowLandmark Header() => RowContaining("Fund");
 
     /// <summary>A bind pointed at the column of fund names, so every record fails.</summary>
-    private static IProjection<decimal> FundColumnAsANumber(LabelMap captions) => Right(captions["Fund"]).Of(Decimal());
+    private static IProjection<ISheetCells, decimal> FundColumnAsANumber(LabelMap captions) => Right(captions["Fund"]).Of(Decimal());
 
     [Fact]
     public void AVerticalRepeatTerminalKeepsTheIdentifierItsItemWasWrittenAs()
@@ -356,54 +358,11 @@ namespace Unrect.Tests.Projections
       Assert.Equal("Table[0] -> 'FundColumnAsANumber' (Decimal)", throughPipeline.Path);
     }
 
-    [Fact]
-    public void AScopedVerticalRepeatTerminalCapturesTheSameWay()
-    {
-      // The scoped hierarchy repeats every terminal rather than inheriting them, because each has to
-      // hand the demand out in its result type — so each is a SECOND forwarding site, and the
-      // capture has to be forwarded twice over.
-      var investorDetail = Decimal();
-
-      var throughPipeline = Assert.Throws<ProjectionException>(
-        () => Over<ICellValues>().On(Header()).VerticalRepeat(investorDetail).Map(Ledger()));
-
-      Assert.Equal("VerticalRepeat[0] -> 'investorDetail' (Decimal)", throughPipeline.Path);
-    }
-
-    [Fact]
-    public void AndAScopedHorizontalRepeatTerminal()
-    {
-      var quarterlyColumn = Decimal();
-
-      var throughPipeline = Assert.Throws<ProjectionException>(
-        () => Over<ICellValues>().On(Header()).HorizontalRepeat(quarterlyColumn).Map(Ledger()));
-
-      Assert.Equal("HorizontalRepeat[0] -> 'quarterlyColumn' (Decimal)", throughPipeline.Path);
-    }
-
-    [Fact]
-    public void AndAScopedTableRowSlotTerminal()
-    {
-      var allocationRow = Decimal();
-
-      var throughPipeline = Assert.Throws<ProjectionException>(
-        () => Over<ICellValues>().On(Header()).Table(headerRows: 1, eachRow: allocationRow).Map(Ledger()));
-
-      Assert.Equal("Table[0] -> 'allocationRow' (Decimal)", throughPipeline.Path);
-    }
-
-    [Fact]
-    public void AndAScopedTableBindTerminal()
-    {
-      var throughPipeline = Assert.Throws<ProjectionException>(
-        () => Over<ICellValues>().On(Header()).Table(headerRows: 1, eachRow: ScopedFundColumnAsANumber).Map(Ledger()));
-
-      Assert.Equal("Table[0] -> 'ScopedFundColumnAsANumber' (Decimal)", throughPipeline.Path);
-    }
-
-    /// <summary>The scoped bind's method group — a bind returning a demanding projection.</summary>
-    private static IProjection<ICellValues, decimal> ScopedFundColumnAsANumber(LabelMap captions)
-      => Over<ICellValues>().Right(captions["Fund"]).Of(Decimal());
+    // (Four more capture pins stood here, one per terminal on the SCOPED stage hierarchy — the
+    // second family that carried a demand in its result type and therefore forwarded every
+    // [CallerArgumentExpression] a second time. There is one stage hierarchy now, and it is the
+    // generic one the four pins above are written through, so each of the four said the same thing
+    // twice.)
 
     // --- 3. Heading is L3-by-construction ------------------------------------------------------------
 
@@ -460,15 +419,14 @@ namespace Unrect.Tests.Projections
     [InlineData("")]
     [InlineData("   ")]
     [InlineData(null)]
-    public void AHeadingCannotBeBlankOnAnyOfTheThreeSurfaces(string? text)
+    public void AHeadingCannotBeBlankOnAnyOfTheSurfacesThatMintOne(string? text)
     {
       // Null lands here rather than on ArgumentNullException deliberately: the question a heading
       // answers is "what does this section say", and no text is no text however it was spelled.
       foreach (var refusal in new[]
       {
         Assert.Throws<ArgumentException>(() => Heading(text!)),
-        Assert.Throws<ArgumentException>(() => Over<ICellValues>().Heading(text!)),
-        Assert.Throws<ArgumentException>(() => ProjectionBuilders<ICellValues>.Heading(text!)),
+        Assert.Throws<ArgumentException>(() => ProjectionBuilders<ISheetCells>.Heading(text!)),
         Assert.Throws<ArgumentException>(() => Heading("IRR Details").Heading(text!)),
         Assert.Throws<ArgumentException>(() => Until(RowContaining(Inception)).Heading(text!)),
       })
@@ -508,7 +466,7 @@ namespace Unrect.Tests.Projections
 
     // --- 5. The teaching stubs -----------------------------------------------------------------------
 
-    /// <summary>Every stage type, plain and scoped, so a refusal cannot go missing from one half.</summary>
+    /// <summary>Every stage type, so a refusal cannot go missing from one of them.</summary>
     public static TheoryData<string> TheStageTypes
     {
       get
@@ -530,18 +488,12 @@ namespace Unrect.Tests.Projections
     private static readonly IReadOnlyDictionary<string, (Type Type, object Instance)> Stages =
       new Dictionary<string, (Type, object)>(StringComparer.Ordinal)
       {
-        ["PlacementStage"] = (typeof(PlacementStage), Down(1)),
-        ["UnboundedStage"] = (typeof(UnboundedStage), Down(1)),
-        ["OffsetStage"] = (typeof(OffsetStage), Down(1)),
-        ["OffsetAndSizeStage"] = (typeof(OffsetAndSizeStage), Down(1).Sized(WholeExtent())),
-        ["BoundStage"] = (typeof(BoundStage), Until(RowContaining("IRR Details"))),
-        ["HeadingStage"] = (typeof(HeadingStage), Heading("IRR Details")),
-        ["PlacementStage<TSpace>"] = (typeof(PlacementStage<ICellValues>), Over<ICellValues>().Down(1)),
-        ["UnboundedStage<TSpace>"] = (typeof(UnboundedStage<ICellValues>), Over<ICellValues>().Down(1)),
-        ["OffsetStage<TSpace>"] = (typeof(OffsetStage<ICellValues>), Over<ICellValues>().Down(1)),
-        ["OffsetAndSizeStage<TSpace>"] = (typeof(OffsetAndSizeStage<ICellValues>), Over<ICellValues>().Down(1).Sized(WholeExtent())),
-        ["BoundStage<TSpace>"] = (typeof(BoundStage<ICellValues>), Over<ICellValues>().Until(RowContaining("IRR Details"))),
-        ["HeadingStage<TSpace>"] = (typeof(HeadingStage<ICellValues>), Over<ICellValues>().Heading("IRR Details")),
+        ["PlacementStage"] = (typeof(PlacementStage<ISheetCells>), Down(1)),
+        ["UnboundedStage"] = (typeof(UnboundedStage<ISheetCells>), Down(1)),
+        ["OffsetStage"] = (typeof(OffsetStage<ISheetCells>), Down(1)),
+        ["OffsetAndSizeStage"] = (typeof(OffsetAndSizeStage<ISheetCells>), Down(1).Sized(WholeExtent())),
+        ["BoundStage"] = (typeof(BoundStage<ISheetCells>), Until(RowContaining("IRR Details"))),
+        ["HeadingStage"] = (typeof(HeadingStage<ISheetCells>), Heading("IRR Details")),
       };
 
     /// <summary>The seven sentences a stage is allowed to refuse with, written once in the library.</summary>
@@ -592,11 +544,17 @@ namespace Unrect.Tests.Projections
       // in total, because that is where a reader can check the claim: an unbounded pipeline refuses
       // only a second anchor (5); a sized one refuses the movements as well (6, all of them — the
       // three of Down/Right/AfterBlank*, the new SkipToFirstNonBlankCell offset entry, and Sized
-      // itself); a bounded one refuses a second end, an extent and the anchors (10); a headed one
+      // itself); a bounded one refuses a second end, an extent and the anchors (12); a headed one
       // refuses everything but another heading (13, gaining the same new offset entry).
-      var counted = Stages
-        .Where(stage => stage.Key.Contains("<") == false)
-        .ToDictionary(stage => stage.Key, stage => Refusals(stage.Value.Type), StringComparer.Ordinal);
+      //
+      // BoundStage went 10 -> 12 in phase 6, and the two are a pair: `Until` and `UntilColumn` are
+      // DOUBLED now, each taking a canonical landmark or a typed one (§15.3 — the landmark phantom,
+      // which is how a typed predicate reaches the erased strategy seam). A stage that refused only
+      // the canonical half of a doubled member would refuse in the library's words down one overload
+      // and in the compiler's down the other, for the same contradiction; so a second end is refused
+      // twice, once per twin. Nothing about the taxonomy moved — only how many spellings each
+      // refusal has to cover.
+      var counted = Stages.ToDictionary(stage => stage.Key, stage => Refusals(stage.Value.Type), StringComparer.Ordinal);
 
       Assert.Equal(
         new Dictionary<string, int>(StringComparer.Ordinal)
@@ -605,15 +563,10 @@ namespace Unrect.Tests.Projections
           ["UnboundedStage"] = 5,
           ["OffsetStage"] = 0,
           ["OffsetAndSizeStage"] = 6,
-          ["BoundStage"] = 10,
+          ["BoundStage"] = 12,
           ["HeadingStage"] = 13,
         },
         counted);
-
-      // The scoped half repeats every one of them, which is the price of a stage that carries a
-      // demand: nothing is inherited, so nothing can be forgotten in only one hierarchy.
-      foreach (var stage in new[] { "UnboundedStage", "OffsetAndSizeStage", "BoundStage", "HeadingStage" })
-        Assert.Equal(Refusals(Stages[stage].Type), Refusals(Stages[stage + "<TSpace>"].Type));
     }
 
     private static int Refusals(Type stage)

@@ -5,10 +5,12 @@ using System.Threading.Tasks;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -38,9 +40,15 @@ namespace Unrect.Tests.Projections
     // them — the pin for the fragility note about how nullability is read.
     public record Annotated(string? Note, string Client);
 
-    public record Kinds(CellValue Any, string Client);
+    // A POINT member, not a Cell one: the escape hatch for a column of no single kind is a locator
+    // now — the cell's address, from which any reading can be asked. `Cell` was the struct the old
+    // canonical layer indexed by, and it lives in a backend now, which is exactly why a member
+    // cannot be typed as one: the binder's supported set is closed over what a cell ACCESSOR yields.
+    public record Kinds(Point<ISheetCells> Any, string Client);
 
     public record Longy(string Client, long Quantity);
+
+    public record MaybePoint(Point<ISheetCells>? Any, string Client);
 
     public record Floaty(string Client, float Ratio);
 
@@ -67,7 +75,7 @@ namespace Unrect.Tests.Projections
       int Count,
       DateTime When,
       bool Flag,
-      CellValue Raw);
+      Point<ISheetCells> Raw);
 
     // Four nullable strings and one that is not: enough of a majority that the compiler stops
     // annotating each parameter and puts a NullableContext(2) on the constructor instead. Reading
@@ -117,14 +125,14 @@ namespace Unrect.Tests.Projections
 
     // --- Grids -----------------------------------------------------------------------------------------
 
-    private static ICellValues Free() => Mixed(new object?[,]
+    private static ISheetCells Free() => Mixed(new object?[,]
     {
       { "Investor Name", "Transaction Date", "Amount" },
       { "Acme", new DateTime(2026, 3, 4), 10m },
       { "Beta", new DateTime(2026, 5, 1), 20m },
     });
 
-    private static ICellValues Captioned() => Mixed(new object?[,]
+    private static ISheetCells Captioned() => Mixed(new object?[,]
     {
       { "Client", "Transaction Date", "Transaction Type", "Amount" },
       { "Acme", new DateTime(2026, 3, 4), "Capital Call", 10m },
@@ -163,14 +171,20 @@ namespace Unrect.Tests.Projections
       Assert.Equal(42, row.Count);
       Assert.Equal(new DateTime(2026, 6, 30), row.When);
       Assert.True(row.Flag);
-      Assert.Equal(CellKind.Text, row.Raw.Kind);
+
+      // The point member is the address, so the assertion is about the cell it names rather than
+      // about a kind carried in the value — Raw.Kind until phase 6, when the member was a Cell.
+      Assert.True(row.Raw.IsText);
+      Assert.Equal("anything", row.Raw.AsText());
     }
 
     [Fact]
-    public void ACellValueMemberIsKindAgnostic()
+    public void APointMemberIsKindAgnostic()
     {
       // The escape hatch for a column that is not one kind: text in one row, a number in the next,
-      // and the member takes both without a word of declaration.
+      // and the member takes both without a word of declaration. What the member holds is the
+      // labelled cell's POINT — its address in the sheet — so nothing was read and nothing could
+      // disagree; the reading happens where the caller asks for one.
       var space = Mixed(new object?[,]
       {
         { "Any", "Client" },
@@ -180,8 +194,31 @@ namespace Unrect.Tests.Projections
 
       var rows = Table<Kinds>().Map(space);
 
-      Assert.Equal(CellKind.Text, rows[0].Any.Kind);
-      Assert.Equal(CellKind.Number, rows[1].Any.Kind);
+      // The address: column 0, the two body rows — which is what makes this kind-agnostic rather
+      // than merely kind-tolerant.
+      Assert.Equal(0, rows[0].Any.Column);
+      Assert.Equal(1, rows[0].Any.Row);
+      Assert.Equal(2, rows[1].Any.Row);
+
+      // And the readings the two cells do answer to, asked of the point after the fact.
+      Assert.True(rows[0].Any.IsText);
+      Assert.Equal("n/a", rows[0].Any.AsText());
+      Assert.Equal(5m, rows[1].Any.Decimal());
+    }
+
+    [Fact]
+    public void ANullablePointMemberIsRefusedAtTheDeclaration()
+    {
+      // A point IS the cell, blank included — there is no blank left for a Nullable<> to tolerate,
+      // so the nullable form would be a second spelling of the same thing. It is refused in its own
+      // words rather than with the types no accessor yields, because the advice is different: the
+      // member is readable, it is the question mark that is not. The kinded members' nullable forms
+      // are unaffected.
+      var failure = Assert.Throws<ArgumentException>(() => Table<MaybePoint>());
+
+      Assert.Contains("MaybePoint.Any is a Point<ISheetCells>?", failure.Message);
+      Assert.Contains("a point is the cell itself, blank included", failure.Message);
+      Assert.Contains("Declare it non-nullable.", failure.Message);
     }
 
     // --- Construction projections -------------------------------------------------------------------------------
@@ -392,8 +429,12 @@ namespace Unrect.Tests.Projections
       var failure = Assert.Throws<ArgumentException>(() => Table<Longy>());
 
       Assert.Contains("Longy.Quantity is a long, and no cell accessor yields long.", failure.Message);
+
+      // The supported set names the point over THIS file's space, which is what a reader would have
+      // to type. It read "Cell" until phase 6, when the kind-agnostic member was the struct rather
+      // than a locator — and a struct has one spelling, where a point has one per space.
       Assert.Contains(
-        "Supported: string, decimal, double, int, DateTime, bool, CellValue, and the nullable forms.",
+        "Supported: string, decimal, double, int, DateTime, bool, Point<ISheetCells>, and the nullable forms.",
         failure.Message);
       Assert.Contains("Read it as int or decimal and convert in Select.", failure.Message);
     }
@@ -470,7 +511,7 @@ namespace Unrect.Tests.Projections
       // A positional record's extra init property is filled by nobody: the type is built through
       // its constructor, and the constructor has never heard of it. Binding or ignoring it would
       // be a declaration with no effect, so it is refused instead.
-      foreach (var declaration in new Func<IProjection<IReadOnlyList<ExtraInit>>>[]
+      foreach (var declaration in new Func<IProjection<ISheetCells, IReadOnlyList<ExtraInit>>>[]
       {
         () => Table<ExtraInit>(bind => bind.Column(t => t.Extra, "Extra")),
         () => Table<ExtraInit>(bind => bind.Ignore(t => t.Extra)),
@@ -512,6 +553,29 @@ namespace Unrect.Tests.Projections
       // The guidance names a member that actually needs binding, spelled as the property is — so
       // it can be pasted into the declaration rather than retyped.
       Assert.Contains("Bind one with Column(t => t.Date, \"…\") or drop it with Ignore(t => t.Date)", failure.Message);
+    }
+
+    [Fact]
+    public void AndItIsOneFailurePerTableApplicationBlamedOnTheTable()
+    {
+      // Two things at once, because they are the same claim from two sides. The subject is the
+      // TABLE — binding is the table's job, and there is no column to blame when the trouble is that
+      // no column was found — and there is exactly ONE message however many members went unbound and
+      // however many rows the body would have had.
+      //
+      // The aggregation is per APPLICATION rather than per declaration: a table inside a repeat
+      // binds per occurrence, each against its own header, so a file whose second block is missing
+      // the column reports it there and not at construction. What must never happen is one message
+      // per unbound member, or one per row.
+      var failure = Assert.Throws<ProjectionException>(() => Table<Wide>().Map(Captioned()));
+
+      Assert.Equal("Table<Wide>", failure.Subject);
+      Assert.Equal(1, Occurrences(failure.Message, "no column binds"));
+      Assert.Equal(1, Occurrences(failure.Message, "the table's captions are"));
+
+      // Both unbound members in the one sentence, in declaration order, joined as prose rather than
+      // as a list a reader has to parse.
+      Assert.Contains("no column binds Wide.Date or Wide.Type;", failure.Message);
     }
 
     [Fact]
@@ -638,7 +702,7 @@ namespace Unrect.Tests.Projections
       });
 
       var typed = Table<Txn>().Apply(space);
-      var projected = Table(r => r["Amount"].GetDecimal()).Apply(space);
+      var projected = Table(r => r["Amount"].Decimal()).Apply(space);
 
       Assert.Equal(projected.Value, typed.Value.Select(row => row.Amount).ToArray());
       Assert.Equal(projected.Offset.Size.Height, typed.Offset.Size.Height);
@@ -652,7 +716,7 @@ namespace Unrect.Tests.Projections
       // A compile-time pin against the overload set becoming ambiguous.
       var space = Mixed(new object?[,] { { "Client", "Amount" }, { "Acme", 1m } });
 
-      Assert.Single(Table(r => r["Client"].GetString()).Map(space));
+      Assert.Single(Table(r => r["Client"].Text()).Map(space));
       Assert.Equal(2, Table(0, r => r[0]).Map(space).Count);   // no header declared, so the caption row is data
       Assert.Single(Table().Map(space));
       Assert.Single(Table<Settable>().Map(space));

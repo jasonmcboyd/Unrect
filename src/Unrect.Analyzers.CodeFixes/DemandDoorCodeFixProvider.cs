@@ -17,10 +17,17 @@ namespace Unrect.Analyzers
   /// do about it.
   /// <para>
   /// The message reads <c>cannot convert from 'IProjection&lt;IFormulaSpace, string?&gt;' to
-  /// 'IProjection&lt;ICellValues, string?&gt;'</c>, which names both types and still leaves the reader to
-  /// work out that the fix belongs two lines up, on the factory whose lambda this child sits in. A
-  /// factory is where a demand enters a declaration; if a scope over a space that answers the demand
-  /// is already in hand, this offers to build the factory through it.
+  /// 'IProjection&lt;ISheetCells, string?&gt;'</c>, which names both types and still leaves the
+  /// reader to work out that the fix belongs two lines up, on the factory whose lambda this child
+  /// sits in. A factory is where a space enters a declaration, and the vocabulary is generic in it,
+  /// so this offers to build that one factory through
+  /// <c>ProjectionBuilders&lt;TDemanded&gt;</c> — the same member, named over the space the child
+  /// asks for.
+  /// </para>
+  /// <para>
+  /// It fixes one factory, which is the honest scope of a mechanical edit: if the result then does
+  /// not fit ITS parent, the compiler says so at the next site out, and the reader decides whether
+  /// the file's own <c>using static</c> is what should have named the wider space all along.
   /// </para>
   /// </summary>
   [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(DemandDoorCodeFixProvider))]
@@ -31,9 +38,9 @@ namespace Unrect.Analyzers
     private const string ArgumentConversion = "CS1503";
 
     /// <summary>
-    /// The factories a demand travels through. Everything else in the vocabulary is indifferent to
-    /// the space and composes into a scoped declaration by variance, so no other member has a scoped
-    /// spelling for this fix to reach for.
+    /// The factories that take a child declaration, and so the only ones a child of another space
+    /// can be refused by. Everything else in the vocabulary builds a leaf out of nothing, where
+    /// there is no child to disagree with the space and nothing for this fix to move.
     /// </summary>
     private static readonly ImmutableHashSet<string> Composing = ImmutableHashSet.Create(
       "VerticalFlow",
@@ -93,20 +100,21 @@ namespace Unrect.Analyzers
         return;
       }
 
-      if (InScope(model, factory.SpanStart, demanded, symbols) is not string scope)
-        return;
+      var vocabulary = symbols.Builders
+        .Construct(demanded)
+        .ToMinimalDisplayString(model, factory.SpanStart, SymbolDisplayFormat.MinimallyQualifiedFormat);
 
       var name = member.Identifier.ValueText;
 
       var title =
-        $"Use '{scope}.{name}' here — this child demands "
+        $"Use '{vocabulary}.{name}' here — this child demands "
         + $"'{demanded.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat)}', "
         + $"which a '{name}' declared over "
         + $"'{Declared(factory, model, symbols, cancellationToken)}' cannot carry";
 
       var through = factory.WithExpression(SyntaxFactory.MemberAccessExpression(
         SyntaxKind.SimpleMemberAccessExpression,
-        SyntaxFactory.IdentifierName(scope),
+        SyntaxFactory.ParseTypeName(vocabulary),
         member.WithoutTrivia()).WithTriviaFrom(factory.Expression));
 
       context.RegisterCodeFix(
@@ -158,41 +166,6 @@ namespace Unrect.Analyzers
 
       return space.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
     }
-
-    /// <summary>
-    /// A scope in hand at <paramref name="position"/> over a space that answers
-    /// <paramref name="demanded"/>. Nothing is invented: a scope is only ever suggested where the
-    /// reader already opened one.
-    /// </summary>
-    private static string? InScope(
-      SemanticModel model,
-      int position,
-      ITypeSymbol demanded,
-      UnrectSymbols symbols)
-    {
-      foreach (var symbol in model.LookupSymbols(position))
-      {
-        if (TypeOf(symbol) is INamedTypeSymbol scope
-          && SymbolEqualityComparer.Default.Equals(scope.OriginalDefinition, symbols.Scope)
-          && UnrectSymbols.Satisfies(scope.TypeArguments[0], demanded))
-        {
-          return symbol.Name;
-        }
-      }
-
-      return null;
-    }
-
-    /// <summary>What a symbol holds, for the four kinds of thing a scope is ever held in.</summary>
-    private static ITypeSymbol? TypeOf(ISymbol symbol)
-      => symbol switch
-      {
-        ILocalSymbol local => local.Type,
-        IParameterSymbol parameter => parameter.Type,
-        IFieldSymbol field => field.Type,
-        IPropertySymbol property => property.Type,
-        _ => null,
-      };
 
     private static SimpleNameSyntax? MemberName(InvocationExpressionSyntax invocation)
       => invocation.Expression switch

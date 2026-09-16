@@ -10,13 +10,21 @@ namespace Unrect.Analyzers
   /// <summary>
   /// <c>UNR003</c>: applying a declaration to a space that cannot answer what it demands.
   /// <para>
-  /// This is a compile error already, and always was — the point of the demand is that it is. What
-  /// it is not is a legible one: the receiver and the argument each bind perfectly well on their
-  /// own, so the compiler reports the call as a failure of type inference — <c>the type arguments
-  /// for method 'ProjectionExtensions.Map&lt;TSpace, TResult&gt;' cannot be inferred from the
-  /// usage</c>, which names no capability and points at the method rather than at either type. This
-  /// one is reported <em>alongside</em> the compiler's, and says which space was demanded and which
-  /// was offered.
+  /// This is a compile error already, and always was — the point of naming the space is that it is.
+  /// What it is not is a legible one: the receiver and the argument each bind perfectly well on
+  /// their own, so the compiler reports the call as a failure of type inference — <c>the type
+  /// arguments for method 'ProjectionExtensions.Map&lt;TSpace, TResult&gt;' cannot be inferred from
+  /// the usage</c> (CS0411), which names no capability and points at the method rather than at
+  /// either type. This one is reported <em>alongside</em> the compiler's, and says which space was
+  /// demanded and which was offered.
+  /// </para>
+  /// <para>
+  /// <b>Where the same disagreement shows up earlier.</b> <c>IProjection&lt;TSpace, TResult&gt;</c>
+  /// is invariant, so a declaration that out-demands the file it is composed into is refused at the
+  /// composition site rather than surviving to <c>Map</c> — CS1503 or CS0311 at <c>v.Next(child)</c>,
+  /// <c>Choice(…)</c> or <c>.Else(…)</c>. Those the compiler already names both types for, which is
+  /// why nothing is added here for them; <c>UNR002</c>'s fix is what speaks there, and says which
+  /// vocabulary to declare the factory through.
   /// </para>
   /// </summary>
   [DiagnosticAnalyzer(LanguageNames.CSharp)]

@@ -1,4 +1,8 @@
+using System;
+
 using Unrect.Core;
+using Unrect.Projections;
+using Unrect.Spreadsheets;
 
 namespace Unrect.Tests
 {
@@ -14,60 +18,79 @@ namespace Unrect.Tests
   /// once but reads them out of order costs a reload, and no count can tell you that.
   /// </para>
   /// <para>
-  /// Subspaces carry the row translation, so every reach is reported in the outermost space's own
-  /// coordinates. Mirrored from the typed-spaces spike, whose scenario 9 first measured this.
+  /// A region is arithmetic over this space, so every read arrives in this space's own coordinates
+  /// and there is nothing to translate. Mirrored from the typed-spaces spike, whose scenario 9 first
+  /// measured this.
   /// </para>
   /// </summary>
-  internal sealed class WatermarkSpace : ICellValues
+  internal sealed class WatermarkSpace : ISheetCells
   {
-    private readonly ICellValues _inner;
-    private readonly int _firstRow;
-    private readonly Trace _trace;
+    private readonly ISheetCells _inner;
+    private readonly Trace _trace = new Trace();
 
-    public WatermarkSpace(ICellValues inner)
-      : this(inner, 0, new Trace())
-    {
-    }
-
-    private WatermarkSpace(ICellValues inner, int firstRow, Trace trace)
-    {
-      _inner = inner;
-      _firstRow = firstRow;
-      _trace = trace;
-    }
+    public WatermarkSpace(ISheetCells inner) => _inner = inner;
 
     /// <summary>The deepest a read ever fell behind the furthest row read so far, in rows.</summary>
     public int BackwardReach => _trace.BackwardReach;
 
-    /// <summary>The furthest row read, in the outermost space's coordinates.</summary>
+    /// <summary>The furthest row read.</summary>
     public int HighWaterMark => _trace.HighWaterMark;
 
     /// <inheritdoc/>
     public Area Area => _inner.Area;
 
     /// <inheritdoc/>
-    public CellValue this[int column, int row]
+    public bool IsBlank(int column, int row) => _inner.IsBlank(column, Read(row));
+
+    /// <inheritdoc/>
+    public bool IsText(int column, int row) => _inner.IsText(column, Read(row));
+
+    /// <inheritdoc/>
+    public string? AsText(int column, int row) => _inner.AsText(column, Read(row));
+
+    /// <inheritdoc/>
+    public bool TextAt(int column, int row, out string value, out CellProblem? problem)
+      => _inner.TextAt(column, Read(row), out value, out problem);
+
+    /// <inheritdoc/>
+    public bool DecimalAt(int column, int row, out decimal value, out CellProblem? problem)
+      => _inner.DecimalAt(column, Read(row), out value, out problem);
+
+    /// <inheritdoc/>
+    public bool IntegerAt(int column, int row, out int value, out CellProblem? problem)
+      => _inner.IntegerAt(column, Read(row), out value, out problem);
+
+    /// <inheritdoc/>
+    public bool DoubleAt(int column, int row, out double value, out CellProblem? problem)
+      => _inner.DoubleAt(column, Read(row), out value, out problem);
+
+    /// <inheritdoc/>
+    public bool DateTimeAt(int column, int row, out DateTime value, out CellProblem? problem)
+      => _inner.DateTimeAt(column, Read(row), out value, out problem);
+
+    /// <inheritdoc/>
+    public bool BooleanAt(int column, int row, out bool value, out CellProblem? problem)
+      => _inner.BooleanAt(column, Read(row), out value, out problem);
+
+    /// <inheritdoc/>
+    public string Describe(int column, int row) => _inner.Describe(column, Read(row));
+
+    /// <inheritdoc/>
+    public bool IsErrorAt(int column, int row) => _inner.IsErrorAt(column, Read(row));
+
+    /// <inheritdoc/>
+    public string? ErrorTextAt(int column, int row) => _inner.ErrorTextAt(column, Read(row));
+
+    /// <summary>
+    /// Records one row touched and hands it straight back, so every member traces by using its
+    /// argument rather than by remembering to.
+    /// </summary>
+    private int Read(int row)
     {
-      get
-      {
-        _trace.Touch(_firstRow + row);
+      _trace.Touch(row);
 
-        return _inner[column, row];
-      }
+      return row;
     }
-
-    /// <inheritdoc/>
-    public bool IsBlank(int column, int row) => this[column, row].IsBlank;
-
-    /// <inheritdoc/>
-    public bool IsText(int column, int row) => this[column, row].IsText;
-
-    /// <inheritdoc/>
-    public string? AsText(int column, int row) => this[column, row].AsText();
-
-    /// <inheritdoc/>
-    public ICellValues GetSubspace(Offset offset, Area area)
-      => new WatermarkSpace(_inner.GetSubspace(offset, area), _firstRow + offset.Height, _trace);
 
     private sealed class Trace
     {

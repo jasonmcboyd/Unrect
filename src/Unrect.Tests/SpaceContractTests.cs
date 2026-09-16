@@ -38,7 +38,7 @@ namespace Unrect.Tests
     /// </summary>
     public static TheoryData<string> Doors => new TheoryData<string> { "grid", "windowed" };
 
-    private static ICellValues Door(string door) => ProjectionTestSpaces.Door(door);
+    private static ISheetCells Door(string door) => ProjectionTestSpaces.Door(door);
 
     [Theory]
     [MemberData(nameof(Doors))]
@@ -48,8 +48,8 @@ namespace Unrect.Tests
 
       Assert.Equal(3, space.Area.Size.Width);
       Assert.Equal(2, space.Area.Size.Height);
-      Assert.Equal("0,0", space[0, 0].GetString());
-      Assert.Equal("2,1", space[2, 1].GetString());
+      Assert.Equal("0,0", space.AsText(0, 0));
+      Assert.Equal("2,1", space.AsText(2, 1));
     }
 
     [Theory]
@@ -65,38 +65,19 @@ namespace Unrect.Tests
       // code and is never absorbed. A space that threw one for an ordinary overrun would make every
       // overrun unrecoverable, and it would do so only for declarations that happened to be pointed
       // at that door. This theory is what stops one implementation drifting away from the others.
+      //
+      // Both ways of running off the edge are here, because a declaration meets both: the plane
+      // refuses to NAME a cell outside the region it was handed, and the space refuses to READ one
+      // outside itself. The second is the door's own obligation and the reason this is a theory.
       var space = Door(door);
+      var plane = Plane<ISheetCells>.Of(space);
 
-      Assert.Throws<OutOfBoundsException>(() => { _ = space[-1, 0]; });
-      Assert.Throws<OutOfBoundsException>(() => { _ = space[3, 0]; });
-      Assert.Throws<OutOfBoundsException>(() => { _ = space[0, -1]; });
-      Assert.Throws<OutOfBoundsException>(() => { _ = space[0, 2]; });
-    }
-
-    [Theory]
-    [MemberData(nameof(Doors))]
-    public void ASubspaceThatDoesNotFitIsABoundsConditionToo(string door)
-    {
-      var space = Door(door);
-
-      Assert.Throws<OutOfBoundsException>(() => space.GetSubspace(new Offset(0, 0), new Area(4, 2)));
-      Assert.Throws<OutOfBoundsException>(() => space.GetSubspace(new Offset(0, 0), new Area(3, 3)));
-      Assert.Throws<OutOfBoundsException>(() => space.GetSubspace(new Offset(2, 0), new Area(2, 1)));
-    }
-
-    [Theory]
-    [MemberData(nameof(Doors))]
-    public void ASliceIsMeasuredFromItsOwnOrigin(string door)
-    {
-      // A subspace is a space in its own right: its coordinates start at zero and its edges are its
-      // own. Every door composes offsets the same way, or a nested declaration would read different
-      // cells depending on where its data came from.
-      var slice = Door(door).GetSubspace(new Offset(1, 1), new Area(2, 1));
-
-      Assert.Equal("1,1", slice[0, 0].GetString());
-      Assert.Equal("2,1", slice[1, 0].GetString());
-      Assert.Throws<OutOfBoundsException>(() => { _ = slice[2, 0]; });
-      Assert.Throws<OutOfBoundsException>(() => { _ = slice[0, 1]; });
+      foreach (var (column, row) in new[] { (-1, 0), (3, 0), (0, -1), (0, 2) })
+      {
+        Assert.Throws<OutOfBoundsException>(() => { _ = plane[column, row]; });
+        Assert.Throws<OutOfBoundsException>(() => { _ = space.IsBlank(column, row); });
+        Assert.Throws<OutOfBoundsException>(() => { _ = space.AsText(column, row); });
+      }
     }
 
     // --- The canonical surface ------------------------------------------------------------------------
@@ -141,19 +122,19 @@ namespace Unrect.Tests
       new object?[] { "text", 42, 3.14, new DateTime(2026, 1, 15), true },
       new object?[]
       {
-        CellValue.OfError(CellError.Value),
-        CellValue.OfError(CellError.DivisionByZero),
-        CellValue.OfError(CellError.NotAvailable),
-        CellValue.OfError(CellError.Reference),
-        CellValue.OfError(CellError.Name),
+        Cell.OfError(CellError.Value),
+        Cell.OfError(CellError.DivisionByZero),
+        Cell.OfError(CellError.NotAvailable),
+        Cell.OfError(CellError.Reference),
+        Cell.OfError(CellError.Name),
       },
       new object?[] { "  ", " ", "", null, "x" },
-      new object?[] { CellValue.OfError(CellError.Null), CellValue.OfError(CellError.Number), null, null, 7 },
+      new object?[] { Cell.OfError(CellError.Null), Cell.OfError(CellError.Number), null, null, 7 },
     };
 
     /// <summary>Every door as the canonical surface alone, over <see cref="EdgeRows"/>.</summary>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="door"/> names no door.</exception>
-    private static ICellValues CanonicalDoor(string door)
+    private static ISheetCells CanonicalDoor(string door)
     {
       var file = System.IO.Path.Combine(AppContext.BaseDirectory, "TestData", "edge-cases.xlsx");
 
@@ -240,22 +221,24 @@ namespace Unrect.Tests
 
     [Theory]
     [MemberData(nameof(CanonicalDoors))]
-    public void TheIndexerAndTheCanonicalSurfaceAnswerAsOne(string door)
+    public void APointAnswersExactlyWhatItsSpaceDoes(string door)
     {
-      // The bridge, while there is one. Every canonical member is meant to be the value's own
-      // property asked of the space, so a door that computed either half separately — a windowed
-      // space answering IsBlank from a row it had not adapted, say — would read as two spaces at
-      // once. Swept rather than sampled, because the drift such a door would produce is per cell.
-      ICellValues cells = CanonicalDoor(door);
+      // A point is an address and not a value: every question asked of it is the space's own answer
+      // at those coordinates. A door whose point read differently from its space — or a point that
+      // cached what it was minted from — would read as two spaces at once. Swept rather than
+      // sampled, because the drift such a door would produce is per cell.
+      ISheetCells cells = CanonicalDoor(door);
+      var plane = Plane<ISheetCells>.Of(cells);
 
       for (var row = 0; row < cells.Area.Height; row++)
         for (var column = 0; column < cells.Area.Width; column++)
         {
-          var value = cells[column, row];
+          var point = plane[column, row];
 
-          Assert.Equal(value.IsBlank, cells.IsBlank(column, row));
-          Assert.Equal(value.IsText, cells.IsText(column, row));
-          Assert.Equal(value.AsText(), cells.AsText(column, row));
+          Assert.Equal(point.IsBlank, cells.IsBlank(column, row));
+          Assert.Equal(point.HasValue, !cells.IsBlank(column, row));
+          Assert.Equal(point.IsText, cells.IsText(column, row));
+          Assert.Equal(point.AsText(), cells.AsText(column, row));
         }
     }
 
@@ -330,7 +313,11 @@ namespace Unrect.Tests
 
       // The same string under a rule that says whitespace is empty space, which is the spreadsheet
       // adapter's default and the case a real export produces by the thousand.
-      ISpace strict = GridSpace.Create(new[,] { { "  ", "kept" } }, text => string.IsNullOrWhiteSpace(text) ? CellValue.Blank : CellValue.Of(text));
+      ISpace strict = GridSpace.Create(
+        new[,] { { "  ", "kept" } },
+        isBlank: text => string.IsNullOrWhiteSpace(text),
+        isText: _ => true,
+        asText: text => text);
 
       Assert.True(strict.IsBlank(0, 0));
       Assert.False(strict.IsText(0, 0));
@@ -362,70 +349,6 @@ namespace Unrect.Tests
       }
     }
 
-    // --- The three spellings of "give me a subspace" --------------------------------------------------
-    //
-    // Two of these are extension methods rather than members of ICellValues, which is why they were not
-    // in this class before. They belong here now because a caller cannot tell the difference: the
-    // convenience overloads are part of the contract as experienced, and the rule they have to keep
-    // is the same one the interface keeps — running off the edge of a space is a bounds condition.
-    //
-    // The offset-only form used to break that rule by accident. An oversized offset produced a
-    // negative extent, and Area's own validation reported it as ArgumentOutOfRangeException — a
-    // different exception from the one the two-argument form throws for the same mistake, and the
-    // wrong kind besides, because ArgumentOutOfRangeException is on the engine's fault list and can
-    // never be absorbed by a tolerance boundary. It went unpinned for as long as it was an accident
-    // nobody had decided about. It is decided now, so it is pinned now.
-
-    [Theory]
-    [MemberData(nameof(Doors))]
-    public void AnOversizedOffsetIsABoundsConditionInEverySpelling(string door)
-    {
-      var space = Door(door);      // three wide, two tall
-
-      Assert.Throws<OutOfBoundsException>(() => space.GetSubspace(new Offset(4, 0)));
-      Assert.Throws<OutOfBoundsException>(() => space.GetSubspace(new Offset(0, 3)));
-      Assert.Throws<OutOfBoundsException>(() => space.GetSubspace(new Offset(4, 0), new Area(1, 1)));
-      Assert.Throws<OutOfBoundsException>(() => space.GetSubspace(new Area(4, 1)));
-      Assert.Throws<OutOfBoundsException>(() => space.GetSubspace(new Area(1, 3)));
-    }
-
-    [Theory]
-    [MemberData(nameof(Doors))]
-    public void AnOffsetAtTheFarCornerIsTheEmptyRemainderRatherThanAFailure(string door)
-    {
-      // The boundary the check has to fall on the right side of. An offset EQUAL to the extent has
-      // not run off the edge — it has arrived at it, and what is left is a real, empty space. A
-      // check written with >= instead of > would turn "there is nothing after this" into an
-      // exception, which is a different and much worse answer for a declaration that is asking
-      // precisely that question.
-      var remainder = Door(door).GetSubspace(new Offset(3, 2));
-
-      Assert.Equal(0, remainder.Area.Size.Width);
-      Assert.Equal(0, remainder.Area.Size.Height);
-    }
-
-    [Theory]
-    [MemberData(nameof(Doors))]
-    public void EachSpellingTakesTheSameRectangleAsTheLongOne(string door)
-    {
-      // The overloads are shorthand, not different operations: an offset with no area means "the
-      // rest", and an area with no offset means "from the corner". Pinned beside their failure mode
-      // so the pair reads as one rule rather than as two unrelated facts.
-      var space = Door(door);
-
-      var remainder = space.GetSubspace(new Offset(1, 1));
-
-      Assert.Equal(2, remainder.Area.Size.Width);
-      Assert.Equal(1, remainder.Area.Size.Height);
-      Assert.Equal("1,1", remainder[0, 0].GetString());
-
-      var corner = space.GetSubspace(new Area(2, 1));
-
-      Assert.Equal("0,0", corner[0, 0].GetString());
-      Assert.Equal("1,0", corner[1, 0].GetString());
-      Assert.Throws<OutOfBoundsException>(() => { _ = corner[2, 0]; });
-    }
-
     // --- Degenerate extents -------------------------------------------------------------------------
 
     [Fact]
@@ -442,18 +365,19 @@ namespace Unrect.Tests
         System.IO.Path.Combine(AppContext.BaseDirectory, "TestData", "simple-report.xlsx"),
         "Report");
 
-      Assert.Throws<OutOfBoundsException>(() => { _ = space[-1, 0]; });
-      Assert.Throws<OutOfBoundsException>(() => { _ = space[space.Area.Size.Width, 0]; });
-      Assert.Throws<OutOfBoundsException>(() => { _ = space[0, space.Area.Size.Height]; });
+      var plane = Plane<ISheetCells>.Of(space);
+
+      Assert.Throws<OutOfBoundsException>(() => { _ = space.IsBlank(-1, 0); });
+      Assert.Throws<OutOfBoundsException>(() => { _ = space.AsText(space.Area.Size.Width, 0); });
+      Assert.Throws<OutOfBoundsException>(() => { _ = space.IsText(0, space.Area.Size.Height); });
+      Assert.Throws<OutOfBoundsException>(() => { _ = plane[-1, 0]; });
       Assert.Throws<OutOfBoundsException>(
-        () => space.GetSubspace(new Offset(0, 0), new Area(space.Area.Size.Width + 1, 1)));
+        () => plane.Slice(new Offset(0, 0), new Area(space.Area.Size.Width + 1, 1)));
 
       // ...including through the convenience overloads, which is where the three spellings used to
       // disagree.
-      Assert.Throws<OutOfBoundsException>(
-        () => space.GetSubspace(new Offset(space.Area.Size.Width + 1, 0)));
-      Assert.Throws<OutOfBoundsException>(
-        () => space.GetSubspace(new Area(space.Area.Size.Width + 1, 1)));
+      Assert.Throws<OutOfBoundsException>(() => plane.Slice(new Offset(space.Area.Size.Width + 1, 0)));
+      Assert.Throws<OutOfBoundsException>(() => plane.Slice(new Area(space.Area.Size.Width + 1, 1)));
     }
 
     [Fact]
@@ -463,19 +387,19 @@ namespace Unrect.Tests
       // a worksheet holding nothing but formatting — and the two doors have to say the same about
       // it. Not "throw the same": AGREE. Zero width is a legitimate extent, so both report it, and
       // both refuse the only cell anyone could ask for.
-      var eager = new GridSpace(new CellValue[10, 0]);
+      var eager = SheetGrid.Of(new Cell[10, 0]);
 
       var source = new FakeRowSource(new FakeSheet("Empty", 10, 0));
       var pool = new ReaderPool(source, 1, warmReaders: false);
-      ICellValues streamed = new WindowedSpace(new SheetStore(pool, 0, "Empty", 10, 0, chunkRows: 100, windowChunks: 4));
+      ISheetCells streamed = new WindowedSpace(new SheetStore(pool, 0, "Empty", 10, 0, chunkRows: 100, windowChunks: 4));
 
       Assert.Equal(0, eager.Area.Size.Width);
       Assert.Equal(eager.Area.Size.Width, streamed.Area.Size.Width);
       Assert.Equal(eager.Area.Size.Height, streamed.Area.Size.Height);
       Assert.Equal(10, streamed.Area.Size.Height);
 
-      Assert.Throws<OutOfBoundsException>(() => { _ = eager[0, 0]; });
-      Assert.Throws<OutOfBoundsException>(() => { _ = streamed[0, 0]; });
+      Assert.Throws<OutOfBoundsException>(() => { _ = Plane<ISheetCells>.Of(eager)[0, 0]; });
+      Assert.Throws<OutOfBoundsException>(() => { _ = Plane<ISheetCells>.Of(streamed)[0, 0]; });
     }
 
     [Fact]
@@ -485,7 +409,7 @@ namespace Unrect.Tests
       // say so as loudly as the indexer does. The trap is that all three have a plausible wrong
       // answer — "it is blank", "it is not text", "it says nothing" — and each would be a claim
       // about a cell that is not there, made by a space that could not have looked.
-      ISpace eager = new GridSpace(new CellValue[10, 0]);
+      ISpace eager = SheetGrid.Of(new Cell[10, 0]);
       ISpace streamed = ProjectionTestSpaces.Windowed(new FakeSheet("Empty", 10, 0), chunkRows: 100);
 
       foreach (var space in new[] { eager, streamed })
@@ -498,10 +422,15 @@ namespace Unrect.Tests
 
     // --- The slicing law ----------------------------------------------------------------------------
     //
-    // "Slicing never changes the geometry. A capable space's subspaces are capable, coordinates
-    // translated; a slice may never invent capability its parent lacked nor shed what it had.
-    // Forgetting is always safe (contravariance licenses it); inventing is the sin."
-    //   — the projection-model spec, §5.
+    // "Slicing never changes the geometry": a region of a capable space answers about that space's
+    // own cells at translated coordinates, and about no others.
+    //
+    // The half of the old law about capability — that a subspace may neither shed what its parent had
+    // nor invent what it lacked — is no longer something a backend can get wrong. A slice is a plane,
+    // a plane names the space it was cut from, and a read through it is that space's read: there is
+    // no wrapper left to forget or to fabricate, and the capability a declaration may use is the one
+    // its own type names. What remains a law, and remains worth asserting at two independent
+    // backends, is the arithmetic: which cell a sliced region's coordinates land on.
     //
     // It is stated as a theory over every capable backend for the same reason the bounds rules above
     // are: a declaration cannot see which door it was handed, so a law kept by one implementation and
@@ -509,10 +438,6 @@ namespace Unrect.Tests
     // a law and a habit visible, and the second one (FormulaGridSpace, beside this file) is written
     // from the interface's documented obligations alone — which is all an implementor outside this
     // repository has.
-    //
-    // Everything here asks through Capability<T>() rather than by type test, because that is how a
-    // declaration asks: a raw `space is IFormulaSpace` answers about whichever wrapper the engine
-    // happens to be holding, and is documented as the wrong question.
 
     /// <summary>The doors that carry formulas: the eager reader over the fixture, and the double.</summary>
     public static TheoryData<string> CapableDoors => new TheoryData<string> { "xlsx", "double" };
@@ -537,19 +462,19 @@ namespace Unrect.Tests
     /// column-shifted group across B9:D9) so that one sample list can be non-vacuous for both; the
     /// TEXT of the formulas is deliberately unalike, because nothing in the law is about the text.
     /// </summary>
-    private static IFormulaSpace CapableDoor(string door)
+    private static ISpreadsheetSpace CapableDoor(string door)
     {
       if (door == "xlsx")
         return SpreadsheetSpace.CreateWithFormulas(
           System.IO.Path.Combine(AppContext.BaseDirectory, "TestData", "formulas.xlsx"),
           "Formulas");
 
-      var values = new CellValue[10, 4];
+      var values = new Cell[10, 4];
       var formulas = new string?[10, 4];
 
       for (var row = 0; row < 10; row++)
         for (var column = 0; column < 4; column++)
-          values[row, column] = CellValue.Of($"{column},{row}");
+          values[row, column] = Cell.Of($"{column},{row}");
 
       for (var row = 1; row <= 4; row++)
         formulas[row, 3] = $"B{row + 1}*C{row + 1}";
@@ -564,48 +489,29 @@ namespace Unrect.Tests
 
     [Theory]
     [MemberData(nameof(CapableDoors))]
-    public void EverySubspaceOfACapableSpaceIsStillCapable(string door)
-    {
-      // Shedding is the failure this forbids. A slice that handed back a plain space would tell a
-      // declaration the file has no formulas — and it would say it in the one voice a declaration
-      // cannot argue with, because absence at a projection site is a fact about the cell.
-      ICellValues space = CapableDoor(door);
-
-      Assert.True(space.Area.Width >= 4 && space.Area.Height >= 10, "the samples need a 4x10 space");
-
-      foreach (var sample in Samples)
-      {
-        var slice = space.GetSubspace(sample.At, sample.Of);
-
-        Assert.NotNull(slice.Capability<IFormulaSpace>());
-
-        // ...and a slice of a slice, and a slice of THAT: the property has to survive depth, which
-        // is what a nested declaration does to a space on the way down.
-        var inner = slice.GetSubspace(new Offset(0, 0), new Area(1, 1)).GetSubspace(new Offset(0, 0));
-
-        Assert.NotNull(inner.Capability<IFormulaSpace>());
-      }
-    }
-
-    [Theory]
-    [MemberData(nameof(CapableDoors))]
     public void ASliceAnswersAboutItsOwnCellsAtTranslatedCoordinates(string door)
     {
-      // The half that is worse than shedding when it is wrong: a slice that forwarded without
-      // translating would answer about the parent's cells and look entirely plausible doing it.
+      // The failure this forbids: a region that named its cells in the wrong frame would answer
+      // about the parent's cells and look entirely plausible doing it. Swept cell by cell over four
+      // rectangles, because that is the granularity at which a frame error shows.
       var parent = CapableDoor(door);
+      var whole = Plane<ISpreadsheetSpace>.Of(parent);
       var formulasSeen = 0;
+
+      Assert.True(parent.Area.Width >= 4 && parent.Area.Height >= 10, "the samples need a 4x10 space");
 
       foreach (var sample in Samples)
       {
-        var slice = Assert.IsAssignableFrom<IFormulaSpace>(parent.GetSubspace(sample.At, sample.Of));
+        var slice = whole.Slice(sample.At, sample.Of);
 
         for (var row = 0; row < sample.Of.Height; row++)
           for (var column = 0; column < sample.Of.Width; column++)
           {
             var expected = parent.FormulaAt(sample.At.Width + column, sample.At.Height + row);
 
-            Assert.Equal(expected, slice.FormulaAt(column, row));
+            var cell = slice[column, row];
+
+            Assert.Equal(expected, cell.Space.FormulaAt(cell.Column, cell.Row));
 
             if (expected is not null)
               formulasSeen++;
@@ -620,87 +526,79 @@ namespace Unrect.Tests
     [MemberData(nameof(CapableDoors))]
     public void ANestedSliceTranslatesOnceForEachSlice(string door)
     {
-      // Two offsets composed, which is where a translating wrapper that added its origin twice — or
-      // handed the inner space back through ISpaceChart, which is what that interface forbids — would
-      // finally show up.
+      // Two offsets composed, which is where a locator that added its origin twice — or dropped one
+      // of them — would finally show up.
       var parent = CapableDoor(door);
 
-      var band = parent.GetSubspace(new Offset(1, 1), new Area(3, 8));      // B2:D9
-      var corner = band.GetSubspace(new Offset(1, 5), new Area(2, 3));                // C7:D9
+      var band = Plane<ISpreadsheetSpace>.Of(parent).Slice(new Offset(1, 1), new Area(3, 8));   // B2:D9
+      var corner = band.Slice(new Offset(1, 5), new Area(2, 3));                                // C7:D9
 
-      var formulas = Assert.IsAssignableFrom<IFormulaSpace>(corner);
-
-      Assert.Equal(parent.FormulaAt(2, 6), formulas.FormulaAt(0, 0));
-      Assert.Equal(parent.FormulaAt(3, 6), formulas.FormulaAt(1, 0));
-      Assert.Equal(parent.FormulaAt(3, 8), formulas.FormulaAt(1, 2));
+      Assert.Equal(parent.FormulaAt(2, 6), Formula(corner[0, 0]));
+      Assert.Equal(parent.FormulaAt(3, 6), Formula(corner[1, 0]));
+      Assert.Equal(parent.FormulaAt(3, 8), Formula(corner[1, 2]));
 
       // The one the coordinates are actually about: D7 carries a formula and C7 does not, so a
-      // slice that had translated by the wrong amount could not produce this pair.
-      Assert.Null(formulas.FormulaAt(0, 0));
-      Assert.NotNull(formulas.FormulaAt(1, 0));
+      // region that had translated by the wrong amount could not produce this pair.
+      Assert.Null(Formula(corner[0, 0]));
+      Assert.NotNull(Formula(corner[1, 0]));
     }
 
     [Theory]
     [MemberData(nameof(CapableDoors))]
-    public void ACapableSliceRefusesCoordinatesOutsideItself(string door)
+    public void ACapableRegionRefusesCoordinatesOutsideItself(string door)
     {
-      // A capability answers about the cells the slice addresses, so it has the slice's edges and not
-      // its parent's — the same bounds contract the indexer keeps, for the same reason. Without this
-      // a slice could read a formula off a cell it does not contain.
-      var slice = Assert.IsAssignableFrom<IFormulaSpace>(
-        CapableDoor(door).GetSubspace(new Offset(3, 1), new Area(1, 4)));
+      // A region addresses the cells it names and no others, so it has its own edges and not its
+      // space's — the same bounds contract every read keeps, for the same reason. Without this a
+      // declaration could reach a formula off a cell its region does not contain.
+      var slice = Plane<ISpreadsheetSpace>.Of(CapableDoor(door)).Slice(new Offset(3, 1), new Area(1, 4));
 
-      Assert.Throws<OutOfBoundsException>(() => slice.FormulaAt(-1, 0));
-      Assert.Throws<OutOfBoundsException>(() => slice.FormulaAt(1, 0));
-      Assert.Throws<OutOfBoundsException>(() => slice.FormulaAt(0, -1));
-      Assert.Throws<OutOfBoundsException>(() => slice.FormulaAt(0, 4));
-    }
+      Assert.Throws<OutOfBoundsException>(() => { _ = slice[-1, 0]; });
+      Assert.Throws<OutOfBoundsException>(() => { _ = slice[1, 0]; });
+      Assert.Throws<OutOfBoundsException>(() => { _ = slice[0, -1]; });
+      Assert.Throws<OutOfBoundsException>(() => { _ = slice[0, 4]; });
 
-    [Theory]
-    [MemberData(nameof(Doors))]
-    public void NoSliceOfAnIncapableSpaceInventsACapability(string door)
-    {
-      // Inventing is the sin, and it is the one a convenience would commit: a slice that answered
-      // FormulaAt with null over a grid built in memory would be reporting, cell by cell, that a
-      // file nobody read has no formulas in it.
-      var space = Door(door);
-
-      Assert.Null(space.Capability<IFormulaSpace>());
-
-      var slice = space.GetSubspace(new Offset(1, 0), new Area(2, 2));
-
-      Assert.False(slice is IFormulaSpace);
-      Assert.Null(slice.Capability<IFormulaSpace>());
-      Assert.Null(slice.GetSubspace(new Offset(1, 1)).Capability<IFormulaSpace>());
+      // ...and the space refuses its own edge in the same voice, which is the half a region cannot
+      // do for it.
+      Assert.Throws<OutOfBoundsException>(() => CapableDoor(door).FormulaAt(-1, 0));
     }
 
     [Fact]
-    public void ThePlainSpreadsheetDoorSlicesAsIncapablyAsItReads()
+    public void ThePlainSpreadsheetDoorReadsAsIncapablyAsItWasAsked()
     {
-      // The door that COULD have carried formulas and was not asked to. Its slices must stay as
-      // silent as it is, or the opt-in would be undone one subspace down.
+      // The door that COULD have carried formulas and was not asked to. Honest absence: a reader
+      // that skipped formulas must not answer about them at all, because a null there would say the
+      // file has none — cell by cell, about a file nobody read that way.
       var space = SpreadsheetSpace.Create(
         System.IO.Path.Combine(AppContext.BaseDirectory, "TestData", "formulas.xlsx"),
         "Formulas");
 
-      Assert.Null(space.Capability<IFormulaSpace>());
-      Assert.Null(space.GetSubspace(new Offset(1, 1), new Area(2, 2)).Capability<IFormulaSpace>());
+      Assert.False(space is IFormulaSpace);
+
+      // ...and the same file through the door that WAS asked, so the fact above is about the asking
+      // and not about the file.
+      Assert.True(
+        SpreadsheetSpace.CreateWithFormulas(
+          System.IO.Path.Combine(AppContext.BaseDirectory, "TestData", "formulas.xlsx"),
+          "Formulas") is IFormulaSpace);
     }
 
     [Fact]
     public void AZeroColumnSheetCanStillBeSlicedByRow()
     {
       // The width is nothing, but the rows are real, so a declaration may still bound itself against
-      // them. A door that rejected the slice would turn an empty sheet into an exception rather than
-      // an empty answer.
+      // them. A locator that rejected the slice would turn an empty sheet into an exception rather
+      // than an empty answer.
       var source = new FakeRowSource(new FakeSheet("Empty", 10, 0));
       var pool = new ReaderPool(source, 1, warmReaders: false);
-      ICellValues streamed = new WindowedSpace(new SheetStore(pool, 0, "Empty", 10, 0, chunkRows: 100, windowChunks: 4));
+      ISheetCells streamed = new WindowedSpace(new SheetStore(pool, 0, "Empty", 10, 0, chunkRows: 100, windowChunks: 4));
 
-      var slice = streamed.GetSubspace(new Offset(0, 2), new Area(0, 5));
+      var slice = Plane<ISheetCells>.Of(streamed).Slice(new Offset(0, 2), new Area(0, 5));
 
       Assert.Equal(0, slice.Area.Size.Width);
       Assert.Equal(5, slice.Area.Size.Height);
     }
+
+    /// <summary>The formula behind the cell a point addresses, read through the point's own space.</summary>
+    private static string? Formula(Point<ISpreadsheetSpace> point) => point.Space.FormulaAt(point.Column, point.Row);
   }
 }

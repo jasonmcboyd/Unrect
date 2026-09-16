@@ -16,7 +16,8 @@ namespace Unrect.Projections
     /// remainder is: a projection that starts two rows down described neither those two rows nor
     /// whatever follows it.
     /// </summary>
-    private static void ReportUnconsumed(IProjection projection, Plane<ICellValues> space, Size gap, Size described, ProjectionContext context)
+    private static void ReportUnconsumed<TSpace>(IProjection projection, Plane<TSpace> space, Size gap, Size described, ProjectionContext context)
+      where TSpace : class, ISpace
     {
       var size = space.Area.Size;
 
@@ -29,7 +30,6 @@ namespace Unrect.Projections
       Describe(gap.Height, described.Height, size.Height, "row", counts, undescribed);
       Describe(gap.Width, described.Width, size.Width, "column", counts, undescribed);
 
-
       // The earliest cell nothing described, in reading order: a leading gap on either axis starts
       // at the very first cell, otherwise it is wherever the described region stops.
       var first =
@@ -37,11 +37,11 @@ namespace Unrect.Projections
         : described.Width < size.Width ? new Offset(described.Width, 0)
         : new Offset(0, described.Height);
 
-      context.Advance(first).Report(
+      context.Report(
         DiagnosticSeverity.Info,
         projection,
         $"the projection consumed {string.Join(" and ", counts)}; {string.Join(" and ", undescribed)} were not described",
-        space);
+        space.Tail(first));
     }
 
     /// <summary>

@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
 
-using Unrect.Core;
+using Unrect.Projections;
+using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 
 namespace Unrect.Tests
 {
@@ -21,17 +22,17 @@ namespace Unrect.Tests
   /// arbitrary object graphs can hang or throw, and either failure mode would be a test-suite defect
   /// wearing a product defect's clothes. The last two are the JUDGMENT LINE the fix drew: a
   /// hand-written <c>ToString</c> is trusted and a compiler-written one is not, because
-  /// <c>CellValue.ToString()</c> prints the value in the cell while its properties would print
+  /// <c>Cell.ToString()</c> prints the value in the cell while its properties would print
   /// everything about the cell except that.
   /// </para>
   /// </summary>
   public class ObservationsRenderingTests
   {
     /// <summary>The smallest space a leaf can be read over — the value under test comes from the closure, not the sheet.</summary>
-    private static ICellValues One() => GridSpace.Create(new[,] { { "x" } });
+    private static ISheetCells One() => SheetGrid.Of(new object?[,] { { "x" } });
 
     /// <summary>Renders <paramref name="value"/> the way the value facet would.</summary>
-    private static string Rendered<T>(T value) => Observations.Observe(Cell(_ => value), One()).Value;
+    private static string Rendered<T>(T value) => Observations.Observe(Point().Select(_ => value), One()).Value;
 
     // --- The recursion guards ------------------------------------------------------------------------
 
@@ -99,15 +100,15 @@ namespace Unrect.Tests
     [Fact]
     public void AHandWrittenToStringIsRespected()
     {
-      // CellValue is the case the rule was written for: its ToString prints the number in the cell,
+      // Cell is the case the rule was written for: its ToString prints the number in the cell,
       // and its three public properties (Kind, IsBlank, HasValue) would print everything about the
       // cell except the number. Reflecting over it would LOSE information, so it is not reflected.
-      var cell = CellValue.Of(42m);
+      var cell = Cell.Of(42m);
 
       Assert.Equal(cell.ToString(), Rendered(cell));
       Assert.DoesNotContain("Kind = ", Rendered(cell));
 
-      // The same rule stated over a type this file owns, so the pin does not rest on CellValue's
+      // The same rule stated over a type this file owns, so the pin does not rest on Cell's
       // current spelling: a sentence someone wrote is the rendering, in full.
       Assert.Equal("a fund, spelled by hand", Rendered(new Spoken()));
     }

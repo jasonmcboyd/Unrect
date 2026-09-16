@@ -1,12 +1,12 @@
 using System.Collections.Generic;
 using System.Linq;
 
-using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.Observations;
 using static Unrect.Tests.ProjectionTestSpaces;
 
@@ -34,7 +34,7 @@ namespace Unrect.Tests.Projections
   public class UnderExpansionLawTests
   {
     // A junk row, a caption, two data rows.
-    private static ICellValues Sheet() => Mixed(new object?[,]
+    private static ISheetCells Sheet() => Mixed(new object?[,]
     {
       { "junk", null },
       { "Detail", null },
@@ -43,7 +43,7 @@ namespace Unrect.Tests.Projections
     });
 
     // Two captions stacked, so the multi-caption arm of the equation has somewhere to run.
-    private static ICellValues TwoCaptionSheet() => Mixed(new object?[,]
+    private static ISheetCells TwoCaptionSheet() => Mixed(new object?[,]
     {
       { "Cap1" },
       { "Cap2" },
@@ -51,7 +51,7 @@ namespace Unrect.Tests.Projections
       { "b" },
     });
 
-    private static IProjection<int> Lines() => Range(b => b.Height);
+    private static IProjection<ISheetCells, int> Lines() => Range(b => b.Height);
 
     /// <summary>
     /// The right-hand side of the equation, written as the docs write it. The locals are named
@@ -59,7 +59,7 @@ namespace Unrect.Tests.Projections
     /// the naming ladder borrows them — which is the second of the two L3 differences and is pinned
     /// as such below.
     /// </summary>
-    private static IProjection<int> Expansion(IProjection<int> section, params IProjection<string>[] captions)
+    private static IProjection<ISheetCells, int> Expansion(IProjection<ISheetCells, int> section, params IProjection<ISheetCells, string>[] captions)
       => VerticalFlow(v =>
       {
         foreach (var caption in captions)
@@ -159,7 +159,7 @@ namespace Unrect.Tests.Projections
       var expansion = Assert.Throws<ProjectionException>(() =>
         Expansion(IntCell(), Caption("Detail")).Map(Sheet()));
 
-      Assert.Equal("Cell#2", sugar.Subject);
+      Assert.Equal("Integer#2", sugar.Subject);
       Assert.Equal("'section'", expansion.Subject);
     }
 
@@ -178,7 +178,7 @@ namespace Unrect.Tests.Projections
     }
 
     /// <summary>A section that raises a Warning of its own rather than failing the parse.</summary>
-    private static IProjection<int> Tolerated() => IntCell().Optional();
+    private static IProjection<ISheetCells, int> Tolerated() => IntCell().Optional();
 
     /// <summary>A diagnostic with everything but its subject and path — the L3 residue the law keeps.</summary>
     private static IReadOnlyList<string> WithoutLabels(IReadOnlyList<ProjectionDiagnostic> diagnostics)

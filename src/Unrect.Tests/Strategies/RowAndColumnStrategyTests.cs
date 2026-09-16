@@ -3,6 +3,7 @@ using System;
 using System.Globalization;
 
 using Unrect.Core;
+using Unrect.Spreadsheets;
 using Unrect.Strategies;
 
 using Xunit;
@@ -76,14 +77,14 @@ namespace Unrect.Tests.Strategies
 
     // --- TakeRowsToText: the band ends on a LABEL --------------------------------------------------
     //
-    // The rename is the rule. The old spelling compared a whole CellValue, so it would end a band on
+    // The rename is the rule. The old spelling compared a whole Cell, so it would end a band on
     // whatever kind of cell happened to equal the one written into the declaration; the new one asks
     // the content question every other text matcher asks, and so sees text cells alone. That is the
     // difference the fixtures below are chosen to show — an int grid cannot show it at all, which is
     // why the pins these replace could not simply be un-skipped.
 
     /// <summary>Labels down column 0 with the boundary at row 2, and a second column of noise.</summary>
-    private static ICellValues LabelledRows() => Text(new string?[,]
+    private static ISheetCells LabelledRows() => Labels(new string?[,]
     {
       { "a", "x" },
       { "b", "y" },
@@ -266,7 +267,7 @@ namespace Unrect.Tests.Strategies
     // --- TakeColumnsToText: the same rule, transposed ------------------------------------------------
 
     /// <summary>The transpose of <see cref="LabelledRows"/>: labels along row 0, boundary at column 2.</summary>
-    private static ICellValues LabelledColumns() => Text(new string?[,]
+    private static ISheetCells LabelledColumns() => Labels(new string?[,]
     {
       { "a", "b", "  Total  ", "c" },
       { "x", "y", "z", "w" },

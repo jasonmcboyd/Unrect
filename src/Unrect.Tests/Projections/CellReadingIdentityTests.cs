@@ -2,12 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -20,21 +21,27 @@ namespace Unrect.Tests.Projections
   /// <c>decimal</c> column cannot describe the same cell differently" — is stated here rather than
   /// left to the shared call site.
   /// <para>
-  /// <strong>What the law covers.</strong> The <em>cell-describing sentence</em> only: the kind
-  /// sentence (<c>expected Number at B2, found Text</c>) and the conversion sentence (<c>the Number
-  /// at B2 (1.5) is not a whole number</c>), including the A1 address inside them. It does NOT
-  /// cover the wrapper: the leaf's problem IS the sentence, while the binder prefixes it with
-  /// <c>column '{caption}': </c>, and the two failures carry legitimately different subjects and
-  /// paths (<c>Decimal</c> at <c>Decimal</c> versus <c>Table&lt;Money&gt;</c> at
-  /// <c>Table&lt;Money&gt;</c>) because they are different declarations. Every test below therefore strips exactly that prefix and asserts the
-  /// remainder is character-identical; <see cref="TheWrapperIsWhereTheTwoReadersDiffer"/> is the
-  /// matching negative pin, spelling out the specific difference rather than "these differ".
+  /// <strong>What the law covers, and how phase 6 sharpened it.</strong> The <em>cell-describing
+  /// sentence</em>: the kind sentence (<c>expected Number at B2, found Text</c>) and the conversion
+  /// sentence (<c>the Number at B2 (1.5) is not a whole number</c>), including the A1 address inside
+  /// them. The sentence is now <b>byte-identical on both readers, with nothing stripped</b> — where
+  /// the binder used to prefix it with <c>column '{caption}': </c>, the caption is a PATH SEGMENT
+  /// now (D-A): the column is a named unit the declaration produced, so it is named where every
+  /// other declared thing is named, and the sentence underneath it is the backend's alone. One
+  /// reading, one sentence, whether it was reached through a record's member or through a point.
   /// </para>
   /// <para>
-  /// The <c>Observations</c> harness does not fit here. Its L1 facet compares the whole problem
-  /// text, and the binder's prefix is a deliberate part of that text, so L1 would be false for a
-  /// law that is true; and the two readers' values differ by construction (one cell versus a list
-  /// of records). Plain asserts, one sentence at a time.
+  /// What still differs is the wrapper, and it differs in the two places a reader looks for "which
+  /// declaration was this": the SUBJECT (<c>Decimal</c> versus <c>column 'Amount'</c>) and the PATH
+  /// (<c>Decimal</c> versus <c>Table&lt;Money&gt;[0] -&gt; column 'Amount'</c>). Those are two
+  /// different declarations and should read as two different declarations.
+  /// <see cref="TheWrapperIsWhereTheTwoReadersDiffer"/> is the matching negative pin, spelling out
+  /// the specific difference rather than "these differ".
+  /// </para>
+  /// <para>
+  /// The <c>Observations</c> harness does not fit here: the two readers' values differ by
+  /// construction (one cell versus a list of records), and what is compared is one sentence at a
+  /// time. Plain asserts.
   /// </para>
   /// </summary>
   public class CellReadingIdentityTests
@@ -62,14 +69,19 @@ namespace Unrect.Tests.Projections
     /// <summary>
     /// Reads one offending cell twice — once by <paramref name="leaf"/> placed on B2, once by
     /// <paramref name="table"/> binding the column captioned <paramref name="caption"/> — and
-    /// asserts the binder said exactly what the leaf said, behind its column prefix. Hands back the
+    /// asserts the binder said exactly what the leaf said, character for character. Hands back the
     /// shared sentence so the caller can pin the words themselves.
+    /// <para>
+    /// Nothing is stripped. The assertion used to allow the binder a <c>column '{caption}': </c>
+    /// prefix; the caption is a path segment now, so the sentences are simply equal, and the caption
+    /// is checked where it went — on the subject.
+    /// </para>
     /// </summary>
     private static string SameSentence<TValue, TRow>(
       string caption,
       object? offending,
-      IProjection<TValue> leaf,
-      IProjection<IReadOnlyList<TRow>> table)
+      IProjection<ISheetCells, TValue> leaf,
+      IProjection<ISheetCells, IReadOnlyList<TRow>> table)
     {
       var space = Mixed(new object?[,]
       {
@@ -80,7 +92,8 @@ namespace Unrect.Tests.Projections
       var byLeaf = Assert.Throws<ProjectionException>(() => Right(1).Down(1).Of(leaf).Map(space));
       var byColumn = Assert.Throws<ProjectionException>(() => table.Map(space));
 
-      Assert.Equal($"column '{caption}': {Problem(byLeaf)}", Problem(byColumn));
+      Assert.Equal(Problem(byLeaf), Problem(byColumn));
+      Assert.Equal($"column '{caption}'", byColumn.Subject);
 
       return Problem(byLeaf);
     }
@@ -128,7 +141,7 @@ namespace Unrect.Tests.Projections
       // from either reader — so this is the case where a duplicated message would show first.
       Assert.Equal(
         "expected Number at B2, found Error(#DIV/0!)",
-        SameSentence("Amount", CellValue.OfError(CellError.DivisionByZero), Decimal(), Table<Money>()));
+        SameSentence("Amount", Cell.OfError(CellError.DivisionByZero), Decimal(), Table<Money>()));
     }
 
     [Fact]
@@ -173,8 +186,8 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void TheWrapperIsWhereTheTwoReadersDiffer()
     {
-      // The negative pin, spelled out: same sentence, different subject, different path, and one
-      // prefix that the binder adds because a table failure has to say which column it was reading.
+      // The negative pin, spelled out: one sentence, two declarations, and the declaration is named
+      // in the subject and the path rather than folded into the sentence.
       var space = Mixed(new object?[,]
       {
         { "Client", "Amount" },
@@ -188,9 +201,12 @@ namespace Unrect.Tests.Projections
       Assert.Equal("Decimal", byLeaf.Path);
       Assert.Equal("expected Number at B2, found Text", Problem(byLeaf));
 
-      Assert.Equal("Table<Money>", byColumn.Subject);
-      Assert.Equal("Table<Money>", byColumn.Path);
-      Assert.Equal("column 'Amount': expected Number at B2, found Text", Problem(byColumn));
+      // The column is a unit the table declared, so it is a path segment under the table's own —
+      // and the record's index is on the table's segment, where a repeat's index has always been.
+      // Until phase 6 both of these read "Table<Money>" and the caption lived inside the sentence.
+      Assert.Equal("column 'Amount'", byColumn.Subject);
+      Assert.Equal("Table<Money>[0] -> column 'Amount'", byColumn.Path);
+      Assert.Equal("expected Number at B2, found Text", Problem(byColumn));
 
       // OrBlank moves the wrapper too — it renames the leaf to "Decimal?" — and leaves the sentence
       // about the cell exactly where it was.
@@ -201,15 +217,19 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void TheColumnPrefixSitsInsideTheProblemAndNotInThePath()
+    public void TheColumnIsAPathSegmentAndTheSentenceUnderItIsUnprefixed()
     {
       // The whole message of a bind failure, assembled as a reader sees it. Where the caption is
-      // said is the load-bearing part: `column 'Amount': ` sits between the subject and the
-      // cell-describing sentence, inside the PROBLEM, and the path names the table alone. Every
-      // other pin in this file strips the subject and asserts the remainder, which leaves the
-      // relationship between the three unstated — so it is stated here once, in full, and moving
-      // the caption anywhere else (into the path, into an address) is a visible diff on this test
-      // rather than a silent change of shape.
+      // said is the load-bearing part, and phase 6 moved it: the column is a declared unit, so
+      // `column 'Amount'` is the SUBJECT and the last segment of the PATH, and what follows the
+      // subject is the backend's sentence with nothing in front of it. Every other pin in this file
+      // asserts one sentence, which leaves the relationship between subject, path and sentence
+      // unstated — so it is stated here once, in full, and moving the caption anywhere else is a
+      // visible diff on this test rather than a silent change of shape.
+      //
+      // Until phase 6 this read `Table<Money>: column 'Amount': …` in Table<Money> at A1 with 2x2
+      // available: the caption was a prefix inside the problem, and the failure was located at the
+      // table's own corner because the table was the innermost thing that had a name.
       var space = Mixed(new object?[,]
       {
         { "Client", "Amount" },
@@ -219,12 +239,17 @@ namespace Unrect.Tests.Projections
       var failure = Assert.Throws<ProjectionException>(() => Table<Money>().Map(space));
 
       Assert.Equal(
-        "Table<Money>: column 'Amount': expected Number at B2, found Text" + Environment.NewLine
-        + "  in Table<Money>" + Environment.NewLine
-        + "  at row 1, column 1 (A1); 2x2 available",
+        "column 'Amount': expected Number at B2, found Text" + Environment.NewLine
+        + "  in Table<Money>[0] -> column 'Amount'" + Environment.NewLine
+        + "  at row 2, column 2 (B2); 1x1 available",
         failure.Message);
 
-      Assert.Equal("Table<Money>", failure.Path);
+      Assert.Equal("Table<Money>[0] -> column 'Amount'", failure.Path);
+
+      // And the scaffolding the column is read through is visible only in the full path: the
+      // record's overlay is how a row places its columns, not something a reader declared, so it is
+      // folded out of the path proper and kept here where a maintainer can still see it.
+      Assert.Equal("Table<Money>[0] -> Overlay -> column 'Amount'", failure.FullPath);
     }
 
     // --- Blank tolerance agrees too ------------------------------------------------------------------------------

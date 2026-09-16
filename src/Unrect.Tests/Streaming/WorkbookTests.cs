@@ -10,7 +10,8 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 
 namespace Unrect.Tests.Streaming
 {
@@ -41,7 +42,7 @@ namespace Unrect.Tests.Streaming
 
       Assert.Equal(eager.Area.Size.Width, streamed.Area.Size.Width);
       Assert.Equal(eager.Area.Size.Height, streamed.Area.Size.Height);
-      Assert.Equal("Capital Activity Report", streamed[0, 0].GetString());
+      Assert.Equal("Capital Activity Report", streamed.AsText(0, 0));
     }
 
     [Fact]
@@ -51,7 +52,7 @@ namespace Unrect.Tests.Streaming
       // book re-pays neither the reader open nor, when the rows are still resident, the read. Both
       // counters have to be unchanged — Opens says no file was touched, ChunkLoads says no row was.
       using var book = Workbook.Open(Path("simple-report.xlsx"), Cold());
-      var declaration = Column(4, c => c[0].GetString());
+      var declaration = Column(4, c => c[0].Text());
 
       _ = declaration.Map(book.Sheet("Report"));
 
@@ -76,7 +77,8 @@ namespace Unrect.Tests.Streaming
       var second = book.Sheet("Report");
 
       Assert.NotSame(first, second);
-      Assert.Equal(first[0, 0], second[0, 0]);
+      Assert.Equal(first.AsText(0, 0), second.AsText(0, 0));
+      Assert.Equal(first.Describe(0, 0), second.Describe(0, 0));
       Assert.Equal(1, book.Statistics("Report")!.Value.ChunkLoads);
     }
 
@@ -86,15 +88,21 @@ namespace Unrect.Tests.Streaming
       // Slicing is free and slices share the window, so a declaration that decomposes a sheet into
       // a hundred regions still holds one window rather than a hundred.
       using var book = Workbook.Open(Path("simple-report.xlsx"), Cold());
-      var space = book.Sheet("Report");
-      var slice = space.GetSubspace(new Offset(0, 5), new Area(4, 5));
+      var sheet = Plane<ISheetCells>.Of(book.Sheet("Report"));
+      var slice = sheet.Slice(new Offset(0, 5), new Area(4, 5));
 
-      Assert.Equal(space[0, 5], slice[0, 0]);
-      Assert.Equal(space[2, 7], slice[2, 2]);
+      Assert.Equal(sheet[0, 5], slice[0, 0]);
+      Assert.Equal(sheet[2, 7], slice[2, 2]);
 
-      var nested = slice.GetSubspace(new Offset(1, 1), new Area(2, 2));
+      var nested = slice.Slice(new Offset(1, 1), new Area(2, 2));
 
-      Assert.Equal(space[1, 6], nested[0, 0]);
+      Assert.Equal(sheet[1, 6], nested[0, 0]);
+
+      // ...and the cells really are read, through the one window: naming a cell costs nothing at
+      // all, so without a read there would be no chunk load to count and the claim below would hold
+      // vacuously over a store nobody had touched.
+      Assert.Equal(sheet[1, 6].AsText(), nested[0, 0].AsText());
+      Assert.Equal(sheet[2, 7].AsText(), slice[2, 2].AsText());
       Assert.Equal(1, book.Statistics("Report")!.Value.ChunkLoads);
     }
 
@@ -108,10 +116,11 @@ namespace Unrect.Tests.Streaming
       using var book = Workbook.Open(Path("simple-report.xlsx"), Cold());
       var space = book.Sheet("Report");
 
-      Assert.Throws<OutOfBoundsException>(() => space[-1, 0]);
-      Assert.Throws<OutOfBoundsException>(() => space[space.Area.Size.Width, 0]);
-      Assert.Throws<OutOfBoundsException>(() => space[0, space.Area.Size.Height]);
-      Assert.Throws<OutOfBoundsException>(() => space.GetSubspace(new Offset(0, 0), new Area(99, 99)));
+      Assert.Throws<OutOfBoundsException>(() => space.AsText(-1, 0));
+      Assert.Throws<OutOfBoundsException>(() => space.AsText(space.Area.Size.Width, 0));
+      Assert.Throws<OutOfBoundsException>(() => space.AsText(0, space.Area.Size.Height));
+      Assert.Throws<OutOfBoundsException>(
+        () => Plane<ISheetCells>.Of(space).Slice(new Offset(0, 0), new Area(99, 99)));
     }
 
     // --- The catalogue -----------------------------------------------------------------------------
@@ -137,7 +146,7 @@ namespace Unrect.Tests.Streaming
       Assert.Equal(2, book.Sheet("Cover").Area.Size.Height);
       Assert.Equal(4, book.Sheet("Summary").Area.Size.Height);
       Assert.Equal(6, book.Sheet("Detail").Area.Size.Height);
-      Assert.Equal("Alpha Fund", book.Sheet("Detail")[0, 1].GetString());
+      Assert.Equal("Alpha Fund", book.Sheet("Detail").AsText(0, 1));
     }
 
     [Fact]
@@ -157,9 +166,9 @@ namespace Unrect.Tests.Streaming
 
       // Not just vended — read. A catalogue entry with the wrong index would hand back a view over
       // the wrong sheet, which an Area alone would not catch.
-      Assert.Equal("Alpha Fund", summary[0, 1].GetString());
-      Assert.Equal("Fund", detail[0, 0].GetString());
-      Assert.Equal(1500d, detail[2, 5].GetDouble());
+      Assert.Equal("Alpha Fund", summary.AsText(0, 1));
+      Assert.Equal("Fund", detail.AsText(0, 0));
+      Assert.Equal(1500d, Plane<ISheetCells>.Of(detail)[2, 5].Double());
 
       // And the catalogue really did grow: the third sheet is in it, without the walk that
       // SheetNames would have forced.
@@ -180,8 +189,8 @@ namespace Unrect.Tests.Streaming
       Assert.Equal(1, book.ReaderStatistics.Opens);
       Assert.Equal(1, book.ReaderStatistics.ReadersOpen);
 
-      _ = detail[0, 1];
-      _ = summary[0, 1];
+      _ = detail.AsText(0, 1);
+      _ = summary.AsText(0, 1);
 
       var stats = book.ReaderStatistics;
 
@@ -200,8 +209,8 @@ namespace Unrect.Tests.Streaming
       Assert.Equal(6, book.Sheet("Detail").Area.Size.Height);
       Assert.Equal(1, book.ReaderStatistics.Opens);
 
-      Assert.Equal("Alpha Fund", book.Sheet("Summary")[0, 1].GetString());
-      Assert.Equal("Quarterly Pack", book.Sheet("Cover")[0, 0].GetString());
+      Assert.Equal("Alpha Fund", book.Sheet("Summary").AsText(0, 1));
+      Assert.Equal("Quarterly Pack", book.Sheet("Cover").AsText(0, 0));
     }
 
     [Fact]
@@ -220,8 +229,31 @@ namespace Unrect.Tests.Streaming
         foreach (var name in order)
           Assert.Equal(heights[name], book.Sheet(name).Area.Size.Height);
 
-        Assert.Equal("Fund", book.Sheet("Detail")[0, 0].GetString());
+        Assert.Equal("Fund", book.Sheet("Detail").AsText(0, 0));
       }
+    }
+
+    /// <summary>
+    /// Every row of <paramref name="space"/>, read once, top to bottom, as a declaration placed over
+    /// the whole sheet — which is the shape of every monotone parse.
+    /// <para>
+    /// A declaration rather than a bare loop, because the band a reader is sweeping is something the
+    /// engine announces at a placement and nothing a cell read says for itself. A loop reads exactly
+    /// the same cells in exactly the same order and tells the window nothing about why, which is a
+    /// different measurement from the one these tests are about.
+    /// </para>
+    /// </summary>
+    private static void WalkEveryRow(ISheetCells space)
+    {
+      var rows = space.Area.Size.Height;
+
+      _ = Column(rows, column =>
+      {
+        for (var row = 0; row < rows; row++)
+          _ = column[row].IsBlank;
+
+        return rows;
+      }).Map(space);
     }
 
     private static IEnumerable<string[]> Permutations(string[] values) =>
@@ -290,7 +322,7 @@ namespace Unrect.Tests.Streaming
       // usage, which is the trade this number represents.
       using var book = Workbook.Open(Path("simple-report.xlsx"), Cold());
 
-      _ = Column(4, c => c[0].GetString()).Map(book.Sheet("Report"));
+      _ = Column(4, c => c[0].Text()).Map(book.Sheet("Report"));
 
       Assert.Equal(1, book.ReaderStatistics.Opens);
       Assert.Equal(1, book.ReaderStatistics.ReadersOpen);
@@ -310,7 +342,7 @@ namespace Unrect.Tests.Streaming
       // never comes and costs milliseconds when it does.
       using var book = Workbook.Open(Path("simple-report.xlsx"), new WorkbookOptions());
 
-      _ = Column(4, c => c[0].GetString()).Map(book.Sheet("Report"));
+      _ = Column(4, c => c[0].Text()).Map(book.Sheet("Report"));
 
       Assert.True(
         SpinWait.SpinUntil(() => book.ReaderStatistics.ReadersOpen == 2, TimeSpan.FromSeconds(10)),
@@ -336,19 +368,19 @@ namespace Unrect.Tests.Streaming
       var summary = book.Sheet("Summary");
 
       for (var row = 0; row < summary.Area.Size.Height; row++)
-        _ = summary[0, row];
+        _ = summary.AsText(0, row);
 
       var detail = book.Sheet("Detail");
       var afterWalk = book.ReaderStatistics;
 
       for (var row = 0; row < detail.Area.Size.Height; row++)
-        _ = detail[0, row];
+        _ = detail.AsText(0, row);
 
       var afterReading = book.ReaderStatistics;
 
       Assert.Equal(afterWalk.Opens, afterReading.Opens);
       Assert.Equal(0, afterReading.Reopens);
-      Assert.Equal("Alpha Fund", detail[0, 1].GetString());
+      Assert.Equal("Alpha Fund", detail.AsText(0, 1));
       Assert.True(
         afterReading.RowsPerReader.Sum() > afterWalk.RowsPerReader.Sum(),
         "the reader already on Detail did the reading rather than a new one being opened");
@@ -364,8 +396,7 @@ namespace Unrect.Tests.Streaming
       using var book = Workbook.Open(Path("tall-ledger.xlsx"), Cold(windowRows: 256, chunkRows: 64));
       var space = book.Sheet("Ledger");
 
-      for (var row = 0; row < space.Area.Size.Height; row++)
-        _ = space[0, row];
+      WalkEveryRow(space);
 
       var walked = book.Statistics("Ledger")!.Value;
 
@@ -377,7 +408,7 @@ namespace Unrect.Tests.Streaming
       Assert.Equal(1201, walked.RowsMaterialised);
 
       // ...and reaching back to a row the window has dropped costs exactly one reload.
-      _ = space[0, 0];
+      _ = space.AsText(0, 0);
 
       Assert.Equal(1, book.Statistics("Ledger")!.Value.ChunkReloads);
     }
@@ -401,8 +432,7 @@ namespace Unrect.Tests.Streaming
       using var book = Workbook.Open(Path("tall-ledger.xlsx"), Cold(windowRows: 256, chunkRows: 64));
       var space = book.Sheet("Ledger");
 
-      for (var row = 0; row < space.Area.Size.Height; row++)
-        _ = space[0, row];
+      WalkEveryRow(space);
 
       var stats = book.Statistics("Ledger")!.Value;
 
@@ -418,8 +448,7 @@ namespace Unrect.Tests.Streaming
       using var book = Workbook.Open(Path("simple-report.xlsx"), Cold());
       var space = book.Sheet("Report");
 
-      for (var row = 0; row < space.Area.Size.Height; row++)
-        _ = space[0, row];
+      WalkEveryRow(space);
 
       var stats = book.Statistics("Report")!.Value;
 
@@ -439,7 +468,7 @@ namespace Unrect.Tests.Streaming
       Assert.Null(book.Statistics("Report"));
 
       var space = book.Sheet("Report");
-      _ = space[0, 0];
+      _ = space.AsText(0, 0);
 
       var stats = book.Statistics("Report");
 
@@ -463,7 +492,7 @@ namespace Unrect.Tests.Streaming
       // meet, and the floor of four chunks is visible in it.
       using var book = Workbook.Open(Path("tall-ledger.xlsx"), Cold(windowRows: 256, chunkRows: 64));
       var space = book.Sheet("Ledger");
-      _ = space[0, 0];
+      _ = space.AsText(0, 0);
 
       var stats = book.Statistics("Ledger")!.Value;
 
@@ -483,11 +512,11 @@ namespace Unrect.Tests.Streaming
       var book = Workbook.Open(Path("simple-report.xlsx"), Cold());
       var space = book.Sheet("Report");
 
-      _ = space[0, 0];        // the chunk is now resident
+      _ = space.AsText(0, 0);        // the chunk is now resident
 
       book.Dispose();
 
-      Assert.Throws<ObjectDisposedException>(() => space[0, 0]);
+      Assert.Throws<ObjectDisposedException>(() => space.AsText(0, 0));
     }
 
     [Fact]
@@ -500,7 +529,7 @@ namespace Unrect.Tests.Streaming
       var space = book.Sheet("Report");
       book.Dispose();
 
-      var declaration = Column(4, c => c[0].GetString()).Named("header");
+      var declaration = Column(4, c => c[0].Text()).Named("header");
 
       var direct = Assert.Throws<ProjectionException>(() => declaration.Map(space));
       Assert.IsType<ObjectDisposedException>(direct.GetBaseException());
@@ -549,7 +578,7 @@ namespace Unrect.Tests.Streaming
       var summary = book.Sheet("Summary");
       var detail = book.Sheet("Detail");
 
-      var declaration = Table(row => row[0].GetString());
+      var declaration = Table(row => row[0].Text());
 
       var serial = new[] { declaration.Map(summary), declaration.Map(detail) };
 
@@ -575,10 +604,12 @@ namespace Unrect.Tests.Streaming
       using var book = Workbook.Open(Path("tall-ledger.xlsx"), Cold(windowRows: 256, chunkRows: 64));
       var space = book.Sheet("Ledger");
 
+      var sheet = Plane<ISheetCells>.Of(space);
+
       Parallel.For(0, 16, worker =>
       {
         for (var row = 1; row <= 200; row++)
-          Assert.Equal(row, space[0, row].GetInt());
+          Assert.Equal(row, sheet[0, row].Integer());
       });
     }
 
@@ -612,7 +643,7 @@ namespace Unrect.Tests.Streaming
 
       using var book = Workbook.Open(Path("simple-report.xlsx"), new WorkbookOptions { WarmReaders = false, ChunkRows = 0 });
       var space = book.Sheet("Report");
-      _ = space[0, 0];
+      _ = space.AsText(0, 0);
 
       Assert.Equal(SheetStore.DefaultChunkRows(space.Area.Size.Width), book.Statistics("Report")!.Value.ChunkRows);
     }
@@ -640,8 +671,8 @@ namespace Unrect.Tests.Streaming
         Path("edge-cases.xlsx"),
         new WorkbookOptions { WarmReaders = false, IsBlank = _ => false });
 
-      Assert.True(lenient.Sheet("Edges")[0, 2].IsBlank);
-      Assert.Equal("  ", strict.Sheet("Edges")[0, 2].GetString());
+      Assert.True(lenient.Sheet("Edges").IsBlank(0, 2));
+      Assert.Equal("  ", strict.Sheet("Edges").AsText(0, 2));
     }
   }
 }

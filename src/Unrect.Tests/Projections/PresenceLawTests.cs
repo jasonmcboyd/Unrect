@@ -1,12 +1,13 @@
 using System;
 using System.Linq;
 
-using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.Observations;
 using static Unrect.Tests.ProjectionTestSpaces;
 
@@ -41,31 +42,31 @@ namespace Unrect.Tests.Projections
     // --- The grids, and the declarations that meet them --------------------------------------------
 
     /// <summary>A column of 1, 2, 3: a projection asking for text fails here, at a known cell.</summary>
-    private static ICellValues Numbers() => Ladder(3);
+    private static ISheetCells Numbers() => Ladder(3);
 
     /// <summary>Nothing but blank cells, so a discovered extent has somewhere to settle at zero.</summary>
-    private static ICellValues Blank() => Grid(new int[2, 2]);
+    private static ISheetCells Blank() => Grid(new int[2, 2]);
 
     /// <summary>A value then a blank row: a flow can mix a child that reads with one that finds nothing.</summary>
-    private static ICellValues ValueThenNothing() => Grid(new[,] { { 1 }, { 0 } });
+    private static ISheetCells ValueThenNothing() => Grid(new[,] { { 1 }, { 0 } });
 
     /// <summary>Two names then a number, so a repeat of text cells finds two occurrences and then trouble.</summary>
-    private static ICellValues TwoNamesThenANumber() => Mixed(new object?[,] { { "a" }, { "b" }, { 1 } });
+    private static ISheetCells TwoNamesThenANumber() => Mixed(new object?[,] { { "a" }, { "b" }, { 1 } });
 
     /// <summary>A caption over two rows of content, for the anchored half of the table's last-but-one row.</summary>
-    private static ICellValues CaptionedSheet() => Mixed(new object?[,] { { "Detail" }, { 1 }, { 2 } });
+    private static ISheetCells CaptionedSheet() => Mixed(new object?[,] { { "Detail" }, { 1 }, { 2 } });
 
     /// <summary>The discovered extent: full width, and as many leading rows as hold anything.</summary>
-    private static IProjection<int> Rows() => Range(RowsWhileAnyValue(), b => b.Height);
+    private static IProjection<ISheetCells, int> Rows() => Range(RowsWhileAnyValue(), b => b.Height);
 
     /// <summary>A cell read as text — which is a failure over <see cref="Numbers"/>, and an absorbable one.</summary>
-    private static IProjection<string> Title() => TextCell();
+    private static IProjection<ISheetCells, string> Title() => TextCell();
 
     /// <summary>The internal ε, at the one type these tests need it at.</summary>
-    private static IProjection<int> Unit() => NothingProjection<int>.Instance;
+    private static IProjection<ISheetCells, int> Unit() => NothingProjection<ISheetCells, int>.Instance;
 
     /// <summary>What the engine recorded about the reading — the value the composites act on.</summary>
-    private static Presence PresenceOf<T>(IProjection<T> projection, ICellValues space)
+    private static Presence PresenceOf<T>(IProjection<ISheetCells, T> projection, ISheetCells space)
       => projection.Apply(space).Presence;
 
     // --- §4, the classification table, one law per row ---------------------------------------------
@@ -112,7 +113,7 @@ namespace Unrect.Tests.Projections
     {
       // A fallback is a projection like any other, so all three answers are reachable through one:
       // it read, it looked and found zero, or it was itself a boundary that declined to look.
-      Assert.Equal(Presence.Read, PresenceOf(Title().Else(Cell(c => c.GetInt().ToString())), Numbers()));
+      Assert.Equal(Presence.Read, PresenceOf(Title().Else(Point().Select(p => p.Integer().ToString())), Numbers()));
       Assert.Equal(Presence.Empty, PresenceOf(Title().Else(Rows().Select(rows => rows + " rows")), Blank()));
       Assert.Equal(Presence.Absorbed, PresenceOf(Title().Else(Title().Else("missing")), Numbers()));
     }
@@ -294,7 +295,7 @@ namespace Unrect.Tests.Projections
       // item is attempted. Without the guard the item runs against a zero-across slice, its Optional
       // absorbs the failure, the productivity guard trips on the standstill, and a spurious D2 Info
       // fires — an item nobody could have read is reported as a tolerated ending.
-      var band = GridSpace.Create(new[,] { { "a", "b", "c" } }).GetSubspace(new Offset(0, 0), new Area(new Size(3, 0)));
+      var band = SheetGrid.Of(new Cell[0, 3]);
 
       var horizontal = HorizontalRepeat(Text().Optional()).MapWithDiagnostics(band);
 
@@ -303,7 +304,7 @@ namespace Unrect.Tests.Projections
 
       // The mirror across the axis is unaffected and stays so: a vertical repeat over a zero-HEIGHT
       // band ends the same quiet way, so the guard reads the same on both axes.
-      var column = GridSpace.Create(new[,] { { "a" }, { "b" }, { "c" } }).GetSubspace(new Offset(0, 0), new Area(new Size(1, 0)));
+      var column = SheetGrid.Of(new Cell[0, 1]);
 
       var vertical = VerticalRepeat(Text().Optional()).MapWithDiagnostics(column);
 
@@ -339,7 +340,7 @@ namespace Unrect.Tests.Projections
     /// whatever the boundary made of it. One row per occurrence, whether the row read or was
     /// tolerated.
     /// </summary>
-    private static IProjection<int> ToleratedRow() => Sized(Extent(1, 1)).Of(Integer().Optional());
+    private static IProjection<ISheetCells, int> ToleratedRow() => Sized(Extent(1, 1)).Of(Integer().Optional());
 
     [Fact]
     public void AnAbsorbedItemThatStillConsumedItsExtentGoesOnRepeating()
@@ -519,8 +520,8 @@ namespace Unrect.Tests.Projections
       var one = Assert.Throws<ProjectionException>(() => plain.Map(Numbers()));
       var two = Assert.Throws<ProjectionException>(() => withUnit.Map(Numbers()));
 
-      Assert.Equal("Cell#1", one.Subject);
-      Assert.Equal("Cell#2", two.Subject);
+      Assert.Equal("Text#1", one.Subject);
+      Assert.Equal("Text#2", two.Subject);
     }
 
     [Fact]
@@ -597,8 +598,8 @@ namespace Unrect.Tests.Projections
     /// about the one thing that suite cannot see.
     /// </summary>
     private static (Presence Expected, Presence Lazily, Presence Eagerly) Compare<T>(
-      IProjection<T> projection,
-      ICellValues space,
+      IProjection<ISheetCells, T> projection,
+      ISheetCells space,
       Presence expected)
     {
       var lazily = PresenceOf(projection, space);

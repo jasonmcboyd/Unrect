@@ -1,10 +1,11 @@
 using System;
 
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -18,8 +19,8 @@ namespace Unrect.Tests.Projections
   public class PadProjectionTests
   {
     // Values are (row * 10 + column + 1): 1 2 3 4 / 11 12 13 14 / 21 22 23 24 (/ 31 ... / 41 ...).
-    private static IProjection<(int Width, int Height, int TopLeft)> Extent()
-      => Range(b => (b.Width, b.Height, b[0, 0].GetInt()));
+    private static IProjection<ISheetCells, (int Width, int Height, int TopLeft)> Extent()
+      => Range(b => (b.Width, b.Height, b[0, 0].Integer()));
 
     // --- Inset arithmetic ------------------------------------------------------------------------
 
@@ -144,7 +145,7 @@ namespace Unrect.Tests.Projections
       var padded = Assert.Throws<ProjectionException>(() => TextCell().Padded(1).Map(CoordinateGrid()));
       var plain = Assert.Throws<ProjectionException>(() => TextCell().Map(CoordinateGrid()));
 
-      Assert.Equal("Cell", padded.Path);
+      Assert.Equal("Text", padded.Path);
       Assert.Equal(plain.Path, padded.Path);
       Assert.DoesNotContain("Padded", padded.Path);
     }
@@ -155,7 +156,7 @@ namespace Unrect.Tests.Projections
       var failure = Assert.Throws<ProjectionException>(() =>
         TextCell().Padded(1).Named("inner block").Map(CoordinateGrid()));
 
-      Assert.Equal("'inner block' -> Cell", failure.Path);
+      Assert.Equal("'inner block' -> Text", failure.Path);
     }
 
     [Fact]
@@ -205,7 +206,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void Padded_RejectsANullProjection()
     {
-      Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjection<int>)null!).Padded(1)).ParamName);
+      Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjection<ISheetCells, int>)null!).Padded(1)).ParamName);
     }
 
     // --- Error locations -------------------------------------------------------------------------

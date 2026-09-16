@@ -21,7 +21,7 @@ namespace Unrect.Projections
   /// </summary>
   /// <typeparam name="TSpace">The space this matcher must be able to look at.</typeparam>
   public interface IRowLandmark<in TSpace>
-    where TSpace : class, ICellValues
+    where TSpace : class, ISpace
   {
     /// <summary>The matcher as the strategy calculus takes it, its demand discharged by the lift.</summary>
     IRowLandmark Landmark { get; }
@@ -32,7 +32,7 @@ namespace Unrect.Projections
   /// </summary>
   /// <typeparam name="TSpace">The space this matcher must be able to look at.</typeparam>
   public interface IColumnLandmark<in TSpace>
-    where TSpace : class, ICellValues
+    where TSpace : class, ISpace
   {
     /// <summary>The matcher as the strategy calculus takes it, its demand discharged by the lift.</summary>
     IColumnLandmark Landmark { get; }

@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-using Unrect.Core;
 using Unrect.Spreadsheets;
 using Unrect.Projections;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -23,12 +23,12 @@ namespace Unrect.Tests.Projections
   {
     // The workbooks are copied into the test output, so tests never depend on the repository
     // layout.
-    private static ICellValues Workbook(string fileName, string sheet)
+    private static ISheetCells Workbook(string fileName, string sheet)
       => SpreadsheetSpace.Create(Path.Combine(AppContext.BaseDirectory, "TestData", fileName), sheet);
 
     // --- simple-report.xlsx: a fixed header over a table ----------------------------------------------------
 
-    private static IProjection<(SimpleHeader Header, IReadOnlyList<Transaction> Transactions)> SimpleReport() =>
+    private static IProjection<ISheetCells, (SimpleHeader Header, IReadOnlyList<Transaction> Transactions)> SimpleReport() =>
       VerticalFlow(v => (
         // The header's kinds are declared rather than asked for: four leaves in a flow read the
         // same four rows Column(4, ...) did, and say what each one is.
@@ -88,20 +88,22 @@ namespace Unrect.Tests.Projections
       Assert.Equal(1, header.Consumed.Width);
       Assert.Equal(4, header.Consumed.Height);
 
-      // Handed the space the header left behind, the table's own defaults find the gap and the
-      // body.
-      var table = Table(t => (t.ColumnCount, t.RowCount))
-        .Apply(Workbook("simple-report.xlsx", "Report").GetSubspace(new Offset(0, 4)));
+      // Placed past the four rows the header consumed, the table then finds the gap and the body —
+      // three rows of gap after the four it was moved down by, then nine rows of table. The gap is
+      // said here rather than left to the table's own default because a declared offset REPLACES a
+      // shape's default rather than composing onto it, and Down(4) is a declared offset.
+      var table = Down(4).AfterBlankRows().Of(Table(t => (t.ColumnCount, t.RowCount)))
+        .Apply(Workbook("simple-report.xlsx", "Report"));
 
       Assert.Equal((4, 8), table.Value);
-      Assert.Equal(3, table.Offset.Size.Height);
+      Assert.Equal(4 + 3, table.Offset.Size.Height);
       Assert.Equal(4, table.Consumed.Width);
       Assert.Equal(9, table.Consumed.Height);
     }
 
     // --- investors-by-deal.xlsx: repeating blocks of differing lengths ------------------------------------------
 
-    private static IProjection<IReadOnlyList<Deal>> InvestorsByDeal()
+    private static IProjection<ISheetCells, IReadOnlyList<Deal>> InvestorsByDeal()
     {
       var deal =
         VerticalFlow(v => new Deal(
@@ -158,26 +160,26 @@ namespace Unrect.Tests.Projections
 
     // --- investor-summary.xlsx: header, summary table, and repeating detail blocks ---------------------------------
 
-    private static IProjection<Report> InvestorSummary()
+    private static IProjection<ISheetCells, Report> InvestorSummary()
     {
       var detail =
         VerticalFlow(v => new Detail(
           Investor: v.Next(TextCell().Named("investor name")),
           Transactions: v.Next(Table(r => new DetailTransaction(
-            r["Date"].GetDateTime(),
-            r["Transaction Type"].GetString(),
-            r["Amount"].GetDecimal()))
+            r["Date"].Date(),
+            r["Transaction Type"].Text(),
+            r["Amount"].Decimal()))
             .Named("transactions"))))
           .Named("investor detail");
 
       return VerticalFlow(v => new Report(
-        Header: v.Next(Column(c => new SummaryHeader(c[0].GetString(), c[1].GetDateTime(), c[2].GetString()))
+        Header: v.Next(Column(c => new SummaryHeader(c[0].Text(), c[1].Date(), c[2].Text()))
           .Named("report header")),
         Summary: v.Next(Table(r => new SummaryRow(
-          r["Investor"].GetString(),
-          r["Contributions"].GetDecimal(),
-          r["Distributions"].GetDecimal(),
-          r["Net"].GetDecimal()))
+          r["Investor"].Text(),
+          r["Contributions"].Decimal(),
+          r["Distributions"].Decimal(),
+          r["Net"].Decimal()))
           .Named("summary")),
         Details: v.Next(AfterBlankRows().Of(VerticalRepeat(detail, separatedBy: BlankRows(), atLeast: 1))
           .Named("investor details"))));
@@ -278,9 +280,9 @@ namespace Unrect.Tests.Projections
     // exactly where the second's caption begins. One declaration reads both, because the first
     // series is bounded by the caption the second is anchored on.
 
-    private static IProjection<IrrReport> InvestorIrr()
+    private static IProjection<ISheetCells, IrrReport> InvestorIrr()
     {
-      var investorBlock = Table(r => r["Investor Name"].GetString()).Named("investor block");
+      var investorBlock = Table(r => r["Investor Name"].Text()).Named("investor block");
 
       // Declared once, placed twice: the same series of blocks read from two different anchors.
       var series = VerticalRepeat(investorBlock, separatedBy: BlankRows());
@@ -291,8 +293,8 @@ namespace Unrect.Tests.Projections
       // and the rows those captions occupy are described by the projection instead of being
       // absorbed into an offset nobody can see.
       return VerticalFlow(v => new IrrReport(
-        Title: v.Next(Column(4, c => c[0].GetString()).Named("report header")),
-        Summary: v.Next(Table(r => r["Investors"].GetString()).Named("summary")),
+        Title: v.Next(Column(4, c => c[0].Text()).Named("report header")),
+        Summary: v.Next(Table(r => r["Investors"].Text()).Named("summary")),
         ByTransferDate: v.Next(Until(RowContaining(Inception)).Heading("IRR Details").Heading("Cash Flows Using Transfer Date").Of(series)),
         ByInception: v.Next(Heading(Inception).Of(series))));
     }
@@ -346,7 +348,7 @@ namespace Unrect.Tests.Projections
     // is DESCRIBED by the projection that owns it, not smuggled past inside an offset — so the section's
     // own rows exclude its caption, and the meter counts the caption rows all the same.
 
-    private static ICellValues CaptionedSheet() => Mixed(new object?[,]
+    private static ISheetCells CaptionedSheet() => Mixed(new object?[,]
     {
       { "K-1 Lines 1-21", null },
       { "Ordinary income", 100 },
@@ -359,7 +361,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void CaptionedSections_AreReadByTheCaptionsTheySitUnder()
     {
-      var lines = Table(0, r => r[0].GetString());
+      var lines = Table(0, r => r[0].Text());
 
       var report = VerticalFlow(v => new
       {
@@ -376,7 +378,7 @@ namespace Unrect.Tests.Projections
     {
       // The regression pin for "the caption stopped being smuggled": neither section's rows contain
       // the caption that introduced it, and neither contains the other section's caption either.
-      var lines = Table(0, r => r[0].GetString());
+      var lines = Table(0, r => r[0].Text());
 
       var report = VerticalFlow(v => new
       {
@@ -394,7 +396,7 @@ namespace Unrect.Tests.Projections
     {
       // ...and the meter did not move: every row of the sheet is accounted for, including the two
       // caption rows and the blank one the second section's seek crossed.
-      var lines = Table(0, r => r[0].GetString());
+      var lines = Table(0, r => r[0].Text());
 
       var report = VerticalFlow(v => new
       {
@@ -428,9 +430,9 @@ namespace Unrect.Tests.Projections
       var typed = Table<Line>().Apply(space);
 
       var projected = Table(r => new Line(
-        r["Client"].GetString(),
-        r["Transaction Date"].GetDateTime(),
-        r["Amount"].GetDecimal()))
+        r["Client"].Text(),
+        r["Transaction Date"].Date(),
+        r["Amount"].Decimal()))
         .Apply(space);
 
       Assert.Equal(projected.Value, typed.Value);

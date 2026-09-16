@@ -1,7 +1,5 @@
 using System;
 
-using Unrect.Core;
-
 namespace Unrect.Spreadsheets
 {
   /// <summary>
@@ -17,11 +15,11 @@ namespace Unrect.Spreadsheets
   {
     /// <summary>
     /// Which cells count as empty space. The default treats whitespace-only text as blank, exactly
-    /// as <see cref="SpreadsheetSpace.Create(string, string, bool, Func{CellValue, bool})"/> does:
+    /// as <see cref="SpreadsheetSpace.Create(string, string, bool, Func{Cell, bool})"/> does:
     /// exported workbooks are full of <c>"  "</c> cells that look empty, are meant to be empty, and
     /// would otherwise anchor a region. Pass <c>_ =&gt; false</c> for strict fidelity.
     /// </summary>
-    public Func<CellValue, bool>? IsBlank { get; init; }
+    public Func<Cell, bool>? IsBlank { get; init; }
 
     /// <summary>
     /// The memory knob, in rows. It must be at least as tall as the tallest extent open at one time:

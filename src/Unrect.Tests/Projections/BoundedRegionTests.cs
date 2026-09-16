@@ -7,8 +7,7 @@ using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
-using static Unrect.Spreadsheets.SpreadsheetProjections;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -36,7 +35,7 @@ namespace Unrect.Tests.Projections
     /// the sheet the offset strategies below go looking through. The bound is a hundred rows, and
     /// settling it costs 101: the blank row that ends the scan has to be read to end it.
     /// </summary>
-    private static ICellValues MarkedSheet()
+    private static ISheetCells MarkedSheet()
     {
       var values = new object?[103, 2];
 
@@ -99,7 +98,7 @@ namespace Unrect.Tests.Projections
     /// is discovered rather than measured — which is what puts the bounded region at the strategy's
     /// door.
     /// </summary>
-    private static IProjection<int> InsideADiscoveredBound(string offset, IProjection<int> child)
+    private static IProjection<ISheetCells, int> InsideADiscoveredBound(string offset, IProjection<ISheetCells, int> child)
     {
       var placed = offset switch
       {
@@ -381,15 +380,18 @@ namespace Unrect.Tests.Projections
       // Rows 8 and 9 of the fixture — "Base" and "Scaled" — with the second carrying the
       // column-shifted group whose text mentions LOG10, and nothing below them until row 11. So the
       // discovered region is two rows tall and the matcher has to look inside it.
-      var declaration = Down(7).Sized(RowsWhileAnyValue()).Of(
-        VerticalFlow(Formulas, v => v.Next(On(RowWithFormula("LOG10")).Of(Range(1, 1, block => block.Location.A1)))));
+      var declaration = ProjectionBuilders<ISpreadsheetSpace>.Down(7)
+        .Sized(RowsWhileAnyValue())
+        .Of(ProjectionBuilders<ISpreadsheetSpace>.VerticalFlow(v => v.Next(
+          ProjectionBuilders<ISpreadsheetSpace>.On(SpreadsheetProjections.RowWithFormula("LOG10"))
+            .Of(ProjectionBuilders<ISpreadsheetSpace>.Range(1, 1, block => block.Location.A1)))));
 
       var read = declaration.Map(FormulaSheet());
 
       // Non-vacuous: the section landed on row 9 rather than on the region's own first row, so the
-      // matcher really did read formulas through the bounded region. A view that had dropped out of
-      // the chart chain would not have got this far — the demand would have failed as a
-      // MissingCapabilityException, which no tolerance can absorb.
+      // matcher really did read formulas through the bounded region. A region that named anything
+      // but the sheet itself would not have got this far — the matcher's cast would have failed as
+      // an InvalidCastException, which no tolerance can absorb.
       Assert.Equal("A9", read);
     }
 
@@ -401,8 +403,11 @@ namespace Unrect.Tests.Projections
       // bound that region is one the engine cut for real, so the capability is right there — but a
       // cut that had shed it, or a chart that had hidden it, would report every formula as absent
       // rather than fail.
-      var formula = Sized(RowsWhileAnyValue()).Of(
-        Overlay(Formulas, o => o.Next(Down(1).Right(3).Of(Formula()))));
+      var formula = ProjectionBuilders<ISpreadsheetSpace>.Sized(RowsWhileAnyValue())
+        .Of(ProjectionBuilders<ISpreadsheetSpace>.Overlay(o => o.Next(
+          ProjectionBuilders<ISpreadsheetSpace>.Down(1)
+            .Right(3)
+            .Of(SpreadsheetProjections.Formula<ISpreadsheetSpace>()))));
 
       var read = formula.Map(FormulaSheet());
 

@@ -7,29 +7,36 @@ using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 
 namespace Unrect.Tests.Streaming
 {
   /// <summary>
-  /// What the streaming store is told when a strategy composes with another one — the seam where the
-  /// phase-6 locus arrives early, and the one place these counters are <em>chosen</em> rather than
-  /// inherited from the reading.
+  /// What the streaming store is told when a strategy composes with another one — and the one place
+  /// these counters are <em>chosen</em> rather than inherited from the reading.
   /// <para>
-  /// A windowed view hands its own extent down with every cell it reads, and that pair is how the
-  /// store tells a sweep of a bounded band apart from a walk down the sheet. Until phase 6 the
-  /// engine keeps that honest by cutting a real subspace object for every region it hands a
-  /// projection. A composing STRATEGY does not: <c>RowsThenColumns</c> narrows its region by
-  /// arithmetic before handing it to the second half, because the reads are identical and cutting a
-  /// second object would cost one per call. So the column scan reads two rows and announces the
-  /// band its parent object names, which on this sheet is all 1,201 of them.
+  /// The store tells a sweep of a bounded band apart from a walk down the sheet by being told which
+  /// band is open. Until phase 6 it was told by inference: a windowed view handed its own extent
+  /// down with every cell it read, so the band was whatever subspace object happened to make the
+  /// read. That made a composing STRATEGY a hazard — <c>RowsThenColumns</c> narrows its region by
+  /// arithmetic rather than cutting a second object, so a column scan reading two rows announced the
+  /// band its PARENT object named, all 1,201 of them, and the store was told a sweep was open that
+  /// was not.
   /// </para>
   /// <para>
-  /// <b>That is a decision, and this is where it is recorded.</b> The answers do not move — the same
+  /// <b>Phase 6 removes the inference, and with it the hazard.</b> The engine announces once per
+  /// placement (<c>ISweepAware</c>), and what it announces is the placement's own region — the
+  /// rectangle the declaration asked for — so a strategy's reads announce nothing at all and the
+  /// composition's spelling cannot reach the counters. The first case below is therefore the one
+  /// that moved: its overrun was an artefact of the inference and is gone. The second did not move,
+  /// because a declaration that really does open a 1,201-row band really does overrun a 256-row
+  /// window, which is the honest reading the counter exists for.
+  /// </para>
+  /// <para>
+  /// <b>What is still chosen, and still recorded here.</b> The answers do not move — the same
   /// declaration reads the same extent through either door — so nothing else in the suite can see
-  /// it; only the counters can, and only here. Phase 6 replaces the slice-borne hint with a
-  /// per-placement announcement, at which point these numbers are expected to move and this file is
-  /// the thing that will say so.
+  /// what the store was told; only the counters can, and only here. That is as true of a number that
+  /// is now zero as of one that is not.
   /// </para>
   /// <para>
   /// The window and chunk sizes mirror <see cref="WorkbookTests"/>' tall-sheet gate on purpose, so
@@ -77,7 +84,7 @@ namespace Unrect.Tests.Streaming
       => AreaStrategies.RowsThenColumns(RowStrategies.TakeRowsWhileAnyValue(), ColumnStrategies.TakeColumnsWhileAnyValue());
 
     [Fact]
-    public void AColumnScanInsideAnUnreadRowCountAnnouncesItsParentsBand()
+    public void AColumnScanInsideAnUnreadRowCountAnnouncesNothingOfItsOwn()
     {
       // The recorded numbers, and what each of them is saying.
       //
@@ -85,13 +92,16 @@ namespace Unrect.Tests.Streaming
       // the smallest unit this window deals in, for a reading that wanted two. Nothing is evicted
       // and nothing is reloaded, because nothing competes for residency.
       //
-      // WindowOverruns is 1, and that is the whole point of the file. The column scan reads rows 0
-      // and 1; the band it announces while doing so is the region its parent object names, all
-      // 1,201 rows, which does not fit a 256-row window. The store is therefore told a sweep is
-      // open that is not, and says so. It costs nothing here — an overrun WITH reloads is the
-      // collapse worth acting on, and reloads are zero — but it is a hint the store was given
-      // wrongly rather than a fact about the reading, and it is chosen: narrowing by arithmetic is
-      // what buys the composition its single object per call.
+      // WindowOverruns is 0, and that is the whole point of the file. What is announced is the
+      // placement's own region, once, where the engine cuts it — three by two, which fits a 256-row
+      // window with room to spare. The column scan's reads announce nothing: the strategy's spelling
+      // (narrowing by arithmetic rather than cutting a second subspace object, which is what buys
+      // the composition one object per call) no longer reaches the store at all.
+      //
+      // This read 1 until phase 6, when the band was inferred from whichever object made the read
+      // and the scan's reads therefore carried its parent's 1,201 rows. That overrun described the
+      // declaration's spelling and not its reading — a hint given wrongly — and it is gone with the
+      // inference that produced it, not suppressed.
       var (read, loads, reloads, evictions, materialised, overruns) = Measure(FirstHalfReadsNothing());
 
       Assert.Equal("3x2", read);
@@ -100,16 +110,18 @@ namespace Unrect.Tests.Streaming
       Assert.Equal(0L, reloads);
       Assert.Equal(0L, evictions);
       Assert.Equal(64L, materialised);
-      Assert.Equal(1L, overruns);
+      Assert.Equal(0L, overruns);
     }
 
     [Fact]
     public void WhereAFirstHalfThatReadsForItselfCostsTheWholeWalk()
     {
-      // The contrast, and the control on the numbers above. Here the row rule walks the sheet, so
-      // the reading is a plain monotone pass and the counters are exactly the tall-sheet gate's:
-      // nineteen loads, fifteen evictions, every row read once, one overrun for the root extent
-      // that could not be held. Those numbers are inherited from the walk; the ones above are not.
+      // The contrast, and the control on the numbers above — kept, because it is what shows the zero
+      // above is a band that fits rather than a counter that stopped counting. Here the row rule
+      // walks the sheet, so the reading is a plain monotone pass and the counters are exactly the
+      // tall-sheet gate's: nineteen loads, fifteen evictions, every row read once, and one overrun
+      // for the 1,201-row band this placement really does open. Those numbers are inherited from the
+      // walk; the ones above are not.
       var (read, loads, reloads, evictions, materialised, overruns) = Measure(FirstHalfReads());
 
       Assert.Equal("3x1201", read);

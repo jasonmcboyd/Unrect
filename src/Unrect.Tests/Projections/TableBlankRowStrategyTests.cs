@@ -2,12 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.Observations;
 using static Unrect.Tests.ProjectionTestSpaces;
 
@@ -17,7 +18,7 @@ namespace Unrect.Tests.Projections
   /// The <c>onBlank</c> blank-row strategy on the leaf <c>Table</c> — the five presets and the
   /// <c>blankRecord</c> escape hatch.
   /// <para>
-  /// A fully-blank body row (every cell <see cref="CellValue.IsBlank"/>) is treated by policy:
+  /// A fully-blank body row (every cell <see cref="Cell.IsBlank"/>) is treated by policy:
   /// <c>Stop</c> is self-bounding and ends the block at the blank (today's behaviour, unchanged);
   /// <c>Skip</c> omits the record and runs to a declared bound or the enclosing edge; <c>Fault</c>
   /// is a terminal error no tolerance boundary may absorb; <c>Tolerate</c> is <c>Skip</c> plus a
@@ -50,7 +51,7 @@ namespace Unrect.Tests.Projections
     ///   r4  (blank)            body index 3 — trailing blank
     /// </code>
     /// </summary>
-    private static ICellValues Gapped() => Mixed(new object?[,]
+    private static ISheetCells Gapped() => Mixed(new object?[,]
     {
       { "Name", "Amount" },
       { "Alpha", 100m },
@@ -71,7 +72,7 @@ namespace Unrect.Tests.Projections
     ///   r5  note                past the landmark
     /// </code>
     /// </summary>
-    private static ICellValues GappedWithTotal() => Mixed(new object?[,]
+    private static ISheetCells GappedWithTotal() => Mixed(new object?[,]
     {
       { "Name", "Amount" },
       { "Alpha", 100m },
@@ -81,8 +82,8 @@ namespace Unrect.Tests.Projections
       { "note", null },
     });
 
-    private static IProjection<IReadOnlyList<Line>> Lines(BlankRowStrategy onBlank)
-      => Table(r => new Line(r.Text("Name"), r.Decimal("Amount")), onBlank);
+    private static IProjection<ISheetCells, IReadOnlyList<Line>> Lines(BlankRowStrategy onBlank)
+      => Table(r => new Line(r["Name"].Text(), r["Amount"].Decimal()), onBlank);
 
     // --- B. default(BlankRowStrategy) == Stop -------------------------------------------------------
 
@@ -106,9 +107,9 @@ namespace Unrect.Tests.Projections
       // content past the interior blank — the case that would diverge if Stop had moved — the
       // no-onBlank spelling, onBlank: default, and onBlank: Stop denote the same reading at L3
       // (value, extent consumed and from where, diagnostics in order, and any failure's path).
-      var control = Observe(Table(r => new Line(r.Text("Name"), r.Decimal("Amount"))), Gapped());
+      var control = Observe(Table(r => new Line(r["Name"].Text(), r["Amount"].Decimal())), Gapped());
 
-      AssertL3(control, Observe(Table(r => new Line(r.Text("Name"), r.Decimal("Amount")), onBlank: default), Gapped()));
+      AssertL3(control, Observe(Table(r => new Line(r["Name"].Text(), r["Amount"].Decimal()), onBlank: default), Gapped()));
       AssertL3(control, Observe(Lines(BlankRowStrategy.Stop), Gapped()));
     }
 
@@ -218,7 +219,7 @@ namespace Unrect.Tests.Projections
       // Where Skip omits, blankRecord includes — and the row a blank offers is usually just its
       // Index, the step-2 occurrence ordinal counted over the body from zero. So Alpha is index 0,
       // the interior blank index 1, Gamma index 2, and the trailing blank index 3.
-      var records = Table(r => new Named(r.Text(0)), blankRecord: b => new Named($"blank#{b.Index}")).Map(Gapped());
+      var records = Table(r => new Named(r[0].Text()), blankRecord: b => new Named($"blank#{b.Index}")).Map(Gapped());
 
       Assert.Equal(
         new[]
@@ -235,22 +236,35 @@ namespace Unrect.Tests.Projections
     public void TheExplicitHeaderRowsBlankRecordRungReadsTheSame()
     {
       // Item 5 delegates to item 6 with headerRows: 1, so the two spellings agree.
-      var oneArg = Table(r => new Named(r.Text(0)), blankRecord: b => new Named($"blank#{b.Index}")).Map(Gapped());
-      var twoArg = Table(1, r => new Named(r.Text(0)), blankRecord: b => new Named($"blank#{b.Index}")).Map(Gapped());
+      var oneArg = Table(r => new Named(r[0].Text()), blankRecord: b => new Named($"blank#{b.Index}")).Map(Gapped());
+      var twoArg = Table(1, r => new Named(r[0].Text()), blankRecord: b => new Named($"blank#{b.Index}")).Map(Gapped());
 
       Assert.Equal(oneArg, twoArg);
     }
 
     // --- C. The reflection rungs carry the knob too ------------------------------------------------
 
+    // The production gap this pin was Skipped for is closed: when the kinded family moved to
+    // SheetProjectionBuilders<TSpace> it published only Table<T>() and Table<T>(bind), leaving the
+    // onBlank twins with no spelling at all. Both are back, on both kinded vocabularies, so the knob
+    // threads through the reflection binder exactly as documented — which is what this says.
+
     [Fact]
     public void TheTypedBindRungSkipsInteriorBlanks()
     {
-      // Table<T>(onBlank:) threads the policy through the reflection binder unchanged; a blank row
-      // is skipped rather than ending the block.
-      var records = Table<Entry>(BlankRowStrategy.Skip).Map(Gapped());
+      Assert.Equal(
+        new[] { new Entry("Alpha", 100m), new Entry("Gamma", 300m) },
+        Table<Entry>(BlankRowStrategy.Skip).Map(Gapped()));
+    }
 
-      Assert.Equal(new[] { new Entry("Alpha", 100m), new Entry("Gamma", 300m) }, records);
+    [Fact]
+    public void TheTypedBindRungWithAnExplicitBindCarriesTheKnobToo()
+    {
+      // The second twin, and the one a reader would assume rather than check: adjusting what
+      // reflection wrote must not cost the blank-row policy.
+      Assert.Equal(
+        new[] { new Entry("Alpha", 100m), new Entry("Gamma", 300m) },
+        Table<Entry>(bind => bind.Column(t => t.Name, "Name"), BlankRowStrategy.Skip).Map(Gapped()));
     }
 
     [Fact]

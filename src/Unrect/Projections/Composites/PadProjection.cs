@@ -11,9 +11,10 @@ namespace Unrect.Projections
   /// this is a wrapper projection rather than a placement, and why the two compose without
   /// interfering.
   /// </summary>
-  internal sealed class PadProjection<TResult> : ProjectionBase<TResult>
+  internal sealed class PadProjection<TSpace, TResult> : ProjectionBase<TSpace, TResult>
+    where TSpace : class, ISpace
   {
-    public PadProjection(IProjection<TResult> inner, int left, int top, int right, int bottom, Placement placement)
+    public PadProjection(IProjection<TSpace, TResult> inner, int left, int top, int right, int bottom, Placement placement)
       : base(placement)
     {
       Inner = inner ?? throw new ArgumentNullException(nameof(inner));
@@ -24,7 +25,7 @@ namespace Unrect.Projections
       Children = new IProjection[] { inner };
     }
 
-    private IProjection<TResult> Inner { get; }
+    private IProjection<TSpace, TResult> Inner { get; }
     private int Left { get; }
     private int Top { get; }
     private int Right { get; }
@@ -36,7 +37,7 @@ namespace Unrect.Projections
 
     public override bool IsTransparent => Name is null && !IsUnitBoundary;
 
-    public override ProjectionResult<TResult> Project(Plane<ICellValues> extent, ProjectionContext context)
+    public override ProjectionResult<TResult> Project(Plane<TSpace> extent, ProjectionContext context)
     {
       var size = extent.Area.Size;
       var width = size.Width - Left - Right;
@@ -52,12 +53,12 @@ namespace Unrect.Projections
           null,
           null);
 
-      // The context advances with the subspace so error locations inside the padding stay absolute
-      // — transparency in the path must not mean absence from the coordinate arithmetic.
+      // The context is handed on unchanged: a location comes from the plane, which carries the
+      // sheet's own coordinates, so the inset region already knows where it is.
       var applied = ProjectionEngine.Apply(
         Inner,
         extent.Cut(new Offset(Left, Top), new Area(width, height)),
-        context.Advance(new Offset(Left, Top)));
+        context);
 
       return new ProjectionResult<TResult>(
         applied.Value,

@@ -5,10 +5,12 @@ using System.Linq;
 using Unrect.Core;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
+using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Streaming
@@ -52,9 +54,7 @@ namespace Unrect.Tests.Streaming
       Assert.Equal(eager.Area.Size.Width, streamed.Area.Size.Width);
       Assert.Equal(eager.Area.Size.Height, streamed.Area.Size.Height);
 
-      for (var row = 0; row < eager.Area.Size.Height; row++)
-        for (var column = 0; column < eager.Area.Size.Width; column++)
-          Assert.Equal(eager[column, row], streamed[column, row]);
+      AssertEveryCellAgrees(eager, streamed);
     }
 
     [Theory]
@@ -71,9 +71,7 @@ namespace Unrect.Tests.Streaming
         new WorkbookOptions { WarmReaders = false, ChunkRows = 1, WindowRows = 1 });
       var streamed = book.Sheet(sheet);
 
-      for (var row = 0; row < eager.Area.Size.Height; row++)
-        for (var column = 0; column < eager.Area.Size.Width; column++)
-          Assert.Equal(eager[column, row], streamed[column, row]);
+      AssertEveryCellAgrees(eager, streamed);
 
       Assert.Equal(1, book.Statistics(sheet)!.Value.ChunkRows);
     }
@@ -127,7 +125,7 @@ namespace Unrect.Tests.Streaming
     /// INSTANCE — itself for a first sighting, and -1 for a cell that is not text at all. Two
     /// spaces with the same pattern share exactly the same values as each other.
     /// </summary>
-    private static IReadOnlyList<int> SharingPattern(ICellValues space)
+    private static IReadOnlyList<int> SharingPattern(ISheetCells space)
     {
       // Reference equality on purpose: the question is which instance a cell points at, and the
       // default comparer would answer the one this test is not asking.
@@ -137,7 +135,7 @@ namespace Unrect.Tests.Streaming
       for (var row = 0; row < space.Area.Size.Height; row++)
         for (var column = 0; column < space.Area.Size.Width; column++)
         {
-          if (space[column, row].TryGetString() is not string text)
+          if (!space.IsText(column, row) || space.AsText(column, row) is not string text)
           {
             pattern.Add(-1);
             continue;
@@ -160,16 +158,16 @@ namespace Unrect.Tests.Streaming
     // and it consumes the whole sheet — which is to say it exercises the pool, the window and the
     // diagnostics in one declaration. If streaming can read this, it can read a report.
 
-    private static IProjection<(string Title, IReadOnlyList<string> Summary, IReadOnlyList<IReadOnlyList<string>> ByTransferDate, IReadOnlyList<IReadOnlyList<string>> ByInception)> InvestorIrr()
+    private static IProjection<ISheetCells, (string Title, IReadOnlyList<string> Summary, IReadOnlyList<IReadOnlyList<string>> ByTransferDate, IReadOnlyList<IReadOnlyList<string>> ByInception)> InvestorIrr()
     {
-      var investorBlock = Table(row => row["Investor Name"].GetString()).Named("investor block");
+      var investorBlock = Table(row => row["Investor Name"].Text()).Named("investor block");
       var series = VerticalRepeat(investorBlock, separatedBy: BlankRows());
 
       const string Inception = "Cash Flows using inception date";
 
       return VerticalFlow(v => (
-        Title: v.Next(Column(4, column => column[0].GetString()).Named("report header")),
-        Summary: v.Next(Table(row => row["Investors"].GetString()).Named("summary")),
+        Title: v.Next(Column(4, column => column[0].Text()).Named("report header")),
+        Summary: v.Next(Table(row => row["Investors"].Text()).Named("summary")),
         ByTransferDate: v.Next(Until(RowContaining(Inception)).Heading("IRR Details").Heading("Cash Flows Using Transfer Date").Of(series)),
         ByInception: v.Next(Heading(Inception).Of(series))));
     }
@@ -252,7 +250,7 @@ namespace Unrect.Tests.Streaming
       var declaration = VerticalRepeat(
         VerticalFlow(v => (
           Deal: v.Next(TextCell()),
-          Rows: v.Next(Table(row => row["Name"].GetString())))),
+          Rows: v.Next(Table(row => row["Name"].Text())))),
         separatedBy: BlankRows());
 
       var eager = declaration.Map(SpreadsheetSpace.Create(Path("investors-by-deal.xlsx"), "Investors"));
@@ -270,8 +268,8 @@ namespace Unrect.Tests.Streaming
     public void ATableBoundByItsHeaderReadsTheSameThroughAWindow()
     {
       var declaration = VerticalFlow(v => (
-        Header: v.Next(Column(4, column => column[0].GetString())),
-        Rows: v.Next(Table(row => (row["Client"].GetString(), row["Amount"].GetDecimal())))));
+        Header: v.Next(Column(4, column => column[0].Text())),
+        Rows: v.Next(Table(row => (row["Client"].Text(), row["Amount"].Decimal())))));
 
       var eager = declaration.Map(SpreadsheetSpace.Create(Path("simple-report.xlsx"), "Report"));
 
@@ -292,7 +290,7 @@ namespace Unrect.Tests.Streaming
 
     private sealed record LedgerEntry(int Entry, int Amount, string Category);
 
-    private static IProjection<IReadOnlyList<LedgerEntry>> Ledger()
+    private static IProjection<ISheetCells, IReadOnlyList<LedgerEntry>> Ledger()
     {
       var ledgerEntry = HorizontalFlow(h => new LedgerEntry(
         Entry: h.Next(Integer()),
@@ -337,18 +335,24 @@ namespace Unrect.Tests.Streaming
       Assert.Equal(0, stats.ChunkReloads);
       Assert.Equal(1201, stats.RowsMaterialised);      // every row once, and not one of them twice
 
-      // The overruns are the documented monotone-tall-sheet reading and nothing beyond it: a view
-      // hands its extent down with every cell, and the extents open here — the whole sheet, and the
-      // table's own discovered band — are both taller than four rows. Two bands that did not fit,
-      // costing nothing, which is exactly the pair StreamingStatistics says to read together.
-      Assert.Equal(2, stats.WindowOverruns);
+      // One overrun, not two, and the missing one is the point. The band is announced once per
+      // PLACEMENT now (ISweepAware), where the engine cuts the region, instead of riding down on
+      // every cell read attached to whatever subspace object happened to make it. So what is counted
+      // is what a placement DECLARED: the table's own discovered band, taller than four rows,
+      // costing nothing. The whole-sheet extent is not a declared band — it is the space the
+      // placement was resolved AGAINST, which the landmark scan reads through to find the header
+      // row — so it is announced nowhere and counted nowhere.
+      //
+      // ChunkReloads 0 and RowsMaterialised 1201 above are unchanged, which is the half that makes
+      // this a re-pin rather than a regression: the announcement that went away bought no residency.
+      Assert.Equal(1, stats.WindowOverruns);
     }
 
     /// <summary>
     /// The same ledger read as a HEADERED table, so the composition the slot rung is built from —
     /// a header read once, then the body tiled beneath it — is the thing under the window.
     /// </summary>
-    private static IProjection<IReadOnlyList<LedgerEntry>> HeaderedLedger()
+    private static IProjection<ISheetCells, IReadOnlyList<LedgerEntry>> HeaderedLedger()
     {
       var ledgerEntry = HorizontalFlow(h => new LedgerEntry(
         Entry: h.Next(Integer()),
@@ -381,6 +385,69 @@ namespace Unrect.Tests.Streaming
       Assert.Equal(0, stats.ChunkReloads);
     }
 
+    // --- A band sweep, which is what the residency law was written for --------------------------------
+
+    [Fact]
+    public void ABandSweptAcrossByAHorizontalFlowCostsNoReloading()
+    {
+      // The case plain LRU gets wrong, and the reason the locus exists at all. A HorizontalFlow over
+      // a band reads it once per child, and the order the children read in is not something the
+      // store gets to choose — so a band that FITS the window must survive being swept across, and
+      // ChunkReloads is how that is said. A window of 64 rows over a three-row band leaves room to
+      // spare; a reload here would mean the store had dropped a chunk of the band it was told about.
+      //
+      // The whole sheet is 1,201 rows, so this is not a declaration that happens to fit by reading
+      // everything: it is a bounded band inside a sheet two orders of magnitude bigger.
+      var band = On(RowContaining("Entry")).Sized(AreaStrategies.ExplicitArea(3, 3)).Of(
+        HorizontalFlow(h => $"{h.Next(Column(3, c => c.Count))}|{h.Next(Column(3, c => c.Count))}|{h.Next(Column(3, c => c.Count))}"));
+
+      using var book = Workbook.Open(
+        Path("tall-ledger.xlsx"),
+        new WorkbookOptions { WarmReaders = false, ChunkRows = 16, WindowRows = 64 });
+
+      Assert.Equal("3|3|3", band.Map(book.Sheet("Ledger")));
+
+      var stats = book.Statistics("Ledger")!.Value;
+
+      Assert.Equal(0, stats.ChunkReloads);
+      Assert.Equal(0, stats.WindowOverruns);
+    }
+
+    [Fact]
+    public void AndAnOversizedBandWrappedThreeDeepIsStillOneOverrun()
+    {
+      // The counter reports the declaration's SHAPE rather than its spelling — the hazard being that
+      // every transparent wrapper places the same region again, so one band arrives at the store
+      // once per wrapper. Three wrappers inside the declared extent here, and one overrun: the band
+      // that does not fit is one thing for a caller to fix, whatever it is written as.
+      //
+      // The wrappers sit INSIDE the pipeline's Sized, which is what makes them wrappers over THIS
+      // band rather than over the whole sheet: a wrapper carrying no geometry of its own is handed
+      // the region its parent settled, so each of them announces 3x200 again, consecutively. Written
+      // the other way round — the geometry on the inner shape, the wrappers outside it — they would
+      // each announce the whole sheet, which is a second oversized band and correctly a second
+      // overrun; the counter is about bands, and that really is two of them.
+      //
+      // The control is the unwrapped declaration, so the number is a property of the band and not of
+      // this particular chain.
+      var read = Range(block => $"{block.Width}x{block.Height}");
+
+      Assert.Equal(1, Overruns(Sized(AreaStrategies.ExplicitArea(3, 200)).Of(read)));
+      Assert.Equal(1, Overruns(Sized(AreaStrategies.ExplicitArea(3, 200)).Of(read.Optional().Padded(0).Named("wrapped"))));
+    }
+
+    /// <summary>The overruns a declaration costs over the tall ledger, through a window it does not fit.</summary>
+    private static long Overruns<T>(IProjection<ISheetCells, T> declaration)
+    {
+      using var book = Workbook.Open(
+        Path("tall-ledger.xlsx"),
+        new WorkbookOptions { WarmReaders = false, ChunkRows = 16, WindowRows = 64 });
+
+      declaration.Map(book.Sheet("Ledger"));
+
+      return book.Statistics("Ledger")!.Value.WindowOverruns;
+    }
+
     // --- Failures are identical too -----------------------------------------------------------------------
 
     [Fact]
@@ -411,9 +478,73 @@ namespace Unrect.Tests.Streaming
       using var book = Workbook.Open(Path("edge-cases.xlsx"), new WorkbookOptions { WarmReaders = false });
       var streamed = book.Sheet("Edges");
 
-      Assert.Equal(CellKind.Error, streamed[0, 1].Kind);
-      Assert.Equal(CellError.Value, streamed[0, 1].GetError());
-      Assert.False(streamed[0, 1].IsBlank);
+      Assert.True(streamed.IsErrorAt(0, 1));
+      Assert.Equal("#VALUE!", streamed.AsText(0, 1));
+      Assert.Equal("Error(#VALUE!)", streamed.Describe(0, 1));
+      Assert.False(streamed.IsBlank(0, 1));
+    }
+
+    /// <summary>
+    /// Every cell of two doors onto one file, compared on everything a reader can ask a cell: what
+    /// kind of thing it is, whether it says anything, whether what it says is its own, and what that
+    /// is. A whole-cell equality said all four at once; four questions say them one at a time and
+    /// name the one that differs.
+    /// </summary>
+    /// <summary>
+    /// Every member of <see cref="ISheetCells"/>, at both doors, for every cell — the canonical four,
+    /// the error queries, and all six kinded reads including the sentence a refused one produces.
+    /// <para>
+    /// The whole interface rather than the canonical part of it, because the interface is the
+    /// contract and a door that agreed about renderings while disagreeing about kinds would satisfy
+    /// half a law. The six kinded reads are asked of EVERY cell, so most of what is compared is the
+    /// refusals — which is the useful half: a reading that succeeds at both doors agrees trivially,
+    /// and a reading that fails has a sentence, a kind and an A1 to disagree about.
+    /// </para>
+    /// </summary>
+    private static void AssertEveryCellAgrees(ISheetCells eager, ISheetCells streamed)
+    {
+      for (var row = 0; row < eager.Area.Size.Height; row++)
+        for (var column = 0; column < eager.Area.Size.Width; column++)
+        {
+          Assert.Equal(eager.Describe(column, row), streamed.Describe(column, row));
+          Assert.Equal(eager.IsBlank(column, row), streamed.IsBlank(column, row));
+          Assert.Equal(eager.IsText(column, row), streamed.IsText(column, row));
+          Assert.Equal(eager.AsText(column, row), streamed.AsText(column, row));
+
+          // The error queries, which are the two ISheetCells members no leaf reads: IsErrorAt asks
+          // whether the cell IS one, and ErrorTextAt hands back the file's own spelling where it
+          // differs from the canonical one. A door that lost the literal would answer null here for
+          // two different reasons, and the contract has one.
+          Assert.Equal(eager.IsErrorAt(column, row), streamed.IsErrorAt(column, row));
+          Assert.Equal(eager.ErrorTextAt(column, row), streamed.ErrorTextAt(column, row));
+
+          Assert.Equal(Read(eager, column, row), Read(streamed, column, row));
+        }
+    }
+
+    /// <summary>
+    /// All six kinded reads of one cell, each rendered as its value or as the sentence that refused
+    /// it, so a whole cell's kinded behaviour is one string to compare.
+    /// </summary>
+    private static string Read(ISheetCells space, int column, int row)
+    {
+      string Of<T>(Func<int, int, (bool Read, T Value, CellProblem? Problem)> read)
+      {
+        var (ok, value, problem) = read(column, row);
+
+        return ok
+          ? Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? "<null>"
+          : problem!(ProjectionLocation.At(Plane<ISheetCells>.Of(space)[column, row]).A1);
+      }
+
+      return string.Join(
+        " | ",
+        Of<string>((c, r) => (space.TextAt(c, r, out var v, out var p), v, p)),
+        Of<decimal>((c, r) => (space.DecimalAt(c, r, out var v, out var p), v, p)),
+        Of<int>((c, r) => (space.IntegerAt(c, r, out var v, out var p), v, p)),
+        Of<double>((c, r) => (space.DoubleAt(c, r, out var v, out var p), v, p)),
+        Of<DateTime>((c, r) => (space.DateTimeAt(c, r, out var v, out var p), v, p)),
+        Of<bool>((c, r) => (space.BooleanAt(c, r, out var v, out var p), v, p)));
     }
 
     private static string Describe(IReadOnlyList<ProjectionDiagnostic> diagnostics) =>

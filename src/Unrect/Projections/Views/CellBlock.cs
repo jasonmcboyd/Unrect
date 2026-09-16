@@ -7,7 +7,8 @@ namespace Unrect.Projections
 {
   /// <summary>
   /// A rectangular block of cells, addressable by coordinate, row, or column, and knowing where it
-  /// sits so a caller can cite any of them.
+  /// sits so a caller can cite any of them. A cell is a <see cref="Point{TSpace}"/> — a place rather
+  /// than a value — so reading one is whatever its space can answer.
   /// <para>
   /// Over an extent whose height is discovered while it is read, the block obeys the same hybrid
   /// rule the extent does: <see cref="Width"/>, the indexer and <see cref="Row"/> ask for as much
@@ -17,31 +18,30 @@ namespace Unrect.Projections
   /// summary.
   /// </para>
   /// </summary>
-  public sealed class CellBlock
+  /// <typeparam name="TSpace">The space the block's cells belong to.</typeparam>
+  public sealed class CellBlock<TSpace>
+    where TSpace : class, ISpace
   {
     // Views are built per projection and are not covered by the projection thread-safety guarantee;
     // the caches race benignly (reference assignment is atomic, so the worst case is duplicated
     // work).
-    private IReadOnlyList<CellStrip>? _rows;
-    private IReadOnlyList<CellStrip>? _columns;
+    private IReadOnlyList<CellStrip<TSpace>>? _rows;
+    private IReadOnlyList<CellStrip<TSpace>>? _columns;
 
-    internal CellBlock(Plane<ICellValues> space, ProjectionContext context)
+    internal CellBlock(Plane<TSpace> space, ProjectionContext context)
     {
       Space = space;
       Context = context;
     }
 
     /// <summary>The block's own extent.</summary>
-    public Plane<ICellValues> Space { get; }
+    public Plane<TSpace> Space { get; }
 
     /// <summary>
     /// The context the block was projected in — where it sits, and the context its rows and columns
     /// carry so a typed read of one reports a failure against the declaration that named the block.
     /// </summary>
     private ProjectionContext Context { get; }
-
-    /// <summary>Where the block starts, relative to the space <c>Map</c> was called with.</summary>
-    private Offset Origin => Context.Origin;
 
     /// <summary>
     /// How many columns wide the block is. Free on an extent still being discovered: a width is
@@ -58,16 +58,16 @@ namespace Unrect.Projections
     /// <summary>
     /// The cell at <paramref name="column"/>, <paramref name="row"/>; either index outside the
     /// block throws <see cref="ArgumentOutOfRangeException"/>. On an extent still being discovered
-    /// this reads through <paramref name="row"/> and no further — the streaming way to read a
-    /// block.
+    /// asking for a cell reaches through <paramref name="row"/> and no further — the streaming way
+    /// to read a block.
     /// </summary>
-    public CellValue this[int column, int row]
+    public Point<TSpace> this[int column, int row]
     {
       get
       {
         Validate(column, row);
 
-        return Space.CellAt(column, row);
+        return Space[column, row];
       }
     }
 
@@ -75,7 +75,7 @@ namespace Unrect.Projections
     /// The address of the block's top-left cell. Carries the extent it was found in, so on one
     /// still being discovered this settles the bound.
     /// </summary>
-    public ProjectionLocation Location => ProjectionLocation.At(Origin, Space.Area.Size);
+    public ProjectionLocation Location => ProjectionLocation.At(Space);
 
     /// <summary>
     /// The address of one cell of the block, for citing it in a message. Like <see
@@ -87,7 +87,7 @@ namespace Unrect.Projections
     {
       Validate(column, row);
 
-      return ProjectionLocation.At(Origin + new Offset(column, row), Space.Area.Size);
+      return ProjectionLocation.At(Space.Origin + new Offset(column, row), Space.Area.Size);
     }
 
     /// <summary>
@@ -96,13 +96,12 @@ namespace Unrect.Projections
     /// through <paramref name="index"/> and no further, so a block can be walked row by row without
     /// asking how many rows there are.
     /// </summary>
-    public CellStrip Row(int index)
+    public CellStrip<TSpace> Row(int index)
     {
       if (!Space.HasRow(index))
         throw new ArgumentOutOfRangeException(nameof(index), index, $"The block is {Height} rows tall.");
 
-      var offset = new Offset(0, index);
-      return new CellStrip(Space.Cut(offset, new Area(Width, 1)), Orientation.Horizontal, Context.Advance(offset));
+      return new CellStrip<TSpace>(Space.Cut(new Offset(0, index), new Area(Width, 1)), Orientation.Horizontal, Context);
     }
 
     /// <summary>
@@ -110,13 +109,12 @@ namespace Unrect.Projections
     /// <see cref="ArgumentOutOfRangeException"/>. A column spans every row, so on an extent still
     /// being discovered this settles the bound.
     /// </summary>
-    public CellStrip Column(int index)
+    public CellStrip<TSpace> Column(int index)
     {
       if (index < 0 || index >= Width)
         throw new ArgumentOutOfRangeException(nameof(index), index, $"The block is {Width} columns wide.");
 
-      var offset = new Offset(index, 0);
-      return new CellStrip(Space.Cut(offset, new Area(1, Height)), Orientation.Vertical, Context.Advance(offset));
+      return new CellStrip<TSpace>(Space.Cut(new Offset(index, 0), new Area(1, Height)), Orientation.Vertical, Context);
     }
 
     /// <summary>
@@ -124,13 +122,13 @@ namespace Unrect.Projections
     /// on an extent still being discovered this settles the bound; <see cref="Row"/> in a loop is
     /// the reading that does not.
     /// </summary>
-    public IReadOnlyList<CellStrip> Rows => _rows ??= Build(Height, Row);
+    public IReadOnlyList<CellStrip<TSpace>> Rows => _rows ??= Build(Height, Row);
 
     /// <summary>
     /// Every column, left to right, built once and cached. Each column spans every row, so on an
     /// extent still being discovered this settles the bound.
     /// </summary>
-    public IReadOnlyList<CellStrip> Columns => _columns ??= Build(Width, Column);
+    public IReadOnlyList<CellStrip<TSpace>> Columns => _columns ??= Build(Width, Column);
 
     private void Validate(int column, int row)
     {
@@ -143,9 +141,9 @@ namespace Unrect.Projections
         throw new ArgumentOutOfRangeException(nameof(row), row, $"The block is {Height} rows tall.");
     }
 
-    private static IReadOnlyList<CellStrip> Build(int count, Func<int, CellStrip> select)
+    private static IReadOnlyList<CellStrip<TSpace>> Build(int count, Func<int, CellStrip<TSpace>> select)
     {
-      var strips = new CellStrip[count];
+      var strips = new CellStrip<TSpace>[count];
 
       for (var index = 0; index < count; index++)
         strips[index] = select(index);

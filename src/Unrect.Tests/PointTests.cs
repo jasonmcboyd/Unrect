@@ -1,6 +1,7 @@
 using System;
 
 using Unrect.Core;
+using Unrect.Spreadsheets;
 
 using Xunit;
 
@@ -12,27 +13,26 @@ namespace Unrect.Tests
   /// by what it finds there.
   /// <para>
   /// The last of those is the one place a reader can be misled, because the value model a point
-  /// stands in front of compares the other way — two blank cells are one <c>CellValue</c>, and two
+  /// stands in front of compares the other way — two blank cells are one <c>Cell</c>, and two
   /// blank cells are two points. Each half of that is pinned below.
   /// </para>
   /// </summary>
   public class PointTests
   {
     /// <summary>One cell of each kind worth telling apart: a label, a blank, a number, an error.</summary>
-    private static GridSpace Kinds() => GridSpace.Create(
+    private static ISheetCells Kinds() => SheetGrid.Of(
       new object?[,]
       {
         { "Total", null },
-        { 42, CellValue.OfError(CellError.DivisionByZero) },
-      },
-      ProjectionTestSpaces.Adapt);
+        { 42, Cell.OfError(CellError.DivisionByZero) },
+      });
 
     /// <summary>
     /// The cell at <paramref name="column"/>, <paramref name="row"/>, minted by hand: the locator
     /// that will mint them does not exist yet, and these laws are the point's own either way.
     /// </summary>
-    private static Point<GridSpace> At(GridSpace space, int column, int row)
-      => new Point<GridSpace>(space, column, row);
+    private static Point<ISheetCells> At(ISheetCells space, int column, int row)
+      => new Point<ISheetCells>(space, column, row);
 
     [Fact]
     public void APointNamesACellOfOneSpace()
@@ -90,11 +90,11 @@ namespace Unrect.Tests
     {
       // default(Point<T>) is unavoidable for a struct, so it is stated rather than guarded against:
       // it compares, hashes and prints like any other point, and has nothing to read.
-      Point<GridSpace> nowhere = default;
+      Point<ISheetCells> nowhere = default;
 
       Assert.Equal("(0,0)", nowhere.ToString());
-      Assert.Equal(nowhere, default(Point<GridSpace>));
-      Assert.Equal(nowhere.GetHashCode(), default(Point<GridSpace>).GetHashCode());
+      Assert.Equal(nowhere, default(Point<ISheetCells>));
+      Assert.Equal(nowhere.GetHashCode(), default(Point<ISheetCells>).GetHashCode());
       Assert.Throws<NullReferenceException>(() => { _ = nowhere.IsBlank; });
     }
 
@@ -141,7 +141,7 @@ namespace Unrect.Tests
       // The other direction of the same rule, and the one a reader coming from the value model is
       // most likely to trip over: nothing distinguishes two blank values, and everything
       // distinguishes two blank cells.
-      var space = GridSpace.Create(new object?[,] { { null, null } }, ProjectionTestSpaces.Adapt);
+      var space = SheetGrid.Of(new object?[,] { { null, null } });
 
       Assert.True(At(space, 0, 0).IsBlank);
       Assert.True(At(space, 1, 0).IsBlank);

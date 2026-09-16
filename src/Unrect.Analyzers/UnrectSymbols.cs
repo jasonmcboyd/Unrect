@@ -5,8 +5,8 @@ using Microsoft.CodeAnalysis;
 namespace Unrect.Analyzers
 {
   /// <summary>
-  /// The handful of Unrect types a demand is written in, resolved once per compilation — and the
-  /// one question asked of them: <em>what does this type demand of a space?</em>
+  /// The handful of Unrect types a declaration's space is written in, resolved once per compilation
+  /// — and the one question asked of them: <em>what space does this type ask for?</em>
   /// <para>
   /// <see cref="TryLoad"/> answers null when the compilation does not reference Unrect at all,
   /// which is every analyzer's first exit.
@@ -17,44 +17,32 @@ namespace Unrect.Analyzers
     private UnrectSymbols(
       INamedTypeSymbol space,
       INamedTypeSymbol projection,
-      INamedTypeSymbol scope,
       INamedTypeSymbol builders,
       INamedTypeSymbol stage,
-      INamedTypeSymbol demand,
       INamedTypeSymbol? rowLandmark,
       INamedTypeSymbol? columnLandmark,
-      INamedTypeSymbol? cursor,
-      INamedTypeSymbol? scopedCursor)
+      INamedTypeSymbol? cursor)
     {
       Space = space;
       Projection = projection;
-      Scope = scope;
       Builders = builders;
       Stage = stage;
-      Demand = demand;
       RowLandmark = rowLandmark;
       ColumnLandmark = columnLandmark;
       Cursor = cursor;
-      ScopedCursor = scopedCursor;
     }
 
-    /// <summary><c>Unrect.Core.ICellValues</c> — the demand a declaration makes when it makes none.</summary>
+    /// <summary><c>Unrect.Core.ISpace</c> — the space a declaration asks for when it asks for nothing.</summary>
     public INamedTypeSymbol Space { get; }
 
-    /// <summary><c>IProjection&lt;TSpace, TResult&gt;</c>, the only place a demand is written.</summary>
+    /// <summary><c>IProjection&lt;TSpace, TResult&gt;</c>, where a declaration's space is written.</summary>
     public INamedTypeSymbol Projection { get; }
 
-    /// <summary><c>ProjectionScope&lt;TSpace&gt;</c>.</summary>
-    public INamedTypeSymbol Scope { get; }
-
-    /// <summary><c>ProjectionBuilders&lt;TSpace&gt;</c>.</summary>
+    /// <summary><c>ProjectionBuilders&lt;TSpace&gt;</c>, the file-scoped vocabulary.</summary>
     public INamedTypeSymbol Builders { get; }
 
-    /// <summary><c>PlacementStage&lt;TSpace&gt;</c>, the base of the scoped pipeline stages.</summary>
+    /// <summary><c>PlacementStage&lt;TSpace&gt;</c>, the base of the pipeline stages.</summary>
     public INamedTypeSymbol Stage { get; }
-
-    /// <summary><c>Demand&lt;TSpace&gt;</c>, the witness a capability's package publishes.</summary>
-    public INamedTypeSymbol Demand { get; }
 
     /// <summary><c>IRowLandmark&lt;TSpace&gt;</c>; null if the projection layer predates it.</summary>
     public INamedTypeSymbol? RowLandmark { get; }
@@ -62,58 +50,44 @@ namespace Unrect.Analyzers
     /// <summary><c>IColumnLandmark&lt;TSpace&gt;</c>; null if the projection layer predates it.</summary>
     public INamedTypeSymbol? ColumnLandmark { get; }
 
-    /// <summary><c>LayoutCursor</c>, the plain layout's cursor.</summary>
+    /// <summary><c>LayoutCursor&lt;TSpace&gt;</c>, the receiver a layout's child is declared on.</summary>
     public INamedTypeSymbol? Cursor { get; }
 
-    /// <summary><c>LayoutCursor&lt;TSpace&gt;</c>, a scoped layout's cursor.</summary>
-    public INamedTypeSymbol? ScopedCursor { get; }
-
-    /// <summary>True for either layout cursor — the receiver a child is declared on.</summary>
+    /// <summary>True for the layout cursor — the receiver a child is declared on.</summary>
     public bool IsCursor(ITypeSymbol type)
-      => SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, Cursor)
-        || SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, ScopedCursor);
+      => SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, Cursor);
 
     /// <summary>The Unrect types in <paramref name="compilation"/>, or null if it has none.</summary>
     public static UnrectSymbols? TryLoad(Compilation compilation)
     {
-      var space = compilation.GetTypeByMetadataName("Unrect.Core.ICellValues");
+      var space = compilation.GetTypeByMetadataName("Unrect.Core.ISpace");
       var projection = compilation.GetTypeByMetadataName("Unrect.Projections.IProjection`2");
-      var scope = compilation.GetTypeByMetadataName("Unrect.Projections.ProjectionScope`1");
       var builders = compilation.GetTypeByMetadataName("Unrect.Projections.ProjectionBuilders`1");
       var stage = compilation.GetTypeByMetadataName("Unrect.Projections.PlacementStage`1");
-      var demand = compilation.GetTypeByMetadataName("Unrect.Projections.Demand`1");
 
-      if (space is null || projection is null || scope is null || builders is null || stage is null || demand is null)
+      if (space is null || projection is null || builders is null || stage is null)
         return null;
 
       return new UnrectSymbols(
         space,
         projection,
-        scope,
         builders,
         stage,
-        demand,
         compilation.GetTypeByMetadataName("Unrect.Projections.IRowLandmark`1"),
         compilation.GetTypeByMetadataName("Unrect.Projections.IColumnLandmark`1"),
-        compilation.GetTypeByMetadataName("Unrect.Projections.LayoutCursor"),
         compilation.GetTypeByMetadataName("Unrect.Projections.LayoutCursor`1"));
     }
 
     /// <summary>
-    /// What <paramref name="type"/> demands of a space — the <c>TSpace</c> of the projection,
-    /// matcher or witness it is — or null where the type says nothing about a space at all.
+    /// The space <paramref name="type"/> asks for — the <c>TSpace</c> of the projection or matcher
+    /// it is — or null where the type says nothing about a space at all.
     /// </summary>
     public ITypeSymbol? DemandOf(ITypeSymbol? type)
       => SpaceArgumentOf(type, Projection)
-        ?? SpaceArgumentOf(type, Demand)
         ?? SpaceArgumentOf(type, RowLandmark)
         ?? SpaceArgumentOf(type, ColumnLandmark);
 
-    /// <summary>True when <paramref name="type"/> asks for more of a space than <c>ICellValues</c>.</summary>
-    public bool DemandsBeyondSpace(ITypeSymbol? type)
-      => DemandOf(type) is ITypeSymbol demanded && !IsSpace(demanded);
-
-    /// <summary>True for <c>ICellValues</c> itself — the demand that is no demand.</summary>
+    /// <summary>True for <c>ISpace</c> itself — the space that asks for nothing.</summary>
     public bool IsSpace(ITypeSymbol type) => SymbolEqualityComparer.Default.Equals(type, Space);
 
     /// <summary>
@@ -156,8 +130,8 @@ namespace Unrect.Analyzers
       {
         var argument = candidate.TypeArguments[0];
 
-        // A projection that names a capability lists that construction alongside the ICellValues one it
-        // inherits (IProjection<T> IS an IProjection<ICellValues, T>); the demanding one is the answer.
+        // A matcher that names a capability may reach its definition through a base construction
+        // over ISpace as well; the demanding one is the answer.
         if (found is null || (IsSpace(found) && !IsSpace(argument)))
           found = argument;
       }

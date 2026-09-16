@@ -8,121 +8,76 @@ namespace Unrect.Analyzers.Tests
   /// UNR002 — the fix on the compiler's CS1503. The error is already at the right place and already
   /// names both types; what it cannot say is that a demand enters a declaration through a
   /// <em>factory</em>, so the edit belongs on the factory rather than on the child it points at.
+  /// <para>
+  /// Since phase 6 there are no scopes to move a factory <em>to</em>: a file names its space once in
+  /// its <c>using static</c>, so the factory a child out-demands is a bare call on the file's
+  /// vocabulary and the edit qualifies that one call with the vocabulary closed over the space the
+  /// child asks for. The old fixtures opened two scopes with <c>Projection.Over&lt;T&gt;()</c> and
+  /// asked which one the fix would reach for; the question no longer exists, and the fix's sentence
+  /// is what changed with it.
+  /// </para>
   /// </summary>
   public class DemandDoorTests
   {
     /// <summary>
-    /// The case the boundary note recorded: a scope too weak for the child declared through it.
-    /// The fix moves the factory to a scope already in hand that can carry the demand.
+    /// The case the boundary note recorded: a file scoped to a sheet, and a child under it that
+    /// reads a formula. The fix names the vocabulary that can carry the demand.
     /// </summary>
     [Fact]
-    public Task A_child_refused_by_a_layout_moves_the_factory_to_a_scope_that_carries_it()
+    public Task A_child_refused_by_a_layout_is_offered_the_vocabulary_that_carries_it()
       => Verify.FixesCompilerError<DemandDoorCodeFixProvider>(
         """
         class Report
         {
-          IProjection<ISpreadsheetSpace, string?> Header()
-          {
-            var plain = Projection.Over<ICellValues>();
-            var spreadsheet = Projection.Over<ISpreadsheetSpace>();
-
-            return plain.VerticalFlow(v => v.Next({|CS1503:SpreadsheetProjections.Formula()|}));
-          }
+          IProjection<IFormulaSpace, string?> Header()
+            => VerticalFlow(v => v.Next({|CS1503:SpreadsheetProjections.Formula<IFormulaSpace>()|}));
         }
         """,
         """
         class Report
         {
-          IProjection<ISpreadsheetSpace, string?> Header()
-          {
-            var plain = Projection.Over<ICellValues>();
-            var spreadsheet = Projection.Over<ISpreadsheetSpace>();
-
-            return spreadsheet.VerticalFlow(v => v.Next(SpreadsheetProjections.Formula()));
-          }
+          IProjection<IFormulaSpace, string?> Header()
+            => ProjectionBuilders<IFormulaSpace>.VerticalFlow(v => v.Next(SpreadsheetProjections.Formula<IFormulaSpace>()));
         }
         """);
 
     /// <summary>
     /// A child handed straight to a factory rather than through a cursor is the same mistake one
     /// level shallower, and the same edit fixes it — named arguments and all.
+    /// <para>
+    /// The title is pinned here because with this fix the sentence IS the product: the edit is one
+    /// qualification, and what earns it is the naming of the two spaces the reader has to compare —
+    /// the one the child demands and the one the file's <c>using static</c> named.
+    /// </para>
     /// </summary>
     [Fact]
-    public Task A_row_refused_by_a_table_moves_the_table_to_the_scope()
+    public Task A_row_refused_by_a_table_is_offered_the_vocabulary_that_carries_it()
       => Verify.FixesCompilerError<DemandDoorCodeFixProvider>(
         """
         class Report
         {
-          IProjection<ISpreadsheetSpace, IReadOnlyList<string?>> Rows()
+          IProjection<IFormulaSpace, IReadOnlyList<string?>> Rows()
           {
-            var plain = Projection.Over<ICellValues>();
-            var spreadsheet = Projection.Over<ISpreadsheetSpace>();
-            IProjection<IFormulaSpace, string?> row = SpreadsheetProjections.Formula();
+            IProjection<IFormulaSpace, string?> row = SpreadsheetProjections.Formula<IFormulaSpace>();
 
-            return plain.Table(headerRows: 1, eachRow: {|CS1503:row|});
+            return Table(headerRows: 1, eachRow: {|CS1503:row|});
           }
         }
         """,
         """
         class Report
         {
-          IProjection<ISpreadsheetSpace, IReadOnlyList<string?>> Rows()
+          IProjection<IFormulaSpace, IReadOnlyList<string?>> Rows()
           {
-            var plain = Projection.Over<ICellValues>();
-            var spreadsheet = Projection.Over<ISpreadsheetSpace>();
-            IProjection<IFormulaSpace, string?> row = SpreadsheetProjections.Formula();
+            IProjection<IFormulaSpace, string?> row = SpreadsheetProjections.Formula<IFormulaSpace>();
 
-            return spreadsheet.Table(headerRows: 1, eachRow: row);
-          }
-        }
-        """);
-
-    /// <summary>A scope handed in is as much in hand as one opened here.</summary>
-    [Fact]
-    public Task A_scope_taken_as_a_parameter_is_offered_too()
-      => Verify.FixesCompilerError<DemandDoorCodeFixProvider>(
-        """
-        class Report
-        {
-          IProjection<ISpreadsheetSpace, string?> Header(ProjectionScope<ISpreadsheetSpace> sheet)
-          {
-            var plain = Projection.Over<ICellValues>();
-
-            return plain.VerticalFlow(v => v.Next({|CS1503:SpreadsheetProjections.Formula()|}));
+            return ProjectionBuilders<IFormulaSpace>.Table(headerRows: 1, eachRow: row);
           }
         }
         """,
-        """
-        class Report
-        {
-          IProjection<ISpreadsheetSpace, string?> Header(ProjectionScope<ISpreadsheetSpace> sheet)
-          {
-            var plain = Projection.Over<ICellValues>();
-
-            return sheet.VerticalFlow(v => v.Next(SpreadsheetProjections.Formula()));
-          }
-        }
-        """);
-
-    /// <summary>
-    /// Nothing is invented. Where no scope in hand can carry the demand, the fix stays silent rather
-    /// than opening a door the author has not chosen — which space to widen to is a decision, and
-    /// the narrowest capability that works is rarely the one a fix would guess.
-    /// </summary>
-    [Fact]
-    public Task No_scope_in_hand_means_no_offer()
-      => Verify.OffersNoFixForCompilerError<DemandDoorCodeFixProvider>(
-        """
-        class Report
-        {
-          IProjection<ICellValues, string?> Header()
-          {
-            var plain = Projection.Over<ICellValues>();
-
-            return plain.VerticalFlow(v => v.Next({|CS1503:SpreadsheetProjections.Formula()|}));
-          }
-        }
-        """);
+        titled:
+          "Use 'ProjectionBuilders<IFormulaSpace>.Table' here — this child demands 'IFormulaSpace', "
+          + "which a 'Table' declared over 'ISheetCells' cannot carry");
 
     /// <summary>CS1503 is a common error; only the projection-shaped one is answered.</summary>
     [Fact]
@@ -136,6 +91,25 @@ namespace Unrect.Analyzers.Tests
           }
 
           static void Give() => Take({|CS1503:"text"|});
+        }
+        """);
+
+    /// <summary>
+    /// A leaf refused somewhere that is not a composing factory is not this fix's business: there is
+    /// no child entering through a factory, so there is nothing to re-declare and the compiler's own
+    /// message — which names both types — is the whole of what can be said.
+    /// </summary>
+    [Fact]
+    public Task A_refusal_outside_a_composing_factory_is_left_to_the_compiler()
+      => Verify.OffersNoFixForCompilerError<DemandDoorCodeFixProvider>(
+        """
+        class Report
+        {
+          static void Take(IProjection<ISheetCells, string?> child)
+          {
+          }
+
+          static void Give() => Take({|CS1503:SpreadsheetProjections.Formula<IFormulaSpace>()|});
         }
         """);
   }

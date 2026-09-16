@@ -8,7 +8,7 @@ using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 
 namespace Unrect.Tests.Spreadsheets
 {
@@ -29,7 +29,7 @@ namespace Unrect.Tests.Spreadsheets
     ///   3    #NULL!       #NUM!      (none)    (none)       7
     /// </code>
     /// </summary>
-    private static ICellValues Edges(Func<CellValue, bool>? isBlank = null)
+    private static ISheetCells Edges(Func<Cell, bool>? isBlank = null)
       => SpreadsheetSpace.Create(
         Path.Combine(AppContext.BaseDirectory, "TestData", "edge-cases.xlsx"),
         "Edges",
@@ -51,30 +51,33 @@ namespace Unrect.Tests.Spreadsheets
     {
       var space = Edges();
 
-      Assert.Equal("text", space[0, 0].GetString());
-      Assert.Equal(42, space[1, 0].GetInt());
-      Assert.Equal(3.14m, space[2, 0].GetDecimal());
-      Assert.Equal(new DateTime(2026, 1, 15), space[3, 0].GetDate());
-      Assert.True(space[4, 0].GetBoolean());
-      Assert.Equal(7, space[4, 3].GetInt());
+      var sheet = Plane<ISheetCells>.Of(space);
+
+      Assert.Equal("text", sheet[0, 0].Text());
+      Assert.Equal(42, sheet[1, 0].Integer());
+      Assert.Equal(3.14m, sheet[2, 0].Decimal());
+      Assert.Equal(new DateTime(2026, 1, 15), sheet[3, 0].Date().Date);
+      Assert.True(sheet[4, 0].Boolean());
+      Assert.Equal(7, sheet[4, 3].Integer());
     }
 
     // --- Errors ------------------------------------------------------------------------------------
 
     [Theory]
-    [InlineData(0, 1, CellError.Value)]
-    [InlineData(1, 1, CellError.DivisionByZero)]
-    [InlineData(2, 1, CellError.NotAvailable)]
-    [InlineData(3, 1, CellError.Reference)]
-    [InlineData(4, 1, CellError.Name)]
-    [InlineData(0, 3, CellError.Null)]
-    [InlineData(1, 3, CellError.Number)]
-    public void AnErrorCellReadsAsTheErrorTheSheetHolds(int column, int row, CellError expected)
+    [InlineData(0, 1, "#VALUE!")]
+    [InlineData(1, 1, "#DIV/0!")]
+    [InlineData(2, 1, "#N/A")]
+    [InlineData(3, 1, "#REF!")]
+    [InlineData(4, 1, "#NAME?")]
+    [InlineData(0, 3, "#NULL!")]
+    [InlineData(1, 3, "#NUM!")]
+    public void AnErrorCellReadsAsTheErrorTheSheetHolds(int column, int row, string spelling)
     {
-      var cell = Edges()[column, row];
+      var space = Edges();
 
-      Assert.Equal(CellKind.Error, cell.Kind);
-      Assert.Equal(expected, cell.GetError());
+      Assert.True(space.IsErrorAt(column, row));
+      Assert.Equal(spelling, space.AsText(column, row));
+      Assert.Equal($"Error({spelling})", space.Describe(column, row));
     }
 
     [Theory]
@@ -89,10 +92,10 @@ namespace Unrect.Tests.Spreadsheets
     {
       // The adapter reads the error before it reads the value: ExcelDataReader reports an error
       // cell's value as null, which would otherwise be adapted into a missing cell.
-      var cell = Edges()[column, row];
+      var space = Edges();
 
-      Assert.True(cell.HasValue);
-      Assert.False(cell.IsBlank);
+      Assert.False(space.IsBlank(column, row));
+      Assert.NotNull(space.AsText(column, row));
     }
 
     [Fact]
@@ -100,15 +103,17 @@ namespace Unrect.Tests.Spreadsheets
     {
       // #REF! is not text, so the whitespace rule never sees it — which is the right outcome: an
       // error is something the sheet says, not empty space to be skipped past.
-      Assert.Equal(CellError.Reference, Edges()[3, 1].GetError());
-      Assert.Equal(CellError.Null, Edges()[0, 3].GetError());
+      Assert.True(Edges().IsErrorAt(3, 1));
+      Assert.Equal("#REF!", Edges().AsText(3, 1));
+      Assert.True(Edges().IsErrorAt(0, 3));
+      Assert.Equal("#NULL!", Edges().AsText(0, 3));
     }
 
     [Fact]
     public void ARowOfNothingButErrorsStillCarriesValues()
     {
       // The consequence that matters downstream: a discovered region does not stop at such a row.
-      var errorsOnly = Edges().GetSubspace(new Offset(0, 1), new Area(5, 1));
+      var errorsOnly = Edges().Region().Slice(new Offset(0, 1), new Area(5, 1));
 
       Assert.Equal(1, SizeStrategies.RowsWhileAnyValue().GetSize(errorsOnly).Height);
     }
@@ -122,11 +127,11 @@ namespace Unrect.Tests.Spreadsheets
       // as text they would anchor a region that should have ended.
       var space = Edges();
 
-      Assert.True(space[0, 2].IsBlank);   // two spaces
-      Assert.True(space[1, 2].IsBlank);   // one space
-      Assert.True(space[2, 2].IsBlank);   // an empty string
-      Assert.True(space[3, 2].IsBlank);   // no cell at all
-      Assert.Equal("x", space[4, 2].GetString());
+      Assert.True(space.IsBlank(0, 2));   // two spaces
+      Assert.True(space.IsBlank(1, 2));   // one space
+      Assert.True(space.IsBlank(2, 2));   // an empty string
+      Assert.True(space.IsBlank(3, 2));   // no cell at all
+      Assert.Equal("x", space.AsText(4, 2));
     }
 
     [Fact]
@@ -134,9 +139,10 @@ namespace Unrect.Tests.Spreadsheets
     {
       var space = Edges(isBlank: _ => false);
 
-      Assert.Equal("  ", space[0, 2].GetString());
-      Assert.Equal(" ", space[1, 2].GetString());
-      Assert.Equal("x", space[4, 2].GetString());
+      Assert.Equal("  ", space.AsText(0, 2));
+      Assert.True(space.IsText(0, 2));
+      Assert.Equal(" ", space.AsText(1, 2));
+      Assert.Equal("x", space.AsText(4, 2));
     }
 
     [Fact]
@@ -146,19 +152,19 @@ namespace Unrect.Tests.Spreadsheets
       // is not a judgement call a blankness rule gets to overrule.
       var space = Edges(isBlank: _ => false);
 
-      Assert.True(space[2, 2].IsBlank);
-      Assert.True(space[3, 2].IsBlank);
+      Assert.True(space.IsBlank(2, 2));
+      Assert.True(space.IsBlank(3, 2));
     }
 
     [Fact]
     public void ACustomPredicateDecidesBlanknessForThisSheet()
     {
-      var space = Edges(isBlank: v => v.TryGetString() == "x");
+      var space = Edges(isBlank: v => v.IsText && v.AsText() == "x");
 
-      Assert.True(space[4, 2].IsBlank);
+      Assert.True(space.IsBlank(4, 2));
 
       // The custom rule replaces the default rather than adding to it, so whitespace is text again.
-      Assert.Equal("  ", space[0, 2].GetString());
+      Assert.Equal("  ", space.AsText(0, 2));
     }
 
     // --- Blankness changes decomposition, which is the whole point ---------------------------------------
@@ -169,21 +175,32 @@ namespace Unrect.Tests.Spreadsheets
       // Column 4 carries "x" on the whitespace row, so the difference only shows on the columns
       // that do not: under the default the row is empty and ends the region; under strict fidelity
       // it carries two text cells and the region runs to the bottom of the sheet.
-      var byDefault = Edges().GetSubspace(new Offset(0, 0), new Area(4, 4));
-      var strict = Edges(isBlank: _ => false).GetSubspace(new Offset(0, 0), new Area(4, 4));
+      var byDefault = Edges();
+      var strict = Edges(isBlank: _ => false);
 
-      Assert.Equal(2, SizeStrategies.RowsWhileAnyValue().GetSize(byDefault).Height);
-      Assert.Equal(4, SizeStrategies.RowsWhileAnyValue().GetSize(strict).Height);
+      var firstFour = new Offset(0, 0);
+      var block = new Area(4, 4);
 
-      Assert.Equal((4, 2), Range(b => (b.Width, b.Height)).Map(byDefault));
-      Assert.Equal((4, 4), Range(b => (b.Width, b.Height)).Map(strict));
+      Assert.Equal(2, SizeStrategies.RowsWhileAnyValue().GetSize(byDefault.Region().Slice(firstFour, block)).Height);
+      Assert.Equal(4, SizeStrategies.RowsWhileAnyValue().GetSize(strict.Region().Slice(firstFour, block)).Height);
+
+      // ...and the leaf that discovers its own extent sees exactly what the strategy does, which is
+      // the half that says blankness reaches the declaration and not merely the calculus. The first
+      // four columns are named here because the fifth carries "x" on the whitespace row under every
+      // rule, and a region that included it could not tell the two apart.
+      var fourColumns = AreaStrategies.ColumnsThenRows(
+        ColumnStrategies.TakeColumns(4),
+        RowStrategies.TakeRowsWhileAnyValue());
+
+      Assert.Equal((4, 2), Range(fourColumns, b => (b.Width, b.Height)).Map(byDefault));
+      Assert.Equal((4, 4), Range(fourColumns, b => (b.Width, b.Height)).Map(strict));
     }
 
     [Fact]
     public void BlanknessDecidesWhetherThereIsAGapToSkip()
     {
-      var byDefault = Edges().GetSubspace(new Offset(0, 2), new Area(4, 2));
-      var strict = Edges(isBlank: _ => false).GetSubspace(new Offset(0, 2), new Area(4, 2));
+      var byDefault = Edges().Region().Slice(new Offset(0, 2), new Area(4, 2));
+      var strict = Edges(isBlank: _ => false).Region().Slice(new Offset(0, 2), new Area(4, 2));
 
       Assert.Equal(1, OffsetStrategies.SkipBlankRows().GetOffset(byDefault).Size.Height);
       Assert.Equal(0, OffsetStrategies.SkipBlankRows().GetOffset(strict).Size.Height);
@@ -197,12 +214,12 @@ namespace Unrect.Tests.Spreadsheets
       var byDefault = Edges();
       var strict = Edges(isBlank: _ => false);
 
-      Assert.Equal(byDefault[0, 0], strict[0, 0]);
-      Assert.Equal(byDefault[1, 0], strict[1, 0]);
-      Assert.Equal(byDefault[3, 0], strict[3, 0]);
-      Assert.Equal(byDefault[0, 1], strict[0, 1]);
-      Assert.Equal(byDefault[4, 2], strict[4, 2]);
-      Assert.Equal(byDefault[4, 3], strict[4, 3]);
+      foreach (var (column, row) in new[] { (0, 0), (1, 0), (3, 0), (0, 1), (4, 2), (4, 3) })
+      {
+        Assert.Equal(byDefault.Describe(column, row), strict.Describe(column, row));
+        Assert.Equal(byDefault.AsText(column, row), strict.AsText(column, row));
+        Assert.Equal(byDefault.IsText(column, row), strict.IsText(column, row));
+      }
     }
 
     // --- An error the adapter cannot name -------------------------------------------------------
@@ -222,12 +239,11 @@ namespace Unrect.Tests.Spreadsheets
     {
       // What the adapter builds when its switch falls through: the code it could not name, plus
       // the reader's own text for it, which for an undefined enum value is the number itself.
-      var value = CellValue.OfError(CellError.Other, "42");
+      var space = SheetGrid.Of(new object?[,] { { Cell.OfError(CellError.Other, "42") } });
 
-      Assert.Equal(CellKind.Error, value.Kind);
-      Assert.False(value.IsBlank);
-      Assert.Equal(CellError.Other, value.GetError());
-      Assert.Equal("42", value.TryGetErrorText());
+      Assert.True(space.IsErrorAt(0, 0));
+      Assert.False(space.IsBlank(0, 0));
+      Assert.Equal("42", space.AsText(0, 0));
     }
 
     [Fact]
@@ -235,12 +251,13 @@ namespace Unrect.Tests.Spreadsheets
     {
       // The reason the literal is carried at all: a reader looking at this message has a string to
       // search the file for. "Error(Other)" would tell them only that something, somewhere, failed.
-      var value = CellValue.OfError(CellError.Other, "42");
+      var space = SheetGrid.Of(new object?[,] { { Cell.OfError(CellError.Other, "42") } });
 
-      Assert.Equal("Error(42)", value.ToString());
-      Assert.Equal(
-        "Cell value is Error (42); expected Number.",
-        Assert.Throws<InvalidOperationException>(() => value.GetDouble()).Message);
+      Assert.Equal("Error(42)", space.Describe(0, 0));
+      Assert.Equal("42", space.AsText(0, 0));
+
+      Assert.False(space.DoubleAt(0, 0, out _, out var problem));
+      Assert.Equal("expected Number at B4, found Error(42)", problem!("B4"));
     }
   }
 }

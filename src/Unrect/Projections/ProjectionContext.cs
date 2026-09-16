@@ -15,51 +15,57 @@ namespace Unrect.Projections
       ProjectionContext? parent,
       IProjection? projection,
       int? index,
-      Offset origin,
-      ICellValues space,
+      ISpace space,
       DiagnosticCollector diagnostics,
       UseSite site,
       UseSite pending,
       LabelScope? labels,
-      int? ordinal)
+      int? ordinal,
+      IProjection? blame = null)
     {
       Parent = parent;
       Space = space;
       Projection = projection;
       Index = index;
-      Origin = origin;
       Diagnostics = diagnostics;
       Site = site;
       Pending = pending;
       Labels = labels;
       Ordinal = ordinal;
+      Blame = blame;
     }
 
     /// <summary>
-    /// The context a <c>Map</c> call starts from: no projection yet, no path, origin (0, 0), and a
-    /// fresh diagnostic collector for this decomposition.
+    /// The context a <c>Map</c> call starts from: no projection yet, no path, and a fresh
+    /// diagnostic collector for this decomposition.
     /// </summary>
-    public static ProjectionContext Root(ICellValues space)
+    /// <param name="space">The space the decomposition was handed.</param>
+    public static ProjectionContext Root(ISpace space)
     {
       if (space is null)
         throw new ArgumentNullException(nameof(space));
 
-      return new ProjectionContext(null, null, null, default, space, new DiagnosticCollector(), default, default, null, null);
+      return new ProjectionContext(null, null, null, space, new DiagnosticCollector(), default, default, null, null);
     }
 
     private ProjectionContext? Parent { get; }
 
     /// <summary>
-    /// The space the decomposition started from. Nothing reads it yet; it is here so the root owns
-    /// what it was given rather than discarding it, which is what a decomposition trace will hang
-    /// off when wave 3 adds one.
+    /// The space the decomposition started from — what the root was handed, kept so a decomposition
+    /// trace has something to hang off.
     /// </summary>
-    internal ICellValues Space { get; }
+    internal ISpace Space { get; }
 
     /// <summary>The projection this context is inside, or null at the root.</summary>
     public IProjection? Projection { get; }
 
-    /// <summary>Which occurrence of <see cref="Projection"/> this is, where that is meaningful (e.g. inside a repeat).</summary>
+    /// <summary>
+    /// Who to blame at the root when nothing was entered — see <see cref="Blaming"/>. Null
+    /// everywhere else, because everywhere else there is a <see cref="Projection"/>.
+    /// </summary>
+    private IProjection? Blame { get; }
+
+    /// <summary>Which occurrence of the projection this is, where that is meaningful (e.g. inside a repeat).</summary>
     public int? Index { get; }
 
     /// <summary>
@@ -72,9 +78,6 @@ namespace Unrect.Projections
     /// overwrites it, so the nearest enclosing one wins.
     /// </summary>
     internal int? Ordinal { get; }
-
-    /// <summary>Where this context sits, relative to the space the root <c>Map</c> call was given.</summary>
-    public Offset Origin { get; }
 
     /// <summary>
     /// Shared by reference across the whole tree of one <c>Map</c> call — the single piece of
@@ -102,12 +105,15 @@ namespace Unrect.Projections
 
     /// <summary>
     /// Pushes <paramref name="source"/> as the nearest set of labels along <paramref name="axis"/>,
-    /// capturing this context's <see cref="Origin"/> as the frame the labels' ordinals are relative
-    /// to. A leaf that later resolves one of these labels translates the ordinal from that captured
-    /// frame to its own.
+    /// with <paramref name="captureOrigin"/> — the origin of the region the labels are APPLIED to —
+    /// as the frame their ordinals are relative to. A leaf that later resolves one of these labels
+    /// translates the ordinal from that frame to its own region's. It is the region the labels
+    /// describe rather than the one they were read from: a table pushes its own extent, and
+    /// <c>WithColumnLabels</c> pushes the body it hands them to, which is what makes an ordinal
+    /// mean the same column to every row beneath it.
     /// </summary>
-    internal ProjectionContext PushLabels(LabelAxis axis, ILabelSource source)
-      => new ProjectionContext(Parent, Projection, Index, Origin, Space, Diagnostics, Site, Pending, new LabelScope(axis, source, Origin, Labels), Ordinal);
+    internal ProjectionContext PushLabels(LabelAxis axis, ILabelSource source, Offset captureOrigin)
+      => new ProjectionContext(Parent, Projection, Index, Space, Diagnostics, Site, Pending, new LabelScope(axis, source, captureOrigin, Labels), Ordinal);
 
     /// <summary>
     /// The nearest labels along <paramref name="axis"/>, or null when none is in scope. Walks the
@@ -128,53 +134,90 @@ namespace Unrect.Projections
     /// Nothing is left over: a projection's own children are labelled by their own use sites, not
     /// by its.
     /// </summary>
-    public ProjectionContext Descend(IProjection projection, Offset offset)
-      => new ProjectionContext(this, projection, null, Origin + offset, Space, Diagnostics, Pending, default, Labels, Ordinal);
+    public ProjectionContext Descend(IProjection projection)
+      => new ProjectionContext(this, projection, null, Space, Diagnostics, Pending, default, Labels, Ordinal);
 
     /// <summary>
-    /// Moves the origin without adding a path segment — how layouts and repeats track their cursor.
-    /// The same node moved, so it keeps both use sites; that is also what the engine does for a
-    /// transparent projection, and therefore how a label reaches past a wrapper to the projection a
-    /// reader would name.
+    /// The root, told which projection is about to be applied to it — the one it may blame for a
+    /// failure raised before anything has been entered.
+    /// <para>
+    /// A transparent projection contributes no path segment, so the engine does not descend into it
+    /// and hands it the context it was called with. At the root that context has no projection at
+    /// all, and a read failure inside the transparent projection's own lambda would have nothing to
+    /// report against — which is what this closes.
+    /// </para>
+    /// <para>
+    /// The projection itself is blamed, not what it wraps: it is what the declaration applied here,
+    /// it is what the use site named, and the renderer resolves a name through a wrapper where it
+    /// wants one. Blaming the wrapped projection instead would make a fallback the declaration
+    /// called <c>'recovery'</c> render as <c>'recovery' (Point)</c> — the label from one projection
+    /// and the kind from another.
+    /// </para>
+    /// <para>
+    /// Anywhere but the root this is the identity: a context inside a projection already has one to
+    /// blame, and blaming the transparent child instead would give it the path segment transparency
+    /// exists to deny it.
+    /// </para>
     /// </summary>
-    public ProjectionContext Advance(Offset offset)
-      => new ProjectionContext(Parent, Projection, Index, Origin + offset, Space, Diagnostics, Site, Pending, Labels, Ordinal);
+    internal ProjectionContext Blaming(IProjection projection)
+      => Projection is null
+        ? new ProjectionContext(Parent, null, Index, Space, Diagnostics, Site, Pending, Labels, Ordinal, projection)
+        : this;
 
     /// <summary>Declares where the next child was written, for it to claim on the way in.</summary>
     internal ProjectionContext WithUseSite(UseSite site)
-      => new ProjectionContext(Parent, Projection, Index, Origin, Space, Diagnostics, Site, site, Labels, Ordinal);
+      => new ProjectionContext(Parent, Projection, Index, Space, Diagnostics, Site, site, Labels, Ordinal);
 
-    /// <summary>Where this context sits, expressed as an A1-style address against <paramref name="extent"/>.</summary>
-    public ProjectionLocation Locate(Plane<ICellValues> extent) => ProjectionLocation.At(Origin, extent.Area.Size);
+    /// <summary>
+    /// Where <paramref name="extent"/> starts, as an A1-style address. The region says so itself —
+    /// its origin is the sheet's own — so nothing has to be accumulated on the way down to it.
+    /// </summary>
+    public ProjectionLocation Locate<TSpace>(Plane<TSpace> extent)
+      where TSpace : class, ISpace
+      => ProjectionLocation.At(extent);
 
     /// <summary>
     /// A <see cref="ProjectionException"/> blaming this context's own projection, for a projection
     /// to throw when the data it was handed is not what the projection declared.
     /// </summary>
-    public ProjectionException Failure(string problem, Plane<ICellValues> extent, Exception? inner = null)
-      => Failure(
-        Projection ?? throw new InvalidOperationException("The root context has no projection to blame; report failures from within a projection's Project."),
-        problem,
-        extent,
-        null,
-        inner);
+    public ProjectionException Failure<TSpace>(string problem, Plane<TSpace> extent, Exception? inner = null)
+      where TSpace : class, ISpace
+      => Failure(Blamed(), problem, extent, null, inner);
 
     /// <summary>
-    /// The same failure as the public <see cref="Failure(string, Plane{ICellValues}, Exception?)"/>, carrying
+    /// The same failure as the public <see cref="Failure{TSpace}(string, Plane{TSpace}, Exception?)"/>, carrying
     /// the fault flag. An overload rather than an optional parameter on the public method: adding a
     /// parameter there would be a binary break, and the flag is not a caller's to set.
     /// </summary>
-    internal ProjectionException Failure(string problem, Plane<ICellValues> extent, Exception? inner, bool isFault)
-      => Failure(
-        Projection ?? throw new InvalidOperationException("The root context has no projection to blame; report failures from within a projection's Project."),
-        problem,
-        extent,
-        null,
-        inner,
-        isFault);
+    internal ProjectionException Failure<TSpace>(string problem, Plane<TSpace> extent, Exception? inner, bool isFault)
+      where TSpace : class, ISpace
+      => Failure(Blamed(), problem, extent, null, inner, isFault);
+
+    /// <summary>
+    /// The projection a failure reported from here is about: the one this context is inside, or —
+    /// at the root, where nothing was entered — the one the engine said it was applying.
+    /// </summary>
+    private IProjection Blamed()
+      => Projection
+        ?? Blame
+        ?? throw new InvalidOperationException("The root context has no projection to blame; report failures from within a projection's Project.");
+
+    /// <summary>
+    /// A failed cell read, rethrown as this context's own failure: the reader's sentence, addressed
+    /// the way this layer addresses a cell, carrying the declaration path and the original as its
+    /// inner exception.
+    /// <para>
+    /// One place decides this wording, and every lambda a projection calls funnels through it — so
+    /// a cell that would not read describes itself identically whether it was reached from a leaf, a
+    /// row, a block or a record.
+    /// </para>
+    /// </summary>
+    internal ProjectionException Reading<TSpace>(CellReadException failure, Plane<TSpace> extent)
+      where TSpace : class, ISpace
+      => Failure(failure.Problem(ProjectionLocation.At(failure.At).A1), extent, failure);
 
     internal ProjectionContext WithIndex(int index)
-      => new ProjectionContext(Parent, Projection, index, Origin, Space, Diagnostics, Site, Pending, Labels, Ordinal);
+      => new ProjectionContext(Parent, Projection, index, Space, Diagnostics, Site, Pending, Labels, Ordinal);
 
     /// <summary>
     /// Stamps the occurrence number a repeat is applying, so the item's whole subtree can recover it
@@ -182,15 +225,16 @@ namespace Unrect.Projections
     /// path-rendering index: this survives the <see cref="Descend"/> into the item, that one does not.
     /// </summary>
     internal ProjectionContext WithOrdinal(int ordinal)
-      => new ProjectionContext(Parent, Projection, Index, Origin, Space, Diagnostics, Site, Pending, Labels, ordinal);
+      => new ProjectionContext(Parent, Projection, Index, Space, Diagnostics, Site, Pending, Labels, ordinal);
 
-    internal ProjectionException Failure(
+    internal ProjectionException Failure<TSpace>(
       IProjection projection,
       string problem,
-      Plane<ICellValues> extent,
+      Plane<TSpace> extent,
       Size? requested,
       Exception? inner,
       bool isFault = false)
+      where TSpace : class, ISpace
     {
       var chain = Chain(projection);
       var (path, subject) = Collapse(chain);
@@ -201,7 +245,8 @@ namespace Unrect.Projections
     /// <summary>
     /// Records something about <paramref name="projection"/> that happened here.
     /// </summary>
-    internal void Report(DiagnosticSeverity severity, IProjection projection, string message, Plane<ICellValues> extent)
+    internal void Report<TSpace>(DiagnosticSeverity severity, IProjection projection, string message, Plane<TSpace> extent)
+      where TSpace : class, ISpace
     {
       var chain = Chain(Through(projection));
       var (path, subject) = Collapse(chain);
@@ -480,8 +525,8 @@ namespace Unrect.Projections
 
   /// <summary>
   /// Something that answers a label with the ordinals carrying it, in the frame it was captured in.
-  /// A <c>TableView</c> is one (its header); step 2's public <c>LabelMap</c> will be another, so the
-  /// context shape is already what a scope-introducer pushes.
+  /// The public <see cref="LabelMap"/> is one, whether it was read from a table's header or written
+  /// out as literals — which is what lets a scope-introducer push either.
   /// </summary>
   internal interface ILabelSource
   {
@@ -512,7 +557,10 @@ namespace Unrect.Projections
     /// <summary>Where the labels' ordinals are read — the answer to <c>IndicesOf</c> is in this frame.</summary>
     public ILabelSource Source { get; }
 
-    /// <summary>The <c>Origin</c> the scope was pushed at, the frame its ordinals translate from.</summary>
+    /// <summary>
+    /// The origin of the region the labels were read in, in the root space's own coordinates — the
+    /// frame their ordinals translate from.
+    /// </summary>
     public Offset CaptureOrigin { get; }
 
     /// <summary>The scope this one shadows, or null at the bottom of the stack.</summary>

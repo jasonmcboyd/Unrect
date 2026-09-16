@@ -1,9 +1,9 @@
-using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.Observations;
 using static Unrect.Tests.ProjectionTestSpaces;
 
@@ -52,16 +52,16 @@ namespace Unrect.Tests.Projections
   public class AlternationLawProbeTests
   {
     /// <summary>One text cell — enough for an arm to agree or disagree about, and nothing else.</summary>
-    private static ICellValues Sheet() => Mixed(new object?[,] { { "x" } });
+    private static ISheetCells Sheet() => Mixed(new object?[,] { { "x" } });
 
     /// <summary>An arm that reads the cell and marks its answer with its own name.</summary>
-    private static IProjection<string> Accepts(string name) => Cell(c => $"{c.GetString()}-{name}").Named(name);
+    private static IProjection<ISheetCells, string> Accepts(string name) => Point().Select(p => $"{p.Text()}-{name}").Named(name);
 
     /// <summary>
     /// An arm that asks the same cell for a number, which it is not. A disagreement with the data,
     /// never a fault, so every tolerance operator here is being asked the question it exists for.
     /// </summary>
-    private static IProjection<string> Rejects(string name) => Cell(c => c.GetInt().ToString()).Named(name);
+    private static IProjection<ISheetCells, string> Rejects(string name) => Point().Select(p => p.Integer().ToString()).Named(name);
 
     // --- Choice associativity: where it holds ------------------------------------------------------
 
@@ -119,10 +119,10 @@ namespace Unrect.Tests.Projections
       Assert.Equal(flat[0].Path, right[0].Path);
 
       Assert.StartsWith("alternative 2 ('b') did not match: ", flat[1].Message);
-      Assert.Equal("Choice -> 'b' (Cell)", flat[1].Path);
+      Assert.Equal("Choice -> 'b' (Select)", flat[1].Path);
 
       Assert.StartsWith("alternative 1 ('b') did not match: ", right[1].Message);
-      Assert.Equal("Choice -> Choice -> 'b' (Cell)", right[1].Path);
+      Assert.Equal("Choice -> Choice -> 'b' (Select)", right[1].Path);
     }
 
     [Fact]
@@ -140,8 +140,8 @@ namespace Unrect.Tests.Projections
       var left = Choice(Choice(a, b), c).MapWithDiagnostics(Sheet()).Diagnostics;
 
       Assert.Equal(2, flat.Count);
-      Assert.Equal("Choice -> 'a' (Cell)", flat[0].Path);
-      Assert.Equal("Choice -> 'b' (Cell)", flat[1].Path);
+      Assert.Equal("Choice -> 'a' (Select)", flat[0].Path);
+      Assert.Equal("Choice -> 'b' (Select)", flat[1].Path);
 
       var folded = Assert.Single(left);
 
@@ -202,8 +202,8 @@ namespace Unrect.Tests.Projections
       var right = Assert.Throws<ProjectionException>(() => Choice(a, Choice(b, c)).Map(Sheet()));
       var left = Assert.Throws<ProjectionException>(() => Choice(Choice(a, b), c).Map(Sheet()));
 
-      Assert.Equal("Choice -> 'c' (Cell)", Assert.IsType<ProjectionException>(flat.InnerException).Path);
-      Assert.Equal("Choice -> 'c' (Cell)", Assert.IsType<ProjectionException>(left.InnerException).Path);
+      Assert.Equal("Choice -> 'c' (Select)", Assert.IsType<ProjectionException>(flat.InnerException).Path);
+      Assert.Equal("Choice -> 'c' (Select)", Assert.IsType<ProjectionException>(left.InnerException).Path);
 
       var retained = Assert.IsType<ProjectionException>(right.InnerException);
       Assert.Equal("Choice -> Choice", retained.Path);
@@ -311,7 +311,7 @@ namespace Unrect.Tests.Projections
       Assert.True(once.IsTransparent);
       Assert.True(twice.IsTransparent);
 
-      Assert.Equal("Cell", Assert.Single(Assert.Single(once.Children).Children).Description);
+      Assert.Equal("Select", Assert.Single(Assert.Single(once.Children).Children).Description);
       Assert.Equal("Optional", Assert.Single(Assert.Single(twice.Children).Children).Description);
     }
 
@@ -322,14 +322,14 @@ namespace Unrect.Tests.Projections
       // annotation and not Nullable<T>, so a projection of int stays a projection of int — the
       // absent reading is 0, as BoundaryProjectionTests pins — and both spellings have the same
       // static type at both arities.
-      IProjection<int> once = IntCell().Optional();
-      IProjection<int> twice = IntCell().Optional().Optional();
+      IProjection<ISheetCells, int> once = IntCell().Optional();
+      IProjection<ISheetCells, int> twice = IntCell().Optional().Optional();
 
       Assert.Equal(0, once.Map(Sheet()));
       Assert.Equal(0, twice.Map(Sheet()));
 
-      IProjection<string?> onceText = Accepts("x").Optional();
-      IProjection<string?> twiceText = Accepts("x").Optional().Optional();
+      IProjection<ISheetCells, string?> onceText = Accepts("x").Optional();
+      IProjection<ISheetCells, string?> twiceText = Accepts("x").Optional().Optional();
 
       Assert.Equal("x-x", onceText.Map(Sheet()));
       Assert.Equal("x-x", twiceText.Map(Sheet()));
@@ -353,12 +353,12 @@ namespace Unrect.Tests.Projections
 
       Assert.Equal(DiagnosticSeverity.Info, passedOver.Severity);
       Assert.Equal("Choice", passedOver.Subject);
-      Assert.Equal("Choice -> 'x' (Cell)", passedOver.Path);
+      Assert.Equal("Choice -> 'x' (Select)", passedOver.Path);
       Assert.StartsWith("alternative 1 ('x') did not match: ", passedOver.Message);
 
       Assert.Equal(DiagnosticSeverity.Warning, absorbed.Severity);
       Assert.Equal("'x'", absorbed.Subject);
-      Assert.Equal("'x' (Cell)", absorbed.Path);
+      Assert.Equal("'x' (Select)", absorbed.Path);
       Assert.DoesNotContain("alternative", absorbed.Message);
     }
 
@@ -380,7 +380,7 @@ namespace Unrect.Tests.Projections
       Assert.DoesNotContain("stands in for", choice.Message);
 
       Assert.Equal("'y'", tolerance.Subject);
-      Assert.Equal("'y' (Cell)", tolerance.Path);
+      Assert.Equal("'y' (Select)", tolerance.Path);
       Assert.Contains("it stands in for 'x', which failed too: ", tolerance.Message);
       Assert.DoesNotContain("no alternative matched", tolerance.Message);
     }

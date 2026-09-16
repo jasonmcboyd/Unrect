@@ -2,10 +2,10 @@ using System.Collections.Generic;
 
 using BenchmarkDotNet.Attributes;
 
-using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 
 namespace Unrect.Benchmarks
 {
@@ -24,9 +24,9 @@ namespace Unrect.Benchmarks
 
     // Declared once, at field initialization: a projection is a value, and building it is the
     // Tables family's subject, not this one's.
-    private static readonly IProjection<int> Line = Row(r => r.Count);
+    private static readonly IProjection<ISheetCells, int> Line = Row(r => r.Count);
 
-    private static readonly IProjection<int> ManyChildren = VerticalFlow(v =>
+    private static readonly IProjection<ISheetCells, int> ManyChildren = VerticalFlow(v =>
     {
       var total = 0;
 
@@ -38,28 +38,28 @@ namespace Unrect.Benchmarks
       return total;
     });
 
-    private static readonly IProjection<int> Nested = VerticalFlow(v =>
+    private static readonly IProjection<ISheetCells, int> Nested = VerticalFlow(v =>
     {
       var total = 0;
 
       for (int i = 0; i < NestedRows; i++)
-        total += v.Next(HorizontalFlow(h => h.Next(Cell(c => c.HasValue ? 1 : 0)) + h.Next(Cell(c => 1))));
+        total += v.Next(HorizontalFlow(h => h.Next(Point().Select(p => p.HasValue ? 1 : 0)) + h.Next(Point().Select(_ => 1))));
 
       return total;
     });
 
     // Four independent readings of the same band. An overlay's children each start from the band's
     // own origin, so this measures placement without the flow's advance.
-    private static readonly IProjection<int> Anchored = Overlay(o =>
+    private static readonly IProjection<ISheetCells, int> Anchored = Overlay(o =>
       o.Next(On(RowContaining(CanonicalSpaces.Landmark)).Row(r => r.Count))
       + o.Next(Column(CanonicalSpaces.BlockRows, c => c.Count))
       + o.Next(Range(2, 2, b => b.Width))
-      + o.Next(Cell(c => c.HasValue ? 1 : 0)));
+      + o.Next(Point().Select(p => p.HasValue ? 1 : 0)));
 
-    private static readonly IProjection<IReadOnlyList<int>> Blocks =
+    private static readonly IProjection<ISheetCells, IReadOnlyList<int>> Blocks =
       VerticalRepeat(Range(RowsWhileAnyValue(), b => b.Height), separatedBy: BlankRows());
 
-    private static readonly IProjection<int> AllCells = Range(b =>
+    private static readonly IProjection<ISheetCells, int> AllCells = Range(b =>
     {
       var present = 0;
 
@@ -71,14 +71,14 @@ namespace Unrect.Benchmarks
       return present;
     });
 
-    private static readonly IProjection<int> Section =
+    private static readonly IProjection<ISheetCells, int> Section =
       Heading(CanonicalSpaces.DetailsCaption).Of(Range(RowsWhileAnyValue(), b => b.Height));
 
-    private ICellValues _tall = default!;
-    private ICellValues _blocks = default!;
-    private ICellValues _band = default!;
-    private ICellValues _document = default!;
-    private ICellValues _mixed = default!;
+    private ISheetCells _tall = default!;
+    private ISheetCells _blocks = default!;
+    private ISheetCells _band = default!;
+    private ISheetCells _document = default!;
+    private ISheetCells _mixed = default!;
 
     [GlobalSetup]
     public void Setup()
@@ -114,7 +114,7 @@ namespace Unrect.Benchmarks
     /// <summary>
     /// Every cell of a million-cell block, read through the view a projection actually gets. The
     /// other rows here place children and read almost nothing; this one is the opposite, and it is
-    /// the only measurement of <see cref="CellBlock"/>'s indexer -- the code path between a user's
+    /// the only measurement of <see cref="CellBlock{TSpace}"/>'s indexer -- the code path between a user's
     /// lambda and the grid. Kinds are mixed, because a real projection does not read a column of
     /// identical numbers.
     /// </summary>

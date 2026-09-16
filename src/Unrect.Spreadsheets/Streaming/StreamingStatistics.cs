@@ -14,7 +14,7 @@ namespace Unrect.Spreadsheets
   /// </para>
   /// <para>
   /// <b>The floor these numbers do not include.</b> <see cref="ResidentBytes"/> counts
-  /// <see cref="Unrect.Core.CellValue"/> structs only. Strings that <c>Text</c> cells point at are
+  /// <see cref="Cell"/> structs only. Strings that <c>Text</c> cells point at are
   /// owned by the reader's shared-string table, are not counted here, and do not shrink with the
   /// window. On a text-heavy sheet that table can dominate: streaming removes the materialised grid,
   /// not the parser.
@@ -82,9 +82,11 @@ namespace Unrect.Spreadsheets
     public long Evictions { get; }
 
     /// <summary>
-    /// How many times a band did not fit the window: once for each distinct extent too tall to be
-    /// held, plus each eviction forced from inside a band that was being swept. Above zero means the
-    /// window is smaller than the declaration needs, and raising <c>WindowRows</c> is the fix.
+    /// How many times a band did not fit the window: once per run of announcements of a band too
+    /// tall to be held — the same band announced again, consecutively, is not counted again — plus
+    /// each eviction forced from inside the band being swept, which is not deduplicated at all.
+    /// Above zero means the window is smaller than the declaration needs, and raising
+    /// <c>WindowRows</c> is the fix. The count is the store's and outlives a single <c>Map</c>.
     /// <para>
     /// The two counters divide the labour: this one says <em>why</em> — a band did not fit — and
     /// <see cref="ChunkReloads"/> says <em>what it cost</em>, in rows that had to be read again.

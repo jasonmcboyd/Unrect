@@ -2,13 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-using Unrect.Core;
-
 namespace Unrect.Spreadsheets
 {
   /// <summary>
   /// A spreadsheet file, read a window at a time. Where
-  /// <see cref="SpreadsheetSpace.Create(string, string, bool, Func{CellValue, bool})"/> loads a whole
+  /// <see cref="SpreadsheetSpace.Create(string, string, bool, Func{Cell, bool})"/> loads a whole
   /// sheet into memory before anything reads it, a workbook loads rows as the projection asks for them and
   /// holds only a window of them at once.
   ///
@@ -53,9 +51,9 @@ namespace Unrect.Spreadsheets
   /// materialised grid, not the parser.</para>
   ///
   /// <para><b>No formulas, said out loud.</b> <see cref="Sheet"/> hands back a plain
-  /// <see cref="ICellValues"/>: a streamed sheet does not implement <see cref="IFormulaSpace"/>, so
-  /// <c>Capability&lt;IFormulaSpace&gt;()</c> over one answers null and a formula-demanding
-  /// declaration will not compile against it. That is the honest absence, not an oversight — a
+  /// <see cref="ISheetCells"/>: a streamed sheet does not implement <see cref="IFormulaSpace"/>, so
+  /// a formula-reading declaration is written over a space this cannot supply and will not compile
+  /// against it. That is the honest absence, not an oversight — a
   /// space that implemented the capability and answered null everywhere would report a file full of
   /// formulas as having none. What would justify building it: a declaration that must read formulas
   /// from a file too large to hold eagerly. The work is a second windowed reader over the sheet's
@@ -81,7 +79,7 @@ namespace Unrect.Spreadsheets
     private bool _catalogueComplete;
     private bool _disposed;
 
-    private static readonly Func<CellValue, bool> WhitespaceIsBlank =
+    private static readonly Func<Cell, bool> WhitespaceIsBlank =
       value => value.TryGetString() is string text && string.IsNullOrWhiteSpace(text);
 
     private Workbook(string path, IRowSource source, WorkbookOptions options)
@@ -189,7 +187,7 @@ namespace Unrect.Spreadsheets
     /// </summary>
     /// <exception cref="ArgumentException">No sheet of that name exists.</exception>
     /// <exception cref="ObjectDisposedException">This workbook has been disposed.</exception>
-    public ICellValues Sheet(string name)
+    public ISheetCells Sheet(string name)
     {
       if (name is null)
         throw new ArgumentNullException(nameof(name));

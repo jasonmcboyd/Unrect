@@ -1,10 +1,12 @@
 using System;
 
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -134,7 +136,7 @@ namespace Unrect.Tests.Projections
       });
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        Table(r => r["Transaction Date"].GetString()).Map(space));
+        Table(r => r["Transaction Date"].Text()).Map(space));
 
       Assert.Contains("there is no column named 'Transaction Date'", failure.Message);
 

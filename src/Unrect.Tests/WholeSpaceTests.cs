@@ -1,4 +1,5 @@
 using Unrect.Core;
+using Unrect.Spreadsheets;
 using Unrect.Strategies;
 
 using Xunit;
@@ -28,7 +29,7 @@ namespace Unrect.Tests
     /// A region narrower or shorter than this by any amount gives a different answer to every rule
     /// below, which is what makes the identity worth asserting rather than assuming.
     /// </summary>
-    private static ICellValues Sheet() => Mixed(new object?[,]
+    private static ISheetCells Sheet() => Mixed(new object?[,]
     {
       { "a", "b", 3, "d" },
       { "e", "f", 7, "h" },

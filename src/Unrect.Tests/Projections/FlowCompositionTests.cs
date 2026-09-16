@@ -2,10 +2,12 @@ using System;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -30,7 +32,7 @@ namespace Unrect.Tests.Projections
     /// declaration in this file sits at the origin, so its advance is its consumed extent;
     /// asserting both says that the composite added nothing of its own to what its children took.
     /// </summary>
-    private static void AssertReads<T>(IProjection<T> projection, ICellValues space, T value, int consumedWidth, int consumedHeight)
+    private static void AssertReads<T>(IProjection<ISheetCells, T> projection, ISheetCells space, T value, int consumedWidth, int consumedHeight)
     {
       var applied = projection.Apply(space);
 
@@ -43,7 +45,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal(consumedHeight, applied.Advance.Height);
     }
 
-    private static void AssertFails<T>(IProjection<T> projection, ICellValues space, string subject, string path, string a1, string problem)
+    private static void AssertFails<T>(IProjection<ISheetCells, T> projection, ISheetCells space, string subject, string path, string a1, string problem)
     {
       var failure = Assert.Throws<ProjectionException>(() => projection.Map(space));
 
@@ -68,7 +70,18 @@ namespace Unrect.Tests.Projections
       Assert.Equal(a1, diagnostic.Location.A1);
     }
 
-    private const string WrongKind = "the projection threw InvalidOperationException: Cell value is Number; expected Text.";
+    /// <summary>
+    /// A Text leaf refusing a Number cell, as the diagnostic reads — and the A1 is now part of the
+    /// sentence, which is why this is a method rather than the constant it used to be.
+    /// <para>
+    /// Until phase 6 the leaf threw an InvalidOperationException from inside its own lambda and the
+    /// engine wrapped it: <c>the projection threw InvalidOperationException: Cell value is Number;
+    /// expected Text.</c> — the reader's vocabulary around the document's, with the location left to
+    /// the diagnostic's own A1 field. The read failure is a first-class condition now, so what is
+    /// reported is the backend's sentence, addressed, and nothing else.
+    /// </para>
+    /// </summary>
+    private static string WrongKind(string at) => $"expected Text at {at}, found Number";
 
     // --- Leaves ---------------------------------------------------------------------------------
 
@@ -141,7 +154,7 @@ namespace Unrect.Tests.Projections
       });
 
       AssertReads(
-        VerticalFlow(v => $"{v.Next(TextCell())}|{string.Join(",", v.Next(Table(r => r["Amount"].GetInt())))}"),
+        VerticalFlow(v => $"{v.Next(TextCell())}|{string.Join(",", v.Next(Table(r => r["Amount"].Integer())))}"),
         space,
         "Report|1,2",
         2,
@@ -254,8 +267,8 @@ namespace Unrect.Tests.Projections
         diagnostics[0],
         DiagnosticSeverity.Info,
         "Choice",
-        $"alternative 1 (VerticalFlow) did not match: {WrongKind}",
-        "Choice -> VerticalFlow -> Cell#1",
+        $"alternative 1 (VerticalFlow) did not match: {WrongKind("A1")}",
+        "Choice -> VerticalFlow -> Text#1",
         "A1");
     }
 
@@ -274,8 +287,8 @@ namespace Unrect.Tests.Projections
         Assert.Single(projection.MapWithDiagnostics(Ladder()).Diagnostics),
         DiagnosticSeverity.Warning,
         "'deep'",
-        WrongKind,
-        "VerticalFlow -> VerticalFlow#2 -> 'deep' (Cell)",
+        WrongKind("A3"),
+        "VerticalFlow -> VerticalFlow#2 -> 'deep' (Text)",
         "A3");
     }
 
@@ -289,7 +302,7 @@ namespace Unrect.Tests.Projections
       var diagnostics = projection.MapWithDiagnostics(Ladder()).Diagnostics;
 
       Assert.Equal(2, diagnostics.Count);
-      AssertDiagnostic(diagnostics[0], DiagnosticSeverity.Warning, "'title'", WrongKind, "VerticalFlow -> 'title' (Cell)", "A1");
+      AssertDiagnostic(diagnostics[0], DiagnosticSeverity.Warning, "'title'", WrongKind("A1"), "VerticalFlow -> 'title' (Text)", "A1");
       AssertDiagnostic(
         diagnostics[1],
         DiagnosticSeverity.Info,
@@ -310,7 +323,7 @@ namespace Unrect.Tests.Projections
       // '(Select)' kind. Nothing to compare against once that spelling is gone.)
       var projection = VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(TextCell())}").Named("report");
 
-      Assert.Equal("'report' -> Cell#2", Assert.Throws<ProjectionException>(() => projection.Map(Ladder())).Path);
+      Assert.Equal("'report' -> Text#2", Assert.Throws<ProjectionException>(() => projection.Map(Ladder())).Path);
     }
 
     // --- Fault classification --------------------------------------------------------------------------------
@@ -323,11 +336,11 @@ namespace Unrect.Tests.Projections
     public void ABrokenProjectionIsRefusedByABoundary()
     {
       AssertFails(
-        VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(Cell<string>(_ => throw new NullReferenceException("boom")).Named("broken"))}")
+        VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(Point().Select<ISheetCells, Point<ISheetCells>, string>(_ => throw new NullReferenceException("boom")).Named("broken"))}")
           .Optional(),
         Ladder(),
         "'broken'",
-        "VerticalFlow -> 'broken' (Cell)",
+        "VerticalFlow -> 'broken' (Select)",
         "A2",
         "the projection threw NullReferenceException: boom");
     }
@@ -342,9 +355,9 @@ namespace Unrect.Tests.Projections
       AssertDiagnostic(
         Assert.Single(projection.MapWithDiagnostics(Ladder()).Diagnostics),
         DiagnosticSeverity.Warning,
-        "Cell#2",
-        WrongKind,
-        "VerticalFlow -> Cell#2",
+        "Text#2",
+        WrongKind("A2"),
+        "VerticalFlow -> Text#2",
         "A2");
     }
 
@@ -357,9 +370,9 @@ namespace Unrect.Tests.Projections
         VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(TextCell().Named("title"))}"),
         Ladder(),
         "'title'",
-        "VerticalFlow -> 'title' (Cell)",
+        "VerticalFlow -> 'title' (Text)",
         "A2",
-        WrongKind);
+        WrongKind("A2"));
     }
 
     [Fact]
@@ -380,8 +393,8 @@ namespace Unrect.Tests.Projections
       AssertFails(
         VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(IntCell())}{v.Next(IntCell())}{v.Next(IntCell())}"),
         Ladder(),
-        "Cell#4",
-        "VerticalFlow -> Cell#4",
+        "Integer#4",
+        "VerticalFlow -> Integer#4",
         "A4",
         "an extent of 1x1 does not fit here");
     }
@@ -394,10 +407,10 @@ namespace Unrect.Tests.Projections
       AssertFails(
         VerticalFlow(v => $"{v.Next(IntCell().Optional())}|{v.Next(IntCell())}"),
         Mixed(new object?[,] { { "x" }, { 5 } }),
-        "Cell#2",
-        "VerticalFlow -> Cell#2",
+        "Integer#2",
+        "VerticalFlow -> Integer#2",
         "A1",
-        "the projection threw InvalidOperationException: Cell value is Text; expected Number; "
+        "expected Number at A1, found Text; "
         + "note: the preceding sibling consumed nothing at this position");
     }
   }

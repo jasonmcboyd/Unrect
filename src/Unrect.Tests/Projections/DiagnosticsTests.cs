@@ -2,12 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -19,9 +19,9 @@ namespace Unrect.Tests.Projections
   /// </summary>
   public class DiagnosticsTests
   {
-    private static ICellValues Square() => Grid(new[,] { { 1, 2 }, { 3, 4 } });
+    private static ISheetCells Square() => Grid(new[,] { { 1, 2 }, { 3, 4 } });
 
-    private static IProjection<string> Title() => TextCell().Named("title");
+    private static IProjection<ISheetCells, string> Title() => TextCell().Named("title");
 
     // --- The two entry points ---------------------------------------------------------------------
 
@@ -53,7 +53,7 @@ namespace Unrect.Tests.Projections
     public void MapWithDiagnostics_RejectsNullArguments()
     {
       Assert.Throws<ArgumentNullException>(() => Title().MapWithDiagnostics(null!));
-      Assert.Throws<ArgumentNullException>(() => ((IProjection<int>)null!).MapWithDiagnostics(Square()));
+      Assert.Throws<ArgumentNullException>(() => ((IProjection<ISheetCells, int>)null!).MapWithDiagnostics(Square()));
     }
 
     [Fact]
@@ -267,7 +267,7 @@ namespace Unrect.Tests.Projections
       var rendered = warning.ToString();
 
       Assert.StartsWith("Warning: 'title': ", rendered);
-      Assert.Contains(" — in 'title' (Cell) at row 1, column 1 (A1)", rendered);
+      Assert.Contains(" — in 'title' (Text) at row 1, column 1 (A1)", rendered);
     }
 
     // --- The documented recovery recipe -------------------------------------------------------------------
@@ -277,13 +277,13 @@ namespace Unrect.Tests.Projections
     // the repetition stops, so that one failure must never be tolerated, while anything wrong
     // inside an anchored section is exactly what the boundary is for.
 
-    private static IProjection<IReadOnlyList<string>> Sections()
+    private static IProjection<ISheetCells, IReadOnlyList<string>> Sections()
     {
       var section =
         VerticalFlow(v =>
         {
           v.Next(TextCell().Named("label"));
-          return (string?)v.Next(Row(2, r => r[0].GetString()).Named("body"));
+          return (string?)v.Next(Row(2, r => r[0].Text()).Named("body"));
         });
 
       var item = On(RowContaining("Section")).Of(section
@@ -350,7 +350,7 @@ namespace Unrect.Tests.Projections
         d => d.Severity == DiagnosticSeverity.Warning);
 
       Assert.Equal("'body'", warning.Subject);
-      Assert.Contains("Cell value is Number; expected Text", warning.Message);
+      Assert.Contains("expected Text at A4, found Number", warning.Message);
       Assert.Contains("VerticalRepeat[1]", warning.Path);
 
       // Row 4 is the malformed body row — the warning points into the junk, not at the repeat.

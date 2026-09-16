@@ -1,10 +1,11 @@
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -32,7 +33,7 @@ namespace Unrect.Tests.Projections
     /// cell is a number" and "rows while any cell has a value" give different answers (3 and 6), so a
     /// child that resumed on the sheet instead of on its parent's region says 6 where it should say 3.
     /// </summary>
-    private static ICellValues Disagreeing()
+    private static ISheetCells Disagreeing()
     {
       var values = new object?[8, 2];
 
@@ -62,7 +63,7 @@ namespace Unrect.Tests.Projections
     /// switch is process-wide and scoped by the <c>using</c>, exactly as <see cref="LazyForcingTests"/>
     /// uses it.
     /// </summary>
-    private static T Read<T>(IProjection<T> declaration, bool eager)
+    private static T Read<T>(IProjection<ISheetCells, T> declaration, bool eager)
     {
       if (!eager)
         return declaration.Map(Disagreeing());

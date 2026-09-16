@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 
 using Microsoft.CodeAnalysis;
@@ -7,27 +7,18 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace Unrect.Analyzers
 {
   /// <summary>
-  /// What counts as a factory that closes over a space, and how much of a declaration one of them
-  /// speaks for.
+  /// What counts as a factory closed over a space, and which space it is closed over.
   /// <para>
-  /// Three spellings say the same thing — a scope member (<c>p.VerticalFlow(…)</c>), a member of the
-  /// file-scoped vocabulary (<c>ProjectionBuilders&lt;TSpace&gt;</c>, imported or qualified), and a
-  /// witness overload (<c>VerticalFlow(Formulas, v =&gt; …)</c>) — and a pipeline entered through any
-  /// of them carries the space through every stage that follows, so the <em>chain</em>, not the
-  /// invocation, is the unit a diagnostic reasons about.
+  /// Two spellings say the same thing — a member of the file-scoped vocabulary
+  /// (<c>ProjectionBuilders&lt;TSpace&gt;</c>, imported or qualified) and a member of a pipeline
+  /// stage built from one — so both answer here.
   /// </para>
   /// </summary>
   internal static class ScopedFactories
   {
     /// <summary>
-    /// The ascription. It is a promise the type system cannot check, so a demand it states is never
-    /// evidence of a scope being unnecessary — and never evidence of one being necessary either.
-    /// </summary>
-    private const string Ascription = "Demanding";
-
-    /// <summary>
     /// The space <paramref name="invocation"/> closes its result over, or null when it closes over
-    /// nothing, over <c>ICellValues</c>, or over a type parameter — a generic helper is parameterized by
+    /// nothing, over <c>ISpace</c>, or over a type parameter — a generic helper is parameterized by
     /// its space, not scoped to one.
     /// </summary>
     public static ITypeSymbol? ClosedOver(
@@ -36,73 +27,21 @@ namespace Unrect.Analyzers
       UnrectSymbols symbols,
       CancellationToken cancellationToken = default)
     {
-      if (model.GetSymbolInfo(invocation, cancellationToken).Symbol is not IMethodSymbol method)
-        return null;
+      var info = model.GetSymbolInfo(invocation, cancellationToken);
 
-      return ClosedOver(method, symbols);
+      // The candidate matters as much as the symbol: this is asked about calls the compiler REFUSED,
+      // where nothing bound and the member the reader wrote is the candidate it turned away. Taking
+      // the first is safe because the answer does not depend on which: the receiver fixes the
+      // constructed ProjectionBuilders<TSpace> or stage type, so every candidate of one refused call
+      // is a member of that same type and names that same space.
+      var method = (info.Symbol ?? info.CandidateSymbols.FirstOrDefault()) as IMethodSymbol;
+
+      return method is null ? null : ClosedOver(method, symbols);
     }
 
     /// <inheritdoc cref="ClosedOver(InvocationExpressionSyntax, SemanticModel, UnrectSymbols, CancellationToken)"/>
     public static ITypeSymbol? ClosedOver(IMethodSymbol method, UnrectSymbols symbols)
-    {
-      if (method.Name == Ascription)
-        return null;
-
-      return Raised(ScopedReceiver(method, symbols), symbols) ?? Raised(Witness(method, symbols), symbols);
-    }
-
-    /// <summary>
-    /// True when <paramref name="invocation"/> begins its chain — nothing to its left is a scoped
-    /// factory of its own, so this is where the space enters the declaration.
-    /// </summary>
-    public static bool IsChainEntry(
-      InvocationExpressionSyntax invocation,
-      SemanticModel model,
-      UnrectSymbols symbols,
-      CancellationToken cancellationToken = default)
-      => !(invocation.Expression is MemberAccessExpressionSyntax access
-        && access.Expression is InvocationExpressionSyntax receiver
-        && ClosedOver(receiver, model, symbols, cancellationToken) is object);
-
-    /// <summary>
-    /// The scoped invocations of the chain <paramref name="entry"/> begins, in order — the entry
-    /// itself, then every stage member called on its result. The chain ends where the pipeline does:
-    /// a postfix modifier is an extension over the finished projection, not a stage.
-    /// </summary>
-    public static IEnumerable<InvocationExpressionSyntax> Chain(
-      InvocationExpressionSyntax entry,
-      SemanticModel model,
-      UnrectSymbols symbols,
-      CancellationToken cancellationToken = default)
-    {
-      yield return entry;
-
-      var current = entry;
-
-      while (current.Parent is MemberAccessExpressionSyntax access
-        && access.Expression == current
-        && access.Parent is InvocationExpressionSyntax next
-        && ClosedOver(next, model, symbols, cancellationToken) is object)
-      {
-        yield return next;
-        current = next;
-      }
-    }
-
-    /// <summary>The last invocation of the chain <paramref name="entry"/> begins.</summary>
-    public static InvocationExpressionSyntax Outermost(
-      InvocationExpressionSyntax entry,
-      SemanticModel model,
-      UnrectSymbols symbols,
-      CancellationToken cancellationToken = default)
-    {
-      var last = entry;
-
-      foreach (var link in Chain(entry, model, symbols, cancellationToken))
-        last = link;
-
-      return last;
-    }
+      => Raised(ScopedReceiver(method, symbols), symbols);
 
     private static ITypeSymbol? ScopedReceiver(IMethodSymbol method, UnrectSymbols symbols)
     {
@@ -116,11 +55,8 @@ namespace Unrect.Analyzers
 
     private static bool IsScopedVocabulary(INamedTypeSymbol definition, UnrectSymbols symbols)
     {
-      if (SymbolEqualityComparer.Default.Equals(definition, symbols.Scope)
-        || SymbolEqualityComparer.Default.Equals(definition, symbols.Builders))
-      {
+      if (SymbolEqualityComparer.Default.Equals(definition, symbols.Builders))
         return true;
-      }
 
       for (var current = definition; current is object; current = current.BaseType?.OriginalDefinition)
       {
@@ -131,22 +67,8 @@ namespace Unrect.Analyzers
       return false;
     }
 
-    private static ITypeSymbol? Witness(IMethodSymbol method, UnrectSymbols symbols)
-    {
-      foreach (var parameter in method.Parameters)
-      {
-        if (parameter.Type is INamedTypeSymbol named
-          && SymbolEqualityComparer.Default.Equals(named.OriginalDefinition, symbols.Demand))
-        {
-          return named.TypeArguments[0];
-        }
-      }
-
-      return null;
-    }
-
     /// <summary>
-    /// The space, once the three non-answers are struck out: <c>ICellValues</c> raises nothing, a type
+    /// The space, once the three non-answers are struck out: <c>ISpace</c> raises nothing, a type
     /// parameter is a helper's own space rather than a scope, and an error type is a compilation
     /// already broken elsewhere.
     /// </summary>

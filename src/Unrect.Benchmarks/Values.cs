@@ -1,25 +1,24 @@
-using System;
-
 using BenchmarkDotNet.Attributes;
 
 using Unrect.Core;
+using Unrect.Spreadsheets;
 
 namespace Unrect.Benchmarks
 {
   /// <summary>
-  /// The value model itself: adapting an array into cells, and reading a million of them back.
-  /// Every row here is a tight sweep over a flat <see cref="CellValue"/> array rather than over a
-  /// space, so nothing but the representation is in the measurement -- no indexer, no bounds check,
-  /// no projection.
+  /// The substrate itself: adapting an array into cells, and reading a million of them back through
+  /// the locators every declaration goes through.
   ///
-  /// <para><b>This family exists for a specific pending question.</b> <c>CellValue</c> is a sealed
-  /// class today: every cell is a heap object and a grid is an array of references. Turning it into
-  /// a struct trades allocation and indirection for copying, and the trade is not obviously good in
-  /// either direction -- a struct with a string field, a decimal, a DateTime and a discriminator is
-  /// not small. These rows are the evidence for that decision: adaptation cost (how much is
-  /// allocated to build a grid), sweep cost (what a read costs once built), equality (which a
-  /// struct changes from a reference-first comparison to a field-wise one), and the blankness
-  /// predicates that every strategy in the library calls per cell.</para>
+  /// <para><b>This family exists for the point substrate.</b> A region is no longer an object: it is
+  /// a <see cref="Plane{TSpace}"/>, three fields of arithmetic, and a cell is a
+  /// <see cref="Point{TSpace}"/> minted from one. Slicing and minting are therefore on every hot
+  /// path in the library, and the rows here are the evidence for that trade — what a mint costs,
+  /// what a slice costs, and what each of the four canonical questions and one kinded read cost a
+  /// million times over.</para>
+  ///
+  /// <para>The reads go through the space rather than through a flat array of cells, which is the
+  /// deliberate change: the array was the representation when a grid held one, and what a strategy
+  /// or a leaf actually calls is a root-coordinate read on a space.</para>
   ///
   /// <para>Sweeps accumulate into a returned value rather than discarding: BenchmarkDotNet only
   /// guarantees a benchmark's work survives dead-code elimination if the result leaves the
@@ -31,116 +30,127 @@ namespace Unrect.Benchmarks
   {
     private int[,] _ints = default!;
     private object?[,] _objects = default!;
-    private CellValue[] _numbers = default!;
-    private CellValue[] _text = default!;
-    private CellValue[] _mixed = default!;
+    private ISheetCells _numbers = default!;
+    private ISheetCells _text = default!;
+    private ISheetCells _mixed = default!;
+    private Plane<ISheetCells> _plane;
 
     [GlobalSetup]
     public void Setup()
     {
       _ints = CanonicalSpaces.MegaInts;
       _objects = CanonicalSpaces.MegaObjects;
-      _numbers = CanonicalSpaces.MegaNumberCells;
-      _text = CanonicalSpaces.MegaTextCells;
-      _mixed = CanonicalSpaces.MegaMixedCells;
+      _numbers = CanonicalSpaces.MegaDenseNumeric;
+      _text = CanonicalSpaces.MegaDenseText;
+      _mixed = CanonicalSpaces.MegaDenseMixed;
+      _plane = Plane<ISheetCells>.Of(_mixed);
     }
 
-    /// <summary>Adapting a million numbers: the allocation floor for a grid this size.</summary>
+    /// <summary>Adapting a million numbers: the allocation floor for a canonical grid this size.</summary>
     [Benchmark]
     public int Create_FromInts() => GridSpace.Create(_ints, isBlank: v => v == 0).Area.Height;
 
-    /// <summary>The same, from a mixed object array: one cell at a time through a mapping lambda.</summary>
+    /// <summary>
+    /// The same from a mixed object array, through the kinded adapter: one cell at a time, each
+    /// deciding its own kind. The floor for a sheet a script builds without a file.
+    /// </summary>
     [Benchmark]
-    public int Create_FromObjects() => GridSpace.Create(_objects, Adapt).Area.Height;
+    public int Create_FromObjects() => SheetGrid.Of(_objects).Area.Height;
 
-    /// <summary>A million checked numeric reads -- the accessor a money column goes through.</summary>
+    /// <summary>
+    /// A million blankness questions. Every size and offset strategy in the library asks one per
+    /// cell, so this row is the multiplier on every scan the Strategies family measures.
+    /// </summary>
     [Benchmark]
-    public decimal Sweep_GetDecimal()
+    public int IsBlank_Million()
     {
-      decimal total = 0m;
+      var blank = 0;
 
-      foreach (var cell in _numbers)
-        total += cell.GetDecimal();
+      for (var row = 0; row < CanonicalSpaces.MegaRows; row++)
+        for (var column = 0; column < CanonicalSpaces.Columns; column++)
+          if (_mixed.IsBlank(column, row))
+            blank++;
 
-      return total;
+      return blank;
     }
 
-    /// <summary>A million string reads.</summary>
+    /// <summary>
+    /// A million "is this cell's text its own value" questions — what every matcher asks before it
+    /// compares anything.
+    /// </summary>
     [Benchmark]
-    public int Sweep_GetString()
+    public int IsText_Million()
+    {
+      var text = 0;
+
+      for (var row = 0; row < CanonicalSpaces.MegaRows; row++)
+        for (var column = 0; column < CanonicalSpaces.Columns; column++)
+          if (_mixed.IsText(column, row))
+            text++;
+
+      return text;
+    }
+
+    /// <summary>A million renderings, over a grid where every cell carries its own string.</summary>
+    [Benchmark]
+    public int AsText_Million_Text()
     {
       var total = 0;
 
-      foreach (var cell in _text)
-        total += cell.GetString().Length;
+      for (var row = 0; row < CanonicalSpaces.MegaRows; row++)
+        for (var column = 0; column < CanonicalSpaces.Columns; column++)
+          total += _text.AsText(column, row)!.Length;
 
       return total;
     }
 
     /// <summary>
-    /// The kind-dispatched read: every cell tried as text, then as a number. Kinds cycle in the
-    /// fixture, so this pays the mispredicted branch a real sheet pays.
+    /// A million checked numeric reads — the accessor a money column goes through, asked of the
+    /// sheet exactly as a <c>Decimal()</c> leaf asks it.
     /// </summary>
     [Benchmark]
-    public long Sweep_TryGetByKind()
+    public decimal Decimal_Million()
     {
-      long total = 0;
+      decimal total = 0m;
 
-      foreach (var cell in _mixed)
-      {
-        if (cell.TryGetString() is string text)
-          total += text.Length;
-        else if (cell.TryGetDouble() is double number)
-          total += (long)number;
-      }
+      for (var row = 0; row < CanonicalSpaces.MegaRows; row++)
+        for (var column = 0; column < CanonicalSpaces.Columns; column++)
+          if (_numbers.DecimalAt(column, row, out var value, out _))
+            total += value;
 
       return total;
     }
 
     /// <summary>
-    /// A million equality comparisons that reach the values. Cells are compared against the one
-    /// five back, not the one before: kinds cycle with period five, so adjacent cells always differ
-    /// in kind and every comparison would exit on the discriminator without ever comparing a string
-    /// or a number -- measuring the cheapest branch and calling it equality.
+    /// A million points minted from one plane: the bounds check and the three-field copy that every
+    /// cell a view hands out now costs.
     /// </summary>
     [Benchmark]
-    public int Sweep_Equality()
+    public int Point_Mint_Million()
     {
-      var equal = 0;
+      var total = 0;
 
-      for (int i = 5; i < _mixed.Length; i++)
-        if (_mixed[i].Equals(_mixed[i - 5]))
-          equal++;
+      for (var row = 0; row < CanonicalSpaces.MegaRows; row++)
+        for (var column = 0; column < CanonicalSpaces.Columns; column++)
+          total += _plane[column, row].Column;
 
-      return equal;
+      return total;
     }
 
     /// <summary>
-    /// The blankness predicates. Every size and offset strategy in the library calls one of these
-    /// per cell, so this row is the multiplier on every scan the Strategies family measures.
+    /// A million slices: the arithmetic a composite does where it used to allocate a subspace. One
+    /// row's worth of the plane, cut a million times.
     /// </summary>
     [Benchmark]
-    public int Sweep_Blankness()
+    public int Slice_Million()
     {
-      var present = 0;
+      var total = 0;
+      var row = new Area(CanonicalSpaces.Columns, 1);
 
-      foreach (var cell in _mixed)
-        if (cell.HasValue && !cell.IsBlank)
-          present++;
+      for (var i = 0; i < CanonicalSpaces.MegaCells; i++)
+        total += _plane.Slice(new Offset(0, i % CanonicalSpaces.MegaRows), row).Width;
 
-      return present;
+      return total;
     }
-
-    private static CellValue Adapt(object? value) => value switch
-    {
-      null => CellValue.Blank,
-      string text => CellValue.Of(text),
-      int number => CellValue.Of(number),
-      double number => CellValue.Of(number),
-      decimal number => CellValue.Of(number),
-      DateTime date => CellValue.Of(date),
-      bool flag => CellValue.Of(flag),
-      _ => CellValue.Of(value.ToString()),
-    };
   }
 }

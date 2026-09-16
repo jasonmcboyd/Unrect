@@ -4,10 +4,11 @@ using System.Linq;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -26,14 +27,14 @@ namespace Unrect.Tests.Projections
   public class FieldsTests
   {
     // A card sitting two columns in, as a real one does.
-    private static ICellValues Card() => Mixed(new object?[,]
+    private static ISheetCells Card() => Mixed(new object?[,]
     {
       { null, null, "EIN:", "12-3456789" },
       { null, null, "Entity Type", "LLC" },
       { null, null, "Deal Type:", "Growth" },
     });
 
-    private static IProjection<System.Collections.Generic.IReadOnlyDictionary<string, CellValue>> Entity()
+    private static IProjection<ISheetCells, System.Collections.Generic.IReadOnlyDictionary<string, Point<ISheetCells>>> Entity()
       => Fields(Field("EIN"), Field("Entity Type"), Field("Deal Type"));
 
     // --- What it reads -------------------------------------------------------------------------------
@@ -63,8 +64,8 @@ namespace Unrect.Tests.Projections
     {
       var entity = Entity().Map(Card());
 
-      Assert.Equal("LLC", entity["entitytype"].GetString());
-      Assert.Equal("LLC", entity["  Entity  Type  "].GetString());
+      Assert.Equal("LLC", entity["entitytype"].Text());
+      Assert.Equal("LLC", entity["  Entity  Type  "].Text());
     }
 
     [Fact]
@@ -79,32 +80,34 @@ namespace Unrect.Tests.Projections
 
       var entity = Fields(Field("Count"), Field("As Of"), Field("Note")).Map(space);
 
-      Assert.Equal(CellKind.Number, entity["Count"].Kind);
-      Assert.Equal(CellKind.Temporal, entity["As Of"].Kind);
+      Assert.Equal(42, entity["Count"].Integer());
+      Assert.Equal(new DateTime(2026, 6, 30), entity["As Of"].Date());
 
-      // A blank value cell is a blank value, not a failure: the label was there, which is what the
+      // A blank value cell is a blank cell, not a failure: the label was there, which is what the
       // block asserted.
-      Assert.Equal(CellKind.Blank, entity["Note"].Kind);
+      Assert.True(entity["Note"].IsBlank);
+      Assert.Null(entity["Note"].AsText());
     }
 
     [Fact]
-    public void TheElementTypeIsADictionaryOfCanonicalCells()
+    public void TheElementTypeIsADictionaryOfPoints()
     {
       // The block's declared result type, pinned rather than inferred from a var: the labels are the
-      // structure and the values are cells — CellValues, not a rendering of them and not a
-      // reader-shaped wrapper. The static side of the assertion is the local's type; the runtime
+      // structure and the values are POINTS — addresses of the cells the labels sat beside, not a
+      // rendering of them and not a reader-shaped wrapper, so whatever a caller's space can be asked
+      // is what a caller can ask. The static side of the assertion is the local's type; the runtime
       // side is the closed interface the factory's projection implements, so the pin holds even if
       // the factory is later composed out of other projections.
-      IProjection<IReadOnlyDictionary<string, CellValue>> block = Fields(Field("EIN"));
+      IProjection<ISheetCells, IReadOnlyDictionary<string, Point<ISheetCells>>> block = Fields(Field("EIN"));
 
       Assert.Contains(
-        typeof(IProjection<IReadOnlyDictionary<string, CellValue>>),
+        typeof(IProjection<ISheetCells, IReadOnlyDictionary<string, Point<ISheetCells>>>),
         block.GetType().GetInterfaces());
 
-      IReadOnlyDictionary<string, CellValue> read = block.Map(Card());
+      IReadOnlyDictionary<string, Point<ISheetCells>> read = block.Map(Card());
       object value = read["EIN"];
 
-      Assert.IsType<CellValue>(value);
+      Assert.IsType<Point<ISheetCells>>(value);
     }
 
     // --- The label rule -------------------------------------------------------------------------------
@@ -119,7 +122,7 @@ namespace Unrect.Tests.Projections
     {
       var space = Mixed(new object?[,] { { "EIN:", "12-3456789" } });
 
-      Assert.Equal("12-3456789", Fields(Field(declared)).Map(space).Values.Single().GetString());
+      Assert.Equal("12-3456789", Fields(Field(declared)).Map(space).Values.Single().Text());
     }
 
     [Theory]
@@ -136,7 +139,7 @@ namespace Unrect.Tests.Projections
       // A colon inside a label is part of it.
       var space = Mixed(new object?[,] { { "Note: see below", "x" } });
 
-      Assert.Equal("x", Fields(Field("Note: see below")).Map(space).Values.Single().GetString());
+      Assert.Equal("x", Fields(Field("Note: see below")).Map(space).Values.Single().Text());
       Assert.Throws<ProjectionException>(() => Fields(Field("Note")).Map(space));
     }
 
@@ -187,7 +190,7 @@ namespace Unrect.Tests.Projections
       // Non-vacuous: the two semantics read different cells, so a green here is the replace law and
       // not a coincidence. (This is the very trap the old AMovementComposesOntoTheAnchor fell into —
       // its anchor resolved to row 0, where replace (origin+1) and compose (anchor@0 + 1) coincide.)
-      Assert.Equal("target", Down(1).Of(Fields(Field("EIN"))).Map(space).Values.Single().GetString());
+      Assert.Equal("target", Down(1).Of(Fields(Field("EIN"))).Map(space).Values.Single().Text());
     }
 
     [Fact]
@@ -208,7 +211,7 @@ namespace Unrect.Tests.Projections
       // only the last (row 1 -> "target") would stand, so the composition is observable here.
       Assert.Equal(
         "other",
-        OffsetBy(SkipRows(1)).Down(1).Of(Fields(Field("EIN"))).Map(space).Values.Single().GetString());
+        OffsetBy(SkipRows(1)).Down(1).Of(Fields(Field("EIN"))).Map(space).Values.Single().Text());
     }
 
     [Fact]
@@ -220,7 +223,7 @@ namespace Unrect.Tests.Projections
         { "EIN:", "12-3456789" },
       });
 
-      Assert.Equal("12-3456789", OffsetBy(SkipRows(1)).Of(Fields(Field("EIN"))).Map(space).Values.Single().GetString());
+      Assert.Equal("12-3456789", OffsetBy(SkipRows(1)).Of(Fields(Field("EIN"))).Map(space).Values.Single().Text());
     }
 
     [Fact]
@@ -375,7 +378,7 @@ namespace Unrect.Tests.Projections
 
       fields[0] = Field("Nope");
 
-      Assert.Equal("12-3456789", entity.Map(Card()).Values.Single().GetString());
+      Assert.Equal("12-3456789", entity.Map(Card()).Values.Single().Text());
     }
 
     // --- The K-1 card, mirrored -----------------------------------------------------------------------------
@@ -407,8 +410,8 @@ namespace Unrect.Tests.Projections
       Assert.Equal(
         new[] { "EIN", "Entity Type", "Deal Type", "Vintage", "Currency" },
         applied.Value.Keys.ToArray());
-      Assert.Equal("98-7654321", applied.Value["EIN"].GetString());
-      Assert.Equal(2019, applied.Value["Vintage"].GetInt());
+      Assert.Equal("98-7654321", applied.Value["EIN"].Text());
+      Assert.Equal(2019, applied.Value["Vintage"].Integer());
 
       Assert.Equal(2, applied.Consumed.Width);
       Assert.Equal(5, applied.Consumed.Height);

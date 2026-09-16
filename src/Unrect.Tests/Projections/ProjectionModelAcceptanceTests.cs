@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-using Unrect.Core;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Spreadsheets.SpreadsheetProjections;
 using static Unrect.Tests.ProjectionTestSpaces;
 
@@ -24,7 +24,6 @@ namespace Unrect.Tests.Projections
   /// repeat them: <see cref="OrBlankTests"/> has the per-field tolerance,
   /// <see cref="RowProjectionTableTests"/> the <c>eachRow</c> slot over this same sparse export,
   /// <see cref="BoundRowTableTests"/> the bind and the reordered-columns reading,
-  /// <see cref="ProjectionScopeTests"/> every member of the scope against its witness twin,
   /// <see cref="Unrect.Tests.Spreadsheets.FormulaCapabilityTests"/> the capability end to end over a real file,
   /// and <see cref="Unrect.Tests.Streaming.MapWorkbookTests"/> the streaming sugar. What those
   /// cannot say is whether the parts still add up to a parser somebody would write, which is the
@@ -72,7 +71,7 @@ namespace Unrect.Tests.Projections
     /// r6  Total   |        | 1.00     &lt;- SUM(C4:C5)
     /// </code>
     /// </summary>
-    private static CellValue[,] AllocationValues()
+    private static Cell[,] AllocationValues()
     {
       var cells = new object?[,]
       {
@@ -85,7 +84,7 @@ namespace Unrect.Tests.Projections
         { "Total", null, 1.00m },
       };
 
-      var values = new CellValue[cells.GetLength(0), cells.GetLength(1)];
+      var values = new Cell[cells.GetLength(0), cells.GetLength(1)];
 
       for (var row = 0; row < cells.GetLength(0); row++)
         for (var column = 0; column < cells.GetLength(1); column++)
@@ -94,7 +93,7 @@ namespace Unrect.Tests.Projections
       return values;
     }
 
-    private static ICellValues PlainAllocations() => new GridSpace(AllocationValues());
+    private static ISheetCells PlainAllocations() => SheetGrid.Of(AllocationValues());
 
     private static ISpreadsheetSpace CapableAllocations()
     {
@@ -111,7 +110,7 @@ namespace Unrect.Tests.Projections
     /// The declaration under test, hoisted so both tests read the same one. Every character of it
     /// predates the campaign, and its type is what it always was.
     /// </summary>
-    private static IProjection<Report> AllocationReport()
+    private static IProjection<ISheetCells, Report> AllocationReport()
     {
       var title = Text();
       var rows = Table<Allocation>();
@@ -125,9 +124,9 @@ namespace Unrect.Tests.Projections
     public void APlainDeclarationIsStillSpelledWithNothingAboutSpacesInIt()
     {
       // The local's annotation is the assertion: a declaration that reads nothing exotic is an
-      // IProjection<T>, which is what every hoisted helper in the corpus and every test in this
+      // IProjection<ISheetCells, T>, which is what every hoisted helper in the corpus and every test in this
       // suite says. If the campaign had cost this, it would have cost everything.
-      IProjection<Report> report = AllocationReport();
+      IProjection<ISheetCells, Report> report = AllocationReport();
 
       var read = report.Map(PlainAllocations());
 
@@ -140,8 +139,9 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AndTheSameDeclarationReadsASpaceThatOffersMore()
     {
-      // Variance does the work and nothing is written differently — not a cast, not an overload,
-      // not a witness. A projection demanding less runs wherever more is offered.
+      // Nothing is written differently — not a cast, not an overload, not a witness. A declaration
+      // names the space it is written over, and a space that offers more IS one of those: the
+      // conversion happens at the argument, where Map takes the declaration's own space type.
       var read = AllocationReport().Map(CapableAllocations());
 
       Assert.Equal("Buying Power Allocation", read.Title);
@@ -156,101 +156,112 @@ namespace Unrect.Tests.Projections
     }
 
     // =============================================================================================
-    // 2. Demands climb by themselves, and only ever upward
+    // 2. A declaration names its space, and a shared helper is generic in it
     // =============================================================================================
     //
-    // Scenario 8 (phase 1's question: one modifier definition, both demands), scenario 3 (a lift
-    // raising what it touches), and the static half of scenario 5 (the direction the conversion
-    // does not exist in — the refusals' whole cause, stated as a fact rather than as a comment).
+    // Scenario 8 (one modifier definition, every space), scenario 3 (a lift raising what it
+    // touches), and the static half of scenario 5 — the conversions that do and do not exist.
+    //
+    // WHAT CHANGED, AND WHY IT IS HERE RATHER THAN DELETED. This section used to be about VARIANCE:
+    // IProjection was contravariant in its space, so a plain declaration was usable wherever a
+    // demanding one was wanted and the refusals fell out of the direction the conversion did not
+    // run in. A projection is handed a region of its space now — a Plane<TSpace>, an invariant
+    // struct — so `in TSpace` and a real Project are mutually exclusive, and the interface is
+    // invariant. The refusals survive; what produces them moved. A file names one space, a
+    // declaration is typed by it, and the two things that used to need variance are now (a) the
+    // argument conversion at Map, which is enough for "reads a space that offers more", and (b) a
+    // helper generic in TSpace, which is enough for one definition shared across spaces.
 
     [Fact]
-    public void OneModifierChainIsTypedTwiceByWhatItWasGiven()
+    public void OneModifierChainIsTypedByWhateverSpaceItIsWrittenOver()
     {
-      // The phase-1 result, read as a user reads it: the SAME chain of modifiers, each written once
-      // in the library and typed twice at the use site. The two annotated locals are the assertion;
-      // that each of them reads its sheet is the proof the type is not the only thing that survived.
-      IProjection<decimal> plain = On(RowContaining("Total")).Right(2).Of(Decimal()
+      // One chain of modifiers, written once in the library and typed by the file that spells it.
+      // The annotated local is the assertion; that it reads its sheet is the proof the type is not
+      // the only thing that survived. (The demanding twin of this very chain is in
+      // ProjectionModelAcceptanceTests.EntryC.Spreadsheets.cs, because its space is not this file's.)
+      IProjection<ISheetCells, decimal> plain = On(RowContaining("Total")).Right(2).Of(Decimal()
         .Named("total"));
 
-      IProjection<IFormulaSpace, string?> demanding = On(RowContaining("Total")).Right(2).Of(Formula()
-        .Named("total formula"));
-
       Assert.Equal(1.00m, plain.Map(PlainAllocations()));
-      Assert.Equal("SUM(C4:C5)", demanding.Map(CapableAllocations()));
 
-      // The names survive the chain too — a placement modifier hands back the projection's own type,
-      // so it cannot quietly rewrap it into something with a different identity. (The transparent
+      // The name survives the chain too — a placement stage hands back the projection's own type, so
+      // it cannot quietly rewrap it into something with a different identity. (The transparent
       // wrappers — Padded, Select, Until — are a different rule, pinned where each of them lives.)
       Assert.Equal("total", plain.Name);
-      Assert.Equal("total formula", demanding.Name);
     }
 
     [Fact]
     public void ALiftRaisesTheProjectionItTouches()
     {
-      // Scenario 3, and the one modifier a self-typed receiver cannot do alone: the matcher's demand
-      // and the receiver's are unified by inference. Written plain, read demanding, annotated
-      // nowhere — the annotation on the local is what the compiler already inferred.
-      IProjection<IFormulaSpace, string> firstFormulaRow =
-        On(RowWithFormula()).Of(Row(cells => cells[0].GetString()));
+      // Scenario 3: the matcher's demand and the receiver's are unified by the file's space. The
+      // matcher is contravariant in what it demands — it is a landmark and no plane appears in its
+      // signature, so `in TSpace` survives there — which is what lets a matcher published for
+      // IFormulaSpace stand in a pipeline closed over the bundle.
+      IProjection<ISpreadsheetSpace, string> firstFormulaRow =
+        ProjectionBuilders<ISpreadsheetSpace>.On(SpreadsheetProjections.RowWithFormula())
+          .Of(ProjectionBuilders<ISpreadsheetSpace>.Row(cells => cells[0].Text()));
 
       Assert.Equal("A-1", firstFormulaRow.Map(CapableAllocations()));
     }
 
     [Fact]
-    public void ADeclarationsDemandOnlyEverPointsOneWay()
+    public void ADeclarationNamesExactlyOneSpace()
     {
-      // The reason every refusal in the ledger is a refusal. A plain declaration is usable where a
-      // demanding one is wanted; the reverse conversion does not exist, which is what turns
-      // "applied to the wrong backend" from a fault into a compile error.
-      var plain = typeof(IProjection<Report>);
-      var demanding = typeof(IProjection<IFormulaSpace, Report>);
+      // The reason every refusal in the ledger is still a refusal, said the way it is now true: a
+      // declaration is INVARIANT in its space, so neither conversion exists and "applied to the
+      // wrong backend" is a compile error in both directions.
+      var plain = typeof(IProjection<ISheetCells, Report>);
+      var demanding = typeof(IProjection<ISpreadsheetSpace, Report>);
 
-      Assert.True(demanding.IsAssignableFrom(plain), "a plain declaration runs on a capable space");
+      Assert.False(demanding.IsAssignableFrom(plain), "a declaration converts to no other space");
       Assert.False(plain.IsAssignableFrom(demanding), "a demanding declaration must not run on any space");
+
+      // ...and what makes the invariance liveable, which is the half worth pinning beside it: the
+      // conversion that a reader actually needs is at the ARGUMENT, where Map takes the declaration's
+      // own space type and a space offering more is one of those. Scenario 1's second half is this
+      // sentence, run.
+      Assert.Equal("Buying Power Allocation", AllocationReport().Map(CapableAllocations()).Title);
     }
 
     /// <summary>A hoisted plain helper: exactly what it was, which is the common case and the point.</summary>
-    private static IProjection<Allocation> AllocationRow()
+    private static IProjection<ISheetCells, Allocation> AllocationRow()
       => HorizontalFlow(h => new Allocation(
         Account: h.Next(Text()),
         Symbol: h.Next(Text()),
         Weight: h.Next(Decimal())));
 
-    /// <summary>A hoisted demanding helper: one type argument more, and it is a statement of requirement.</summary>
-    private static IProjection<IFormulaSpace, SourcedAllocation> SourcedRow()
-      => Overlay(Formulas, o => new SourcedAllocation(
-        Account: o.Next(Text()),
-        Formula: o.Next(Right(2).Of(Formula()))));
+    /// <summary>A hoisted demanding helper: its space says what it requires, and it says so once.</summary>
+    private static IProjection<ISpreadsheetSpace, SourcedAllocation> SourcedRow()
+      => ProjectionBuilders<ISpreadsheetSpace>.Overlay(o => new SourcedAllocation(
+        Account: o.Next(SpreadsheetProjections.Text<ISpreadsheetSpace>()),
+        Formula: o.Next(ProjectionBuilders<ISpreadsheetSpace>.Right(2)
+          .Of(SpreadsheetProjections.Formula<ISpreadsheetSpace>()))));
 
-    /// <summary>A helper generic in whatever its caller demands — the one shape that needs the parameter.</summary>
+    /// <summary>A helper generic in whatever space its caller names — the shape that replaced variance.</summary>
     private static IProjection<TSpace, IReadOnlyList<T>> Sections<TSpace, T>(IProjection<TSpace, T> item)
-      where TSpace : class, ICellValues
-      => VerticalRepeat(item, separatedBy: BlankRows());
+      where TSpace : class, ISheetCells
+      => ProjectionBuilders<TSpace>.VerticalRepeat(item, separatedBy: BlankRows());
 
     [Fact]
     public void AHoistedHelperSaysWhatItRequiresInItsReturnType()
     {
-      // Scenario 7: what tooltips show over a library of hoisted declarations. The plain one did not
-      // move; the demanding one grew a type argument that reads as a requirement; and a generic
-      // helper composes either, keeping whatever it was handed.
-      //
-      // The generic helper's plain instantiation is IProjection<ICellValues, T> and NOT IProjection<T>:
-      // the latter DERIVES from the former, so the conversion runs one way and a generic helper
-      // hands back the base form. It is the annotation tax's whole remaining balance, it costs one
-      // word at one kind of site, and it is recorded here rather than filed away.
-      IProjection<ICellValues, IReadOnlyList<Allocation>> plainSections = Sections(AllocationRow());
-      IProjection<IFormulaSpace, IReadOnlyList<SourcedAllocation>> demandingSections = Sections(SourcedRow());
+      // Scenario 7: what tooltips show over a library of hoisted declarations. The plain one names
+      // the plain space; the demanding one names a space that carries formulas, and that IS the
+      // requirement; and a generic helper composes either, keeping whatever it was handed.
+      IProjection<ISheetCells, IReadOnlyList<Allocation>> plainSections = Sections(AllocationRow());
+      IProjection<ISpreadsheetSpace, IReadOnlyList<SourcedAllocation>> demandingSections = Sections(SourcedRow());
 
-      // Both read the same capable sheet — the plain one because variance lets it, the demanding one
-      // because the sheet answers what it asks.
+      // Both read the same capable sheet — the plain one because Map's argument converts, the
+      // demanding one because the sheet answers what it asks.
       var rows = On(RowContaining("A-1")).Of(AllocationRow()).Map(CapableAllocations());
 
       Assert.Equal(new Allocation("A-1", "SPY", 0.25m), rows);
       Assert.Equal("VerticalRepeat", plainSections.Description);
       Assert.Equal("VerticalRepeat", demandingSections.Description);
 
-      var sourced = On(RowContaining("A-1")).Of(SourcedRow()).Map(CapableAllocations());
+      var sourced = ProjectionBuilders<ISpreadsheetSpace>.On(ProjectionBuilders<ISpreadsheetSpace>.RowContaining("A-1"))
+        .Of(SourcedRow())
+        .Map(CapableAllocations());
 
       Assert.Equal(new SourcedAllocation("A-1", "D4/$D$8"), sourced);
     }
@@ -279,7 +290,7 @@ namespace Unrect.Tests.Projections
     /// r7   TOTAL             2231.25
     /// </code>
     /// </summary>
-    private static ICellValues BuyingPower()
+    private static ISheetCells BuyingPower()
     {
       var cells = new object?[8, 11];
 
@@ -311,7 +322,7 @@ namespace Unrect.Tests.Projections
     /// overlay saying which column each field is, <c>OrBlank</c> saying which of them a record may
     /// omit, and the table's own extent discovered from the content below the caption row.
     /// </summary>
-    private static IProjection<BuyingPowerAllocation> BuyingPowerParser()
+    private static IProjection<ISheetCells, BuyingPowerAllocation> BuyingPowerParser()
     {
       var allocation = Overlay(o => new BuyingPowerRow(
         FundCode: o.Next(Right(1).Of(Text())),
@@ -415,9 +426,9 @@ namespace Unrect.Tests.Projections
     // spelling never had, plus the two facts that must agree between the spellings (the block
     // counts, and full consumption of the sheet).
 
-    private static ICellValues Irr() => SpreadsheetSpace.Create(TestData("investor-irr.xlsx"), "IRR");
+    private static ISheetCells Irr() => SpreadsheetSpace.Create(TestData("investor-irr.xlsx"), "IRR");
 
-    private static IProjection<IrrReport> IrrReportDeclaration()
+    private static IProjection<ISheetCells, IrrReport> IrrReportDeclaration()
     {
       // Not one caption is written down: "Investor Name" binds to InvestorName and "IRR" to Irr,
       // through the comparer, and each member's own type chooses the kind and the accessor.
@@ -531,85 +542,19 @@ namespace Unrect.Tests.Projections
     }
 
     // =============================================================================================
-    // 5. The audited ledger, through the scoped entry
+    // 5. The audited ledger — in the file whose space it names
     // =============================================================================================
     //
-    // Entry B over the committed formula fixture: the demand answered once, in prose position, for a
-    // whole declaration. ProjectionScopeTests pins each scope member against its witness twin and
-    // reads one cell of this file through the eager door; this is the declaration those members were
-    // added for — a table of records that read a value AND the formula behind it, and a total line
-    // read as a formula alone.
-
-    private static IProjection<ISpreadsheetSpace, AuditedLedger> AuditedLedgerDeclaration()
-    {
-      var p = Projection.Over<ISpreadsheetSpace>();
-
-      // A cell has a value and a formula, so reading both is an overlay's job, as ever.
-      var line = p.Overlay(o => new AuditedLine(
-        Item: o.Next(Text()),
-        Qty: o.Next(Right(1).Of(Integer())),
-        Total: o.Next(Right(3).Of(Double())),
-        Formula: o.Next(Right(3).Of(Formula()))));
-
-      var lines = p.Table(headerRows: 1, eachRow: line);
-      var total = On(RowContaining("Total")).Right(3).Of(Formula());
-
-      return p.VerticalFlow(v => new AuditedLedger(
-        Lines: v.Next(lines),
-        TotalFormula: v.Next(total)));
-    }
-
-    [Fact]
-    public void TheScopedLedgerReadsValuesAndTheFormulasBehindThem()
-    {
-      var sheet = SpreadsheetSpace.CreateWithFormulas(TestData("formulas.xlsx"), "Formulas");
-
-      var ledger = AuditedLedgerDeclaration().Map(sheet);
-
-      Assert.Equal(4, ledger.Lines.Count);
-
-      Assert.Equal("Widget", ledger.Lines[0].Item);
-      Assert.Equal(2, ledger.Lines[0].Qty);
-      Assert.Equal(4.5, ledger.Lines[0].Total);
-      Assert.Equal(@"IF(B2>0,ROUND(B2*$C$2,2)+SUM($B$2:B2),""B2"")", ledger.Lines[0].Formula);
-
-      // The fourth line is a shared FOLLOWER: the file carries only the group's index for it, and
-      // the reader reconstructs the text for this row rather than reporting the master's.
-      Assert.Equal("Doodad", ledger.Lines[3].Item);
-      Assert.Equal(21.5, ledger.Lines[3].Total);
-      Assert.Equal(@"IF(B5>0,ROUND(B5*$C$2,2)+SUM($B$2:B5),""B2"")", ledger.Lines[3].Formula);
-
-      // And the total line, below the gap, read as a formula and nothing else.
-      Assert.Equal("SUM(D2:D5)", ledger.TotalFormula);
-    }
-
-    [Fact]
-    public void AndTheSameDeclarationWithNoScopeIsTheSameDeclaration()
-    {
-      // The scope is sugar over the witness form, so a declaration written the other way must read
-      // the file identically. This is the acceptance-level statement of what ProjectionScopeTests
-      // says member by member.
-      var line = Overlay(Spreadsheets, o => new AuditedLine(
-        Item: o.Next(Text()),
-        Qty: o.Next(Right(1).Of(Integer())),
-        Total: o.Next(Right(3).Of(Double())),
-        Formula: o.Next(Right(3).Of(Formula()))));
-
-      var witnessed = VerticalFlow(Spreadsheets, v => new AuditedLedger(
-        Lines: v.Next(Table(headerRows: 1, eachRow: line)),
-        TotalFormula: v.Next(On(RowContaining("Total")).Right(3).Of(Formula()))));
-
-      var sheet = SpreadsheetSpace.CreateWithFormulas(TestData("formulas.xlsx"), "Formulas");
-
-      var byScope = AuditedLedgerDeclaration().Map(sheet);
-      var byWitness = witnessed.Map(sheet);
-
-      Assert.Equal(byWitness.TotalFormula, byScope.TotalFormula);
-      Assert.Equal(byWitness.Lines, byScope.Lines);
-    }
-
-    /// <summary>The bundle as a witness, so the witnessed twin above names no type argument either.</summary>
-    private static Demand<ISpreadsheetSpace> Spreadsheets => Demand<ISpreadsheetSpace>.Instance;
+    // The fourth declaration lives in ProjectionModelAcceptanceTests.EntryC.Spreadsheets.cs, which
+    // is the whole teaching: a file closes the vocabulary over ONE space, and this declaration's
+    // space is not this file's.
+    //
+    // Two declarations stood here and are gone with what they compared. The first answered its
+    // demand in PROSE POSITION — `var p = Projection.Over<ISpreadsheetSpace>()`, then `p.` at the
+    // three sites that needed it — and the second answered the same demand with a WITNESS argument
+    // (`Overlay(Spreadsheets, o => ...)`), with a pin that the two read the file identically. There
+    // is one way to name a space now, and it is the import at the top of a file; the scope entry and
+    // the witness are both deleted, and neither has a spelling left to be at parity with.
 
     // --- The results ---------------------------------------------------------------------------------
 

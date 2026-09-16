@@ -5,10 +5,11 @@ using System.Linq;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -30,7 +31,7 @@ namespace Unrect.Tests.Projections
   /// </summary>
   public class LazyErrorTimingTests
   {
-    private static ICellValues Sheet() => Grid(new[,]
+    private static ISheetCells Sheet() => Grid(new[,]
     {
       { 1, 2, 3 },
       { 4, 5, 6 },
@@ -62,7 +63,7 @@ namespace Unrect.Tests.Projections
     /// </summary>
     private const int LateMarker = 7;
 
-    private static ProjectionException Failure<T>(IProjection<T> projection, bool eager)
+    private static ProjectionException Failure<T>(IProjection<ISheetCells, T> projection, bool eager)
     {
       if (!eager)
         return Assert.Throws<ProjectionException>(() => projection.MapWithDiagnostics(Sheet()));
@@ -71,7 +72,7 @@ namespace Unrect.Tests.Projections
         return Assert.Throws<ProjectionException>(() => projection.MapWithDiagnostics(Sheet()));
     }
 
-    private static MapResult<T> Result<T>(IProjection<T> projection, bool eager)
+    private static MapResult<T> Result<T>(IProjection<ISheetCells, T> projection, bool eager)
     {
       if (!eager)
         return projection.MapWithDiagnostics(Sheet());
@@ -80,7 +81,7 @@ namespace Unrect.Tests.Projections
         return projection.MapWithDiagnostics(Sheet());
     }
 
-    private static void AssertSameFailureBothWays<T>(IProjection<T> projection)
+    private static void AssertSameFailureBothWays<T>(IProjection<ISheetCells, T> projection)
     {
       var deferred = Failure(projection, eager: false);
       var measured = Failure(projection, eager: true);
@@ -137,7 +138,7 @@ namespace Unrect.Tests.Projections
       // bound built at placement time and raised while a different part of the tree is live.
       var projection = VerticalFlow(v =>
       {
-        var caption = v.Next(Range(1, 1, b => b[0, 0].GetInt()));
+        var caption = v.Next(Range(1, 1, b => b[0, 0].Integer()));
         var body = v.Next(Range(RowsWhileAny(BreaksOn(LateMarker)), _ => 0).Named("body"));
 
         return caption + body;
@@ -162,7 +163,7 @@ namespace Unrect.Tests.Projections
     {
       var broken = Range(RowsWhileAny(FaultsOn(LateMarker)), b => b.Height);
 
-      IProjection<int> projection = boundary switch
+      IProjection<ISheetCells, int> projection = boundary switch
       {
         "Optional" => broken.Optional(),
         "Else" => broken.Else(-1),
@@ -235,7 +236,7 @@ namespace Unrect.Tests.Projections
     // --- Rule 2: a repeat's item is placed up front, always ----------------------------------------
 
     /// <summary>Two blocks of values with one blank row between them, so a repeat finds exactly two.</summary>
-    private static ICellValues TwoBlocks() => Grid(new[,]
+    private static ISheetCells TwoBlocks() => Grid(new[,]
     {
       { 1, 2 },
       { 3, 4 },

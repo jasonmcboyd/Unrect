@@ -2,17 +2,19 @@ using System;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
 {
   /// <summary>
-  /// The single-import claim: <c>using static Unrect.Projections.Projection;</c> is all a
+  /// The single-import claim: <c>using static Unrect.Projections.ProjectionBuilders&lt;Unrect.Core.ISheetCells&gt;;</c> is all a
   /// declaration needs. Every re-export here forwards to a strategy factory, and each test proves
   /// the forwarding by behaviour rather than by reference — a re-export wired to the wrong strategy
   /// would compile.
@@ -34,9 +36,9 @@ namespace Unrect.Tests.Projections
 
     // 3 columns by 2 rows: 1 0 3 / 2 0 4 — a blank middle column, so column-wise and row-wise
     // discovery give different answers and a mis-wired re-export cannot hide.
-    private static ICellValues Patchy() => Grid(new[,] { { 1, 0, 3 }, { 2, 0, 4 } });
+    private static ISheetCells Patchy() => Grid(new[,] { { 1, 0, 3 }, { 2, 0, 4 } });
 
-    private static ICellValues Block() => Grid(new[,] { { 1, 2, 3 }, { 4, 5, 6 } });
+    private static ISheetCells Block() => Grid(new[,] { { 1, 2, 3 }, { 4, 5, 6 } });
 
     /// <summary>The extent a strategy resolves to on the patchy grid, as "WxH".</summary>
     private static string Measure(IAreaStrategy area)
@@ -174,7 +176,7 @@ namespace Unrect.Tests.Projections
         Lines = v.Next(Table<Line>(bind => bind.Column(t => t.When, "Transaction Date"))),
       }).Map(card);
 
-      Assert.Equal("12-3456789", report.Entity["EIN"].GetString());
+      Assert.Equal("12-3456789", report.Entity["EIN"].Text());
       Assert.Equal(new DateTime(2026, 3, 4), report.Lines[0].When);
       Assert.Equal(10m, report.Lines[0].Amount);
 

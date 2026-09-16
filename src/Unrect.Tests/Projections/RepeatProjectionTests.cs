@@ -4,11 +4,13 @@ using System.Threading.Tasks;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -89,7 +91,7 @@ namespace Unrect.Tests.Projections
       // there.
       var space = Grid(new[,] { { 1 }, { 0 }, { 2 }, { 0 }, { 0 } });
 
-      var items = VerticalRepeat(Range(1, 1, b => b[0, 0].GetInt()), separatedBy: BlankRows());
+      var items = VerticalRepeat(Range(1, 1, b => b[0, 0].Integer()), separatedBy: BlankRows());
       var band = Range(1, 2, b => b.Height);
 
       var read = VerticalFlow(v => $"{string.Join(",", v.Next(items))}|{v.Next(band)}").Map(space);
@@ -105,7 +107,7 @@ namespace Unrect.Tests.Projections
       // a separator can express — bound the repeat's own extent if that is what the format means.
       var space = Grid(new[,] { { 1 }, { 0 }, { 2 }, { 0 }, { 0 }, { 9 } });
 
-      var items = VerticalRepeat(Range(1, 1, b => b[0, 0].GetInt()), separatedBy: BlankRows()).Map(space);
+      var items = VerticalRepeat(Range(1, 1, b => b[0, 0].Integer()), separatedBy: BlankRows()).Map(space);
 
       Assert.Equal(new[] { 1, 2, 9 }, items);
     }
@@ -121,7 +123,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void Repeat_OnAnEmptySpace_YieldsNoItems()
     {
-      var space = Grid(new[,] { { 1, 1 } }).GetSubspace(new Offset(0, 0), new Area(0, 0));
+      var space = Grid(new int[0, 0]);
 
       Assert.Empty(VerticalRepeat(IntCell()).Map(space));
     }
@@ -188,13 +190,15 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void Repeat_WhenAProjectionInsideTheItemThrows_Propagates()
     {
-      // Cell has no notion of "value bearing", so a trailing blank is a projection failure rather
-      // than a stopping condition — and the repeat surfaces it.
+      // A leaf has no notion of "value bearing", so a trailing blank is a read failure rather than
+      // a stopping condition — and the repeat surfaces it.
       var space = Grid(new[,] { { 1 }, { 2 }, { 0 } });
 
       var failure = Assert.Throws<ProjectionException>(() => VerticalRepeat(IntCell()).Map(space));
 
-      Assert.IsType<InvalidOperationException>(failure.InnerException);
+      // Nothing wrapped: the leaf reports its own read. Until phase 6 it threw an
+      // InvalidOperationException from inside its lambda and the engine wrapped that.
+      Assert.Null(failure.InnerException);
       Assert.Contains("VerticalRepeat[2]", failure.Path);
     }
 
@@ -230,13 +234,16 @@ namespace Unrect.Tests.Projections
       var item = VerticalFlow(v =>
       {
         var code = v.Next(TextCell().Named("code"));
-        v.Next(Table(r => r["Amount"].GetInt()).Named("rows"));
+        v.Next(Table(r => r["Amount"].Integer()).Named("rows"));
         return code;
       });
 
       var failure = Assert.Throws<ProjectionException>(() => VerticalRepeat(item).Map(space));
 
-      Assert.Contains("the projection threw", failure.Message);
+      // The item's first child is a Text leaf and the band is blank, so what the repeat surfaces is
+      // that read, said plainly. Until phase 6 this was "the projection threw
+      // InvalidOperationException: ..." — the generic wrapper, because the leaf threw one.
+      Assert.Contains("expected Text at A4, found Blank", failure.Message);
       Assert.Contains("VerticalRepeat[1]", failure.Path);
 
       // Declared with the separator, the same projection over the same space stops cleanly.
@@ -328,7 +335,7 @@ namespace Unrect.Tests.Projections
     // pinned: the trap, and the one-modifier recipe that fixes it.
 
     /// <summary>Two captioned sections, a blank line between them, and a totals row that is neither.</summary>
-    private static ICellValues CaptionedSections() => Mixed(new object?[,]
+    private static ISheetCells CaptionedSections() => Mixed(new object?[,]
     {
       { "Detail" },
       { "a" },
@@ -429,7 +436,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void Repeat_RejectsANullItem()
     {
-      Assert.Throws<ArgumentNullException>(() => VerticalRepeat((IProjection<int>)null!));
+      Assert.Throws<ArgumentNullException>(() => VerticalRepeat((IProjection<ISheetCells, int>)null!));
     }
 
     // --- Horizontal repetition --------------------------------------------------------------------------------
@@ -461,7 +468,7 @@ namespace Unrect.Tests.Projections
     // --- A repeat inside a discovered bound reads forward only ------------------------------------------------------
 
     /// <summary>Two two-row blocks, adjacent: a repeat walks them with nothing between.</summary>
-    private static ICellValues TwoBlocks() => Mixed(new object?[,]
+    private static ISheetCells TwoBlocks() => Mixed(new object?[,]
     {
       { "A-1", null },
       { null, 10 },
@@ -470,7 +477,7 @@ namespace Unrect.Tests.Projections
     });
 
     /// <summary>A code cell over a value one row down and one column across — two rows per block.</summary>
-    private static IProjection<(string Code, int Amount)> Section()
+    private static IProjection<ISheetCells, (string Code, int Amount)> Section()
       => VerticalFlow(v => (Code: v.Next(TextCell()), Amount: v.Next(Right(1).Of(IntCell()))));
 
     [Fact]
@@ -493,7 +500,7 @@ namespace Unrect.Tests.Projections
     /// Three record rows, a blank row, and trailing content — the sheet a record walk has to stop
     /// part way down.
     /// </summary>
-    private static ICellValues RecordsThenTrailingContent() => Mixed(new object?[,]
+    private static ISheetCells RecordsThenTrailingContent() => Mixed(new object?[,]
     {
       { "a", 1 },
       { "b", 2 },
@@ -514,11 +521,11 @@ namespace Unrect.Tests.Projections
       // the trailing content. Ending the walk is a declared bound's job.
       var sheet = RecordsThenTrailingContent();
 
-      Assert.Equal(new[] { 0, 1, 2, 3, 4 }, VerticalRepeat(Record((TableRow row) => row.Index)).Map(sheet));
+      Assert.Equal(new[] { 0, 1, 2, 3, 4 }, VerticalRepeat(Record((TableRow<ISheetCells> row) => row.Index)).Map(sheet));
 
       // The same walk under .Until: the bound ends just before the blank row, and is consumed in
       // full, so the trailing content is left where the next sibling would find it.
-      var bounded = Until(BlankRow()).Of(VerticalRepeat(Record((TableRow row) => row.Index))).Apply(sheet);
+      var bounded = Until(BlankRow()).Of(VerticalRepeat(Record((TableRow<ISheetCells> row) => row.Index))).Apply(sheet);
 
       Assert.Equal(new[] { 0, 1, 2 }, bounded.Value);
       Assert.Equal(2, bounded.Consumed.Width);
@@ -535,7 +542,7 @@ namespace Unrect.Tests.Projections
 
       // Each record reads a cell of its row, so the watermark measures the walk itself and not only
       // the landmark search that precedes it.
-      var records = Until(BlankRow()).Of(VerticalRepeat(Record((TableRow row) => { _ = row.Text(0); return row.Index; }))).Map(watched);
+      var records = Until(BlankRow()).Of(VerticalRepeat(Record((TableRow<ISheetCells> row) => { _ = row[0].Text(); return row.Index; }))).Map(watched);
 
       Assert.Equal(new[] { 0, 1, 2 }, records);
 
@@ -625,7 +632,7 @@ namespace Unrect.Tests.Projections
 
       var block = VerticalFlow(v => (
         Code: v.Next(TextCell().Named("code")),
-        Amounts: v.Next(Table(r => r["Amount"].GetInt()).Named("amounts"))))
+        Amounts: v.Next(Table(r => r["Amount"].Integer()).Named("amounts"))))
         .Named("block");
 
       var blocks = VerticalRepeat(block, separatedBy: BlankRows()).Map(space);

@@ -1,11 +1,12 @@
 using System;
 
-using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -24,13 +25,13 @@ namespace Unrect.Tests.Projections
   /// </summary>
   public class OrBlankTests
   {
-    private static ICellValues One(object? value) => Mixed(new object?[,] { { value } });
+    private static ISheetCells One(object? value) => Mixed(new object?[,] { { value } });
 
     /// <summary>
     /// One row eight columns wide with something in column 0 and <paramref name="atSix"/> in column
     /// 6 — the sparse shape the modifier was designed for, small enough to say one thing.
     /// </summary>
-    private static ICellValues Sparse(object? atSix)
+    private static ISheetCells Sparse(object? atSix)
     {
       var cells = new object?[1, 8];
 
@@ -105,7 +106,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal(
         "expected Number at A1, found Error(#DIV/0!)",
         Problem(Assert.Throws<ProjectionException>(() =>
-          Decimal().OrBlank().Map(One(CellValue.OfError(CellError.DivisionByZero))))));
+          Decimal().OrBlank().Map(One(Cell.OfError(CellError.DivisionByZero))))));
     }
 
     [Fact]
@@ -229,18 +230,45 @@ namespace Unrect.Tests.Projections
     // NEITHER of these compiles, and they are refused for two different reasons.
     //
     //   Decimal().OrBlank().OrBlank()   CS0453, "the type 'decimal?' must be a non-nullable value
-    //     type". The first call returns IProjection<decimal?>; the generic overload constrains T to
-    //     a non-nullable struct and the reference-typed one takes IProjection<string>. There is no
+    //     type". The first call returns IProjection<ISheetCells, decimal?>; the generic overload constrains T to
+    //     a non-nullable struct and the reference-typed one takes IProjection<ISheetCells, string>. There is no
     //     Nullable<Nullable<T>> to reach for, so the second "may be absent" has nothing left to say.
     //     This is the library's own refusal, and the one the design intended.
     //
-    //   Text().OrBlank().OrBlank()      CS8620 — IProjection<string?> cannot be passed where
-    //     IProjection<string> is wanted, because IProjection<TResult> is invariant. Verified against
+    //   Text().OrBlank().OrBlank()      CS8620 — IProjection<ISheetCells, string?> cannot be passed where
+    //     IProjection<ISheetCells, string> is wanted, because IProjection<ISheetCells, TResult> is invariant. Verified against
     //     this tree, where TreatWarningsAsErrors makes it an error outright; in a project that only
     //     warns it would compile and be a harmless no-op, since string? and string are one type at
     //     run time and the receiver is a TypedCellProjection either way. So the reference half of
     //     the family is closed by C#'s nullability rules rather than by anything here, which is why
     //     it is a note and not a pin — the compiler diagnostic is not this library's to keep.
+
+    // --- What the rebuild has to carry across ---------------------------------------------------------
+
+    [Fact]
+    public void ItKeepsTheUnitMarkItWasGivenWhicheverOrderTheyAreWrittenIn()
+    {
+      // OrBlank is the one modifier that cannot clone: it changes the result type, so it BUILDS a
+      // new leaf and has to carry the receiver's naming across by hand. The name is the obvious
+      // half; the unit marks are the half a reader would not think to check, and losing them
+      // silently changes the path a failure renders — a folded unit's one segment becomes the
+      // uncollapsed tree underneath it.
+      //
+      // Stated as a commutation, because that is the form the loss would show up as: written one way
+      // the mark survives trivially (the mark is applied last), and written the other it survives
+      // only if OrBlank carried it.
+      var space = Mixed(new object?[,] { { "x" } });
+
+      var markedThenTolerant = Assert.Throws<ProjectionException>(() => Decimal().AsUnit("x").OrBlank().Map(space));
+      var tolerantThenMarked = Assert.Throws<ProjectionException>(() => Decimal().OrBlank().AsUnit("x").Map(space));
+
+      Assert.Equal(tolerantThenMarked.Path, markedThenTolerant.Path);
+      Assert.Equal(tolerantThenMarked.Subject, markedThenTolerant.Subject);
+      Assert.Equal(tolerantThenMarked.FullPath, markedThenTolerant.FullPath);
+
+      // Non-vacuity: the mark is what is being carried, so it has to be visible in what is compared.
+      Assert.Equal("x", markedThenTolerant.Subject);
+    }
 
     // --- The construction guard ---------------------------------------------------------------------
 
@@ -251,9 +279,12 @@ namespace Unrect.Tests.Projections
       // but in a reading that asserted a kind, so this is a broken declaration and not bad data.
       var failure = Assert.Throws<ArgumentException>(() => Row(cells => cells.Count).OrBlank());
 
+      // The list of leaves is no longer enumerable from the core: the kinded six live in a backend
+      // now, and any backend may publish its own, so the sentence names the CANONICAL leaf and the
+      // shape of the rest rather than pretending to a closed list it cannot see.
       Assert.StartsWith(
-        "OrBlank reads a blank cell as null, so it belongs on a cell leaf that declares a kind — "
-        + "Text, Decimal, Integer, Double, Date or Boolean. Row is not one.",
+        "OrBlank reads a blank cell as null, so it belongs on a cell leaf — AsText, or one of a "
+        + "backend's kinded leaves. Row is not one.",
         failure.Message);
 
       Assert.Equal("projection", failure.ParamName);
@@ -261,7 +292,7 @@ namespace Unrect.Tests.Projections
 
     [Theory]
     [InlineData("Row", "Row")]
-    [InlineData("Cell", "Cell")]
+    [InlineData("Point", "Point")]
     [InlineData("Range", "Range")]
     [InlineData("Caption", "Caption(\"Total\")")]
     [InlineData("Optional", "Optional")]
@@ -280,7 +311,7 @@ namespace Unrect.Tests.Projections
     private static IProjection Refuse(string receiver) => receiver switch
     {
       "Row" => Row(cells => cells.Count).OrBlank(),
-      "Cell" => IntCell().OrBlank(),
+      "Point" => Point().OrBlank(),
       "Range" => Range(block => block.Width).OrBlank(),
 
       // A caption reads text out of a cell and is still not a typed leaf: it asserts a spelling
@@ -300,8 +331,8 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AndItRefusesNullTheWayEveryModifierDoes()
     {
-      Assert.Throws<ArgumentNullException>(() => ((IProjection<decimal>)null!).OrBlank());
-      Assert.Throws<ArgumentNullException>(() => ((IProjection<string>)null!).OrBlank());
+      Assert.Throws<ArgumentNullException>(() => ((IProjection<ISheetCells, decimal>)null!).OrBlank());
+      Assert.Throws<ArgumentNullException>(() => ((IProjection<ISheetCells, string>)null!).OrBlank());
     }
   }
 }

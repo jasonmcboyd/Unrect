@@ -3,11 +3,12 @@ using System.Linq;
 using System.Threading.Tasks;
 
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -27,7 +28,7 @@ namespace Unrect.Tests.Projections
   {
     /// <summary>A cell read as text — named for what it does, so it cannot be mistaken for the
     /// <c>Text()</c> leaf that the vocabulary now has.</summary>
-    private static IProjection<string> StringCell() => TextCell();
+    private static IProjection<ISheetCells, string> StringCell() => TextCell();
 
     // --- Flow arithmetic ---------------------------------------------------------------------------
 
@@ -277,7 +278,7 @@ namespace Unrect.Tests.Projections
       Assert.Null(result.Value);
 
       var warning = Assert.Single(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Warning);
-      Assert.Equal("VerticalFlow -> VerticalFlow#2 -> 'deep' (Cell)", warning.Path);
+      Assert.Equal("VerticalFlow -> VerticalFlow#2 -> 'deep' (Text)", warning.Path);
       Assert.Equal("A3", warning.Location.A1);
     }
 
@@ -302,9 +303,13 @@ namespace Unrect.Tests.Projections
         VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(StringCell().Named("title"))}").Map(Ladder()));
 
       Assert.Equal("'title'", failure.Subject);
-      Assert.Equal("VerticalFlow -> 'title' (Cell)", failure.Path);
+      Assert.Equal("VerticalFlow -> 'title' (Text)", failure.Path);
       Assert.Equal("A2", failure.Location.A1);
-      Assert.IsType<InvalidOperationException>(failure.InnerException);
+
+      // Nothing wrapped: a kinded leaf is the reader, so its refusal is the failure rather than
+      // something caught and re-described. Until phase 6 the leaf threw an InvalidOperationException
+      // from inside its own lambda, and this asserted that.
+      Assert.Null(failure.InnerException);
     }
 
     [Fact]
@@ -368,7 +373,7 @@ namespace Unrect.Tests.Projections
     {
       // The position is the pin: reporting the composite's own origin would be correct but vaguer,
       // and A2 is only right because the context is advanced to the cursor before it is blamed.
-      IProjection<int>? missing = null;
+      IProjection<ISheetCells, int>? missing = null;
 
       var failure = Assert.Throws<ProjectionException>(() =>
         VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(missing!)}").Map(Ladder()));
@@ -381,7 +386,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ANullFirstChildIsReportedAtTheFlowsOrigin()
     {
-      IProjection<int>? missing = null;
+      IProjection<ISheetCells, int>? missing = null;
 
       var failure = Assert.Throws<ProjectionException>(() => VerticalFlow(v => $"{v.Next(missing!)}").Map(Ladder()));
 
@@ -392,7 +397,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ANullProjection_ResistsAToleranceBoundary()
     {
-      IProjection<int>? missing = null;
+      IProjection<ISheetCells, int>? missing = null;
 
       Assert.Throws<ProjectionException>(() =>
         VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(missing!)}").Optional().Map(Ladder()));
@@ -404,7 +409,7 @@ namespace Unrect.Tests.Projections
       // The only escape the compiler cannot catch, because anyone can construct it. The message
       // says which of the two ways of being outside a layout this is; the other — a cursor used
       // after its layout returned — cannot be reached from C# at all, so it has no test.
-      var failure = Assert.Throws<InvalidOperationException>(() => default(LayoutCursor).Next(IntCell()));
+      var failure = Assert.Throws<InvalidOperationException>(() => default(LayoutCursor<ISheetCells>).Next(IntCell()));
 
       Assert.Equal(
         "A layout cursor cannot be used outside the layout that created it; this one never had a layout.",
@@ -480,14 +485,14 @@ namespace Unrect.Tests.Projections
     // test without a compilation harness — so the snippets live here, each verified against this
     // build to produce the code shown.
     //
-    //   IProjection<List<int>> s = VerticalFlow(v => Enumerable.Range(0, 3).Select(i => v.Next(x)).ToList());
+    //   IProjection<ISheetCells, List<int>> s = VerticalFlow(v => Enumerable.Range(0, 3).Select(i => v.Next(x)).ToList());
     //     CS9108 — cannot use ref-like 'v' inside an anonymous method or lambda. Covers the
     //     deferred-query hazard too: unmaterialised, the query fails the same way.
     //
-    //   IProjection<int> s = VerticalFlow(v => { int F() => v.Next(x); return F(); });
+    //   IProjection<ISheetCells, int> s = VerticalFlow(v => { int F() => v.Next(x); return F(); });
     //     CS9108 — the same rule for a local function.
     //
-    //   IProjection<LayoutCursor> s = VerticalFlow(v => v);
+    //   IProjection<ISheetCells, LayoutCursor> s = VerticalFlow(v => v);
     //     CS9244 — the type 'LayoutCursor' may not be a type argument (returning the cursor).
     //
     //   static LayoutCursor field; ... VerticalFlow(v => { field = v; return v.Next(x); });

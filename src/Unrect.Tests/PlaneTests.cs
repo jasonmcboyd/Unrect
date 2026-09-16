@@ -119,6 +119,38 @@ namespace Unrect.Tests
       Assert.Throws<OutOfBoundsException>(() => { _ = rowsOnly[0, 0]; });
     }
 
+    [Fact]
+    public void EachSpellingTakesTheSameRectangleAsTheLongOne()
+    {
+      // The two short forms are shorthand, not different operations: an offset with no area means
+      // "the rest", and an area with no offset means "from the corner". Pinned beside their failure
+      // mode so the three spellings read as one rule rather than as three unrelated facts.
+      //
+      // (Stated over one door because slicing is arithmetic on the locator: a plane composes the
+      // same numbers whatever space it names. What varies by door is the READ, and that is
+      // SpaceContractTests' theory.)
+      var plane = Whole();      // three wide, two tall
+
+      var remainder = plane.Slice(new Offset(1, 1));
+
+      Assert.Equal(2, remainder.Area.Width);
+      Assert.Equal(1, remainder.Area.Height);
+      Assert.Equal("1,1", remainder[0, 0].AsText());
+
+      var corner = plane.Slice(new Area(2, 1));
+
+      Assert.Equal("0,0", corner[0, 0].AsText());
+      Assert.Equal("1,0", corner[1, 0].AsText());
+      Assert.Throws<OutOfBoundsException>(() => { _ = corner[2, 0]; });
+
+      // ...and each refuses an oversized request as the bounds condition the long form does.
+      Assert.Throws<OutOfBoundsException>(() => plane.Slice(new Offset(4, 0)));
+      Assert.Throws<OutOfBoundsException>(() => plane.Slice(new Offset(0, 3)));
+      Assert.Throws<OutOfBoundsException>(() => plane.Slice(new Offset(4, 0), new Area(1, 1)));
+      Assert.Throws<OutOfBoundsException>(() => plane.Slice(new Area(4, 1)));
+      Assert.Throws<OutOfBoundsException>(() => plane.Slice(new Area(1, 3)));
+    }
+
     // --- Overflow is a bounds condition, not an argument bug ------------------------------------------
     //
     // The arithmetic hazard the checks are written around. Every component is non-negative, so
@@ -385,6 +417,31 @@ namespace Unrect.Tests
       Assert.Equal(3, plane.Width);
       Assert.Equal(-1, bound.Reached);
       Assert.Equal(0, bound.Forced);
+    }
+
+    [Fact]
+    public void HasRowIsClampedByTheDeclaredExtentBeforeTheBoundIsAskedAtAll()
+    {
+      // The two halves of HasRow, and the order they are asked in. A discovered bottom edge cannot
+      // run past the CEILING it was begun under — that is what "discovered" means — so a row beyond
+      // the declared height is absent whatever the rule would have said, and the rule is not asked.
+      //
+      // The test is written with a bound that would say YES, which is the only way to tell the two
+      // halves apart: a region declared three rows tall, under a rule good for nine, has three rows.
+      // Redundant with what the scan does, deliberately — stating it here makes it a property of the
+      // region rather than something taken on trust from the scan.
+      var space = GridSpace.Create(new string?[9, 3]);
+      var generous = new CountingBound(9);
+      var plane = Plane<ISpace>.Of(space).Slice(new Area(3, 3)).Bounded(generous, 3);
+
+      Assert.True(plane.HasRow(2));
+      Assert.False(plane.HasRow(3));
+      Assert.False(plane.HasRow(8));
+
+      // Only row 2 reached the rule; rows 3 and 8 were answered by the declared extent alone, and
+      // nothing was settled.
+      Assert.Equal(2, generous.Reached);
+      Assert.Equal(0, generous.Forced);
     }
 
     [Fact]
