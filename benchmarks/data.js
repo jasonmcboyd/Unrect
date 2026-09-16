@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789531989508,
+  "lastUpdate": 1789531989783,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -11648,6 +11648,72 @@ window.BENCHMARK_DATA = {
             "value": 20660196.16294643,
             "unit": "ns",
             "range": "± 248972.99196458972"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "33f1afa3496afb1fabd2e0242197d1c5d9889568",
+          "message": "Merge experiment/point-and-line: the Point substrate — one vocabulary over any ISpace, planes and points as the locators, the kinds in Unrect.Spreadsheets\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01Wk5ZXojzv4hibCXDkjRu3g",
+          "timestamp": "2026-09-16T04:05:17Z",
+          "tree_id": "09d4c757d0f1502df340fb2a2481c31f78e8d8b2",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/33f1afa3496afb1fabd2e0242197d1c5d9889568"
+        },
+        "date": 1789531989721,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Streaming.Monotone_Eager",
+            "value": 729807003.8461539,
+            "unit": "ns",
+            "range": "± 2145901.390714589"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Monotone_Windowed",
+            "value": 1076501039.4,
+            "unit": "ns",
+            "range": "± 13032350.365095206"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Monotone_Resident",
+            "value": 777271187.6428572,
+            "unit": "ns",
+            "range": "± 5997873.0897587305"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Band_WindowFits",
+            "value": 1373404.1389973958,
+            "unit": "ns",
+            "range": "± 588.6222516130623"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Band_WindowTooSmall",
+            "value": 1376850.4829799107,
+            "unit": "ns",
+            "range": "± 3148.3702542888645"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Adversarial_OneReader",
+            "value": 47962908.69930069,
+            "unit": "ns",
+            "range": "± 100471.65663237499"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Adversarial_Pooled",
+            "value": 37497726.44761905,
+            "unit": "ns",
+            "range": "± 184464.82905850536"
           }
         ]
       }
