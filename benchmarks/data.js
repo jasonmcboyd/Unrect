@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789613136446,
+  "lastUpdate": 1789613136713,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -2196,6 +2196,72 @@ window.BENCHMARK_DATA = {
             "value": 1616162.5226004464,
             "unit": "ns",
             "range": "± 4438.74717351412"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "0f34f159151554afcc0555f7afc83fdd486b8c06",
+          "message": "Merge experiment/point-follow-ups: Extents into Plane, Unrect.Interactive, and the typed-predicate lift\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01Wk5ZXojzv4hibCXDkjRu3g",
+          "timestamp": "2026-09-17T02:37:19Z",
+          "tree_id": "cfa1d003f75555e9d6f330d316cdd949a1da2b25",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/0f34f159151554afcc0555f7afc83fdd486b8c06"
+        },
+        "date": 1789613136653,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Strategies.RowsWhileAnyValue_FullHeight",
+            "value": 1202457.7467447917,
+            "unit": "ns",
+            "range": "± 1149.9826580108734"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.RowsWhileAnyValue_Sparse",
+            "value": 1207292.6450195312,
+            "unit": "ns",
+            "range": "± 503.1613484525089"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_HitAt10Percent",
+            "value": 486217.7124399039,
+            "unit": "ns",
+            "range": "± 535.7541077593071"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_HitAt90Percent",
+            "value": 4445156.791466346,
+            "unit": "ns",
+            "range": "± 6679.960987488347"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_MissWholeGrid",
+            "value": 4555125.137834822,
+            "unit": "ns",
+            "range": "± 5226.768197596514"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Until_BoundResolution",
+            "value": 5651704.450892857,
+            "unit": "ns",
+            "range": "± 12004.816876718824"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.BlankRows_Skip",
+            "value": 1900557.6078725962,
+            "unit": "ns",
+            "range": "± 1019.7284694814193"
           }
         ]
       }
