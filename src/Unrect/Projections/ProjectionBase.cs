@@ -6,22 +6,9 @@ using Unrect.Core;
 namespace Unrect.Projections
 {
   /// <summary>
-  /// The base for every projection, and the seam a modifier dispatches through.
-  /// <para>
-  /// A modifier keeps whatever demand its receiver carries by handing back the receiver's own type
-  /// (<c>TProjection Named&lt;TProjection&gt;(this TProjection, string)</c>), and a method generic
-  /// in the projection's type can only see it as an <see cref="IProjection"/>. So the operations
-  /// that need to know the <em>result</em> type live here, where <see
-  /// cref="ProjectionBase{TSpace, TResult}"/> supplies it. That is the whole reason this non-generic half
-  /// exists, and it is why the modifier surface is written once instead of once per demand.
-  /// </para>
-  /// <para>
-  /// The one clone-returning operation (<see cref="With"/>) hands back a copy of the same runtime
-  /// type, so a modifier's cast back to <c>TProjection</c> cannot fail. The wrapper-returning ones
-  /// hand back a new projection, which is a <see cref="ProjectionBase{TSpace, TResult}"/> for the
-  /// same result type and therefore converts to any <em>interface</em> the receiver was seen
-  /// through — but not to a projection class of its own, which is what a modifier's cast checks.
-  /// </para>
+  /// The base for every projection: a base for <em>construction</em>, not behaviour. It carries the
+  /// <see cref="Annotations"/> every projection has and the one clone that changes them; what a
+  /// projection does with its extent is its own, and what a modifier wraps it in is the modifier's.
   /// </summary>
   public abstract class ProjectionBase : IProjection
   {
@@ -80,26 +67,6 @@ namespace Unrect.Projections
       return clone;
     }
 
-    /// <summary>This projection inset on each side — the wrapper <c>Padded</c> declares.</summary>
-    internal abstract IProjection Inset(int left, int top, int right, int bottom);
-
-    /// <summary>This projection bounded at <paramref name="landmark"/> — the wrapper <c>Until</c> declares.</summary>
-    internal abstract IProjection BoundedBy(Landmark landmark, bool orEnd);
-
-    /// <summary>
-    /// This projection below <paramref name="captions"/>, as one vertical flow — the structure a
-    /// <c>Heading</c> stage builds directly. The captions are the heading rows, read and discarded;
-    /// this projection is the section they announce.
-    /// </summary>
-    internal abstract IProjection WithHeadings(IProjection[] captions);
-
-    /// <summary>
-    /// This projection with <paramref name="fallback"/> to stand in for it — the boundary
-    /// <c>Else</c> declares. The fallback must read what this projection reads, which the
-    /// modifier's own type inference has already required of every caller that named a projection
-    /// type.
-    /// </summary>
-    internal abstract IProjection Otherwise(IProjection fallback, string? declared);
 
   }
 
@@ -134,40 +101,6 @@ namespace Unrect.Projections
     IProjection<TSpace, TResult> IProjection<TSpace, TResult>.With(Annotations annotations)
       => (IProjection<TSpace, TResult>)With(annotations);
 
-    internal sealed override IProjection Inset(int left, int top, int right, int bottom)
-      => new PadProjection<TSpace, TResult>(this, left, top, right, bottom, Placement.Default);
-
-    /// <summary>
-    /// Refuses a second end rather than replacing the first, so <c>Until(A).Until(B)</c> is not a
-    /// declaration at all: a projection has one end, and the axis comes with the landmark, so a
-    /// column bound over a row bound is a second end too. A wrapper in between makes the outer bound
-    /// nest, which is a different declaration and a legal one.
-    /// </summary>
-    internal sealed override IProjection BoundedBy(Landmark landmark, bool orEnd)
-    {
-      if (this is UntilProjection<TSpace, TResult> bounded)
-        throw bounded.AlreadyEnded(landmark);
-
-      return new UntilProjection<TSpace, TResult>(this, landmark, orEnd, Placement.Default);
-    }
-
-    internal sealed override IProjection WithHeadings(IProjection[] captions)
-      => new FlowProjection<TSpace, TResult>(
-        Orientation.Vertical,
-        cursor =>
-        {
-          // declared: null at both sites, and it is mandatory. Left to the compiler, the naming
-          // ladder would read the argument text from inside HERE and label every caption 'caption'
-          // and the section 'projection' — identifiers the user never wrote. Capture reads the
-          // immediate call site, so a helper has to opt out.
-          foreach (var caption in captions)
-            cursor.Next((IProjection<TSpace, string>)caption, declared: null);
-
-          return cursor.Next(this, declared: null);
-        },
-        Placement.Default,
-        description: "Heading");
-
     /// <summary>
     /// The same reading, tolerating a blank cell — what <c>OrBlank</c> declares. Only a cell leaf
     /// can: a blank is a value in a reading of one cell, and on anything else it is a declaration
@@ -187,17 +120,5 @@ namespace Unrect.Projections
         "OrBlank reads a blank cell as null, so it belongs on a cell leaf — AsText, or one of a "
         + $"backend's kinded leaves. {ProjectionContext.Describe(this)} is not one.",
         "projection");
-
-    internal sealed override IProjection Otherwise(IProjection fallback, string? declared)
-      => new BoundaryProjection<TSpace, TResult>(
-        this,
-        fallback as IProjection<TSpace, TResult>
-          ?? throw new ArgumentException(
-            $"A fallback must read what the projection it stands in for reads ({typeof(TResult).Name}).",
-            nameof(fallback)),
-        default!,
-        Placement.Default,
-        "Else",
-        UseSite.From(declared, null));
   }
 }

@@ -40,7 +40,7 @@ namespace Unrect.Projections
     /// <c>v.Next(summary)</c> makes the child <c>'summary'</c> in every path and message, at no
     /// cost. Reserve <c>Named</c> for projections written inline, and never bake a name into a
     /// projection-returning helper — see <see
-    /// cref="ProjectionExtensions.Named{TProjection}(TProjection, string)"/>.
+    /// cref="ProjectionExtensions.Named{TSpace, TResult}(IProjection{TSpace, TResult}, string)"/>.
     /// </para>
     /// <para>
     /// The lambda must call <c>Next</c> at least once — a flow that declares nothing would match

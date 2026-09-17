@@ -136,12 +136,13 @@ namespace Unrect.Projections
     /// name that reads badly.
     /// </para>
     /// </summary>
-    /// <typeparam name="TProjection">The projection's own type, handed back unchanged.</typeparam>
+    /// <typeparam name="TSpace">The space the projection is written over.</typeparam>
+    /// <typeparam name="TResult">What the projection reads.</typeparam>
     /// <param name="projection">The declaration.</param>
     /// <param name="name">What failures and diagnostics should call it.</param>
-    public static TProjection Named<TProjection>(this TProjection projection, string name)
-      where TProjection : class, IProjection
-      => Cloned<TProjection>(Base(projection).With(projection.Annotations.WithName(name)));
+    public static IProjection<TSpace, TResult> Named<TSpace, TResult>(this IProjection<TSpace, TResult> projection, string name)
+      where TSpace : class, ISpace
+      => NotNull(projection).With(projection.Annotations.WithName(name));
 
     /// <summary>
     /// Calls the projection <paramref name="name"/> in a failure or diagnostic path: the node renders
@@ -157,12 +158,13 @@ namespace Unrect.Projections
     /// <c>ProjectionException.FullPath</c> and <c>ProjectionDiagnostic.FullPath</c> either way.
     /// </para>
     /// </summary>
-    /// <typeparam name="TProjection">The projection's own type, handed back unchanged.</typeparam>
+    /// <typeparam name="TSpace">The space the projection is written over.</typeparam>
+    /// <typeparam name="TResult">What the projection reads.</typeparam>
     /// <param name="projection">The declaration.</param>
     /// <param name="name">What a path and a subject should call the unit.</param>
-    public static TProjection AsUnit<TProjection>(this TProjection projection, string name)
-      where TProjection : class, IProjection
-      => Cloned<TProjection>(Base(projection).With(projection.Annotations.WithUnitName(name)));
+    public static IProjection<TSpace, TResult> AsUnit<TSpace, TResult>(this IProjection<TSpace, TResult> projection, string name)
+      where TSpace : class, ISpace
+      => NotNull(projection).With(projection.Annotations.WithUnitName(name));
 
     /// <summary>
     /// Marks the projection a composition's internal plumbing: in a failure or diagnostic path it
@@ -174,11 +176,12 @@ namespace Unrect.Projections
     /// path that goes through it.
     /// </para>
     /// </summary>
-    /// <typeparam name="TProjection">The projection's own type, handed back unchanged.</typeparam>
+    /// <typeparam name="TSpace">The space the projection is written over.</typeparam>
+    /// <typeparam name="TResult">What the projection reads.</typeparam>
     /// <param name="projection">The declaration.</param>
-    public static TProjection AsScaffolding<TProjection>(this TProjection projection)
-      where TProjection : class, IProjection
-      => Cloned<TProjection>(Base(projection).With(projection.Annotations.AsScaffolding()));
+    public static IProjection<TSpace, TResult> AsScaffolding<TSpace, TResult>(this IProjection<TSpace, TResult> projection)
+      where TSpace : class, ISpace
+      => NotNull(projection).With(projection.Annotations.AsScaffolding());
 
     /// <summary>
     /// Falls back to <paramref name="fallback"/> when this projection fails, recording a
@@ -206,21 +209,23 @@ namespace Unrect.Projections
     /// declaration, since either of them may be the one that runs.
     /// </para>
     /// </summary>
-    /// <typeparam name="TProjection">The type both projections share, handed back unchanged.</typeparam>
+    /// <typeparam name="TSpace">The space both projections are written over.</typeparam>
+    /// <typeparam name="TResult">What both projections read.</typeparam>
     /// <param name="projection">The declaration.</param>
     /// <param name="fallback">What to read instead.</param>
     /// <param name="declared">Supplied by the compiler as the text of the <paramref name="fallback"/> argument.</param>
-    public static TProjection Else<TProjection>(
-      this TProjection projection,
-      TProjection fallback,
+    public static IProjection<TSpace, TResult> Else<TSpace, TResult>(
+      this IProjection<TSpace, TResult> projection,
+      IProjection<TSpace, TResult> fallback,
       [CallerArgumentExpression("fallback")] string? declared = null)
-      where TProjection : class, IProjection
-    {
-      if (fallback is null)
-        throw new ArgumentNullException(nameof(fallback));
-
-      return Wrapped<TProjection>(Base(projection).Otherwise(fallback, declared));
-    }
+      where TSpace : class, ISpace
+      => new BoundaryProjection<TSpace, TResult>(
+        NotNull(projection),
+        NotNull(fallback, nameof(fallback)),
+        default!,
+        Placement.Default,
+        "Else",
+        UseSite.From(declared, null));
 
     /// <summary>
     /// Yields <paramref name="fallbackValue"/> when this projection fails, recording a
@@ -340,11 +345,12 @@ namespace Unrect.Projections
     /// <summary>
     /// Insets the projection's extent by <paramref name="all"/> cells on every side.
     /// </summary>
-    /// <typeparam name="TProjection">The projection's own type, handed back unchanged.</typeparam>
+    /// <typeparam name="TSpace">The space the projection is written over.</typeparam>
+    /// <typeparam name="TResult">What the projection reads.</typeparam>
     /// <param name="projection">The declaration.</param>
     /// <param name="all">The inset on every side.</param>
-    public static TProjection Padded<TProjection>(this TProjection projection, int all)
-      where TProjection : class, IProjection
+    public static IProjection<TSpace, TResult> Padded<TSpace, TResult>(this IProjection<TSpace, TResult> projection, int all)
+      where TSpace : class, ISpace
     {
       NotNegative(all, nameof(all));
 
@@ -355,12 +361,13 @@ namespace Unrect.Projections
     /// Insets the projection's extent by <paramref name="horizontal"/> cells left and right and
     /// <paramref name="vertical"/> cells top and bottom.
     /// </summary>
-    /// <typeparam name="TProjection">The projection's own type, handed back unchanged.</typeparam>
+    /// <typeparam name="TSpace">The space the projection is written over.</typeparam>
+    /// <typeparam name="TResult">What the projection reads.</typeparam>
     /// <param name="projection">The declaration.</param>
     /// <param name="horizontal">The inset left and right.</param>
     /// <param name="vertical">The inset top and bottom.</param>
-    public static TProjection Padded<TProjection>(this TProjection projection, int horizontal, int vertical)
-      where TProjection : class, IProjection
+    public static IProjection<TSpace, TResult> Padded<TSpace, TResult>(this IProjection<TSpace, TResult> projection, int horizontal, int vertical)
+      where TSpace : class, ISpace
     {
       NotNegative(horizontal, nameof(horizontal));
       NotNegative(vertical, nameof(vertical));
@@ -383,14 +390,15 @@ namespace Unrect.Projections
     /// so it is safe as a modifier and needs no stage of its own.
     /// </para>
     /// </summary>
-    /// <typeparam name="TProjection">The projection's own type, handed back unchanged.</typeparam>
+    /// <typeparam name="TSpace">The space the projection is written over.</typeparam>
+    /// <typeparam name="TResult">What the projection reads.</typeparam>
     /// <param name="projection">The declaration.</param>
     /// <param name="left">The inset on the left.</param>
     /// <param name="top">The inset on the top.</param>
     /// <param name="right">The inset on the right.</param>
     /// <param name="bottom">The inset on the bottom.</param>
-    public static TProjection Padded<TProjection>(this TProjection projection, int left, int top, int right, int bottom)
-      where TProjection : class, IProjection
+    public static IProjection<TSpace, TResult> Padded<TSpace, TResult>(this IProjection<TSpace, TResult> projection, int left, int top, int right, int bottom)
+      where TSpace : class, ISpace
     {
       NotNegative(left, nameof(left));
       NotNegative(top, nameof(top));
@@ -400,49 +408,22 @@ namespace Unrect.Projections
       return Pad(projection, left, top, right, bottom);
     }
 
-    private static TProjection Pad<TProjection>(TProjection projection, int left, int top, int right, int bottom)
-      where TProjection : class, IProjection
-      => Wrapped<TProjection>(Base(projection).Inset(left, top, right, bottom));
+    private static IProjection<TSpace, TResult> Pad<TSpace, TResult>(IProjection<TSpace, TResult> projection, int left, int top, int right, int bottom)
+      where TSpace : class, ISpace
+      => new PadProjection<TSpace, TResult>(NotNull(projection), left, top, right, bottom, Placement.Default);
 
     /// <summary>
     /// The receiver as the projection base <c>OrBlank</c> dispatches through. A leaf that can
     /// tolerate a blank overrides <c>Tolerating</c>; everything else refuses there, so the
-    /// distinction is the leaf's to make rather than a list kept here.
+    /// distinction is the leaf's to make rather than a list kept here. The one cast left in the
+    /// modifier surface; it goes when a backend's leaf becomes a node this assembly can match on.
     /// </summary>
     private static ProjectionBase<TSpace, T> Leaf<TSpace, T>(IProjection<TSpace, T> projection)
       where TSpace : class, ISpace
-      => NotNull(projection) as ProjectionBase<TSpace, T> ?? throw NotOurs(projection, nameof(projection));
-
-    /// <summary>The projection as this library builds them, which is the only kind a modifier can modify.</summary>
-    private static ProjectionBase Base<TProjection>(TProjection projection)
-      where TProjection : class, IProjection
-      => NotNull(projection) as ProjectionBase ?? throw NotOurs(projection, nameof(projection));
-
-    /// <summary>
-    /// A clone back as the receiver's own type. Total: a clone has the receiver's runtime type, so
-    /// it is whatever the receiver was seen as.
-    /// </summary>
-    private static TProjection Cloned<TProjection>(IProjection clone)
-      where TProjection : class, IProjection
-      => (TProjection)clone;
-
-    /// <summary>
-    /// A wrapper back as the receiver's own type. A wrapper is a new projection reading the same
-    /// thing, so it satisfies every <em>interface</em> the receiver was seen through — but it is
-    /// not the receiver's class, which only a caller holding a projection by its own concrete type
-    /// would ask for.
-    /// </summary>
-    private static TProjection Wrapped<TProjection>(IProjection wrapper)
-      where TProjection : class, IProjection
-      => wrapper as TProjection
-        ?? throw new InvalidOperationException(
-          $"A modifier that wraps hands back a {wrapper.GetType().Name}, which is not a {typeof(TProjection).Name}. "
-          + "Hold the projection as IProjection<TSpace, T> rather than as its own class.");
-
-    private static ArgumentException NotOurs(IProjection? projection, string parameter)
-      => new ArgumentException(
-        $"{projection?.GetType().Name ?? "null"} is not a projection this library built; only those can be modified or applied.",
-        parameter);
+      => NotNull(projection) as ProjectionBase<TSpace, T>
+        ?? throw new ArgumentException(
+          $"{projection.GetType().Name} is not a projection this library built, so it cannot read a blank as null.",
+          nameof(projection));
 
     /// <summary>One guard: the receiver defaults to its own parameter name, anything else names itself.</summary>
     private static T NotNull<T>(T value, string parameter = "projection") where T : class

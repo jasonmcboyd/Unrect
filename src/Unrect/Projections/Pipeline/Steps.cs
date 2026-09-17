@@ -129,47 +129,83 @@ namespace Unrect.Projections
     internal IProjection<TSpace, T> ApplyTo<TSpace, T>(IProjection<TSpace, T> projection)
       where TSpace : class, ISpace
     {
-      var subject = (ProjectionBase)projection;
-
       return _kind switch
       {
         // Every offset kind composes onto an earlier pipeline offset, or starts from the origin.
-        StepKind.OnRow => Offset<TSpace, T>(subject, OffsetStrategies.To((IRowLandmark)_subject!)),
-        StepKind.OnColumn => Offset<TSpace, T>(subject, OffsetStrategies.To((IColumnLandmark)_subject!)),
-        StepKind.Below => Offset<TSpace, T>(subject, OffsetStrategies.Past((IRowLandmark)_subject!)),
-        StepKind.RightOf => Offset<TSpace, T>(subject, OffsetStrategies.Past((IColumnLandmark)_subject!)),
-        StepKind.OffsetBy => Offset<TSpace, T>(subject, (IOffsetStrategy)_subject!),
-        StepKind.Down => Offset<TSpace, T>(subject, OffsetStrategies.ExplicitOffset(0, _count)),
-        StepKind.Right => Offset<TSpace, T>(subject, OffsetStrategies.ExplicitOffset(_count, 0)),
-        StepKind.AfterBlankRows => Offset<TSpace, T>(subject, OffsetStrategies.SkipBlankRows()),
-        StepKind.AfterBlankColumns => Offset<TSpace, T>(subject, OffsetStrategies.SkipBlankColumns()),
-        StepKind.SkipToFirstNonBlankCell => Offset<TSpace, T>(subject, OffsetStrategies.SkipToFirstNonBlankCell()),
+        StepKind.OnRow => Offset(projection, OffsetStrategies.To((IRowLandmark)_subject!)),
+        StepKind.OnColumn => Offset(projection, OffsetStrategies.To((IColumnLandmark)_subject!)),
+        StepKind.Below => Offset(projection, OffsetStrategies.Past((IRowLandmark)_subject!)),
+        StepKind.RightOf => Offset(projection, OffsetStrategies.Past((IColumnLandmark)_subject!)),
+        StepKind.OffsetBy => Offset(projection, (IOffsetStrategy)_subject!),
+        StepKind.Down => Offset(projection, OffsetStrategies.ExplicitOffset(0, _count)),
+        StepKind.Right => Offset(projection, OffsetStrategies.ExplicitOffset(_count, 0)),
+        StepKind.AfterBlankRows => Offset(projection, OffsetStrategies.SkipBlankRows()),
+        StepKind.AfterBlankColumns => Offset(projection, OffsetStrategies.SkipBlankColumns()),
+        StepKind.SkipToFirstNonBlankCell => Offset(projection, OffsetStrategies.SkipToFirstNonBlankCell()),
 
         // An extent replaces the projection's derived one.
-        StepKind.Sized => (IProjection<TSpace, T>)subject.With(subject.Annotations.WithPlacement(subject.Placement.WithArea((IAreaStrategy)_subject!))),
+        StepKind.Sized => projection.With(projection.Annotations.WithPlacement(projection.Placement.WithArea((IAreaStrategy)_subject!))),
 
         // Bounds and headings wrap rather than reposition.
-        StepKind.UntilRow => (IProjection<TSpace, T>)subject.BoundedBy(Landmark.Of((IRowLandmark)_subject!), _orEnd),
-        StepKind.UntilColumn => (IProjection<TSpace, T>)subject.BoundedBy(Landmark.Of((IColumnLandmark)_subject!), _orEnd),
-        StepKind.Headings => (IProjection<TSpace, T>)subject.WithHeadings((IProjection[])_subject!),
+        StepKind.UntilRow => Bounded(projection, Landmark.Of((IRowLandmark)_subject!), _orEnd),
+        StepKind.UntilColumn => Bounded(projection, Landmark.Of((IColumnLandmark)_subject!), _orEnd),
+        StepKind.Headings => Headed(projection, (IProjection[])_subject!),
 
         _ => throw new InvalidOperationException($"Unknown placement step {_kind}."),
       };
     }
 
     /// <summary>
+    /// Refuses a second end rather than replacing the first, so <c>Until(A).Until(B)</c> is not a
+    /// declaration at all: a projection has one end, and the axis comes with the landmark, so a
+    /// column bound over a row bound is a second end too. A wrapper in between makes the outer bound
+    /// nest, which is a different declaration and a legal one.
+    /// </summary>
+    private static IProjection<TSpace, T> Bounded<TSpace, T>(IProjection<TSpace, T> projection, Landmark landmark, bool orEnd)
+      where TSpace : class, ISpace
+    {
+      if (projection is UntilProjection<TSpace, T> bounded)
+        throw bounded.AlreadyEnded(landmark);
+
+      return new UntilProjection<TSpace, T>(projection, landmark, orEnd, Placement.Default);
+    }
+
+    /// <summary>
+    /// The projection below <paramref name="captions"/>, as one vertical flow — the structure a
+    /// <c>Heading</c> stage builds. The captions are the heading rows, read and discarded; the
+    /// projection is the section they announce.
+    /// </summary>
+    private static IProjection<TSpace, T> Headed<TSpace, T>(IProjection<TSpace, T> projection, IProjection[] captions)
+      where TSpace : class, ISpace
+      => new FlowProjection<TSpace, T>(
+        Orientation.Vertical,
+        cursor =>
+        {
+          // declared: null at both sites, and it is mandatory. Left to the compiler, the naming
+          // ladder would read the argument text from inside HERE and label every caption 'caption'
+          // and the section 'projection' — identifiers the user never wrote. Capture reads the
+          // immediate call site, so a helper has to opt out.
+          foreach (var caption in captions)
+            cursor.Next((IProjection<TSpace, string>)caption, declared: null);
+
+          return cursor.Next(projection, declared: null);
+        },
+        Placement.Default,
+        description: "Heading");
+
+    /// <summary>
     /// The one offset rule for every offset step: <paramref name="offset"/> composes onto an offset an
     /// earlier pipeline stage declared (placement both <see cref="Placement.OffsetWasDeclared"/> and
     /// <see cref="Placement.HasDeclaredOffset"/>), otherwise starts from the origin.
     /// </summary>
-    private static IProjection<TSpace, T> Offset<TSpace, T>(ProjectionBase subject, IOffsetStrategy offset)
+    private static IProjection<TSpace, T> Offset<TSpace, T>(IProjection<TSpace, T> projection, IOffsetStrategy offset)
       where TSpace : class, ISpace
     {
-      var placement = subject.Placement;
+      var placement = projection.Placement;
       var composeOntoBase = placement.OffsetWasDeclared && placement.HasDeclaredOffset;
       var composed = composeOntoBase ? OffsetStrategies.Then(placement.Offset, offset) : offset;
 
-      return (IProjection<TSpace, T>)subject.With(subject.Annotations.WithPlacement(placement.WithOffset(composed)));
+      return projection.With(projection.Annotations.WithPlacement(placement.WithOffset(composed)));
     }
 
     public override string ToString() => _kind switch
