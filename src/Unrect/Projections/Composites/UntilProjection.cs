@@ -23,7 +23,7 @@ namespace Unrect.Projections
       Inner = inner ?? throw new ArgumentNullException(nameof(inner));
       Landmark = landmark ?? throw new ArgumentNullException(nameof(landmark));
       OrEnd = orEnd;
-      Children = new IProjection[] { inner };
+      Children = new[] { new Child(inner, default) };
     }
 
     private IProjection<TSpace, TResult> Inner { get; }
@@ -34,7 +34,7 @@ namespace Unrect.Projections
 
     public override string Description => Spelling(Landmark);
 
-    public override IReadOnlyList<IProjection> Children { get; }
+    public override IReadOnlyList<Child> Children { get; }
 
     /// <summary>Like a pad: a bound the user wrote as part of a projection is not a level of the tree.</summary>
     public override bool IsWrapper => true;

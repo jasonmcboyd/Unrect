@@ -453,7 +453,7 @@ namespace Unrect.Tests.Projections
     {
       var inner = Lines();
 
-      Assert.Same(inner, Assert.Single(Until(RowContaining("Total")).Of(inner).Children));
+      Assert.Same(inner, Assert.Single(Until(RowContaining("Total")).Of(inner).Children).Projection);
     }
 
     [Fact]

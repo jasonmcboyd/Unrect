@@ -17,7 +17,7 @@ namespace Unrect.Projections
     {
       Inner = inner ?? throw new ArgumentNullException(nameof(inner));
       Selector = selector ?? throw new ArgumentNullException(nameof(selector));
-      Children = new IProjection[] { inner };
+      Children = new[] { new Child(inner, default) };
     }
 
     private IProjection<TSpace, TSource> Inner { get; }
@@ -25,7 +25,7 @@ namespace Unrect.Projections
 
     public override string Description => "Select";
 
-    public override IReadOnlyList<IProjection> Children { get; }
+    public override IReadOnlyList<Child> Children { get; }
 
     public override bool IsWrapper => true;
 

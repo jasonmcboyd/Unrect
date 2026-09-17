@@ -311,8 +311,8 @@ namespace Unrect.Tests.Projections
       Assert.True(once.IsWrapper);
       Assert.True(twice.IsWrapper);
 
-      Assert.Equal("Select", Assert.Single(Assert.Single(once.Children).Children).Description);
-      Assert.Equal("Optional", Assert.Single(Assert.Single(twice.Children).Children).Description);
+      Assert.Equal("Select", Assert.Single(Assert.Single(once.Children).Projection.Children).Projection.Description);
+      Assert.Equal("Optional", Assert.Single(Assert.Single(twice.Children).Projection.Children).Projection.Description);
     }
 
     [Fact]

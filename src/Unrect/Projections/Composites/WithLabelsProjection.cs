@@ -22,7 +22,7 @@ namespace Unrect.Projections
       Axis = axis;
       Map = map ?? throw new ArgumentNullException(nameof(map));
       Body = body ?? throw new ArgumentNullException(nameof(body));
-      Children = new IProjection[] { body };
+      Children = new[] { new Child(body, default) };
     }
 
     private LabelAxis Axis { get; }
@@ -31,7 +31,7 @@ namespace Unrect.Projections
 
     public override string Description => Axis == LabelAxis.Column ? "WithColumnLabels" : "WithRowLabels";
 
-    public override IReadOnlyList<IProjection> Children { get; }
+    public override IReadOnlyList<Child> Children { get; }
 
     public override bool IsWrapper => true;
 

@@ -26,7 +26,7 @@ namespace Unrect.Projections
       Orientation = orientation;
       AtLeast = atLeast;
       ItemSite = itemSite;
-      Children = new IProjection[] { item };
+      Children = new[] { new Child(item, itemSite) };
     }
 
     private IProjection<TSpace, T> Item { get; }
@@ -39,7 +39,7 @@ namespace Unrect.Projections
 
     public override string Description => Orientation == Orientation.Vertical ? "VerticalRepeat" : "HorizontalRepeat";
 
-    public override IReadOnlyList<IProjection> Children { get; }
+    public override IReadOnlyList<Child> Children { get; }
 
     /// <summary>
     /// The walk. Every attempt is handed the tail from the cursor, left unsettled, so a repeat over

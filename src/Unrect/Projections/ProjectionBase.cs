@@ -25,7 +25,7 @@ namespace Unrect.Projections
   /// </summary>
   public abstract class ProjectionBase : IProjection
   {
-    private static readonly IProjection[] NoChildren = Array.Empty<IProjection>();
+    private static readonly Child[] NoChildren = Array.Empty<Child>();
 
     /// <summary>
     /// Fixes where the projection sits. Every projection has a placement from the moment it exists,
@@ -51,7 +51,7 @@ namespace Unrect.Projections
     public abstract string Description { get; }
 
     /// <summary>No children by default; a composite overrides this to declare its own.</summary>
-    public virtual IReadOnlyList<IProjection> Children => NoChildren;
+    public virtual IReadOnlyList<Child> Children => NoChildren;
 
     /// <summary>A level of the tree by default; only a wrapper overrides this to true.</summary>
     public virtual bool IsWrapper => false;

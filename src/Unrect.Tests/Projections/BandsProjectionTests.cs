@@ -345,7 +345,7 @@ namespace Unrect.Tests.Projections
 
       Assert.Equal("VerticalBands", VerticalBands(1, allocation).Description);
       Assert.Equal("HorizontalBands", HorizontalBands(1, allocation).Description);
-      Assert.Same(allocation, Assert.Single(VerticalBands(2, allocation).Children));
+      Assert.Same(allocation, Assert.Single(VerticalBands(2, allocation).Children).Projection);
     }
   }
 }

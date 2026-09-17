@@ -19,20 +19,25 @@ namespace Unrect.Projections
       : base(placement)
     {
       var copy = new IProjection<TSpace, T>[alternatives.Count];
+      var children = new Child[alternatives.Count];
 
       for (var index = 0; index < copy.Length; index++)
+      {
         // The factory validates its own parameters; this is the invariant behind it.
         copy[index] = alternatives[index] ?? throw new ArgumentException("A choice cannot contain a null projection.", nameof(alternatives));
+        // A params array captures no per-argument text, so an alternative is known only by its position.
+        children[index] = new Child(copy[index], UseSite.From(null, index + 1));
+      }
 
       Alternatives = copy;
-      Children = copy;
+      Children = children;
     }
 
     private IProjection<TSpace, T>[] Alternatives { get; }
 
     public override string Description => "Choice";
 
-    public override IReadOnlyList<IProjection> Children { get; }
+    public override IReadOnlyList<Child> Children { get; }
 
     public override ProjectionResult<T> Project(Plane<TSpace> extent, ProjectionContext context)
     {

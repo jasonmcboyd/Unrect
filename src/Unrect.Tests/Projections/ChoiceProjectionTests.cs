@@ -392,8 +392,13 @@ namespace Unrect.Tests.Projections
 
       Assert.Equal("Choice", choice.Description);
       Assert.Equal(2, choice.Children.Count);
-      Assert.Same(first, choice.Children[0]);
-      Assert.Same(second, choice.Children[1]);
+      Assert.Same(first, choice.Children[0].Projection);
+      Assert.Same(second, choice.Children[1].Projection);
+
+      // A params array captures no per-argument text, so an alternative is known by position only.
+      Assert.Null(choice.Children[0].Site.Name);
+      Assert.Equal(1, choice.Children[0].Site.Ordinal);
+      Assert.Equal(2, choice.Children[1].Site.Ordinal);
       Assert.False(choice.IsWrapper);
       Assert.Null(choice.Placement.Area);
     }

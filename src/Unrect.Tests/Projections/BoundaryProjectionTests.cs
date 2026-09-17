@@ -540,8 +540,9 @@ namespace Unrect.Tests.Projections
 
       Assert.Single(inner.Else(0).Children);
       Assert.Equal(2, inner.Else(fallback).Children.Count);
-      Assert.Same(inner, inner.Else(fallback).Children[0]);
-      Assert.Same(fallback, inner.Else(fallback).Children[1]);
+      Assert.Same(inner, inner.Else(fallback).Children[0].Projection);
+      Assert.Same(fallback, inner.Else(fallback).Children[1].Projection);
+      Assert.Equal("fallback", inner.Else(fallback).Children[1].Site.Name);
     }
 
     [Fact]

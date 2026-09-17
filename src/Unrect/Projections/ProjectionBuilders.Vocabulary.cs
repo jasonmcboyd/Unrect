@@ -303,7 +303,7 @@ namespace Unrect.Projections
         ? body
         : UnderColumnLabels(ColumnLabels(1).AsScaffolding(), body).AsScaffolding();
 
-      return new UnitProjection<TSpace, IReadOnlyList<T>>(composed, new IProjection[] { eachRow }, "Table", TablePlacement());
+      return new UnitProjection<TSpace, IReadOnlyList<T>>(composed, new[] { new Child(eachRow, UseSite.From(declared, null)) }, "Table", TablePlacement());
     }
 
     /// <summary>

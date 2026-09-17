@@ -176,7 +176,7 @@ namespace Unrect.Tests.Projections
       var padded = inner.Padded(1);
 
       Assert.Equal("Padded", padded.Description);
-      Assert.Same(inner, Assert.Single(padded.Children));
+      Assert.Same(inner, Assert.Single(padded.Children).Projection);
     }
 
     // --- Argument guards --------------------------------------------------------------------------------------

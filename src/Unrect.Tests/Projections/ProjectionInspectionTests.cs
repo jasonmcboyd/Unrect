@@ -107,7 +107,25 @@ namespace Unrect.Tests.Projections
     {
       var item = IntCell().Named("item");
 
-      Assert.Same(item, Assert.Single(VerticalRepeat(item).Children));
+      Assert.Same(item, Assert.Single(VerticalRepeat(item).Children).Projection);
+    }
+
+    [Fact]
+    public void AnEdgeCarriesTheIdentifierTheDeclarationWrote()
+    {
+      // The use site is declaration data: what a failure path would call the child is readable off
+      // the edge, without a space and without running anything.
+      var block = IntCell();
+
+      var hoisted = Assert.Single(VerticalRepeat(block).Children);
+      var inline = Assert.Single(VerticalRepeat(IntCell()).Children);
+
+      Assert.Same(block, hoisted.Projection);
+      Assert.Equal("block", hoisted.Site.Name);
+      Assert.Null(hoisted.Site.Ordinal);
+
+      Assert.Null(inline.Site.Name);
+      Assert.Null(inline.Site.Ordinal);
     }
 
     [Fact]
@@ -118,8 +136,9 @@ namespace Unrect.Tests.Projections
       // running anything.
       var row = IntCell().Named("row");
 
-      Assert.Same(row, Assert.Single(Table(0, row).Children));
-      Assert.Same(row, Assert.Single(Table(1, row).Children));
+      Assert.Same(row, Assert.Single(Table(0, row).Children).Projection);
+      Assert.Same(row, Assert.Single(Table(1, row).Children).Projection);
+      Assert.Equal("row", Assert.Single(Table(1, row).Children).Site.Name);
     }
 
     [Theory]
@@ -174,7 +193,7 @@ namespace Unrect.Tests.Projections
     {
       var inner = IntCell().Named("inner");
 
-      Assert.Same(inner, Assert.Single(inner.Select(v => v + 1).Children));
+      Assert.Same(inner, Assert.Single(inner.Select(v => v + 1).Children).Projection);
     }
 
     // --- Wrappers ---------------------------------------------------------------------------------------
@@ -264,7 +283,7 @@ namespace Unrect.Tests.Projections
       yield return new string(' ', depth * 2) + label + (reason is null ? string.Empty : $" [opaque: {reason}]");
 
       foreach (var child in projection.Children)
-        foreach (var line in Describe(child, depth + 1))
+        foreach (var line in Describe(child.Projection, depth + 1))
           yield return line;
     }
 

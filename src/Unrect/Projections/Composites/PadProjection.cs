@@ -22,7 +22,7 @@ namespace Unrect.Projections
       Top = top;
       Right = right;
       Bottom = bottom;
-      Children = new IProjection[] { inner };
+      Children = new[] { new Child(inner, default) };
     }
 
     private IProjection<TSpace, TResult> Inner { get; }
@@ -33,7 +33,7 @@ namespace Unrect.Projections
 
     public override string Description => "Padded";
 
-    public override IReadOnlyList<IProjection> Children { get; }
+    public override IReadOnlyList<Child> Children { get; }
 
     public override bool IsWrapper => true;
 

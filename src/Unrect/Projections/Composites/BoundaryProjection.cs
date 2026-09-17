@@ -32,7 +32,7 @@ namespace Unrect.Projections
       FallbackValue = fallbackValue;
       Description = description;
       FallbackSite = fallbackSite;
-      Children = fallback is null ? new IProjection[] { inner } : new IProjection[] { inner, fallback };
+      Children = fallback is null ? new[] { new Child(inner, default) } : new[] { new Child(inner, default), new Child(fallback, fallbackSite) };
     }
 
     private IProjection<TSpace, T> Inner { get; }
@@ -44,7 +44,7 @@ namespace Unrect.Projections
 
     public override string Description { get; }
 
-    public override IReadOnlyList<IProjection> Children { get; }
+    public override IReadOnlyList<Child> Children { get; }
 
     public override bool IsWrapper => true;
 

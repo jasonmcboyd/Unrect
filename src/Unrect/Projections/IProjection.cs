@@ -25,8 +25,11 @@ namespace Unrect.Projections
     /// <summary>Where this projection sits, and how much of its extent it declares, within the space it is handed.</summary>
     Placement Placement { get; }
 
-    /// <summary>The projection's declared children, in declaration order; empty for a leaf.</summary>
-    IReadOnlyList<IProjection> Children { get; }
+    /// <summary>
+    /// The projection's declared children, in declaration order, each with the use site it was
+    /// written at; empty for a leaf. Complete unless <see cref="Opacity"/> says otherwise.
+    /// </summary>
+    IReadOnlyList<Child> Children { get; }
 
     /// <summary>
     /// Everything a declaration wrote on this projection that is not its structure — <see

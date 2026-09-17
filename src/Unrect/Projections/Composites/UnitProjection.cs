@@ -14,7 +14,7 @@ namespace Unrect.Projections
   internal sealed class UnitProjection<TSpace, T> : ProjectionBase<TSpace, T>
     where TSpace : class, ISpace
   {
-    public UnitProjection(IProjection<TSpace, T> body, IReadOnlyList<IProjection> children, string description, Placement placement)
+    public UnitProjection(IProjection<TSpace, T> body, IReadOnlyList<Child> children, string description, Placement placement)
       : base(placement)
     {
       Body = body ?? throw new ArgumentNullException(nameof(body));
@@ -26,7 +26,7 @@ namespace Unrect.Projections
 
     public override string Description { get; }
 
-    public override IReadOnlyList<IProjection> Children { get; }
+    public override IReadOnlyList<Child> Children { get; }
 
     public override ProjectionResult<T> Project(Plane<TSpace> extent, ProjectionContext context)
     {

@@ -31,7 +31,7 @@ namespace Unrect.Projections
       Stride = stride;
       EachSite = eachSite;
       OnBlank = onBlank;
-      Children = new IProjection[] { each };
+      Children = new[] { new Child(each, eachSite) };
     }
 
     private IProjection<TSpace, T> Each { get; }
@@ -49,7 +49,7 @@ namespace Unrect.Projections
 
     public override string Description => Orientation == Orientation.Vertical ? "VerticalBands" : "HorizontalBands";
 
-    public override IReadOnlyList<IProjection> Children { get; }
+    public override IReadOnlyList<Child> Children { get; }
 
     public override ProjectionResult<IReadOnlyList<T>> Project(Plane<TSpace> extent, ProjectionContext context)
     {
