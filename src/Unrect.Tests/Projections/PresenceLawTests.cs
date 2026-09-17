@@ -77,7 +77,13 @@ namespace Unrect.Tests.Projections
       // The default, and the one that needs no machinery: a leaf that read a cell, and a composite
       // over leaves that did.
       Assert.Equal(Presence.Read, PresenceOf(IntCell(), Numbers()));
-      Assert.Equal(Presence.Read, PresenceOf(VerticalFlow(v => v.Next(IntCell()) + v.Next(IntCell())), Numbers()));
+      Assert.Equal(Presence.Read, PresenceOf(VerticalFlow(v =>
+      {
+        var intCell = v.Next(IntCell());
+        var intCell2 = v.Next(IntCell());
+
+        return v.Build(read => read.Of(intCell) + read.Of(intCell2));
+      }), Numbers()));
     }
 
     [Fact]
@@ -138,15 +144,15 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void ALayoutThatDeclaredNothingStaysAFaultRatherThanBecomingAPresence()
+    public void ALayoutThatDeclaredNothingIsRefusedRatherThanBecomingAPresence()
     {
       // The table's last row, and the reason the join rule never has to answer for an empty child
-      // list: "described nothing" is not a kind of nothing, it is an error, and a fault at that —
-      // no tolerance boundary may absorb a declaration with a hole in it.
-      var failure = Assert.Throws<ProjectionException>(() => VerticalFlow<int>(_ => 0).Map(Numbers()));
+      // list: "described nothing" is not a kind of nothing, it is an error in the declaration, and
+      // it is refused where the declaration is written — before there is a space, a presence, or a
+      // tolerance boundary to absorb it.
+      var failure = Assert.Throws<InvalidOperationException>(() => VerticalFlow<int>(v => v.Build(_ => 0)));
 
-      Assert.True(failure.IsFault);
-      Assert.Equal("a flow must declare at least one projection; this one called Next zero times", Problem(failure));
+      Assert.Equal("a flow must declare at least one projection; this one called Next zero times", failure.Message);
     }
 
     // --- The join rule: Read if any child Read, else Empty -----------------------------------------
@@ -154,7 +160,13 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AFlowOfChildrenThatBothReadIsRead()
     {
-      var flow = VerticalFlow(v => v.Next(IntCell()) + v.Next(IntCell()));
+      var flow = VerticalFlow(v =>
+      {
+        var intCell = v.Next(IntCell());
+        var intCell2 = v.Next(IntCell());
+
+        return v.Build(read => read.Of(intCell) + read.Of(intCell2));
+      });
 
       Assert.Equal(Presence.Read, PresenceOf(flow, Numbers()));
     }
@@ -164,7 +176,13 @@ namespace Unrect.Tests.Projections
     {
       // Two discovered extents over a blank grid, each settling at zero. The flow looked — through
       // every child it declared — and what it found was nothing, which is exactly Empty.
-      var flow = VerticalFlow(v => v.Next(Rows()) + v.Next(Rows()));
+      var flow = VerticalFlow(v =>
+      {
+        var rows = v.Next(Rows());
+        var rows2 = v.Next(Rows());
+
+        return v.Build(read => read.Of(rows) + read.Of(rows2));
+      });
 
       Assert.Equal(Presence.Empty, PresenceOf(flow, Blank()));
     }
@@ -174,7 +192,13 @@ namespace Unrect.Tests.Projections
     {
       // Read is the join's absorbing element: one child that read content makes the whole layout a
       // region that was read, whatever its neighbours found.
-      var flow = VerticalFlow(v => v.Next(IntCell()) + v.Next(Rows()));
+      var flow = VerticalFlow(v =>
+      {
+        var intCell = v.Next(IntCell());
+        var rows = v.Next(Rows());
+
+        return v.Build(read => read.Of(intCell) + read.Of(rows));
+      });
 
       Assert.Equal(Presence.Read, PresenceOf(flow, ValueThenNothing()));
     }
@@ -186,8 +210,20 @@ namespace Unrect.Tests.Projections
       // join is still "did any of them read". The Read child here is an EXPLICIT 1x1 region over
       // blank cells — Read is about the declaration having read its extent, not about the cells in
       // it holding anything.
-      var nothing = Overlay(o => o.Next(Rows()) + o.Next(Rows()));
-      var something = Overlay(o => o.Next(Rows()) + o.Next(Range(1, 1, b => b.Height)));
+      var nothing = Overlay(o =>
+      {
+        var rows = o.Next(Rows());
+        var rows2 = o.Next(Rows());
+
+        return o.Build(read => read.Of(rows) + read.Of(rows2));
+      });
+      var something = Overlay(o =>
+      {
+        var rows = o.Next(Rows());
+        var rangeSlot = o.Next(Range(1, 1, b => b.Height));
+
+        return o.Build(read => read.Of(rows) + read.Of(rangeSlot));
+      });
 
       Assert.Equal(Presence.Empty, PresenceOf(nothing, Blank()));
       Assert.Equal(Presence.Read, PresenceOf(something, Blank()));
@@ -201,12 +237,19 @@ namespace Unrect.Tests.Projections
       // look, and the layout did look — through the child it declared. Stated as the implementation
       // behaves AND as the spec's status header rules; if these ever part company, the spec wins the
       // argument and this test is the place it gets had.
-      var absorbedOnly = VerticalFlow(v => v.Next(Title().Optional()));
+      var absorbedOnly = VerticalFlow(v =>
+      {
+        var title = v.Next(Title().Optional());
+
+        return v.Build(read => read.Of(title));
+      });
       var absorbedThenRead = VerticalFlow(v =>
       {
         v.Next(Title().Optional());
 
-        return v.Next(IntCell());
+        var intCell = v.Next(IntCell());
+
+        return v.Build(read => read.Of(intCell));
       });
 
       Assert.Equal(Presence.Empty, PresenceOf(absorbedOnly, Numbers()));
@@ -456,12 +499,19 @@ namespace Unrect.Tests.Projections
       // which is why L3 reaches — see the negative pin below for the one thing the extra child does
       // move.
       var x = Rows();
-      var plain = VerticalFlow(v => v.Next(x));
+      var plain = VerticalFlow(v =>
+      {
+        var x2 = v.Next(x);
+
+        return v.Build(read => read.Of(x2));
+      });
       var withUnit = VerticalFlow(v =>
       {
         v.Next(Unit());
 
-        return v.Next(x);
+        var x2 = v.Next(x);
+
+        return v.Build(read => read.Of(x2));
       });
 
       AssertL3(Observe(plain, Numbers()), Observe(withUnit, Numbers()));
@@ -472,13 +522,20 @@ namespace Unrect.Tests.Projections
       var tolerated = Title().Optional();
 
       AssertL3(
-        Observe(VerticalFlow(v => v.Next(tolerated)), Numbers()),
+        Observe(VerticalFlow(v =>
+        {
+          var tolerated2 = v.Next(tolerated);
+
+          return v.Build(read => read.Of(tolerated2));
+        }), Numbers()),
         Observe(
           VerticalFlow(v =>
           {
             v.Next(Unit());
 
-            return v.Next(tolerated);
+            var tolerated2 = v.Next(tolerated);
+
+            return v.Build(read => read.Of(tolerated2));
           }),
           Numbers()));
     }
@@ -490,14 +547,19 @@ namespace Unrect.Tests.Projections
       // handed and adds nothing to the advance, so a following sibling — or an enclosing repeat —
       // steps by exactly what x consumed.
       var x = Rows();
-      var plain = VerticalFlow(v => v.Next(x));
+      var plain = VerticalFlow(v =>
+      {
+        var x2 = v.Next(x);
+
+        return v.Build(read2 => read2.Of(x2));
+      });
       var withUnit = VerticalFlow(v =>
       {
         var value = v.Next(x);
 
         v.Next(Unit());
 
-        return value;
+        return v.Build(read => read.Of(value));
       });
 
       AssertL3(Observe(plain, Numbers()), Observe(withUnit, Numbers()));
@@ -509,12 +571,19 @@ namespace Unrect.Tests.Projections
       // The first of the two negative pins, and the reason the identity above is stated over
       // use-site-named children. A child written inline has no identifier to borrow and falls to the
       // naming ladder's last rung — its kind and its 1-based POSITION — which the extra child moves.
-      var plain = VerticalFlow(v => v.Next(TextCell()));
+      var plain = VerticalFlow(v =>
+      {
+        var textCell = v.Next(TextCell());
+
+        return v.Build(read => read.Of(textCell));
+      });
       var withUnit = VerticalFlow(v =>
       {
         v.Next(Unit());
 
-        return v.Next(TextCell());
+        var textCell = v.Next(TextCell());
+
+        return v.Build(read => read.Of(textCell));
       });
 
       var one = Assert.Throws<ProjectionException>(() => plain.Map(Numbers()));
@@ -532,12 +601,19 @@ namespace Unrect.Tests.Projections
       // appended to the PROBLEM, so this divergence is at L1 — the level a tolerance boundary above
       // either spelling would act on — not at L3 where a naming difference would sit.
       var x = Title();
-      var plain = VerticalFlow(v => v.Next(x));
+      var plain = VerticalFlow(v =>
+      {
+        var x2 = v.Next(x);
+
+        return v.Build(read => read.Of(x2));
+      });
       var withUnit = VerticalFlow(v =>
       {
         v.Next(Unit());
 
-        return v.Next(x);
+        var x2 = v.Next(x);
+
+        return v.Build(read => read.Of(x2));
       });
 
       var one = Assert.Throws<ProjectionException>(() => plain.Map(Numbers()));
@@ -582,7 +658,13 @@ namespace Unrect.Tests.Projections
           return Compare(Title().Optional(), Numbers(), Presence.Absorbed);
         case MixedFlow:
           return Compare(
-            VerticalFlow(v => v.Next(IntCell()) + v.Next(Rows())),
+            VerticalFlow(v =>
+            {
+              var intCell = v.Next(IntCell());
+              var rows = v.Next(Rows());
+
+              return v.Build(read => read.Of(intCell) + read.Of(rows));
+            }),
             ValueThenNothing(),
             Presence.Read);
         case NoOccurrences:

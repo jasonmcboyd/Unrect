@@ -97,7 +97,7 @@ namespace Unrect.Spreadsheets
     /// </para>
     /// <para>
     /// A cell has both a value and a formula, and reading both is an overlay's job rather than a
-    /// flow's: <c>Overlay(o =&gt; new Line(o.Next(Decimal()), o.Next(Formula())))</c> hands each
+    /// flow's: <c>Overlay(o =&gt; { var v = o.Next(Decimal()); var f = o.Next(Formula()); return o.Build(r =&gt; new Line(r.Of(v), r.Of(f))); })</c> hands each
     /// child the same cell, where a flow would step past it.
     /// </para>
     /// <para>

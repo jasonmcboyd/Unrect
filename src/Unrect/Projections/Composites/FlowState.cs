@@ -24,8 +24,8 @@ namespace Unrect.Projections
     private int _across;
     private int _previous;
 
-    public FlowState(IProjection owner, Orientation orientation, Plane<TSpace> extent, ProjectionContext context)
-      : base(owner, extent, context)
+    public FlowState(Orientation orientation, Plane<TSpace> extent, ProjectionContext context)
+      : base(extent, context)
     {
       Orientation = orientation;
     }
@@ -40,24 +40,17 @@ namespace Unrect.Projections
       ? new Size(_across, _along)
       : new Size(_along, _across);
 
-    public override string DeclaredNothing => NothingDeclared("a flow");
-
     /// <summary>
     /// Where the next child goes: a flow consumes along its own axis only, so the cursor moves
     /// along that axis and nowhere else.
     /// </summary>
     private Offset Cursor => Orientation == Orientation.Vertical ? new Offset(0, _along) : new Offset(_along, 0);
 
-    /// <summary>
-    /// Takes the next child, knowing its result type — what a cursor lambda declares, and the
-    /// reason it costs neither a box nor a cast.
-    /// </summary>
-    public override T Next<T>(IProjection<TSpace, T> projection, string? declared)
+    /// <summary>Takes the next child, knowing its result type, at the position the ones before it left off.</summary>
+    public override T Next<T>(IProjection<TSpace, T> projection, UseSite site)
     {
       var cursor = Cursor;
-      Admit(projection, cursor);
-
-      var scope = Context.WithUseSite(UseSite.From(declared, Count + 1));
+      var scope = Context.WithUseSite(site);
       AppliedResult<T> applied;
 
       try

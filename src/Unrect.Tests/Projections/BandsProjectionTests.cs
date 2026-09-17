@@ -55,7 +55,12 @@ namespace Unrect.Tests.Projections
       // the extent the overlay was handed: one row, every time, and never the three below it.
       var sheet = CoordinateGrid(width: 3, height: 3);
 
-      IReadOnlyList<string> seen = VerticalBands(1, Overlay(o => o.Next(BandExtent()))).Map(sheet);
+      IReadOnlyList<string> seen = VerticalBands(1, Overlay(o =>
+      {
+        var bandExtent = o.Next(BandExtent());
+
+        return o.Build(read => read.Of(bandExtent));
+      })).Map(sheet);
 
       Assert.Equal(new[] { "3x1", "3x1", "3x1" }, seen);
     }

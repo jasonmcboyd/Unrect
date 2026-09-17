@@ -1,5 +1,3 @@
-using System;
-
 using Unrect.Core;
 
 namespace Unrect.Projections
@@ -7,35 +5,20 @@ namespace Unrect.Projections
   /// <summary>
   /// One layout in progress: what it has taken so far, and everything that is true of a layout
   /// whatever it does with the space. What differs between layouts is one thing only — whether a
-  /// child moves the next one along — so that is what the subclasses override, and the guards, the
-  /// wording, and the bookkeeping around it live here where they cannot fork.
+  /// child moves the next one along — so that is what the subclasses override, and the bookkeeping
+  /// around it lives here where it cannot fork.
   /// </summary>
   internal abstract class LayoutState<TSpace>
     where TSpace : class, ISpace
   {
-    private const string Outside = "A layout cursor cannot be used outside the layout that created it";
-
-    /// <summary>
-    /// Being outside a layout covers two different bugs, so the messages name which one:
-    /// <see cref="LayoutCursor{TSpace}"/> refuses a cursor that never had a layout, and this class refuses
-    /// one whose layout has already returned.
-    /// </summary>
-    internal const string NoLayout = Outside + "; this one never had a layout.";
-
-    /// <inheritdoc cref="NoLayout"/>
-    internal const string LayoutReturned = Outside + "; this one was used after its layout returned.";
-
-    private bool _closed;
     private bool _read;
 
-    protected LayoutState(IProjection owner, Plane<TSpace> extent, ProjectionContext context)
+    protected LayoutState(Plane<TSpace> extent, ProjectionContext context)
     {
-      Owner = owner;
       Extent = extent;
       Context = context;
     }
 
-    protected IProjection Owner { get; }
     protected Plane<TSpace> Extent { get; }
     protected ProjectionContext Context { get; }
 
@@ -51,25 +34,14 @@ namespace Unrect.Projections
     /// nothing itself. <see cref="Presence.Absorbed"/> is deliberately not among the answers: only a
     /// tolerance boundary can say it did not look, and a layout did look, through every child it
     /// declared.
-    /// <para>
-    /// A layout that took no children never gets this far; declaring nothing stays a fault.
-    /// </para>
     /// </summary>
     public Presence Presence => _read ? Presence.Read : Presence.Empty;
 
     /// <summary>
-    /// What to say when the lambda never called <c>Next</c>; each layout supplies its own noun.
+    /// Takes the next child and returns what it read, labelled by <paramref name="site"/> — where
+    /// the declaration wrote it.
     /// </summary>
-    public abstract string DeclaredNothing { get; }
-
-    /// <summary>
-    /// Takes the next child and returns what it read. <paramref name="declared"/> is the text the
-    /// compiler saw at the call site, from which the child's label is inferred.
-    /// </summary>
-    public abstract T Next<T>(IProjection<TSpace, T> projection, string? declared);
-
-    /// <summary>Ends the layout, after which no cursor may add to it.</summary>
-    public void Close() => _closed = true;
+    public abstract T Next<T>(IProjection<TSpace, T> projection, UseSite site);
 
     /// <summary>
     /// Records a child the layout has just taken, and what it made of its own extent. Counting and
@@ -80,40 +52,5 @@ namespace Unrect.Projections
       _read |= presence == Presence.Read;
       Count++;
     }
-
-    /// <summary>
-    /// Lets a child into the layout, <paramref name="at"/> being where it is about to go. Both
-    /// refusals are declaration bugs rather than shapes of data, so neither is absorbable.
-    /// </summary>
-    protected void Admit(IProjection? projection, Offset at)
-    {
-      if (_closed)
-        throw new InvalidOperationException(LayoutReturned);
-
-      // A null projection is a hole in the declaration: it is reported where the child would have
-      // gone, and no tolerance boundary may absorb it.
-      if (projection is null)
-        throw Context.Failure(
-          Owner,
-          $"a null projection was declared as child {Count + 1}",
-          RemainingAt(at),
-          null,
-          null,
-          isFault: true);
-    }
-
-    /// <summary>
-    /// The space left at <paramref name="at"/>, or the whole extent when there is no room there to
-    /// slice. A hole in the declaration has to be reportable from any position the layout reached,
-    /// so the message and the location outrank an exact availability figure.
-    /// </summary>
-    protected Plane<TSpace> RemainingAt(Offset at)
-      => at.Width > Extent.Area.Width || at.Height > Extent.Area.Height
-        ? Extent
-        : Extent.Slice(at);
-
-    /// <summary>The one wording, so a flow and an overlay cannot drift apart on it.</summary>
-    protected static string NothingDeclared(string noun)
-      => $"{noun} must declare at least one projection; this one called Next zero times";
   }
 }

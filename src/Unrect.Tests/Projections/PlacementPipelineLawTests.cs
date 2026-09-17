@@ -189,11 +189,18 @@ namespace Unrect.Tests.Projections
       var space = Report();
       var series = Series();
 
-      var pipelineReport = VerticalFlow(v => new
+      var pipelineReport = VerticalFlow(v =>
       {
-        Title = v.Next(Text()),
-        ByTransferDate = v.Next(Until(RowContaining(Inception)).Heading("IRR Details").Heading(Transfer).Of(series)),
-        ByInception = v.Next(Heading(Inception).Of(series)),
+        var textSlot = v.Next(Text());
+        var until = v.Next(Until(RowContaining(Inception)).Heading("IRR Details").Heading(Transfer).Of(series));
+        var heading = v.Next(Heading(Inception).Of(series));
+
+        return v.Build(read2 => new
+        {
+          Title = read2.Of(textSlot),
+          ByTransferDate = read2.Of(until),
+          ByInception = read2.Of(heading),
+        });
       });
 
       var read = pipelineReport.Map(space);

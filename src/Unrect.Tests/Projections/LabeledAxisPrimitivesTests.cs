@@ -50,15 +50,10 @@ namespace Unrect.Tests.Projections
     /// method's. Unmarked, nothing folds and a rendered path is the whole tree.
     /// </summary>
     private static IProjection<ISheetCells, IReadOnlyList<T>> PrimitiveTable<T>(int headerRows, Func<TableRow<ISheetCells>, T> record, bool marked)
-      => new FlowProjection<ISheetCells, IReadOnlyList<T>>(
-        Orientation.Vertical,
-        flow =>
-        {
-          var columns = flow.Next(Mark(ColumnLabels(headerRows), marked));
-          var body = Mark(VerticalBands(1, Mark(Record(record), marked)), marked);
-
-          return flow.Next(WithColumnLabels(columns, body));
-        },
+      => new LabelledProjection<ISheetCells, IReadOnlyList<T>>(
+        LabelAxis.Column,
+        Mark(ColumnLabels(headerRows), marked),
+        Mark(VerticalBands(1, Mark(Record(record), marked)), marked),
         TablePlacementReplica(),
         "Table");
 
@@ -362,16 +357,27 @@ namespace Unrect.Tests.Projections
     private static IProjection<ISheetCells, decimal> InnerUnit()
       => new FlowProjection<ISheetCells, decimal>(
         Orientation.Vertical,
-        flow => flow.Next(Decimal().Named("allocation")),
+        SingleChild(Decimal().Named("allocation")),
         Placement.Default,
         "Row").AsUnit("Inner");
 
     private static IProjection<ISheetCells, IReadOnlyList<decimal>> OuterUnit()
       => new FlowProjection<ISheetCells, IReadOnlyList<decimal>>(
         Orientation.Vertical,
-        flow => flow.Next(VerticalRepeat(InnerUnit()).AsScaffolding()),
+        SingleChild(VerticalRepeat(InnerUnit()).AsScaffolding()),
         Placement.Default,
         "Body").AsUnit("Outer");
+
+    /// <summary>A layout of exactly one child, declared with no use-site text — as a factory declares the parts it assembles.</summary>
+    private static Layout<ISheetCells, T> SingleChild<T>(IProjection<ISheetCells, T> child)
+      => LayoutBuilder<ISheetCells>.Declare<T>(
+        flow =>
+        {
+          var only = flow.Next(child, declared: null);
+          return flow.Build(read => read.Of(only));
+        },
+        "a flow",
+        nameof(child));
 
     [Fact]
     public void NestedUnitsBothFoldAndNeitherLeaksScaffolding()
@@ -399,7 +405,7 @@ namespace Unrect.Tests.Projections
     private static IProjection<ISheetCells, IReadOnlyList<int>> TolerantUnit()
       => new FlowProjection<ISheetCells, IReadOnlyList<int>>(
         Orientation.Vertical,
-        flow => flow.Next(VerticalBands(1, Record((TableRow<ISheetCells> row) => row.Index), onBlank: BlankRowStrategy.Tolerate).AsScaffolding()),
+        SingleChild(VerticalBands(1, Record((TableRow<ISheetCells> row) => row.Index), onBlank: BlankRowStrategy.Tolerate).AsScaffolding()),
         Placement.Default,
         "Body").AsUnit("Table");
 
@@ -458,7 +464,12 @@ namespace Unrect.Tests.Projections
       var block = VerticalRepeat(Decimal().Named("x")).AsUnit("Table");
 
       var failure = Assert.Throws<ProjectionException>(
-        () => VerticalFlow(v => v.Next(block)).Map(sheet));
+        () => VerticalFlow(v =>
+        {
+          var block2 = v.Next(block);
+
+          return v.Build(read => read.Of(block2));
+        }).Map(sheet));
 
       Assert.Contains("Table[0]", failure.Path);
       Assert.DoesNotContain("block", failure.Path);
@@ -487,7 +498,7 @@ namespace Unrect.Tests.Projections
     private static IProjection<ISheetCells, IReadOnlyList<string>> Card(bool marked)
       => new FlowProjection<ISheetCells, IReadOnlyList<string>>(
         Orientation.Vertical,
-        flow => flow.Next(Mark(VerticalRepeat(Text().Named("investor")), marked)),
+        SingleChild(Mark(VerticalRepeat(Text().Named("investor")), marked)),
         Placement.Default,
         "Body").AsUnit("Card");
 
@@ -1038,7 +1049,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal(leaf.Subject, composed.Subject);
 
       // FullPath keeps the primitive tree the rung composes, each part under its own description.
-      Assert.Equal("Table -> VerticalFlow -> ColumnLabels#1", composed.FullPath);
+      Assert.Equal("Table -> UnderColumnLabels -> ColumnLabels#1", composed.FullPath);
     }
 
     [Fact]

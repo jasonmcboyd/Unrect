@@ -275,14 +275,20 @@ namespace Unrect.Tests.Projections
     // --- Inspection and naming -------------------------------------------------------------------------------
 
     [Fact]
-    public void ABlockIsAnOpaqueFlowThatDescribesItselfByItsFactory()
+    public void ABlockIsAFlowOfItsFieldsAndDescribesItselfByItsFactory()
     {
       var entity = Entity();
 
       Assert.Equal("Fields", entity.Description);
-      Assert.Empty(entity.Children);
+      Assert.Null(entity.Opacity);
+      Assert.NotEmpty(entity.Children);
 
-      Assert.Equal("declared by a cursor lambda; children are known only while it runs", entity.Opacity);
+      // Each field is a child at its ordinal, with no use-site name: the factory assembled them.
+      for (var index = 0; index < entity.Children.Count; index++)
+      {
+        Assert.Null(entity.Children[index].Site.Name);
+        Assert.Equal(index + 1, entity.Children[index].Site.Ordinal);
+      }
     }
 
     [Fact]
@@ -291,7 +297,12 @@ namespace Unrect.Tests.Projections
       var entity = Fields(Field("EIN"), Field("Entity Type"), Field("Deal Type"), Field("Vintage"));
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v => v.Next(entity)).Map(Card()));
+        VerticalFlow(v =>
+        {
+          var entity2 = v.Next(entity);
+
+          return v.Build(read => read.Of(entity2));
+        }).Map(Card()));
 
       Assert.Equal("VerticalFlow -> 'entity' -> Field(\"Vintage\")#4", failure.Path);
     }

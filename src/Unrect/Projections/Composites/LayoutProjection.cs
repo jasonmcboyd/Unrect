@@ -1,32 +1,29 @@
 using System;
+using System.Collections.Generic;
 
 using Unrect.Core;
 
 namespace Unrect.Projections
 {
   /// <summary>
-  /// A composite whose children are declared by calling <c>Next</c> on a cursor rather than by
-  /// being passed in. Running the lambda is the only way to learn what it contains, which is why
-  /// every layout is opaque to anything that walks a declaration without a space.
-  /// <para>
-  /// Subclasses differ in one thing: the <see cref="LayoutState{TSpace}"/> they run on, which is what
-  /// decides whether a child moves the next one along. Everything else about declaring children
-  /// this way — the single pass, closing the layout, and refusing one that declared nothing — is
-  /// the same for all of them and lives here.
-  /// </para>
+  /// A composite whose children were declared through a cursor and closed into a
+  /// <see cref="Layout{TSpace, T}"/>: the children are complete and ordered, and the result is the
+  /// combiner applied to what they read. Subclasses differ in one thing: the
+  /// <see cref="LayoutState{TSpace}"/> they run on, which is what decides whether a child moves the
+  /// next one along.
   /// </summary>
   internal abstract class LayoutProjection<TSpace, T> : ProjectionBase<TSpace, T>
     where TSpace : class, ISpace
   {
-    protected LayoutProjection(Layout<TSpace, T> build, Placement placement)
+    protected LayoutProjection(Layout<TSpace, T> layout, Placement placement)
       : base(placement)
     {
-      Build = build ?? throw new ArgumentNullException(nameof(build));
+      Layout = layout ?? throw new ArgumentNullException(nameof(layout));
     }
 
-    private Layout<TSpace, T> Build { get; }
+    private Layout<TSpace, T> Layout { get; }
 
-    public override string? Opacity => "declared by a cursor lambda; children are known only while it runs";
+    public override IReadOnlyList<Child> Children => Layout.Children;
 
     /// <summary>The state that decides what this layout does with its extent between children.</summary>
     protected abstract LayoutState<TSpace> NewState(Plane<TSpace> extent, ProjectionContext context);
@@ -34,30 +31,24 @@ namespace Unrect.Projections
     public override ProjectionResult<T> Project(Plane<TSpace> extent, ProjectionContext context)
     {
       var state = NewState(extent, context);
+      var children = Layout.Children;
+      var values = new object?[children.Count];
 
-      // One pass, immediately: what the lambda reads, it reads now. A failure inside a Next call
-      // belongs to the child that raised it and travels out through here untouched — but the layout
-      // still ends here, so a cursor that somehow outlived the lambda is refused either way.
+      // Every child, in declaration order, at the site the declaration wrote it. A failure inside a
+      // child belongs to that child and travels out through here untouched.
+      for (var index = 0; index < values.Length; index++)
+        values[index] = Layout.Runners[index].Apply(state, children[index].Site);
+
       T value;
 
       try
       {
-        value = Build(new LayoutCursor<TSpace>(state));
+        value = Layout.Combine(new Reading(Layout.Builder, values));
       }
       catch (CellReadException failure)
       {
         throw context.Reading(failure, extent);
       }
-      finally
-      {
-        state.Close();
-      }
-
-      // A layout that declared nothing would match anything, describe nothing, and quietly end an
-      // enclosing repetition by consuming nothing. That is a bug in the declaration, so no
-      // tolerance boundary may absorb it.
-      if (state.Count == 0)
-        throw context.Failure(this, state.DeclaredNothing, extent, null, null, isFault: true);
 
       return new ProjectionResult<T>(value, state.Consumed, state.Presence);
     }

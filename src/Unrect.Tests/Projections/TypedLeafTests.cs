@@ -219,7 +219,12 @@ namespace Unrect.Tests.Projections
       var amount = Decimal();
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v => v.Next(amount)).Map(One("x")));
+        VerticalFlow(v =>
+        {
+          var amount2 = v.Next(amount);
+
+          return v.Build(read => read.Of(amount2));
+        }).Map(One("x")));
 
       Assert.Equal("VerticalFlow -> 'amount' (Decimal)", failure.Path);
     }
@@ -236,12 +241,20 @@ namespace Unrect.Tests.Projections
         { "RPT-1" },
       });
 
-      var byLeaves = VerticalFlow(v => new
+      var byLeaves = VerticalFlow(v =>
       {
-        Title = v.Next(Text()),
-        Subtitle = v.Next(Text()),
-        Date = v.Next(Date()),
-        Id = v.Next(Text()),
+        var textSlot = v.Next(Text());
+        var textSlot2 = v.Next(Text());
+        var dateSlot = v.Next(Date());
+        var textSlot3 = v.Next(Text());
+
+        return v.Build(read => new
+        {
+          Title = read.Of(textSlot),
+          Subtitle = read.Of(textSlot2),
+          Date = read.Of(dateSlot),
+          Id = read.Of(textSlot3),
+        });
       }).Apply(space);
 
       var byColumn = Column(4, c => c[0].Text()).Apply(space);

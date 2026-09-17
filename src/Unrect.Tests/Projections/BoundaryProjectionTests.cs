@@ -35,7 +35,13 @@ namespace Unrect.Tests.Projections
 
     /// <summary>Two levels below the boundary: the flow whose second child is the one that fails.</summary>
     private static IProjection<ISheetCells, string> Inner()
-      => VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(TextCell())}");
+      => VerticalFlow(v =>
+      {
+        var intCell = v.Next(IntCell());
+        var textCell = v.Next(TextCell());
+
+        return v.Build(read => $"{read.Of(intCell)}{read.Of(textCell)}");
+      });
 
     /// <summary>
     /// The one warning a parse produced. An absorbing boundary consumes nothing, so a boundary at
@@ -142,7 +148,13 @@ namespace Unrect.Tests.Projections
     public void AFollowingSiblingStartsWhereTheAbsorbedProjectionBegan()
     {
       var read = VerticalFlow(v =>
-        $"{v.Next(Title().Optional()) ?? "null"}|{v.Next(IntCell())}|{v.Next(IntCell())}")
+      {
+        var title = v.Next(Title().Optional());
+        var intCell = v.Next(IntCell());
+        var intCell2 = v.Next(IntCell());
+
+        return v.Build(read2 => $"{read2.Of(title) ?? "null"}|{read2.Of(intCell)}|{read2.Of(intCell2)}");
+      })
         .Map(Numbers());
 
       Assert.Equal("null|1|2", read);
@@ -151,7 +163,13 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ElseValue_AlsoConsumesNothing()
     {
-      var read = VerticalFlow(v => $"{v.Next(Title().Else("missing"))}|{v.Next(IntCell())}").Map(Numbers());
+      var read = VerticalFlow(v =>
+      {
+        var title = v.Next(Title().Else("missing"));
+        var intCell = v.Next(IntCell());
+
+        return v.Build(read2 => $"{read2.Of(title)}|{read2.Of(intCell)}");
+      }).Map(Numbers());
 
       Assert.Equal("missing|1", read);
     }
@@ -162,7 +180,12 @@ namespace Unrect.Tests.Projections
       // A fallback projection did read something, so it reports an honest extent and the next
       // sibling clears it.
       var read = VerticalFlow(v =>
-        $"{v.Next(Title().Else(Point().Select(p => p.Integer().ToString()).Named("plan B")))}|{v.Next(IntCell())}")
+      {
+        var title = v.Next(Title().Else(Point().Select(p => p.Integer().ToString()).Named("plan B")));
+        var intCell = v.Next(IntCell());
+
+        return v.Build(read2 => $"{read2.Of(title)}|{read2.Of(intCell)}");
+      })
         .Map(Numbers());
 
       Assert.Equal("1|2", read);
@@ -185,7 +208,13 @@ namespace Unrect.Tests.Projections
       // Three levels down: the boundary wraps a flow whose second child fails. Nothing between
       // them softens anything — the failure travels to the nearest boundary and stops there.
       var projection = VerticalFlow(v =>
-        $"{v.Next(IntCell())}|{v.Next(Inner().Optional()) ?? "null"}|{v.Next(IntCell())}");
+      {
+        var intCell = v.Next(IntCell());
+        var inner = v.Next(Inner().Optional());
+        var intCell2 = v.Next(IntCell());
+
+        return v.Build(read => $"{read.Of(intCell)}|{read.Of(inner) ?? "null"}|{read.Of(intCell2)}");
+      });
 
       var result = projection.MapWithDiagnostics(Numbers());
 
@@ -196,7 +225,13 @@ namespace Unrect.Tests.Projections
     public void ADeeplyAbsorbedFailure_KeepsItsFullPathAndTrueLocation()
     {
       var projection = VerticalFlow(v =>
-        $"{v.Next(IntCell())}|{v.Next(Inner().Optional()) ?? "null"}|{v.Next(IntCell())}");
+      {
+        var intCell = v.Next(IntCell());
+        var inner = v.Next(Inner().Optional());
+        var intCell2 = v.Next(IntCell());
+
+        return v.Build(read => $"{read.Of(intCell)}|{read.Of(inner) ?? "null"}|{read.Of(intCell2)}");
+      });
 
       var warning = Assert.Single(
         projection.MapWithDiagnostics(Numbers()).Diagnostics,
@@ -348,7 +383,13 @@ namespace Unrect.Tests.Projections
     private static ISheetCells TextOverNumber() => Mixed(new object?[,] { { "x" }, { 5 } });
 
     private static IProjection<ISheetCells, string> AbsorbedThenSameCell()
-      => VerticalFlow(v => $"{v.Next(IntCell().Optional())}|{v.Next(IntCell())}");
+      => VerticalFlow(v =>
+      {
+        var intCell = v.Next(IntCell().Optional());
+        var intCell2 = v.Next(IntCell());
+
+        return v.Build(read => $"{read.Of(intCell)}|{read.Of(intCell2)}");
+      });
 
     [Fact]
     public void AFailureRightAfterAnAbsorbedSibling_CarriesANote()
@@ -366,7 +407,13 @@ namespace Unrect.Tests.Projections
       // The quoted exception message brings its own full stop; keeping it would read ".; note:".
       var noted = FirstLine(Assert.Throws<ProjectionException>(() => AbsorbedThenSameCell().Map(TextOverNumber())));
       var plain = FirstLine(Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v => $"{v.Next(TextCell())}|{v.Next(TextCell())}").Map(TextOverNumber())));
+        VerticalFlow(v =>
+        {
+          var textCell = v.Next(TextCell());
+          var textCell2 = v.Next(TextCell());
+
+          return v.Build(read => $"{read.Of(textCell)}|{read.Of(textCell2)}");
+        }).Map(TextOverNumber())));
 
       // The reading sentence carries no full stop of its own, so there is none to replace — the
       // note simply follows it. The rule is still worth pinning: what must never appear is the
@@ -414,10 +461,22 @@ namespace Unrect.Tests.Projections
     {
       // Nothing consumed nothing, so there is nothing to blame but the projection that failed.
       var laterChild = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v => $"{v.Next(TextCell())}|{v.Next(TextCell())}").Map(TextOverNumber()));
+        VerticalFlow(v =>
+        {
+          var textCell = v.Next(TextCell());
+          var textCell2 = v.Next(TextCell());
+
+          return v.Build(read => $"{read.Of(textCell)}|{read.Of(textCell2)}");
+        }).Map(TextOverNumber()));
 
       var firstChild = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(IntCell())}").Map(TextOverNumber()));
+        VerticalFlow(v =>
+        {
+          var intCell = v.Next(IntCell());
+          var intCell2 = v.Next(IntCell());
+
+          return v.Build(read => $"{read.Of(intCell)}|{read.Of(intCell2)}");
+        }).Map(TextOverNumber()));
 
       Assert.DoesNotContain("note:", laterChild.Message);
       Assert.DoesNotContain("note:", firstChild.Message);
@@ -430,7 +489,13 @@ namespace Unrect.Tests.Projections
       // on, so by the time the third child fails the coincidence has passed.
       var failure = Assert.Throws<ProjectionException>(() =>
         VerticalFlow(v =>
-          $"{v.Next(IntCell().Optional())}|{v.Next(TextCell())}|{v.Next(TextCell())}")
+        {
+          var intCell = v.Next(IntCell().Optional());
+          var textCell = v.Next(TextCell());
+          var textCell2 = v.Next(TextCell());
+
+          return v.Build(read => $"{read.Of(intCell)}|{read.Of(textCell)}|{read.Of(textCell2)}");
+        })
           .Map(TextOverNumber()));
 
       Assert.DoesNotContain("note:", failure.Message);
@@ -446,7 +511,12 @@ namespace Unrect.Tests.Projections
 
       var failure = Assert.Throws<ProjectionException>(() =>
         VerticalFlow(v =>
-          $"{v.Next(IntCell().Optional())}|{v.Next(OffsetBy(BlankRows()).Down(2).Of(TextCell()))}")
+        {
+          var intCell = v.Next(IntCell().Optional());
+          var offsetBy = v.Next(OffsetBy(BlankRows()).Down(2).Of(TextCell()));
+
+          return v.Build(read => $"{read.Of(intCell)}|{read.Of(offsetBy)}");
+        })
           .Map(space));
 
       Assert.DoesNotContain("note:", failure.Message);
@@ -460,7 +530,12 @@ namespace Unrect.Tests.Projections
       // simply the usual way that happens.
       var failure = Assert.Throws<ProjectionException>(() =>
         VerticalFlow(v =>
-          $"{v.Next(Range(AreaStrategies.ExplicitArea(1, 0), b => b.Height))}|{v.Next(IntCell())}")
+        {
+          var rangeSlot = v.Next(Range(AreaStrategies.ExplicitArea(1, 0), b => b.Height));
+          var intCell = v.Next(IntCell());
+
+          return v.Build(read => $"{read.Of(rangeSlot)}|{read.Of(intCell)}");
+        })
           .Map(TextOverNumber()));
 
       Assert.Contains("note: the preceding sibling consumed nothing at this position", failure.Message);
@@ -470,7 +545,13 @@ namespace Unrect.Tests.Projections
     public void AHorizontalFlowIsNotedTheSameWay()
     {
       var failure = Assert.Throws<ProjectionException>(() =>
-        HorizontalFlow(h => $"{h.Next(IntCell().Optional())}|{h.Next(IntCell())}")
+        HorizontalFlow(h =>
+        {
+          var intCell = h.Next(IntCell().Optional());
+          var intCell2 = h.Next(IntCell());
+
+          return h.Build(read => $"{read.Of(intCell)}|{read.Of(intCell2)}");
+        })
           .Map(Mixed(new object?[,] { { "x", 5 } })));
 
       Assert.Contains("note: the preceding sibling consumed nothing at this position", failure.Message);
@@ -485,13 +566,17 @@ namespace Unrect.Tests.Projections
       var tolerant = VerticalFlow(v =>
       {
         v.Next(IntCell().Optional());
-        return v.Next(IntCell());
+        var intCell = v.Next(IntCell());
+
+        return v.Build(read => read.Of(intCell));
       }).Named("tolerant branch");
 
       var strict = VerticalFlow(v =>
       {
         v.Next(IntCell());
-        return v.Next(IntCell());
+        var intCell = v.Next(IntCell());
+
+        return v.Build(read => read.Of(intCell));
       }).Named("strict branch");
 
       var failure = Assert.Throws<ProjectionException>(() => Choice(tolerant, strict).Map(TextOverNumber()));

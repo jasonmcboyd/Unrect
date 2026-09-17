@@ -107,7 +107,12 @@ namespace Unrect.Tests.Projections
         _ => throw new ArgumentOutOfRangeException(nameof(offset), offset, "No such offset.")
       };
 
-      return Sized(RowsWhileAnyValue()).Of(VerticalFlow(v => v.Next(placed)));
+      return Sized(RowsWhileAnyValue()).Of(VerticalFlow(v =>
+      {
+        var placed2 = v.Next(placed);
+
+        return v.Build(read => read.Of(placed2));
+      }));
     }
 
     [Theory]
@@ -382,9 +387,14 @@ namespace Unrect.Tests.Projections
       // discovered region is two rows tall and the matcher has to look inside it.
       var declaration = ProjectionBuilders<ISpreadsheetSpace>.Down(7)
         .Sized(RowsWhileAnyValue())
-        .Of(ProjectionBuilders<ISpreadsheetSpace>.VerticalFlow(v => v.Next(
-          ProjectionBuilders<ISpreadsheetSpace>.On(SpreadsheetProjections.RowWithFormula("LOG10"))
-            .Of(ProjectionBuilders<ISpreadsheetSpace>.Range(1, 1, block => block.Location.A1)))));
+        .Of(ProjectionBuilders<ISpreadsheetSpace>.VerticalFlow(v =>
+        {
+          var projectionBuilders = v.Next(
+            ProjectionBuilders<ISpreadsheetSpace>.On(SpreadsheetProjections.RowWithFormula("LOG10"))
+              .Of(ProjectionBuilders<ISpreadsheetSpace>.Range(1, 1, block => block.Location.A1)));
+
+          return v.Build(read2 => read2.Of(projectionBuilders));
+        }));
 
       var read = declaration.Map(FormulaSheet());
 
@@ -404,10 +414,15 @@ namespace Unrect.Tests.Projections
       // cut that had shed it, or a chart that had hidden it, would report every formula as absent
       // rather than fail.
       var formula = ProjectionBuilders<ISpreadsheetSpace>.Sized(RowsWhileAnyValue())
-        .Of(ProjectionBuilders<ISpreadsheetSpace>.Overlay(o => o.Next(
-          ProjectionBuilders<ISpreadsheetSpace>.Down(1)
-            .Right(3)
-            .Of(SpreadsheetProjections.Formula<ISpreadsheetSpace>()))));
+        .Of(ProjectionBuilders<ISpreadsheetSpace>.Overlay(o =>
+        {
+          var projectionBuilders = o.Next(
+            ProjectionBuilders<ISpreadsheetSpace>.Down(1)
+              .Right(3)
+              .Of(SpreadsheetProjections.Formula<ISpreadsheetSpace>()));
+
+          return o.Build(read2 => read2.Of(projectionBuilders));
+        }));
 
       var read = formula.Map(FormulaSheet());
 

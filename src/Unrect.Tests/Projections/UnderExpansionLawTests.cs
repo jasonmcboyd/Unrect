@@ -65,7 +65,9 @@ namespace Unrect.Tests.Projections
         foreach (var caption in captions)
           v.Next(caption);
 
-        return v.Next(section);
+        var body = v.Next(section);
+
+        return v.Build(read => read.Of(body));
       });
 
     // --- L2: the equation itself -------------------------------------------------------------------

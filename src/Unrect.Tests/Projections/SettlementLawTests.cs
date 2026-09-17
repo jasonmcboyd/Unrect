@@ -142,12 +142,14 @@ namespace Unrect.Tests.Projections
       {
         v.Next(Range(RowsWhileAnyValue(), _ => 0).Named("body"));
 
-        return v.Next(AfterBlankRows().Of(Point().Select(point =>
+        var afterBlankRows = v.Next(AfterBlankRows().Of(Point().Select(point =>
         {
           rowsReadInsideTheSibling = counter.RowsTouched;
 
           return point.Integer();
         })).Named("next"));
+
+        return v.Build(read => read.Of(afterBlankRows));
       });
 
       Assert.Equal(9, flow.Map(counter));
@@ -167,12 +169,14 @@ namespace Unrect.Tests.Projections
       {
         v.Next(Range(RowsWhileAny(BreaksOn(MarkerInTheThirdRow)), _ => 0).Named("body"));
 
-        return v.Next(Point().Select(point =>
+        var pointSlot = v.Next(Point().Select(point =>
         {
           siblingRuns++;
 
           return point.Integer();
         }).Named("next"));
+
+        return v.Build(read => read.Of(pointSlot));
       });
 
       var failure = Assert.Throws<ProjectionException>(() => flow.Map(TwoBlocks()));

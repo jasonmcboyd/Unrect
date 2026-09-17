@@ -27,7 +27,12 @@ namespace Unrect.Tests.Projections
   /// </summary>
   public class MethodGroupTests
   {
-    private static IProjection<ISheetCells, int> Report() => VerticalFlow(v => v.Next(IntCell()));
+    private static IProjection<ISheetCells, int> Report() => VerticalFlow(v =>
+    {
+      var intCell = v.Next(IntCell());
+
+      return v.Build(read => read.Of(intCell));
+    });
 
     private static ISheetCells[] Workbooks() => new[]
     {
@@ -104,7 +109,12 @@ namespace Unrect.Tests.Projections
       // The other half of the same decision: naming the root from the receiver would need the
       // optional parameter the tests above forbid, so the root renders structurally instead.
       var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v => v.Next(TextCell())).Map(Grid(new[,] { { 1 } })));
+        VerticalFlow(v =>
+        {
+          var textCell = v.Next(TextCell());
+
+          return v.Build(read => read.Of(textCell));
+        }).Map(Grid(new[,] { { 1 } })));
 
       Assert.Equal("VerticalFlow -> Text#1", failure.Path);
     }
@@ -114,7 +124,12 @@ namespace Unrect.Tests.Projections
     {
       // ...and Named is the mechanism, unchanged. A root worth a name is worth writing one.
       var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v => v.Next(TextCell())).Named("report").Map(Grid(new[,] { { 1 } })));
+        VerticalFlow(v =>
+        {
+          var textCell = v.Next(TextCell());
+
+          return v.Build(read => read.Of(textCell));
+        }).Named("report").Map(Grid(new[,] { { 1 } })));
 
       Assert.Equal("'report' -> Text#1", failure.Path);
     }

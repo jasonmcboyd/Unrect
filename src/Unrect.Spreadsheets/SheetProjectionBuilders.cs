@@ -12,7 +12,13 @@ namespace Unrect.Spreadsheets
   /// using static Unrect.Projections.ProjectionBuilders&lt;Unrect.Spreadsheets.ISheetCells&gt;;
   /// using static Unrect.Spreadsheets.SheetProjectionBuilders&lt;Unrect.Spreadsheets.ISheetCells&gt;;
   ///
-  /// var row = HorizontalFlow(h =&gt; new Line(h.Next(Text()), h.Next(Decimal())));
+  /// var row = HorizontalFlow(h =&gt;
+  /// {
+  ///     var label  = h.Next(Text());
+  ///     var amount = h.Next(Decimal());
+  ///
+  ///     return h.Build(read =&gt; new Line(read.Of(label), read.Of(amount)));
+  /// });
   /// </code>
   /// <para>
   /// It is <see cref="SpreadsheetProjectionBuilders{TSpace}"/> without the four members that need a

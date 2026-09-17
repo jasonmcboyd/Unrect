@@ -24,10 +24,16 @@ var dealCode = Text();
 // rather than demanding an exact match.
 var transactions = Table<DealTransaction>();
 
-var deal = VerticalFlow(v => new
+var deal = VerticalFlow(v =>
 {
-	DealCode = v.Next(dealCode),
-	Transactions = v.Next(transactions),
+	var code = v.Next(dealCode);
+	var rows = v.Next(transactions);
+
+	return v.Build(read => new
+	{
+		DealCode = read.Of(code),
+		Transactions = read.Of(rows),
+	});
 });
 
 // The report: that block, repeated, blank-row separated.

@@ -148,9 +148,13 @@ namespace Unrect.Projections
     /// handed to <paramref name="eachRow"/>, and the projection it returns is applied to every body
     /// row.
     /// <code>
-    /// Table(headerRows: 1, eachRow: labels =&gt; Overlay(o =&gt; new Allocation(
-    ///   Account: o.Next(Text().Right(labels["Account"])),
-    ///   Weight:  o.Next(Decimal().OrBlank().Right(labels["Weight"])))))
+    /// Table(headerRows: 1, eachRow: labels =&gt; Overlay(o =&gt;
+    /// {
+    ///   var account = o.Next(Text().Right(labels["Account"]));
+    ///   var weight  = o.Next(Decimal().OrBlank().Right(labels["Weight"]));
+    ///
+    ///   return o.Build(read =&gt; new Allocation(Account: read.Of(account), Weight: read.Of(weight)));
+    /// }))
     /// </code>
     /// <para>
     /// Two arrows, two moments. The bind runs <em>once per application of the table</em> — a table
@@ -228,7 +232,8 @@ namespace Unrect.Projections
         rows,
         table => ProjectRecords(table, BoundRow(table, eachRow), site, onBlank),
         TablePlacement(onBlank),
-        "Table");
+        "Table",
+        opacity: "the row projection is built from the header's captions; it is known only once a header is read");
     }
 
     /// <summary>
@@ -241,15 +246,23 @@ namespace Unrect.Projections
     /// you write says how the columns are found:
     /// <code>
     /// // Adjacent columns, no coordinates anywhere: silence is adjacency, as in any flow.
-    /// Table(headerRows: 1, eachRow: HorizontalFlow(h =&gt; new Allocation(
-    ///   Account: h.Next(Text()),
-    ///   Symbol:  h.Next(Text()),
-    ///   Weight:  h.Next(Decimal()))))
+    /// Table(headerRows: 1, eachRow: HorizontalFlow(h =&gt;
+    /// {
+    ///   var account = h.Next(Text());
+    ///   var symbol  = h.Next(Text());
+    ///   var weight  = h.Next(Decimal());
+    ///
+    ///   return h.Build(read =&gt; new Allocation(read.Of(account), read.Of(symbol), read.Of(weight)));
+    /// }))
     ///
     /// // Sparse, structurally-fixed columns: an overlay hands every child the whole row.
-    /// Table(headerRows: 0, eachRow: Overlay(o =&gt; new Allocation(
-    ///   Fund:    o.Next(Text().Right(1)),
-    ///   Primary: o.Next(Decimal().OrBlank().Right(6)))))
+    /// Table(headerRows: 0, eachRow: Overlay(o =&gt;
+    /// {
+    ///   var fund    = o.Next(Text().Right(1));
+    ///   var primary = o.Next(Decimal().OrBlank().Right(6));
+    ///
+    ///   return o.Build(read =&gt; new Allocation(Fund: read.Of(fund), Primary: read.Of(primary)));
+    /// }))
     ///   .Below(RowContaining("ACCOUNT"))
     ///   .Sized(RowsWhileAnyValue())
     /// </code>
@@ -308,23 +321,11 @@ namespace Unrect.Projections
 
     /// <summary>
     /// The header read once, then the body beneath it resolving columns through what the header
-    /// named. The unit above this owns the placement, so the flow sits where it is handed and the
+    /// named. The unit above this owns the placement, so the node sits where it is handed and the
     /// rows it takes are the only thing it decides.
     /// </summary>
     private static IProjection<TSpace, IReadOnlyList<T>> UnderColumnLabels<T>(IProjection<TSpace, LabelMap> header, IProjection<TSpace, IReadOnlyList<T>> body)
-      => new FlowProjection<TSpace, IReadOnlyList<T>>(
-        Orientation.Vertical,
-        flow =>
-        {
-          // declared: null at both sites, and it is mandatory. Left to the compiler, the naming
-          // ladder would label the children with this method's own locals, identifiers the user
-          // never wrote.
-          var columns = flow.Next(header, declared: null);
-
-          return flow.Next(WithColumnLabels(columns, body), declared: null);
-        },
-        Placement.Default,
-        null);
+      => new LabelledProjection<TSpace, IReadOnlyList<T>>(LabelAxis.Column, header, body, Placement.Default);
 
 
     /// <summary>
@@ -593,17 +594,28 @@ namespace Unrect.Projections
 
       return new FlowProjection<TSpace, IReadOnlyDictionary<string, Point<TSpace>>>(
         Orientation.Vertical,
-        cursor =>
-        {
-          var values = new Dictionary<string, Point<TSpace>>(declared.Length, CaptionComparer.Default);
+        LayoutBuilder<TSpace>.Declare<IReadOnlyDictionary<string, Point<TSpace>>>(
+          cursor =>
+          {
+            var slots = new Slot<Point<TSpace>>[declared.Length];
 
-          // declared: null — without it the naming ladder would label every child with this
-          // helper's own loop variable, an identifier the user never wrote.
-          for (var index = 0; index < declared.Length; index++)
-            values[declared[index].Label] = cursor.Next(pairs[index], declared: null);
+            // declared: null — without it the naming ladder would label every child with this
+            // helper's own loop variable, an identifier the user never wrote.
+            for (var index = 0; index < declared.Length; index++)
+              slots[index] = cursor.Next(pairs[index], declared: null);
 
-          return values;
-        },
+            return cursor.Build<IReadOnlyDictionary<string, Point<TSpace>>>(read =>
+            {
+              var values = new Dictionary<string, Point<TSpace>>(declared.Length, CaptionComparer.Default);
+
+              for (var index = 0; index < declared.Length; index++)
+                values[declared[index].Label] = read.Of(slots[index]);
+
+              return values;
+            });
+          },
+          "a flow",
+          nameof(fields)),
         FieldsPlacement(declared[0].Label),
         description: "Fields");
     }

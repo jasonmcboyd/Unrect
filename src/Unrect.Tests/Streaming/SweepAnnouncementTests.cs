@@ -119,7 +119,13 @@ namespace Unrect.Tests.Streaming
       // the other side.
       var sheet = Listening();
 
-      VerticalFlow(v => $"{v.Next(Row(4, cells => cells.Count))}{v.Next(Row(4, cells => cells.Count))}").Map(sheet);
+      VerticalFlow(v =>
+      {
+        var rowSlot = v.Next(Row(4, cells => cells.Count));
+        var rowSlot2 = v.Next(Row(4, cells => cells.Count));
+
+        return v.Build(read => $"{read.Of(rowSlot)}{read.Of(rowSlot2)}");
+      }).Map(sheet);
 
       Assert.Equal(new[] { "0,0+4x4", "0,0+4x1", "0,1+4x1" }, sheet.Announced);
     }

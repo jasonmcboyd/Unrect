@@ -29,20 +29,34 @@ namespace Unrect.Tests.Projections
     // --- simple-report.xlsx: a fixed header over a table ----------------------------------------------------
 
     private static IProjection<ISheetCells, (SimpleHeader Header, IReadOnlyList<Transaction> Transactions)> SimpleReport() =>
-      VerticalFlow(v => (
-        // The header's kinds are declared rather than asked for: four leaves in a flow read the
-        // same four rows Column(4, ...) did, and say what each one is.
-        Header: v.Next(VerticalFlow(h => new SimpleHeader(
-          Title: h.Next(Text()),
-          Subtitle: h.Next(Text()),
-          Date: h.Next(Date()),
-          Id: h.Next(Text())))
-          .Named("report header")),
-        // Two captions the comparer would not have found; the other two bind free.
-        Transactions: v.Next(Table<Transaction>(bind => bind
-          .Column(t => t.Date, "Transaction Date")
-          .Column(t => t.Type, "Transaction Type"))
-          .Named("transactions"))));
+      VerticalFlow(v =>
+      {
+        var verticalFlow = v.Next(VerticalFlow(h =>
+          {
+            var textSlot = h.Next(Text());
+            var textSlot2 = h.Next(Text());
+            var dateSlot = h.Next(Date());
+            var textSlot3 = h.Next(Text());
+
+            return h.Build(read => new SimpleHeader(
+              Title: read.Of(textSlot),
+              Subtitle: read.Of(textSlot2),
+              Date: read.Of(dateSlot),
+              Id: read.Of(textSlot3)));
+          })
+            .Named("report header"));
+        var table = v.Next(Table<Transaction>(bind => bind
+            .Column(t => t.Date, "Transaction Date")
+            .Column(t => t.Type, "Transaction Type"))
+            .Named("transactions"));
+
+        return v.Build(read => (
+          // The header's kinds are declared rather than asked for: four leaves in a flow read the
+          // same four rows Column(4, ...) did, and say what each one is.
+          Header: read.Of(verticalFlow),
+          // Two captions the comparer would not have found; the other two bind free.
+          Transactions: read.Of(table)));
+      });
 
     [Fact]
     public void SimpleReport_ProjectsItsHeader()
@@ -106,10 +120,16 @@ namespace Unrect.Tests.Projections
     private static IProjection<ISheetCells, IReadOnlyList<Deal>> InvestorsByDeal()
     {
       var deal =
-        VerticalFlow(v => new Deal(
-          Code: v.Next(TextCell().Named("deal code")),
-          // Every caption binds free: AccountKey to "Account Key", TransferDate to "Transfer Date".
-          Transactions: v.Next(Table<DealTransaction>().Named("transactions"))))
+        VerticalFlow(v =>
+        {
+          var textCell = v.Next(TextCell().Named("deal code"));
+          var table = v.Next(Table<DealTransaction>().Named("transactions"));
+
+          return v.Build(read => new Deal(
+            Code: read.Of(textCell),
+            // Every caption binds free: AccountKey to "Account Key", TransferDate to "Transfer Date".
+            Transactions: read.Of(table)));
+        })
           .Named("deal block");
 
       return VerticalRepeat(deal, separatedBy: BlankRows());
@@ -163,26 +183,39 @@ namespace Unrect.Tests.Projections
     private static IProjection<ISheetCells, Report> InvestorSummary()
     {
       var detail =
-        VerticalFlow(v => new Detail(
-          Investor: v.Next(TextCell().Named("investor name")),
-          Transactions: v.Next(Table(r => new DetailTransaction(
-            r["Date"].Date(),
-            r["Transaction Type"].Text(),
-            r["Amount"].Decimal()))
-            .Named("transactions"))))
+        VerticalFlow(v =>
+        {
+          var textCell = v.Next(TextCell().Named("investor name"));
+          var table = v.Next(Table(r => new DetailTransaction(
+              r["Date"].Date(),
+              r["Transaction Type"].Text(),
+              r["Amount"].Decimal()))
+              .Named("transactions"));
+
+          return v.Build(read => new Detail(
+            Investor: read.Of(textCell),
+            Transactions: read.Of(table)));
+        })
           .Named("investor detail");
 
-      return VerticalFlow(v => new Report(
-        Header: v.Next(Column(c => new SummaryHeader(c[0].Text(), c[1].Date(), c[2].Text()))
-          .Named("report header")),
-        Summary: v.Next(Table(r => new SummaryRow(
-          r["Investor"].Text(),
-          r["Contributions"].Decimal(),
-          r["Distributions"].Decimal(),
-          r["Net"].Decimal()))
-          .Named("summary")),
-        Details: v.Next(AfterBlankRows().Of(VerticalRepeat(detail, separatedBy: BlankRows(), atLeast: 1))
-          .Named("investor details"))));
+      return VerticalFlow(v =>
+      {
+        var columnSlot = v.Next(Column(c => new SummaryHeader(c[0].Text(), c[1].Date(), c[2].Text()))
+            .Named("report header"));
+        var table = v.Next(Table(r => new SummaryRow(
+            r["Investor"].Text(),
+            r["Contributions"].Decimal(),
+            r["Distributions"].Decimal(),
+            r["Net"].Decimal()))
+            .Named("summary"));
+        var afterBlankRows = v.Next(AfterBlankRows().Of(VerticalRepeat(detail, separatedBy: BlankRows(), atLeast: 1))
+            .Named("investor details"));
+
+        return v.Build(read => new Report(
+          Header: read.Of(columnSlot),
+          Summary: read.Of(table),
+          Details: read.Of(afterBlankRows)));
+      });
     }
 
     [Fact]
@@ -292,11 +325,19 @@ namespace Unrect.Tests.Projections
       // The captions are declared rather than skipped over: each section says what it sits under,
       // and the rows those captions occupy are described by the projection instead of being
       // absorbed into an offset nobody can see.
-      return VerticalFlow(v => new IrrReport(
-        Title: v.Next(Column(4, c => c[0].Text()).Named("report header")),
-        Summary: v.Next(Table(r => r["Investors"].Text()).Named("summary")),
-        ByTransferDate: v.Next(Until(RowContaining(Inception)).Heading("IRR Details").Heading("Cash Flows Using Transfer Date").Of(series)),
-        ByInception: v.Next(Heading(Inception).Of(series))));
+      return VerticalFlow(v =>
+      {
+        var columnSlot = v.Next(Column(4, c => c[0].Text()).Named("report header"));
+        var table = v.Next(Table(r => r["Investors"].Text()).Named("summary"));
+        var until = v.Next(Until(RowContaining(Inception)).Heading("IRR Details").Heading("Cash Flows Using Transfer Date").Of(series));
+        var heading = v.Next(Heading(Inception).Of(series));
+
+        return v.Build(read => new IrrReport(
+          Title: read.Of(columnSlot),
+          Summary: read.Of(table),
+          ByTransferDate: read.Of(until),
+          ByInception: read.Of(heading)));
+      });
     }
 
     [Fact]
@@ -363,10 +404,16 @@ namespace Unrect.Tests.Projections
     {
       var lines = Table(0, r => r[0].Text());
 
-      var report = VerticalFlow(v => new
+      var report = VerticalFlow(v =>
       {
-        Ordinary = v.Next(Until(RowContaining("Foreign transactions")).Heading("K-1 Lines 1-21").Of(lines)),
-        Foreign = v.Next(Heading("Foreign transactions").Of(lines)),
+        var until = v.Next(Until(RowContaining("Foreign transactions")).Heading("K-1 Lines 1-21").Of(lines));
+        var heading = v.Next(Heading("Foreign transactions").Of(lines));
+
+        return v.Build(read => new
+        {
+          Ordinary = read.Of(until),
+          Foreign = read.Of(heading),
+        });
       }).Map(CaptionedSheet());
 
       Assert.Equal(new[] { "Ordinary income", "Interest income" }, report.Ordinary);
@@ -380,10 +427,16 @@ namespace Unrect.Tests.Projections
       // the caption that introduced it, and neither contains the other section's caption either.
       var lines = Table(0, r => r[0].Text());
 
-      var report = VerticalFlow(v => new
+      var report = VerticalFlow(v =>
       {
-        Ordinary = v.Next(Until(RowContaining("Foreign transactions")).Heading("K-1 Lines 1-21").Of(lines)),
-        Foreign = v.Next(Heading("Foreign transactions").Of(lines)),
+        var until = v.Next(Until(RowContaining("Foreign transactions")).Heading("K-1 Lines 1-21").Of(lines));
+        var heading = v.Next(Heading("Foreign transactions").Of(lines));
+
+        return v.Build(read => new
+        {
+          Ordinary = read.Of(until),
+          Foreign = read.Of(heading),
+        });
       }).Map(CaptionedSheet());
 
       Assert.DoesNotContain("K-1 Lines 1-21", report.Ordinary);
@@ -398,10 +451,16 @@ namespace Unrect.Tests.Projections
       // caption rows and the blank one the second section's seek crossed.
       var lines = Table(0, r => r[0].Text());
 
-      var report = VerticalFlow(v => new
+      var report = VerticalFlow(v =>
       {
-        Ordinary = v.Next(Until(RowContaining("Foreign transactions")).Heading("K-1 Lines 1-21").Of(lines)),
-        Foreign = v.Next(Heading("Foreign transactions").Of(lines)),
+        var until = v.Next(Until(RowContaining("Foreign transactions")).Heading("K-1 Lines 1-21").Of(lines));
+        var heading = v.Next(Heading("Foreign transactions").Of(lines));
+
+        return v.Build(read => new
+        {
+          Ordinary = read.Of(until),
+          Foreign = read.Of(heading),
+        });
       });
 
       var result = report.MapWithDiagnostics(CaptionedSheet());

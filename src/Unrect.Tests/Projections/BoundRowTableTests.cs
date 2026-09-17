@@ -112,10 +112,17 @@ namespace Unrect.Tests.Projections
     /// signature — the spelling the rung recommends, and the one that gives every record a name.
     /// </summary>
     private static IProjection<ISheetCells, Allocation> AllocationRow(LabelMap captions)
-      => Overlay(o => new Allocation(
-        Account: o.Next(Right(captions["Account"]).Of(Text())),
-        Symbol: o.Next(Right(captions["Symbol"]).Of(Text())),
-        Weight: o.Next(Right(captions["Weight"]).Of(Decimal()))));
+      => Overlay(o =>
+      {
+        var right = o.Next(Right(captions["Account"]).Of(Text()));
+        var right2 = o.Next(Right(captions["Symbol"]).Of(Text()));
+        var right3 = o.Next(Right(captions["Weight"]).Of(Decimal()));
+
+        return o.Build(read => new Allocation(
+          Account: read.Of(right),
+          Symbol: read.Of(right2),
+          Weight: read.Of(right3)));
+      });
 
     // --- 1. The bind runs exactly once per APPLICATION of the table ------------------------------------
     //
@@ -461,11 +468,17 @@ namespace Unrect.Tests.Projections
     }
 
     private static IProjection<ISpreadsheetSpace, SourcedAllocation> SourcedRow(LabelMap captions)
-      => ProjectionBuilders<ISpreadsheetSpace>.Overlay(o => new SourcedAllocation(
-        Account: o.Next(ProjectionBuilders<ISpreadsheetSpace>.Right(captions["Account"])
-          .Of(SpreadsheetProjections.Text<ISpreadsheetSpace>())),
-        Formula: o.Next(ProjectionBuilders<ISpreadsheetSpace>.Right(captions["Total"])
-          .Of(SpreadsheetProjections.Formula<ISpreadsheetSpace>()))));
+      => ProjectionBuilders<ISpreadsheetSpace>.Overlay(o =>
+      {
+        var projectionBuilders = o.Next(ProjectionBuilders<ISpreadsheetSpace>.Right(captions["Account"])
+            .Of(SpreadsheetProjections.Text<ISpreadsheetSpace>()));
+        var projectionBuilders2 = o.Next(ProjectionBuilders<ISpreadsheetSpace>.Right(captions["Total"])
+            .Of(SpreadsheetProjections.Formula<ISpreadsheetSpace>()));
+
+        return o.Build(read => new SourcedAllocation(
+          Account: read.Of(projectionBuilders),
+          Formula: read.Of(projectionBuilders2)));
+      });
 
     [Fact]
     public void ABindReturningADemandingRowMakesTheTableDemandIt()
@@ -523,10 +536,17 @@ namespace Unrect.Tests.Projections
       // The contrast that gives the claim above its meaning: the same three columns read by
       // adjacency instead of by caption. Over the canonical order it agrees; over the reordered one
       // it does not even typecheck against the file.
-      var positional = Table(headerRows: 1, eachRow: HorizontalFlow(h => new Allocation(
-        Account: h.Next(Text()),
-        Symbol: h.Next(Text()),
-        Weight: h.Next(Decimal()))));
+      var positional = Table(headerRows: 1, eachRow: HorizontalFlow(h =>
+      {
+        var textSlot = h.Next(Text());
+        var textSlot2 = h.Next(Text());
+        var decimalSlot = h.Next(Decimal());
+
+        return h.Build(read => new Allocation(
+          Account: read.Of(textSlot),
+          Symbol: read.Of(textSlot2),
+          Weight: read.Of(decimalSlot)));
+      }));
 
       Assert.Equal(TheThreeRecords(), positional.Map(Allocations()));
 

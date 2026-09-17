@@ -189,7 +189,9 @@ namespace Unrect.Tests.Projections
       var result = VerticalFlow(v =>
       {
         v.Next(TextCell().Named("a").Optional());
-        return v.Next(TextCell().Named("b").Optional());
+        var textCell = v.Next(TextCell().Named("b").Optional());
+
+        return v.Build(read => read.Of(textCell));
       }).MapWithDiagnostics(space);
 
       Assert.Equal(2, result.Diagnostics.Count(d => d.Severity == DiagnosticSeverity.Warning));
@@ -219,7 +221,9 @@ namespace Unrect.Tests.Projections
       var result = VerticalFlow(v =>
       {
         v.Next(TextCell().Optional());
-        return v.Next(IntCell());
+        var intCell = v.Next(IntCell());
+
+        return v.Build(read => read.Of(intCell));
       }).MapWithDiagnostics(space);
 
       Assert.Contains(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Info && d.Message.Contains("not described"));
@@ -243,8 +247,12 @@ namespace Unrect.Tests.Projections
       var space = Mixed(new object?[,] { { "x" }, { 5 } });
 
       var choice = Choice(
-        VerticalFlow(v => { v.Next(IntCell()); return v.Next(IntCell()); }).Named("A"),
-        VerticalFlow(v => { v.Next(TextCell()); return v.Next(IntCell()); }).Named("B"));
+        VerticalFlow(v => { v.Next(IntCell()); var intCell = v.Next(IntCell());
+
+        return v.Build(read => read.Of(intCell)); }).Named("A"),
+        VerticalFlow(v => { v.Next(TextCell()); var intCell = v.Next(IntCell());
+
+        return v.Build(read => read.Of(intCell)); }).Named("B"));
 
       Assert.All(
         choice.MapWithDiagnostics(space).Diagnostics,
@@ -283,7 +291,9 @@ namespace Unrect.Tests.Projections
         VerticalFlow(v =>
         {
           v.Next(TextCell().Named("label"));
-          return (string?)v.Next(Row(2, r => r[0].Text()).Named("body"));
+          var rowSlot = v.Next(Row(2, r => r[0].Text()).Named("body"));
+
+          return v.Build(read => (string?)read.Of(rowSlot));
         });
 
       var item = On(RowContaining("Section")).Of(section

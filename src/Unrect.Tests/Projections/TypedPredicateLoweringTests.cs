@@ -87,8 +87,18 @@ namespace Unrect.Tests.Projections
         return cell.HasValue;
       })).Of(Range(block => block.Height));
 
-      var declaration = VerticalFlow(outer => outer.Next(
-        Down(1).Of(VerticalFlow(middle => middle.Next(Right(2).Of(inner))))));
+      var declaration = VerticalFlow(outer =>
+      {
+        var down = outer.Next(
+          Down(1).Of(VerticalFlow(middle =>
+          {
+            var right = middle.Next(Right(2).Of(inner));
+
+            return middle.Build(read => read.Of(right));
+          })));
+
+        return outer.Build(read => read.Of(down));
+      });
 
       declaration.Map(sheet);
 
@@ -141,7 +151,12 @@ namespace Unrect.Tests.Projections
         return new Size(plane.Width, 2);
       })).Of(Range(block => block.Height));
 
-      var declaration = Sized(RowsWhileAnyValue()).Of(VerticalFlow(v => v.Next(Down(1).Of(child))));
+      var declaration = Sized(RowsWhileAnyValue()).Of(VerticalFlow(v =>
+      {
+        var down = v.Next(Down(1).Of(child));
+
+        return v.Build(read => read.Of(down));
+      }));
 
       Assert.Equal(2, declaration.Map(counter));
 
@@ -195,7 +210,12 @@ namespace Unrect.Tests.Projections
         return plane[0, row].AsText() == "32";
       })).Of(Row(strip => strip[0].AsText()));
 
-      var found = Down(2).Right(1).Of(VerticalFlow(v => v.Next(anchored)));
+      var found = Down(2).Right(1).Of(VerticalFlow(v =>
+      {
+        var anchored2 = v.Next(anchored);
+
+        return v.Build(read => read.Of(anchored2));
+      }));
 
       Assert.Equal("32", found.Map(sheet));
 

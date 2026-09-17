@@ -179,17 +179,22 @@ namespace Unrect.Projections
       where TSpace : class, ISpace
       => new FlowProjection<TSpace, T>(
         Orientation.Vertical,
-        cursor =>
-        {
-          // declared: null at both sites, and it is mandatory. Left to the compiler, the naming
-          // ladder would read the argument text from inside HERE and label every caption 'caption'
-          // and the section 'projection' — identifiers the user never wrote. Capture reads the
-          // immediate call site, so a helper has to opt out.
-          foreach (var caption in captions)
-            cursor.Next((IProjection<TSpace, string>)caption, declared: null);
+        LayoutBuilder<TSpace>.Declare<T>(
+          cursor =>
+          {
+            // declared: null at both sites, and it is mandatory. Left to the compiler, the naming
+            // ladder would read the argument text from inside HERE and label every caption 'caption'
+            // and the section 'projection' — identifiers the user never wrote. Capture reads the
+            // immediate call site, so a helper has to opt out.
+            foreach (var caption in captions)
+              cursor.Next((IProjection<TSpace, string>)caption, declared: null);
 
-          return cursor.Next(projection, declared: null);
-        },
+            var section = cursor.Next(projection, declared: null);
+
+            return cursor.Build(read => read.Of(section));
+          },
+          "a flow",
+          nameof(projection)),
         Placement.Default,
         description: "Heading");
 

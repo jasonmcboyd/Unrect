@@ -126,7 +126,13 @@ namespace Unrect.Tests.Projections
 
       var below = Below(Detail()).Of(Text());
 
-      Assert.Equal("a|c", HorizontalFlow(h => $"{h.Next(Text())}|{h.Next(below)}").Map(space));
+      Assert.Equal("a|c", HorizontalFlow(h =>
+      {
+        var textSlot = h.Next(Text());
+        var below2 = h.Next(below);
+
+        return h.Build(read => $"{read.Of(textSlot)}|{read.Of(below2)}");
+      }).Map(space));
     }
 
     [Fact]
@@ -140,7 +146,13 @@ namespace Unrect.Tests.Projections
 
       var right = RightOf(DetailColumn()).Of(Text());
 
-      Assert.Equal("a|b", VerticalFlow(v => $"{v.Next(Text())}|{v.Next(right)}").Map(space));
+      Assert.Equal("a|b", VerticalFlow(v =>
+      {
+        var textSlot = v.Next(Text());
+        var right2 = v.Next(right);
+
+        return v.Build(read => $"{read.Of(textSlot)}|{read.Of(right2)}");
+      }).Map(space));
     }
 
     // --- Replace a default, refuse a declaration ---------------------------------------------------------

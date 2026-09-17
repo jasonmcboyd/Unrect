@@ -71,7 +71,11 @@ new
 // by default, but includes it under strict fidelity. The window is declared, not sliced off the
 // space: an overlay hands its whole extent to its child, so the Range keeps its own discovery and
 // only has less to discover in. (Sized ON the Range would replace that discovery with the 4x4.)
-var block = Sized(Extent(4, 4)).Of(Overlay(o => o.Next(Range(b => $"{b.Width}x{b.Height}"))));
+var block = Sized(Extent(4, 4)).Of(Overlay(o =>
+{
+	var extent = o.Next(Range(b => $"{b.Width}x{b.Height}"));
+	return o.Build(read => read.Of(extent));
+}));
 new
 {
 	Default = block.Map(defaultSpace),

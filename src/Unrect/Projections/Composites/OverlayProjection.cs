@@ -10,14 +10,14 @@ namespace Unrect.Projections
   internal sealed class OverlayProjection<TSpace, T> : LayoutProjection<TSpace, T>
     where TSpace : class, ISpace
   {
-    public OverlayProjection(Layout<TSpace, T> build, Placement placement)
-      : base(build, placement)
+    public OverlayProjection(Layout<TSpace, T> layout, Placement placement)
+      : base(layout, placement)
     {
     }
 
     public override string Description => "Overlay";
 
     protected override LayoutState<TSpace> NewState(Plane<TSpace> extent, ProjectionContext context)
-      => new OverlayState<TSpace>(this, extent, context);
+      => new OverlayState<TSpace>(extent, context);
   }
 }

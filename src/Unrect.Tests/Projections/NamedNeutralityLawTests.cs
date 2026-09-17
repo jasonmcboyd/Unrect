@@ -54,7 +54,13 @@ namespace Unrect.Tests.Projections
     {
       // A composite's extent is derived from its children, so a name that reached the derivation
       // would show up here as a different consumed extent rather than as a different word.
-      var flow = VerticalFlow(v => v.Next(IntCell()) + v.Next(IntCell()));
+      var flow = VerticalFlow(v =>
+      {
+        var intCell = v.Next(IntCell());
+        var intCell2 = v.Next(IntCell());
+
+        return v.Build(read => read.Of(intCell) + read.Of(intCell2));
+      });
 
       AssertL2(Observe(flow, Ladder()), Observe(flow.Named("header"), Ladder()));
     }
@@ -109,7 +115,13 @@ namespace Unrect.Tests.Projections
       var summary = Text();
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(summary.Named("summary"))}").Map(Ladder()));
+        VerticalFlow(v =>
+        {
+          var intCell = v.Next(IntCell());
+          var summary2 = v.Next(summary.Named("summary"));
+
+          return v.Build(read => $"{read.Of(intCell)}{read.Of(summary2)}");
+        }).Map(Ladder()));
 
       Assert.Equal("'summary'", failure.Subject);
       Assert.Equal("VerticalFlow -> 'summary' (Text)", failure.Path);
@@ -123,10 +135,24 @@ namespace Unrect.Tests.Projections
       var second = IntCell();
 
       var plain = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(second)}{v.Next(Text())}").Map(Ladder()));
+        VerticalFlow(v =>
+        {
+          var intCell = v.Next(IntCell());
+          var second2 = v.Next(second);
+          var textSlot = v.Next(Text());
+
+          return v.Build(read => $"{read.Of(intCell)}{read.Of(second2)}{read.Of(textSlot)}");
+        }).Map(Ladder()));
 
       var named = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(second.Named("middle"))}{v.Next(Text())}").Map(Ladder()));
+        VerticalFlow(v =>
+        {
+          var intCell = v.Next(IntCell());
+          var second2 = v.Next(second.Named("middle"));
+          var textSlot = v.Next(Text());
+
+          return v.Build(read => $"{read.Of(intCell)}{read.Of(second2)}{read.Of(textSlot)}");
+        }).Map(Ladder()));
 
       Assert.Equal("Text#3", plain.Subject);
       Assert.Equal("Text#3", named.Subject);

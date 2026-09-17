@@ -293,7 +293,9 @@ namespace Unrect.Tests.Projections
         v.Next(Row(cells => cells.Count));
         v.Next(Row(cells => cells.Count));
 
-        return v.Next(Range(WholeExtent(), block => block.Space.Origin));
+        var rangeSlot = v.Next(Range(WholeExtent(), block => block.Space.Origin));
+
+        return v.Build(read => read.Of(rangeSlot));
       }).Map(CoordinateGrid(4, 10));
 
       Assert.Equal(0, origin.Width);

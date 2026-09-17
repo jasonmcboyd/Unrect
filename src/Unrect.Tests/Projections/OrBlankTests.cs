@@ -198,7 +198,12 @@ namespace Unrect.Tests.Projections
       // Where the description is actually read: a declaration that tolerated a blank and still met
       // the wrong kind should say which of the two readings was declared.
       var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v => v.Next(Decimal().OrBlank())).Map(One("n/a")));
+        VerticalFlow(v =>
+        {
+          var decimalSlot = v.Next(Decimal().OrBlank());
+
+          return v.Build(read => read.Of(decimalSlot));
+        }).Map(One("n/a")));
 
       Assert.Equal("VerticalFlow -> Decimal?#1", failure.Path);
       Assert.Equal("Decimal?#1", failure.Subject);
@@ -212,7 +217,12 @@ namespace Unrect.Tests.Projections
       var primary = Decimal().OrBlank();
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v => v.Next(primary)).Map(One("n/a")));
+        VerticalFlow(v =>
+        {
+          var primary2 = v.Next(primary);
+
+          return v.Build(read => read.Of(primary2));
+        }).Map(One("n/a")));
 
       Assert.Equal("VerticalFlow -> 'primary' (Decimal?)", failure.Path);
     }

@@ -167,7 +167,13 @@ namespace Unrect.Tests.Spreadsheets
       var value = Decimal();
       var formula = Right(1).Of(Formula());
 
-      var line = Overlay(o => (Value: o.Next(value), Formula: o.Next(formula)));
+      var line = Overlay(o =>
+      {
+        var valueSlot = o.Next(value);
+        var formula2 = o.Next(formula);
+
+        return o.Build(read2 => (Value: read2.Of(valueSlot), Formula: read2.Of(formula2)));
+      });
 
       var read = Down(1).Of(line).Map(Sheet());
 

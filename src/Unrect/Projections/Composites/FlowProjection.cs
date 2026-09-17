@@ -9,8 +9,8 @@ namespace Unrect.Projections
   internal sealed class FlowProjection<TSpace, T> : LayoutProjection<TSpace, T>
     where TSpace : class, ISpace
   {
-    public FlowProjection(Orientation orientation, Layout<TSpace, T> build, Placement placement, string? description = null)
-      : base(build, placement)
+    public FlowProjection(Orientation orientation, Layout<TSpace, T> layout, Placement placement, string? description = null)
+      : base(layout, placement)
     {
       Orientation = orientation;
       Declared = description;
@@ -30,6 +30,6 @@ namespace Unrect.Projections
       => Declared ?? (Orientation == Orientation.Vertical ? "VerticalFlow" : "HorizontalFlow");
 
     protected override LayoutState<TSpace> NewState(Plane<TSpace> extent, ProjectionContext context)
-      => new FlowState<TSpace>(this, Orientation, extent, context);
+      => new FlowState<TSpace>(Orientation, extent, context);
   }
 }

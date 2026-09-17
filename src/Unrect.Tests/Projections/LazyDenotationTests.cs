@@ -154,14 +154,19 @@ namespace Unrect.Tests.Projections
 
       // The same bound reached through a layout, which is where the deferred extent stops being the
       // root's and becomes a child's — and where a sibling's placement depends on what it consumed.
-      "flow" => Scenario.Of(VerticalFlow(v => v.Next(Range(RowsWhileAnyValue(), b => b.Height))), Sheet()),
+      "flow" => Scenario.Of(VerticalFlow(v =>
+      {
+        var rangeSlot = v.Next(Range(RowsWhileAnyValue(), b => b.Height));
+
+        return v.Build(read2 => read2.Of(rangeSlot));
+      }), Sheet()),
       "flow of two children" => Scenario.Of(
         VerticalFlow(v =>
         {
           var head = v.Next(Range(RowsWhileAnyValue(), b => b.Height));
           var tail = v.Next(Range(WholeExtent(), b => b.Height));
 
-          return head * 100 + tail;
+          return v.Build(read => read.Of(head) * 100 + read.Of(tail));
         }),
         Sheet()),
 
@@ -255,7 +260,13 @@ namespace Unrect.Tests.Projections
       // flow, a band read in part, and a headered table whose header is consumed rather than
       // projected.
       "table with a row projection" => Scenario.Of(
-        Sized(RowsWhileAnyValue()).Of(Table(0, eachRow: HorizontalFlow(h => $"{h.Next(IntCell())}/{h.Next(IntCell())}"))),
+        Sized(RowsWhileAnyValue()).Of(Table(0, eachRow: HorizontalFlow(h =>
+        {
+          var intCell = h.Next(IntCell());
+          var intCell2 = h.Next(IntCell());
+
+          return h.Build(read => $"{read.Of(intCell)}/{read.Of(intCell2)}");
+        }))),
         Sheet()),
       "row projection reading part of its band" => Scenario.Of(
         Sized(RowsWhileAnyValue()).Of(Table(0, eachRow: IntCell())),
@@ -283,7 +294,13 @@ namespace Unrect.Tests.Projections
       // The undecorated slot form, which is the one people write: a discovered block, deferred since
       // the width/height interleave landed.
       "table with a row projection, default placement" => Scenario.Of(
-        Table(0, eachRow: HorizontalFlow(h => $"{h.Next(IntCell())}/{h.Next(IntCell())}")),
+        Table(0, eachRow: HorizontalFlow(h =>
+        {
+          var intCell = h.Next(IntCell());
+          var intCell2 = h.Next(IntCell());
+
+          return h.Build(read => $"{read.Of(intCell)}/{read.Of(intCell2)}");
+        })),
         Sheet()),
 
       // The table view reached directly, where the projection asks for the dimension query the
@@ -431,7 +448,12 @@ namespace Unrect.Tests.Projections
       {
         "Range(strategy)" => project => Range(RowsWhileAnyValue(), project),
         "Sized" => project => Sized(RowsWhileAnyValue()).Of(Range(project)),
-        "inside a flow" => project => VerticalFlow(v => v.Next(Range(RowsWhileAnyValue(), project))),
+        "inside a flow" => project => VerticalFlow(v =>
+        {
+          var rangeSlot = v.Next(Range(RowsWhileAnyValue(), project));
+
+          return v.Build(read => read.Of(rangeSlot));
+        }),
         "under Optional" => project => Range(RowsWhileAnyValue(), project).Optional(),
 
         _ => throw new ArgumentOutOfRangeException(nameof(spelling), spelling, "No such spelling."),
@@ -560,9 +582,24 @@ namespace Unrect.Tests.Projections
       {
         // A fixed 3x1 child so the child's own placement has nothing to discover: what is measured
         // here is the parent's bound being settled, not the child's.
-        "VerticalFlow" => project => Sized(RowsWhileAnyValue()).Of(VerticalFlow(v => v.Next(Range(3, 1, project)))),
-        "HorizontalFlow" => project => Sized(RowsWhileAnyValue()).Of(HorizontalFlow(h => h.Next(Range(3, 1, project)))),
-        "Overlay" => project => Sized(RowsWhileAnyValue()).Of(Overlay(o => o.Next(Range(3, 1, project)))),
+        "VerticalFlow" => project => Sized(RowsWhileAnyValue()).Of(VerticalFlow(v =>
+        {
+          var rangeSlot = v.Next(Range(3, 1, project));
+
+          return v.Build(read => read.Of(rangeSlot));
+        })),
+        "HorizontalFlow" => project => Sized(RowsWhileAnyValue()).Of(HorizontalFlow(h =>
+        {
+          var rangeSlot = h.Next(Range(3, 1, project));
+
+          return h.Build(read => read.Of(rangeSlot));
+        })),
+        "Overlay" => project => Sized(RowsWhileAnyValue()).Of(Overlay(o =>
+        {
+          var rangeSlot = o.Next(Range(3, 1, project));
+
+          return o.Build(read => read.Of(rangeSlot));
+        })),
 
         _ => throw new ArgumentOutOfRangeException(nameof(layout), layout, "No such layout."),
       };

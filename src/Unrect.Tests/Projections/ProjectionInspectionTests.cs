@@ -15,9 +15,10 @@ namespace Unrect.Tests.Projections
 {
   /// <summary>
   /// A projection is an inspectable value, not a closure over a file: its name, description and
-  /// placement can all be read without ever handing it a space, and so can its children — except
-  /// for a layout composite, which declares its children by running a lambda and therefore has none
-  /// to show. That one says so rather than passing for a leaf, through <c>Opacity</c>.
+  /// placement can all be read without ever handing it a space, and so can its children — a
+  /// layout's included, since its lambda ran once when it was declared. The one node whose child
+  /// is built from data, the bind rung, says so rather than passing for a leaf, through
+  /// <c>Opacity</c>.
   /// <para>
   /// What is left readable is what makes the wave-3 diagnostics (dry runs, traces, capability
   /// checks) possible, and it is what makes one projection safe to apply to many spaces at once.
@@ -53,9 +54,27 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void CompositesDescribeThemselvesStructurally()
     {
-      Assert.Equal("VerticalFlow", VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(IntCell())}").Description);
-      Assert.Equal("HorizontalFlow", HorizontalFlow(h => $"{h.Next(IntCell())}{h.Next(IntCell())}").Description);
-      Assert.Equal("Overlay", Overlay(o => $"{o.Next(IntCell())}{o.Next(IntCell())}").Description);
+      Assert.Equal("VerticalFlow", VerticalFlow(v =>
+      {
+        var intCell = v.Next(IntCell());
+        var intCell2 = v.Next(IntCell());
+
+        return v.Build(read => $"{read.Of(intCell)}{read.Of(intCell2)}");
+      }).Description);
+      Assert.Equal("HorizontalFlow", HorizontalFlow(h =>
+      {
+        var intCell = h.Next(IntCell());
+        var intCell2 = h.Next(IntCell());
+
+        return h.Build(read => $"{read.Of(intCell)}{read.Of(intCell2)}");
+      }).Description);
+      Assert.Equal("Overlay", Overlay(o =>
+      {
+        var intCell = o.Next(IntCell());
+        var intCell2 = o.Next(IntCell());
+
+        return o.Build(read => $"{read.Of(intCell)}{read.Of(intCell2)}");
+      }).Description);
       Assert.Equal("VerticalRepeat", VerticalRepeat(IntCell()).Description);
       Assert.Equal("HorizontalRepeat", HorizontalRepeat(IntCell()).Description);
       Assert.Equal("Select", IntCell().Select(v => v + 1).Description);
@@ -89,17 +108,29 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void ALayoutCompositeHasNoChildrenToExpose()
+    public void ALayoutCompositeExposesItsChildrenComplete()
     {
-      // The cost of declaring children by calling Next: what a layout declares is knowable only by
-      // running it. An empty Children would read as "leaf" to a renderer, so the marker says why.
-      var flow = VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(IntCell())}");
-      var overlay = Overlay(o => $"{o.Next(IntCell())}{o.Next(IntCell())}");
+      // Declaring children by calling Next costs nothing here: the lambda ran once, at declaration,
+      // so what a layout declares is complete before any space exists and it hides nothing.
+      var flow = VerticalFlow(v =>
+      {
+        var intCell = v.Next(IntCell());
+        var intCell2 = v.Next(IntCell());
 
-      Assert.Empty(flow.Children);
-      Assert.Empty(overlay.Children);
-      Assert.Equal(Reason(flow), Reason(overlay));
-      Assert.Equal("declared by a cursor lambda; children are known only while it runs", Reason(flow));
+        return v.Build(read => $"{read.Of(intCell)}{read.Of(intCell2)}");
+      });
+      var overlay = Overlay(o =>
+      {
+        var intCell = o.Next(IntCell());
+        var intCell2 = o.Next(IntCell());
+
+        return o.Build(read => $"{read.Of(intCell)}{read.Of(intCell2)}");
+      });
+
+      Assert.Equal(2, flow.Children.Count);
+      Assert.Equal(2, overlay.Children.Count);
+      Assert.Null(Reason(flow));
+      Assert.Null(Reason(overlay));
     }
 
     [Fact]
@@ -144,7 +175,6 @@ namespace Unrect.Tests.Projections
     [Theory]
     [InlineData("Table(view lambda)")]
     [InlineData("Table(row lambda)")]
-    [InlineData("Table<T>")]
     [InlineData("Table()")]
     public void ButTheLambdaRungsHaveNoneToShow(string rung)
     {
@@ -155,7 +185,6 @@ namespace Unrect.Tests.Projections
       {
         "Table(view lambda)" => Table(table => table.RowCount),
         "Table(row lambda)" => Table(row => row.Index),
-        "Table<T>" => Table<Entry>(),
         "Table()" => Table(),
 
         _ => throw new System.ArgumentOutOfRangeException(nameof(rung), rung, "No such rung."),
@@ -163,9 +192,23 @@ namespace Unrect.Tests.Projections
 
       Assert.Empty(projection.Children);
 
-      // ...and unlike a layout composite, a table does not claim to be hiding anything: it has no
-      // opacity marker, because with a lambda in the slot there was never a child to declare.
+      // ...and a lambda rung does not claim to be hiding anything: it has no opacity marker,
+      // because with a lambda in the slot there was never a child to declare.
       Assert.Null(Reason(projection));
+    }
+
+    [Fact]
+    public void TheBindRungSaysWhyItsChildIsMissing()
+    {
+      // The one shipped node whose child is manufactured from data: the row projection exists only
+      // once a header has been read, so an empty Children would be a lie and the rung says why. The
+      // reflective Table<T> is the bind rung underneath, so it says the same.
+      var bound = Table(1, (LabelMap labels) => IntCell());
+      var reflected = Table<Entry>();
+
+      Assert.Empty(bound.Children);
+      Assert.Equal("the row projection is built from the header's captions; it is known only once a header is read", Reason(bound));
+      Assert.Equal(Reason(bound), Reason(reflected));
     }
 
     /// <summary>What the typed rung binds a row to — a shape for the theory above and nothing more.</summary>
@@ -174,16 +217,23 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ATableWithARowProjectionCanBeWalkedIntoWithoutASpace()
     {
-      // The dry-run traversal, one level deeper than it could go before: the walk enters the record
-      // and stops where the record's own layout is, reporting why rather than pretending it is a
-      // leaf.
-      var allocation = Overlay(o => $"{o.Next(IntCell())}{o.Next(IntCell())}").Named("allocation");
+      // The dry-run traversal, all the way down: the walk enters the record and its layout, and
+      // reaches the leaves, with no space anywhere.
+      var allocation = Overlay(o =>
+      {
+        var intCell = o.Next(IntCell());
+        var intCell2 = o.Next(IntCell());
+
+        return o.Build(read => $"{read.Of(intCell)}{read.Of(intCell2)}");
+      }).Named("allocation");
 
       Assert.Equal(
         new[]
         {
           "Table",
-          "  'allocation' (Overlay) [opaque: declared by a cursor lambda; children are known only while it runs]",
+          "  'allocation' (Overlay)",
+          "    Integer",
+          "    Integer",
         },
         Describe(Table(0, allocation)).ToArray());
     }
@@ -213,7 +263,13 @@ namespace Unrect.Tests.Projections
 
       // Projections that are levels of the tree in their own right never are.
       Assert.False(IntCell().IsWrapper);
-      Assert.False(VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(IntCell())}").IsWrapper);
+      Assert.False(VerticalFlow(v =>
+      {
+        var intCell = v.Next(IntCell());
+        var intCell2 = v.Next(IntCell());
+
+        return v.Build(read => $"{read.Of(intCell)}{read.Of(intCell2)}");
+      }).IsWrapper);
       Assert.False(VerticalRepeat(IntCell()).IsWrapper);
     }
 
@@ -230,7 +286,13 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void CompositesDeriveTheirArea()
     {
-      Assert.Null(VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(IntCell())}").Placement.Area);
+      Assert.Null(VerticalFlow(v =>
+      {
+        var intCell = v.Next(IntCell());
+        var intCell2 = v.Next(IntCell());
+
+        return v.Build(read => $"{read.Of(intCell)}{read.Of(intCell2)}");
+      }).Placement.Area);
       Assert.Null(VerticalRepeat(IntCell()).Placement.Area);
       Assert.Null(IntCell().Select(v => v).Placement.Area);
     }
@@ -262,15 +324,23 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void TheWalkStopsAtALayoutAndSaysWhy()
+    public void TheWalkGoesThroughALayout()
     {
-      var projection = VerticalRepeat(VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(IntCell())}").Named("block"));
+      var projection = VerticalRepeat(VerticalFlow(v =>
+      {
+        var intCell = v.Next(IntCell());
+        var intCell2 = v.Next(IntCell());
+
+        return v.Build(read => $"{read.Of(intCell)}{read.Of(intCell2)}");
+      }).Named("block"));
 
       Assert.Equal(
         new[]
         {
           "VerticalRepeat",
-          "  'block' (VerticalFlow) [opaque: declared by a cursor lambda; children are known only while it runs]",
+          "  'block' (VerticalFlow)",
+          "    Integer",
+          "    Integer",
         },
         Describe(projection).ToArray());
     }
@@ -298,7 +368,13 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void OneProjectionCanBeAppliedToManyDifferentSpaces()
     {
-      var projection = VerticalFlow(v => (v.Next(IntCell()), v.Next(VerticalRepeat(IntCell()))));
+      var projection = VerticalFlow(v =>
+      {
+        var intCell = v.Next(IntCell());
+        var verticalRepeat = v.Next(VerticalRepeat(IntCell()));
+
+        return v.Build(read => (read.Of(intCell), read.Of(verticalRepeat)));
+      });
 
       Assert.Equal("1:2,3", Read(projection, Grid(new[,] { { 1 }, { 2 }, { 3 } })));
       Assert.Equal("9:8", Read(projection, Grid(new[,] { { 9 }, { 8 } })));
@@ -309,7 +385,13 @@ namespace Unrect.Tests.Projections
     public void OneProjectionCanBeAppliedToManySpacesConcurrently()
     {
       // The context tree is built per Map call, so nothing is shared between concurrent runs.
-      var projection = VerticalFlow(v => (v.Next(IntCell()), v.Next(VerticalRepeat(IntCell()))));
+      var projection = VerticalFlow(v =>
+      {
+        var intCell = v.Next(IntCell());
+        var verticalRepeat = v.Next(VerticalRepeat(IntCell()));
+
+        return v.Build(read => (read.Of(intCell), read.Of(verticalRepeat)));
+      });
 
       var spaces = Enumerable.Range(0, 64)
         .Select(seed => Grid(new[,] { { seed + 1 }, { seed + 2 }, { seed + 3 } }))

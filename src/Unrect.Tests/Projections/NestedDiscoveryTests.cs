@@ -96,7 +96,12 @@ namespace Unrect.Tests.Projections
       // engine started sharing one — the two tests after this one are the ones that go red when it
       // stops. Kept because it is the sentence a reader needs before those two make sense.
       var rows = Sized(NumericRowsOnly()).Of(
-        VerticalFlow(v => v.Next(Range(WholeExtent(), block => block.Rows.Count))));
+        VerticalFlow(v =>
+        {
+          var rangeSlot = v.Next(Range(WholeExtent(), block => block.Rows.Count));
+
+          return v.Build(read => read.Of(rangeSlot));
+        }));
 
       Assert.Equal(NumericRows, Read(rows, eager));
     }
@@ -110,7 +115,12 @@ namespace Unrect.Tests.Projections
       // row 2 is the region it was given. A child resolved against the raw sheet says six here and
       // nothing else in the reading looks wrong.
       var rows = Sized(NumericRowsOnly()).Of(
-        VerticalFlow(v => v.Next(Range(RowsWhileAnyValue(), block => block.Rows.Count))));
+        VerticalFlow(v =>
+        {
+          var rangeSlot = v.Next(Range(RowsWhileAnyValue(), block => block.Rows.Count));
+
+          return v.Build(read => read.Of(rangeSlot));
+        }));
 
       Assert.Equal(NumericRows, Read(rows, eager));
     }
@@ -124,7 +134,12 @@ namespace Unrect.Tests.Projections
       // space" is not merely tidy: begun over one object and folded over another, it replays state
       // taken from a sheet against a region, and the mismatch is silent.
       var rows = Sized(NumericRowsAndValuedColumns()).Of(
-        VerticalFlow(v => v.Next(Range(RowsWhileAnyValue(), block => block.Rows.Count))));
+        VerticalFlow(v =>
+        {
+          var rangeSlot = v.Next(Range(RowsWhileAnyValue(), block => block.Rows.Count));
+
+          return v.Build(read => read.Of(rangeSlot));
+        }));
 
       Assert.Equal(NumericRows, Read(rows, eager));
     }

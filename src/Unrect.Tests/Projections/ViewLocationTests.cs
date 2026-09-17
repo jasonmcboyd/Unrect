@@ -100,7 +100,13 @@ namespace Unrect.Tests.Projections
     {
       var band = Range(4, 1, b => b.Location.A1);
 
-      Assert.Equal("A1|A2", VerticalFlow(v => $"{v.Next(band)}|{v.Next(band)}").Map(CoordinateGrid()));
+      Assert.Equal("A1|A2", VerticalFlow(v =>
+      {
+        var band2 = v.Next(band);
+        var band3 = v.Next(band);
+
+        return v.Build(read => $"{read.Of(band2)}|{read.Of(band3)}");
+      }).Map(CoordinateGrid()));
     }
 
     [Fact]
@@ -110,7 +116,13 @@ namespace Unrect.Tests.Projections
       var corner = Range(1, 1, b => b.Location.A1);
       var inset = Down(1).Right(2).Of(Range(1, 1, b => b.Location.A1));
 
-      Assert.Equal("A1|C2", Overlay(o => $"{o.Next(corner)}|{o.Next(inset)}").Map(CoordinateGrid()));
+      Assert.Equal("A1|C2", Overlay(o =>
+      {
+        var corner2 = o.Next(corner);
+        var inset2 = o.Next(inset);
+
+        return o.Build(read => $"{read.Of(corner2)}|{read.Of(inset2)}");
+      }).Map(CoordinateGrid()));
     }
 
     [Fact]
@@ -130,7 +142,18 @@ namespace Unrect.Tests.Projections
       var corner = Range(1, 1, b => b.Location.A1);
 
       var address = VerticalFlow(v =>
-        $"{v.Next(band)}|{v.Next(Overlay(o => $"{o.Next(padded)}/{o.Next(corner)}"))}")
+      {
+        var band2 = v.Next(band);
+        var overlay = v.Next(Overlay(o =>
+          {
+            var padded2 = o.Next(padded);
+            var corner2 = o.Next(corner);
+
+            return o.Build(read => $"{read.Of(padded2)}/{read.Of(corner2)}");
+          }));
+
+        return v.Build(read => $"{read.Of(band2)}|{read.Of(overlay)}");
+      })
         .Map(CoordinateGrid());
 
       Assert.Equal("A1|B2/A2", address);
@@ -205,7 +228,13 @@ namespace Unrect.Tests.Projections
       var caption = Range(2, 1, b => b.Location.A1);
       var amounts = Table(r => r.AddressOf("Amount").A1);
 
-      var address = VerticalFlow(v => $"{v.Next(caption)}|{string.Join(",", v.Next(amounts))}").Map(Mixed(new object?[,]
+      var address = VerticalFlow(v =>
+      {
+        var caption2 = v.Next(caption);
+        var amounts2 = v.Next(amounts);
+
+        return v.Build(read => $"{read.Of(caption2)}|{string.Join(",", read.Of(amounts2))}");
+      }).Map(Mixed(new object?[,]
       {
         { "ignored", "header" },
         { "Name", "Amount" },

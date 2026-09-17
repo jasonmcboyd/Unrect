@@ -158,7 +158,11 @@ namespace Unrect.Tests.Projections
       // One composite (the flow) above the table: the engine descends into the table, the table pushes
       // its scope, and the body bands advance from there — the whole chain must carry the labels.
       IReadOnlyList<Line> lines = VerticalFlow(v =>
-        v.Next(Table((TableRow<ISheetCells> row) => new Line(row["Investor"].Text(), row["Amount"].Decimal())))).Map(sheet);
+      {
+        var table = v.Next(Table((TableRow<ISheetCells> row) => new Line(row["Investor"].Text(), row["Amount"].Decimal())));
+
+        return v.Build(read => read.Of(table));
+      }).Map(sheet);
 
       Assert.Equal(new[] { new Line("Acme", 10m), new Line("Beta", 20m) }, lines);
     }

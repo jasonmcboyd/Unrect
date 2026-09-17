@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -34,7 +35,13 @@ namespace Unrect.Tests.Projections
     public void Overlay_AppliesEveryChildToTheSameExtent()
     {
       // Two children, each placing itself independently inside the one extent.
-      Assert.Equal("1|13", Overlay(o => $"{o.Next(IntCell())}|{o.Next(Down(1).Right(2).Of(IntCell()))}").Map(CoordinateGrid()));
+      Assert.Equal("1|13", Overlay(o =>
+      {
+        var intCell = o.Next(IntCell());
+        var down = o.Next(Down(1).Right(2).Of(IntCell()));
+
+        return o.Build(read => $"{read.Of(intCell)}|{read.Of(down)}");
+      }).Map(CoordinateGrid()));
     }
 
     [Fact]
@@ -42,8 +49,20 @@ namespace Unrect.Tests.Projections
     {
       // The distinguishing test, now cursor against cursor: the same two calls read one cell twice
       // in an overlay and two rows in a flow. Nothing but the composite differs.
-      Assert.Equal("1|1", Overlay(o => $"{o.Next(IntCell())}|{o.Next(IntCell())}").Map(CoordinateGrid()));
-      Assert.Equal("1|11", VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(IntCell())}").Map(CoordinateGrid()));
+      Assert.Equal("1|1", Overlay(o =>
+      {
+        var intCell = o.Next(IntCell());
+        var intCell2 = o.Next(IntCell());
+
+        return o.Build(read => $"{read.Of(intCell)}|{read.Of(intCell2)}");
+      }).Map(CoordinateGrid()));
+      Assert.Equal("1|11", VerticalFlow(v =>
+      {
+        var intCell = v.Next(IntCell());
+        var intCell2 = v.Next(IntCell());
+
+        return v.Build(read => $"{read.Of(intCell)}|{read.Of(intCell2)}");
+      }).Map(CoordinateGrid()));
     }
 
     [Fact]
@@ -51,7 +70,13 @@ namespace Unrect.Tests.Projections
     {
       // Deliberately no z-order and no occlusion: reading a cell twice is not a conflict.
       var read = Overlay(o =>
-        $"{o.Next(Range(2, 2, b => b[1, 0].Integer()))}|{o.Next(Right(1).Of(IntCell()))}|{o.Next(Right(1).Of(IntCell()))}");
+      {
+        var rangeSlot = o.Next(Range(2, 2, b => b[1, 0].Integer()));
+        var right = o.Next(Right(1).Of(IntCell()));
+        var right2 = o.Next(Right(1).Of(IntCell()));
+
+        return o.Build(read2 => $"{read2.Of(rangeSlot)}|{read2.Of(right)}|{read2.Of(right2)}");
+      });
 
       Assert.Equal("2|2|2", read.Map(CoordinateGrid()));
     }
@@ -59,7 +84,14 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void Overlay_ProjectsChildrenInDeclarationOrder()
     {
-      var result = Overlay(o => new[] { o.Next(IntCell()), o.Next(Right(1).Of(IntCell())), o.Next(Right(2).Of(IntCell())) })
+      var result = Overlay(o =>
+      {
+        var intCell = o.Next(IntCell());
+        var right = o.Next(Right(1).Of(IntCell()));
+        var right2 = o.Next(Right(2).Of(IntCell()));
+
+        return o.Build(read => new[] { read.Of(intCell), read.Of(right), read.Of(right2) });
+      })
         .Map(CoordinateGrid());
 
       Assert.Equal(new[] { 1, 2, 3 }, result);
@@ -71,7 +103,13 @@ namespace Unrect.Tests.Projections
     public void Overlay_SizesItselfToTheUnionOfItsChildrensFootprints()
     {
       // Per axis, the furthest any child reached: three columns across, two rows down.
-      var applied = Overlay(o => $"{o.Next(IntCell())}|{o.Next(Down(1).Right(2).Of(IntCell()))}").Apply(CoordinateGrid());
+      var applied = Overlay(o =>
+      {
+        var intCell = o.Next(IntCell());
+        var down = o.Next(Down(1).Right(2).Of(IntCell()));
+
+        return o.Build(read => $"{read.Of(intCell)}|{read.Of(down)}");
+      }).Apply(CoordinateGrid());
 
       Assert.Equal(3, applied.Consumed.Width);
       Assert.Equal(2, applied.Consumed.Height);
@@ -82,7 +120,13 @@ namespace Unrect.Tests.Projections
     {
       // The last child reaches least far; the bounding box is still the widest reach of any of
       // them.
-      var applied = Overlay(o => $"{o.Next(Right(3).Of(IntCell()))}|{o.Next(IntCell())}").Apply(CoordinateGrid());
+      var applied = Overlay(o =>
+      {
+        var right = o.Next(Right(3).Of(IntCell()));
+        var intCell = o.Next(IntCell());
+
+        return o.Build(read => $"{read.Of(right)}|{read.Of(intCell)}");
+      }).Apply(CoordinateGrid());
 
       Assert.Equal(4, applied.Consumed.Width);
       Assert.Equal(1, applied.Consumed.Height);
@@ -93,23 +137,47 @@ namespace Unrect.Tests.Projections
     {
       // What the derived extent is for: the overlay occupies one row here, so the next child of the
       // enclosing flow begins on the second.
-      var band = Overlay(o => $"{o.Next(IntCell())}|{o.Next(Right(2).Of(IntCell()))}");
+      var band = Overlay(o =>
+      {
+        var intCell = o.Next(IntCell());
+        var right = o.Next(Right(2).Of(IntCell()));
 
-      Assert.Equal("1|3/11", VerticalFlow(v => $"{v.Next(band)}/{v.Next(IntCell())}").Map(CoordinateGrid()));
+        return o.Build(read => $"{read.Of(intCell)}|{read.Of(right)}");
+      });
+
+      Assert.Equal("1|3/11", VerticalFlow(v =>
+      {
+        var band2 = v.Next(band);
+        var intCell = v.Next(IntCell());
+
+        return v.Build(read => $"{read.Of(band2)}/{read.Of(intCell)}");
+      }).Map(CoordinateGrid()));
     }
 
     [Fact]
     public void Sized_OverridesTheBoundingBox()
     {
       // Common for a header region, whose footprint on the sheet exceeds its sparse content.
-      var band = Sized(AreaStrategies.ExplicitArea(4, 2)).Of(Overlay(o => $"{o.Next(IntCell())}|{o.Next(Right(2).Of(IntCell()))}"));
+      var band = Sized(AreaStrategies.ExplicitArea(4, 2)).Of(Overlay(o =>
+      {
+        var intCell = o.Next(IntCell());
+        var right = o.Next(Right(2).Of(IntCell()));
+
+        return o.Build(read => $"{read.Of(intCell)}|{read.Of(right)}");
+      }));
 
       var applied = band.Apply(CoordinateGrid());
 
       Assert.Equal(4, applied.Consumed.Width);
       Assert.Equal(2, applied.Consumed.Height);
 
-      Assert.Equal("1|3/21", VerticalFlow(v => $"{v.Next(band)}/{v.Next(IntCell())}").Map(CoordinateGrid()));
+      Assert.Equal("1|3/21", VerticalFlow(v =>
+      {
+        var band2 = v.Next(band);
+        var intCell = v.Next(IntCell());
+
+        return v.Build(read => $"{read.Of(band2)}/{read.Of(intCell)}");
+      }).Map(CoordinateGrid()));
     }
 
     // --- Misfit is a hard error -----------------------------------------------------------------------
@@ -122,7 +190,13 @@ namespace Unrect.Tests.Projections
       var block = Range(9, 9, b => b.Width);
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        Overlay(o => $"{o.Next(IntCell())}|{o.Next(block)}").Map(CoordinateGrid()));
+        Overlay(o =>
+        {
+          var intCell = o.Next(IntCell());
+          var block2 = o.Next(block);
+
+          return o.Build(read => $"{read.Of(intCell)}|{read.Of(block2)}");
+        }).Map(CoordinateGrid()));
 
       Assert.Contains("an extent of 9x9 does not fit here", failure.Message);
       Assert.Equal("Overlay -> 'block' (Range)", failure.Path);
@@ -132,7 +206,13 @@ namespace Unrect.Tests.Projections
     public void Overlay_WhenAChildsOffsetRunsOff_Throws()
     {
       Assert.Throws<ProjectionException>(() =>
-        Overlay(o => $"{o.Next(IntCell())}|{o.Next(Right(9).Of(IntCell()))}").Map(CoordinateGrid()));
+        Overlay(o =>
+        {
+          var intCell = o.Next(IntCell());
+          var right = o.Next(Right(9).Of(IntCell()));
+
+          return o.Build(read => $"{read.Of(intCell)}|{read.Of(right)}");
+        }).Map(CoordinateGrid()));
     }
 
     // --- Context and diagnostics ----------------------------------------------------------------------
@@ -145,7 +225,13 @@ namespace Unrect.Tests.Projections
       var title = Down(1).Right(2).Of(TextCell());
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        Overlay(o => $"{o.Next(IntCell())}|{o.Next(title)}").Map(CoordinateGrid()));
+        Overlay(o =>
+        {
+          var intCell = o.Next(IntCell());
+          var title2 = o.Next(title);
+
+          return o.Build(read => $"{read.Of(intCell)}|{read.Of(title2)}");
+        }).Map(CoordinateGrid()));
 
       Assert.Equal("Overlay -> 'title' (Text)", failure.Path);
       Assert.Equal("C2", failure.Location.A1);
@@ -159,7 +245,13 @@ namespace Unrect.Tests.Projections
       var title = Right(1).Of(TextCell());
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        Down(1).Of(Overlay(o => $"{o.Next(IntCell())}|{o.Next(title)}")).Map(CoordinateGrid()));
+        Down(1).Of(Overlay(o =>
+        {
+          var intCell = o.Next(IntCell());
+          var title2 = o.Next(title);
+
+          return o.Build(read => $"{read.Of(intCell)}|{read.Of(title2)}");
+        })).Map(CoordinateGrid()));
 
       Assert.Equal("B2", failure.Location.A1);
     }
@@ -167,22 +259,34 @@ namespace Unrect.Tests.Projections
     // --- Inspection ------------------------------------------------------------------------------------
 
     [Fact]
-    public void AnOverlayDescribesItselfAndSaysWhyItsChildrenAreMissing()
+    public void AnOverlayDescribesItselfAndExposesItsChildren()
     {
-      // Every cursor composite is opaque: what it declares is knowable only by running it, so an
-      // empty Children would read as "leaf" to a renderer unless the marker said otherwise.
-      var overlay = Overlay(o => $"{o.Next(IntCell())}|{o.Next(Right(1).Of(IntCell()))}");
+      // The lambda ran once, at declaration, so an overlay's children are complete and it hides
+      // nothing from a renderer.
+      var overlay = Overlay(o =>
+      {
+        var intCell = o.Next(IntCell());
+        var right = o.Next(Right(1).Of(IntCell()));
+
+        return o.Build(read => $"{read.Of(intCell)}|{read.Of(right)}");
+      });
 
       Assert.Equal("Overlay", overlay.Description);
-      Assert.Empty(overlay.Children);
+      Assert.Equal(2, overlay.Children.Count);
       Assert.False(overlay.IsWrapper);
-      Assert.Equal("declared by a cursor lambda; children are known only while it runs", overlay.Opacity);
+      Assert.Null(overlay.Opacity);
     }
 
     [Fact]
     public void AnOverlayDerivesItsExtent()
     {
-      Assert.Null(Overlay(o => $"{o.Next(IntCell())}|{o.Next(IntCell())}").Placement.Area);
+      Assert.Null(Overlay(o =>
+      {
+        var intCell = o.Next(IntCell());
+        var intCell2 = o.Next(IntCell());
+
+        return o.Build(read => $"{read.Of(intCell)}|{read.Of(intCell2)}");
+      }).Placement.Area);
     }
 
     [Fact]
@@ -190,7 +294,13 @@ namespace Unrect.Tests.Projections
     {
       var space = Grid(new[,] { { 0, 0 }, { 1, 2 } });
 
-      var projection = AfterBlankRows().Of(Overlay(o => $"{o.Next(IntCell())}|{o.Next(Right(1).Of(IntCell()))}")).Named("header");
+      var projection = AfterBlankRows().Of(Overlay(o =>
+      {
+        var intCell = o.Next(IntCell());
+        var right = o.Next(Right(1).Of(IntCell()));
+
+        return o.Build(read => $"{read.Of(intCell)}|{read.Of(right)}");
+      })).Named("header");
 
       Assert.Equal("1|2", projection.Map(space));
       Assert.Equal("header", projection.Name);
@@ -202,12 +312,26 @@ namespace Unrect.Tests.Projections
     public void AnOverlayHasNoArityLimit()
     {
       // Children are Next calls, so there is no tuple to run out of and no nesting to reach for.
-      var projection = Overlay(o => string.Join(",", new[]
+      var projection = Overlay(o =>
       {
-        o.Next(IntCell()), o.Next(Right(1).Of(IntCell())), o.Next(Right(2).Of(IntCell())), o.Next(Right(3).Of(IntCell())),
-        o.Next(Down(1).Of(IntCell())), o.Next(Down(1).Right(1).Of(IntCell())), o.Next(Down(1).Right(2).Of(IntCell())),
-        o.Next(Down(2).Of(IntCell())), o.Next(Down(2).Right(1).Of(IntCell())), o.Next(Down(2).Right(2).Of(IntCell())),
-      }));
+        var intCell = o.Next(IntCell());
+        var right = o.Next(Right(1).Of(IntCell()));
+        var right2 = o.Next(Right(2).Of(IntCell()));
+        var right3 = o.Next(Right(3).Of(IntCell()));
+        var down = o.Next(Down(1).Of(IntCell()));
+        var down2 = o.Next(Down(1).Right(1).Of(IntCell()));
+        var down3 = o.Next(Down(1).Right(2).Of(IntCell()));
+        var down4 = o.Next(Down(2).Of(IntCell()));
+        var down5 = o.Next(Down(2).Right(1).Of(IntCell()));
+        var down6 = o.Next(Down(2).Right(2).Of(IntCell()));
+
+        return o.Build(read => string.Join(",", new[]
+        {
+          read.Of(intCell), read.Of(right), read.Of(right2), read.Of(right3),
+          read.Of(down), read.Of(down2), read.Of(down3),
+          read.Of(down4), read.Of(down5), read.Of(down6),
+        }));
+      });
 
       Assert.Equal("1,2,3,4,11,12,13,21,22,23", projection.Map(CoordinateGrid()));
     }
@@ -229,7 +353,18 @@ namespace Unrect.Tests.Projections
       var items = Table(r => r["Amount"].Integer());
 
       var projection = VerticalFlow(v =>
-        $"{v.Next(Overlay(o => $"{o.Next(entity)}/{o.Next(year)}"))}|{string.Join(",", v.Next(items))}");
+      {
+        var overlay = v.Next(Overlay(o =>
+          {
+            var entity2 = o.Next(entity);
+            var year2 = o.Next(year);
+
+            return o.Build(read => $"{read.Of(entity2)}/{read.Of(year2)}");
+          }));
+        var items2 = v.Next(items);
+
+        return v.Build(read => $"{read.Of(overlay)}|{string.Join(",", read.Of(items2))}");
+      });
 
       Assert.Equal("Acme Fund/2026|10", projection.Map(space));
     }
@@ -237,43 +372,30 @@ namespace Unrect.Tests.Projections
     // --- Guards -------------------------------------------------------------------------------------------
 
     [Fact]
-    public void AnOverlayThatDeclaresNothing_Fails()
+    public void AnOverlayThatDeclaresNothing_IsRefusedWhereItIsWritten()
     {
       // Same rule as a flow, told with the right noun: an overlay that declared nothing would match
-      // anything and describe nothing.
-      var failure = Assert.Throws<ProjectionException>(() => Overlay(_ => 42).Map(CoordinateGrid()));
+      // anything and describe nothing, so Build refuses it at declaration.
+      var failure = Assert.Throws<InvalidOperationException>(() => Overlay<int>(o => o.Build(_ => 42)));
 
-      Assert.Contains("an overlay must declare at least one projection; this one called Next zero times", failure.Message);
+      Assert.Equal("an overlay must declare at least one projection; this one called Next zero times", failure.Message);
     }
 
     [Fact]
-    public void AnOverlayThatDeclaresNothing_ResistsAToleranceBoundary()
+    public void ANullChildIsRefusedWhereItIsWritten()
     {
-      Assert.Throws<ProjectionException>(() => Overlay(_ => 42).Optional().Map(CoordinateGrid()));
-    }
-
-    [Fact]
-    public void ANullChildIsReportedAtTheOverlaysOrigin()
-    {
-      // Every overlay child starts from the same origin, so there is no cursor position to report
-      // one against — unlike a flow, where the hole is where the child would have gone.
       IProjection<ISheetCells, int>? missing = null;
 
-      var failure = Assert.Throws<ProjectionException>(() =>
-        Overlay(o => $"{o.Next(Down(1).Of(IntCell()))}|{o.Next(missing!)}").Map(CoordinateGrid()));
+      var failure = Assert.Throws<ArgumentNullException>(() =>
+        Overlay(o =>
+        {
+          var down = o.Next(Down(1).Of(IntCell()));
+          var missing2 = o.Next(missing!);
+
+          return o.Build(read => $"{read.Of(down)}|{read.Of(missing2)}");
+        }));
 
       Assert.Contains("a null projection was declared as child 2", failure.Message);
-      Assert.Equal("A1", failure.Location.A1);
-      Assert.Equal("Overlay", failure.Path);
-    }
-
-    [Fact]
-    public void ANullChild_ResistsAToleranceBoundary()
-    {
-      IProjection<ISheetCells, int>? missing = null;
-
-      Assert.Throws<ProjectionException>(() =>
-        Overlay(o => $"{o.Next(IntCell())}|{o.Next(missing!)}").Optional().Map(CoordinateGrid()));
     }
 
     [Fact]
@@ -288,10 +410,22 @@ namespace Unrect.Tests.Projections
       var second = IntCell();
 
       var inOverlay = Assert.Throws<ProjectionException>(() =>
-        Overlay(o => $"{o.Next(absorbed)}|{o.Next(second)}").Map(space));
+        Overlay(o =>
+        {
+          var absorbed2 = o.Next(absorbed);
+          var second2 = o.Next(second);
+
+          return o.Build(read => $"{read.Of(absorbed2)}|{read.Of(second2)}");
+        }).Map(space));
 
       var inFlow = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v => $"{v.Next(absorbed)}|{v.Next(second)}").Map(space));
+        VerticalFlow(v =>
+        {
+          var absorbed2 = v.Next(absorbed);
+          var second2 = v.Next(second);
+
+          return v.Build(read => $"{read.Of(absorbed2)}|{read.Of(second2)}");
+        }).Map(space));
 
       Assert.DoesNotContain("note:", inOverlay.Message);
       Assert.Contains("note: the preceding sibling consumed nothing at this position", inFlow.Message);
@@ -300,7 +434,13 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ACaptureNothingOverlayIsSafeToApplyToManySpacesAtOnce()
     {
-      var projection = Overlay(o => $"{o.Next(IntCell())}|{o.Next(Right(1).Of(IntCell()))}");
+      var projection = Overlay(o =>
+      {
+        var intCell = o.Next(IntCell());
+        var right = o.Next(Right(1).Of(IntCell()));
+
+        return o.Build(read => $"{read.Of(intCell)}|{read.Of(right)}");
+      });
 
       var spaces = Enumerable.Range(0, 64)
         .Select(seed => Grid(new[,] { { seed + 1, seed + 2 } }))

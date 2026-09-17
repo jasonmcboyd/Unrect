@@ -15,8 +15,8 @@ namespace Unrect.Projections
     private int _width;
     private int _height;
 
-    public OverlayState(IProjection owner, Plane<TSpace> extent, ProjectionContext context)
-      : base(owner, extent, context)
+    public OverlayState(Plane<TSpace> extent, ProjectionContext context)
+      : base(extent, context)
     {
     }
 
@@ -26,16 +26,12 @@ namespace Unrect.Projections
     /// </summary>
     public override Size Consumed => new Size(_width, _height);
 
-    public override string DeclaredNothing => NothingDeclared("an overlay");
-
-    public override T Next<T>(IProjection<TSpace, T> projection, string? declared)
+    public override T Next<T>(IProjection<TSpace, T> projection, UseSite site)
     {
       // Children are independent: the same extent and the same unadvanced context every time, so
       // each child's own placement decides where it lands and the engine records its true offset.
       // They may overlap and may read the same cells, because they read rather than paint.
-      Admit(projection, default);
-
-      var applied = ProjectionEngine.Apply(projection, Extent, Context.WithUseSite(UseSite.From(declared, Count + 1)));
+      var applied = ProjectionEngine.Apply(projection, Extent, Context.WithUseSite(site));
 
       _width = Math.Max(_width, applied.Advance.Width);
       _height = Math.Max(_height, applied.Advance.Height);

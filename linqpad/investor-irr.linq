@@ -29,12 +29,20 @@ var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\exam
 // Without a way to say where the first series ENDS, its repeat runs into the second heading
 // and fails from inside an item. Until bounds it by content, and — because the bound is
 // consumed in full — the next child's own seek finds that row at distance zero.
-var reportHeader = VerticalFlow(v => new
+var reportHeader = VerticalFlow(v =>
 {
-	Title = v.Next(Text()),
-	Fund = v.Next(Text()),
-	ReportDate = v.Next(Date()),
-	ReportId = v.Next(Text()),
+	var title = v.Next(Text());
+	var fund = v.Next(Text());
+	var reportDate = v.Next(Date());
+	var reportId = v.Next(Text());
+
+	return v.Build(read => new
+	{
+		Title = read.Of(title),
+		Fund = read.Of(fund),
+		ReportDate = read.Of(reportDate),
+		ReportId = read.Of(reportId),
+	});
 });
 
 // Five of six captions bind with nothing said: the comparer ignores case and whitespace, so
@@ -64,12 +72,20 @@ var byTransferDate = Until(RowContaining(Inception))
 
 var byInception = Heading(Inception).Of(irrDetails);
 
-var report = VerticalFlow(v => new
+var report = VerticalFlow(v =>
 {
-	ReportHeader = v.Next(reportHeader),
-	Summary = v.Next(summary),
-	ByTransferDate = v.Next(byTransferDate),
-	ByInception = v.Next(byInception),
+	var header = v.Next(reportHeader);
+	var summaryRows = v.Next(summary);
+	var transferDateSeries = v.Next(byTransferDate);
+	var inceptionSeries = v.Next(byInception);
+
+	return v.Build(read => new
+	{
+		ReportHeader = read.Of(header),
+		Summary = read.Of(summaryRows),
+		ByTransferDate = read.Of(transferDateSeries),
+		ByInception = read.Of(inceptionSeries),
+	});
 });
 
 var mapped = report.MapWithDiagnostics(SpreadsheetSpace.Create(path, "IRR"));

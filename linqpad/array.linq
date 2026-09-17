@@ -39,10 +39,16 @@ var firstRow = Row(r => r.Select(p => p.Value()).ToArray());
 
 var rest = Range(b => b.Rows.Select(r => r.Select(p => p.Value()).ToArray()).ToArray());
 
-var block = VerticalFlow(v => new
+var block = VerticalFlow(v =>
 {
-	FirstRow = v.Next(firstRow),
-	Rest = v.Next(rest),
+	var first = v.Next(firstRow);
+	var remainder = v.Next(rest);
+
+	return v.Build(read => new
+	{
+		FirstRow = read.Of(first),
+		Rest = read.Of(remainder),
+	});
 });
 
 VerticalRepeat(block, separatedBy: BlankRows()).Map(space).Dump();

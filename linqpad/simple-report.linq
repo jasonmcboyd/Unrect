@@ -27,12 +27,20 @@ var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\exam
 // The header was Column(4, c => ...): a hard-coded height and four accessor calls. As a flow of
 // typed leaves the 4 dissolves into the child count and every field states its kind. It consumes
 // 1x4 either way, so nothing below it moves.
-var reportHeader = VerticalFlow(v => new
+var reportHeader = VerticalFlow(v =>
 {
-	Title = v.Next(Text()),
-	SubTitle = v.Next(Text()),
-	ReportDate = v.Next(Date()),
-	ReportId = v.Next(Text()),
+	var title = v.Next(Text());
+	var subTitle = v.Next(Text());
+	var reportDate = v.Next(Date());
+	var reportId = v.Next(Text());
+
+	return v.Build(read => new
+	{
+		Title = read.Of(title),
+		SubTitle = read.Of(subTitle),
+		ReportDate = read.Of(reportDate),
+		ReportId = read.Of(reportId),
+	});
 });
 
 // Captions bind to members by name, ignoring case and whitespace: Client and Amount need nothing
@@ -42,11 +50,17 @@ var transactions = Table<Transaction>(bind => bind
 	.Column(t => t.Date, "Transaction Date")
 	.Column(t => t.Type, "Transaction Type"));
 
-// One lambda declares the children in flow order and builds the result from what they read.
-var report = VerticalFlow(v => new
+// One lambda declares the children in flow order, once, at declaration; Build combines what they read.
+var report = VerticalFlow(v =>
 {
-	ReportHeader = v.Next(reportHeader),
-	Transactions = v.Next(transactions),
+	var header = v.Next(reportHeader);
+	var rows = v.Next(transactions);
+
+	return v.Build(read => new
+	{
+		ReportHeader = read.Of(header),
+		Transactions = read.Of(rows),
+	});
 });
 
 report.Map(SpreadsheetSpace.Create(path, "Report")).Dump();

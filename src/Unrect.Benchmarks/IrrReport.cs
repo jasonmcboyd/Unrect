@@ -39,11 +39,19 @@ namespace Unrect.Benchmarks
   /// </summary>
   internal static class IrrReport
   {
-    private static readonly IProjection<ISheetCells, IrrReportHeader> Header = VerticalFlow(v => new IrrReportHeader(
-      Title: v.Next(Text()),
-      Fund: v.Next(Text()),
-      ReportDate: v.Next(Date()),
-      ReportId: v.Next(Text())));
+    private static readonly IProjection<ISheetCells, IrrReportHeader> Header = VerticalFlow(v =>
+    {
+      var title = v.Next(Text());
+      var fund = v.Next(Text());
+      var reportDate = v.Next(Date());
+      var reportId = v.Next(Text());
+
+      return v.Build(read => new IrrReportHeader(
+        Title: read.Of(title),
+        Fund: read.Of(fund),
+        ReportDate: read.Of(reportDate),
+        ReportId: read.Of(reportId)));
+    });
 
     // Five of six captions bind with nothing said; only Investor needs one, because the sheet's
     // heading is plural where the member is singular.
@@ -64,21 +72,37 @@ namespace Unrect.Benchmarks
     private static readonly IProjection<ISheetCells, IReadOnlyList<IReadOnlyList<CashFlow>>> ByInception =
       Heading(CanonicalSpaces.InceptionCaption).Of(Series);
 
-    public static readonly IProjection<ISheetCells, Report> Projection = VerticalFlow(v => new Report(
-      ReportHeader: v.Next(Header),
-      Summary: v.Next(Summary),
-      ByTransferDate: v.Next(ByTransferDate),
-      ByInception: v.Next(ByInception)));
+    public static readonly IProjection<ISheetCells, Report> Projection = VerticalFlow(v =>
+    {
+      var header = v.Next(Header);
+      var summary = v.Next(Summary);
+      var byTransferDate = v.Next(ByTransferDate);
+      var byInception = v.Next(ByInception);
+
+      return v.Build(read => new Report(
+        ReportHeader: read.Of(header),
+        Summary: read.Of(summary),
+        ByTransferDate: read.Of(byTransferDate),
+        ByInception: read.Of(byInception)));
+    });
 
     /// <summary>
     /// The same report with one caption that is not in the document. Used by the failure rows: it
     /// fails deep -- inside a section, inside the flow -- so the measured cost is a real path, not
     /// a root-level throw.
     /// </summary>
-    public static readonly IProjection<ISheetCells, Report> WithMissingSection = VerticalFlow(v => new Report(
-      ReportHeader: v.Next(Header),
-      Summary: v.Next(Summary),
-      ByTransferDate: v.Next(ByTransferDate),
-      ByInception: v.Next(Heading("No Such Caption Exists Here").Of(Series))));
+    public static readonly IProjection<ISheetCells, Report> WithMissingSection = VerticalFlow(v =>
+    {
+      var header = v.Next(Header);
+      var summary = v.Next(Summary);
+      var byTransferDate = v.Next(ByTransferDate);
+      var byInception = v.Next(Heading("No Such Caption Exists Here").Of(Series));
+
+      return v.Build(read => new Report(
+        ReportHeader: read.Of(header),
+        Summary: read.Of(summary),
+        ByTransferDate: read.Of(byTransferDate),
+        ByInception: read.Of(byInception)));
+    });
   }
 }

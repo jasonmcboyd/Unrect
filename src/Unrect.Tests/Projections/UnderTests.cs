@@ -50,12 +50,14 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void HeadingIsOpaqueLikeEveryOtherCursorComposite()
+    public void HeadingExposesItsCaptionsAndThenItsSection()
     {
       var section = Heading("Detail").Of(Lines());
 
-      Assert.Empty(section.Children);
-      Assert.Equal("declared by a cursor lambda; children are known only while it runs", section.Opacity);
+      Assert.Null(section.Opacity);
+      Assert.Equal(2, section.Children.Count);
+      Assert.Equal("Caption(\"Detail\")", section.Children[0].Projection.Description);
+      Assert.Equal("Range", section.Children[1].Projection.Description);
     }
 
     [Fact]
@@ -126,7 +128,12 @@ namespace Unrect.Tests.Projections
       var section = Heading("Nope").Of(Lines());
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v => v.Next(section)).Map(Sheet()));
+        VerticalFlow(v =>
+        {
+          var section2 = v.Next(section);
+
+          return v.Build(read => read.Of(section2));
+        }).Map(Sheet()));
 
       Assert.Equal("VerticalFlow -> 'section' -> Caption(\"Nope\")#1", failure.Path);
     }

@@ -50,21 +50,57 @@ namespace Unrect.Tests.Projections
       // Two single cells side by side: the flow's second band is the second column, and the overlay
       // says so with .Right(1).
       "adjacent cells" => (
-        HorizontalFlow(h => $"{h.Next(IntCell())}/{h.Next(IntCell())}"),
-        Overlay(o => $"{o.Next(IntCell())}/{o.Next(Right(1).Of(IntCell()))}")),
+        HorizontalFlow(h =>
+        {
+          var intCell = h.Next(IntCell());
+          var intCell2 = h.Next(IntCell());
+
+          return h.Build(read => $"{read.Of(intCell)}/{read.Of(intCell2)}");
+        }),
+        Overlay(o =>
+        {
+          var intCell = o.Next(IntCell());
+          var right = o.Next(Right(1).Of(IntCell()));
+
+          return o.Build(read => $"{read.Of(intCell)}/{read.Of(right)}");
+        })),
 
       // A gap between them, which the two spellings express differently — the flow's child steps one
       // column into its own band, the overlay's steps two from the origin — and must absorb
       // identically.
       "a gap between them" => (
-        HorizontalFlow(h => $"{h.Next(IntCell())}/{h.Next(Right(1).Of(IntCell()))}"),
-        Overlay(o => $"{o.Next(IntCell())}/{o.Next(Right(2).Of(IntCell()))}")),
+        HorizontalFlow(h =>
+        {
+          var intCell = h.Next(IntCell());
+          var right = h.Next(Right(1).Of(IntCell()));
+
+          return h.Build(read => $"{read.Of(intCell)}/{read.Of(right)}");
+        }),
+        Overlay(o =>
+        {
+          var intCell = o.Next(IntCell());
+          var right = o.Next(Right(2).Of(IntCell()));
+
+          return o.Build(read => $"{read.Of(intCell)}/{read.Of(right)}");
+        })),
 
       // Children of different heights, so the consumed extent is not simply the first child's: the
       // flow takes the tallest across its axis, the overlay the furthest reach down.
       "children of different heights" => (
-        HorizontalFlow(h => $"{h.Next(Column(2, s => s[0].Integer()))}/{h.Next(IntCell())}"),
-        Overlay(o => $"{o.Next(Column(2, s => s[0].Integer()))}/{o.Next(Right(1).Of(IntCell()))}")),
+        HorizontalFlow(h =>
+        {
+          var columnSlot = h.Next(Column(2, s => s[0].Integer()));
+          var intCell = h.Next(IntCell());
+
+          return h.Build(read => $"{read.Of(columnSlot)}/{read.Of(intCell)}");
+        }),
+        Overlay(o =>
+        {
+          var columnSlot = o.Next(Column(2, s => s[0].Integer()));
+          var right = o.Next(Right(1).Of(IntCell()));
+
+          return o.Build(read => $"{read.Of(columnSlot)}/{read.Of(right)}");
+        })),
 
       _ => throw new ArgumentOutOfRangeException(nameof(spelling), spelling, "No such spelling."),
     };
@@ -156,10 +192,22 @@ namespace Unrect.Tests.Projections
       // The same difference where it matters most. The problem, the cell and the child's own label
       // are identical; only the enclosing segment says which composite was written.
       var inFlow = Assert.Throws<ProjectionException>(() =>
-        HorizontalFlow(h => $"{h.Next(IntCell())}/{h.Next(Text())}").Map(CoordinateGrid()));
+        HorizontalFlow(h =>
+        {
+          var intCell = h.Next(IntCell());
+          var textSlot = h.Next(Text());
+
+          return h.Build(read => $"{read.Of(intCell)}/{read.Of(textSlot)}");
+        }).Map(CoordinateGrid()));
 
       var inOverlay = Assert.Throws<ProjectionException>(() =>
-        Overlay(o => $"{o.Next(IntCell())}/{o.Next(Right(1).Of(Text()))}").Map(CoordinateGrid()));
+        Overlay(o =>
+        {
+          var intCell = o.Next(IntCell());
+          var right = o.Next(Right(1).Of(Text()));
+
+          return o.Build(read => $"{read.Of(intCell)}/{read.Of(right)}");
+        }).Map(CoordinateGrid()));
 
       Assert.Equal("HorizontalFlow -> Text#2", inFlow.Path);
       Assert.Equal("Overlay -> Text#2", inOverlay.Path);
@@ -177,8 +225,20 @@ namespace Unrect.Tests.Projections
       // cell first, so it reads row 2 and then reaches back to row 1 — a word no vertical flow can
       // produce, because a flow's cursor only ever goes forwards. Everything the law is about is
       // nevertheless identical.
-      var flow = VerticalFlow(v => v.Next(IntCell()) + v.Next(IntCell()));
-      var backwards = Overlay(o => o.Next(Down(1).Of(IntCell())) + o.Next(IntCell()));
+      var flow = VerticalFlow(v =>
+      {
+        var intCell = v.Next(IntCell());
+        var intCell2 = v.Next(IntCell());
+
+        return v.Build(read => read.Of(intCell) + read.Of(intCell2));
+      });
+      var backwards = Overlay(o =>
+      {
+        var down = o.Next(Down(1).Of(IntCell()));
+        var intCell = o.Next(IntCell());
+
+        return o.Build(read => read.Of(down) + read.Of(intCell));
+      });
 
       AssertL2(Observe(flow, CoordinateGrid()), Observe(backwards, CoordinateGrid()));
 

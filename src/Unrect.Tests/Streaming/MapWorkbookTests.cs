@@ -153,7 +153,13 @@ namespace Unrect.Tests.Streaming
     {
       // Nothing about reading through the sugar changes what a failure says: the coordinates are the
       // sheet's own, because the space handed to the declaration is the whole sheet either way.
-      var declaration = VerticalFlow(v => $"{v.Next(Text())}{v.Next(Decimal())}");
+      var declaration = VerticalFlow(v =>
+      {
+        var textSlot = v.Next(Text());
+        var decimalSlot = v.Next(Decimal());
+
+        return v.Build(read => $"{read.Of(textSlot)}{read.Of(decimalSlot)}");
+      });
 
       var failure = Assert.Throws<ProjectionException>(
         () => declaration.MapWorkbook(Path("multi-sheet.xlsx"), "Detail"));
@@ -278,7 +284,13 @@ namespace Unrect.Tests.Streaming
         return block.Width;
       });
 
-      var declaration = VerticalFlow(v => $"{v.Next(probe)}{v.Next(Decimal())}");
+      var declaration = VerticalFlow(v =>
+      {
+        var probe2 = v.Next(probe);
+        var decimalSlot = v.Next(Decimal());
+
+        return v.Build(read => $"{read.Of(probe2)}{read.Of(decimalSlot)}");
+      });
 
       Assert.Throws<ProjectionException>(() => declaration.MapWorkbook(Path("multi-sheet.xlsx"), "Detail"));
 

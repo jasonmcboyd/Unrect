@@ -163,7 +163,12 @@ namespace Unrect.Tests.Spreadsheets
       // paths wrap a foreign exception and the fault list is consulted at both.
       var bounded = ProjectionBuilders<ISheetCells>
         .UntilColumn(SpreadsheetProjections.ColumnWithFormula().Landmark)
-        .Of(ProjectionBuilders<ISheetCells>.HorizontalFlow(h => h.Next(SpreadsheetProjections.Text<ISheetCells>())))
+        .Of(ProjectionBuilders<ISheetCells>.HorizontalFlow(h =>
+        {
+          var spreadsheetProjections = h.Next(SpreadsheetProjections.Text<ISheetCells>());
+
+          return h.Build(read => read.Of(spreadsheetProjections));
+        }))
         .Optional();
 
       var failure = Assert.Throws<ProjectionException>(() => bounded.Map(Plain()));

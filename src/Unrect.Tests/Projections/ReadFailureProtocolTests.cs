@@ -111,7 +111,7 @@ namespace Unrect.Tests.Projections
           // catch is the only thing that can translate it.
           var block = o.Next(Range(2, 2, b => b));
 
-          return (object?)block[1, 1].Decimal();
+          return o.Build(read => (object?)read.Of(block)[1, 1].Decimal());
         }),
         "Overlay",
         Sheet()),
@@ -199,7 +199,12 @@ namespace Unrect.Tests.Projections
       // segment, so the failure is attributed to the layout — which is the transparency rule, not a
       // second bug.
       var failure = Assert.Throws<ProjectionException>(
-        () => Overlay(o => o.Next(Right(1).Down(1).Of(Point().Select(p => p.Decimal())))).Map(Sheet()));
+        () => Overlay(o =>
+        {
+          var right = o.Next(Right(1).Down(1).Of(Point().Select(p => p.Decimal())));
+
+          return o.Build(read => read.Of(right));
+        }).Map(Sheet()));
 
       Assert.Equal(Sentence, Problem(failure));
       Assert.Equal("Overlay", failure.Path);

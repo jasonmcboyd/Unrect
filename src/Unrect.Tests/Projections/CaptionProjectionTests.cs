@@ -56,7 +56,13 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void TheNextSiblingStartsOnTheRowBelowTheCaption()
     {
-      var read = VerticalFlow(v => $"{v.Next(Caption("ein:"))}|{v.Next(TextCell())}").Map(Sheet());
+      var read = VerticalFlow(v =>
+      {
+        var caption = v.Next(Caption("ein:"));
+        var textCell = v.Next(TextCell());
+
+        return v.Build(read2 => $"{read2.Of(caption)}|{read2.Of(textCell)}");
+      }).Map(Sheet());
 
       Assert.Equal("  EIN:  |a", read);
     }

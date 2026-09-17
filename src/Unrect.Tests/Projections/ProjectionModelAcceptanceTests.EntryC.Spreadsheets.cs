@@ -53,18 +53,32 @@ namespace Unrect.Tests.Projections
     private static IProjection<ISpreadsheetSpace, AuditedLedger> AuditedLedgerThroughTheBuilders()
     {
       // A cell has a value and a formula, so reading both is an overlay's job, as ever.
-      var line = Overlay(o => new AuditedLine(
-        Item: o.Next(Text()),
-        Qty: o.Next(Right(1).Integer()),
-        Total: o.Next(Right(3).Double()),
-        Formula: o.Next(Right(3).Of(Formula()))));
+      var line = Overlay(o =>
+      {
+        var textSlot = o.Next(Text());
+        var right = o.Next(Right(1).Integer());
+        var right2 = o.Next(Right(3).Double());
+        var right3 = o.Next(Right(3).Of(Formula()));
+
+        return o.Build(read => new AuditedLine(
+          Item: read.Of(textSlot),
+          Qty: read.Of(right),
+          Total: read.Of(right2),
+          Formula: read.Of(right3)));
+      });
 
       var lines = Table(headerRows: 1, eachRow: line);
       var total = On(RowContaining("Total")).Right(3).Of(Formula());
 
-      return VerticalFlow(v => new AuditedLedger(
-        Lines: v.Next(lines),
-        TotalFormula: v.Next(total)));
+      return VerticalFlow(v =>
+      {
+        var lines2 = v.Next(lines);
+        var total2 = v.Next(total);
+
+        return v.Build(read => new AuditedLedger(
+          Lines: read.Of(lines2),
+          TotalFormula: read.Of(total2)));
+      });
     }
 
     [Fact]

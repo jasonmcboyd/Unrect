@@ -16,9 +16,13 @@ namespace Unrect.Projections
   /// using static Unrect.Projections.ProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;;
   /// using static Unrect.Spreadsheets.SpreadsheetProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;;
   ///
-  /// var report = VerticalFlow(v =&gt; new Report(
-  ///     Title: v.Next(Text()),
-  ///     Rows:  v.Next(Table(headerRows: 1, eachRow: row))));
+  /// var report = VerticalFlow(v =&gt;
+  /// {
+  ///     var title = v.Next(Text());
+  ///     var rows  = v.Next(Table(headerRows: 1, eachRow: row));
+  ///
+  ///     return v.Build(read =&gt; new Report(Title: read.Of(title), Rows: read.Of(rows)));
+  /// });
   /// </code>
   /// <para>
   /// The space is spelled in full in the import because a <c>using</c> directive is resolved without

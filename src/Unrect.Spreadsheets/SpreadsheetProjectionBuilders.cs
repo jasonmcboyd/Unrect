@@ -12,7 +12,13 @@ namespace Unrect.Spreadsheets
   /// using static Unrect.Projections.ProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;;
   /// using static Unrect.Spreadsheets.SpreadsheetProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;;
   ///
-  /// var line = Overlay(o =&gt; new Line(o.Next(Decimal()), o.Next(Formula().Right(1))));
+  /// var line = Overlay(o =&gt;
+  /// {
+  ///     var value   = o.Next(Decimal());
+  ///     var formula = o.Next(Formula().Right(1));
+  ///
+  ///     return o.Build(read =&gt; new Line(read.Of(value), read.Of(formula)));
+  /// });
   /// </code>
   /// <para>
   /// <b>The backend rule: overloads, never a second member of the same signature.</b> Methods

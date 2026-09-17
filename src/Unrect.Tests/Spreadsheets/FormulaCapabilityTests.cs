@@ -92,7 +92,13 @@ namespace Unrect.Tests.Spreadsheets
     public void TheLeafReadsAFormulaWhereTheCellReadsAValue()
     {
       // A cell has both, so reading both is an overlay's job: the same cell, twice.
-      var cell = On(RowContaining("Text")).Right(1).Of(Overlay(o => (Value: o.Next(Text()), Formula: o.Next(Formula()))));
+      var cell = On(RowContaining("Text")).Right(1).Of(Overlay(o =>
+      {
+        var textSlot = o.Next(Text());
+        var formula = o.Next(Formula());
+
+        return o.Build(read2 => (Value: read2.Of(textSlot), Formula: read2.Of(formula)));
+      }));
 
       var read = cell.Map(Sheet());
 
@@ -127,9 +133,24 @@ namespace Unrect.Tests.Spreadsheets
       {
         v.Next(Row(cells => cells.Count));
 
-        return (
-          First: v.Next(Overlay(o => (Total: o.Next(Right(3).Of(Decimal())), Formula: o.Next(Right(3).Of(Formula()))))),
-          Second: v.Next(Overlay(o => (Total: o.Next(Right(3).Of(Decimal())), Formula: o.Next(Right(3).Of(Formula()))))));
+        var overlay = v.Next(Overlay(o =>
+          {
+            var right = o.Next(Right(3).Of(Decimal()));
+            var right2 = o.Next(Right(3).Of(Formula()));
+
+            return o.Build(read2 => (Total: read2.Of(right), Formula: read2.Of(right2)));
+          }));
+var overlay2 = v.Next(Overlay(o =>
+          {
+            var right = o.Next(Right(3).Of(Decimal()));
+            var right2 = o.Next(Right(3).Of(Formula()));
+
+            return o.Build(read2 => (Total: read2.Of(right), Formula: read2.Of(right2)));
+          }));
+
+return v.Build(read2 => (
+          First: read2.Of(overlay),
+          Second: read2.Of(overlay2)));
       }));
 
       var read = lines.Map(Sheet());
@@ -153,7 +174,9 @@ namespace Unrect.Tests.Spreadsheets
       {
         v.Next(Row(cells => cells.Count));
 
-        return v.Next(On(RowWithFormula()).Of(Row(cells => cells[0].Text())));
+        var on = v.Next(On(RowWithFormula()).Of(Row(cells => cells[0].Text())));
+
+        return v.Build(read => read.Of(on));
       }));
 
       Assert.Equal("Widget", firstComputed.Map(Sheet()));

@@ -26,11 +26,15 @@ namespace Unrect.Tests.Projections
 
     /// <summary>Reads the pair as text-then-number: what the file actually is.</summary>
     private static IProjection<ISheetCells, int> TextFirst(string name = "vendor A layout")
-      => VerticalFlow(v => { v.Next(TextCell()); return v.Next(IntCell()); }).Named(name);
+      => VerticalFlow(v => { v.Next(TextCell()); var intCell = v.Next(IntCell());
+
+      return v.Build(read => read.Of(intCell)); }).Named(name);
 
     /// <summary>Reads the pair as number-then-number: a layout this file is not in.</summary>
     private static IProjection<ISheetCells, int> NumberFirst(string name = "vendor B layout")
-      => VerticalFlow(v => { v.Next(IntCell()); return v.Next(IntCell()); }).Named(name);
+      => VerticalFlow(v => { v.Next(IntCell()); var intCell = v.Next(IntCell());
+
+      return v.Build(read => read.Of(intCell)); }).Named(name);
 
     // --- The degeneracy, named ----------------------------------------------------------------------
     //
@@ -167,7 +171,9 @@ namespace Unrect.Tests.Projections
     public void AnUnnamedAlternative_IsDescribedStructurally()
     {
       var alternatives = Choice(
-        VerticalFlow(v => { v.Next(IntCell()); return v.Next(IntCell()); }),
+        VerticalFlow(v => { v.Next(IntCell()); var intCell = v.Next(IntCell());
+
+        return v.Build(read => read.Of(intCell)); }),
         TextFirst());
 
       var info = Assert.Single(alternatives.MapWithDiagnostics(Pair()).Diagnostics);
@@ -350,7 +356,7 @@ namespace Unrect.Tests.Projections
       {
         v.Next(TextCell().Optional());
         v.Next(TextCell());
-        return 0;
+        return v.Build(read => 0);
       }).Named("losing");
 
       var result = Choice(losing, TextFirst()).MapWithDiagnostics(Pair());
@@ -368,7 +374,9 @@ namespace Unrect.Tests.Projections
       {
         v.Next(TextCell());
         v.Next(TextCell().Optional());
-        return v.Next(IntCell());
+        var intCell = v.Next(IntCell());
+
+        return v.Build(read => read.Of(intCell));
       }).Named("winning");
 
       var result = Choice(NumberFirst(), winning).MapWithDiagnostics(Pair());

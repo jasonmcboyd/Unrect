@@ -7,18 +7,26 @@ namespace Unrect.Projections
   internal sealed class TableProjection<TSpace, T> : ProjectionBase<TSpace, T>
     where TSpace : class, ISpace
   {
-    public TableProjection(int headerRows, Func<TableView<TSpace>, T> project, Placement placement, string description)
+    public TableProjection(int headerRows, Func<TableView<TSpace>, T> project, Placement placement, string description, string? opacity = null)
       : base(placement)
     {
       HeaderRows = headerRows;
       Projection = project ?? throw new ArgumentNullException(nameof(project));
       Description = description;
+      Opacity = opacity;
     }
 
     private int HeaderRows { get; }
     private Func<TableView<TSpace>, T> Projection { get; }
 
     public override string Description { get; }
+
+    /// <summary>
+    /// Null for a lambda rung, which is a leaf to tooling — with a lambda in the slot there was
+    /// never a child to declare. The bind rung says why its child is missing: it is built from the
+    /// header's captions, so it is known only once a header is read.
+    /// </summary>
+    public override string? Opacity { get; }
 
     public override ProjectionResult<T> Project(Plane<TSpace> extent, ProjectionContext context)
     {

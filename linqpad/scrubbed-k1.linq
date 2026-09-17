@@ -71,12 +71,20 @@ var ownershipRow = Down(4).Of(FullRow("Fund Short Name"));
 // the shape it places: Sized is the entry for an extent with no movement to its left.
 var header = Sized(RowsWhileAnyValue()).Of(Overlay(o =>
 {
+	// Four children, declared once; everything below Build runs per application, over what they read.
+	var entityCard = o.Next(entity);
+	var captionCells = o.Next(captionRow);
+	var fundNameCells = o.Next(fundNameRow);
+	var ownershipCells = o.Next(ownershipRow);
+
+	return o.Build(read =>
+	{
 	// Fields hands back each label's cell as a place; AsText is the total reading, so the card
 	// leaves here as what it says rather than as five addresses for someone else to read.
-	var entityFields = o.Next(entity).ToDictionary(f => f.Key, f => f.Value.AsText() ?? "");
-	var captions = o.Next(captionRow);
-	var fundNames = o.Next(fundNameRow);
-	var ownership = o.Next(ownershipRow);
+	var entityFields = read.Of(entityCard).ToDictionary(f => f.Key, f => f.Value.AsText() ?? "");
+	var captions = read.Of(captionCells);
+	var fundNames = read.Of(fundNameCells);
+	var ownership = read.Of(ownershipCells);
 
 	var label = Find(fundNames, "Fund Short Name");
 
@@ -89,6 +97,7 @@ var header = Sized(RowsWhileAnyValue()).Of(Overlay(o =>
 		.ToArray();
 
 	return new { Entity = entityFields, AtaxColumn = Find(captions, "ATAX"), Columns = columns };
+	});
 }));
 
 // One section projection: rows while any value, wherever it is anchored.
@@ -103,9 +112,15 @@ var portfolio = Heading("Portfolio Income").Of(section).Optional();
 
 var report = VerticalFlow(v =>
 {
-	var head = v.Next(header);
-	var k1Rows = v.Next(k1Lines);
-	var portfolioRows = v.Next(portfolio);
+	var headerBlock = v.Next(header);
+	var k1Section = v.Next(k1Lines);
+	var portfolioSection = v.Next(portfolio);
+
+	return v.Build(read =>
+	{
+	var head = read.Of(headerBlock);
+	var k1Rows = read.Of(k1Section);
+	var portfolioRows = read.Of(portfolioSection);
 
 	// Every coded row across both sections, pivot-neutral.
 	var allRows = k1Rows.Concat(portfolioRows ?? Array.Empty<Point<ISheetCells>[]>())
@@ -140,6 +155,7 @@ var report = VerticalFlow(v =>
 				.Where(i => i.Atax == fi.Atax)
 				.Sum(i => i.Amount ?? 0m) == fi.Amount),
 	};
+	});
 });
 
 var mapped = report.MapWithDiagnostics(space);

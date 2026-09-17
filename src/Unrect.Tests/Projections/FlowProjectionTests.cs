@@ -35,26 +35,51 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void TheOrderOfTheNextCallsIsTheOrderOfTheChildren()
     {
-      Assert.Equal("1|2|3", VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(IntCell())}|{v.Next(IntCell())}").Map(Ladder()));
+      Assert.Equal("1|2|3", VerticalFlow(v =>
+      {
+        var intCell = v.Next(IntCell());
+        var intCell2 = v.Next(IntCell());
+        var intCell3 = v.Next(IntCell());
+
+        return v.Build(read => $"{read.Of(intCell)}|{read.Of(intCell2)}|{read.Of(intCell3)}");
+      }).Map(Ladder()));
     }
 
     [Fact]
     public void AFlowAdvancesAlongItsOwnAxisOnly()
     {
       // The first child is inset one column; the second starts back at column 0, one row down.
-      Assert.Equal("2|3", VerticalFlow(v => $"{v.Next(Right(1).Of(IntCell()))}|{v.Next(IntCell())}").Map(Grid(new[,] { { 1, 2 }, { 3, 4 } })));
+      Assert.Equal("2|3", VerticalFlow(v =>
+      {
+        var right = v.Next(Right(1).Of(IntCell()));
+        var intCell = v.Next(IntCell());
+
+        return v.Build(read => $"{read.Of(right)}|{read.Of(intCell)}");
+      }).Map(Grid(new[,] { { 1, 2 }, { 3, 4 } })));
     }
 
     [Fact]
     public void AHorizontalFlowAdvancesAcrossOnly()
     {
-      Assert.Equal("3|2", HorizontalFlow(v => $"{v.Next(Down(1).Of(IntCell()))}|{v.Next(IntCell())}").Map(Grid(new[,] { { 1, 2 }, { 3, 4 } })));
+      Assert.Equal("3|2", HorizontalFlow(v =>
+      {
+        var down = v.Next(Down(1).Of(IntCell()));
+        var intCell = v.Next(IntCell());
+
+        return v.Build(read => $"{read.Of(down)}|{read.Of(intCell)}");
+      }).Map(Grid(new[,] { { 1, 2 }, { 3, 4 } })));
     }
 
     [Fact]
     public void AFlowIsAsWideAsItsWidestChild()
     {
-      var applied = VerticalFlow(v => $"{v.Next(Row(2, r => r.Count))}|{v.Next(Row(3, r => r.Count))}").Apply(CoordinateGrid());
+      var applied = VerticalFlow(v =>
+      {
+        var rowSlot = v.Next(Row(2, r => r.Count));
+        var rowSlot2 = v.Next(Row(3, r => r.Count));
+
+        return v.Build(read => $"{read.Of(rowSlot)}|{read.Of(rowSlot2)}");
+      }).Apply(CoordinateGrid());
 
       Assert.Equal(3, applied.Consumed.Width);
       Assert.Equal(2, applied.Consumed.Height);
@@ -64,13 +89,25 @@ namespace Unrect.Tests.Projections
     public void AChildWithADeclaredArea_IsConsumedInFull()
     {
       // The block only reads two rows because it was told to; the next child starts after them.
-      Assert.Equal("2|3", VerticalFlow(v => $"{v.Next(Range(1, 2, b => b.Height))}|{v.Next(IntCell())}").Map(Ladder()));
+      Assert.Equal("2|3", VerticalFlow(v =>
+      {
+        var rangeSlot = v.Next(Range(1, 2, b => b.Height));
+        var intCell = v.Next(IntCell());
+
+        return v.Build(read => $"{read.Of(rangeSlot)}|{read.Of(intCell)}");
+      }).Map(Ladder()));
     }
 
     [Fact]
     public void Sized_OverridesWhatTheFlowDerived()
     {
-      var applied = Sized(AreaStrategies.ExplicitArea(1, 3)).Of(VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(IntCell())}"))
+      var applied = Sized(AreaStrategies.ExplicitArea(1, 3)).Of(VerticalFlow(v =>
+      {
+        var intCell = v.Next(IntCell());
+        var intCell2 = v.Next(IntCell());
+
+        return v.Build(read => $"{read.Of(intCell)}|{read.Of(intCell2)}");
+      }))
         .Apply(Ladder());
 
       Assert.Equal(1, applied.Consumed.Width);
@@ -81,7 +118,12 @@ namespace Unrect.Tests.Projections
     public void ASingleNextCallIsALegalFlow()
     {
       // One child is a Select with a placement, which is a useful thing to declare.
-      var applied = Down(1).Of(VerticalFlow(v => v.Next(IntCell()))).Apply(Ladder());
+      var applied = Down(1).Of(VerticalFlow(v =>
+      {
+        var intCell = v.Next(IntCell());
+
+        return v.Build(read => read.Of(intCell));
+      })).Apply(Ladder());
 
       Assert.Equal(2, applied.Value);
       Assert.Equal(1, applied.Consumed.Height);
@@ -90,7 +132,14 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AHorizontalFlowReadsItsChildrenLeftToRight()
     {
-      var applied = HorizontalFlow(v => $"{v.Next(IntCell())}|{v.Next(IntCell())}|{v.Next(IntCell())}")
+      var applied = HorizontalFlow(v =>
+      {
+        var intCell = v.Next(IntCell());
+        var intCell2 = v.Next(IntCell());
+        var intCell3 = v.Next(IntCell());
+
+        return v.Build(read => $"{read.Of(intCell)}|{read.Of(intCell2)}|{read.Of(intCell3)}");
+      })
         .Apply(Grid(new[,] { { 1, 2, 3 } }));
 
       Assert.Equal("1|2|3", applied.Value);
@@ -103,7 +152,13 @@ namespace Unrect.Tests.Projections
     {
       // The cross-axis rule in the other orientation: along the axis the children accumulate,
       // across it the furthest-reaching one wins.
-      var applied = HorizontalFlow(v => $"{v.Next(Column(2, s => s.Count))}|{v.Next(Column(3, s => s.Count))}")
+      var applied = HorizontalFlow(v =>
+      {
+        var columnSlot = v.Next(Column(2, s => s.Count));
+        var columnSlot2 = v.Next(Column(3, s => s.Count));
+
+        return v.Build(read => $"{read.Of(columnSlot)}|{read.Of(columnSlot2)}");
+      })
         .Apply(Grid(new[,] { { 1, 2 }, { 3, 4 }, { 5, 6 } }));
 
       Assert.Equal("2|3", applied.Value);
@@ -116,7 +171,13 @@ namespace Unrect.Tests.Projections
     {
       // The first child sits one row down, and that row is part of what the flow took: a following
       // sibling of the flow must clear the gap the flow's own child opened.
-      var applied = VerticalFlow(v => $"{v.Next(Down(1).Of(IntCell()))}|{v.Next(IntCell())}")
+      var applied = VerticalFlow(v =>
+      {
+        var down = v.Next(Down(1).Of(IntCell()));
+        var intCell = v.Next(IntCell());
+
+        return v.Build(read => $"{read.Of(down)}|{read.Of(intCell)}");
+      })
         .Apply(Grid(new[,] { { 0 }, { 1 }, { 2 } }));
 
       Assert.Equal("1|2", applied.Value);
@@ -128,7 +189,19 @@ namespace Unrect.Tests.Projections
     {
       // The contrast to the .Sized case above: an inner flow with no declared extent takes the two
       // rows it read, so the next child starts on the third rather than the fourth.
-      var projection = VerticalFlow(v => $"{v.Next(VerticalFlow(w => $"({w.Next(IntCell())},{w.Next(IntCell())})"))}|{v.Next(IntCell())}");
+      var projection = VerticalFlow(v =>
+      {
+        var verticalFlow = v.Next(VerticalFlow(w =>
+        {
+          var intCell = w.Next(IntCell());
+          var intCell2 = w.Next(IntCell());
+
+          return w.Build(read => $"({read.Of(intCell)},{read.Of(intCell2)})");
+        }));
+        var intCell = v.Next(IntCell());
+
+        return v.Build(read => $"{read.Of(verticalFlow)}|{read.Of(intCell)}");
+      });
 
       Assert.Equal("(1,2)|3", projection.Map(Ladder(4)));
     }
@@ -138,7 +211,18 @@ namespace Unrect.Tests.Projections
     {
       // Declared three rows tall while reading only two, so the next child starts after the third.
       var projection = VerticalFlow(v =>
-        $"{v.Next(Sized(AreaStrategies.ExplicitArea(1, 3)).Of(VerticalFlow(w => $"({w.Next(IntCell())},{w.Next(IntCell())})")))}|{v.Next(IntCell())}");
+      {
+        var sized = v.Next(Sized(AreaStrategies.ExplicitArea(1, 3)).Of(VerticalFlow(w =>
+          {
+            var intCell = w.Next(IntCell());
+            var intCell2 = w.Next(IntCell());
+
+            return w.Build(read => $"({read.Of(intCell)},{read.Of(intCell2)})");
+          })));
+        var intCell = v.Next(IntCell());
+
+        return v.Build(read => $"{read.Of(sized)}|{read.Of(intCell)}");
+      });
 
       Assert.Equal("(1,2)|4", projection.Map(Ladder(4)));
     }
@@ -148,12 +232,28 @@ namespace Unrect.Tests.Projections
     {
       // The point of the whole spelling: children are Next calls, so there is no tuple to run out
       // of and no nesting to reach for. Twelve here; there is no number that would fail.
-      var projection = VerticalFlow(v => string.Join(",", new[]
+      var projection = VerticalFlow(v =>
       {
-        v.Next(IntCell()), v.Next(IntCell()), v.Next(IntCell()), v.Next(IntCell()),
-        v.Next(IntCell()), v.Next(IntCell()), v.Next(IntCell()), v.Next(IntCell()),
-        v.Next(IntCell()), v.Next(IntCell()), v.Next(IntCell()), v.Next(IntCell()),
-      }));
+        var intCell = v.Next(IntCell());
+        var intCell2 = v.Next(IntCell());
+        var intCell3 = v.Next(IntCell());
+        var intCell4 = v.Next(IntCell());
+        var intCell5 = v.Next(IntCell());
+        var intCell6 = v.Next(IntCell());
+        var intCell7 = v.Next(IntCell());
+        var intCell8 = v.Next(IntCell());
+        var intCell9 = v.Next(IntCell());
+        var intCell10 = v.Next(IntCell());
+        var intCell11 = v.Next(IntCell());
+        var intCell12 = v.Next(IntCell());
+
+        return v.Build(read => string.Join(",", new[]
+        {
+          read.Of(intCell), read.Of(intCell2), read.Of(intCell3), read.Of(intCell4),
+          read.Of(intCell5), read.Of(intCell6), read.Of(intCell7), read.Of(intCell8),
+          read.Of(intCell9), read.Of(intCell10), read.Of(intCell11), read.Of(intCell12),
+        }));
+      });
 
       var applied = projection.Apply(Ladder(12));
 
@@ -169,7 +269,13 @@ namespace Unrect.Tests.Projections
       var space = Mixed(new object?[,] { { "x" }, { 5 } });
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v => $"{v.Next(IntCell().Optional())}|{v.Next(IntCell())}").Map(space));
+        VerticalFlow(v =>
+        {
+          var intCell = v.Next(IntCell().Optional());
+          var intCell2 = v.Next(IntCell());
+
+          return v.Build(read => $"{read.Of(intCell)}|{read.Of(intCell2)}");
+        }).Map(space));
 
       Assert.Contains("note: the preceding sibling consumed nothing at this position", failure.Message);
     }
@@ -180,7 +286,13 @@ namespace Unrect.Tests.Projections
       var space = Mixed(new object?[,] { { "x" }, { null }, { null }, { 5 }, { 6 } });
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v => $"{v.Next(IntCell().Optional())}|{v.Next(OffsetBy(BlankRows()).Down(2).Of(StringCell()))}").Map(space));
+        VerticalFlow(v =>
+        {
+          var intCell = v.Next(IntCell().Optional());
+          var offsetBy = v.Next(OffsetBy(BlankRows()).Down(2).Of(StringCell()));
+
+          return v.Build(read => $"{read.Of(intCell)}|{read.Of(offsetBy)}");
+        }).Map(space));
 
       Assert.DoesNotContain("note:", failure.Message);
       Assert.Equal("A3", failure.Location.A1);
@@ -193,7 +305,13 @@ namespace Unrect.Tests.Projections
     {
       var space = Grid(new[,] { { 1 }, { 2 }, { 0 }, { 3 }, { 4 }, { 0 }, { 0 } });
 
-      var items = VerticalRepeat(VerticalFlow(v => $"{v.Next(IntCell())}+{v.Next(IntCell())}"), separatedBy: BlankRows()).Map(space);
+      var items = VerticalRepeat(VerticalFlow(v =>
+      {
+        var intCell = v.Next(IntCell());
+        var intCell2 = v.Next(IntCell());
+
+        return v.Build(read => $"{read.Of(intCell)}+{read.Of(intCell2)}");
+      }), separatedBy: BlankRows()).Map(space);
 
       Assert.Equal(new[] { "1+2", "3+4" }, items);
     }
@@ -204,7 +322,13 @@ namespace Unrect.Tests.Projections
       var space = Grid(new[,] { { 1 }, { 2 }, { 0 }, { 3 }, { 4 }, { 0 }, { 0 } });
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalRepeat(VerticalFlow(v => $"{v.Next(IntCell())}+{v.Next(IntCell())}"), separatedBy: BlankRows(), atLeast: 5).Map(space));
+        VerticalRepeat(VerticalFlow(v =>
+        {
+          var intCell = v.Next(IntCell());
+          var intCell2 = v.Next(IntCell());
+
+          return v.Build(read => $"{read.Of(intCell)}+{read.Of(intCell2)}");
+        }), separatedBy: BlankRows(), atLeast: 5).Map(space));
 
       Assert.Contains("expected at least 5 occurrences but found 2", failure.Message);
     }
@@ -215,7 +339,13 @@ namespace Unrect.Tests.Projections
       // A Next call is deeper than the item's own placement, so it is drift, not the end of the
       // run.
       var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalRepeat(VerticalFlow(v => $"{v.Next(IntCell())}+{v.Next(StringCell())}")).Map(Ladder()));
+        VerticalRepeat(VerticalFlow(v =>
+        {
+          var intCell = v.Next(IntCell());
+          var stringCell = v.Next(StringCell());
+
+          return v.Build(read => $"{read.Of(intCell)}+{read.Of(stringCell)}");
+        })).Map(Ladder()));
 
       Assert.Contains("VerticalRepeat[0]", failure.Path);
       Assert.Contains("expected Text", failure.Message);
@@ -224,30 +354,51 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ARepeatedFlowThatConsumesNothing_Terminates()
     {
-      Assert.Empty(VerticalRepeat(VerticalFlow(v => v.Next(Range(AreaStrategies.MinArea(), b => b.Width)))).Map(Ladder()));
+      Assert.Empty(VerticalRepeat(VerticalFlow(v =>
+      {
+        var rangeSlot = v.Next(Range(AreaStrategies.MinArea(), b => b.Width));
+
+        return v.Build(read => read.Of(rangeSlot));
+      })).Map(Ladder()));
     }
 
     // --- Alternation -----------------------------------------------------------------------------------
 
     [Fact]
-    public void ALosingBranchLeavesNoDiagnosticsButDoesRunItsLambdaPartially()
+    public void ALosingBranchLeavesNoDiagnosticsAndNeverReachesItsCombiner()
     {
-      // The combine IS the lambda here, so a losing branch runs every expression up to and
-      // including the failing Next and no further. Diagnostics roll back; side effects do not —
-      // which is the whole reason the factory's documentation says to capture nothing you write to.
-      var reached = 0;
+      // The combiner runs only once every child has read, so a branch that loses on a child never
+      // runs it at all — and the declaration lambda ran once, at declaration, before any branch was
+      // tried. Diagnostics roll back; a combiner that did run (one that threw, say) leaves its side
+      // effects behind, which is why the factory's documentation says to capture nothing you write to.
+      var declared = 0;
+      var combined = 0;
 
       var losing = VerticalFlow(v =>
       {
-        var first = v.Next(IntCell());
-        reached++;
-        return $"{first}{v.Next(StringCell())}";
+        var intCell = v.Next(IntCell());
+        var stringCell = v.Next(StringCell());
+        declared++;
+
+        return v.Build(read =>
+        {
+          combined++;
+          return $"{read.Of(intCell)}{read.Of(stringCell)}";
+        });
       });
 
-      var result = Choice(losing, VerticalFlow(v => $"{v.Next(IntCell())}w")).MapWithDiagnostics(Ladder());
+      Assert.Equal(1, declared);
+
+      var result = Choice(losing, VerticalFlow(v =>
+      {
+        var intCell = v.Next(IntCell());
+
+        return v.Build(read => $"{read.Of(intCell)}w");
+      })).MapWithDiagnostics(Ladder());
 
       Assert.Equal("1w", result.Value);
-      Assert.Equal(1, reached);
+      Assert.Equal(1, declared);
+      Assert.Equal(0, combined);
       Assert.DoesNotContain(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Warning);
     }
 
@@ -255,8 +406,18 @@ namespace Unrect.Tests.Projections
     public void AWinningBranchNamesTheOnesBeforeIt()
     {
       var result = Choice(
-        VerticalFlow(v => $"{v.Next(StringCell())}"),
-        VerticalFlow(v => $"{v.Next(IntCell())}"))
+        VerticalFlow(v =>
+        {
+          var stringCell = v.Next(StringCell());
+
+          return v.Build(read => $"{read.Of(stringCell)}");
+        }),
+        VerticalFlow(v =>
+        {
+          var intCell = v.Next(IntCell());
+
+          return v.Build(read => $"{read.Of(intCell)}");
+        }))
         .MapWithDiagnostics(Ladder());
 
       Assert.Equal("1", result.Value);
@@ -271,7 +432,18 @@ namespace Unrect.Tests.Projections
     public void ABoundaryAroundAFlow_AbsorbsADeepFailureWithTheInnerPath()
     {
       var deep = VerticalFlow(v =>
-        $"{v.Next(IntCell())}|{v.Next(VerticalFlow(w => $"{w.Next(IntCell())}{w.Next(StringCell().Named("deep"))}"))}");
+      {
+        var intCell = v.Next(IntCell());
+        var verticalFlow = v.Next(VerticalFlow(w =>
+          {
+            var intCell = w.Next(IntCell());
+            var stringCell = w.Next(StringCell().Named("deep"));
+
+            return w.Build(read => $"{read.Of(intCell)}{read.Of(stringCell)}");
+          }));
+
+        return v.Build(read => $"{read.Of(intCell)}|{read.Of(verticalFlow)}");
+      });
 
       var result = deep.Optional().MapWithDiagnostics(Ladder());
 
@@ -285,7 +457,18 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AnAbsorbedFlow_ConsumesNothing()
     {
-      var applied = VerticalFlow(v => $"{v.Next(VerticalFlow(w => w.Next(StringCell())).Else("fallback"))}|{v.Next(IntCell())}")
+      var applied = VerticalFlow(v =>
+      {
+        var verticalFlow = v.Next(VerticalFlow(w =>
+        {
+          var stringCell = w.Next(StringCell());
+
+          return w.Build(read2 => read2.Of(stringCell));
+        }).Else("fallback"));
+        var intCell = v.Next(IntCell());
+
+        return v.Build(read => $"{read.Of(verticalFlow)}|{read.Of(intCell)}");
+      })
         .Apply(Ladder());
 
       Assert.Equal("fallback|1", applied.Value);
@@ -300,7 +483,13 @@ namespace Unrect.Tests.Projections
       // The failure belongs to the child, with the child's path and cell. Only the sibling note may
       // ever be added to it.
       var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(StringCell().Named("title"))}").Map(Ladder()));
+        VerticalFlow(v =>
+        {
+          var intCell = v.Next(IntCell());
+          var stringCell = v.Next(StringCell().Named("title"));
+
+          return v.Build(read => $"{read.Of(intCell)}|{read.Of(stringCell)}");
+        }).Map(Ladder()));
 
       Assert.Equal("'title'", failure.Subject);
       Assert.Equal("VerticalFlow -> 'title' (Text)", failure.Path);
@@ -313,12 +502,12 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void UserCodeThrowingBetweenNextCalls_IsWrappedOnceAtTheFlowsOwnOrigin()
+    public void UserCodeThrowingInTheCombiner_IsWrappedOnceAtTheFlowsOwnOrigin()
     {
-      // The throw happened in the outer lambda, so the flow is what failed. This is why parsing
+      // The throw happened in the combiner, so the flow is what failed. This is why parsing
       // belongs inside a leaf's projection, where the location is the cell.
       var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow<int>(v => { _ = v.Next(IntCell()); throw new InvalidOperationException("boom"); }).Map(Ladder()));
+        VerticalFlow<int>(v => { _ = v.Next(IntCell()); return v.Build<int>(_ => throw new InvalidOperationException("boom")); }).Map(Ladder()));
 
       Assert.Equal("VerticalFlow", failure.Subject);
       Assert.Equal("VerticalFlow", failure.Path);
@@ -327,10 +516,10 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void ANullReferenceBetweenNextCalls_IsAFaultAndIsNotAbsorbed()
+    public void ANullReferenceInTheCombiner_IsAFaultAndIsNotAbsorbed()
     {
       var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow<int>(v => { _ = v.Next(IntCell()); throw new NullReferenceException("boom"); })
+        VerticalFlow<int>(v => { _ = v.Next(IntCell()); return v.Build<int>(_ => throw new NullReferenceException("boom")); })
           .Optional()
           .Map(Ladder()));
 
@@ -338,11 +527,11 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void AnArgumentExceptionBetweenNextCalls_IsStillAbsorbable()
+    public void AnArgumentExceptionInTheCombiner_IsStillAbsorbable()
     {
       // A parse that disagreed with the data is what tolerance is for; only the broken-code
       // exceptions are exempt.
-      var result = VerticalFlow<int>(v => { _ = v.Next(IntCell()); throw new ArgumentException("bad"); })
+      var result = VerticalFlow<int>(v => { _ = v.Next(IntCell()); return v.Build<int>(_ => throw new ArgumentException("bad")); })
         .Optional()
         .MapWithDiagnostics(Ladder());
 
@@ -353,54 +542,115 @@ namespace Unrect.Tests.Projections
     // --- Misuse -----------------------------------------------------------------------------------------------
 
     [Fact]
-    public void AFlowThatDeclaresNothing_Fails()
+    public void AFlowThatDeclaresNothing_IsRefusedWhereItIsWritten()
     {
-      // It would match anything, describe nothing, and quietly end an enclosing repetition.
-      var failure = Assert.Throws<ProjectionException>(() => VerticalFlow(_ => 42).Map(Ladder()));
+      // It would match anything, describe nothing, and quietly end an enclosing repetition — so
+      // Build refuses it at declaration, before there is a space or a boundary to hide it.
+      var failure = Assert.Throws<InvalidOperationException>(() => VerticalFlow<int>(v => v.Build(_ => 42)));
 
-      Assert.Contains("a flow must declare at least one projection; this one called Next zero times", failure.Message);
+      Assert.Equal("a flow must declare at least one projection; this one called Next zero times", failure.Message);
     }
 
     [Fact]
-    public void AFlowThatDeclaresNothing_ResistsAToleranceBoundary()
+    public void ANullProjectionIsRefusedWhereItIsWritten()
     {
-      // A declaration bug is not a shape of data, so no boundary may hide it.
-      Assert.Throws<ProjectionException>(() => VerticalFlow(_ => 42).Optional().Map(Ladder()));
-    }
-
-    [Fact]
-    public void ANullProjectionIsReportedWhereTheChildWouldHaveGone()
-    {
-      // The position is the pin: reporting the composite's own origin would be correct but vaguer,
-      // and A2 is only right because the context is advanced to the cursor before it is blamed.
+      // A hole in the declaration is refused at the declaration, naming the child it would have
+      // been; there is no space yet, so no cell to report it against and no boundary to absorb it.
       IProjection<ISheetCells, int>? missing = null;
 
-      var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(missing!)}").Map(Ladder()));
+      var failure = Assert.Throws<ArgumentNullException>(() =>
+        VerticalFlow(v =>
+        {
+          var intCell = v.Next(IntCell());
+          var missing2 = v.Next(missing!);
+
+          return v.Build(read => $"{read.Of(intCell)}|{read.Of(missing2)}");
+        }));
 
       Assert.Contains("a null projection was declared as child 2", failure.Message);
-      Assert.Equal("A2", failure.Location.A1);
-      Assert.Equal("VerticalFlow", failure.Path);
     }
 
     [Fact]
-    public void ANullFirstChildIsReportedAtTheFlowsOrigin()
+    public void ANullFirstChildIsRefusedAsChildOne()
     {
       IProjection<ISheetCells, int>? missing = null;
 
-      var failure = Assert.Throws<ProjectionException>(() => VerticalFlow(v => $"{v.Next(missing!)}").Map(Ladder()));
+      var failure = Assert.Throws<ArgumentNullException>(() => VerticalFlow(v =>
+      {
+        var missing2 = v.Next(missing!);
+
+        return v.Build(read => $"{read.Of(missing2)}");
+      }));
 
       Assert.Contains("a null projection was declared as child 1", failure.Message);
-      Assert.Equal("A1", failure.Location.A1);
     }
 
     [Fact]
-    public void ANullProjection_ResistsAToleranceBoundary()
+    public void ALayoutLambdaThatForgetsToBuild_DoesNotCompile()
     {
-      IProjection<ISheetCells, int>? missing = null;
+      // Pinned as prose: `VerticalFlow(v => v.Next(IntCell()))` returns a Slot where a Layout is
+      // required, and `VerticalFlow(_ => 42)` an int. The one diagnostic that moved into the type
+      // system needs no run-time test, only this note that it was not forgotten.
+    }
 
-      Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(missing!)}").Optional().Map(Ladder()));
+    [Fact]
+    public void ACursorUsedAfterItsLayoutWasBuilt_IsRefused()
+    {
+      var failure = Assert.Throws<InvalidOperationException>(() => VerticalFlow(v =>
+      {
+        var intCell = v.Next(IntCell());
+        var layout = v.Build(read => read.Of(intCell));
+
+        v.Next(IntCell());
+
+        return layout;
+      }));
+
+      Assert.Equal("A layout cursor cannot be used outside the layout that created it; this one has already been built.", failure.Message);
+    }
+
+    [Fact]
+    public void ALayoutBuiltByAnotherCursor_IsRefused()
+    {
+      Layout<ISheetCells, int>? stolen = null;
+
+      VerticalFlow(v =>
+      {
+        var intCell = v.Next(IntCell());
+        stolen = v.Build(read => read.Of(intCell));
+        return stolen;
+      });
+
+      var failure = Assert.Throws<ArgumentException>(() => VerticalFlow(v => stolen!));
+
+      Assert.Contains("another cursor built", failure.Message);
+    }
+
+    [Fact]
+    public void ASlotReadsOnlyInTheLayoutThatDeclaredIt()
+    {
+      Slot<int> foreign = default;
+
+      VerticalFlow(v =>
+      {
+        foreign = v.Next(IntCell());
+        return v.Build(read => read.Of(foreign));
+      });
+
+      var other = VerticalFlow(v =>
+      {
+        var intCell = v.Next(IntCell());
+        return v.Build(read => read.Of(intCell) + read.Of(foreign));
+      });
+
+      var failure = Assert.Throws<ProjectionException>(() => other.Map(Ladder()));
+
+      Assert.Contains("belongs to another layout", failure.Message);
+      Assert.Contains("never declared", Assert.Throws<ProjectionException>(() => VerticalFlow(v =>
+      {
+        var intCell = v.Next(IntCell());
+        return v.Build(read => read.Of(intCell) + read.Of(default(Slot<int>)));
+      }).Map(Ladder())).Message);
     }
 
     [Fact]
@@ -423,25 +673,53 @@ namespace Unrect.Tests.Projections
     {
       // The description is what a path segment renders as, so it is pinned as a literal rather
       // than compared against another spelling of the same thing.
-      Assert.Equal("VerticalFlow", VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(IntCell())}").Description);
-      Assert.Equal("HorizontalFlow", HorizontalFlow(v => $"{v.Next(IntCell())}{v.Next(IntCell())}").Description);
+      Assert.Equal("VerticalFlow", VerticalFlow(v =>
+      {
+        var intCell = v.Next(IntCell());
+        var intCell2 = v.Next(IntCell());
+
+        return v.Build(read => $"{read.Of(intCell)}{read.Of(intCell2)}");
+      }).Description);
+      Assert.Equal("HorizontalFlow", HorizontalFlow(v =>
+      {
+        var intCell = v.Next(IntCell());
+        var intCell2 = v.Next(IntCell());
+
+        return v.Build(read => $"{read.Of(intCell)}{read.Of(intCell2)}");
+      }).Description);
     }
 
     [Fact]
-    public void AFlowHasNoChildrenToEnumerate()
+    public void AFlowEnumeratesItsChildrenInDeclarationOrder()
     {
-      // The cost of the experiment, stated as a test: what it declares is knowable only by running
-      // it, so anything structural that runs without a space sees nothing.
-      Assert.Empty(VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(IntCell())}").Children);
+      // The lambda ran once, at declaration, so what it declared is complete before any space exists:
+      // anything structural that runs without a space sees every child, in order, at its ordinal.
+      var children = VerticalFlow(v =>
+      {
+        var intCell = v.Next(IntCell());
+        var intCell2 = v.Next(IntCell());
+
+        return v.Build(read => $"{read.Of(intCell)}{read.Of(intCell2)}");
+      }).Children;
+
+      Assert.Equal(2, children.Count);
+      Assert.Equal(1, children[0].Site.Ordinal);
+      Assert.Equal(2, children[1].Site.Ordinal);
     }
 
     [Fact]
-    public void AFlowSaysWhyItsChildrenAreMissing()
+    public void AFlowHidesNothing()
     {
-      // Empty children would read as "leaf" to a renderer, which is a lie; this is how it can tell.
-      var projection = VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(IntCell())}");
+      // Its children are the whole truth, so it has no opacity to declare.
+      var projection = VerticalFlow(v =>
+      {
+        var intCell = v.Next(IntCell());
+        var intCell2 = v.Next(IntCell());
 
-      Assert.Equal("declared by a cursor lambda; children are known only while it runs", projection.Opacity);
+        return v.Build(read => $"{read.Of(intCell)}{read.Of(intCell2)}");
+      });
+
+      Assert.Null(projection.Opacity);
     }
 
     [Fact]
@@ -449,7 +727,13 @@ namespace Unrect.Tests.Projections
     {
       var space = Grid(new[,] { { 0 }, { 1 }, { 2 } });
 
-      var projection = AfterBlankRows().Of(VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(IntCell())}")).Named("block");
+      var projection = AfterBlankRows().Of(VerticalFlow(v =>
+      {
+        var intCell = v.Next(IntCell());
+        var intCell2 = v.Next(IntCell());
+
+        return v.Build(read => $"{read.Of(intCell)}|{read.Of(intCell2)}");
+      })).Named("block");
 
       Assert.Equal("1|2", projection.Map(space));
       Assert.Equal("block", projection.Name);
@@ -461,7 +745,13 @@ namespace Unrect.Tests.Projections
     public void ACaptureNothingFlowIsSafeToApplyToManySpacesAtOnce()
     {
       // The immutability guarantee survives the lambda as long as the lambda writes to nothing.
-      var projection = VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(IntCell())}");
+      var projection = VerticalFlow(v =>
+      {
+        var intCell = v.Next(IntCell());
+        var intCell2 = v.Next(IntCell());
+
+        return v.Build(read => $"{read.Of(intCell)}|{read.Of(intCell2)}");
+      });
 
       var spaces = Enumerable.Range(0, 64)
         .Select(seed => Grid(new[,] { { seed + 1 }, { seed + 2 } }))

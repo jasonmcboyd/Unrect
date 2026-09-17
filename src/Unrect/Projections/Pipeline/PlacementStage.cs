@@ -59,23 +59,23 @@ namespace Unrect.Projections
     // whose result type lives inside its own lambda has to be told what space it is over, and the
     // receiver's type is the telling.
 
-    /// <inheritdoc cref="ProjectionBuilders{TSpace}.VerticalFlow{T}(Layout{TSpace, T})"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.VerticalFlow{T}(LayoutDeclaration{TSpace, T})"/>
     /// <typeparam name="T">What the layout builds.</typeparam>
-    /// <param name="build">The layout, declaring its children by calling <c>Next</c>.</param>
-    public IProjection<TSpace, T> VerticalFlow<T>(Layout<TSpace, T> build)
-      => Close(ProjectionBuilders<TSpace>.VerticalFlow(build));
+    /// <param name="declare">The layout: its children declared with <c>Next</c>, closed with <c>Build</c>.</param>
+    public IProjection<TSpace, T> VerticalFlow<T>(LayoutDeclaration<TSpace, T> declare)
+      => Close(ProjectionBuilders<TSpace>.VerticalFlow(declare));
 
-    /// <inheritdoc cref="ProjectionBuilders{TSpace}.HorizontalFlow{T}(Layout{TSpace, T})"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.HorizontalFlow{T}(LayoutDeclaration{TSpace, T})"/>
     /// <typeparam name="T">What the layout builds.</typeparam>
-    /// <param name="build">The layout, declaring its children by calling <c>Next</c>.</param>
-    public IProjection<TSpace, T> HorizontalFlow<T>(Layout<TSpace, T> build)
-      => Close(ProjectionBuilders<TSpace>.HorizontalFlow(build));
+    /// <param name="declare">The layout: its children declared with <c>Next</c>, closed with <c>Build</c>.</param>
+    public IProjection<TSpace, T> HorizontalFlow<T>(LayoutDeclaration<TSpace, T> declare)
+      => Close(ProjectionBuilders<TSpace>.HorizontalFlow(declare));
 
-    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Overlay{T}(Layout{TSpace, T})"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Overlay{T}(LayoutDeclaration{TSpace, T})"/>
     /// <typeparam name="T">What the layout builds.</typeparam>
-    /// <param name="build">The layout, declaring its children by calling <c>Next</c>.</param>
-    public IProjection<TSpace, T> Overlay<T>(Layout<TSpace, T> build)
-      => Close(ProjectionBuilders<TSpace>.Overlay(build));
+    /// <param name="declare">The layout: its children declared with <c>Next</c>, closed with <c>Build</c>.</param>
+    public IProjection<TSpace, T> Overlay<T>(LayoutDeclaration<TSpace, T> declare)
+      => Close(ProjectionBuilders<TSpace>.Overlay(declare));
 
     // --- Repetition and alternation ----------------------------------------------------------------
 

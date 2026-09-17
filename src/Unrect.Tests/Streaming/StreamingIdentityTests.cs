@@ -165,11 +165,19 @@ namespace Unrect.Tests.Streaming
 
       const string Inception = "Cash Flows using inception date";
 
-      return VerticalFlow(v => (
-        Title: v.Next(Column(4, column => column[0].Text()).Named("report header")),
-        Summary: v.Next(Table(row => row["Investors"].Text()).Named("summary")),
-        ByTransferDate: v.Next(Until(RowContaining(Inception)).Heading("IRR Details").Heading("Cash Flows Using Transfer Date").Of(series)),
-        ByInception: v.Next(Heading(Inception).Of(series))));
+      return VerticalFlow(v =>
+      {
+        var columnSlot = v.Next(Column(4, column => column[0].Text()).Named("report header"));
+        var table = v.Next(Table(row => row["Investors"].Text()).Named("summary"));
+        var until = v.Next(Until(RowContaining(Inception)).Heading("IRR Details").Heading("Cash Flows Using Transfer Date").Of(series));
+        var heading = v.Next(Heading(Inception).Of(series));
+
+        return v.Build(read => (
+          Title: read.Of(columnSlot),
+          Summary: read.Of(table),
+          ByTransferDate: read.Of(until),
+          ByInception: read.Of(heading)));
+      });
     }
 
     [Fact]
@@ -248,9 +256,15 @@ namespace Unrect.Tests.Streaming
       // investors-by-deal: repeating blocks separated by blank bands, which is the projection whose
       // termination depends on reading past the end of one block and into the next.
       var declaration = VerticalRepeat(
-        VerticalFlow(v => (
-          Deal: v.Next(TextCell()),
-          Rows: v.Next(Table(row => row["Name"].Text())))),
+        VerticalFlow(v =>
+        {
+          var textCell = v.Next(TextCell());
+          var table = v.Next(Table(row => row["Name"].Text()));
+
+          return v.Build(read => (
+            Deal: read.Of(textCell),
+            Rows: read.Of(table)));
+        }),
         separatedBy: BlankRows());
 
       var eager = declaration.Map(SpreadsheetSpace.Create(Path("investors-by-deal.xlsx"), "Investors"));
@@ -267,9 +281,15 @@ namespace Unrect.Tests.Streaming
     [Fact]
     public void ATableBoundByItsHeaderReadsTheSameThroughAWindow()
     {
-      var declaration = VerticalFlow(v => (
-        Header: v.Next(Column(4, column => column[0].Text())),
-        Rows: v.Next(Table(row => (row["Client"].Text(), row["Amount"].Decimal())))));
+      var declaration = VerticalFlow(v =>
+      {
+        var columnSlot = v.Next(Column(4, column => column[0].Text()));
+        var table = v.Next(Table(row => (row["Client"].Text(), row["Amount"].Decimal())));
+
+        return v.Build(read => (
+          Header: read.Of(columnSlot),
+          Rows: read.Of(table)));
+      });
 
       var eager = declaration.Map(SpreadsheetSpace.Create(Path("simple-report.xlsx"), "Report"));
 
@@ -292,10 +312,17 @@ namespace Unrect.Tests.Streaming
 
     private static IProjection<ISheetCells, IReadOnlyList<LedgerEntry>> Ledger()
     {
-      var ledgerEntry = HorizontalFlow(h => new LedgerEntry(
-        Entry: h.Next(Integer()),
-        Amount: h.Next(Integer()),
-        Category: h.Next(Text())));
+      var ledgerEntry = HorizontalFlow(h =>
+      {
+        var integer = h.Next(Integer());
+        var integer2 = h.Next(Integer());
+        var textSlot = h.Next(Text());
+
+        return h.Build(read => new LedgerEntry(
+          Entry: read.Of(integer),
+          Amount: read.Of(integer2),
+          Category: read.Of(textSlot)));
+      });
 
       return Below(RowContaining("Entry")).Of(Table(headerRows: 0, eachRow: ledgerEntry));
     }
@@ -354,10 +381,17 @@ namespace Unrect.Tests.Streaming
     /// </summary>
     private static IProjection<ISheetCells, IReadOnlyList<LedgerEntry>> HeaderedLedger()
     {
-      var ledgerEntry = HorizontalFlow(h => new LedgerEntry(
-        Entry: h.Next(Integer()),
-        Amount: h.Next(Integer()),
-        Category: h.Next(Text())));
+      var ledgerEntry = HorizontalFlow(h =>
+      {
+        var integer = h.Next(Integer());
+        var integer2 = h.Next(Integer());
+        var textSlot = h.Next(Text());
+
+        return h.Build(read => new LedgerEntry(
+          Entry: read.Of(integer),
+          Amount: read.Of(integer2),
+          Category: read.Of(textSlot)));
+      });
 
       return On(RowContaining("Entry")).Of(Table(headerRows: 1, eachRow: ledgerEntry));
     }
@@ -399,7 +433,14 @@ namespace Unrect.Tests.Streaming
       // The whole sheet is 1,201 rows, so this is not a declaration that happens to fit by reading
       // everything: it is a bounded band inside a sheet two orders of magnitude bigger.
       var band = On(RowContaining("Entry")).Sized(AreaStrategies.ExplicitArea(3, 3)).Of(
-        HorizontalFlow(h => $"{h.Next(Column(3, c => c.Count))}|{h.Next(Column(3, c => c.Count))}|{h.Next(Column(3, c => c.Count))}"));
+        HorizontalFlow(h =>
+        {
+          var columnSlot = h.Next(Column(3, c => c.Count));
+          var columnSlot2 = h.Next(Column(3, c => c.Count));
+          var columnSlot3 = h.Next(Column(3, c => c.Count));
+
+          return h.Build(read => $"{read.Of(columnSlot)}|{read.Of(columnSlot2)}|{read.Of(columnSlot3)}");
+        }));
 
       using var book = Workbook.Open(
         Path("tall-ledger.xlsx"),

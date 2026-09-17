@@ -12,9 +12,13 @@ using Unrect.Spreadsheets;
 using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 
-var report = VerticalFlow(v => new Report(
-    Title: v.Next(Text()),
-    Rows:  v.Next(Table(headerRows: 1, eachRow: row))));
+var report = VerticalFlow(v =>
+{
+    var title = v.Next(Text());
+    var rows  = v.Next(Table(headerRows: 1, eachRow: row));
+
+    return v.Build(read => new Report(Title: read.Of(title), Rows: read.Of(rows)));
+});
 ```
 
 Everything below that pair of `using static` lines is written with **zero prefix**: no
@@ -95,7 +99,7 @@ Two notes the ladder earns:
 
 | Operator | Claim |
 |---|---|
-| `VerticalFlow(v => ...)` / `HorizontalFlow(v => ...)` | Stacked bands, one per child: each child's band spans the flow's full width, so no sibling ever shares it. `v.Next(projection)` declares the next child and returns its value; any arity |
+| `VerticalFlow(v => ...)` / `HorizontalFlow(v => ...)` | Stacked bands, one per child: each child's band spans the flow's full width, so no sibling ever shares it. The lambda runs once, at declaration: `v.Next(projection)` declares the next child and hands back a `Slot<T>`, and `v.Build(read => ...)` closes the layout with the combiner that reads the slots (`read.Of(slot)`); any arity, and nothing in the lambda has a value to branch on |
 | `Overlay(o => ...)` | One shared band; each child finds its own place by its own placement; no advance between children; consumed = bounding box |
 | `VerticalRepeat(item, separatedBy:, atLeast:)` / `HorizontalRepeat(...)` | N items with separators. A blank band is a separator, never a terminator — bound the repeat with `.Until` to end it at content |
 | `VerticalBands(rows, each, onBlank:)` / `HorizontalBands(columns, ...)` | The extent cut into bands of a fixed stride, each projected by `each`. Nothing is searched for; the tiling ends when a whole band is no longer left. The contrast with a repeat: a repeat repeats a *pattern*, a tiler repeats a *fixed-dimension space* |
@@ -316,9 +320,13 @@ using Unrect.Spreadsheets;
 using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>;
 using static Unrect.Spreadsheets.SpreadsheetProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>;
 
-var report = VerticalFlow(v => new Report(
-    Title: v.Next(Text()),
-    Rows:  v.Next(Table(headerRows: 1, eachRow: row))));
+var report = VerticalFlow(v =>
+{
+    var title = v.Next(Text());
+    var rows  = v.Next(Table(headerRows: 1, eachRow: row));
+
+    return v.Build(read => new Report(Title: read.Of(title), Rows: read.Of(rows)));
+});
 ```
 
 **The space is spelled in full, in the `using static` line, exactly once** — a `using` directive

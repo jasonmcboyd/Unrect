@@ -140,7 +140,7 @@ namespace Unrect.Tests.Projections
         var caption = v.Next(Range(1, 1, b => b[0, 0].Integer()));
         var body = v.Next(Range(RowsWhileAny(BreaksOn(LateMarker)), _ => 0).Named("body"));
 
-        return caption + body;
+        return v.Build(read => read.Of(caption) + read.Of(body));
       });
 
       AssertSameFailureBothWays(projection);
