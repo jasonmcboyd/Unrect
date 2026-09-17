@@ -37,7 +37,7 @@ namespace Unrect.Projections
     public override IReadOnlyList<IProjection> Children { get; }
 
     /// <summary>Like a pad: a bound the user wrote as part of a projection is not a level of the tree.</summary>
-    public override bool IsTransparent => Name is null && !IsUnitBoundary;
+    public override bool IsWrapper => true;
 
     /// <summary>
     /// The refusal a second bound gets, naming the modifier that asked for it. A bound written

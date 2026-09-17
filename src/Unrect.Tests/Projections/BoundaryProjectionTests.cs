@@ -545,10 +545,10 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void OnlyAnUnnamedBoundaryIsTransparent()
+    public void ABoundaryIsAWrapperWhetherOrNotItIsNamed()
     {
-      Assert.True(Title().Optional().IsTransparent);
-      Assert.False(Title().Optional().Named("named").IsTransparent);
+      Assert.True(Title().Optional().IsWrapper);
+      Assert.True(Title().Optional().Named("named").IsWrapper);
     }
 
     // --- Argument guards --------------------------------------------------------------------------------------------------

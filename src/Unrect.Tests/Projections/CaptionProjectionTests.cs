@@ -171,7 +171,7 @@ namespace Unrect.Tests.Projections
 
       Assert.Equal("Caption(\"IRR Details\")", caption.Description);
       Assert.Empty(caption.Children);
-      Assert.False(caption.IsTransparent);
+      Assert.False(caption.IsWrapper);
     }
 
     [Fact]

@@ -439,12 +439,9 @@ namespace Unrect.Tests.Projections
     public void AFlowSaysWhyItsChildrenAreMissing()
     {
       // Empty children would read as "leaf" to a renderer, which is a lie; this is how it can tell.
-      // The marker is internal to Unrect, which these tests can see.
       var projection = VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(IntCell())}");
 
-      var marker = Assert.IsAssignableFrom<IOpaqueComposite>(projection);
-
-      Assert.Equal("declared by a cursor lambda; children are known only while it runs", marker.Reason);
+      Assert.Equal("declared by a cursor lambda; children are known only while it runs", projection.Opacity);
     }
 
     [Fact]
@@ -456,7 +453,7 @@ namespace Unrect.Tests.Projections
 
       Assert.Equal("1|2", projection.Map(space));
       Assert.Equal("block", projection.Name);
-      Assert.False(projection.IsTransparent);
+      Assert.False(projection.IsWrapper);
       Assert.Null(projection.Placement.Area);
     }
 

@@ -298,7 +298,7 @@ namespace Unrect.Tests.Projections
     public void TheSecondOptionalIsAWrapperOnlyInspectionCanSee()
     {
       // Where the idempotence stops, which is L0: the doubled form is a boundary over a Select over
-      // a boundary. Both describe themselves the same way and both are transparent, so the extra
+      // a boundary. Both describe themselves the same way and both are unnamed wrappers, so the extra
       // level contributes no path segment and no description a diagnostic could carry — which is
       // exactly why the levels above cannot tell them apart.
       var x = Rejects("x");
@@ -308,8 +308,8 @@ namespace Unrect.Tests.Projections
 
       Assert.Equal("Optional", once.Description);
       Assert.Equal("Optional", twice.Description);
-      Assert.True(once.IsTransparent);
-      Assert.True(twice.IsTransparent);
+      Assert.True(once.IsWrapper);
+      Assert.True(twice.IsWrapper);
 
       Assert.Equal("Select", Assert.Single(Assert.Single(once.Children).Children).Description);
       Assert.Equal("Optional", Assert.Single(Assert.Single(twice.Children).Children).Description);

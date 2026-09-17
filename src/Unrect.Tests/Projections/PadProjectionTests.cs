@@ -160,10 +160,10 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void OnlyAnUnnamedPadIsTransparent()
+    public void APadIsAWrapperWhetherOrNotItIsNamed()
     {
-      Assert.True(IntCell().Padded(1).IsTransparent);
-      Assert.False(IntCell().Padded(1).Named("named").IsTransparent);
+      Assert.True(IntCell().Padded(1).IsWrapper);
+      Assert.True(IntCell().Padded(1).Named("named").IsWrapper);
     }
 
     // --- Inspection ------------------------------------------------------------------------------------------

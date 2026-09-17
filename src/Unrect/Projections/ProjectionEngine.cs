@@ -111,10 +111,10 @@ namespace Unrect.Projections
       }
 
       var inner = availableSpace.Slice(offset);
-      // A transparent projection is not entered — it contributes no path segment — so it reports
+      // A projection the path skips is not entered — it contributes no segment — so it reports
       // against whatever context it was called with. At the root there is nothing in that context to
       // report against, so the root is told who it is applying instead.
-      var scope = projection.IsTransparent ? context.Blaming(projection) : context.Descend(projection);
+      var scope = ProjectionContext.Skipped(projection) ? context.Blaming(projection) : context.Descend(projection);
 
       if (projection.Placement.Area is null)
       {

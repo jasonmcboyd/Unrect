@@ -17,7 +17,7 @@ namespace Unrect.Tests.Projections
   /// A projection is an inspectable value, not a closure over a file: its name, description and
   /// placement can all be read without ever handing it a space, and so can its children — except
   /// for a layout composite, which declares its children by running a lambda and therefore has none
-  /// to show. That one says so rather than passing for a leaf, through <c>IOpaqueComposite</c>.
+  /// to show. That one says so rather than passing for a leaf, through <c>Opacity</c>.
   /// <para>
   /// What is left readable is what makes the wave-3 diagnostics (dry runs, traces, capability
   /// checks) possible, and it is what makes one projection safe to apply to many spaces at once.
@@ -177,25 +177,25 @@ namespace Unrect.Tests.Projections
       Assert.Same(inner, Assert.Single(inner.Select(v => v + 1).Children));
     }
 
-    // --- Transparency ---------------------------------------------------------------------------------------
+    // --- Wrappers ---------------------------------------------------------------------------------------
 
     [Fact]
-    public void OnlyAnUnnamedWrapperIsTransparent()
+    public void AWrapperSaysSoWhetherOrNotItIsNamed()
     {
-      // A wrapper the user wrote as part of a projection is not a level of the tree — until it is
-      // named, at which point it claims a segment and says what it is.
-      Assert.True(IntCell().Select(v => v + 1).IsTransparent);
-      Assert.True(IntCell().Padded(1).IsTransparent);
-      Assert.True(Until(RowContaining("Total")).Of(IntCell()).IsTransparent);
+      // A structural fact about the projection, not a rendering decision: naming a wrapper changes
+      // whether a path shows it (the renderer's rule), never what it is.
+      Assert.True(IntCell().Select(v => v + 1).IsWrapper);
+      Assert.True(IntCell().Padded(1).IsWrapper);
+      Assert.True(Until(RowContaining("Total")).Of(IntCell()).IsWrapper);
 
-      Assert.False(IntCell().Select(v => v + 1).Named("named").IsTransparent);
-      Assert.False(IntCell().Padded(1).Named("named").IsTransparent);
-      Assert.False(Until(RowContaining("Total")).Of(IntCell()).Named("named").IsTransparent);
+      Assert.True(IntCell().Select(v => v + 1).Named("named").IsWrapper);
+      Assert.True(IntCell().Padded(1).Named("named").IsWrapper);
+      Assert.True(Until(RowContaining("Total")).Of(IntCell()).Named("named").IsWrapper);
 
       // Projections that are levels of the tree in their own right never are.
-      Assert.False(IntCell().IsTransparent);
-      Assert.False(VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(IntCell())}").IsTransparent);
-      Assert.False(VerticalRepeat(IntCell()).IsTransparent);
+      Assert.False(IntCell().IsWrapper);
+      Assert.False(VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(IntCell())}").IsWrapper);
+      Assert.False(VerticalRepeat(IntCell()).IsWrapper);
     }
 
     // --- Placement ---------------------------------------------------------------------------------------------
@@ -269,11 +269,10 @@ namespace Unrect.Tests.Projections
     }
 
     /// <summary>
-    /// Why a composite's children are missing, or null when it has none to hide. The marker is
-    /// internal to Unrect, which these tests can see; a renderer shipped in another assembly could
-    /// not, and is the reason the marker exists at all rather than a member on <c>IProjection</c>.
+    /// Why a composite's children are missing, or null when it has none to hide — read off the
+    /// public face, exactly as a renderer shipped in another assembly would read it.
     /// </summary>
-    private static string? Reason(IProjection projection) => (projection as IOpaqueComposite)?.Reason;
+    private static string? Reason(IProjection projection) => projection.Opacity;
 
     // --- Reuse ---------------------------------------------------------------------------------------------------
 

@@ -51,29 +51,23 @@ namespace Unrect.Projections
     /// <summary>No children by default; a composite overrides this to declare its own.</summary>
     public virtual IReadOnlyList<IProjection> Children => NoChildren;
 
-    /// <summary>Opaque by default; only an unnamed wrapper overrides this to true.</summary>
-    public virtual bool IsTransparent => false;
+    /// <summary>A level of the tree by default; only a wrapper overrides this to true.</summary>
+    public virtual bool IsWrapper => false;
+
+    /// <summary>Children are the whole truth by default; a layout overrides this to say why they are not.</summary>
+    public virtual string? Opacity => null;
 
     /// <inheritdoc/>
-    public bool IsUnitBoundary { get; private set; }
+    public string? UnitName { get; private set; }
 
-    /// <summary>
-    /// The kind label <c>.AsUnit</c> gave this boundary, or null. A separate slot from
-    /// <see cref="Name"/>: a named boundary renders both, as <c>UnitName:Name</c>.
-    /// </summary>
-    internal string? UnitName { get; private set; }
-
-    /// <summary>
-    /// Whether this node is a composition's internal plumbing rather than something the declaration
-    /// wrote. A collapsed path drops it and keeps its occurrence index.
-    /// </summary>
-    internal bool IsUnitScaffolding { get; private set; }
+    /// <inheritdoc/>
+    public bool IsScaffolding { get; private set; }
 
     /// <summary>This projection marked internal plumbing — a copy, of this same type.</summary>
     internal ProjectionBase AsScaffolding()
     {
       var clone = Clone();
-      clone.IsUnitScaffolding = true;
+      clone.IsScaffolding = true;
       return clone;
     }
 
@@ -87,15 +81,13 @@ namespace Unrect.Projections
 
     /// <summary>
     /// This projection marked a path boundary with kind label <paramref name="name"/> — a copy, of
-    /// this same type. The label is the collapsed path's segment; the flag is what folds the unit's
-    /// internals into it. Independent of <see cref="Name"/>, so a boundary that is also
-    /// <c>.Named</c> renders <c>label:name</c>.
+    /// this same type. The label is the collapsed path's segment. Independent of
+    /// <see cref="Name"/>, so a boundary that is also <c>.Named</c> renders <c>label:name</c>.
     /// </summary>
     internal ProjectionBase AsUnitBoundary(string name)
     {
       var clone = Clone();
       clone.UnitName = name;
-      clone.IsUnitBoundary = true;
       return clone;
     }
 
@@ -115,8 +107,7 @@ namespace Unrect.Projections
     {
       rewritten.Name = Name;
       rewritten.UnitName = UnitName;
-      rewritten.IsUnitBoundary = IsUnitBoundary;
-      rewritten.IsUnitScaffolding = IsUnitScaffolding;
+      rewritten.IsScaffolding = IsScaffolding;
 
       return rewritten;
     }

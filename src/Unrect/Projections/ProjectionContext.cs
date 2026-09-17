@@ -297,18 +297,26 @@ namespace Unrect.Projections
     /// </summary>
     internal static IProjection Through(IProjection projection)
     {
-      while (projection.Name is null && projection.IsTransparent && projection.Children.Count > 0)
+      while (Skipped(projection) && projection.Children.Count > 0)
         projection = projection.Children[0];
 
       return projection;
     }
 
+    /// <summary>
+    /// The renderer's one rule about wrappers: an unnamed wrapper carrying no unit label is not a
+    /// level of the path. The projection publishes the structural fact (<see
+    /// cref="IProjection.IsWrapper"/>); whether that fact hides it is decided here and nowhere else.
+    /// </summary>
+    internal static bool Skipped(IProjection projection)
+      => projection.IsWrapper && projection.Name is null && projection.UnitName is null;
+
     internal static string DescribeThrough(IProjection projection) => Describe(Through(projection));
 
     /// <summary>
     /// The chain of enclosing projections, root to leaf, ending at <paramref name="failing"/> — a
-    /// child of this context when a projection fails before it is descended into. Transparent
-    /// wrappers say nothing about themselves and are left out.
+    /// child of this context when a projection fails before it is descended into. Wrappers the path
+    /// skips say nothing about themselves and are left out.
     /// </summary>
     private List<PathNode> Chain(IProjection? failing)
     {
@@ -317,7 +325,7 @@ namespace Unrect.Projections
 
       for (var context = this; context is not null; context = context.Parent)
       {
-        if (context.Projection is not IProjection projection || projection.IsTransparent)
+        if (context.Projection is not IProjection projection || Skipped(projection))
           continue;
 
         chain.Insert(0, new PathNode(projection, context.Site, context.Index));
@@ -367,7 +375,7 @@ namespace Unrect.Projections
 
       foreach (var node in chain)
       {
-        if (!IsScaffolding(node.Projection))
+        if (!node.Projection.IsScaffolding)
           Keep(node);
         // With nothing kept above it there is no segment to carry the index up onto, so it is
         // dropped rather than moved down onto whatever the fold keeps next; RenderFull still has it.
@@ -382,7 +390,7 @@ namespace Unrect.Projections
 
       // The suffix says what a quoted name hides, and the deepest node is what it would say — so
       // scaffolding there has no name to speak for and nothing to add.
-      if (!IsScaffolding(chain[chain.Count - 1].Projection))
+      if (!chain[chain.Count - 1].Projection.IsScaffolding)
         ApplyKindSuffix(segments, chain[chain.Count - 1]);
 
       return (string.Join(" -> ", segments), SegmentName(surviving));
@@ -395,9 +403,6 @@ namespace Unrect.Projections
       }
     }
 
-    private static bool IsScaffolding(IProjection projection)
-      => projection is ProjectionBase node && node.IsUnitScaffolding;
-
     /// <summary>What a projection contributes to a path: its name, plus its occurrence index if it has one.</summary>
     private static string Segment(PathNode node)
       => SegmentName(node) + (node.Index is int index ? $"[{index}]" : string.Empty);
@@ -408,10 +413,9 @@ namespace Unrect.Projections
     /// </summary>
     private static string SegmentName(PathNode node)
     {
-      if (!node.Projection.IsUnitBoundary)
+      if (node.Projection.UnitName is not string label)
         return Describe(node.Projection, node.Site);
 
-      var label = ((ProjectionBase)node.Projection).UnitName!;
       return node.Projection.Name is string instance ? $"{label}:{instance}" : label;
     }
 

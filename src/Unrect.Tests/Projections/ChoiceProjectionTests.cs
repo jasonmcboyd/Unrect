@@ -394,7 +394,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal(2, choice.Children.Count);
       Assert.Same(first, choice.Children[0]);
       Assert.Same(second, choice.Children[1]);
-      Assert.False(choice.IsTransparent);
+      Assert.False(choice.IsWrapper);
       Assert.Null(choice.Placement.Area);
     }
 

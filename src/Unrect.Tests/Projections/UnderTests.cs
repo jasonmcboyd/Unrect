@@ -45,7 +45,7 @@ namespace Unrect.Tests.Projections
       var section = Heading("Detail").Of(Lines());
 
       Assert.Equal("Heading", section.Description);
-      Assert.False(section.IsTransparent);
+      Assert.False(section.IsWrapper);
       Assert.Null(section.Placement.Area);
     }
 
@@ -54,10 +54,8 @@ namespace Unrect.Tests.Projections
     {
       var section = Heading("Detail").Of(Lines());
 
-      var marker = Assert.IsAssignableFrom<IOpaqueComposite>(section);
-
       Assert.Empty(section.Children);
-      Assert.Equal("declared by a cursor lambda; children are known only while it runs", marker.Reason);
+      Assert.Equal("declared by a cursor lambda; children are known only while it runs", section.Opacity);
     }
 
     [Fact]

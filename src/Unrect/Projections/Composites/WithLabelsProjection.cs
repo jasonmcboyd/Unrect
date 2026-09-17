@@ -33,7 +33,7 @@ namespace Unrect.Projections
 
     public override IReadOnlyList<IProjection> Children { get; }
 
-    public override bool IsTransparent => Name is null && !IsUnitBoundary;
+    public override bool IsWrapper => true;
 
     public override ProjectionResult<T> Project(Plane<TSpace> extent, ProjectionContext context)
     {

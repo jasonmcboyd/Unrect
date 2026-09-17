@@ -175,11 +175,8 @@ namespace Unrect.Tests.Projections
 
       Assert.Equal("Overlay", overlay.Description);
       Assert.Empty(overlay.Children);
-      Assert.False(overlay.IsTransparent);
-
-      var marker = Assert.IsAssignableFrom<IOpaqueComposite>(overlay);
-
-      Assert.Equal("declared by a cursor lambda; children are known only while it runs", marker.Reason);
+      Assert.False(overlay.IsWrapper);
+      Assert.Equal("declared by a cursor lambda; children are known only while it runs", overlay.Opacity);
     }
 
     [Fact]

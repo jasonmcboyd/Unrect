@@ -282,9 +282,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal("Fields", entity.Description);
       Assert.Empty(entity.Children);
 
-      var marker = Assert.IsAssignableFrom<IOpaqueComposite>(entity);
-
-      Assert.Equal("declared by a cursor lambda; children are known only while it runs", marker.Reason);
+      Assert.Equal("declared by a cursor lambda; children are known only while it runs", entity.Opacity);
     }
 
     [Fact]

@@ -29,19 +29,35 @@ namespace Unrect.Projections
     IReadOnlyList<IProjection> Children { get; }
 
     /// <summary>
-    /// True only for unnamed wrappers (<c>Select</c>, <c>Padded</c>, <c>Until</c>, and the
-    /// <c>Else</c>/<c>Optional</c> boundary), which contribute no segment to a failure path;
-    /// naming a wrapper or marking it a unit boundary makes it opaque and it claims the segment.
+    /// The label <c>.AsUnit</c> gave this projection, or null. When set, its path segment is that
+    /// label rather than its description or use-site name (joined as <c>label:name</c> when it is
+    /// also <c>.Named</c>), and a wrapper carrying one claims a segment it would otherwise not.
+    /// Folding a path is a separate mark — <see cref="IsScaffolding"/>, on the parts to drop.
     /// </summary>
-    bool IsTransparent { get; }
+    string? UnitName { get; }
 
     /// <summary>
-    /// True when <c>.AsUnit</c> gave this projection a unit label: its path segment is that label
-    /// rather than its description or use-site name (joined as <c>label:name</c> when it is also
-    /// <c>.Named</c>), and it is opaque even where it would otherwise be transparent. Folding a
-    /// path is a separate mark — <c>.AsScaffolding</c>, on the parts to drop.
+    /// True when <c>.AsScaffolding</c> marked this projection a composition's internal plumbing: a
+    /// collapsed path drops its segment and carries only its occurrence index up onto the nearest
+    /// segment that was kept.
     /// </summary>
-    bool IsUnitBoundary { get; }
+    bool IsScaffolding { get; }
+
+    /// <summary>
+    /// True for a projection the declaration did not write as a level of its own — <c>Select</c>,
+    /// <c>Padded</c>, <c>Until</c>, and the <c>Else</c>/<c>Optional</c> boundary. A structural
+    /// fact, and only that: whether a path skips it is the renderer's rule (an unnamed wrapper with
+    /// no unit label contributes no segment), not the projection's.
+    /// </summary>
+    bool IsWrapper { get; }
+
+    /// <summary>
+    /// Null when <see cref="Children"/> is the whole truth. A sentence when it is not — a
+    /// composite whose children exist only while it runs, which would otherwise read as a leaf to
+    /// anything walking a declaration without a space. A renderer shows the sentence in the
+    /// children's place.
+    /// </summary>
+    string? Opacity { get; }
   }
 
   /// <summary>

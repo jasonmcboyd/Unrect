@@ -438,13 +438,13 @@ namespace Unrect.Tests.Projections
     // --- Inspection and guards ---------------------------------------------------------------------------------
 
     [Fact]
-    public void ABoundDescribesItselfAndIsTransparentUntilNamed()
+    public void ABoundDescribesItselfAndIsAWrapper()
     {
       var bound = Until(RowContaining("Total")).Of(Lines());
 
       Assert.Equal("Until", bound.Description);
-      Assert.True(bound.IsTransparent);
-      Assert.False(bound.Named("section").IsTransparent);
+      Assert.True(bound.IsWrapper);
+      Assert.True(bound.Named("section").IsWrapper);
       Assert.Equal("UntilColumn", UntilColumn(ColumnContaining("Total")).Of(Lines()).Description);
     }
 

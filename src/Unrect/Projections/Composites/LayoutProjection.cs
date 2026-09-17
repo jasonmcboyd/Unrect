@@ -15,7 +15,7 @@ namespace Unrect.Projections
   /// the same for all of them and lives here.
   /// </para>
   /// </summary>
-  internal abstract class LayoutProjection<TSpace, T> : ProjectionBase<TSpace, T>, IOpaqueComposite
+  internal abstract class LayoutProjection<TSpace, T> : ProjectionBase<TSpace, T>
     where TSpace : class, ISpace
   {
     protected LayoutProjection(Layout<TSpace, T> build, Placement placement)
@@ -26,7 +26,7 @@ namespace Unrect.Projections
 
     private Layout<TSpace, T> Build { get; }
 
-    public string Reason => "declared by a cursor lambda; children are known only while it runs";
+    public override string? Opacity => "declared by a cursor lambda; children are known only while it runs";
 
     /// <summary>The state that decides what this layout does with its extent between children.</summary>
     protected abstract LayoutState<TSpace> NewState(Plane<TSpace> extent, ProjectionContext context);
