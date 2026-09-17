@@ -84,7 +84,7 @@ namespace Unrect.Spreadsheets
         return true;
       }
 
-      return Naming(new KindedCellProjection<TSpace, TValue>(Description + "?", Tolerant, Placement, blankIsNull: true));
+      return (IProjection<TSpace, TValue>)new KindedCellProjection<TSpace, TValue>(Description + "?", Tolerant, Placement, blankIsNull: true).With(Annotations);
     }
   }
 }

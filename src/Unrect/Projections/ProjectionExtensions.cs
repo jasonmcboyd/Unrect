@@ -141,7 +141,7 @@ namespace Unrect.Projections
     /// <param name="name">What failures and diagnostics should call it.</param>
     public static TProjection Named<TProjection>(this TProjection projection, string name)
       where TProjection : class, IProjection
-      => Cloned<TProjection>(Base(projection).Renamed(name ?? throw new ArgumentNullException(nameof(name))));
+      => Cloned<TProjection>(Base(projection).With(projection.Annotations.WithName(name)));
 
     /// <summary>
     /// Calls the projection <paramref name="name"/> in a failure or diagnostic path: the node renders
@@ -162,7 +162,7 @@ namespace Unrect.Projections
     /// <param name="name">What a path and a subject should call the unit.</param>
     public static TProjection AsUnit<TProjection>(this TProjection projection, string name)
       where TProjection : class, IProjection
-      => Cloned<TProjection>(Base(projection).AsUnitBoundary(name ?? throw new ArgumentNullException(nameof(name))));
+      => Cloned<TProjection>(Base(projection).With(projection.Annotations.WithUnitName(name)));
 
     /// <summary>
     /// Marks the projection a composition's internal plumbing: in a failure or diagnostic path it
@@ -178,7 +178,7 @@ namespace Unrect.Projections
     /// <param name="projection">The declaration.</param>
     public static TProjection AsScaffolding<TProjection>(this TProjection projection)
       where TProjection : class, IProjection
-      => Cloned<TProjection>(Base(projection).AsScaffolding());
+      => Cloned<TProjection>(Base(projection).With(projection.Annotations.AsScaffolding()));
 
     /// <summary>
     /// Falls back to <paramref name="fallback"/> when this projection fails, recording a

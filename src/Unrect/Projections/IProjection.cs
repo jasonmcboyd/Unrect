@@ -29,6 +29,13 @@ namespace Unrect.Projections
     IReadOnlyList<IProjection> Children { get; }
 
     /// <summary>
+    /// Everything a declaration wrote on this projection that is not its structure — <see
+    /// cref="Name"/>, <see cref="UnitName"/>, <see cref="IsScaffolding"/> and <see cref="Placement"/>
+    /// as one record. The four members above read through it.
+    /// </summary>
+    Annotations Annotations { get; }
+
+    /// <summary>
     /// The label <c>.AsUnit</c> gave this projection, or null. When set, its path segment is that
     /// label rather than its description or use-site name (joined as <c>label:name</c> when it is
     /// also <c>.Named</c>), and a wrapper carrying one claims a segment it would otherwise not.
@@ -92,10 +99,10 @@ namespace Unrect.Projections
     /// </summary>
     ProjectionResult<TResult> Project(Plane<TSpace> extent, ProjectionContext context);
 
-    /// <summary>A copy of this projection named <paramref name="name"/> — see <see cref="IProjection.Name"/>.</summary>
-    IProjection<TSpace, TResult> WithName(string name);
-
-    /// <summary>A copy of this projection with <paramref name="placement"/> in place of its own.</summary>
-    IProjection<TSpace, TResult> WithPlacement(Placement placement);
+    /// <summary>
+    /// A copy of this projection carrying <paramref name="annotations"/> in place of its own — what
+    /// <c>.Named</c>, <c>.AsUnit</c>, <c>.AsScaffolding</c> and every placement stage build.
+    /// </summary>
+    IProjection<TSpace, TResult> With(Annotations annotations);
   }
 }

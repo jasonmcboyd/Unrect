@@ -50,6 +50,6 @@ namespace Unrect.Projections
     }
 
     internal override IProjection<TSpace, TValue> Tolerating<TValue>(Func<TResult, TValue> widen)
-      => Naming(new TextProjection<TSpace, TValue>(Placement, blankIsNull: true, text => widen(Read(text))));
+      => (IProjection<TSpace, TValue>)new TextProjection<TSpace, TValue>(Placement, blankIsNull: true, text => widen(Read(text))).With(Annotations);
   }
 }

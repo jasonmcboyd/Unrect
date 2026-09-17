@@ -146,7 +146,7 @@ namespace Unrect.Projections
         StepKind.SkipToFirstNonBlankCell => Offset<TSpace, T>(subject, OffsetStrategies.SkipToFirstNonBlankCell()),
 
         // An extent replaces the projection's derived one.
-        StepKind.Sized => (IProjection<TSpace, T>)subject.Replaced(subject.Placement.WithArea((IAreaStrategy)_subject!)),
+        StepKind.Sized => (IProjection<TSpace, T>)subject.With(subject.Annotations.WithPlacement(subject.Placement.WithArea((IAreaStrategy)_subject!))),
 
         // Bounds and headings wrap rather than reposition.
         StepKind.UntilRow => (IProjection<TSpace, T>)subject.BoundedBy(Landmark.Of((IRowLandmark)_subject!), _orEnd),
@@ -169,7 +169,7 @@ namespace Unrect.Projections
       var composeOntoBase = placement.OffsetWasDeclared && placement.HasDeclaredOffset;
       var composed = composeOntoBase ? OffsetStrategies.Then(placement.Offset, offset) : offset;
 
-      return (IProjection<TSpace, T>)subject.Replaced(placement.WithOffset(composed));
+      return (IProjection<TSpace, T>)subject.With(subject.Annotations.WithPlacement(placement.WithOffset(composed)));
     }
 
     public override string ToString() => _kind switch

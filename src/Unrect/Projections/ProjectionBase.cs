@@ -16,12 +16,11 @@ namespace Unrect.Projections
   /// exists, and it is why the modifier surface is written once instead of once per demand.
   /// </para>
   /// <para>
-  /// The clone-returning operations (<see cref="Renamed"/>, <see cref="Replaced"/>) hand back a
-  /// copy of the same runtime type, so a modifier's cast back to <c>TProjection</c> cannot fail.
-  /// The wrapper-returning ones hand back a new projection, which is a <see
-  /// cref="ProjectionBase{TSpace, TResult}"/> for the same result type and therefore converts to any
-  /// <em>interface</em> the receiver was seen through — but not to a projection class of its own,
-  /// which is what a modifier's cast checks.
+  /// The one clone-returning operation (<see cref="With"/>) hands back a copy of the same runtime
+  /// type, so a modifier's cast back to <c>TProjection</c> cannot fail. The wrapper-returning ones
+  /// hand back a new projection, which is a <see cref="ProjectionBase{TSpace, TResult}"/> for the
+  /// same result type and therefore converts to any <em>interface</em> the receiver was seen
+  /// through — but not to a projection class of its own, which is what a modifier's cast checks.
   /// </para>
   /// </summary>
   public abstract class ProjectionBase : IProjection
@@ -36,14 +35,17 @@ namespace Unrect.Projections
     /// <exception cref="ArgumentNullException"><paramref name="placement"/> is null.</exception>
     private protected ProjectionBase(Placement placement)
     {
-      Placement = placement ?? throw new ArgumentNullException(nameof(placement));
+      Annotations = Annotations.Default.WithPlacement(placement);
     }
 
     /// <inheritdoc/>
-    public string? Name { get; private set; }
+    public Annotations Annotations { get; private set; }
 
     /// <inheritdoc/>
-    public Placement Placement { get; private set; }
+    public string? Name => Annotations.Name;
+
+    /// <inheritdoc/>
+    public Placement Placement => Annotations.Placement;
 
     /// <inheritdoc/>
     public abstract string Description { get; }
@@ -58,65 +60,23 @@ namespace Unrect.Projections
     public virtual string? Opacity => null;
 
     /// <inheritdoc/>
-    public string? UnitName { get; private set; }
+    public string? UnitName => Annotations.UnitName;
 
     /// <inheritdoc/>
-    public bool IsScaffolding { get; private set; }
-
-    /// <summary>This projection marked internal plumbing — a copy, of this same type.</summary>
-    internal ProjectionBase AsScaffolding()
-    {
-      var clone = Clone();
-      clone.IsScaffolding = true;
-      return clone;
-    }
-
-    /// <summary>This projection named <paramref name="name"/> — a copy, of this same type.</summary>
-    internal ProjectionBase Renamed(string name)
-    {
-      var clone = Clone();
-      clone.Name = name;
-      return clone;
-    }
+    public bool IsScaffolding => Annotations.IsScaffolding;
 
     /// <summary>
-    /// This projection marked a path boundary with kind label <paramref name="name"/> — a copy, of
-    /// this same type. The label is the collapsed path's segment. Independent of
-    /// <see cref="Name"/>, so a boundary that is also <c>.Named</c> renders <c>label:name</c>.
+    /// This projection carrying <paramref name="annotations"/> — a copy, of this same type. The one
+    /// way any annotation changes: every modifier that names, labels, marks or places builds the
+    /// record it wants and comes through here. A widening that has to build a new projection rather
+    /// than clone one — <c>OrBlank</c>, which changes the result type — hands the new leaf the old
+    /// one's record the same way, so a leaf does not silently change its own path by being made
+    /// tolerant.
     /// </summary>
-    internal ProjectionBase AsUnitBoundary(string name)
+    internal ProjectionBase With(Annotations annotations)
     {
-      var clone = Clone();
-      clone.UnitName = name;
-      return clone;
-    }
-
-    /// <summary>
-    /// <paramref name="rewritten"/> given this projection's naming — its <see cref="Name"/> and its
-    /// unit marks — and handed back for the caller to return.
-    /// <para>
-    /// The clone-returning modifiers keep all of it for free. A widening that has to build a new
-    /// projection rather than clone one — <c>OrBlank</c>, which changes the result type — is the one
-    /// place it has to be carried across by hand, and a leaf that carried only the name would
-    /// silently change its own path by being made tolerant. Mutation is safe here and nowhere else:
-    /// <paramref name="rewritten"/> was constructed by the caller one line ago and has not escaped.
-    /// </para>
-    /// </summary>
-    internal TProjection Naming<TProjection>(TProjection rewritten)
-      where TProjection : ProjectionBase
-    {
-      rewritten.Name = Name;
-      rewritten.UnitName = UnitName;
-      rewritten.IsScaffolding = IsScaffolding;
-
-      return rewritten;
-    }
-
-    /// <summary>This projection placed by <paramref name="placement"/> — a copy, of this same type.</summary>
-    internal ProjectionBase Replaced(Placement placement)
-    {
-      var clone = Clone();
-      clone.Placement = placement;
+      var clone = (ProjectionBase)MemberwiseClone();
+      clone.Annotations = annotations ?? throw new ArgumentNullException(nameof(annotations));
       return clone;
     }
 
@@ -141,7 +101,6 @@ namespace Unrect.Projections
     /// </summary>
     internal abstract IProjection Otherwise(IProjection fallback, string? declared);
 
-    private ProjectionBase Clone() => (ProjectionBase)MemberwiseClone();
   }
 
   /// <summary>
@@ -172,12 +131,8 @@ namespace Unrect.Projections
     public abstract ProjectionResult<TResult> Project(Plane<TSpace> extent, ProjectionContext context);
 
     /// <inheritdoc/>
-    public IProjection<TSpace, TResult> WithName(string name)
-      => (IProjection<TSpace, TResult>)Renamed(name ?? throw new ArgumentNullException(nameof(name)));
-
-    /// <inheritdoc/>
-    public IProjection<TSpace, TResult> WithPlacement(Placement placement)
-      => (IProjection<TSpace, TResult>)Replaced(placement ?? throw new ArgumentNullException(nameof(placement)));
+    IProjection<TSpace, TResult> IProjection<TSpace, TResult>.With(Annotations annotations)
+      => (IProjection<TSpace, TResult>)With(annotations);
 
     internal sealed override IProjection Inset(int left, int top, int right, int bottom)
       => new PadProjection<TSpace, TResult>(this, left, top, right, bottom, Placement.Default);

@@ -511,15 +511,29 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void WithName_RejectsNull()
+    public void With_RejectsNull()
     {
-      Assert.Throws<ArgumentNullException>(() => IntCell().WithName(null!));
+      Assert.Throws<ArgumentNullException>(() => IntCell().With(null!));
     }
 
     [Fact]
-    public void WithPlacement_RejectsNull()
+    public void AnnotationsRejectNull()
     {
-      Assert.Throws<ArgumentNullException>(() => IntCell().WithPlacement(null!));
+      Assert.Throws<ArgumentNullException>(() => Annotations.Default.WithName(null!));
+      Assert.Throws<ArgumentNullException>(() => Annotations.Default.WithUnitName(null!));
+      Assert.Throws<ArgumentNullException>(() => Annotations.Default.WithPlacement(null!));
+    }
+
+    [Fact]
+    public void AnnotationsAreOneRecordReadThroughTheFace()
+    {
+      var projection = Sized(AreaStrategies.ExplicitArea(1, 1)).Of(IntCell()).Named("cell").AsUnit("Unit").AsScaffolding();
+
+      Assert.Same(projection.Annotations.Placement, projection.Placement);
+      Assert.Equal("cell", projection.Annotations.Name);
+      Assert.Equal("Unit", projection.Annotations.UnitName);
+      Assert.True(projection.Annotations.IsScaffolding);
+      Assert.Same(projection.Annotations, projection.With(projection.Annotations).Annotations);
     }
 
     // --- Placement itself ---------------------------------------------------------------------------
