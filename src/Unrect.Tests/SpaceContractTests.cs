@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 using Unrect.Core;
 using Unrect.Spreadsheets;
@@ -332,6 +333,58 @@ namespace Unrect.Tests
       Assert.Equal("  ", kept.AsText(0, 0));
     }
 
+    // --- The kind question ---------------------------------------------------------------------------
+    //
+    // The one read a sheet answers for every cell. The six kinded reads assert a kind and refuse a
+    // cell that disagrees; this one asks, which is what a predicate needs before it decides
+    // anything — so its whole contract is that it answers, always, and agrees with the three
+    // questions that were already being asked about the same cell.
+
+    [Theory]
+    [MemberData(nameof(CanonicalDoors))]
+    public void EveryCellHasAKindAndTheKindAgreesWithWhatTheDoorAlreadySaid(string door)
+    {
+      // Three equivalences, swept. Blank and Text are the canonical surface's own words for two of
+      // the kinds, and Error is the sheet vocabulary's — a door whose kind disagreed with any of
+      // them would give a predicate and a leaf two different pictures of the same cell, and the
+      // leaf's failure message would name a kind the predicate had already ruled out.
+      var cells = CanonicalDoor(door);
+      var seen = new HashSet<CellKind>();
+
+      for (var row = 0; row < cells.Area.Height; row++)
+        for (var column = 0; column < cells.Area.Width; column++)
+        {
+          var kind = cells.KindAt(column, row);
+
+          Assert.Equal(kind == CellKind.Blank, cells.IsBlank(column, row));
+          Assert.Equal(kind == CellKind.Text, cells.IsText(column, row));
+          Assert.Equal(kind == CellKind.Error, cells.IsErrorAt(column, row));
+
+          seen.Add(kind);
+        }
+
+      // Non-vacuity, and the strongest form of "it fails for none": this layout holds a cell of
+      // every kind there is, so a door that threw on one — or classified a kind it had no word for
+      // as something else — has nowhere to hide.
+      Assert.Equal(
+        new HashSet<CellKind> { CellKind.Blank, CellKind.Text, CellKind.Number, CellKind.Temporal, CellKind.Boolean, CellKind.Error },
+        seen);
+    }
+
+    [Theory]
+    [MemberData(nameof(CanonicalDoors))]
+    public void APointsKindIsItsSpacesKindAtThoseCoordinates(string door)
+    {
+      // The point extension is an address's way of asking the space, exactly as the canonical four
+      // are. Swept beside them because a predicate reads the point and a message reads the space.
+      ISheetCells cells = CanonicalDoor(door);
+      var plane = Plane<ISheetCells>.Of(cells);
+
+      for (var row = 0; row < cells.Area.Height; row++)
+        for (var column = 0; column < cells.Area.Width; column++)
+          Assert.Equal(cells.KindAt(column, row), plane[column, row].Kind());
+    }
+
     [Theory]
     [MemberData(nameof(CanonicalDoors))]
     public void EveryCanonicalMemberRefusesACoordinateOutsideTheSpace(string door)
@@ -346,6 +399,11 @@ namespace Unrect.Tests
         Assert.Throws<OutOfBoundsException>(() => { _ = cells.IsBlank(column, row); });
         Assert.Throws<OutOfBoundsException>(() => { _ = cells.IsText(column, row); });
         Assert.Throws<OutOfBoundsException>(() => { _ = cells.AsText(column, row); });
+
+        // The kind question answers for every cell IN the space and for no coordinate outside it:
+        // "it fails for none" is about kinds, never about addresses, so a coordinate off the edge
+        // is the same bounds condition here as everywhere else.
+        Assert.Throws<OutOfBoundsException>(() => { _ = cells.KindAt(column, row); });
       }
     }
 

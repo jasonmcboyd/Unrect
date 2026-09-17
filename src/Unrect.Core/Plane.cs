@@ -228,6 +228,22 @@ namespace Unrect.Core
     internal Plane<ISpace> Erased() => new Plane<ISpace>(Space, Origin, _extent, _bound);
 
     /// <summary>
+    /// The same region, named over <typeparamref name="TOther"/> — the way back from the canonical
+    /// surface for a caller that knows which space it erased.
+    /// <para>
+    /// The mirror of <see cref="Erased"/>, and the same cost: a copy of three fields and a
+    /// reference, nothing read, the discovered bottom edge riding along. The space is the same
+    /// object, so a read through the result is the read it would have been; a space that is not a
+    /// <typeparamref name="TOther"/> throws <see cref="InvalidCastException"/>.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="TOther">The space to name this region over.</typeparam>
+    /// <exception cref="InvalidCastException">This region's space is not a <typeparamref name="TOther"/>.</exception>
+    internal Plane<TOther> Retyped<TOther>()
+      where TOther : class, ISpace
+      => new Plane<TOther>((TOther)(object)Space, Origin, _extent, _bound);
+
+    /// <summary>
     /// The leading <paramref name="width"/> columns, with everything else about the region left
     /// alone — including a bottom edge still being discovered, which is what makes this different
     /// from slicing to a rectangle: narrowing asks nothing about the height.

@@ -141,6 +141,18 @@ namespace Unrect.Spreadsheets
       => point.Space.ErrorTextAt(point.Column, point.Row);
 
     /// <summary>
+    /// Which kind the cell is — the question a predicate puts to a cell, where
+    /// <see cref="Text{TSpace}"/>, <see cref="Decimal{TSpace}"/>, <see cref="Integer{TSpace}"/>,
+    /// <see cref="Double{TSpace}"/>, <see cref="Date{TSpace}"/> and <see cref="Boolean{TSpace}"/>
+    /// assert one and refuse a cell that disagrees:
+    /// <c>RowsWhileAny(p =&gt; p.Kind() == CellKind.Number)</c>.
+    /// </summary>
+    /// <inheritdoc cref="Text{TSpace}"/>
+    public static CellKind Kind<TSpace>(this Point<TSpace> point)
+      where TSpace : class, ISheetCells
+      => point.Space.KindAt(point.Column, point.Row);
+
+    /// <summary>
     /// What kind of thing the cell is, in the document's own vocabulary — for a caller's own
     /// complaint about a cell this vocabulary has no reading for.
     /// </summary>

@@ -150,5 +150,43 @@ namespace Unrect.Tests.Spreadsheets
       Assert.Equal("1.5", Of(1.5m).AsText());
       Assert.Null(Of(null).AsText());
     }
+
+    // --- The kind question ---------------------------------------------------------------------------
+
+    [Fact]
+    public void TheKindQuestionAnswersForEveryCellTheStrictReadsRefuse()
+    {
+      // What a predicate puts to a cell before deciding anything about it. Every cell below is one
+      // a strict read throws on, and the whole point of this read is that it does not: a rule that
+      // had to guard its kind with a try would not be a rule.
+      Assert.Equal(CellKind.Blank, Of(null).Kind());
+      Assert.Equal(CellKind.Text, Of("hello").Kind());
+      Assert.Equal(CellKind.Number, Of(1.5m).Kind());
+      Assert.Equal(CellKind.Temporal, Of(Moment).Kind());
+      Assert.Equal(CellKind.Boolean, Of(true).Kind());
+      Assert.Equal(CellKind.Error, Of(Cell.OfError(CellError.DivisionByZero)).Kind());
+    }
+
+    [Fact]
+    public void AndItIsTheQuestionAStrictReadAnswersWithWhenItRefuses()
+    {
+      // The two halves of the kind vocabulary saying the same thing: what the cell IS, and what a
+      // refusal reports it was found to be. A predicate that ruled a cell in and a leaf that then
+      // refused it would be two readings of one cell, which is the failure this pairing rules out.
+      var cell = Of("x");
+
+      Assert.Equal(CellKind.Text, cell.Kind());
+      Assert.Equal($"expected Number at A1, found {cell.Kind()}", Assert.Throws<CellReadException>(() => cell.Decimal()).Message);
+    }
+
+    [Fact]
+    public void AndAskingIsNotReading()
+    {
+      // The kind is a classification and never a value: it says a cell holds a number without
+      // saying which, so a rule about the value still has to read it. Stated because the read it
+      // sits beside — Describe — answers a sentence, and a rule cannot branch on prose.
+      Assert.Equal(Of(1m).Kind(), Of(9999m).Kind());
+      Assert.NotEqual(Of(1m).Decimal(), Of(9999m).Decimal());
+    }
   }
 }

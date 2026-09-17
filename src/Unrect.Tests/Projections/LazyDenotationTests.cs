@@ -118,21 +118,17 @@ namespace Unrect.Tests.Projections
     // in each of the two runs — the runs consume different numbers of cells, which is the whole point
     // — and the suite would report a difference the engine did not cause.
 
-    /// <summary>
-    /// A cell rule that breaks, absorbably, on the cell holding <paramref name="marker"/>.
-    /// <para>
-    /// Written against what the cell says rather than against its kind: this grid is built from
-    /// ints, and <c>GridSpace.Create(int[,])</c> renders each one invariantly, so comparing the
-    /// rendering picks out exactly the cell the old <c>TryGetInt()</c> comparison did. The kind
-    /// predicate returns with the typed layer.
-    /// </para>
-    /// </summary>
-    private static Func<Point<ISpace>, bool> BreaksOn(int marker)
-      => cell => cell.AsText() == marker.ToString() ? throw new InvalidOperationException("no") : true;
+    /// <summary>A cell rule that breaks, absorbably, on the cell holding <paramref name="marker"/>.</summary>
+    private static Func<Point<ISheetCells>, bool> BreaksOn(int marker)
+      => cell => cell.Kind() == CellKind.Number && cell.Integer() == marker
+        ? throw new InvalidOperationException("no")
+        : true;
 
     /// <summary>A cell rule whose failure is the environment's, not the data's.</summary>
-    private static Func<Point<ISpace>, bool> FaultsOn(int marker)
-      => cell => cell.AsText() == marker.ToString() ? throw new IOException("the disk stopped answering") : true;
+    private static Func<Point<ISheetCells>, bool> FaultsOn(int marker)
+      => cell => cell.Kind() == CellKind.Number && cell.Integer() == marker
+        ? throw new IOException("the disk stopped answering")
+        : true;
 
     /// <summary>
     /// The sheet's 7 is the first cell of row 2, so a rule that breaks on it survives the first two

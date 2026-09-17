@@ -1,6 +1,6 @@
 # Benchmarking Conventions
 
-The continuous-benchmark rig (modeled on Copse's): `src/Unrect.Benchmarks` runs 41
+The continuous-benchmark rig (modeled on Copse's): `src/Unrect.Benchmarks` runs 43
 benchmarks in seven BenchmarkDotNet families — `Values`, `Strategies`, `Engine`, `Tables`,
 `Diagnostics`, `EndToEnd`, and `Streaming` (`docs/design/streaming-spec.md` §12) — plus an
 eighth leg, `Retention`, which is not a BenchmarkDotNet family at all and measures a live

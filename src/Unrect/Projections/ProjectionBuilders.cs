@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.CompilerServices;
 
 using Unrect.Core;
 
@@ -115,6 +116,11 @@ namespace Unrect.Projections
     /// <param name="offset">Where the section starts.</param>
     public static OffsetStage<TSpace> OffsetBy(IOffsetStrategy offset) => Enter(Step.OffsetBy(offset));
 
+    /// <inheritdoc cref="OffsetBy(IOffsetStrategy)"/>
+    /// <param name="offset">Where the section starts. A rule demanding less is accepted as it is.</param>
+    public static OffsetStage<TSpace> OffsetBy(IOffsetStrategy<TSpace> offset)
+      => Enter(Step.OffsetBy(Required(offset).Strategy));
+
     /// <summary>
     /// Opens a pipeline whose section starts past the blank rows in front of it. One of the two
     /// operators that keep the word <em>after</em>: filler is the one thing that genuinely has an
@@ -180,6 +186,11 @@ namespace Unrect.Projections
     public static OffsetAndSizeStage<TSpace> Sized(IAreaStrategy area)
       => new OffsetAndSizeStage<TSpace>(Steps.None.Then(Step.Sized(area)));
 
+    /// <inheritdoc cref="Sized(IAreaStrategy)"/>
+    /// <param name="area">The extent. A rule demanding less is accepted as it is.</param>
+    public static OffsetAndSizeStage<TSpace> Sized(IAreaStrategy<TSpace> area)
+      => new OffsetAndSizeStage<TSpace>(Steps.None.Then(Step.Sized(Required(area).Strategy)));
+
     // --- Bounds -----------------------------------------------------------------------------------
 
     /// <inheritdoc cref="UnboundedStage{TSpace}.Until(IRowLandmark, bool)"/>
@@ -214,8 +225,14 @@ namespace Unrect.Projections
 
     private static OffsetStage<TSpace> Enter(Step step) => new OffsetStage<TSpace>(Steps.None.Then(step));
 
-    private static TLandmark Required<TLandmark>(TLandmark landmark)
-      where TLandmark : class
-      => landmark ?? throw new ArgumentNullException(nameof(landmark));
+    /// <summary>
+    /// The argument a typed overload has to unwrap, checked first. The name in the failure is the
+    /// text of the argument at the call site, which is always the parameter being unwrapped.
+    /// </summary>
+    private static TDemanding Required<TDemanding>(
+      TDemanding demanding,
+      [CallerArgumentExpression("demanding")] string? named = null)
+      where TDemanding : class
+      => demanding ?? throw new ArgumentNullException(named);
   }
 }

@@ -1,7 +1,9 @@
 using BenchmarkDotNet.Attributes;
 
 using Unrect.Core;
+using Unrect.Projections;
 using Unrect.Spreadsheets;
+using Unrect.Strategies;
 
 namespace Unrect.Benchmarks
 {
@@ -34,6 +36,9 @@ namespace Unrect.Benchmarks
     private ISheetCells _text = default!;
     private ISheetCells _mixed = default!;
     private Plane<ISheetCells> _plane;
+    private Plane<ISpace> _numericPlane;
+    private IRowStrategy _erasedRule = default!;
+    private IRowStrategy _typedRule = default!;
 
     [GlobalSetup]
     public void Setup()
@@ -44,6 +49,13 @@ namespace Unrect.Benchmarks
       _text = CanonicalSpaces.MegaDenseText;
       _mixed = CanonicalSpaces.MegaDenseMixed;
       _plane = Plane<ISheetCells>.Of(_mixed);
+      _numericPlane = Plane<ISpace>.Of(_numbers);
+
+      // Built once: lowering happens where a declaration is written, so what the two predicate rows
+      // measure is evaluation. Both rules run to the bottom of the dense numeric grid, asking every
+      // one of its million cells, which is the output to check when this fixture changes.
+      _erasedRule = RowStrategies.TakeRowsWhileAll(cell => !cell.IsBlank);
+      _typedRule = ProjectionBuilders<ISheetCells>.TakeRowsWhileAll(cell => !cell.IsBlank).Strategy;
     }
 
     /// <summary>Adapting a million numbers: the allocation floor for a canonical grid this size.</summary>
@@ -136,6 +148,29 @@ namespace Unrect.Benchmarks
 
       return total;
     }
+
+    /// <summary>
+    /// A million cell predicates evaluated by a rule from the strategy calculus — the erased half of
+    /// the pair below, and the baseline a typed predicate is measured against. The rule accepts
+    /// every row of a grid with no blank in it, so every cell is asked.
+    /// </summary>
+    [Benchmark]
+    public int Predicate_Million() => _erasedRule.SelectRows(_numericPlane);
+
+    /// <summary>
+    /// The same million evaluations of the same question, through the rule a declaration writes
+    /// (<c>TakeRowsWhileAll(p =&gt; !p.IsBlank)</c> over a file scoped to a sheet): the predicate is
+    /// lowered once at construction, and each evaluation carries a cast back to the space it named.
+    ///
+    /// <para>Its pair is <see cref="Predicate_Million"/>, which runs the same scan over the same
+    /// cells with nothing lowered, so the difference between the two rows is the cast and nothing
+    /// else. It is per point on purpose: hoisting it to the measurement would need a wrapping
+    /// strategy, and a wrapper is what would drop the incremental scan the engine type-tests for.
+    /// The predicate is a canonical question rather than a kinded one so that the two rules do the
+    /// same work.</para>
+    /// </summary>
+    [Benchmark]
+    public int TypedPredicate_Million() => _typedRule.SelectRows(_numericPlane);
 
     /// <summary>
     /// A million slices: the arithmetic a composite does where it used to allocate a subspace. One

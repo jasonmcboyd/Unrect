@@ -73,6 +73,9 @@ namespace Unrect.Tests
       => _inner.BooleanAt(column, Read(row), out value, out problem);
 
     /// <inheritdoc/>
+    public CellKind KindAt(int column, int row) => _inner.KindAt(column, Read(row));
+
+    /// <inheritdoc/>
     public string Describe(int column, int row) => _inner.Describe(column, Read(row));
 
     /// <inheritdoc/>

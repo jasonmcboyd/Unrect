@@ -16,6 +16,14 @@ namespace Unrect.Tests.Strategies
   /// The row and column strategies, which count along one axis. These pin the counting semantics:
   /// what "while all" and "while any" mean, whether the terminating row is included, and what
   /// happens when an explicit count does not fit.
+  /// <para>
+  /// Every predicate here asks the four questions, through the rendering where it wants a number:
+  /// this file is about the erased calculus, whose predicates are handed a cell over
+  /// <c>ISpace</c> on purpose. The grids are built from ints and render each one invariantly, so a
+  /// comparison against the rendering selects exactly the cells a value rule would. A predicate that
+  /// asks a cell's kind or its value names its space and belongs to the typed vocabulary, which is
+  /// pinned where it lives.
+  /// </para>
   /// </summary>
   public class RowAndColumnStrategyTests
   {
