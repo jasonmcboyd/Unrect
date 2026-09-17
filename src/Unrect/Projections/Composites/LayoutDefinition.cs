@@ -12,10 +12,10 @@ namespace Unrect.Projections
   /// <see cref="LayoutState{TSpace}"/> they run on, which is what decides whether a child moves the
   /// next one along.
   /// </summary>
-  internal abstract class LayoutProjection<TSpace, T> : ProjectionBase<TSpace, T>
+  internal abstract class LayoutDefinition<TSpace, T> : DefinitionNode<TSpace, T>
     where TSpace : class, ISpace
   {
-    protected LayoutProjection(Layout<TSpace, T> layout, Placement placement)
+    protected LayoutDefinition(Layout<TSpace, T> layout, Placement placement)
       : base(placement)
     {
       Layout = layout ?? throw new ArgumentNullException(nameof(layout));

@@ -117,7 +117,7 @@ namespace Unrect.Tests
     }
 
     /// <summary>A cell read as a number — the leaf most tests need and none of them vary.</summary>
-    public static IProjection<ISheetCells, int> IntCell() => SpreadsheetProjections.Integer<ISheetCells>();
+    public static IProjectionDefinition<ISheetCells, int> IntCell() => SpreadsheetProjections.Integer<ISheetCells>();
 
     /// <summary>
     /// A cell read as text — the other leaf the suite reaches for by reflex, and the twin of
@@ -125,7 +125,7 @@ namespace Unrect.Tests
     /// <c>v.Next(TextCell())</c> is named exactly as the inline lambda it replaced was: by kind and
     /// ordinal.
     /// </summary>
-    public static IProjection<ISheetCells, string> TextCell() => SpreadsheetProjections.Text<ISheetCells>();
+    public static IProjectionDefinition<ISheetCells, string> TextCell() => SpreadsheetProjections.Text<ISheetCells>();
 
     /// <summary>
     /// The problem text of a failure, without the subject the message template puts in front of it.

@@ -11,7 +11,7 @@ namespace Unrect.Projections
   /// A set of labels along an axis: the result of a table projecting its own header, handed to a row
   /// bind so a declaration written once can find this file's columns, and — since it is public and
   /// implements <see cref="ILabelSource"/> — what a scope-introducer such as
-  /// <see cref="ProjectionBuilders{TSpace}.WithColumnLabels{T}(LabelMap, IProjection{TSpace, T})"/>
+  /// <see cref="ProjectionBuilders{TSpace}.WithColumnLabels{T}(LabelMap, IProjectionDefinition{TSpace, T})"/>
   /// pushes so a decoupled record reads by name.
   /// <para>
   /// It is per-file data rather than geometry, which is why it arrives as an argument and not as

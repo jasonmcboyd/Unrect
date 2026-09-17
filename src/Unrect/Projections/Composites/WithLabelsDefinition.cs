@@ -13,10 +13,10 @@ namespace Unrect.Projections
   /// transparent node, so the body reads at the wrapper's own frame and column translation is the
   /// identity in the canonical table composition.
   /// </summary>
-  internal sealed class WithLabelsProjection<TSpace, T> : ProjectionBase<TSpace, T>
+  internal sealed class WithLabelsDefinition<TSpace, T> : DefinitionNode<TSpace, T>
     where TSpace : class, ISpace
   {
-    public WithLabelsProjection(LabelAxis axis, LabelMap map, IProjection<TSpace, T> body, Placement placement)
+    public WithLabelsDefinition(LabelAxis axis, LabelMap map, IProjectionDefinition<TSpace, T> body, Placement placement)
       : base(placement)
     {
       Axis = axis;
@@ -27,7 +27,7 @@ namespace Unrect.Projections
 
     private LabelAxis Axis { get; }
     private LabelMap Map { get; }
-    private IProjection<TSpace, T> Body { get; }
+    private IProjectionDefinition<TSpace, T> Body { get; }
 
     public override string Description => Axis == LabelAxis.Column ? "WithColumnLabels" : "WithRowLabels";
 

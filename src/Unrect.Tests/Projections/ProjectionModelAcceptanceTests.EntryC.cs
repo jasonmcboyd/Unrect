@@ -85,12 +85,12 @@ namespace Unrect.Tests.Projections
     /// <summary>
     /// The allocation report in the closed vocabulary. Every word of the body is the same word;
     /// what changed is the import at the top of the file and, at the hoisted-helper site, the return
-    /// type — <c>IProjection&lt;ISheetCells, Report&gt;</c> rather than <c>IProjection&lt;Report&gt;</c>,
+    /// type — <c>IProjectionDefinition&lt;ISheetCells, Report&gt;</c> rather than <c>IProjectionDefinition&lt;Report&gt;</c>,
     /// because the closed class's layouts are closed over the space the file named. The two are one
     /// type up to the derivation that makes the plain form the base, which is the annotation tax the
     /// campaign already recorded and priced.
     /// </summary>
-    private static IProjection<ISheetCells, Report> AllocationReportInTheClosedVocabulary()
+    private static IProjectionDefinition<ISheetCells, Report> AllocationReportInTheClosedVocabulary()
     {
       var title = Text();
       var rows = Table<Allocation>();
@@ -126,7 +126,7 @@ namespace Unrect.Tests.Projections
         Read(AllocationReport(), CapableAllocations()),
         Read(AllocationReportInTheClosedVocabulary(), CapableAllocations()));
 
-      var read = ((IProjection<ISheetCells, Report>)AllocationReportInTheClosedVocabulary()).Map(CapableAllocations());
+      var read = ((IProjectionDefinition<ISheetCells, Report>)AllocationReportInTheClosedVocabulary()).Map(CapableAllocations());
 
       Assert.Equal("Buying Power Allocation", read.Title);
       Assert.Equal(
@@ -150,7 +150,7 @@ namespace Unrect.Tests.Projections
     /// it, exactly as the parity suite's boundary pin says. Declare it, then place it.
     /// </para>
     /// </summary>
-    private static IProjection<ISheetCells, BuyingPowerAllocation> BuyingPowerParserThroughThePipeline()
+    private static IProjectionDefinition<ISheetCells, BuyingPowerAllocation> BuyingPowerParserThroughThePipeline()
     {
       var allocation = Overlay(o =>
       {
@@ -196,7 +196,7 @@ namespace Unrect.Tests.Projections
     {
       // Non-vacuity, and the record the whole declaration exists to be allowed to describe: a fund
       // code with two absences is still a record and not a failure, per field, through the pipeline.
-      var read = ((IProjection<ISheetCells, BuyingPowerAllocation>)BuyingPowerParserThroughThePipeline()).Map(BuyingPower());
+      var read = ((IProjectionDefinition<ISheetCells, BuyingPowerAllocation>)BuyingPowerParserThroughThePipeline()).Map(BuyingPower());
 
       Assert.Equal("PCTCAL2 BUYING POWER", read.Title);
       Assert.Equal(2231.25m, read.Total);
@@ -219,7 +219,7 @@ namespace Unrect.Tests.Projections
       // introduce a backwards reach; this is that argument made into an instrument reading.
       var watched = new WatermarkSpace(BuyingPower());
 
-      var read = ((IProjection<ISheetCells, BuyingPowerAllocation>)BuyingPowerParserThroughThePipeline()).Map(watched);
+      var read = ((IProjectionDefinition<ISheetCells, BuyingPowerAllocation>)BuyingPowerParserThroughThePipeline()).Map(watched);
 
       Assert.Equal(3, read.Allocations.Count);
       Assert.Equal(7, watched.HighWaterMark);
@@ -244,7 +244,7 @@ namespace Unrect.Tests.Projections
     /// writes, which <see cref="PlacementPipelineLawTests"/> pins as a law in its own right.
     /// </para>
     /// </summary>
-    private static IProjection<ISheetCells, IrrReport> IrrReportThroughHeadings()
+    private static IProjectionDefinition<ISheetCells, IrrReport> IrrReportThroughHeadings()
     {
       var investorBlock = Table<CashFlow>();
 
@@ -301,7 +301,7 @@ namespace Unrect.Tests.Projections
     {
       // Non-vacuity for the pin above: the whole document really is read, both series really are the
       // one hoisted series placed twice, and the sheet really is described end to end.
-      var result = ((IProjection<ISheetCells, IrrReport>)IrrReportThroughHeadings()).MapWithDiagnostics(Irr());
+      var result = ((IProjectionDefinition<ISheetCells, IrrReport>)IrrReportThroughHeadings()).MapWithDiagnostics(Irr());
       var report = result.Value;
 
       Assert.Equal("Investor IRR Report", report.Header.Title);
@@ -328,7 +328,7 @@ namespace Unrect.Tests.Projections
     /// out to its leaves, so nothing has to be described by hand here — see the class remarks for
     /// what that replaced.
     /// </summary>
-    private static Observation Read<T>(IProjection<ISheetCells, T> declaration, ISheetCells space)
+    private static Observation Read<T>(IProjectionDefinition<ISheetCells, T> declaration, ISheetCells space)
       => Observe(declaration, space);
 
   }

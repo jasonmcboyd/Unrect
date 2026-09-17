@@ -451,7 +451,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void Repeat_RejectsANullItem()
     {
-      Assert.Throws<ArgumentNullException>(() => VerticalRepeat((IProjection<ISheetCells, int>)null!));
+      Assert.Throws<ArgumentNullException>(() => VerticalRepeat((IProjectionDefinition<ISheetCells, int>)null!));
     }
 
     // --- Horizontal repetition --------------------------------------------------------------------------------
@@ -492,7 +492,7 @@ namespace Unrect.Tests.Projections
     });
 
     /// <summary>A code cell over a value one row down and one column across — two rows per block.</summary>
-    private static IProjection<ISheetCells, (string Code, int Amount)> Section()
+    private static IProjectionDefinition<ISheetCells, (string Code, int Amount)> Section()
       => VerticalFlow(v =>
       {
         var textCell = v.Next(TextCell());

@@ -14,10 +14,10 @@ namespace Unrect.Projections
   /// arithmetic underneath is the same "rows up to the landmark by full width" a strategy would do.
   /// </para>
   /// </summary>
-  internal sealed class UntilProjection<TSpace, TResult> : ProjectionBase<TSpace, TResult>
+  internal sealed class BoundedDefinition<TSpace, TResult> : DefinitionNode<TSpace, TResult>
     where TSpace : class, ISpace
   {
-    public UntilProjection(IProjection<TSpace, TResult> inner, Landmark landmark, bool orEnd, Placement placement)
+    public BoundedDefinition(IProjectionDefinition<TSpace, TResult> inner, Landmark landmark, bool orEnd, Placement placement)
       : base(placement)
     {
       Inner = inner ?? throw new ArgumentNullException(nameof(inner));
@@ -26,7 +26,7 @@ namespace Unrect.Projections
       Children = new[] { new Child(inner, default) };
     }
 
-    private IProjection<TSpace, TResult> Inner { get; }
+    private IProjectionDefinition<TSpace, TResult> Inner { get; }
     private Landmark Landmark { get; }
     private bool OrEnd { get; }
 

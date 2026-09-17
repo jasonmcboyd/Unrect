@@ -18,7 +18,7 @@ namespace Unrect.Tests.Projections
   /// <summary>
   /// Step 2 of labelled axes: the built-in <c>Table</c> is reimplementable from the three public
   /// primitives — <c>ColumnLabels(int)</c> manufactures a <see cref="LabelMap"/>,
-  /// <c>WithColumnLabels&lt;T&gt;(LabelMap, IProjection&lt;TSpace, T&gt;)</c> pushes it as the ambient
+  /// <c>WithColumnLabels&lt;T&gt;(LabelMap, IProjectionDefinition&lt;TSpace, T&gt;)</c> pushes it as the ambient
   /// column labels, and <c>Record&lt;T&gt;(Func&lt;TableRow&lt;TSpace&gt;, T&gt;)</c> reads a row by name
   /// through the pushed scope. The acceptance claim is byte-identity of the reading's <em>value</em>,
   /// its failure <em>message</em> and <em>A1 location</em>, and — since GAP C closed in step 2 — its
@@ -36,11 +36,11 @@ namespace Unrect.Tests.Projections
     // record is the tiler's business, not a pattern repeat's — a record declares its own one-row band
     // and so has no shape to discover. It is dressed with the built-in table's own placement —
     // skip-to-first-non-blank-cell over a discovered block — and its "Table" description, through the
-    // internal FlowProjection, which is precisely what step 3 will do when the bespoke path is
+    // internal FlowDefinition, which is precisely what step 3 will do when the bespoke path is
     // deleted. Constructed in the test project because the primitives it composes
-    // are public and the assembling FlowProjection/Placement are reachable through InternalsVisibleTo.
+    // are public and the assembling FlowDefinition/Placement are reachable through InternalsVisibleTo.
 
-    internal static IProjection<ISheetCells, IReadOnlyList<T>> TableFromPrimitives<T>(int headerRows, Func<TableRow<ISheetCells>, T> record)
+    internal static IProjectionDefinition<ISheetCells, IReadOnlyList<T>> TableFromPrimitives<T>(int headerRows, Func<TableRow<ISheetCells>, T> record)
       => PrimitiveTable(headerRows, record, marked: false);
 
     /// <summary>
@@ -49,15 +49,15 @@ namespace Unrect.Tests.Projections
     /// <c>Func&lt;TableRow, T&gt;</c>, so the header, the tiler and the record are all this
     /// method's. Unmarked, nothing folds and a rendered path is the whole tree.
     /// </summary>
-    private static IProjection<ISheetCells, IReadOnlyList<T>> PrimitiveTable<T>(int headerRows, Func<TableRow<ISheetCells>, T> record, bool marked)
-      => new LabelledProjection<ISheetCells, IReadOnlyList<T>>(
+    private static IProjectionDefinition<ISheetCells, IReadOnlyList<T>> PrimitiveTable<T>(int headerRows, Func<TableRow<ISheetCells>, T> record, bool marked)
+      => new LabelledDefinition<ISheetCells, IReadOnlyList<T>>(
         LabelAxis.Column,
         Mark(ColumnLabels(headerRows), marked),
         Mark(VerticalBands(1, Mark(Record(record), marked)), marked),
         TablePlacementReplica(),
         "Table");
 
-    private static IProjection<ISheetCells, T> Mark<T>(IProjection<ISheetCells, T> part, bool marked) => marked ? part.AsScaffolding() : part;
+    private static IProjectionDefinition<ISheetCells, T> Mark<T>(IProjectionDefinition<ISheetCells, T> part, bool marked) => marked ? part.AsScaffolding() : part;
 
     /// <summary>
     /// A hand copy of the private <c>Projection.TablePlacement()</c> — skip to the first non-blank
@@ -223,7 +223,7 @@ namespace Unrect.Tests.Projections
     // The negative-pin rule forbids a blanket "these differ" — so the actual strings are documented as
     // specific asserts. Bespoke reports one flat `Table` segment; the reimplementation's failure sits
     // inside the VerticalBands the primitives compose (the transparent WithColumnLabels is skipped,
-    // and the FlowProjection's "Table" description keeps the outer segment reading `Table`).
+    // and the FlowDefinition's "Table" description keeps the outer segment reading `Table`).
 
     [Fact]
     public void GapB_TheMessageAndA1AgreeButThePathAndSubjectReflectTheDifferentTrees()
@@ -251,7 +251,7 @@ namespace Unrect.Tests.Projections
       // rather than sliding under a "they differ" that would pass forever after the first drift. The
       // built-in Table's Func rung calls the record inline, so its failure blames the flat Table; the
       // reimplementation's failure sits inside the VerticalBands the primitives compose — the "Table"
-      // description on the FlowProjection keeps the outer segment reading Table, and the transparent
+      // description on the FlowDefinition keeps the outer segment reading Table, and the transparent
       // WithColumnLabels is skipped, so the tree between them is VerticalBands -> Record.
       Assert.Equal("Table", bespoke.Path);
       Assert.Equal("Table", bespoke.Subject);
@@ -266,7 +266,7 @@ namespace Unrect.Tests.Projections
     // carrying the failing occurrence's index up onto it, while FullPath keeps the uncollapsed tree
     // GAP B pinned above. The value and the reading are untouched: the markers are presentation-only.
 
-    private static IProjection<ISheetCells, IReadOnlyList<T>> UnitTableFromPrimitives<T>(int headerRows, Func<TableRow<ISheetCells>, T> record)
+    private static IProjectionDefinition<ISheetCells, IReadOnlyList<T>> UnitTableFromPrimitives<T>(int headerRows, Func<TableRow<ISheetCells>, T> record)
       => PrimitiveTable(headerRows, record, marked: true).AsUnit("Table");
 
     [Fact]
@@ -354,22 +354,22 @@ namespace Unrect.Tests.Projections
     // Both boundaries keep their segments, the marked repeat between them does not, and the failing
     // named leaf keeps its own as the deepest segment. Each flow IS its boundary, so neither "Body"
     // nor "Row" appears: a boundary renders its unit label in place of its description.
-    private static IProjection<ISheetCells, decimal> InnerUnit()
-      => new FlowProjection<ISheetCells, decimal>(
+    private static IProjectionDefinition<ISheetCells, decimal> InnerUnit()
+      => new FlowDefinition<ISheetCells, decimal>(
         Orientation.Vertical,
         SingleChild(Decimal().Named("allocation")),
         Placement.Default,
         "Row").AsUnit("Inner");
 
-    private static IProjection<ISheetCells, IReadOnlyList<decimal>> OuterUnit()
-      => new FlowProjection<ISheetCells, IReadOnlyList<decimal>>(
+    private static IProjectionDefinition<ISheetCells, IReadOnlyList<decimal>> OuterUnit()
+      => new FlowDefinition<ISheetCells, IReadOnlyList<decimal>>(
         Orientation.Vertical,
         SingleChild(VerticalRepeat(InnerUnit()).AsScaffolding()),
         Placement.Default,
         "Body").AsUnit("Outer");
 
     /// <summary>A layout of exactly one child, declared with no use-site text — as a factory declares the parts it assembles.</summary>
-    private static Layout<ISheetCells, T> SingleChild<T>(IProjection<ISheetCells, T> child)
+    private static Layout<ISheetCells, T> SingleChild<T>(IProjectionDefinition<ISheetCells, T> child)
       => LayoutBuilder<ISheetCells>.Declare<T>(
         flow =>
         {
@@ -402,8 +402,8 @@ namespace Unrect.Tests.Projections
     // A diagnostic (not an exception) under a boundary. A tolerant band tiler skips a fully-blank body
     // row with an Info; the boundary folds the Info's Path exactly as it folds a failure's, while
     // FullPath keeps the uncollapsed chain.
-    private static IProjection<ISheetCells, IReadOnlyList<int>> TolerantUnit()
-      => new FlowProjection<ISheetCells, IReadOnlyList<int>>(
+    private static IProjectionDefinition<ISheetCells, IReadOnlyList<int>> TolerantUnit()
+      => new FlowDefinition<ISheetCells, IReadOnlyList<int>>(
         Orientation.Vertical,
         SingleChild(VerticalBands(1, Record((TableRow<ISheetCells> row) => row.Index), onBlank: BlankRowStrategy.Tolerate).AsScaffolding()),
         Placement.Default,
@@ -495,8 +495,8 @@ namespace Unrect.Tests.Projections
     // what the collapse acts on, so a unit a user assembles themselves folds exactly the parts they
     // marked and nothing else. Two readings of one declaration, differing only in the marker.
 
-    private static IProjection<ISheetCells, IReadOnlyList<string>> Card(bool marked)
-      => new FlowProjection<ISheetCells, IReadOnlyList<string>>(
+    private static IProjectionDefinition<ISheetCells, IReadOnlyList<string>> Card(bool marked)
+      => new FlowDefinition<ISheetCells, IReadOnlyList<string>>(
         Orientation.Vertical,
         SingleChild(Mark(VerticalRepeat(Text().Named("investor")), marked)),
         Placement.Default,
@@ -1075,7 +1075,7 @@ namespace Unrect.Tests.Projections
 
     // --- Machinery ----------------------------------------------------------------------------------
 
-    private static void SameReading<T>(IProjection<ISheetCells, T> bespoke, IProjection<ISheetCells, T> primitives, ISheetCells sheet)
+    private static void SameReading<T>(IProjectionDefinition<ISheetCells, T> bespoke, IProjectionDefinition<ISheetCells, T> primitives, ISheetCells sheet)
     {
       var expected = Observations.Observe(bespoke, sheet);
       var actual = Observations.Observe(primitives, sheet);
@@ -1103,7 +1103,7 @@ namespace Unrect.Tests.Projections
     /// can be measured by the same harness. It reads the band it was handed, which is what a record
     /// that measured itself could not do.
     /// </summary>
-    private static IProjection<ISheetCells, int> InstrumentedBand() => Range(WholeExtent(), block =>
+    private static IProjectionDefinition<ISheetCells, int> InstrumentedBand() => Range(WholeExtent(), block =>
     {
       if (_gapAAtFirstRecord < 0)
         _gapAAtFirstRecord = _gapACounter.RowsTouched;
@@ -1111,7 +1111,7 @@ namespace Unrect.Tests.Projections
       return block.Height;
     });
 
-    private static (int AtFirstRecord, int Total) RowsTouchedAtFirstRecord(IProjection<ISheetCells, IReadOnlyList<int>> table)
+    private static (int AtFirstRecord, int Total) RowsTouchedAtFirstRecord(IProjectionDefinition<ISheetCells, IReadOnlyList<int>> table)
     {
       _gapACounter = new CountingSpace(Trailing());
       _gapAAtFirstRecord = -1;

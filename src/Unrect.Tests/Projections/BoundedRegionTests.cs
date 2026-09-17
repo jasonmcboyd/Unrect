@@ -98,7 +98,7 @@ namespace Unrect.Tests.Projections
     /// is discovered rather than measured — which is what puts the bounded region at the strategy's
     /// door.
     /// </summary>
-    private static IProjection<ISheetCells, int> InsideADiscoveredBound(string offset, IProjection<ISheetCells, int> child)
+    private static IProjectionDefinition<ISheetCells, int> InsideADiscoveredBound(string offset, IProjectionDefinition<ISheetCells, int> child)
     {
       var placed = offset switch
       {

@@ -13,10 +13,10 @@ namespace Unrect.Projections
   /// place the library would otherwise have chosen a shape from a value, which a declaration must
   /// not do.
   /// </summary>
-  internal sealed class LabelledProjection<TSpace, T> : ProjectionBase<TSpace, T>
+  internal sealed class LabelledDefinition<TSpace, T> : DefinitionNode<TSpace, T>
     where TSpace : class, ISpace
   {
-    public LabelledProjection(LabelAxis axis, IProjection<TSpace, LabelMap> header, IProjection<TSpace, T> body, Placement placement, string? description = null)
+    public LabelledDefinition(LabelAxis axis, IProjectionDefinition<TSpace, LabelMap> header, IProjectionDefinition<TSpace, T> body, Placement placement, string? description = null)
       : base(placement)
     {
       if (axis != LabelAxis.Column)
@@ -32,8 +32,8 @@ namespace Unrect.Projections
     }
 
     private LabelAxis Axis { get; }
-    private IProjection<TSpace, LabelMap> Header { get; }
-    private IProjection<TSpace, T> Body { get; }
+    private IProjectionDefinition<TSpace, LabelMap> Header { get; }
+    private IProjectionDefinition<TSpace, T> Body { get; }
 
     public override string Description { get; }
 
@@ -46,7 +46,7 @@ namespace Unrect.Projections
       var state = new FlowState<TSpace>(Orientation.Vertical, extent, context);
 
       var labels = state.Next(Header, Children[0].Site);
-      var value = state.Next(new WithLabelsProjection<TSpace, T>(Axis, labels, Body, Placement.Default), Children[1].Site);
+      var value = state.Next(new WithLabelsDefinition<TSpace, T>(Axis, labels, Body, Placement.Default), Children[1].Site);
 
       return new ProjectionResult<T>(value, state.Consumed, state.Presence);
     }

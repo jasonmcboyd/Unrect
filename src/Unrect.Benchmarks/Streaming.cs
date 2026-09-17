@@ -41,7 +41,7 @@ namespace Unrect.Benchmarks
   [BenchmarkCategory("Streaming")]
   public class Streaming
   {
-    private static readonly IProjection<ISheetCells, IReadOnlyList<StreamedRow>> Rows = Table<StreamedRow>();
+    private static readonly IProjectionDefinition<ISheetCells, IReadOnlyList<StreamedRow>> Rows = Table<StreamedRow>();
 
     // One range over a band, swept five times — once per column read. Each sweep walks the band
     // end to end, so the whole band is open across all five: the access pattern the window has to
@@ -50,7 +50,7 @@ namespace Unrect.Benchmarks
     // A flow is not used here because its children would have to divide the band's WIDTH between
     // them, which changes what is being measured; five passes over one extent is the same demand on
     // the window with nothing else in the way.
-    private static readonly IProjection<ISheetCells, long> Band = Range(Extent(StreamingSpaces.Columns, StreamingSpaces.BandRows), block =>
+    private static readonly IProjectionDefinition<ISheetCells, long> Band = Range(Extent(StreamingSpaces.Columns, StreamingSpaces.BandRows), block =>
     {
       long sum = 0;
 

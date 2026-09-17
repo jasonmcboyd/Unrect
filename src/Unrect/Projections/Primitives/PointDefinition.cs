@@ -7,10 +7,10 @@ namespace Unrect.Projections
   /// name: a point answers the canonical questions, and a backend's own extension answers the rest.
   /// </summary>
   /// <typeparam name="TSpace">The space the point addresses a cell of.</typeparam>
-  internal sealed class PointProjection<TSpace> : ProjectionBase<TSpace, Point<TSpace>>
+  internal sealed class PointDefinition<TSpace> : DefinitionNode<TSpace, Point<TSpace>>
     where TSpace : class, ISpace
   {
-    public PointProjection(Placement placement)
+    public PointDefinition(Placement placement)
       : base(placement)
     {
     }

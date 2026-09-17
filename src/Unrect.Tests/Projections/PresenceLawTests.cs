@@ -57,16 +57,16 @@ namespace Unrect.Tests.Projections
     private static ISheetCells CaptionedSheet() => Mixed(new object?[,] { { "Detail" }, { 1 }, { 2 } });
 
     /// <summary>The discovered extent: full width, and as many leading rows as hold anything.</summary>
-    private static IProjection<ISheetCells, int> Rows() => Range(RowsWhileAnyValue(), b => b.Height);
+    private static IProjectionDefinition<ISheetCells, int> Rows() => Range(RowsWhileAnyValue(), b => b.Height);
 
     /// <summary>A cell read as text — which is a failure over <see cref="Numbers"/>, and an absorbable one.</summary>
-    private static IProjection<ISheetCells, string> Title() => TextCell();
+    private static IProjectionDefinition<ISheetCells, string> Title() => TextCell();
 
     /// <summary>The internal ε, at the one type these tests need it at.</summary>
-    private static IProjection<ISheetCells, int> Unit() => NothingProjection<ISheetCells, int>.Instance;
+    private static IProjectionDefinition<ISheetCells, int> Unit() => NothingDefinition<ISheetCells, int>.Instance;
 
     /// <summary>What the engine recorded about the reading — the value the composites act on.</summary>
-    private static Presence PresenceOf<T>(IProjection<ISheetCells, T> projection, ISheetCells space)
+    private static Presence PresenceOf<T>(IProjectionDefinition<ISheetCells, T> projection, ISheetCells space)
       => projection.Apply(space).Presence;
 
     // --- §4, the classification table, one law per row ---------------------------------------------
@@ -372,7 +372,7 @@ namespace Unrect.Tests.Projections
     // the continue rule "Read with progress", which ended a run at the first absorption even where
     // the item had consumed rows. That is a semantic change wearing a diagnostic's clothes — it
     // silently dropped occurrences a declaration used to collect — so the numeric productivity guard
-    // is the sole decider again (RepeatProjection.cs:133) and presence only explains a stop it did
+    // is the sole decider again (RepeatDefinition.cs:133) and presence only explains a stop it did
     // not cause. These are compatibility pins: what they assert is what the vocabulary did before
     // presence existed, and the point of pinning it is that nothing in the suite said so when it
     // changed.
@@ -383,7 +383,7 @@ namespace Unrect.Tests.Projections
     /// whatever the boundary made of it. One row per occurrence, whether the row read or was
     /// tolerated.
     /// </summary>
-    private static IProjection<ISheetCells, int> ToleratedRow() => Sized(Extent(1, 1)).Of(Integer().Optional());
+    private static IProjectionDefinition<ISheetCells, int> ToleratedRow() => Sized(Extent(1, 1)).Of(Integer().Optional());
 
     [Fact]
     public void AnAbsorbedItemThatStillConsumedItsExtentGoesOnRepeating()
@@ -680,7 +680,7 @@ namespace Unrect.Tests.Projections
     /// about the one thing that suite cannot see.
     /// </summary>
     private static (Presence Expected, Presence Lazily, Presence Eagerly) Compare<T>(
-      IProjection<ISheetCells, T> projection,
+      IProjectionDefinition<ISheetCells, T> projection,
       ISheetCells space,
       Presence expected)
     {

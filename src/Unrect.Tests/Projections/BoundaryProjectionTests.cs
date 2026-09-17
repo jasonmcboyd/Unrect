@@ -31,10 +31,10 @@ namespace Unrect.Tests.Projections
       return Grid(values);
     }
 
-    private static IProjection<ISheetCells, string> Title() => TextCell().Named("title");
+    private static IProjectionDefinition<ISheetCells, string> Title() => TextCell().Named("title");
 
     /// <summary>Two levels below the boundary: the flow whose second child is the one that fails.</summary>
-    private static IProjection<ISheetCells, string> Inner()
+    private static IProjectionDefinition<ISheetCells, string> Inner()
       => VerticalFlow(v =>
       {
         var intCell = v.Next(IntCell());
@@ -333,7 +333,7 @@ namespace Unrect.Tests.Projections
 
     // --- When the fallback fails too ------------------------------------------------------------------------------------
 
-    private static IProjection<ISheetCells, string> PrimaryAndFallbackBothWrong()
+    private static IProjectionDefinition<ISheetCells, string> PrimaryAndFallbackBothWrong()
       => TextCell().Named("primary")
         .Else(Point().Select(p => p.Date().ToString()).Named("fallback"));
 
@@ -382,7 +382,7 @@ namespace Unrect.Tests.Projections
 
     private static ISheetCells TextOverNumber() => Mixed(new object?[,] { { "x" }, { 5 } });
 
-    private static IProjection<ISheetCells, string> AbsorbedThenSameCell()
+    private static IProjectionDefinition<ISheetCells, string> AbsorbedThenSameCell()
       => VerticalFlow(v =>
       {
         var intCell = v.Next(IntCell().Optional());
@@ -625,8 +625,8 @@ namespace Unrect.Tests.Projections
 
       Assert.Single(inner.Else(0).Children);
       Assert.Equal(2, inner.Else(fallback).Children.Count);
-      Assert.Same(inner, inner.Else(fallback).Children[0].Projection);
-      Assert.Same(fallback, inner.Else(fallback).Children[1].Projection);
+      Assert.Same(inner, inner.Else(fallback).Children[0].Definition);
+      Assert.Same(fallback, inner.Else(fallback).Children[1].Definition);
       Assert.Equal("fallback", inner.Else(fallback).Children[1].Site.Name);
     }
 
@@ -642,15 +642,15 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void Else_RejectsANullFallbackProjection()
     {
-      Assert.Equal("fallback", Assert.Throws<ArgumentNullException>(() => Title().Else((IProjection<ISheetCells, string>)null!)).ParamName);
+      Assert.Equal("fallback", Assert.Throws<ArgumentNullException>(() => Title().Else((IProjectionDefinition<ISheetCells, string>)null!)).ParamName);
     }
 
     [Fact]
     public void BoundariesRejectANullProjection()
     {
-      Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjection<ISheetCells, int>)null!).Optional()).ParamName);
-      Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjection<ISheetCells, int>)null!).Else(0)).ParamName);
-      Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjection<ISheetCells, int>)null!).Else(IntCell())).ParamName);
+      Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjectionDefinition<ISheetCells, int>)null!).Optional()).ParamName);
+      Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjectionDefinition<ISheetCells, int>)null!).Else(0)).ParamName);
+      Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjectionDefinition<ISheetCells, int>)null!).Else(IntCell())).ParamName);
     }
   }
 }

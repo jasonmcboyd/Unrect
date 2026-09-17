@@ -49,7 +49,7 @@ namespace Unrect.Tests.Streaming
       // — and an ISheetCells IS an ISpace, so a declaration written over the canonical surface is a
       // declaration this file can answer. Without the overload, the whole canonical vocabulary would
       // be unusable through the sugar for no reason a reader could name.
-      IProjection<ISpace, string?> canonical = ProjectionBuilders<ISpace>.AsText().OrBlank();
+      IProjectionDefinition<ISpace, string?> canonical = ProjectionBuilders<ISpace>.AsText().OrBlank();
 
       Assert.Equal("Fund", canonical.MapWorkbook(Path("multi-sheet.xlsx"), "Detail", Cold()));
     }
@@ -60,11 +60,11 @@ namespace Unrect.Tests.Streaming
       // MUST NOT COMPILE, and there is no way to assert that from inside a test — so it is recorded
       // here instead, beside the two overloads that make it true:
       //
-      //   IProjection<IFormulaSpace, string?> formula = SpreadsheetProjections.Formula<IFormulaSpace>();
+      //   IProjectionDefinition<IFormulaSpace, string?> formula = SpreadsheetProjections.Formula<IFormulaSpace>();
       //   formula.MapWorkbook(path, sheet);          // CS1929/CS0411 — no overload takes it
       //
-      // The receiver is IProjection<ISheetCells, T> on one overload and IProjection<ISpace, T> on the
-      // other, and IProjection is INVARIANT in its space (phase-6 ruling (i): `in TSpace` and a real
+      // The receiver is IProjectionDefinition<ISheetCells, T> on one overload and IProjectionDefinition<ISpace, T> on the
+      // other, and IProjectionDefinition is INVARIANT in its space (phase-6 ruling (i): `in TSpace` and a real
       // Project(Plane<TSpace>, …) are mutually exclusive), so a declaration over IFormulaSpace,
       // ISpreadsheetSpace or IValueCells<T> matches neither. That is the whole guard: the alternative
       // to a compile error here is a file's formulas quietly reading as absent, which is the failure
@@ -247,8 +247,8 @@ namespace Unrect.Tests.Streaming
       // to be an ArgumentNullException rather than whatever opening a missing file would have been.
       var missing = Path("no-such-workbook.xlsx");
 
-      Assert.Throws<ArgumentNullException>(() => ((IProjection<ISheetCells, string>)null!).MapWorkbook(missing, "Any"));
-      Assert.Throws<ArgumentNullException>(() => ((IProjection<ISheetCells, string>)null!).MapWorkbookWithDiagnostics(missing, "Any"));
+      Assert.Throws<ArgumentNullException>(() => ((IProjectionDefinition<ISheetCells, string>)null!).MapWorkbook(missing, "Any"));
+      Assert.Throws<ArgumentNullException>(() => ((IProjectionDefinition<ISheetCells, string>)null!).MapWorkbookWithDiagnostics(missing, "Any"));
 
       // ...and the path really is one that would have failed, so the assertion above is not vacuous.
       Assert.ThrowsAny<IOException>(() => Text().MapWorkbook(missing, "Any"));
@@ -411,9 +411,9 @@ namespace Unrect.Tests.Streaming
     // re-run against this tree when these tests were written:
     //
     //   (n) Formula().MapWorkbook(path, "Data")
-    //       CS1061: 'IProjection<IFormulaSpace, string?>' does not contain a definition for
+    //       CS1061: 'IProjectionDefinition<IFormulaSpace, string?>' does not contain a definition for
     //               'MapWorkbook' and no accessible extension method 'MapWorkbook' accepting a first
-    //               argument of type 'IProjection<IFormulaSpace, string?>' could be found (are you
+    //               argument of type 'IProjectionDefinition<IFormulaSpace, string?>' could be found (are you
     //               missing a using directive or an assembly reference?)
     //
     // The refusal is the point and the tail is misleading: no import would help, because there is no

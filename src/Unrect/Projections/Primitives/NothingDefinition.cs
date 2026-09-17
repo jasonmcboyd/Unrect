@@ -14,16 +14,16 @@ namespace Unrect.Projections
   /// named — so it is available to the law tests and to whatever mints one while rewriting later.
   /// </para>
   /// </summary>
-  internal sealed class NothingProjection<TSpace, T> : ProjectionBase<TSpace, T>
+  internal sealed class NothingDefinition<TSpace, T> : DefinitionNode<TSpace, T>
     where TSpace : class, ISpace
   {
     /// <summary>
     /// The one of them. A projection is an immutable value applied to many spaces, and this one has
     /// no state to vary, so there is nothing for a second instance to be.
     /// </summary>
-    public static readonly IProjection<TSpace, T> Instance = new NothingProjection<TSpace, T>();
+    public static readonly IProjectionDefinition<TSpace, T> Instance = new NothingDefinition<TSpace, T>();
 
-    private NothingProjection()
+    private NothingDefinition()
       : base(Placement.Default)
     {
     }

@@ -16,8 +16,8 @@ namespace Unrect.Analyzers
   /// own, because the compiler has already said something true and the only thing missing is what to
   /// do about it.
   /// <para>
-  /// The message reads <c>cannot convert from 'IProjection&lt;IFormulaSpace, string?&gt;' to
-  /// 'IProjection&lt;ISheetCells, string?&gt;'</c>, which names both types and still leaves the
+  /// The message reads <c>cannot convert from 'IProjectionDefinition&lt;IFormulaSpace, string?&gt;' to
+  /// 'IProjectionDefinition&lt;ISheetCells, string?&gt;'</c>, which names both types and still leaves the
   /// reader to work out that the fix belongs two lines up, on the factory whose lambda this child
   /// sits in. A factory is where a space enters a declaration, and the vocabulary is generic in it,
   /// so this offers to build that one factory through

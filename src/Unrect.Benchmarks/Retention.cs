@@ -73,7 +73,7 @@ namespace Unrect.Benchmarks
 
     private const string Unit = "bytes";
 
-    private static readonly IProjection<ISheetCells, IReadOnlyList<LedgerRow>> Ledger = Table<LedgerRow>();
+    private static readonly IProjectionDefinition<ISheetCells, IReadOnlyList<LedgerRow>> Ledger = Table<LedgerRow>();
 
     /// <summary>
     /// The scenarios, in the order a reader should meet them: what the grid costs, what the same

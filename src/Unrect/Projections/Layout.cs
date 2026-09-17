@@ -95,7 +95,7 @@ namespace Unrect.Projections
       return layout;
     }
 
-    public Slot<T> Next<T>(IProjection<TSpace, T> projection, string? declared)
+    public Slot<T> Next<T>(IProjectionDefinition<TSpace, T> projection, string? declared)
     {
       if (_built)
         throw new InvalidOperationException(AlreadyBuilt);
@@ -145,9 +145,9 @@ namespace Unrect.Projections
   internal sealed class LayoutRunner<TSpace, T> : LayoutRunner<TSpace>
     where TSpace : class, ISpace
   {
-    public LayoutRunner(IProjection<TSpace, T> projection) => Projection = projection;
+    public LayoutRunner(IProjectionDefinition<TSpace, T> projection) => Projection = projection;
 
-    private IProjection<TSpace, T> Projection { get; }
+    private IProjectionDefinition<TSpace, T> Projection { get; }
 
     public override object? Apply(LayoutState<TSpace> state, UseSite site) => state.Next(Projection, site);
   }

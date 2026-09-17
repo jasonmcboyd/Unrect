@@ -92,11 +92,11 @@ namespace Unrect.Tests.Projections
     });
 
     /// <summary>One investor's run of rows, read as its name and its height.</summary>
-    private static IProjection<ISheetCells, string> InvestorBlock()
+    private static IProjectionDefinition<ISheetCells, string> InvestorBlock()
       => Range(RowsWhileAnyValue(), block => $"{block[0, 0].Text()}x{block.Height}");
 
     /// <summary>The repeated series both headings announce — hoisted, because it is declared once.</summary>
-    private static IProjection<ISheetCells, IReadOnlyList<string>> Series()
+    private static IProjectionDefinition<ISheetCells, IReadOnlyList<string>> Series()
       => VerticalRepeat(InvestorBlock(), separatedBy: BlankRows());
 
     // --- 1. The denotation sweep: the pipeline against the modifiers it replays ----------------------
@@ -321,7 +321,7 @@ namespace Unrect.Tests.Projections
     private static IRowLandmark Header() => RowContaining("Fund");
 
     /// <summary>A bind pointed at the column of fund names, so every record fails.</summary>
-    private static IProjection<ISheetCells, decimal> FundColumnAsANumber(LabelMap captions) => Right(captions["Fund"]).Of(Decimal());
+    private static IProjectionDefinition<ISheetCells, decimal> FundColumnAsANumber(LabelMap captions) => Right(captions["Fund"]).Of(Decimal());
 
     [Fact]
     public void AVerticalRepeatTerminalKeepsTheIdentifierItsItemWasWrittenAs()

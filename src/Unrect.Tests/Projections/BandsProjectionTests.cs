@@ -28,10 +28,10 @@ namespace Unrect.Tests.Projections
   public class BandsProjectionTests
   {
     /// <summary>The extent a band projection was handed, as "WxH" — the whole of what a band is.</summary>
-    private static IProjection<ISheetCells, string> BandExtent() => Range(WholeExtent(), block => $"{block.Width}x{block.Height}");
+    private static IProjectionDefinition<ISheetCells, string> BandExtent() => Range(WholeExtent(), block => $"{block.Width}x{block.Height}");
 
     /// <summary>The first cell of a band, so an assertion reads as the row or column it was cut from.</summary>
-    private static IProjection<ISheetCells, int> FirstCell() => Range(WholeExtent(), block => block.Space[0, 0].IntegerOrBlank() ?? -1);
+    private static IProjectionDefinition<ISheetCells, int> FirstCell() => Range(WholeExtent(), block => block.Space[0, 0].IntegerOrBlank() ?? -1);
 
     // --- 1. What one band is -----------------------------------------------------------------------
 
@@ -324,8 +324,8 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ANullBandProjectionIsRejectedAtConstruction()
     {
-      Assert.Throws<ArgumentNullException>(() => VerticalBands(1, (IProjection<ISheetCells, int>)null!));
-      Assert.Throws<ArgumentNullException>(() => HorizontalBands(1, (IProjection<ISheetCells, int>)null!));
+      Assert.Throws<ArgumentNullException>(() => VerticalBands(1, (IProjectionDefinition<ISheetCells, int>)null!));
+      Assert.Throws<ArgumentNullException>(() => HorizontalBands(1, (IProjectionDefinition<ISheetCells, int>)null!));
     }
 
     [Theory]
@@ -350,7 +350,7 @@ namespace Unrect.Tests.Projections
 
       Assert.Equal("VerticalBands", VerticalBands(1, allocation).Description);
       Assert.Equal("HorizontalBands", HorizontalBands(1, allocation).Description);
-      Assert.Same(allocation, Assert.Single(VerticalBands(2, allocation).Children).Projection);
+      Assert.Same(allocation, Assert.Single(VerticalBands(2, allocation).Children).Definition);
     }
   }
 }

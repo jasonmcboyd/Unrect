@@ -33,7 +33,7 @@ namespace Unrect.Tests.Projections
       { "b", 2 },
     });
 
-    private static IProjection<ISheetCells, int> Lines() => Range(b => b.Height);
+    private static IProjectionDefinition<ISheetCells, int> Lines() => Range(b => b.Height);
 
     // --- The desugared tree ---------------------------------------------------------------------------
 
@@ -56,8 +56,8 @@ namespace Unrect.Tests.Projections
 
       Assert.Null(section.Opacity);
       Assert.Equal(2, section.Children.Count);
-      Assert.Equal("Caption(\"Detail\")", section.Children[0].Projection.Description);
-      Assert.Equal("Range", section.Children[1].Projection.Description);
+      Assert.Equal("Caption(\"Detail\")", section.Children[0].Definition.Description);
+      Assert.Equal("Range", section.Children[1].Definition.Description);
     }
 
     [Fact]

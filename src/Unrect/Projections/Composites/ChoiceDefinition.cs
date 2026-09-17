@@ -12,13 +12,13 @@ namespace Unrect.Projections
   /// it absorbed on its way to failing is rolled back — a branch that did not win says nothing
   /// beyond the one line explaining itself.
   /// </summary>
-  internal sealed class ChoiceProjection<TSpace, T> : ProjectionBase<TSpace, T>
+  internal sealed class ChoiceDefinition<TSpace, T> : DefinitionNode<TSpace, T>
     where TSpace : class, ISpace
   {
-    public ChoiceProjection(IReadOnlyList<IProjection<TSpace, T>> alternatives, Placement placement)
+    public ChoiceDefinition(IReadOnlyList<IProjectionDefinition<TSpace, T>> alternatives, Placement placement)
       : base(placement)
     {
-      var copy = new IProjection<TSpace, T>[alternatives.Count];
+      var copy = new IProjectionDefinition<TSpace, T>[alternatives.Count];
       var children = new Child[alternatives.Count];
 
       for (var index = 0; index < copy.Length; index++)
@@ -33,7 +33,7 @@ namespace Unrect.Projections
       Children = children;
     }
 
-    private IProjection<TSpace, T>[] Alternatives { get; }
+    private IProjectionDefinition<TSpace, T>[] Alternatives { get; }
 
     public override string Description => "Choice";
 

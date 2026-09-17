@@ -36,12 +36,12 @@ namespace Unrect.Benchmarks
   [BenchmarkCategory("Tables")]
   public class Tables
   {
-    private static readonly IProjection<ISheetCells, IReadOnlyList<decimal>> Projected =
+    private static readonly IProjectionDefinition<ISheetCells, IReadOnlyList<decimal>> Projected =
       Table(r => r["Contribution"].Decimal());
 
-    private static readonly IProjection<ISheetCells, IReadOnlyList<TabularRow>> Bound = Table<TabularRow>();
+    private static readonly IProjectionDefinition<ISheetCells, IReadOnlyList<TabularRow>> Bound = Table<TabularRow>();
 
-    private static readonly IProjection<ISheetCells, IReadOnlyList<IReadOnlyDictionary<string, Point<ISheetCells>>>> Dictionaries =
+    private static readonly IProjectionDefinition<ISheetCells, IReadOnlyList<IReadOnlyDictionary<string, Point<ISheetCells>>>> Dictionaries =
       Table();
 
     private ISheetCells _large = default!;

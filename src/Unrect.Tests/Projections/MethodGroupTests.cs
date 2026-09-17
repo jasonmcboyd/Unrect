@@ -27,7 +27,7 @@ namespace Unrect.Tests.Projections
   /// </summary>
   public class MethodGroupTests
   {
-    private static IProjection<ISheetCells, int> Report() => VerticalFlow(v =>
+    private static IProjectionDefinition<ISheetCells, int> Report() => VerticalFlow(v =>
     {
       var intCell = v.Next(IntCell());
 

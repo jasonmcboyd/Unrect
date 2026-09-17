@@ -139,7 +139,7 @@ namespace Unrect.Tests.Projections
     private const int LateMarker = 7;
 
     /// <summary>A rule that breaks before it has looked at anything — the scan fails at its first row.</summary>
-    private static IProjection<ISheetCells, int> Breaks(Exception exception)
+    private static IProjectionDefinition<ISheetCells, int> Breaks(Exception exception)
       => Range(RowsWhileAny(_ => throw exception), b => b.Height);
 
     // --- The cases -------------------------------------------------------------------------------
@@ -413,7 +413,7 @@ namespace Unrect.Tests.Projections
     // asks the counting space how much of the sheet has been read is asking a question the two paths
     // answer differently — nothing yet, versus the whole scan.
 
-    private static int RowsReadBeforeTheProjectionRuns(Func<Func<CellBlock<ISheetCells>, int>, IProjection<ISheetCells, int>> declare, ISheetCells sheet, bool eager)
+    private static int RowsReadBeforeTheProjectionRuns(Func<Func<CellBlock<ISheetCells>, int>, IProjectionDefinition<ISheetCells, int>> declare, ISheetCells sheet, bool eager)
     {
       var counter = new CountingSpace(sheet);
       var observed = -1;
@@ -444,7 +444,7 @@ namespace Unrect.Tests.Projections
     [InlineData("under Optional")]
     public void TheDeclarationsThisSuiteSweepsDoTakeTheDeferredBranch(string spelling)
     {
-      Func<Func<CellBlock<ISheetCells>, int>, IProjection<ISheetCells, int>> declare = spelling switch
+      Func<Func<CellBlock<ISheetCells>, int>, IProjectionDefinition<ISheetCells, int>> declare = spelling switch
       {
         "Range(strategy)" => project => Range(RowsWhileAnyValue(), project),
         "Sized" => project => Sized(RowsWhileAnyValue()).Of(Range(project)),
@@ -481,7 +481,7 @@ namespace Unrect.Tests.Projections
       // lambda project its first row having read two rows of the sheet.
       // The rungs project different types, so each is reduced to the pair of placements the claim
       // is actually about before the switch has to agree on one.
-      static (IProjection Declared, IProjection Sized) Probe<T>(IProjection<ISheetCells, T> projection) => (projection, Sized(RowsWhileAnyValue()).Of(projection));
+      static (IProjectionDefinition Declared, IProjectionDefinition Sized) Probe<T>(IProjectionDefinition<ISheetCells, T> projection) => (projection, Sized(RowsWhileAnyValue()).Of(projection));
 
       var (declared, sized) = rung switch
       {
@@ -551,7 +551,7 @@ namespace Unrect.Tests.Projections
       // to discover and so nothing to defer — so the sweep above proves nothing about them.
       // Range()'s discovered block left this theory when the width/height interleave landed; it is
       // now ADefaultPlacementDiscoversItsWidthFromTheRowsItsHeightWouldHaveReadAnyway.
-      Func<Func<CellBlock<ISheetCells>, int>, IProjection<ISheetCells, int>> declare = spelling switch
+      Func<Func<CellBlock<ISheetCells>, int>, IProjectionDefinition<ISheetCells, int>> declare = spelling switch
       {
         "Range(width, height)" => project => Range(3, 3, project),
         "WholeExtent" => project => Range(WholeExtent(), project),
@@ -578,7 +578,7 @@ namespace Unrect.Tests.Projections
       // asks whether there is a row at the child's offset, and slices the extent without naming a
       // height. So the one row the fixed 3x1 child probes is the whole cost before it projects,
       // against the four the eager reading takes to find where the values stop.
-      Func<Func<CellBlock<ISheetCells>, int>, IProjection<ISheetCells, int>> declare = layout switch
+      Func<Func<CellBlock<ISheetCells>, int>, IProjectionDefinition<ISheetCells, int>> declare = layout switch
       {
         // A fixed 3x1 child so the child's own placement has nothing to discover: what is measured
         // here is the parent's bound being settled, not the child's.
@@ -702,7 +702,7 @@ namespace Unrect.Tests.Projections
 
       private Func<Outcome> Observe { get; }
 
-      public static Scenario Of<T>(IProjection<ISheetCells, T> projection, ISheetCells space) => new Scenario(() => Read(projection, space));
+      public static Scenario Of<T>(IProjectionDefinition<ISheetCells, T> projection, ISheetCells space) => new Scenario(() => Read(projection, space));
 
       public Outcome Lazily() => Observe();
 
@@ -712,7 +712,7 @@ namespace Unrect.Tests.Projections
           return Observe();
       }
 
-      private static Outcome Read<T>(IProjection<ISheetCells, T> projection, ISheetCells space)
+      private static Outcome Read<T>(IProjectionDefinition<ISheetCells, T> projection, ISheetCells space)
       {
         try
         {

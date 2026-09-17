@@ -110,7 +110,7 @@ namespace Unrect.Tests.Projections
       })), CoordinateGrid());
     }
 
-    private static void AssertFit(bool fits, string extent, IProjection<ISheetCells, string> declaration, ISheetCells space)
+    private static void AssertFit(bool fits, string extent, IProjectionDefinition<ISheetCells, string> declaration, ISheetCells space)
     {
       if (fits)
       {
@@ -642,8 +642,8 @@ namespace Unrect.Tests.Projections
       // pipeline's terminal: .Of blames "projection" at construction rather than letting a null
       // surface later as a NullReferenceException when the steps run. Both the offset door
       // (OffsetBy) and the extent door (Sized) reach that one guard.
-      Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjection<ISheetCells, int>)null!).Named("x")).ParamName);
-      Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjection<ISheetCells, int>)null!).Select(v => v)).ParamName);
+      Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjectionDefinition<ISheetCells, int>)null!).Named("x")).ParamName);
+      Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjectionDefinition<ISheetCells, int>)null!).Select(v => v)).ParamName);
       Assert.Equal(
         "projection",
         Assert.Throws<ArgumentNullException>(() => OffsetBy(SkipRows(1)).Of<int>(null!)).ParamName);

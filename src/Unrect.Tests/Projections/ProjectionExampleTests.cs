@@ -28,7 +28,7 @@ namespace Unrect.Tests.Projections
 
     // --- simple-report.xlsx: a fixed header over a table ----------------------------------------------------
 
-    private static IProjection<ISheetCells, (SimpleHeader Header, IReadOnlyList<Transaction> Transactions)> SimpleReport() =>
+    private static IProjectionDefinition<ISheetCells, (SimpleHeader Header, IReadOnlyList<Transaction> Transactions)> SimpleReport() =>
       VerticalFlow(v =>
       {
         var verticalFlow = v.Next(VerticalFlow(h =>
@@ -117,7 +117,7 @@ namespace Unrect.Tests.Projections
 
     // --- investors-by-deal.xlsx: repeating blocks of differing lengths ------------------------------------------
 
-    private static IProjection<ISheetCells, IReadOnlyList<Deal>> InvestorsByDeal()
+    private static IProjectionDefinition<ISheetCells, IReadOnlyList<Deal>> InvestorsByDeal()
     {
       var deal =
         VerticalFlow(v =>
@@ -180,7 +180,7 @@ namespace Unrect.Tests.Projections
 
     // --- investor-summary.xlsx: header, summary table, and repeating detail blocks ---------------------------------
 
-    private static IProjection<ISheetCells, Report> InvestorSummary()
+    private static IProjectionDefinition<ISheetCells, Report> InvestorSummary()
     {
       var detail =
         VerticalFlow(v =>
@@ -313,7 +313,7 @@ namespace Unrect.Tests.Projections
     // exactly where the second's caption begins. One declaration reads both, because the first
     // series is bounded by the caption the second is anchored on.
 
-    private static IProjection<ISheetCells, IrrReport> InvestorIrr()
+    private static IProjectionDefinition<ISheetCells, IrrReport> InvestorIrr()
     {
       var investorBlock = Table(r => r["Investor Name"].Text()).Named("investor block");
 

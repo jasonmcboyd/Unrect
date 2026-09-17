@@ -126,7 +126,7 @@ namespace Unrect.Tests.Spreadsheets
       // The column half of the acceptance suite's demand-climbing test. The demand is the file's
       // space, and the pipeline accepts this matcher only because that space can answer it — which
       // would not compile if the column lift had been left off the demanding family.
-      IProjection<ISpreadsheetSpace, string> firstComputedColumn =
+      IProjectionDefinition<ISpreadsheetSpace, string> firstComputedColumn =
         On(ColumnWithFormula()).Of(Column(cells => cells[0].Text()));
 
       Assert.Equal("Rate", firstComputedColumn.Map(Sheet()));

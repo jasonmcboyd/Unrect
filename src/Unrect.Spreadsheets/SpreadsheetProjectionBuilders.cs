@@ -60,53 +60,53 @@ namespace Unrect.Spreadsheets
     where TSpace : class, ISpreadsheetSpace
   {
     /// <inheritdoc cref="SpreadsheetProjections.Text{TSpace}()"/>
-    public static IProjection<TSpace, string> Text() => SpreadsheetProjections.Text<TSpace>();
+    public static IProjectionDefinition<TSpace, string> Text() => SpreadsheetProjections.Text<TSpace>();
 
     /// <inheritdoc cref="SpreadsheetProjections.Decimal{TSpace}()"/>
-    public static IProjection<TSpace, decimal> Decimal() => SpreadsheetProjections.Decimal<TSpace>();
+    public static IProjectionDefinition<TSpace, decimal> Decimal() => SpreadsheetProjections.Decimal<TSpace>();
 
     /// <inheritdoc cref="SpreadsheetProjections.Integer{TSpace}()"/>
-    public static IProjection<TSpace, int> Integer() => SpreadsheetProjections.Integer<TSpace>();
+    public static IProjectionDefinition<TSpace, int> Integer() => SpreadsheetProjections.Integer<TSpace>();
 
     /// <inheritdoc cref="SpreadsheetProjections.Double{TSpace}()"/>
-    public static IProjection<TSpace, double> Double() => SpreadsheetProjections.Double<TSpace>();
+    public static IProjectionDefinition<TSpace, double> Double() => SpreadsheetProjections.Double<TSpace>();
 
     /// <inheritdoc cref="SpreadsheetProjections.Date{TSpace}()"/>
-    public static IProjection<TSpace, DateTime> Date() => SpreadsheetProjections.Date<TSpace>();
+    public static IProjectionDefinition<TSpace, DateTime> Date() => SpreadsheetProjections.Date<TSpace>();
 
     /// <inheritdoc cref="SpreadsheetProjections.Boolean{TSpace}()"/>
-    public static IProjection<TSpace, bool> Boolean() => SpreadsheetProjections.Boolean<TSpace>();
+    public static IProjectionDefinition<TSpace, bool> Boolean() => SpreadsheetProjections.Boolean<TSpace>();
 
     /// <inheritdoc cref="SpreadsheetProjections.Table{TSpace, T}()"/>
     /// <typeparam name="T">What one record reads.</typeparam>
-    public static IProjection<TSpace, IReadOnlyList<T>> Table<T>() => SpreadsheetProjections.Table<TSpace, T>();
+    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>() => SpreadsheetProjections.Table<TSpace, T>();
 
     /// <inheritdoc cref="SpreadsheetProjections.Table{TSpace, T}(BlankRowStrategy)"/>
     /// <typeparam name="T">What one record reads.</typeparam>
     /// <param name="onBlank">How a fully-blank body row is treated.</param>
-    public static IProjection<TSpace, IReadOnlyList<T>> Table<T>(BlankRowStrategy onBlank)
+    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(BlankRowStrategy onBlank)
       => SpreadsheetProjections.Table<TSpace, T>(onBlank);
 
     /// <inheritdoc cref="SpreadsheetProjections.Table{TSpace, T}(Func{TableBinding{T}, TableBinding{T}})"/>
     /// <typeparam name="T">What one record reads.</typeparam>
     /// <param name="bind">The per-member declarations applied to what reflection would have written.</param>
-    public static IProjection<TSpace, IReadOnlyList<T>> Table<T>(Func<TableBinding<T>, TableBinding<T>> bind)
+    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(Func<TableBinding<T>, TableBinding<T>> bind)
       => SpreadsheetProjections.Table<TSpace, T>(bind);
 
     /// <inheritdoc cref="SpreadsheetProjections.Table{TSpace, T}(Func{TableBinding{T}, TableBinding{T}}, BlankRowStrategy)"/>
     /// <typeparam name="T">What one record reads.</typeparam>
     /// <param name="bind">The per-member declarations applied to what reflection would have written.</param>
     /// <param name="onBlank">How a fully-blank body row is treated.</param>
-    public static IProjection<TSpace, IReadOnlyList<T>> Table<T>(Func<TableBinding<T>, TableBinding<T>> bind, BlankRowStrategy onBlank)
+    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(Func<TableBinding<T>, TableBinding<T>> bind, BlankRowStrategy onBlank)
       => SpreadsheetProjections.Table<TSpace, T>(bind, onBlank);
 
     /// <inheritdoc cref="SpreadsheetProjections.Record{TSpace, T}(LabelMap)"/>
     /// <typeparam name="T">What one record reads.</typeparam>
     /// <param name="labels">This file's captions — what a table's bind rung hands its record.</param>
-    public static IProjection<TSpace, T> Record<T>(LabelMap labels) => SpreadsheetProjections.Record<TSpace, T>(labels);
+    public static IProjectionDefinition<TSpace, T> Record<T>(LabelMap labels) => SpreadsheetProjections.Record<TSpace, T>(labels);
 
     /// <inheritdoc cref="SpreadsheetProjections.Formula{TSpace}()"/>
-    public static IProjection<TSpace, string?> Formula() => SpreadsheetProjections.Formula<TSpace>();
+    public static IProjectionDefinition<TSpace, string?> Formula() => SpreadsheetProjections.Formula<TSpace>();
 
     /// <inheritdoc cref="SpreadsheetProjections.RowWithFormula()"/>
     public static IRowLandmark<TSpace> RowWithFormula() => SpreadsheetProjections.RowWithFormula();

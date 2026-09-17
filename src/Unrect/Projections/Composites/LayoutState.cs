@@ -41,7 +41,7 @@ namespace Unrect.Projections
     /// Takes the next child and returns what it read, labelled by <paramref name="site"/> — where
     /// the declaration wrote it.
     /// </summary>
-    public abstract T Next<T>(IProjection<TSpace, T> projection, UseSite site);
+    public abstract T Next<T>(IProjectionDefinition<TSpace, T> projection, UseSite site);
 
     /// <summary>
     /// Records a child the layout has just taken, and what it made of its own extent. Counting and

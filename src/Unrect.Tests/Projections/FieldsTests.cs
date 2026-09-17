@@ -34,7 +34,7 @@ namespace Unrect.Tests.Projections
       { null, null, "Deal Type:", "Growth" },
     });
 
-    private static IProjection<ISheetCells, System.Collections.Generic.IReadOnlyDictionary<string, Point<ISheetCells>>> Entity()
+    private static IProjectionDefinition<ISheetCells, System.Collections.Generic.IReadOnlyDictionary<string, Point<ISheetCells>>> Entity()
       => Fields(Field("EIN"), Field("Entity Type"), Field("Deal Type"));
 
     // --- What it reads -------------------------------------------------------------------------------
@@ -98,10 +98,10 @@ namespace Unrect.Tests.Projections
       // is what a caller can ask. The static side of the assertion is the local's type; the runtime
       // side is the closed interface the factory's projection implements, so the pin holds even if
       // the factory is later composed out of other projections.
-      IProjection<ISheetCells, IReadOnlyDictionary<string, Point<ISheetCells>>> block = Fields(Field("EIN"));
+      IProjectionDefinition<ISheetCells, IReadOnlyDictionary<string, Point<ISheetCells>>> block = Fields(Field("EIN"));
 
       Assert.Contains(
-        typeof(IProjection<ISheetCells, IReadOnlyDictionary<string, Point<ISheetCells>>>),
+        typeof(IProjectionDefinition<ISheetCells, IReadOnlyDictionary<string, Point<ISheetCells>>>),
         block.GetType().GetInterfaces());
 
       IReadOnlyDictionary<string, Point<ISheetCells>> read = block.Map(Card());

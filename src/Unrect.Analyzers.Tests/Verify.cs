@@ -12,7 +12,7 @@ namespace Unrect.Analyzers.Tests
   /// <summary>
   /// Runs a diagnostic, or a diagnostic and its fix, over a source file compiled against the REAL
   /// Unrect assemblies — the ones this solution just built, not a stub of them. A rule about what
-  /// <c>IProjection</c>'s demand means is only worth as much as the <c>IProjection</c> it was tested
+  /// <c>IProjectionDefinition</c>'s demand means is only worth as much as the <c>IProjectionDefinition</c> it was tested
   /// against.
   /// </summary>
   internal static class Verify

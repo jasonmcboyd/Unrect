@@ -1,7 +1,7 @@
 # The Unrect Vocabulary
 
 A survey of every operator in the projection layer, grouped by role in the algebra. There is one
-vocabulary — `ProjectionBuilders<TSpace>` — and one mapping interface — `IProjection<TSpace,
+vocabulary — `ProjectionBuilders<TSpace>` — and one mapping interface — `IProjectionDefinition<TSpace,
 TResult>`. A declaration file imports the vocabulary once, closed over the space every
 declaration in the file is written against:
 
@@ -40,7 +40,7 @@ living beside that backend.
 | `AsText()` | `string` | One cell, read as what it says: a text cell's own value, or the backend's rendering of anything else. **Total** — every space renders every cell, so the only failure is a blank one, and `OrBlank()` turns that into `null`. `Choice(AsText(), …)` is therefore degenerate: `AsText` cannot fail, so nothing after it in the choice is reachable — put the narrower leaf first |
 | `Text()` `Decimal()` `Integer()` `Double()` `Date()` `Boolean()` | typed value | One cell; asserts its kind, applies the kinded accessor. Live in `Unrect.Spreadsheets`, imported via `SheetProjectionBuilders<TSpace>` (over `ISheetCells`) or `SpreadsheetProjectionBuilders<TSpace>` (over `ISpreadsheetSpace`, which also carries `Formula()`). The family is CLOSED over `ISheetCells`'s kinded reads and never leads it — no `Long()`, ever; a conversion beyond the set is `Select` territory |
 | `AsText().OrBlank()` / `Text().OrBlank()` / `Decimal().OrBlank()` … | `T?` | The same reading, tolerating a BLANK cell: null, quietly, with no diagnostic — where `.Optional()` absorbs a *failure* and records a Warning. A wrong kind still fails loudly. The standalone spelling of a nullable table member's tolerance |
-| `Cell(v => ...)` | `T` | Removed name; the escape hatch for one cell is `Point(...)` composed with a caller's own read, or a bespoke leaf over `ProjectionBase<TSpace, T>` |
+| `Cell(v => ...)` | `T` | Removed name; the escape hatch for one cell is `Point(...)` composed with a caller's own read, or a bespoke leaf over `DefinitionNode<TSpace, T>` |
 | `Row(r => ...)` / `Row(width, r => ...)` / `Row(IColumnStrategy, r => ...)` | from `CellStrip<TSpace>` | One row; width discovered (`while any value`), explicit count, or by column strategy |
 | `Column(c => ...)` / `Column(height, c => ...)` / `Column(IRowStrategy, c => ...)` | from `CellStrip<TSpace>` | One column; height discovered, explicit count, or by row strategy |
 | `Range(b => ...)` / `Range(w, h, ...)` / `Range(area, ...)` | from `CellBlock<TSpace>` | Rectangular block |
@@ -64,7 +64,7 @@ kinded space can answer that.
 | Rung | Operator | Package | Yields | Notes |
 |---|---|---|---|---|
 | bind | `Table(headerRows: 1, eachRow: captions => ...)` | `Unrect` | `IReadOnlyList<T>` | The header is read, and the captions it carries (a `LabelMap`) are handed to a lambda that returns the projection for one record — `Overlay(o => new Row(o.Next(Decimal().Right(captions["Amount"]))))`. The bind runs ONCE PER application of the table (after the header, before any row) and builds a description; the description is applied per row by the engine. A missing or duplicated caption is a loud failure naming the header cells |
-| row-slot | `Table(headerRows:, eachRow: someProjection)` | `Unrect` | `IReadOnlyList<T>` | Every body row is handed to a PROJECTION as its own one-row extent. Composed from `VerticalBands` under a discovered header (`ColumnLabels`/`WithColumnLabels`), wrapped as one `UnitProjection` so a failure inside a record reads `Table[3] -> 'eachRow' -> …`, byte-identical to a hand-written leaf's path |
+| row-slot | `Table(headerRows:, eachRow: someProjection)` | `Unrect` | `IReadOnlyList<T>` | Every body row is handed to a PROJECTION as its own one-row extent. Composed from `VerticalBands` under a discovered header (`ColumnLabels`/`WithColumnLabels`), wrapped as one `UnitDefinition` so a failure inside a record reads `Table[3] -> 'eachRow' -> …`, byte-identical to a hand-written leaf's path |
 | dictionary | `Table()` | `Unrect` | rows of `IReadOnlyDictionary<string, Point<TSpace>>` | Exploratory: keys discovered from the file's header, looked up under the binding comparer; a column with no caption and two captions that collide are both loud failures |
 | lambda / row | `Table(r => ...)` / `Table(headerRows, r => ...)` | `Unrect` | `IReadOnlyList<T>` (`T` per row) | Full control: hand-written per-row reading over `TableRow<TSpace>` — `r["Caption"]` / `r[i]`, both yielding a `Point<TSpace>` |
 | lambda / view | `Table(t => ...)` / `Table(headerRows, t => ...)` | `Unrect` | `T` for the whole table | Full control over `TableView<TSpace>`, for a table that does not decompose row-by-row |
@@ -348,7 +348,7 @@ Two boundaries, both load-bearing rather than incidental:
 - **(b) Scope the file to what the declarations READ, not to what the file parses.** A workbook
   opened `CreateWithFormulas` whose projections never call `Formula()` should be an `ISheetCells`
   file, not an `ISpreadsheetSpace` one. A **generic helper method**, not a file import, is how a
-  hoisted library projection states its own minimum: `static IProjection<TSpace, T>
+  hoisted library projection states its own minimum: `static IProjectionDefinition<TSpace, T>
   Helper<TSpace>(...) where TSpace : class, ISheetCells` composes into any file whose space can
   answer it, instantiated at that file's own space — write library helpers this way, against the
   narrowest constraint, and reserve a full file scope for application declaration files, which are

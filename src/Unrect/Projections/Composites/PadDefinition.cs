@@ -11,10 +11,10 @@ namespace Unrect.Projections
   /// this is a wrapper projection rather than a placement, and why the two compose without
   /// interfering.
   /// </summary>
-  internal sealed class PadProjection<TSpace, TResult> : ProjectionBase<TSpace, TResult>
+  internal sealed class PadDefinition<TSpace, TResult> : DefinitionNode<TSpace, TResult>
     where TSpace : class, ISpace
   {
-    public PadProjection(IProjection<TSpace, TResult> inner, int left, int top, int right, int bottom, Placement placement)
+    public PadDefinition(IProjectionDefinition<TSpace, TResult> inner, int left, int top, int right, int bottom, Placement placement)
       : base(placement)
     {
       Inner = inner ?? throw new ArgumentNullException(nameof(inner));
@@ -25,7 +25,7 @@ namespace Unrect.Projections
       Children = new[] { new Child(inner, default) };
     }
 
-    private IProjection<TSpace, TResult> Inner { get; }
+    private IProjectionDefinition<TSpace, TResult> Inner { get; }
     private int Left { get; }
     private int Top { get; }
     private int Right { get; }

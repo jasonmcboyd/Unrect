@@ -25,13 +25,13 @@ namespace Unrect.Tests.Projections
     private static ISheetCells Pair() => Mixed(new object?[,] { { "x" }, { 5 } });
 
     /// <summary>Reads the pair as text-then-number: what the file actually is.</summary>
-    private static IProjection<ISheetCells, int> TextFirst(string name = "vendor A layout")
+    private static IProjectionDefinition<ISheetCells, int> TextFirst(string name = "vendor A layout")
       => VerticalFlow(v => { v.Next(TextCell()); var intCell = v.Next(IntCell());
 
       return v.Build(read => read.Of(intCell)); }).Named(name);
 
     /// <summary>Reads the pair as number-then-number: a layout this file is not in.</summary>
-    private static IProjection<ISheetCells, int> NumberFirst(string name = "vendor B layout")
+    private static IProjectionDefinition<ISheetCells, int> NumberFirst(string name = "vendor B layout")
       => VerticalFlow(v => { v.Next(IntCell()); var intCell = v.Next(IntCell());
 
       return v.Build(read => read.Of(intCell)); }).Named(name);
@@ -251,7 +251,7 @@ namespace Unrect.Tests.Projections
     // AlternationLawProbeTests deliberately asserts no layout — this is the file it defers to.
 
     /// <summary>A typed leaf, named — one clause of a problem, so a tally's line is predictable.</summary>
-    private static IProjection<ISheetCells, int> Number(string name) => Integer().Named(name);
+    private static IProjectionDefinition<ISheetCells, int> Number(string name) => Integer().Named(name);
 
     private static ISheetCells OneText() => Mixed(new object?[,] { { "text" } });
 
@@ -400,8 +400,8 @@ namespace Unrect.Tests.Projections
 
       Assert.Equal("Choice", choice.Description);
       Assert.Equal(2, choice.Children.Count);
-      Assert.Same(first, choice.Children[0].Projection);
-      Assert.Same(second, choice.Children[1].Projection);
+      Assert.Same(first, choice.Children[0].Definition);
+      Assert.Same(second, choice.Children[1].Definition);
 
       // A params array captures no per-argument text, so an alternative is known by position only.
       Assert.Null(choice.Children[0].Site.Name);

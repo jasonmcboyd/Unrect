@@ -32,15 +32,15 @@ namespace Unrect.Benchmarks
   [BenchmarkCategory("Diagnostics")]
   public class Diagnostics
   {
-    private static readonly IProjection<ISheetCells, int> Section = Range(RowsWhileAnyValue(), b => b.Height);
+    private static readonly IProjectionDefinition<ISheetCells, int> Section = Range(RowsWhileAnyValue(), b => b.Height);
 
     // The loser goes first: a caption that is not in the document, so the choice pays for a full
     // failed attempt before the second alternative succeeds.
-    private static readonly IProjection<ISheetCells, int> FirstAlternativeLoses = Choice(
+    private static readonly IProjectionDefinition<ISheetCells, int> FirstAlternativeLoses = Choice(
       Heading("No Such Caption Exists Here").Of(Section),
       Heading(CanonicalSpaces.DetailsCaption).Of(Section));
 
-    private static readonly IProjection<ISheetCells, int> AbsorbedFailure =
+    private static readonly IProjectionDefinition<ISheetCells, int> AbsorbedFailure =
       Heading("No Such Caption Exists Here").Of(Section).Optional();
 
     private ISheetCells _document = default!;

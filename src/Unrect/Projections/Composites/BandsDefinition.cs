@@ -14,11 +14,11 @@ namespace Unrect.Projections
   /// the stride and the bound stay two separate declarations.
   /// </para>
   /// </summary>
-  internal sealed class BandsProjection<TSpace, T> : ProjectionBase<TSpace, IReadOnlyList<T>>
+  internal sealed class BandsDefinition<TSpace, T> : DefinitionNode<TSpace, IReadOnlyList<T>>
     where TSpace : class, ISpace
   {
-    public BandsProjection(
-      IProjection<TSpace, T> each,
+    public BandsDefinition(
+      IProjectionDefinition<TSpace, T> each,
       Orientation orientation,
       int stride,
       UseSite eachSite,
@@ -34,7 +34,7 @@ namespace Unrect.Projections
       Children = new[] { new Child(each, eachSite) };
     }
 
-    private IProjection<TSpace, T> Each { get; }
+    private IProjectionDefinition<TSpace, T> Each { get; }
 
     /// <summary>What the declaration called the band projection, for every band to be labelled by.</summary>
     private UseSite EachSite { get; }

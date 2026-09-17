@@ -16,7 +16,7 @@ namespace Unrect.Projections
     /// remainder is: a projection that starts two rows down described neither those two rows nor
     /// whatever follows it.
     /// </summary>
-    private static void ReportUnconsumed<TSpace>(IProjection projection, Plane<TSpace> space, Size gap, Size described, ProjectionContext context)
+    private static void ReportUnconsumed<TSpace>(IProjectionDefinition projection, Plane<TSpace> space, Size gap, Size described, ProjectionContext context)
       where TSpace : class, ISpace
     {
       var size = space.Area.Size;

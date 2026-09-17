@@ -19,7 +19,7 @@ namespace Unrect.Analyzers
   /// demanded and which was offered.
   /// </para>
   /// <para>
-  /// <b>Where the same disagreement shows up earlier.</b> <c>IProjection&lt;TSpace, TResult&gt;</c>
+  /// <b>Where the same disagreement shows up earlier.</b> <c>IProjectionDefinition&lt;TSpace, TResult&gt;</c>
   /// is invariant, so a declaration that out-demands the file it is composed into is refused at the
   /// composition site rather than surviving to <c>Map</c> — CS1503 or CS0311 at <c>v.Next(child)</c>,
   /// <c>Choice(…)</c> or <c>.Else(…)</c>. Those the compiler already names both types for, which is

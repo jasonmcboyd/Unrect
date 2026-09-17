@@ -45,7 +45,7 @@ namespace Unrect.Tests.Projections
     /// A flow spelling and an overlay spelling built to land on the same cells. The overlay's
     /// children carry the offsets the flow's cursor would have supplied.
     /// </summary>
-    private static (IProjection<ISheetCells, string> Flow, IProjection<ISheetCells, string> Overlay) Pair(string spelling) => spelling switch
+    private static (IProjectionDefinition<ISheetCells, string> Flow, IProjectionDefinition<ISheetCells, string> Overlay) Pair(string spelling) => spelling switch
     {
       // Two single cells side by side: the flow's second band is the second column, and the overlay
       // says so with .Right(1).

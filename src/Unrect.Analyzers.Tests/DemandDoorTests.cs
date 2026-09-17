@@ -29,7 +29,7 @@ namespace Unrect.Analyzers.Tests
         """
         class Report
         {
-          IProjection<IFormulaSpace, string?> Header()
+          IProjectionDefinition<IFormulaSpace, string?> Header()
             => VerticalFlow(v =>
             {
               var formula = v.Next({|CS1503:SpreadsheetProjections.Formula<IFormulaSpace>()|});
@@ -40,7 +40,7 @@ namespace Unrect.Analyzers.Tests
         """
         class Report
         {
-          IProjection<IFormulaSpace, string?> Header()
+          IProjectionDefinition<IFormulaSpace, string?> Header()
             => ProjectionBuilders<IFormulaSpace>.VerticalFlow(v =>
             {
               var formula = v.Next(SpreadsheetProjections.Formula<IFormulaSpace>());
@@ -64,9 +64,9 @@ namespace Unrect.Analyzers.Tests
         """
         class Report
         {
-          IProjection<IFormulaSpace, IReadOnlyList<string?>> Rows()
+          IProjectionDefinition<IFormulaSpace, IReadOnlyList<string?>> Rows()
           {
-            IProjection<IFormulaSpace, string?> row = SpreadsheetProjections.Formula<IFormulaSpace>();
+            IProjectionDefinition<IFormulaSpace, string?> row = SpreadsheetProjections.Formula<IFormulaSpace>();
 
             return Table(headerRows: 1, eachRow: {|CS1503:row|});
           }
@@ -75,9 +75,9 @@ namespace Unrect.Analyzers.Tests
         """
         class Report
         {
-          IProjection<IFormulaSpace, IReadOnlyList<string?>> Rows()
+          IProjectionDefinition<IFormulaSpace, IReadOnlyList<string?>> Rows()
           {
-            IProjection<IFormulaSpace, string?> row = SpreadsheetProjections.Formula<IFormulaSpace>();
+            IProjectionDefinition<IFormulaSpace, string?> row = SpreadsheetProjections.Formula<IFormulaSpace>();
 
             return ProjectionBuilders<IFormulaSpace>.Table(headerRows: 1, eachRow: row);
           }
@@ -113,7 +113,7 @@ namespace Unrect.Analyzers.Tests
         """
         class Report
         {
-          static void Take(IProjection<ISheetCells, string?> child)
+          static void Take(IProjectionDefinition<ISheetCells, string?> child)
           {
           }
 

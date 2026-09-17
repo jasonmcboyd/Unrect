@@ -333,7 +333,7 @@ namespace Unrect.Tests.Projections
     }
 
     /// <summary>A rule and a matcher promised a spreadsheet, unwrapped so a sheet can be handed one.</summary>
-    private static IProjection<ISheetCells, int> Smuggled(string door) => door switch
+    private static IProjectionDefinition<ISheetCells, int> Smuggled(string door) => door switch
     {
       "Sized" => Sized(ProjectionBuilders<ISpreadsheetSpace>.RowsWhileAny(cell => cell.HasValue).Strategy)
         .Of(Range(block => block.Height)),

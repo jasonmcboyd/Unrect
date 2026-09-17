@@ -115,7 +115,7 @@ namespace Unrect.Tests.Projections
     private static IRowLandmark Missing() => RowContaining("Nope");
 
     /// <summary>A region that renders its own extent and contents, so every geometric difference shows.</summary>
-    private static IProjection<ISheetCells, string> Block() => Range(block =>
+    private static IProjectionDefinition<ISheetCells, string> Block() => Range(block =>
     {
       var parts = new string[block.Width * block.Height];
 
@@ -135,7 +135,7 @@ namespace Unrect.Tests.Projections
     /// of geometry now; <c>Entry.Of(x)</c> writes the same placement field the retired postfix
     /// modifier wrote, so <c>With(b, With(a, x))</c> still reads as "a inside, b outside".
     /// </summary>
-    private static IProjection<ISheetCells, string> With(string modifier, IProjection<ISheetCells, string> projection) => modifier switch
+    private static IProjectionDefinition<ISheetCells, string> With(string modifier, IProjectionDefinition<ISheetCells, string> projection) => modifier switch
     {
       "Named" => projection.Named("n"),
       "Sized" => Sized(Extent(2, 2)).Of(projection),

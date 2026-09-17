@@ -47,7 +47,7 @@ namespace Unrect.Projections
     private Offset Cursor => Orientation == Orientation.Vertical ? new Offset(0, _along) : new Offset(_along, 0);
 
     /// <summary>Takes the next child, knowing its result type, at the position the ones before it left off.</summary>
-    public override T Next<T>(IProjection<TSpace, T> projection, UseSite site)
+    public override T Next<T>(IProjectionDefinition<TSpace, T> projection, UseSite site)
     {
       var cursor = Cursor;
       var scope = Context.WithUseSite(site);

@@ -28,7 +28,7 @@ namespace Unrect.Tests.Projections
   {
     /// <summary>A cell read as text — named for what it does, so it cannot be mistaken for the
     /// <c>Text()</c> leaf that the vocabulary now has.</summary>
-    private static IProjection<ISheetCells, string> StringCell() => TextCell();
+    private static IProjectionDefinition<ISheetCells, string> StringCell() => TextCell();
 
     // --- Flow arithmetic ---------------------------------------------------------------------------
 
@@ -556,7 +556,7 @@ namespace Unrect.Tests.Projections
     {
       // A hole in the declaration is refused at the declaration, naming the child it would have
       // been; there is no space yet, so no cell to report it against and no boundary to absorb it.
-      IProjection<ISheetCells, int>? missing = null;
+      IProjectionDefinition<ISheetCells, int>? missing = null;
 
       var failure = Assert.Throws<ArgumentNullException>(() =>
         VerticalFlow(v =>
@@ -573,7 +573,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ANullFirstChildIsRefusedAsChildOne()
     {
-      IProjection<ISheetCells, int>? missing = null;
+      IProjectionDefinition<ISheetCells, int>? missing = null;
 
       var failure = Assert.Throws<ArgumentNullException>(() => VerticalFlow(v =>
       {
@@ -772,14 +772,14 @@ namespace Unrect.Tests.Projections
     // test without a compilation harness — so the snippets live here, each verified against this
     // build to produce the code shown.
     //
-    //   IProjection<ISheetCells, List<int>> s = VerticalFlow(v => Enumerable.Range(0, 3).Select(i => v.Next(x)).ToList());
+    //   IProjectionDefinition<ISheetCells, List<int>> s = VerticalFlow(v => Enumerable.Range(0, 3).Select(i => v.Next(x)).ToList());
     //     CS9108 — cannot use ref-like 'v' inside an anonymous method or lambda. Covers the
     //     deferred-query hazard too: unmaterialised, the query fails the same way.
     //
-    //   IProjection<ISheetCells, int> s = VerticalFlow(v => { int F() => v.Next(x); return F(); });
+    //   IProjectionDefinition<ISheetCells, int> s = VerticalFlow(v => { int F() => v.Next(x); return F(); });
     //     CS9108 — the same rule for a local function.
     //
-    //   IProjection<ISheetCells, LayoutCursor> s = VerticalFlow(v => v);
+    //   IProjectionDefinition<ISheetCells, LayoutCursor> s = VerticalFlow(v => v);
     //     CS9244 — the type 'LayoutCursor' may not be a type argument (returning the cursor).
     //
     //   static LayoutCursor field; ... VerticalFlow(v => { field = v; return v.Next(x); });

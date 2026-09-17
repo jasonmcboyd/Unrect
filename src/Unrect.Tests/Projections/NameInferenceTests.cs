@@ -31,12 +31,12 @@ namespace Unrect.Tests.Projections
   /// </summary>
   public class NameInferenceTests
   {
-    private static IProjection<ISheetCells, int> Number() => IntCell();
+    private static IProjectionDefinition<ISheetCells, int> Number() => IntCell();
 
     /// <summary>A projection that always fails, so every test reads its label off the failure.</summary>
-    private static IProjection<ISheetCells, string> Text() => TextCell();
+    private static IProjectionDefinition<ISheetCells, string> Text() => TextCell();
 
-    private static ProjectionException Failure<T>(IProjection<ISheetCells, T> projection) => Assert.Throws<ProjectionException>(() => projection.Map(Ladder()));
+    private static ProjectionException Failure<T>(IProjectionDefinition<ISheetCells, T> projection) => Assert.Throws<ProjectionException>(() => projection.Map(Ladder()));
 
     // --- The three rungs ---------------------------------------------------------------------------
 
@@ -570,17 +570,17 @@ namespace Unrect.Tests.Projections
       Assert.Equal("VerticalFlow -> Table#2[0] -> Decimal", failure.Path);
     }
 
-    private static IProjection<ISheetCells, string> FullRow() => TextCell();
+    private static IProjectionDefinition<ISheetCells, string> FullRow() => TextCell();
 
-    private static IProjection<ISheetCells, string> NamedFullRow() => TextCell().Named("full row");
+    private static IProjectionDefinition<ISheetCells, string> NamedFullRow() => TextCell().Named("full row");
 
-    private static IProjection<ISheetCells, string> Pick() => TextCell();
+    private static IProjectionDefinition<ISheetCells, string> Pick() => TextCell();
 
-    private static IProjection<ISheetCells, string> MakeBlock() => TextCell();
+    private static IProjectionDefinition<ISheetCells, string> MakeBlock() => TextCell();
 
     private sealed class Projections
     {
-      public IProjection<ISheetCells, string> Total { get; } = TextCell();
+      public IProjectionDefinition<ISheetCells, string> Total { get; } = TextCell();
     }
   }
 }

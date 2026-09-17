@@ -18,7 +18,7 @@ namespace Unrect.Projections
       string fullPath,
       ProjectionLocation location,
       Size? requested,
-      IProjection projection,
+      IProjectionDefinition projection,
       Exception? inner,
       bool isFault = false)
       : base(BuildMessage(subject, problem, path, location), inner)
@@ -66,7 +66,7 @@ namespace Unrect.Projections
     public Size? Requested { get; }
 
     /// <summary>The projection that failed.</summary>
-    public IProjection Projection { get; }
+    public IProjectionDefinition Projection { get; }
 
     /// <summary>The problem on its own, without the subject, path, and location around it.</summary>
     internal string Problem { get; }

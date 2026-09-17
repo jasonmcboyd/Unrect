@@ -52,7 +52,7 @@ namespace Unrect.Tests.Projections
     });
 
     /// <summary>The same bind pointed at the column of fund names, so every record fails.</summary>
-    private static IProjection<ISheetCells, decimal> FundColumnAsANumber(LabelMap captions) => Right(captions["Fund"]).Of(Decimal());
+    private static IProjectionDefinition<ISheetCells, decimal> FundColumnAsANumber(LabelMap captions) => Right(captions["Fund"]).Of(Decimal());
 
     // --- 1. Name capture, one pin per forwarding site ----------------------------------------------
 

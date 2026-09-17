@@ -60,7 +60,7 @@ namespace Unrect.Spreadsheets
     /// <param name="options">How the file is read; the defaults where omitted.</param>
     /// <exception cref="ArgumentException">No sheet of that name exists.</exception>
     public static TResult MapWorkbook<TResult>(
-      this IProjection<ISheetCells, TResult> projection,
+      this IProjectionDefinition<ISheetCells, TResult> projection,
       string path,
       string sheetName,
       WorkbookOptions? options = null)
@@ -71,14 +71,14 @@ namespace Unrect.Spreadsheets
       return Over(path, sheetName, options, projection.Map);
     }
 
-    /// <inheritdoc cref="MapWorkbook{TResult}(IProjection{ISheetCells, TResult}, string, string, WorkbookOptions)"/>
+    /// <inheritdoc cref="MapWorkbook{TResult}(IProjectionDefinition{ISheetCells, TResult}, string, string, WorkbookOptions)"/>
     /// <remarks>
     /// The canonical receiver: a declaration written over <see cref="ISpace"/> asks for nothing a
     /// sheet does not answer, so it reads a workbook through the same door — and a projection type
     /// is invariant, so it needs an overload of its own to say so.
     /// </remarks>
     public static TResult MapWorkbook<TResult>(
-      this IProjection<ISpace, TResult> projection,
+      this IProjectionDefinition<ISpace, TResult> projection,
       string path,
       string sheetName,
       WorkbookOptions? options = null)
@@ -90,7 +90,7 @@ namespace Unrect.Spreadsheets
     }
 
     /// <summary>
-    /// <see cref="MapWorkbook{TResult}(IProjection{ISheetCells, TResult}, string, string, WorkbookOptions)"/>,
+    /// <see cref="MapWorkbook{TResult}(IProjectionDefinition{ISheetCells, TResult}, string, string, WorkbookOptions)"/>,
     /// keeping what the decomposition noticed — every tolerance
     /// boundary that absorbed a failure, every alternative a choice passed over, and space the
     /// projection did not describe.
@@ -107,7 +107,7 @@ namespace Unrect.Spreadsheets
     /// <param name="options">How the file is read; the defaults where omitted.</param>
     /// <exception cref="ArgumentException">No sheet of that name exists.</exception>
     public static MapResult<TResult> MapWorkbookWithDiagnostics<TResult>(
-      this IProjection<ISheetCells, TResult> projection,
+      this IProjectionDefinition<ISheetCells, TResult> projection,
       string path,
       string sheetName,
       WorkbookOptions? options = null)
@@ -118,12 +118,12 @@ namespace Unrect.Spreadsheets
       return Over(path, sheetName, options, projection.MapWithDiagnostics);
     }
 
-    /// <inheritdoc cref="MapWorkbookWithDiagnostics{TResult}(IProjection{ISheetCells, TResult}, string, string, WorkbookOptions)"/>
+    /// <inheritdoc cref="MapWorkbookWithDiagnostics{TResult}(IProjectionDefinition{ISheetCells, TResult}, string, string, WorkbookOptions)"/>
     /// <remarks>
     /// The canonical receiver, for the same reason its plain twin has one.
     /// </remarks>
     public static MapResult<TResult> MapWorkbookWithDiagnostics<TResult>(
-      this IProjection<ISpace, TResult> projection,
+      this IProjectionDefinition<ISpace, TResult> projection,
       string path,
       string sheetName,
       WorkbookOptions? options = null)

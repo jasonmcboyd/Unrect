@@ -6,10 +6,10 @@ namespace Unrect.Projections
   /// A flow: children laid out one after another along an axis, each starting where the one before
   /// it left off, so the space is divided into bands nobody shares.
   /// </summary>
-  internal sealed class FlowProjection<TSpace, T> : LayoutProjection<TSpace, T>
+  internal sealed class FlowDefinition<TSpace, T> : LayoutDefinition<TSpace, T>
     where TSpace : class, ISpace
   {
-    public FlowProjection(Orientation orientation, Layout<TSpace, T> layout, Placement placement, string? description = null)
+    public FlowDefinition(Orientation orientation, Layout<TSpace, T> layout, Placement placement, string? description = null)
       : base(layout, placement)
     {
       Orientation = orientation;

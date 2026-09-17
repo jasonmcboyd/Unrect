@@ -21,7 +21,7 @@ namespace Unrect.Tests.Projections
   {
     private static ISheetCells Square() => Grid(new[,] { { 1, 2 }, { 3, 4 } });
 
-    private static IProjection<ISheetCells, string> Title() => TextCell().Named("title");
+    private static IProjectionDefinition<ISheetCells, string> Title() => TextCell().Named("title");
 
     // --- The two entry points ---------------------------------------------------------------------
 
@@ -53,7 +53,7 @@ namespace Unrect.Tests.Projections
     public void MapWithDiagnostics_RejectsNullArguments()
     {
       Assert.Throws<ArgumentNullException>(() => Title().MapWithDiagnostics(null!));
-      Assert.Throws<ArgumentNullException>(() => ((IProjection<ISheetCells, int>)null!).MapWithDiagnostics(Square()));
+      Assert.Throws<ArgumentNullException>(() => ((IProjectionDefinition<ISheetCells, int>)null!).MapWithDiagnostics(Square()));
     }
 
     [Fact]
@@ -285,7 +285,7 @@ namespace Unrect.Tests.Projections
     // the repetition stops, so that one failure must never be tolerated, while anything wrong
     // inside an anchored section is exactly what the boundary is for.
 
-    private static IProjection<ISheetCells, IReadOnlyList<string>> Sections()
+    private static IProjectionDefinition<ISheetCells, IReadOnlyList<string>> Sections()
     {
       var section =
         VerticalFlow(v =>

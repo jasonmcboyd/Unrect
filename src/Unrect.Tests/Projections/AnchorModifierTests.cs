@@ -336,10 +336,10 @@ namespace Unrect.Tests.Projections
       // hierarchy now and it is the one above, so the pin said the same thing twice.)
     }
 
-    private static string Miss(IProjection<ISheetCells, string> projection, ISheetCells space)
+    private static string Miss(IProjectionDefinition<ISheetCells, string> projection, ISheetCells space)
       => Assert.Throws<ProjectionException>(() => projection.Map(space)).Message;
 
-    private static void AssertSameOffset(IProjection<ISheetCells, string> lifted, IProjection<ISheetCells, string> anchored, ISheetCells space)
+    private static void AssertSameOffset(IProjectionDefinition<ISheetCells, string> lifted, IProjectionDefinition<ISheetCells, string> anchored, ISheetCells space)
     {
       var expected = lifted.Apply(space);
       var actual = anchored.Apply(space);

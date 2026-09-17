@@ -85,7 +85,7 @@ new
 // 5. Typed leaves speak the document's vocabulary: kinds for a kind mismatch, conversions for a
 // number that will not fit. Note that the error cell is reported as the Error it is, never as
 // "blank" — and that the sentence changes entirely when the number is genuinely there.
-string Message<T>(IProjection<ISheetCells, T> projection)
+string Message<T>(IProjectionDefinition<ISheetCells, T> projection)
 {
 	try { projection.Map(defaultSpace); return "no failure"; }
 	catch (ProjectionException failure) { return failure.Message.Split('\n')[0].TrimEnd('\r'); }

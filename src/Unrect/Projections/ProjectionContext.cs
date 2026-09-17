@@ -13,7 +13,7 @@ namespace Unrect.Projections
   {
     private ProjectionContext(
       ProjectionContext? parent,
-      IProjection? projection,
+      IProjectionDefinition? projection,
       int? index,
       ISpace space,
       DiagnosticCollector diagnostics,
@@ -21,7 +21,7 @@ namespace Unrect.Projections
       UseSite pending,
       LabelScope? labels,
       int? ordinal,
-      IProjection? blame = null)
+      IProjectionDefinition? blame = null)
     {
       Parent = parent;
       Space = space;
@@ -57,13 +57,13 @@ namespace Unrect.Projections
     internal ISpace Space { get; }
 
     /// <summary>The projection this context is inside, or null at the root.</summary>
-    public IProjection? Projection { get; }
+    public IProjectionDefinition? Projection { get; }
 
     /// <summary>
     /// Who to blame at the root when nothing was entered — see <see cref="Blaming"/>. Null
     /// everywhere else, because everywhere else there is a <see cref="Projection"/>.
     /// </summary>
-    private IProjection? Blame { get; }
+    private IProjectionDefinition? Blame { get; }
 
     /// <summary>Which occurrence of the projection this is, where that is meaningful (e.g. inside a repeat).</summary>
     public int? Index { get; }
@@ -134,7 +134,7 @@ namespace Unrect.Projections
     /// Nothing is left over: a projection's own children are labelled by their own use sites, not
     /// by its.
     /// </summary>
-    public ProjectionContext Descend(IProjection projection)
+    public ProjectionContext Descend(IProjectionDefinition projection)
       => new ProjectionContext(this, projection, null, Space, Diagnostics, Pending, default, Labels, Ordinal);
 
     /// <summary>
@@ -159,7 +159,7 @@ namespace Unrect.Projections
     /// exists to deny it.
     /// </para>
     /// </summary>
-    internal ProjectionContext Blaming(IProjection projection)
+    internal ProjectionContext Blaming(IProjectionDefinition projection)
       => Projection is null
         ? new ProjectionContext(Parent, null, Index, Space, Diagnostics, Site, Pending, Labels, Ordinal, projection)
         : this;
@@ -197,7 +197,7 @@ namespace Unrect.Projections
     /// The projection a failure reported from here is about: the one this context is inside, or —
     /// at the root, where nothing was entered — the one the engine said it was applying.
     /// </summary>
-    private IProjection Blamed()
+    private IProjectionDefinition Blamed()
       => Projection
         ?? Blame
         ?? throw new InvalidOperationException("The root context has no projection to blame; report failures from within a projection's Project.");
@@ -228,7 +228,7 @@ namespace Unrect.Projections
       => new ProjectionContext(Parent, Projection, Index, Space, Diagnostics, Site, Pending, Labels, ordinal);
 
     internal ProjectionException Failure<TSpace>(
-      IProjection projection,
+      IProjectionDefinition projection,
       string problem,
       Plane<TSpace> extent,
       Size? requested,
@@ -245,7 +245,7 @@ namespace Unrect.Projections
     /// <summary>
     /// Records something about <paramref name="projection"/> that happened here.
     /// </summary>
-    internal void Report<TSpace>(DiagnosticSeverity severity, IProjection projection, string message, Plane<TSpace> extent)
+    internal void Report<TSpace>(DiagnosticSeverity severity, IProjectionDefinition projection, string message, Plane<TSpace> extent)
       where TSpace : class, ISpace
     {
       var chain = Chain(Through(projection));
@@ -259,7 +259,7 @@ namespace Unrect.Projections
     /// inside it, otherwise the one waiting for it — the same discrimination the renderer makes
     /// between a context's own projection and a child being placed but not yet descended into.
     /// </summary>
-    private UseSite SiteOf(IProjection projection) => ReferenceEquals(Projection, projection) ? Site : Pending;
+    private UseSite SiteOf(IProjectionDefinition projection) => ReferenceEquals(Projection, projection) ? Site : Pending;
 
     /// <summary>
     /// Records something a failure caused, keeping the failure's own path and location so the
@@ -276,7 +276,7 @@ namespace Unrect.Projections
         failure.FullPath,
         failure.Location));
 
-    internal static string Describe(IProjection projection) => Describe(projection, default);
+    internal static string Describe(IProjectionDefinition projection) => Describe(projection, default);
 
     /// <summary>
     /// What a reader should call this projection, best name first: the one it was given, then the
@@ -284,7 +284,7 @@ namespace Unrect.Projections
     /// The middle rung renders exactly like the first, because a label that named the path but not
     /// the subject would have one message calling the same child two things.
     /// </summary>
-    private static string Describe(IProjection projection, UseSite site)
+    private static string Describe(IProjectionDefinition projection, UseSite site)
       => projection.Name is not null ? $"'{projection.Name}'"
        : site.Name is not null ? $"'{site.Name}'"
        : site.Ordinal is int ordinal ? $"{projection.Description}#{ordinal}"
@@ -295,10 +295,10 @@ namespace Unrect.Projections
     /// unifying variants, a boundary declaring tolerance — say nothing useful about themselves, so
     /// they stand in for what they wrap.
     /// </summary>
-    internal static IProjection Through(IProjection projection)
+    internal static IProjectionDefinition Through(IProjectionDefinition projection)
     {
       while (Skipped(projection) && projection.Children.Count > 0)
-        projection = projection.Children[0].Projection;
+        projection = projection.Children[0].Definition;
 
       return projection;
     }
@@ -306,26 +306,26 @@ namespace Unrect.Projections
     /// <summary>
     /// The renderer's one rule about wrappers: an unnamed wrapper carrying no unit label is not a
     /// level of the path. The projection publishes the structural fact (<see
-    /// cref="IProjection.IsWrapper"/>); whether that fact hides it is decided here and nowhere else.
+    /// cref="IProjectionDefinition.IsWrapper"/>); whether that fact hides it is decided here and nowhere else.
     /// </summary>
-    internal static bool Skipped(IProjection projection)
+    internal static bool Skipped(IProjectionDefinition projection)
       => projection.IsWrapper && projection.Name is null && projection.UnitName is null;
 
-    internal static string DescribeThrough(IProjection projection) => Describe(Through(projection));
+    internal static string DescribeThrough(IProjectionDefinition projection) => Describe(Through(projection));
 
     /// <summary>
     /// The chain of enclosing projections, root to leaf, ending at <paramref name="failing"/> — a
     /// child of this context when a projection fails before it is descended into. Wrappers the path
     /// skips say nothing about themselves and are left out.
     /// </summary>
-    private List<PathNode> Chain(IProjection? failing)
+    private List<PathNode> Chain(IProjectionDefinition? failing)
     {
       var chain = new List<PathNode>();
-      IProjection? deepest = null;
+      IProjectionDefinition? deepest = null;
 
       for (var context = this; context is not null; context = context.Parent)
       {
-        if (context.Projection is not IProjection projection || Skipped(projection))
+        if (context.Projection is not IProjectionDefinition projection || Skipped(projection))
           continue;
 
         chain.Insert(0, new PathNode(projection, context.Site, context.Index));
@@ -443,14 +443,14 @@ namespace Unrect.Projections
   /// </summary>
   internal readonly struct PathNode
   {
-    public PathNode(IProjection projection, UseSite site, int? index)
+    public PathNode(IProjectionDefinition projection, UseSite site, int? index)
     {
       Projection = projection;
       Site = site;
       Index = index;
     }
 
-    public IProjection Projection { get; }
+    public IProjectionDefinition Projection { get; }
 
     public UseSite Site { get; }
 

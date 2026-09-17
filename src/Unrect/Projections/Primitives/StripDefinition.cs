@@ -4,10 +4,10 @@ using Unrect.Core;
 
 namespace Unrect.Projections
 {
-  internal sealed class StripProjection<TSpace, T> : ProjectionBase<TSpace, T>
+  internal sealed class StripDefinition<TSpace, T> : DefinitionNode<TSpace, T>
     where TSpace : class, ISpace
   {
-    public StripProjection(Orientation orientation, Func<CellStrip<TSpace>, T> project, Placement placement, string description)
+    public StripDefinition(Orientation orientation, Func<CellStrip<TSpace>, T> project, Placement placement, string description)
       : base(placement)
     {
       Orientation = orientation;

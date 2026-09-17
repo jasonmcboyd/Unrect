@@ -384,7 +384,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ANullChildIsRefusedWhereItIsWritten()
     {
-      IProjection<ISheetCells, int>? missing = null;
+      IProjectionDefinition<ISheetCells, int>? missing = null;
 
       var failure = Assert.Throws<ArgumentNullException>(() =>
         Overlay(o =>

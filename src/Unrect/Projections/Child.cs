@@ -8,14 +8,14 @@ namespace Unrect.Projections
   /// </summary>
   public readonly struct Child
   {
-    internal Child(IProjection projection, UseSite site)
+    internal Child(IProjectionDefinition definition, UseSite site)
     {
-      Projection = projection;
+      Definition = definition;
       Site = site;
     }
 
     /// <summary>The child itself.</summary>
-    public IProjection Projection { get; }
+    public IProjectionDefinition Definition { get; }
 
     /// <summary>Where the child was written: the identifier the declaration used for it, and which child it is.</summary>
     public UseSite Site { get; }

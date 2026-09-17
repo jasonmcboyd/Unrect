@@ -138,7 +138,7 @@ namespace Unrect.Tests.Projections
     {
       var item = IntCell().Named("item");
 
-      Assert.Same(item, Assert.Single(VerticalRepeat(item).Children).Projection);
+      Assert.Same(item, Assert.Single(VerticalRepeat(item).Children).Definition);
     }
 
     [Fact]
@@ -151,7 +151,7 @@ namespace Unrect.Tests.Projections
       var hoisted = Assert.Single(VerticalRepeat(block).Children);
       var inline = Assert.Single(VerticalRepeat(IntCell()).Children);
 
-      Assert.Same(block, hoisted.Projection);
+      Assert.Same(block, hoisted.Definition);
       Assert.Equal("block", hoisted.Site.Name);
       Assert.Null(hoisted.Site.Ordinal);
 
@@ -167,8 +167,8 @@ namespace Unrect.Tests.Projections
       // running anything.
       var row = IntCell().Named("row");
 
-      Assert.Same(row, Assert.Single(Table(0, row).Children).Projection);
-      Assert.Same(row, Assert.Single(Table(1, row).Children).Projection);
+      Assert.Same(row, Assert.Single(Table(0, row).Children).Definition);
+      Assert.Same(row, Assert.Single(Table(1, row).Children).Definition);
       Assert.Equal("row", Assert.Single(Table(1, row).Children).Site.Name);
     }
 
@@ -181,7 +181,7 @@ namespace Unrect.Tests.Projections
       // What a lambda rung reads is knowable only by running it, so it is a leaf to tooling — as it
       // has always been. This is the contrast that gives the fact above its meaning: the two forms
       // of table differ in exactly this, and nothing else.
-      IProjection projection = rung switch
+      IProjectionDefinition projection = rung switch
       {
         "Table(view lambda)" => Table(table => table.RowCount),
         "Table(row lambda)" => Table(row => row.Index),
@@ -243,7 +243,7 @@ namespace Unrect.Tests.Projections
     {
       var inner = IntCell().Named("inner");
 
-      Assert.Same(inner, Assert.Single(inner.Select(v => v + 1).Children).Projection);
+      Assert.Same(inner, Assert.Single(inner.Select(v => v + 1).Children).Definition);
     }
 
     // --- Wrappers ---------------------------------------------------------------------------------------
@@ -345,7 +345,7 @@ namespace Unrect.Tests.Projections
         Describe(projection).ToArray());
     }
 
-    private static IEnumerable<string> Describe(IProjection projection, int depth = 0)
+    private static IEnumerable<string> Describe(IProjectionDefinition projection, int depth = 0)
     {
       var label = projection.Name is null ? projection.Description : $"'{projection.Name}' ({projection.Description})";
       var reason = Reason(projection);
@@ -353,7 +353,7 @@ namespace Unrect.Tests.Projections
       yield return new string(' ', depth * 2) + label + (reason is null ? string.Empty : $" [opaque: {reason}]");
 
       foreach (var child in projection.Children)
-        foreach (var line in Describe(child.Projection, depth + 1))
+        foreach (var line in Describe(child.Definition, depth + 1))
           yield return line;
     }
 
@@ -361,7 +361,7 @@ namespace Unrect.Tests.Projections
     /// Why a composite's children are missing, or null when it has none to hide — read off the
     /// public face, exactly as a renderer shipped in another assembly would read it.
     /// </summary>
-    private static string? Reason(IProjection projection) => projection.Opacity;
+    private static string? Reason(IProjectionDefinition projection) => projection.Opacity;
 
     // --- Reuse ---------------------------------------------------------------------------------------------------
 
@@ -418,7 +418,7 @@ namespace Unrect.Tests.Projections
     }
 
     /// <summary>Renders a result as text so array identity never enters the comparison.</summary>
-    private static string Read(IProjection<ISheetCells, (int, IReadOnlyList<int>)> projection, ISheetCells space)
+    private static string Read(IProjectionDefinition<ISheetCells, (int, IReadOnlyList<int>)> projection, ISheetCells space)
     {
       var (first, rest) = projection.Map(space);
       return $"{first}:{string.Join(",", rest)}";

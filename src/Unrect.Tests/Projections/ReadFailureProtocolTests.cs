@@ -70,9 +70,9 @@ namespace Unrect.Tests.Projections
     /// Written as a switch rather than as inline theory data so each case can say what it is.
     /// </para>
     /// </summary>
-    private static (IProjection<ISheetCells, object?> Declaration, string Path, ISheetCells Sheet) Site(string site) => site switch
+    private static (IProjectionDefinition<ISheetCells, object?> Declaration, string Path, ISheetCells Sheet) Site(string site) => site switch
     {
-      // MapProjection — a point handed to Select, which is how every reading the vocabulary does not
+      // SelectDefinition — a point handed to Select, which is how every reading the vocabulary does not
       // name is spelled.
       //
       // Named, so this case pins a Select that claims a path segment of its own. The unnamed —
@@ -80,20 +80,20 @@ namespace Unrect.Tests.Projections
       // ATransparentProjectionAtTheRootSpeaksForItself below.
       "Select" => (Right(1).Down(1).Of(Point().Select(p => (object?)p.Decimal()).Named("amount")), "'amount' (Select)", Sheet()),
 
-      // StripProjection, both axes: a row and a column handed over as cells to be read by index.
+      // StripDefinition, both axes: a row and a column handed over as cells to be read by index.
       "Row" => (Down(1).Of(Row(2, cells => (object?)cells[1].Decimal())), "Row(2)", Sheet()),
       "Column" => (Right(1).Of(Column(2, cells => (object?)cells[1].Decimal())), "Column(2)", Sheet()),
 
-      // BlockProjection — a rectangle handed over whole.
+      // BlockDefinition — a rectangle handed over whole.
       "Range" => (Range(2, 2, block => (object?)block[1, 1].Decimal()), "Range(2, 2)", Sheet()),
 
-      // RecordProjection — one labelled row, resolved through the ambient columns.
+      // RecordDefinition — one labelled row, resolved through the ambient columns.
       "Record" => (
         WithColumnLabels(LabelMap.Of(("Client", 0), ("Amount", 1)), Down(1).Of(Record((TableRow<ISheetCells> row) => (object?)row["Amount"].Decimal()))),
         "Record",
         Sheet()),
 
-      // TableProjection, the row-lambda rung...
+      // TableViewDefinition, the row-lambda rung...
       "Table(row)" => (
         Table((TableRow<ISheetCells> row) => (object?)row["Amount"].Decimal()).Select(rows => (object?)rows).Named("rows"),
         "Table",
@@ -102,7 +102,7 @@ namespace Unrect.Tests.Projections
       // ...and the view-lambda rung, which reads the whole table at once.
       "Table(view)" => (Table((TableView<ISheetCells> table) => (object?)table.Rows[0]["Amount"].Decimal()), "Table", Sheet()),
 
-      // LayoutProjection — a read in the BODY of a layout rather than in one of its children, which
+      // LayoutDefinition — a read in the BODY of a layout rather than in one of its children, which
       // is the site a reader forgets exists.
       "Layout" => (
         Overlay(o =>
@@ -237,7 +237,7 @@ namespace Unrect.Tests.Projections
       // expect to find on the other side: every other fault is plainly a bug or a broken file
       // (NullReference, IndexOutOfRange, IO, ObjectDisposed), and a failed cast can look like bad
       // data if you squint at it.
-      IProjection<ISheetCells, int> miscast =
+      IProjectionDefinition<ISheetCells, int> miscast =
         Point().Select<ISheetCells, Point<ISheetCells>, int>(_ => throw new InvalidCastException("not that type"));
 
       Assert.True(Assert.Throws<ProjectionException>(() => miscast.Map(Sheet())).IsFault);

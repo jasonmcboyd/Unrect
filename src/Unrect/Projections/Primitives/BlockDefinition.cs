@@ -4,10 +4,10 @@ using Unrect.Core;
 
 namespace Unrect.Projections
 {
-  internal sealed class BlockProjection<TSpace, T> : ProjectionBase<TSpace, T>
+  internal sealed class BlockDefinition<TSpace, T> : DefinitionNode<TSpace, T>
     where TSpace : class, ISpace
   {
-    public BlockProjection(Func<CellBlock<TSpace>, T> project, Placement placement, string description)
+    public BlockDefinition(Func<CellBlock<TSpace>, T> project, Placement placement, string description)
       : base(placement)
     {
       Projection = project ?? throw new ArgumentNullException(nameof(project));

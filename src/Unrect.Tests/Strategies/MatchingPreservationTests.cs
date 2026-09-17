@@ -409,7 +409,7 @@ namespace Unrect.Tests.Strategies
     }
 
     /// <summary>A cell read as whatever it says, so an anchored column can report a non-text cell.</summary>
-    private static IProjection<ISheetCells, string?> AsSaid() => Point().Select(point => point.AsText());
+    private static IProjectionDefinition<ISheetCells, string?> AsSaid() => Point().Select(point => point.AsText());
 
     // --- The header parse behind a label map ----------------------------------------------------------
     //

@@ -240,13 +240,13 @@ namespace Unrect.Tests.Projections
     // NEITHER of these compiles, and they are refused for two different reasons.
     //
     //   Decimal().OrBlank().OrBlank()   CS0453, "the type 'decimal?' must be a non-nullable value
-    //     type". The first call returns IProjection<ISheetCells, decimal?>; the generic overload constrains T to
-    //     a non-nullable struct and the reference-typed one takes IProjection<ISheetCells, string>. There is no
+    //     type". The first call returns IProjectionDefinition<ISheetCells, decimal?>; the generic overload constrains T to
+    //     a non-nullable struct and the reference-typed one takes IProjectionDefinition<ISheetCells, string>. There is no
     //     Nullable<Nullable<T>> to reach for, so the second "may be absent" has nothing left to say.
     //     This is the library's own refusal, and the one the design intended.
     //
-    //   Text().OrBlank().OrBlank()      CS8620 — IProjection<ISheetCells, string?> cannot be passed where
-    //     IProjection<ISheetCells, string> is wanted, because IProjection<ISheetCells, TResult> is invariant. Verified against
+    //   Text().OrBlank().OrBlank()      CS8620 — IProjectionDefinition<ISheetCells, string?> cannot be passed where
+    //     IProjectionDefinition<ISheetCells, string> is wanted, because IProjectionDefinition<ISheetCells, TResult> is invariant. Verified against
     //     this tree, where TreatWarningsAsErrors makes it an error outright; in a project that only
     //     warns it would compile and be a harmless no-op, since string? and string are one type at
     //     run time and the receiver is a TypedCellProjection either way. So the reference half of
@@ -318,7 +318,7 @@ namespace Unrect.Tests.Projections
       Assert.Contains($". {described} is not one.", failure.Message);
     }
 
-    private static IProjection Refuse(string receiver) => receiver switch
+    private static IProjectionDefinition Refuse(string receiver) => receiver switch
     {
       "Row" => Row(cells => cells.Count).OrBlank(),
       "Point" => Point().OrBlank(),
@@ -341,8 +341,8 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AndItRefusesNullTheWayEveryModifierDoes()
     {
-      Assert.Throws<ArgumentNullException>(() => ((IProjection<ISheetCells, decimal>)null!).OrBlank());
-      Assert.Throws<ArgumentNullException>(() => ((IProjection<ISheetCells, string>)null!).OrBlank());
+      Assert.Throws<ArgumentNullException>(() => ((IProjectionDefinition<ISheetCells, decimal>)null!).OrBlank());
+      Assert.Throws<ArgumentNullException>(() => ((IProjectionDefinition<ISheetCells, string>)null!).OrBlank());
     }
   }
 }

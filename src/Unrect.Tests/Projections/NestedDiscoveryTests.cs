@@ -61,7 +61,7 @@ namespace Unrect.Tests.Projections
     /// switch is process-wide and scoped by the <c>using</c>, exactly as <see cref="LazyForcingTests"/>
     /// uses it.
     /// </summary>
-    private static T Read<T>(IProjection<ISheetCells, T> declaration, bool eager)
+    private static T Read<T>(IProjectionDefinition<ISheetCells, T> declaration, bool eager)
     {
       if (!eager)
         return declaration.Map(Disagreeing());

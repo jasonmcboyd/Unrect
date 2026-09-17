@@ -114,7 +114,7 @@ namespace Unrect.Tests
     /// twice rather than two readings.
     /// </para>
     /// </summary>
-    public static Observation Observe<TSpace, T>(IProjection<TSpace, T> projection, TSpace space)
+    public static Observation Observe<TSpace, T>(IProjectionDefinition<TSpace, T> projection, TSpace space)
       where TSpace : class, ISpace
     {
       try

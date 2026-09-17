@@ -111,7 +111,7 @@ namespace Unrect.Tests.Projections
     /// A hoisted bound row is a <em>factory</em>, with its dependence on the captions in its
     /// signature — the spelling the rung recommends, and the one that gives every record a name.
     /// </summary>
-    private static IProjection<ISheetCells, Allocation> AllocationRow(LabelMap captions)
+    private static IProjectionDefinition<ISheetCells, Allocation> AllocationRow(LabelMap captions)
       => Overlay(o =>
       {
         var right = o.Next(Right(captions["Account"]).Of(Text()));
@@ -358,7 +358,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ANullBindIsRejectedAtConstructionToo()
     {
-      Assert.Throws<ArgumentNullException>(() => Table(1, (Func<LabelMap, IProjection<ISheetCells, int>>)null!));
+      Assert.Throws<ArgumentNullException>(() => Table(1, (Func<LabelMap, IProjectionDefinition<ISheetCells, int>>)null!));
     }
 
     // --- 4. Fault discipline ----------------------------------------------------------------------------
@@ -369,19 +369,19 @@ namespace Unrect.Tests.Projections
     // boundary that is loud about everything is a different (and wrong) system.
 
     /// <summary>A bind with a bug in it: it hands back no description at all.</summary>
-    private static IProjection<ISheetCells, int> NoRow(LabelMap captions) => null!;
+    private static IProjectionDefinition<ISheetCells, int> NoRow(LabelMap captions) => null!;
 
     /// <summary>A bind whose read of the file broke underneath it.</summary>
-    private static IProjection<ISheetCells, int> DiskFailed(LabelMap captions) => throw new IOException("the share stopped answering");
+    private static IProjectionDefinition<ISheetCells, int> DiskFailed(LabelMap captions) => throw new IOException("the share stopped answering");
 
     /// <summary>A bind that looked and disagreed — the data-quality side, which tolerance is for.</summary>
-    private static IProjection<ISheetCells, int> WrongExport(LabelMap captions)
+    private static IProjectionDefinition<ISheetCells, int> WrongExport(LabelMap captions)
       => throw new InvalidOperationException("this is not the export this declaration reads");
 
     /// <summary>A bind that works, for the half of each test that must stay quiet.</summary>
-    private static IProjection<ISheetCells, string> AccountCell(LabelMap captions) => Right(captions["Account"]).Of(Text());
+    private static IProjectionDefinition<ISheetCells, string> AccountCell(LabelMap captions) => Right(captions["Account"]).Of(Text());
 
-    private static ProjectionException Faults<T>(IProjection<ISheetCells, T> projection, ISheetCells sheet)
+    private static ProjectionException Faults<T>(IProjectionDefinition<ISheetCells, T> projection, ISheetCells sheet)
     {
       var failure = Assert.Throws<ProjectionException>(() => projection.Map(sheet));
 
@@ -467,7 +467,7 @@ namespace Unrect.Tests.Projections
       return new FormulaGridSpace(values, formulas);
     }
 
-    private static IProjection<ISpreadsheetSpace, SourcedAllocation> SourcedRow(LabelMap captions)
+    private static IProjectionDefinition<ISpreadsheetSpace, SourcedAllocation> SourcedRow(LabelMap captions)
       => ProjectionBuilders<ISpreadsheetSpace>.Overlay(o =>
       {
         var projectionBuilders = o.Next(ProjectionBuilders<ISpreadsheetSpace>.Right(captions["Account"])
@@ -487,7 +487,7 @@ namespace Unrect.Tests.Projections
       // RETURNING a projection exposes its demands in its return type, where a value-consuming lambda
       // never could. (Spelled with prefixes because this file is closed over ISheetCells and this one
       // declaration is not.)
-      IProjection<ISpreadsheetSpace, IReadOnlyList<SourcedAllocation>> table =
+      IProjectionDefinition<ISpreadsheetSpace, IReadOnlyList<SourcedAllocation>> table =
         ProjectionBuilders<ISpreadsheetSpace>.Table(headerRows: 1, eachRow: SourcedRow);
 
       Assert.Equal(
@@ -502,8 +502,8 @@ namespace Unrect.Tests.Projections
       // handed a REGION of its space — an invariant struct — so the interface is invariant and
       // NEITHER conversion exists. Written reflectively so the refusal can be asserted at all: the
       // compiler's half of it is the absence of a conversion.
-      var plain = typeof(IProjection<ISheetCells, IReadOnlyList<SourcedAllocation>>);
-      var demanding = typeof(IProjection<ISpreadsheetSpace, IReadOnlyList<SourcedAllocation>>);
+      var plain = typeof(IProjectionDefinition<ISheetCells, IReadOnlyList<SourcedAllocation>>);
+      var demanding = typeof(IProjectionDefinition<ISpreadsheetSpace, IReadOnlyList<SourcedAllocation>>);
 
       Assert.False(demanding.IsAssignableFrom(plain), "a bound table converts to no other space");
       Assert.False(plain.IsAssignableFrom(demanding), "a demanding bound table must not be usable as a plain one");
@@ -513,7 +513,7 @@ namespace Unrect.Tests.Projections
     public void APlainBindLeavesTheTablePlain()
     {
       // The control, and the reason every existing declaration still compiles.
-      IProjection<ISheetCells, IReadOnlyList<Allocation>> table = Table(headerRows: 1, eachRow: AllocationRow);
+      IProjectionDefinition<ISheetCells, IReadOnlyList<Allocation>> table = Table(headerRows: 1, eachRow: AllocationRow);
 
       Assert.Equal(3, table.Map(Allocations()).Count);
     }

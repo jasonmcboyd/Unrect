@@ -39,33 +39,33 @@ namespace Unrect.Spreadsheets
 
     /// <summary>One cell holding text.</summary>
     /// <typeparam name="TSpace">The sheet the leaf is declared over.</typeparam>
-    public static IProjection<TSpace, string> Text<TSpace>()
+    public static IProjectionDefinition<TSpace, string> Text<TSpace>()
       where TSpace : class, ISheetCells
-      => Kinded<TSpace, string>("Text", (ISheetCells s, int c, int r, out string v, out CellProblem? p) => s.TextAt(c, r, out v, out p));
+      => Kinded<TSpace, string>("Text", (Point<TSpace> cell, out string v, out CellProblem? p) => cell.Space.TextAt(cell.Column, cell.Row, out v, out p));
 
     /// <summary>
     /// One cell holding a number, read as a <see cref="decimal"/> — the accessor that keeps a
     /// spreadsheet's exact decimal where the file carried one.
     /// </summary>
     /// <typeparam name="TSpace">The sheet the leaf is declared over.</typeparam>
-    public static IProjection<TSpace, decimal> Decimal<TSpace>()
+    public static IProjectionDefinition<TSpace, decimal> Decimal<TSpace>()
       where TSpace : class, ISheetCells
-      => Kinded<TSpace, decimal>("Decimal", (ISheetCells s, int c, int r, out decimal v, out CellProblem? p) => s.DecimalAt(c, r, out v, out p));
+      => Kinded<TSpace, decimal>("Decimal", (Point<TSpace> cell, out decimal v, out CellProblem? p) => cell.Space.DecimalAt(cell.Column, cell.Row, out v, out p));
 
     /// <summary>
     /// One cell holding a whole number. A number that is really there but is fractional or out of
     /// range fails as a conversion, not as a kind — the cell is a number either way.
     /// </summary>
     /// <typeparam name="TSpace">The sheet the leaf is declared over.</typeparam>
-    public static IProjection<TSpace, int> Integer<TSpace>()
+    public static IProjectionDefinition<TSpace, int> Integer<TSpace>()
       where TSpace : class, ISheetCells
-      => Kinded<TSpace, int>("Integer", (ISheetCells s, int c, int r, out int v, out CellProblem? p) => s.IntegerAt(c, r, out v, out p));
+      => Kinded<TSpace, int>("Integer", (Point<TSpace> cell, out int v, out CellProblem? p) => cell.Space.IntegerAt(cell.Column, cell.Row, out v, out p));
 
     /// <summary>One cell holding a number, read as a <see cref="double"/>.</summary>
     /// <typeparam name="TSpace">The sheet the leaf is declared over.</typeparam>
-    public static IProjection<TSpace, double> Double<TSpace>()
+    public static IProjectionDefinition<TSpace, double> Double<TSpace>()
       where TSpace : class, ISheetCells
-      => Kinded<TSpace, double>("Double", (ISheetCells s, int c, int r, out double v, out CellProblem? p) => s.DoubleAt(c, r, out v, out p));
+      => Kinded<TSpace, double>("Double", (Point<TSpace> cell, out double v, out CellProblem? p) => cell.Space.DoubleAt(cell.Column, cell.Row, out v, out p));
 
     /// <summary>
     /// One cell holding a date or time, verbatim. The time of day is kept: truncating is
@@ -73,19 +73,19 @@ namespace Unrect.Spreadsheets
     /// back less than the cell holds would be the only one in the vocabulary that did.
     /// </summary>
     /// <typeparam name="TSpace">The sheet the leaf is declared over.</typeparam>
-    public static IProjection<TSpace, DateTime> Date<TSpace>()
+    public static IProjectionDefinition<TSpace, DateTime> Date<TSpace>()
       where TSpace : class, ISheetCells
-      => Kinded<TSpace, DateTime>("Date", (ISheetCells s, int c, int r, out DateTime v, out CellProblem? p) => s.DateTimeAt(c, r, out v, out p));
+      => Kinded<TSpace, DateTime>("Date", (Point<TSpace> cell, out DateTime v, out CellProblem? p) => cell.Space.DateTimeAt(cell.Column, cell.Row, out v, out p));
 
     /// <summary>One cell holding a boolean.</summary>
     /// <typeparam name="TSpace">The sheet the leaf is declared over.</typeparam>
-    public static IProjection<TSpace, bool> Boolean<TSpace>()
+    public static IProjectionDefinition<TSpace, bool> Boolean<TSpace>()
       where TSpace : class, ISheetCells
-      => Kinded<TSpace, bool>("Boolean", (ISheetCells s, int c, int r, out bool v, out CellProblem? p) => s.BooleanAt(c, r, out v, out p));
+      => Kinded<TSpace, bool>("Boolean", (Point<TSpace> cell, out bool v, out CellProblem? p) => cell.Space.BooleanAt(cell.Column, cell.Row, out v, out p));
 
-    internal static IProjection<TSpace, T> Kinded<TSpace, T>(string description, KindRead<T> read)
+    internal static IProjectionDefinition<TSpace, T> Kinded<TSpace, T>(string kind, CellRead<TSpace, T> read)
       where TSpace : class, ISheetCells
-      => new KindedCellProjection<TSpace, T>(description, read, Placement.Of(ProjectionBuilders<TSpace>.Extent(1, 1)), blankIsNull: false);
+      => new ReadDefinition<TSpace, T>(kind, read, Placement.Of(ProjectionBuilders<TSpace>.Extent(1, 1)), blankIsNull: false);
 
     /// <summary>
     /// One cell, read as the formula behind it: the file's own expression without the leading
@@ -109,7 +109,7 @@ namespace Unrect.Spreadsheets
     /// </para>
     /// </summary>
     /// <typeparam name="TSpace">The space the leaf is declared over; anything carrying formulas.</typeparam>
-    public static IProjection<TSpace, string?> Formula<TSpace>()
+    public static IProjectionDefinition<TSpace, string?> Formula<TSpace>()
       where TSpace : class, IFormulaSpace
       => ProjectionBuilders<TSpace>.Range(1, 1, cell => FormulaAt(cell.Space)).Named("Formula");
 

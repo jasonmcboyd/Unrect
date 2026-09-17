@@ -221,7 +221,7 @@ namespace Unrect.Tests.Projections
       Assert.Contains("alternative 1 ('first')", note.Message);
     }
 
-    private static MapResult<T> Read<T>(IProjection<ISheetCells, T> projection, ISheetCells space, bool eager)
+    private static MapResult<T> Read<T>(IProjectionDefinition<ISheetCells, T> projection, ISheetCells space, bool eager)
     {
       if (!eager)
         return projection.MapWithDiagnostics(space);

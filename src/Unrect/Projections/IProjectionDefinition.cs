@@ -10,7 +10,7 @@ namespace Unrect.Projections
   /// to make of that region; <see cref="ProjectionEngine"/> is the only code that applies the
   /// placement.
   /// </summary>
-  public interface IProjection
+  public interface IProjectionDefinition
   {
     /// <summary>
     /// The explicit name given by <c>.Named</c>, or null. The top rung of the naming ladder: when
@@ -80,7 +80,7 @@ namespace Unrect.Projections
   /// </para>
   /// <para>
   /// <b>A shared helper states its minimum in a constraint, not in its return type.</b> Write it as
-  /// a generic method — <c>static IProjection&lt;TSpace, decimal&gt; Total&lt;TSpace&gt;() where
+  /// a generic method — <c>static IProjectionDefinition&lt;TSpace, decimal&gt; Total&lt;TSpace&gt;() where
   /// TSpace : class, ISheetCells</c> — and it composes into any file whose space can answer it,
   /// instantiated at that file's own space. A helper that named a space outright would hand back a
   /// projection over that space and nothing else, which is a different and much smaller thing.
@@ -93,7 +93,7 @@ namespace Unrect.Projections
   /// </summary>
   /// <typeparam name="TSpace">The space this projection is written over.</typeparam>
   /// <typeparam name="TResult">What projecting this projection's extent produces.</typeparam>
-  public interface IProjection<TSpace, TResult> : IProjection
+  public interface IProjectionDefinition<TSpace, TResult> : IProjectionDefinition
     where TSpace : class, ISpace
   {
     /// <summary>
@@ -106,6 +106,6 @@ namespace Unrect.Projections
     /// A copy of this projection carrying <paramref name="annotations"/> in place of its own — what
     /// <c>.Named</c>, <c>.AsUnit</c>, <c>.AsScaffolding</c> and every placement stage build.
     /// </summary>
-    IProjection<TSpace, TResult> With(Annotations annotations);
+    IProjectionDefinition<TSpace, TResult> With(Annotations annotations);
   }
 }

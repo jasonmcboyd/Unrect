@@ -15,12 +15,12 @@ namespace Unrect.Projections
   /// <c>x.Optional().On(anchor)</c> does not.
   /// </para>
   /// </summary>
-  internal sealed class BoundaryProjection<TSpace, T> : ProjectionBase<TSpace, T>
+  internal sealed class FallbackDefinition<TSpace, T> : DefinitionNode<TSpace, T>
     where TSpace : class, ISpace
   {
-    public BoundaryProjection(
-      IProjection<TSpace, T> inner,
-      IProjection<TSpace, T>? fallback,
+    public FallbackDefinition(
+      IProjectionDefinition<TSpace, T> inner,
+      IProjectionDefinition<TSpace, T>? fallback,
       T fallbackValue,
       Placement placement,
       string description,
@@ -35,8 +35,8 @@ namespace Unrect.Projections
       Children = fallback is null ? new[] { new Child(inner, default) } : new[] { new Child(inner, default), new Child(fallback, fallbackSite) };
     }
 
-    private IProjection<TSpace, T> Inner { get; }
-    private IProjection<TSpace, T>? Fallback { get; }
+    private IProjectionDefinition<TSpace, T> Inner { get; }
+    private IProjectionDefinition<TSpace, T>? Fallback { get; }
     private T FallbackValue { get; }
 
     /// <summary>What the declaration called the fallback, so a stand-in names itself as written.</summary>

@@ -7,10 +7,10 @@ namespace Unrect.Projections
   /// cursor between them. Where a flow divides the space into bands, this hands the whole of it to
   /// everyone, so children may overlap and may read the same cells.
   /// </summary>
-  internal sealed class OverlayProjection<TSpace, T> : LayoutProjection<TSpace, T>
+  internal sealed class OverlayDefinition<TSpace, T> : LayoutDefinition<TSpace, T>
     where TSpace : class, ISpace
   {
-    public OverlayProjection(Layout<TSpace, T> layout, Placement placement)
+    public OverlayDefinition(Layout<TSpace, T> layout, Placement placement)
       : base(layout, placement)
     {
     }

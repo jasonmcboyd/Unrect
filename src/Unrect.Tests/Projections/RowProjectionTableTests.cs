@@ -93,7 +93,7 @@ namespace Unrect.Tests.Projections
     /// <summary>
     /// The sparse declaration, hoisted so the record's label is an identifier a reader can grep for.
     /// </summary>
-    private static IProjection<ISheetCells, IReadOnlyList<BuyingPowerRow>> SparseTable()
+    private static IProjectionDefinition<ISheetCells, IReadOnlyList<BuyingPowerRow>> SparseTable()
     {
       var allocation = Overlay(o =>
       {
@@ -408,7 +408,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ANullRowProjectionIsRejectedAtConstruction()
     {
-      Assert.Throws<ArgumentNullException>(() => Table(0, (IProjection<ISheetCells, int>)null!));
+      Assert.Throws<ArgumentNullException>(() => Table(0, (IProjectionDefinition<ISheetCells, int>)null!));
     }
 
     [Theory]
@@ -456,7 +456,7 @@ namespace Unrect.Tests.Projections
       // carries the row's own space parameter out into its result. (Spelled with prefixes because
       // this file is closed over ISheetCells and this one declaration is not — which is the
       // file-is-the-scope rule showing its edge rather than an argument against it.)
-      IProjection<ISpreadsheetSpace, IReadOnlyList<SourcedRow>> table = ProjectionBuilders<ISpreadsheetSpace>.Table(
+      IProjectionDefinition<ISpreadsheetSpace, IReadOnlyList<SourcedRow>> table = ProjectionBuilders<ISpreadsheetSpace>.Table(
         headerRows: 1,
         eachRow: ProjectionBuilders<ISpreadsheetSpace>.Overlay(o =>
         {
@@ -479,7 +479,7 @@ namespace Unrect.Tests.Projections
     {
       // The control, and the reason every existing declaration in the corpus still compiles: a slot
       // that demands nothing raises nothing.
-      IProjection<ISheetCells, IReadOnlyList<Allocation>> table = Table(
+      IProjectionDefinition<ISheetCells, IReadOnlyList<Allocation>> table = Table(
         headerRows: 1,
         eachRow: HorizontalFlow(h =>
         {
@@ -505,8 +505,8 @@ namespace Unrect.Tests.Projections
       // it was written over, and applying it to any other is a compile error. Written reflectively
       // because the compiler's half of it cannot be asserted at all, being the absence of a
       // conversion.
-      var plain = typeof(IProjection<ISheetCells, IReadOnlyList<SourcedRow>>);
-      var demanding = typeof(IProjection<ISpreadsheetSpace, IReadOnlyList<SourcedRow>>);
+      var plain = typeof(IProjectionDefinition<ISheetCells, IReadOnlyList<SourcedRow>>);
+      var demanding = typeof(IProjectionDefinition<ISpreadsheetSpace, IReadOnlyList<SourcedRow>>);
 
       Assert.False(demanding.IsAssignableFrom(plain), "a table converts to no other space");
       Assert.False(plain.IsAssignableFrom(demanding), "a demanding table must not be usable as a plain one");

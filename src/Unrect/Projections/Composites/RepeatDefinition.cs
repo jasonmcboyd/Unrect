@@ -9,11 +9,11 @@ namespace Unrect.Projections
   /// One declared item applied as many times as the space supports. The separator sits between
   /// items and never before the first; a leading gap is the repeat's own offset.
   /// </summary>
-  internal sealed class RepeatProjection<TSpace, T> : ProjectionBase<TSpace, IReadOnlyList<T>>
+  internal sealed class RepeatDefinition<TSpace, T> : DefinitionNode<TSpace, IReadOnlyList<T>>
     where TSpace : class, ISpace
   {
-    public RepeatProjection(
-      IProjection<TSpace, T> item,
+    public RepeatDefinition(
+      IProjectionDefinition<TSpace, T> item,
       IOffsetStrategy? separator,
       Orientation orientation,
       int atLeast,
@@ -29,7 +29,7 @@ namespace Unrect.Projections
       Children = new[] { new Child(item, itemSite) };
     }
 
-    private IProjection<TSpace, T> Item { get; }
+    private IProjectionDefinition<TSpace, T> Item { get; }
 
     /// <summary>What the declaration called the item, for every occurrence of it to be labelled by.</summary>
     private UseSite ItemSite { get; }

@@ -51,15 +51,15 @@ namespace Unrect.Projections
     /// <c>v.Next(summary)</c> makes the child <c>'summary'</c> in every path and message, at no
     /// cost. Reserve <c>Named</c> for projections written inline, and never bake a name into a
     /// projection-returning helper — see <see
-    /// cref="ProjectionExtensions.Named{TSpace, TResult}(IProjection{TSpace, TResult}, string)"/>.
+    /// cref="ProjectionExtensions.Named{TSpace, TResult}(IProjectionDefinition{TSpace, TResult}, string)"/>.
     /// </para>
     /// <para>
     /// The lambda must call <c>Next</c> at least once — a flow that declares nothing would match
     /// anything and describe nothing, and <c>Build</c> refuses it where it is written.
     /// </para>
     /// </summary>
-    public static IProjection<TSpace, T> VerticalFlow<T>(LayoutDeclaration<TSpace, T> declare)
-      => new FlowProjection<TSpace, T>(Orientation.Vertical, LayoutBuilder<TSpace>.Declare(declare, "a flow", nameof(declare)), Placement.Default);
+    public static IProjectionDefinition<TSpace, T> VerticalFlow<T>(LayoutDeclaration<TSpace, T> declare)
+      => new FlowDefinition<TSpace, T>(Orientation.Vertical, LayoutBuilder<TSpace>.Declare(declare, "a flow", nameof(declare)), Placement.Default);
 
     /// <summary>
     /// A flow rightwards, whose children are declared with <c>Next</c> and read through
@@ -67,8 +67,8 @@ namespace Unrect.Projections
     /// belongs in the lambda and what does not, including why children belong in well-named
     /// locals rather than written inline.
     /// </summary>
-    public static IProjection<TSpace, T> HorizontalFlow<T>(LayoutDeclaration<TSpace, T> declare)
-      => new FlowProjection<TSpace, T>(Orientation.Horizontal, LayoutBuilder<TSpace>.Declare(declare, "a flow", nameof(declare)), Placement.Default);
+    public static IProjectionDefinition<TSpace, T> HorizontalFlow<T>(LayoutDeclaration<TSpace, T> declare)
+      => new FlowDefinition<TSpace, T>(Orientation.Horizontal, LayoutBuilder<TSpace>.Declare(declare, "a flow", nameof(declare)), Placement.Default);
 
     /// <summary>
     /// One extent shared by every child, each finding its own place in it — the projection for a
@@ -101,7 +101,7 @@ namespace Unrect.Projections
     /// must call <c>Next</c> at least once.
     /// </para>
     /// </summary>
-    public static IProjection<TSpace, T> Overlay<T>(LayoutDeclaration<TSpace, T> declare)
-      => new OverlayProjection<TSpace, T>(LayoutBuilder<TSpace>.Declare(declare, "an overlay", nameof(declare)), Placement.Default);
+    public static IProjectionDefinition<TSpace, T> Overlay<T>(LayoutDeclaration<TSpace, T> declare)
+      => new OverlayDefinition<TSpace, T>(LayoutBuilder<TSpace>.Declare(declare, "an overlay", nameof(declare)), Placement.Default);
   }
 }

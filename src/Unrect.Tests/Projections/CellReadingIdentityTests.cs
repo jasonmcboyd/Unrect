@@ -80,8 +80,8 @@ namespace Unrect.Tests.Projections
     private static string SameSentence<TValue, TRow>(
       string caption,
       object? offending,
-      IProjection<ISheetCells, TValue> leaf,
-      IProjection<ISheetCells, IReadOnlyList<TRow>> table)
+      IProjectionDefinition<ISheetCells, TValue> leaf,
+      IProjectionDefinition<ISheetCells, IReadOnlyList<TRow>> table)
     {
       var space = Mixed(new object?[,]
       {

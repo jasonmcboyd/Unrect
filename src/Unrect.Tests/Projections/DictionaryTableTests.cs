@@ -94,10 +94,10 @@ namespace Unrect.Tests.Projections
       // is whatever their own space answers. The static side of this assertion is the local's type;
       // the runtime side is the closed interface the factory's projection implements, so the pin
       // holds even if the factory is later composed out of other projections.
-      IProjection<ISheetCells, IReadOnlyList<IReadOnlyDictionary<string, Point<ISheetCells>>>> table = Table();
+      IProjectionDefinition<ISheetCells, IReadOnlyList<IReadOnlyDictionary<string, Point<ISheetCells>>>> table = Table();
 
       Assert.Contains(
-        typeof(IProjection<ISheetCells, IReadOnlyList<IReadOnlyDictionary<string, Point<ISheetCells>>>>),
+        typeof(IProjectionDefinition<ISheetCells, IReadOnlyList<IReadOnlyDictionary<string, Point<ISheetCells>>>>),
         table.GetType().GetInterfaces());
 
       IReadOnlyDictionary<string, Point<ISheetCells>> row = table.Map(Sheet())[0];

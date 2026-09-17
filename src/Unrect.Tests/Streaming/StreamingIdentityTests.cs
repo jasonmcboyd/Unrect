@@ -158,7 +158,7 @@ namespace Unrect.Tests.Streaming
     // and it consumes the whole sheet — which is to say it exercises the pool, the window and the
     // diagnostics in one declaration. If streaming can read this, it can read a report.
 
-    private static IProjection<ISheetCells, (string Title, IReadOnlyList<string> Summary, IReadOnlyList<IReadOnlyList<string>> ByTransferDate, IReadOnlyList<IReadOnlyList<string>> ByInception)> InvestorIrr()
+    private static IProjectionDefinition<ISheetCells, (string Title, IReadOnlyList<string> Summary, IReadOnlyList<IReadOnlyList<string>> ByTransferDate, IReadOnlyList<IReadOnlyList<string>> ByInception)> InvestorIrr()
     {
       var investorBlock = Table(row => row["Investor Name"].Text()).Named("investor block");
       var series = VerticalRepeat(investorBlock, separatedBy: BlankRows());
@@ -310,7 +310,7 @@ namespace Unrect.Tests.Streaming
 
     private sealed record LedgerEntry(int Entry, int Amount, string Category);
 
-    private static IProjection<ISheetCells, IReadOnlyList<LedgerEntry>> Ledger()
+    private static IProjectionDefinition<ISheetCells, IReadOnlyList<LedgerEntry>> Ledger()
     {
       var ledgerEntry = HorizontalFlow(h =>
       {
@@ -379,7 +379,7 @@ namespace Unrect.Tests.Streaming
     /// The same ledger read as a HEADERED table, so the composition the slot rung is built from —
     /// a header read once, then the body tiled beneath it — is the thing under the window.
     /// </summary>
-    private static IProjection<ISheetCells, IReadOnlyList<LedgerEntry>> HeaderedLedger()
+    private static IProjectionDefinition<ISheetCells, IReadOnlyList<LedgerEntry>> HeaderedLedger()
     {
       var ledgerEntry = HorizontalFlow(h =>
       {
@@ -478,7 +478,7 @@ namespace Unrect.Tests.Streaming
     }
 
     /// <summary>The overruns a declaration costs over the tall ledger, through a window it does not fit.</summary>
-    private static long Overruns<T>(IProjection<ISheetCells, T> declaration)
+    private static long Overruns<T>(IProjectionDefinition<ISheetCells, T> declaration)
     {
       using var book = Workbook.Open(
         Path("tall-ledger.xlsx"),

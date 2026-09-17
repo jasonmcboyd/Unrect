@@ -21,16 +21,16 @@ namespace Unrect.Projections
       Placement = placement;
     }
 
-    /// <inheritdoc cref="IProjection.Name"/>
+    /// <inheritdoc cref="IProjectionDefinition.Name"/>
     public string? Name { get; }
 
-    /// <inheritdoc cref="IProjection.UnitName"/>
+    /// <inheritdoc cref="IProjectionDefinition.UnitName"/>
     public string? UnitName { get; }
 
-    /// <inheritdoc cref="IProjection.IsScaffolding"/>
+    /// <inheritdoc cref="IProjectionDefinition.IsScaffolding"/>
     public bool IsScaffolding { get; }
 
-    /// <inheritdoc cref="IProjection.Placement"/>
+    /// <inheritdoc cref="IProjectionDefinition.Placement"/>
     public Placement Placement { get; }
 
     /// <summary>The same annotations, named <paramref name="name"/>.</summary>

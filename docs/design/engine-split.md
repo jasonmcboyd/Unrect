@@ -1,8 +1,14 @@
 # The engine split: a definition builds its own state machine
 
-**Status.** Design, not yet built. Branch `experiment/engine-split`, written against `0f34f15`. It
-records the owner's decisions of 2026-09-16/17 and the three rulings that followed the first cut. It
-is preparation for the push interpreter and comes *before* that design session; the per-kind machine
+**Status.** Phase 1 of §9 landed on `experiment/engine-split` on 2026-09-17, in six commits (1a
+the tooling face, 1b `Annotations`, 1c `Child`/`UseSite`, 1d the modifier collapse, 1e the slot
+layout form, 1f the rename and `ReadDefinition`); phases 2–5 are not started. Three things were built
+differently from the text below and are recorded in CLAUDE.md's "Where Work Left Off": `Reading`
+reads a slot through the method `read.Of(slot)` rather than an indexer (a C# indexer cannot be
+generic); the node classes stay internal for now; `ProjectionContext.Pending` survives until the
+engine takes a use site per `Apply`. The document was written against `0f34f15` and records the
+owner's decisions of 2026-09-16/17 and the three rulings that followed the first cut. It is
+preparation for the push interpreter and comes *before* that design session; the per-kind machine
 trace belongs to that document, not this one.
 
 The one sentence: `IProjection<TSpace, TResult>.Project(Plane<TSpace>, ProjectionContext)` makes every

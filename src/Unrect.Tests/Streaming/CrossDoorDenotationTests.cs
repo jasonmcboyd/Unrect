@@ -278,7 +278,7 @@ namespace Unrect.Tests.Streaming
     private sealed record Ledger(int Entry, decimal Amount);
 
     /// <summary>A deal block: its name, and how many holdings are under it.</summary>
-    private static IProjection<ISheetCells, string> DealBlock() =>
+    private static IProjectionDefinition<ISheetCells, string> DealBlock() =>
       VerticalFlow(v =>
       {
         var textSlot = v.Next(Text());
@@ -288,7 +288,7 @@ namespace Unrect.Tests.Streaming
       });
 
     /// <summary>The tall ledger, anchored on its caption and bounded by its terminator.</summary>
-    private static IProjection<ISheetCells, IReadOnlyList<Ledger>> TallLedger() =>
+    private static IProjectionDefinition<ISheetCells, IReadOnlyList<Ledger>> TallLedger() =>
       Below(RowContaining("Ledger")).Until(RowContaining("End")).Of(Table<Ledger>());
 
     // --- The matrix ----------------------------------------------------------------------------------
@@ -684,7 +684,7 @@ namespace Unrect.Tests.Streaming
       /// <summary>Which fixture this scenario is read over.</summary>
       public string Grid { get; }
 
-      public static Scenario Of<T>(IProjection<ISheetCells, T> projection, string grid)
+      public static Scenario Of<T>(IProjectionDefinition<ISheetCells, T> projection, string grid)
         => new Scenario(grid, space => Observe(projection, space));
 
       public Observation Read(ISheetCells space) => _read(space);

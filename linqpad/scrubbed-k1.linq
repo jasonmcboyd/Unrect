@@ -43,7 +43,7 @@ int Find(Point<ISheetCells>[] row, string caption) => Array.FindIndex(row,
 // caption band has gaps. The helper does NOT name what it returns: a name baked in here would call
 // every row the same thing at every use site, and the use site is the only place that knows which
 // row this is.
-IProjection<ISheetCells, Point<ISheetCells>[]> FullRow(string anchor) =>
+IProjectionDefinition<ISheetCells, Point<ISheetCells>[]> FullRow(string anchor) =>
 	On(RowContaining(anchor))
 		.Row(AllColumns(), r => r.ToArray());
 

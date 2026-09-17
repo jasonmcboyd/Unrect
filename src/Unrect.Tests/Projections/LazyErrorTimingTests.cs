@@ -62,7 +62,7 @@ namespace Unrect.Tests.Projections
     /// </summary>
     private const int LateMarker = 7;
 
-    private static ProjectionException Failure<T>(IProjection<ISheetCells, T> projection, bool eager)
+    private static ProjectionException Failure<T>(IProjectionDefinition<ISheetCells, T> projection, bool eager)
     {
       if (!eager)
         return Assert.Throws<ProjectionException>(() => projection.MapWithDiagnostics(Sheet()));
@@ -71,7 +71,7 @@ namespace Unrect.Tests.Projections
         return Assert.Throws<ProjectionException>(() => projection.MapWithDiagnostics(Sheet()));
     }
 
-    private static MapResult<T> Result<T>(IProjection<ISheetCells, T> projection, bool eager)
+    private static MapResult<T> Result<T>(IProjectionDefinition<ISheetCells, T> projection, bool eager)
     {
       if (!eager)
         return projection.MapWithDiagnostics(Sheet());
@@ -80,7 +80,7 @@ namespace Unrect.Tests.Projections
         return projection.MapWithDiagnostics(Sheet());
     }
 
-    private static void AssertSameFailureBothWays<T>(IProjection<ISheetCells, T> projection)
+    private static void AssertSameFailureBothWays<T>(IProjectionDefinition<ISheetCells, T> projection)
     {
       var deferred = Failure(projection, eager: false);
       var measured = Failure(projection, eager: true);
@@ -162,7 +162,7 @@ namespace Unrect.Tests.Projections
     {
       var broken = Range(RowsWhileAny(FaultsOn(LateMarker)), b => b.Height);
 
-      IProjection<ISheetCells, int> projection = boundary switch
+      IProjectionDefinition<ISheetCells, int> projection = boundary switch
       {
         "Optional" => broken.Optional(),
         "Else" => broken.Else(-1),

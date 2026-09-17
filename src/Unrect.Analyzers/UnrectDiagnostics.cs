@@ -6,7 +6,7 @@ namespace Unrect.Analyzers
   /// The two things the compiler cannot say about the space a declaration is written over, and the
   /// identifiers they say them under.
   /// <para>
-  /// The space — the <c>TSpace</c> in <c>IProjection&lt;TSpace, T&gt;</c> — is checked by the type
+  /// The space — the <c>TSpace</c> in <c>IProjectionDefinition&lt;TSpace, T&gt;</c> — is checked by the type
   /// system and reported by messages written for type inference and conversion, which name either
   /// the wrong thing or nothing at all. These fill exactly those gaps and add no rule of their own:
   /// <c>UNR002</c> is a fix on the compiler's own conversion error rather than a diagnostic, and

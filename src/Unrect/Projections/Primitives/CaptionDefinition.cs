@@ -17,10 +17,10 @@ namespace Unrect.Projections
   /// written again.
   /// </para>
   /// </summary>
-  internal sealed class CaptionProjection<TSpace> : ProjectionBase<TSpace, string>
+  internal sealed class CaptionDefinition<TSpace> : DefinitionNode<TSpace, string>
     where TSpace : class, ISpace
   {
-    public CaptionProjection(string text, Placement placement)
+    public CaptionDefinition(string text, Placement placement)
       : base(placement)
     {
       Text = text;

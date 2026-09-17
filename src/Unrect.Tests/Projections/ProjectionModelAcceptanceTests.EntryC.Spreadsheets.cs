@@ -50,7 +50,7 @@ namespace Unrect.Tests.Projections
     /// the one door — declare it, then place it.
     /// </para>
     /// </summary>
-    private static IProjection<ISpreadsheetSpace, AuditedLedger> AuditedLedgerThroughTheBuilders()
+    private static IProjectionDefinition<ISpreadsheetSpace, AuditedLedger> AuditedLedgerThroughTheBuilders()
     {
       // A cell has a value and a formula, so reading both is an overlay's job, as ever.
       var line = Overlay(o =>
@@ -90,7 +90,7 @@ namespace Unrect.Tests.Projections
       // reads a decimal off the same coordinates over a sheet with no formulas in it.
       var sheet = SpreadsheetSpace.CreateWithFormulas(TestData("formulas.xlsx"), "Formulas");
 
-      IProjection<ISpreadsheetSpace, string?> demanding =
+      IProjectionDefinition<ISpreadsheetSpace, string?> demanding =
         On(RowContaining("Widget")).Right(3).Of(Formula().Named("line formula"));
 
       Assert.Equal(@"IF(B2>0,ROUND(B2*$C$2,2)+SUM($B$2:B2),""B2"")", demanding.Map(sheet));

@@ -53,7 +53,7 @@ namespace Unrect.Projections
     /// Supplied by the compiler as the text of the <paramref name="projection"/> argument. It is
     /// not a naming API — pass <c>.Named(…)</c> when you want to choose what a child is called.
     /// </param>
-    public Slot<T> Next<T>(IProjection<TSpace, T> projection, [CallerArgumentExpression("projection")] string? declared = null)
+    public Slot<T> Next<T>(IProjectionDefinition<TSpace, T> projection, [CallerArgumentExpression("projection")] string? declared = null)
     {
       if (_builder is null)
         throw new InvalidOperationException(LayoutBuilder<TSpace>.NoLayout);

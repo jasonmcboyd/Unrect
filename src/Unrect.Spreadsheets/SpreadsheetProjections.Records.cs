@@ -51,7 +51,7 @@ namespace Unrect.Spreadsheets
     /// <typeparam name="TSpace">The sheet the record is declared over.</typeparam>
     /// <typeparam name="T">What one record reads.</typeparam>
     /// <param name="labels">This file's captions — what a table's bind rung hands its record.</param>
-    public static IProjection<TSpace, T> Record<TSpace, T>(LabelMap labels)
+    public static IProjectionDefinition<TSpace, T> Record<TSpace, T>(LabelMap labels)
       where TSpace : class, ISheetCells
       => RecordRow<TSpace, T>(RowBinding<T>.Create(null, typeof(TSpace)), labels);
 
@@ -66,7 +66,7 @@ namespace Unrect.Spreadsheets
     /// </summary>
     /// <typeparam name="TSpace">The sheet the table is declared over.</typeparam>
     /// <typeparam name="T">What one record reads.</typeparam>
-    public static IProjection<TSpace, IReadOnlyList<T>> Table<TSpace, T>()
+    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<TSpace, T>()
       where TSpace : class, ISheetCells
       => Bound<TSpace, T>(RowBinding<T>.Create(null, typeof(TSpace)), BlankRowStrategy.Stop);
 
@@ -80,7 +80,7 @@ namespace Unrect.Spreadsheets
     /// <typeparam name="TSpace">The sheet the table is declared over.</typeparam>
     /// <typeparam name="T">What one record reads.</typeparam>
     /// <param name="onBlank">How a fully-blank body row is treated.</param>
-    public static IProjection<TSpace, IReadOnlyList<T>> Table<TSpace, T>(BlankRowStrategy onBlank)
+    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<TSpace, T>(BlankRowStrategy onBlank)
       where TSpace : class, ISheetCells
       => Bound<TSpace, T>(RowBinding<T>.Create(null, typeof(TSpace)), onBlank);
 
@@ -96,7 +96,7 @@ namespace Unrect.Spreadsheets
     /// <typeparam name="TSpace">The sheet the table is declared over.</typeparam>
     /// <typeparam name="T">What one record reads.</typeparam>
     /// <param name="bind">The per-member declarations applied to what reflection would have written.</param>
-    public static IProjection<TSpace, IReadOnlyList<T>> Table<TSpace, T>(Func<TableBinding<T>, TableBinding<T>> bind)
+    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<TSpace, T>(Func<TableBinding<T>, TableBinding<T>> bind)
       where TSpace : class, ISheetCells
       => Bound<TSpace, T>(Planned<TSpace, T>(bind), BlankRowStrategy.Stop);
 
@@ -111,7 +111,7 @@ namespace Unrect.Spreadsheets
     /// <typeparam name="T">What one record reads.</typeparam>
     /// <param name="bind">The per-member declarations applied to what reflection would have written.</param>
     /// <param name="onBlank">How a fully-blank body row is treated.</param>
-    public static IProjection<TSpace, IReadOnlyList<T>> Table<TSpace, T>(Func<TableBinding<T>, TableBinding<T>> bind, BlankRowStrategy onBlank)
+    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<TSpace, T>(Func<TableBinding<T>, TableBinding<T>> bind, BlankRowStrategy onBlank)
       where TSpace : class, ISheetCells
       => Bound<TSpace, T>(Planned<TSpace, T>(bind), onBlank);
 
@@ -122,7 +122,7 @@ namespace Unrect.Spreadsheets
         ?? throw new ArgumentException("The binding lambda returned null.", nameof(bind)),
         typeof(TSpace));
 
-    private static IProjection<TSpace, IReadOnlyList<T>> Bound<TSpace, T>(RowBinding<T> plan, BlankRowStrategy onBlank)
+    private static IProjectionDefinition<TSpace, IReadOnlyList<T>> Bound<TSpace, T>(RowBinding<T> plan, BlankRowStrategy onBlank)
       where TSpace : class, ISheetCells
       => ProjectionBuilders<TSpace>
         .Table(headerRows: 1, eachRow: labels => RecordRow<TSpace, T>(plan, labels), onBlank, declared: null)
@@ -138,11 +138,11 @@ namespace Unrect.Spreadsheets
     /// says so in one sentence rather than three files later.
     /// </para>
     /// </summary>
-    private static IProjection<TSpace, T> RecordRow<TSpace, T>(RowBinding<T> plan, LabelMap labels)
+    private static IProjectionDefinition<TSpace, T> RecordRow<TSpace, T>(RowBinding<T> plan, LabelMap labels)
       where TSpace : class, ISheetCells
     {
       var columns = Columns<T>(plan, labels);
-      var members = new IProjection<TSpace, object?>[plan.Members.Count];
+      var members = new IProjectionDefinition<TSpace, object?>[plan.Members.Count];
 
       for (var member = 0; member < members.Length; member++)
         members[member] = ProjectionBuilders<TSpace>

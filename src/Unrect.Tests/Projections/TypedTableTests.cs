@@ -511,7 +511,7 @@ namespace Unrect.Tests.Projections
       // A positional record's extra init property is filled by nobody: the type is built through
       // its constructor, and the constructor has never heard of it. Binding or ignoring it would
       // be a declaration with no effect, so it is refused instead.
-      foreach (var declaration in new Func<IProjection<ISheetCells, IReadOnlyList<ExtraInit>>>[]
+      foreach (var declaration in new Func<IProjectionDefinition<ISheetCells, IReadOnlyList<ExtraInit>>>[]
       {
         () => Table<ExtraInit>(bind => bind.Column(t => t.Extra, "Extra")),
         () => Table<ExtraInit>(bind => bind.Ignore(t => t.Extra)),

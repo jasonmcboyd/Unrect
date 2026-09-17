@@ -9,10 +9,10 @@ namespace Unrect.Projections
   /// Backs <c>Select</c>. Its own placement is applied by the engine like any other projection's,
   /// so <c>x.Select(f).OffsetBy(o)</c> and <c>x.OffsetBy(o).Select(f)</c> land in the same place.
   /// </summary>
-  internal sealed class MapProjection<TSpace, TSource, TResult> : ProjectionBase<TSpace, TResult>
+  internal sealed class SelectDefinition<TSpace, TSource, TResult> : DefinitionNode<TSpace, TResult>
     where TSpace : class, ISpace
   {
-    public MapProjection(IProjection<TSpace, TSource> inner, Func<TSource, TResult> selector, Placement placement)
+    public SelectDefinition(IProjectionDefinition<TSpace, TSource> inner, Func<TSource, TResult> selector, Placement placement)
       : base(placement)
     {
       Inner = inner ?? throw new ArgumentNullException(nameof(inner));
@@ -20,7 +20,7 @@ namespace Unrect.Projections
       Children = new[] { new Child(inner, default) };
     }
 
-    private IProjection<TSpace, TSource> Inner { get; }
+    private IProjectionDefinition<TSpace, TSource> Inner { get; }
     private Func<TSource, TResult> Selector { get; }
 
     public override string Description => "Select";

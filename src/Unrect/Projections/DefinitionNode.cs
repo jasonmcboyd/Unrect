@@ -10,7 +10,7 @@ namespace Unrect.Projections
   /// <see cref="Annotations"/> every projection has and the one clone that changes them; what a
   /// projection does with its extent is its own, and what a modifier wraps it in is the modifier's.
   /// </summary>
-  public abstract class ProjectionBase : IProjection
+  public abstract class DefinitionNode : IProjectionDefinition
   {
     private static readonly Child[] NoChildren = Array.Empty<Child>();
 
@@ -20,7 +20,7 @@ namespace Unrect.Projections
     /// </summary>
     /// <param name="placement">Where this projection sits within the space it is handed.</param>
     /// <exception cref="ArgumentNullException"><paramref name="placement"/> is null.</exception>
-    private protected ProjectionBase(Placement placement)
+    private protected DefinitionNode(Placement placement)
     {
       Annotations = Annotations.Default.WithPlacement(placement);
     }
@@ -60,9 +60,9 @@ namespace Unrect.Projections
     /// one's record the same way, so a leaf does not silently change its own path by being made
     /// tolerant.
     /// </summary>
-    internal ProjectionBase With(Annotations annotations)
+    internal DefinitionNode With(Annotations annotations)
     {
-      var clone = (ProjectionBase)MemberwiseClone();
+      var clone = (DefinitionNode)MemberwiseClone();
       clone.Annotations = annotations ?? throw new ArgumentNullException(nameof(annotations));
       return clone;
     }
@@ -78,10 +78,10 @@ namespace Unrect.Projections
   /// </summary>
   /// <typeparam name="TSpace">The space this projection is written over.</typeparam>
   /// <typeparam name="TResult">What projecting this projection's extent produces.</typeparam>
-  public abstract class ProjectionBase<TSpace, TResult> : ProjectionBase, IProjection<TSpace, TResult>
+  public abstract class DefinitionNode<TSpace, TResult> : DefinitionNode, IProjectionDefinition<TSpace, TResult>
     where TSpace : class, ISpace
   {
-    /// <inheritdoc cref="ProjectionBase(Placement)"/>
+    /// <inheritdoc cref="DefinitionNode(Placement)"/>
     /// <remarks>
     /// Not <c>protected</c>: only this library may derive. The modifier surface casts its result
     /// back to the receiver's own type on the strength of "every projection is one of ours", and an
@@ -89,7 +89,7 @@ namespace Unrect.Projections
     /// compiling cleanly. Closed at the projection rename (owner decision).
     /// </remarks>
     /// <param name="placement">Where this projection sits within the space it is handed.</param>
-    private protected ProjectionBase(Placement placement)
+    private protected DefinitionNode(Placement placement)
       : base(placement)
     {
     }
@@ -98,27 +98,7 @@ namespace Unrect.Projections
     public abstract ProjectionResult<TResult> Project(Plane<TSpace> extent, ProjectionContext context);
 
     /// <inheritdoc/>
-    IProjection<TSpace, TResult> IProjection<TSpace, TResult>.With(Annotations annotations)
-      => (IProjection<TSpace, TResult>)With(annotations);
-
-    /// <summary>
-    /// The same reading, tolerating a blank cell — what <c>OrBlank</c> declares. Only a cell leaf
-    /// can: a blank is a value in a reading of one cell, and on anything else it is a declaration
-    /// error, which is why refusing here is where that error is raised.
-    /// <para>
-    /// The widening comes from the caller because C# cannot say "this same reading, of
-    /// <typeparamref name="TValue"/>"; at run time it is the identity. Everything else — the
-    /// placement, the name, the kind a backend's leaf asserts — is the receiver's own, so
-    /// <c>Decimal().Right(6).OrBlank()</c> and <c>Decimal().OrBlank().Right(6)</c> declare the same
-    /// thing.
-    /// </para>
-    /// </summary>
-    /// <typeparam name="TValue">The nullable form of <typeparamref name="TResult"/>.</typeparam>
-    /// <param name="widen">The widening, which is the identity conversion at run time.</param>
-    internal virtual IProjection<TSpace, TValue> Tolerating<TValue>(Func<TResult, TValue> widen)
-      => throw new ArgumentException(
-        "OrBlank reads a blank cell as null, so it belongs on a cell leaf — AsText, or one of a "
-        + $"backend's kinded leaves. {ProjectionContext.Describe(this)} is not one.",
-        "projection");
+    IProjectionDefinition<TSpace, TResult> IProjectionDefinition<TSpace, TResult>.With(Annotations annotations)
+      => (IProjectionDefinition<TSpace, TResult>)With(annotations);
   }
 }

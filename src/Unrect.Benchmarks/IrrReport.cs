@@ -39,7 +39,7 @@ namespace Unrect.Benchmarks
   /// </summary>
   internal static class IrrReport
   {
-    private static readonly IProjection<ISheetCells, IrrReportHeader> Header = VerticalFlow(v =>
+    private static readonly IProjectionDefinition<ISheetCells, IrrReportHeader> Header = VerticalFlow(v =>
     {
       var title = v.Next(Text());
       var fund = v.Next(Text());
@@ -55,24 +55,24 @@ namespace Unrect.Benchmarks
 
     // Five of six captions bind with nothing said; only Investor needs one, because the sheet's
     // heading is plural where the member is singular.
-    private static readonly IProjection<ISheetCells, IReadOnlyList<SummaryRow>> Summary =
+    private static readonly IProjectionDefinition<ISheetCells, IReadOnlyList<SummaryRow>> Summary =
       Table<SummaryRow>(bind => bind.Column(r => r.Investor, "Investors"));
 
-    private static readonly IProjection<ISheetCells, IReadOnlyList<CashFlow>> InvestorBlock = Table<CashFlow>();
+    private static readonly IProjectionDefinition<ISheetCells, IReadOnlyList<CashFlow>> InvestorBlock = Table<CashFlow>();
 
-    private static readonly IProjection<ISheetCells, IReadOnlyList<IReadOnlyList<CashFlow>>> Series =
+    private static readonly IProjectionDefinition<ISheetCells, IReadOnlyList<IReadOnlyList<CashFlow>>> Series =
       VerticalRepeat(InvestorBlock, separatedBy: BlankRows());
 
-    private static readonly IProjection<ISheetCells, IReadOnlyList<IReadOnlyList<CashFlow>>> ByTransferDate =
+    private static readonly IProjectionDefinition<ISheetCells, IReadOnlyList<IReadOnlyList<CashFlow>>> ByTransferDate =
       Until(RowContaining(CanonicalSpaces.InceptionCaption))
         .Heading(CanonicalSpaces.DetailsCaption)
         .Heading(CanonicalSpaces.TransferDateCaption)
         .Of(Series);
 
-    private static readonly IProjection<ISheetCells, IReadOnlyList<IReadOnlyList<CashFlow>>> ByInception =
+    private static readonly IProjectionDefinition<ISheetCells, IReadOnlyList<IReadOnlyList<CashFlow>>> ByInception =
       Heading(CanonicalSpaces.InceptionCaption).Of(Series);
 
-    public static readonly IProjection<ISheetCells, Report> Projection = VerticalFlow(v =>
+    public static readonly IProjectionDefinition<ISheetCells, Report> Projection = VerticalFlow(v =>
     {
       var header = v.Next(Header);
       var summary = v.Next(Summary);
@@ -91,7 +91,7 @@ namespace Unrect.Benchmarks
     /// fails deep -- inside a section, inside the flow -- so the measured cost is a real path, not
     /// a root-level throw.
     /// </summary>
-    public static readonly IProjection<ISheetCells, Report> WithMissingSection = VerticalFlow(v =>
+    public static readonly IProjectionDefinition<ISheetCells, Report> WithMissingSection = VerticalFlow(v =>
     {
       var header = v.Next(Header);
       var summary = v.Next(Summary);

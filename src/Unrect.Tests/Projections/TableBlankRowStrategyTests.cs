@@ -82,7 +82,7 @@ namespace Unrect.Tests.Projections
       { "note", null },
     });
 
-    private static IProjection<ISheetCells, IReadOnlyList<Line>> Lines(BlankRowStrategy onBlank)
+    private static IProjectionDefinition<ISheetCells, IReadOnlyList<Line>> Lines(BlankRowStrategy onBlank)
       => Table(r => new Line(r["Name"].Text(), r["Amount"].Decimal()), onBlank);
 
     // --- B. default(BlankRowStrategy) == Stop -------------------------------------------------------

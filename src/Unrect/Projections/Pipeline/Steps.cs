@@ -43,7 +43,7 @@ namespace Unrect.Projections
     }
 
     /// <summary>Writes the declared placement onto <paramref name="projection"/>, each slot once.</summary>
-    internal IProjection<TSpace, T> ApplyTo<TSpace, T>(IProjection<TSpace, T> projection)
+    internal IProjectionDefinition<TSpace, T> ApplyTo<TSpace, T>(IProjectionDefinition<TSpace, T> projection)
       where TSpace : class, ISpace
     {
       foreach (var step in _steps)
@@ -120,13 +120,13 @@ namespace Unrect.Projections
     /// The headings a section announces itself by, as the caption leaves the replay folds into one
     /// vertical flow. The array is the stage's own and is never handed out, so it is safe to hold.
     /// </summary>
-    internal static Step Headings(IProjection[] captions) => new Step(StepKind.Headings, captions);
+    internal static Step Headings(IProjectionDefinition[] captions) => new Step(StepKind.Headings, captions);
 
     /// <summary>
     /// Writes this step's offset/area/bound operation onto <paramref name="projection"/>'s
     /// <see cref="Placement"/>.
     /// </summary>
-    internal IProjection<TSpace, T> ApplyTo<TSpace, T>(IProjection<TSpace, T> projection)
+    internal IProjectionDefinition<TSpace, T> ApplyTo<TSpace, T>(IProjectionDefinition<TSpace, T> projection)
       where TSpace : class, ISpace
     {
       return _kind switch
@@ -149,7 +149,7 @@ namespace Unrect.Projections
         // Bounds and headings wrap rather than reposition.
         StepKind.UntilRow => Bounded(projection, Landmark.Of((IRowLandmark)_subject!), _orEnd),
         StepKind.UntilColumn => Bounded(projection, Landmark.Of((IColumnLandmark)_subject!), _orEnd),
-        StepKind.Headings => Headed(projection, (IProjection[])_subject!),
+        StepKind.Headings => Headed(projection, (IProjectionDefinition[])_subject!),
 
         _ => throw new InvalidOperationException($"Unknown placement step {_kind}."),
       };
@@ -161,13 +161,13 @@ namespace Unrect.Projections
     /// column bound over a row bound is a second end too. A wrapper in between makes the outer bound
     /// nest, which is a different declaration and a legal one.
     /// </summary>
-    private static IProjection<TSpace, T> Bounded<TSpace, T>(IProjection<TSpace, T> projection, Landmark landmark, bool orEnd)
+    private static IProjectionDefinition<TSpace, T> Bounded<TSpace, T>(IProjectionDefinition<TSpace, T> projection, Landmark landmark, bool orEnd)
       where TSpace : class, ISpace
     {
-      if (projection is UntilProjection<TSpace, T> bounded)
+      if (projection is BoundedDefinition<TSpace, T> bounded)
         throw bounded.AlreadyEnded(landmark);
 
-      return new UntilProjection<TSpace, T>(projection, landmark, orEnd, Placement.Default);
+      return new BoundedDefinition<TSpace, T>(projection, landmark, orEnd, Placement.Default);
     }
 
     /// <summary>
@@ -175,9 +175,9 @@ namespace Unrect.Projections
     /// <c>Heading</c> stage builds. The captions are the heading rows, read and discarded; the
     /// projection is the section they announce.
     /// </summary>
-    private static IProjection<TSpace, T> Headed<TSpace, T>(IProjection<TSpace, T> projection, IProjection[] captions)
+    private static IProjectionDefinition<TSpace, T> Headed<TSpace, T>(IProjectionDefinition<TSpace, T> projection, IProjectionDefinition[] captions)
       where TSpace : class, ISpace
-      => new FlowProjection<TSpace, T>(
+      => new FlowDefinition<TSpace, T>(
         Orientation.Vertical,
         LayoutBuilder<TSpace>.Declare<T>(
           cursor =>
@@ -187,7 +187,7 @@ namespace Unrect.Projections
             // and the section 'projection' — identifiers the user never wrote. Capture reads the
             // immediate call site, so a helper has to opt out.
             foreach (var caption in captions)
-              cursor.Next((IProjection<TSpace, string>)caption, declared: null);
+              cursor.Next((IProjectionDefinition<TSpace, string>)caption, declared: null);
 
             var section = cursor.Next(projection, declared: null);
 
@@ -203,7 +203,7 @@ namespace Unrect.Projections
     /// earlier pipeline stage declared (placement both <see cref="Placement.OffsetWasDeclared"/> and
     /// <see cref="Placement.HasDeclaredOffset"/>), otherwise starts from the origin.
     /// </summary>
-    private static IProjection<TSpace, T> Offset<TSpace, T>(IProjection<TSpace, T> projection, IOffsetStrategy offset)
+    private static IProjectionDefinition<TSpace, T> Offset<TSpace, T>(IProjectionDefinition<TSpace, T> projection, IOffsetStrategy offset)
       where TSpace : class, ISpace
     {
       var placement = projection.Placement;
@@ -224,7 +224,7 @@ namespace Unrect.Projections
     {
       IRowLandmark row => row.Description,
       IColumnLandmark column => column.Description,
-      IProjection[] captions => string.Join(", ", Array.ConvertAll(captions, caption => caption.Description)),
+      IProjectionDefinition[] captions => string.Join(", ", Array.ConvertAll(captions, caption => caption.Description)),
       null => "?",
       _ => subject.GetType().Name,
     };

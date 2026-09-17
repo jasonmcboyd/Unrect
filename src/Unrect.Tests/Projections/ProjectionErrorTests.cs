@@ -548,7 +548,7 @@ return v.Build(read => read.Of(horizontalFlow));
     public void ApplyRejectsNullArguments()
     {
       Assert.Throws<ArgumentNullException>(() => IntCell().Map(null!));
-      Assert.Throws<ArgumentNullException>(() => ((IProjection<ISheetCells, int>)null!).Map(Square()));
+      Assert.Throws<ArgumentNullException>(() => ((IProjectionDefinition<ISheetCells, int>)null!).Map(Square()));
     }
 
     private static int ThrowingSelector(int only)

@@ -24,7 +24,7 @@ namespace Unrect.Tests.Projections
     // A, B, Total, C, End — two rows, a caption, two more.
     private static ISheetCells Sections() => Mixed(new object?[,] { { "A" }, { "B" }, { "Total" }, { "C" }, { "End" } });
 
-    private static IProjection<ISheetCells, IReadOnlyList<string>> Lines() => VerticalRepeat(TextCell());
+    private static IProjectionDefinition<ISheetCells, IReadOnlyList<string>> Lines() => VerticalRepeat(TextCell());
 
     // --- The bound ------------------------------------------------------------------------------
 
@@ -192,7 +192,7 @@ namespace Unrect.Tests.Projections
     //
     // The offset and the extent families each have a DEFAULT path the refusal leaves alone — a shape
     // states an offset or an extent in its own constructor, and a modifier replaces it silently. The
-    // bound has no such path to guard: nothing builds an UntilProjection but .Until/.UntilColumn, so
+    // bound has no such path to guard: nothing builds an BoundedDefinition but .Until/.UntilColumn, so
     // a projection has no default end and the FIRST bound is always the declaration. That asymmetry
     // is why these pins are all refusals with no silent-replacement twin.
 
@@ -312,7 +312,7 @@ namespace Unrect.Tests.Projections
       { "Stop", "f", "g" },
     });
 
-    private static IProjection<ISheetCells, string> BlockExtent() => Range(b => $"{b.Width}x{b.Height}");
+    private static IProjectionDefinition<ISheetCells, string> BlockExtent() => Range(b => $"{b.Width}x{b.Height}");
 
     [Fact]
     public void AColumnBoundOverARowBoundIsRefused()
@@ -470,7 +470,7 @@ namespace Unrect.Tests.Projections
     {
       var inner = Lines();
 
-      Assert.Same(inner, Assert.Single(Until(RowContaining("Total")).Of(inner).Children).Projection);
+      Assert.Same(inner, Assert.Single(Until(RowContaining("Total")).Of(inner).Children).Definition);
     }
 
     [Fact]

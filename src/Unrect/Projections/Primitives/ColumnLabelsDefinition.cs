@@ -14,10 +14,10 @@ namespace Unrect.Projections
   /// own, so a header and the body beneath it describe the same columns.
   /// </para>
   /// </summary>
-  internal sealed class ColumnLabelsProjection<TSpace> : ProjectionBase<TSpace, LabelMap>
+  internal sealed class ColumnLabelsDefinition<TSpace> : DefinitionNode<TSpace, LabelMap>
     where TSpace : class, ISpace
   {
-    public ColumnLabelsProjection(int headerRows, Placement placement)
+    public ColumnLabelsDefinition(int headerRows, Placement placement)
       : base(placement)
       => HeaderRows = headerRows;
 

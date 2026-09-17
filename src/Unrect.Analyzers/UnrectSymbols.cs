@@ -51,7 +51,7 @@ namespace Unrect.Analyzers
     /// <summary><c>Unrect.Core.ISpace</c> — the space a declaration asks for when it asks for nothing.</summary>
     public INamedTypeSymbol Space { get; }
 
-    /// <summary><c>IProjection&lt;TSpace, TResult&gt;</c>, where a declaration's space is written.</summary>
+    /// <summary><c>IProjectionDefinition&lt;TSpace, TResult&gt;</c>, where a declaration's space is written.</summary>
     public INamedTypeSymbol Projection { get; }
 
     /// <summary><c>ProjectionBuilders&lt;TSpace&gt;</c>, the file-scoped vocabulary.</summary>
@@ -71,7 +71,10 @@ namespace Unrect.Analyzers
     public static UnrectSymbols? TryLoad(Compilation compilation)
     {
       var space = compilation.GetTypeByMetadataName("Unrect.Core.ISpace");
-      var projection = compilation.GetTypeByMetadataName("Unrect.Projections.IProjection`2");
+      // The definition interface by its current name, then by the name it had before the engine
+      // split, so the analyzer and library packages need not be upgraded in lockstep.
+      var projection = compilation.GetTypeByMetadataName("Unrect.Projections.IProjectionDefinition`2")
+        ?? compilation.GetTypeByMetadataName("Unrect.Projections.IProjection`2");
       var builders = compilation.GetTypeByMetadataName("Unrect.Projections.ProjectionBuilders`1");
       var stage = compilation.GetTypeByMetadataName("Unrect.Projections.PlacementStage`1");
 

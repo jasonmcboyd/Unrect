@@ -42,7 +42,7 @@ namespace Unrect.Spreadsheets
     /// </summary>
     /// <typeparam name="TSpace">The sheet the record is declared over.</typeparam>
     /// <param name="member">The member to fill.</param>
-    internal static IProjection<TSpace, object?> For<TSpace>(MemberPlan member)
+    internal static IProjectionDefinition<TSpace, object?> For<TSpace>(MemberPlan member)
       where TSpace : class, ISheetCells
     {
       var leaf = Boxed<TSpace>(member.Type);
@@ -50,7 +50,7 @@ namespace Unrect.Spreadsheets
       return member.BlankTolerant ? Tolerant(leaf) : leaf;
     }
 
-    private static IProjection<TSpace, object?> Boxed<TSpace>(Type type)
+    private static IProjectionDefinition<TSpace, object?> Boxed<TSpace>(Type type)
       where TSpace : class, ISheetCells
     {
       // The one member that asserts nothing: it hands over the cell's address and lets the reader
@@ -60,27 +60,27 @@ namespace Unrect.Spreadsheets
 
       if (type == typeof(string))
         return SpreadsheetProjections.Kinded<TSpace, object?>(
-          "Text", (ISheetCells s, int c, int r, out object? v, out CellProblem? p) => Box(s.TextAt(c, r, out var value, out p), value, out v));
+          "Text", (Point<TSpace> cell, out object? v, out CellProblem? p) => Box(cell.Space.TextAt(cell.Column, cell.Row, out var value, out p), value, out v));
 
       if (type == typeof(decimal))
         return SpreadsheetProjections.Kinded<TSpace, object?>(
-          "Decimal", (ISheetCells s, int c, int r, out object? v, out CellProblem? p) => Box(s.DecimalAt(c, r, out var value, out p), value, out v));
+          "Decimal", (Point<TSpace> cell, out object? v, out CellProblem? p) => Box(cell.Space.DecimalAt(cell.Column, cell.Row, out var value, out p), value, out v));
 
       if (type == typeof(double))
         return SpreadsheetProjections.Kinded<TSpace, object?>(
-          "Double", (ISheetCells s, int c, int r, out object? v, out CellProblem? p) => Box(s.DoubleAt(c, r, out var value, out p), value, out v));
+          "Double", (Point<TSpace> cell, out object? v, out CellProblem? p) => Box(cell.Space.DoubleAt(cell.Column, cell.Row, out var value, out p), value, out v));
 
       if (type == typeof(int))
         return SpreadsheetProjections.Kinded<TSpace, object?>(
-          "Integer", (ISheetCells s, int c, int r, out object? v, out CellProblem? p) => Box(s.IntegerAt(c, r, out var value, out p), value, out v));
+          "Integer", (Point<TSpace> cell, out object? v, out CellProblem? p) => Box(cell.Space.IntegerAt(cell.Column, cell.Row, out var value, out p), value, out v));
 
       if (type == typeof(DateTime))
         return SpreadsheetProjections.Kinded<TSpace, object?>(
-          "Date", (ISheetCells s, int c, int r, out object? v, out CellProblem? p) => Box(s.DateTimeAt(c, r, out var value, out p), value, out v));
+          "Date", (Point<TSpace> cell, out object? v, out CellProblem? p) => Box(cell.Space.DateTimeAt(cell.Column, cell.Row, out var value, out p), value, out v));
 
       if (type == typeof(bool))
         return SpreadsheetProjections.Kinded<TSpace, object?>(
-          "Boolean", (ISheetCells s, int c, int r, out object? v, out CellProblem? p) => Box(s.BooleanAt(c, r, out var value, out p), value, out v));
+          "Boolean", (Point<TSpace> cell, out object? v, out CellProblem? p) => Box(cell.Space.BooleanAt(cell.Column, cell.Row, out var value, out p), value, out v));
 
       // Unreachable: the plan refuses a type Reads says no to, where it is written rather than per
       // file. Kept so this method is correct read on its own rather than only in context.
@@ -98,14 +98,14 @@ namespace Unrect.Spreadsheets
     /// than through the modifier because the result type is already <c>object?</c>.
     /// <para>
     /// The cast is the invariant the point branch of <see cref="Boxed{TSpace}"/> pays for: every
-    /// leaf built there is a <see cref="KindedCellProjection{TSpace, TResult}"/> EXCEPT the point's,
+    /// leaf built there is a <see cref="ReadDefinition{TSpace, TResult}"/> EXCEPT the point's,
     /// which is a <c>Select</c> over <c>Point()</c> — and a point member is never blank-tolerant,
     /// because <c>RowBinding</c> refuses <c>Point&lt;TSpace&gt;?</c> where it is declared. Take that
     /// refusal away and this cast is where it would be felt.
     /// </para>
     /// </summary>
-    private static IProjection<TSpace, object?> Tolerant<TSpace>(IProjection<TSpace, object?> leaf)
+    private static IProjectionDefinition<TSpace, object?> Tolerant<TSpace>(IProjectionDefinition<TSpace, object?> leaf)
       where TSpace : class, ISheetCells
-      => ((KindedCellProjection<TSpace, object?>)leaf).Tolerating<object?>(value => value);
+      => ((ReadDefinition<TSpace, object?>)leaf).Tolerating<object?>(value => value);
   }
 }

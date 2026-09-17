@@ -187,10 +187,10 @@ namespace Unrect.Projections
     /// caption is still built for a value nobody reads, and it is inside the library rather than in
     /// a declaration — which is the whole of what the word moves.
     /// </summary>
-    internal static IProjection<TSpace, string>[] Captions<TSpace>(string[] headings)
+    internal static IProjectionDefinition<TSpace, string>[] Captions<TSpace>(string[] headings)
       where TSpace : class, ISpace
     {
-      var captions = new IProjection<TSpace, string>[headings.Length];
+      var captions = new IProjectionDefinition<TSpace, string>[headings.Length];
 
       for (var index = 0; index < headings.Length; index++)
         captions[index] = ProjectionBuilders<TSpace>.Caption(headings[index]);

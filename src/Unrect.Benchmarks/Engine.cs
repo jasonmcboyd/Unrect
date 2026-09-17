@@ -24,9 +24,9 @@ namespace Unrect.Benchmarks
 
     // Declared once, at field initialization: a projection is a value, and building it is the
     // Tables family's subject, not this one's.
-    private static readonly IProjection<ISheetCells, int> Line = Row(r => r.Count);
+    private static readonly IProjectionDefinition<ISheetCells, int> Line = Row(r => r.Count);
 
-    private static readonly IProjection<ISheetCells, int> ManyChildren = VerticalFlow(v =>
+    private static readonly IProjectionDefinition<ISheetCells, int> ManyChildren = VerticalFlow(v =>
     {
       // The N children are a loop, not N call sites: the layout lambda runs once, at declaration,
       // so this is still a declaration -- it says "N of these, stacked" without naming a row number.
@@ -46,7 +46,7 @@ namespace Unrect.Benchmarks
       });
     });
 
-    private static readonly IProjection<ISheetCells, int> Pair = HorizontalFlow(h =>
+    private static readonly IProjectionDefinition<ISheetCells, int> Pair = HorizontalFlow(h =>
     {
       var present = h.Next(Point().Select(p => p.HasValue ? 1 : 0));
       var one = h.Next(Point().Select(_ => 1));
@@ -54,7 +54,7 @@ namespace Unrect.Benchmarks
       return h.Build(read => read.Of(present) + read.Of(one));
     });
 
-    private static readonly IProjection<ISheetCells, int> Nested = VerticalFlow(v =>
+    private static readonly IProjectionDefinition<ISheetCells, int> Nested = VerticalFlow(v =>
     {
       var pairs = new Slot<int>[NestedRows];
 
@@ -74,7 +74,7 @@ namespace Unrect.Benchmarks
 
     // Four independent readings of the same band. An overlay's children each start from the band's
     // own origin, so this measures placement without the flow's advance.
-    private static readonly IProjection<ISheetCells, int> Anchored = Overlay(o =>
+    private static readonly IProjectionDefinition<ISheetCells, int> Anchored = Overlay(o =>
     {
       var anchored = o.Next(On(RowContaining(CanonicalSpaces.Landmark)).Row(r => r.Count));
       var column = o.Next(Column(CanonicalSpaces.BlockRows, c => c.Count));
@@ -84,10 +84,10 @@ namespace Unrect.Benchmarks
       return o.Build(read => read.Of(anchored) + read.Of(column) + read.Of(range) + read.Of(point));
     });
 
-    private static readonly IProjection<ISheetCells, IReadOnlyList<int>> Blocks =
+    private static readonly IProjectionDefinition<ISheetCells, IReadOnlyList<int>> Blocks =
       VerticalRepeat(Range(RowsWhileAnyValue(), b => b.Height), separatedBy: BlankRows());
 
-    private static readonly IProjection<ISheetCells, int> AllCells = Range(b =>
+    private static readonly IProjectionDefinition<ISheetCells, int> AllCells = Range(b =>
     {
       var present = 0;
 
@@ -99,7 +99,7 @@ namespace Unrect.Benchmarks
       return present;
     });
 
-    private static readonly IProjection<ISheetCells, int> Section =
+    private static readonly IProjectionDefinition<ISheetCells, int> Section =
       Heading(CanonicalSpaces.DetailsCaption).Of(Range(RowsWhileAnyValue(), b => b.Height));
 
     private ISheetCells _tall = default!;

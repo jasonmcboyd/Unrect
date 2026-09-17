@@ -26,7 +26,7 @@ namespace Unrect.Projections
     /// </summary>
     public override Size Consumed => new Size(_width, _height);
 
-    public override T Next<T>(IProjection<TSpace, T> projection, UseSite site)
+    public override T Next<T>(IProjectionDefinition<TSpace, T> projection, UseSite site)
     {
       // Children are independent: the same extent and the same unadvanced context every time, so
       // each child's own placement decides where it lands and the engine records its true offset.

@@ -4,10 +4,10 @@ using Unrect.Core;
 
 namespace Unrect.Projections
 {
-  internal sealed class TableProjection<TSpace, T> : ProjectionBase<TSpace, T>
+  internal sealed class TableViewDefinition<TSpace, T> : DefinitionNode<TSpace, T>
     where TSpace : class, ISpace
   {
-    public TableProjection(int headerRows, Func<TableView<TSpace>, T> project, Placement placement, string description, string? opacity = null)
+    public TableViewDefinition(int headerRows, Func<TableView<TSpace>, T> project, Placement placement, string description, string? opacity = null)
       : base(placement)
     {
       HeaderRows = headerRows;

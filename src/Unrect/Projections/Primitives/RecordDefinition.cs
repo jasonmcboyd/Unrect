@@ -17,10 +17,10 @@ namespace Unrect.Projections
   /// enclosing repeat stamped on the context, so a decoupled record still numbers its rows.
   /// </para>
   /// </summary>
-  internal sealed class RecordProjection<TSpace, T> : ProjectionBase<TSpace, T>
+  internal sealed class RecordDefinition<TSpace, T> : DefinitionNode<TSpace, T>
     where TSpace : class, ISpace
   {
-    public RecordProjection(Func<TableRow<TSpace>, T> record, Placement placement)
+    public RecordDefinition(Func<TableRow<TSpace>, T> record, Placement placement)
       : base(placement)
       => Record = record ?? throw new ArgumentNullException(nameof(record));
 

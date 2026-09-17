@@ -62,70 +62,70 @@ namespace Unrect.Projections
     /// <inheritdoc cref="ProjectionBuilders{TSpace}.VerticalFlow{T}(LayoutDeclaration{TSpace, T})"/>
     /// <typeparam name="T">What the layout builds.</typeparam>
     /// <param name="declare">The layout: its children declared with <c>Next</c>, closed with <c>Build</c>.</param>
-    public IProjection<TSpace, T> VerticalFlow<T>(LayoutDeclaration<TSpace, T> declare)
+    public IProjectionDefinition<TSpace, T> VerticalFlow<T>(LayoutDeclaration<TSpace, T> declare)
       => Close(ProjectionBuilders<TSpace>.VerticalFlow(declare));
 
     /// <inheritdoc cref="ProjectionBuilders{TSpace}.HorizontalFlow{T}(LayoutDeclaration{TSpace, T})"/>
     /// <typeparam name="T">What the layout builds.</typeparam>
     /// <param name="declare">The layout: its children declared with <c>Next</c>, closed with <c>Build</c>.</param>
-    public IProjection<TSpace, T> HorizontalFlow<T>(LayoutDeclaration<TSpace, T> declare)
+    public IProjectionDefinition<TSpace, T> HorizontalFlow<T>(LayoutDeclaration<TSpace, T> declare)
       => Close(ProjectionBuilders<TSpace>.HorizontalFlow(declare));
 
     /// <inheritdoc cref="ProjectionBuilders{TSpace}.Overlay{T}(LayoutDeclaration{TSpace, T})"/>
     /// <typeparam name="T">What the layout builds.</typeparam>
     /// <param name="declare">The layout: its children declared with <c>Next</c>, closed with <c>Build</c>.</param>
-    public IProjection<TSpace, T> Overlay<T>(LayoutDeclaration<TSpace, T> declare)
+    public IProjectionDefinition<TSpace, T> Overlay<T>(LayoutDeclaration<TSpace, T> declare)
       => Close(ProjectionBuilders<TSpace>.Overlay(declare));
 
     // --- Repetition and alternation ----------------------------------------------------------------
 
-    /// <inheritdoc cref="ProjectionBuilders{TSpace}.VerticalRepeat{T}(IProjection{TSpace, T}, IOffsetStrategy, int, string)"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.VerticalRepeat{T}(IProjectionDefinition{TSpace, T}, IOffsetStrategy, int, string)"/>
     /// <typeparam name="T">What one occurrence reads.</typeparam>
     /// <param name="item">The projection to apply repeatedly.</param>
     /// <param name="separatedBy">The offset between occurrences; never applied before the first.</param>
     /// <param name="atLeast">How many occurrences make a well-formed section.</param>
     /// <param name="declared">Supplied by the compiler as the text of the <paramref name="item"/> argument.</param>
-    public IProjection<TSpace, IReadOnlyList<T>> VerticalRepeat<T>(
-      IProjection<TSpace, T> item,
+    public IProjectionDefinition<TSpace, IReadOnlyList<T>> VerticalRepeat<T>(
+      IProjectionDefinition<TSpace, T> item,
       IOffsetStrategy? separatedBy = null,
       int atLeast = 0,
       [CallerArgumentExpression("item")] string? declared = null)
       => Close(ProjectionBuilders<TSpace>.VerticalRepeat(item, separatedBy, atLeast, declared: declared));
 
-    /// <inheritdoc cref="ProjectionBuilders{TSpace}.VerticalRepeat{T}(IProjection{TSpace, T}, IOffsetStrategy{TSpace}, int, string)"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.VerticalRepeat{T}(IProjectionDefinition{TSpace, T}, IOffsetStrategy{TSpace}, int, string)"/>
     /// <typeparam name="T">What one occurrence reads.</typeparam>
     /// <param name="item">The projection to apply repeatedly.</param>
     /// <param name="separatedBy">The offset between occurrences; never applied before the first.</param>
     /// <param name="atLeast">How many occurrences make a well-formed section.</param>
     /// <param name="declared">Supplied by the compiler as the text of the <paramref name="item"/> argument.</param>
-    public IProjection<TSpace, IReadOnlyList<T>> VerticalRepeat<T>(
-      IProjection<TSpace, T> item,
+    public IProjectionDefinition<TSpace, IReadOnlyList<T>> VerticalRepeat<T>(
+      IProjectionDefinition<TSpace, T> item,
       IOffsetStrategy<TSpace> separatedBy,
       int atLeast = 0,
       [CallerArgumentExpression("item")] string? declared = null)
       => Close(ProjectionBuilders<TSpace>.VerticalRepeat(item, separatedBy, atLeast, declared: declared));
 
-    /// <inheritdoc cref="ProjectionBuilders{TSpace}.HorizontalRepeat{T}(IProjection{TSpace, T}, IOffsetStrategy, int, string)"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.HorizontalRepeat{T}(IProjectionDefinition{TSpace, T}, IOffsetStrategy, int, string)"/>
     /// <typeparam name="T">What one occurrence reads.</typeparam>
     /// <param name="item">The projection to apply repeatedly.</param>
     /// <param name="separatedBy">The offset between occurrences; never applied before the first.</param>
     /// <param name="atLeast">How many occurrences make a well-formed section.</param>
     /// <param name="declared">Supplied by the compiler as the text of the <paramref name="item"/> argument.</param>
-    public IProjection<TSpace, IReadOnlyList<T>> HorizontalRepeat<T>(
-      IProjection<TSpace, T> item,
+    public IProjectionDefinition<TSpace, IReadOnlyList<T>> HorizontalRepeat<T>(
+      IProjectionDefinition<TSpace, T> item,
       IOffsetStrategy? separatedBy = null,
       int atLeast = 0,
       [CallerArgumentExpression("item")] string? declared = null)
       => Close(ProjectionBuilders<TSpace>.HorizontalRepeat(item, separatedBy, atLeast, declared: declared));
 
-    /// <inheritdoc cref="ProjectionBuilders{TSpace}.HorizontalRepeat{T}(IProjection{TSpace, T}, IOffsetStrategy{TSpace}, int, string)"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.HorizontalRepeat{T}(IProjectionDefinition{TSpace, T}, IOffsetStrategy{TSpace}, int, string)"/>
     /// <typeparam name="T">What one occurrence reads.</typeparam>
     /// <param name="item">The projection to apply repeatedly.</param>
     /// <param name="separatedBy">The offset between occurrences; never applied before the first.</param>
     /// <param name="atLeast">How many occurrences make a well-formed section.</param>
     /// <param name="declared">Supplied by the compiler as the text of the <paramref name="item"/> argument.</param>
-    public IProjection<TSpace, IReadOnlyList<T>> HorizontalRepeat<T>(
-      IProjection<TSpace, T> item,
+    public IProjectionDefinition<TSpace, IReadOnlyList<T>> HorizontalRepeat<T>(
+      IProjectionDefinition<TSpace, T> item,
       IOffsetStrategy<TSpace> separatedBy,
       int atLeast = 0,
       [CallerArgumentExpression("item")] string? declared = null)
@@ -134,156 +134,156 @@ namespace Unrect.Projections
     /// <inheritdoc cref="ProjectionBuilders{TSpace}.Choice{T}"/>
     /// <typeparam name="T">What every alternative reads.</typeparam>
     /// <param name="alternatives">The alternatives, tried in declaration order.</param>
-    public IProjection<TSpace, T> Choice<T>(params IProjection<TSpace, T>[] alternatives)
+    public IProjectionDefinition<TSpace, T> Choice<T>(params IProjectionDefinition<TSpace, T>[] alternatives)
       => Close(ProjectionBuilders<TSpace>.Choice(alternatives));
 
     // --- Tables ------------------------------------------------------------------------------------
 
-    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Table{T}(int, Func{LabelMap, IProjection{TSpace, T}}, string)"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Table{T}(int, Func{LabelMap, IProjectionDefinition{TSpace, T}}, string)"/>
     /// <typeparam name="T">What one record reads.</typeparam>
     /// <param name="headerRows">How many rows to read as the header; a bind needs 1.</param>
     /// <param name="eachRow">Given this file's captions, the projection that reads one record.</param>
     /// <param name="declared">Supplied by the compiler as the text of the <paramref name="eachRow"/> argument.</param>
-    public IProjection<TSpace, IReadOnlyList<T>> Table<T>(
+    public IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(
       int headerRows,
-      Func<LabelMap, IProjection<TSpace, T>> eachRow,
+      Func<LabelMap, IProjectionDefinition<TSpace, T>> eachRow,
       [CallerArgumentExpression("eachRow")] string? declared = null)
       => Close(ProjectionBuilders<TSpace>.Table(headerRows, eachRow, declared));
 
-    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Table{T}(int, IProjection{TSpace, T}, string)"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Table{T}(int, IProjectionDefinition{TSpace, T}, string)"/>
     /// <typeparam name="T">What one record reads.</typeparam>
     /// <param name="headerRows">How many rows to consume as the header, 0 or 1.</param>
     /// <param name="eachRow">The projection applied to each body row.</param>
     /// <param name="declared">Supplied by the compiler as the text of the <paramref name="eachRow"/> argument.</param>
-    public IProjection<TSpace, IReadOnlyList<T>> Table<T>(
+    public IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(
       int headerRows,
-      IProjection<TSpace, T> eachRow,
+      IProjectionDefinition<TSpace, T> eachRow,
       [CallerArgumentExpression("eachRow")] string? declared = null)
       => Close(ProjectionBuilders<TSpace>.Table(headerRows, eachRow, declared));
 
     /// <inheritdoc cref="ProjectionBuilders{TSpace}.Table()"/>
-    public IProjection<TSpace, IReadOnlyList<IReadOnlyDictionary<string, Point<TSpace>>>> Table()
+    public IProjectionDefinition<TSpace, IReadOnlyList<IReadOnlyDictionary<string, Point<TSpace>>>> Table()
       => Close<IReadOnlyList<IReadOnlyDictionary<string, Point<TSpace>>>>(ProjectionBuilders<TSpace>.Table());
 
     /// <inheritdoc cref="ProjectionBuilders{TSpace}.Table{T}(Func{TableRow{TSpace}, T})"/>
     /// <typeparam name="T">What one row reads.</typeparam>
     /// <param name="project">The reading applied to each body row.</param>
-    public IProjection<TSpace, IReadOnlyList<T>> Table<T>(Func<TableRow<TSpace>, T> project)
+    public IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(Func<TableRow<TSpace>, T> project)
       => Close<IReadOnlyList<T>>(ProjectionBuilders<TSpace>.Table(project));
 
     /// <inheritdoc cref="ProjectionBuilders{TSpace}.Table{T}(int, Func{TableRow{TSpace}, T})"/>
     /// <typeparam name="T">What one row reads.</typeparam>
     /// <param name="headerRows">How many rows to consume as the header, 0 or 1.</param>
     /// <param name="project">The reading applied to each body row.</param>
-    public IProjection<TSpace, IReadOnlyList<T>> Table<T>(int headerRows, Func<TableRow<TSpace>, T> project)
+    public IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(int headerRows, Func<TableRow<TSpace>, T> project)
       => Close<IReadOnlyList<T>>(ProjectionBuilders<TSpace>.Table(headerRows, project));
 
     /// <inheritdoc cref="ProjectionBuilders{TSpace}.Table{T}(Func{TableView{TSpace}, T})"/>
     /// <typeparam name="T">What the table reads.</typeparam>
     /// <param name="project">The reading applied to the table as a whole.</param>
-    public IProjection<TSpace, T> Table<T>(Func<TableView<TSpace>, T> project) => Close<T>(ProjectionBuilders<TSpace>.Table(project));
+    public IProjectionDefinition<TSpace, T> Table<T>(Func<TableView<TSpace>, T> project) => Close<T>(ProjectionBuilders<TSpace>.Table(project));
 
     /// <inheritdoc cref="ProjectionBuilders{TSpace}.Table{T}(int, Func{TableView{TSpace}, T})"/>
     /// <typeparam name="T">What the table reads.</typeparam>
     /// <param name="headerRows">How many rows to consume as the header, 0 or 1.</param>
     /// <param name="project">The reading applied to the table as a whole.</param>
-    public IProjection<TSpace, T> Table<T>(int headerRows, Func<TableView<TSpace>, T> project)
+    public IProjectionDefinition<TSpace, T> Table<T>(int headerRows, Func<TableView<TSpace>, T> project)
       => Close<T>(ProjectionBuilders<TSpace>.Table(headerRows, project));
 
     // --- Leaves ------------------------------------------------------------------------------------
 
     /// <inheritdoc cref="ProjectionBuilders{TSpace}.Point()"/>
-    public IProjection<TSpace, Point<TSpace>> Point() => Close(ProjectionBuilders<TSpace>.Point());
+    public IProjectionDefinition<TSpace, Point<TSpace>> Point() => Close(ProjectionBuilders<TSpace>.Point());
 
     /// <inheritdoc cref="ProjectionBuilders{TSpace}.AsText()"/>
-    public IProjection<TSpace, string> AsText() => Close(ProjectionBuilders<TSpace>.AsText());
+    public IProjectionDefinition<TSpace, string> AsText() => Close(ProjectionBuilders<TSpace>.AsText());
 
     /// <inheritdoc cref="ProjectionBuilders{TSpace}.Caption(string)"/>
     /// <param name="text">What the row must say.</param>
-    public IProjection<TSpace, string> Caption(string text) => Close<string>(ProjectionBuilders<TSpace>.Caption(text));
+    public IProjectionDefinition<TSpace, string> Caption(string text) => Close<string>(ProjectionBuilders<TSpace>.Caption(text));
 
     /// <inheritdoc cref="ProjectionBuilders{TSpace}.Row{T}(Func{CellStrip{TSpace}, T})"/>
     /// <typeparam name="T">What the row reads.</typeparam>
     /// <param name="project">The reading applied to the row's cells.</param>
-    public IProjection<TSpace, T> Row<T>(Func<CellStrip<TSpace>, T> project) => Close<T>(ProjectionBuilders<TSpace>.Row(project));
+    public IProjectionDefinition<TSpace, T> Row<T>(Func<CellStrip<TSpace>, T> project) => Close<T>(ProjectionBuilders<TSpace>.Row(project));
 
     /// <inheritdoc cref="ProjectionBuilders{TSpace}.Row{T}(int, Func{CellStrip{TSpace}, T})"/>
     /// <typeparam name="T">What the row reads.</typeparam>
     /// <param name="width">How many columns the row spans.</param>
     /// <param name="project">The reading applied to the row's cells.</param>
-    public IProjection<TSpace, T> Row<T>(int width, Func<CellStrip<TSpace>, T> project)
+    public IProjectionDefinition<TSpace, T> Row<T>(int width, Func<CellStrip<TSpace>, T> project)
       => Close<T>(ProjectionBuilders<TSpace>.Row(width, project));
 
     /// <inheritdoc cref="ProjectionBuilders{TSpace}.Row{T}(IColumnStrategy, Func{CellStrip{TSpace}, T})"/>
     /// <typeparam name="T">What the row reads.</typeparam>
     /// <param name="columns">The columns the row spans.</param>
     /// <param name="project">The reading applied to the row's cells.</param>
-    public IProjection<TSpace, T> Row<T>(IColumnStrategy columns, Func<CellStrip<TSpace>, T> project)
+    public IProjectionDefinition<TSpace, T> Row<T>(IColumnStrategy columns, Func<CellStrip<TSpace>, T> project)
       => Close<T>(ProjectionBuilders<TSpace>.Row(columns, project));
 
     /// <inheritdoc cref="ProjectionBuilders{TSpace}.Row{T}(IColumnStrategy{TSpace}, Func{CellStrip{TSpace}, T})"/>
     /// <typeparam name="T">What the row reads.</typeparam>
     /// <param name="columns">The columns the row spans. A rule demanding less is accepted as it is.</param>
     /// <param name="project">The reading applied to the row's cells.</param>
-    public IProjection<TSpace, T> Row<T>(IColumnStrategy<TSpace> columns, Func<CellStrip<TSpace>, T> project)
+    public IProjectionDefinition<TSpace, T> Row<T>(IColumnStrategy<TSpace> columns, Func<CellStrip<TSpace>, T> project)
       => Close<T>(ProjectionBuilders<TSpace>.Row(columns, project));
 
     /// <inheritdoc cref="ProjectionBuilders{TSpace}.Column{T}(Func{CellStrip{TSpace}, T})"/>
     /// <typeparam name="T">What the column reads.</typeparam>
     /// <param name="project">The reading applied to the column's cells.</param>
-    public IProjection<TSpace, T> Column<T>(Func<CellStrip<TSpace>, T> project) => Close<T>(ProjectionBuilders<TSpace>.Column(project));
+    public IProjectionDefinition<TSpace, T> Column<T>(Func<CellStrip<TSpace>, T> project) => Close<T>(ProjectionBuilders<TSpace>.Column(project));
 
     /// <inheritdoc cref="ProjectionBuilders{TSpace}.Column{T}(int, Func{CellStrip{TSpace}, T})"/>
     /// <typeparam name="T">What the column reads.</typeparam>
     /// <param name="height">How many rows the column spans.</param>
     /// <param name="project">The reading applied to the column's cells.</param>
-    public IProjection<TSpace, T> Column<T>(int height, Func<CellStrip<TSpace>, T> project)
+    public IProjectionDefinition<TSpace, T> Column<T>(int height, Func<CellStrip<TSpace>, T> project)
       => Close<T>(ProjectionBuilders<TSpace>.Column(height, project));
 
     /// <inheritdoc cref="ProjectionBuilders{TSpace}.Column{T}(IRowStrategy, Func{CellStrip{TSpace}, T})"/>
     /// <typeparam name="T">What the column reads.</typeparam>
     /// <param name="rows">The rows the column spans.</param>
     /// <param name="project">The reading applied to the column's cells.</param>
-    public IProjection<TSpace, T> Column<T>(IRowStrategy rows, Func<CellStrip<TSpace>, T> project)
+    public IProjectionDefinition<TSpace, T> Column<T>(IRowStrategy rows, Func<CellStrip<TSpace>, T> project)
       => Close<T>(ProjectionBuilders<TSpace>.Column(rows, project));
 
     /// <inheritdoc cref="ProjectionBuilders{TSpace}.Column{T}(IRowStrategy{TSpace}, Func{CellStrip{TSpace}, T})"/>
     /// <typeparam name="T">What the column reads.</typeparam>
     /// <param name="rows">The rows the column spans. A rule demanding less is accepted as it is.</param>
     /// <param name="project">The reading applied to the column's cells.</param>
-    public IProjection<TSpace, T> Column<T>(IRowStrategy<TSpace> rows, Func<CellStrip<TSpace>, T> project)
+    public IProjectionDefinition<TSpace, T> Column<T>(IRowStrategy<TSpace> rows, Func<CellStrip<TSpace>, T> project)
       => Close<T>(ProjectionBuilders<TSpace>.Column(rows, project));
 
     /// <inheritdoc cref="ProjectionBuilders{TSpace}.Range{T}(Func{CellBlock{TSpace}, T})"/>
     /// <typeparam name="T">What the region reads.</typeparam>
     /// <param name="project">The reading applied to the region's cells.</param>
-    public IProjection<TSpace, T> Range<T>(Func<CellBlock<TSpace>, T> project) => Close<T>(ProjectionBuilders<TSpace>.Range(project));
+    public IProjectionDefinition<TSpace, T> Range<T>(Func<CellBlock<TSpace>, T> project) => Close<T>(ProjectionBuilders<TSpace>.Range(project));
 
     /// <inheritdoc cref="ProjectionBuilders{TSpace}.Range{T}(int, int, Func{CellBlock{TSpace}, T})"/>
     /// <typeparam name="T">What the region reads.</typeparam>
     /// <param name="width">How many columns the region spans.</param>
     /// <param name="height">How many rows the region spans.</param>
     /// <param name="project">The reading applied to the region's cells.</param>
-    public IProjection<TSpace, T> Range<T>(int width, int height, Func<CellBlock<TSpace>, T> project)
+    public IProjectionDefinition<TSpace, T> Range<T>(int width, int height, Func<CellBlock<TSpace>, T> project)
       => Close<T>(ProjectionBuilders<TSpace>.Range(width, height, project));
 
     /// <inheritdoc cref="ProjectionBuilders{TSpace}.Range{T}(IAreaStrategy, Func{CellBlock{TSpace}, T})"/>
     /// <typeparam name="T">What the region reads.</typeparam>
     /// <param name="area">How far the region extends.</param>
     /// <param name="project">The reading applied to the region's cells.</param>
-    public IProjection<TSpace, T> Range<T>(IAreaStrategy area, Func<CellBlock<TSpace>, T> project)
+    public IProjectionDefinition<TSpace, T> Range<T>(IAreaStrategy area, Func<CellBlock<TSpace>, T> project)
       => Close<T>(ProjectionBuilders<TSpace>.Range(area, project));
 
     /// <inheritdoc cref="ProjectionBuilders{TSpace}.Range{T}(IAreaStrategy{TSpace}, Func{CellBlock{TSpace}, T})"/>
     /// <typeparam name="T">What the region reads.</typeparam>
     /// <param name="area">How far the region extends. A rule demanding less is accepted as it is.</param>
     /// <param name="project">The reading applied to the region's cells.</param>
-    public IProjection<TSpace, T> Range<T>(IAreaStrategy<TSpace> area, Func<CellBlock<TSpace>, T> project)
+    public IProjectionDefinition<TSpace, T> Range<T>(IAreaStrategy<TSpace> area, Func<CellBlock<TSpace>, T> project)
       => Close<T>(ProjectionBuilders<TSpace>.Range(area, project));
 
     /// <inheritdoc cref="ProjectionBuilders{TSpace}.Fields(Field[])"/>
     /// <param name="fields">The labelled pairs, in the order they sit on the sheet.</param>
-    public IProjection<TSpace, IReadOnlyDictionary<string, Point<TSpace>>> Fields(params Field[] fields)
+    public IProjectionDefinition<TSpace, IReadOnlyDictionary<string, Point<TSpace>>> Fields(params Field[] fields)
       => Close(ProjectionBuilders<TSpace>.Fields(fields));
 
     // --- The hoisted-reuse terminal ------------------------------------------------------------------
@@ -298,10 +298,10 @@ namespace Unrect.Projections
     /// </summary>
     /// <typeparam name="T">What the projection reads.</typeparam>
     /// <param name="projection">The declaration to place.</param>
-    public IProjection<TSpace, T> Of<T>(IProjection<TSpace, T> projection)
+    public IProjectionDefinition<TSpace, T> Of<T>(IProjectionDefinition<TSpace, T> projection)
       => Close(projection ?? throw new ArgumentNullException(nameof(projection)));
 
-    private IProjection<TSpace, T> Close<T>(IProjection<TSpace, T> projection) => Steps.ApplyTo(projection);
+    private IProjectionDefinition<TSpace, T> Close<T>(IProjectionDefinition<TSpace, T> projection) => Steps.ApplyTo(projection);
   }
 
   /// <summary>A pipeline whose extent is still open: a bound or an extent may still be declared, and

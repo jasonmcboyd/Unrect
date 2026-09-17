@@ -15,10 +15,10 @@ namespace Unrect.Projections
   /// </para>
   /// </summary>
   /// <typeparam name="TSpace">The space the pair's cells belong to.</typeparam>
-  internal sealed class FieldProjection<TSpace> : ProjectionBase<TSpace, Point<TSpace>>
+  internal sealed class FieldDefinition<TSpace> : DefinitionNode<TSpace, Point<TSpace>>
     where TSpace : class, ISpace
   {
-    public FieldProjection(string label, Placement placement)
+    public FieldDefinition(string label, Placement placement)
       : base(placement)
     {
       Label = label;

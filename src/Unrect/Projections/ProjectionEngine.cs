@@ -8,7 +8,7 @@ namespace Unrect.Projections
 {
   /// <summary>
   /// The one code path that applies a projection's placement — exactly once, at every level,
-  /// including the top-level <c>Map</c> call. Because <see cref="IProjection{TSpace, TResult}.Project"/> is
+  /// including the top-level <c>Map</c> call. Because <see cref="IProjectionDefinition{TSpace, TResult}.Project"/> is
   /// handed the resolved extent, no projection can see or re-apply an offset.
   /// </summary>
   public static class ProjectionEngine
@@ -27,12 +27,12 @@ namespace Unrect.Projections
     /// and projects it. Strict: a placement that does not fit throws rather than signalling failure
     /// to the caller — use <c>TryApply</c> where running out of space is expected.
     /// </summary>
-    public static AppliedResult<TResult> Apply<TSpace, TResult>(IProjection<TSpace, TResult> projection, TSpace availableSpace, ProjectionContext context)
+    public static AppliedResult<TResult> Apply<TSpace, TResult>(IProjectionDefinition<TSpace, TResult> projection, TSpace availableSpace, ProjectionContext context)
       where TSpace : class, ISpace
       => Apply(projection, Plane<TSpace>.Of(availableSpace), context);
 
-    /// <inheritdoc cref="Apply{TSpace, TResult}(IProjection{TSpace, TResult}, TSpace, ProjectionContext)"/>
-    internal static AppliedResult<TResult> Apply<TSpace, TResult>(IProjection<TSpace, TResult> projection, Plane<TSpace> availableSpace, ProjectionContext context)
+    /// <inheritdoc cref="Apply{TSpace, TResult}(IProjectionDefinition{TSpace, TResult}, TSpace, ProjectionContext)"/>
+    internal static AppliedResult<TResult> Apply<TSpace, TResult>(IProjectionDefinition<TSpace, TResult> projection, Plane<TSpace> availableSpace, ProjectionContext context)
       where TSpace : class, ISpace
       => Project(projection, Place(projection, availableSpace, context));
 
@@ -41,12 +41,12 @@ namespace Unrect.Projections
     /// condition. Failures deeper inside the projection — a nested misfit, a projection that throws
     /// — still propagate: format drift inside a block is an error, not a quiet truncation.
     /// </summary>
-    public static bool TryApply<TSpace, TResult>(IProjection<TSpace, TResult> projection, TSpace availableSpace, ProjectionContext context, out AppliedResult<TResult> result)
+    public static bool TryApply<TSpace, TResult>(IProjectionDefinition<TSpace, TResult> projection, TSpace availableSpace, ProjectionContext context, out AppliedResult<TResult> result)
       where TSpace : class, ISpace
       => TryApply(projection, Plane<TSpace>.Of(availableSpace), context, out result);
 
-    /// <inheritdoc cref="TryApply{TSpace, TResult}(IProjection{TSpace, TResult}, TSpace, ProjectionContext, out AppliedResult{TResult})"/>
-    internal static bool TryApply<TSpace, TResult>(IProjection<TSpace, TResult> projection, Plane<TSpace> availableSpace, ProjectionContext context, out AppliedResult<TResult> result)
+    /// <inheritdoc cref="TryApply{TSpace, TResult}(IProjectionDefinition{TSpace, TResult}, TSpace, ProjectionContext, out AppliedResult{TResult})"/>
+    internal static bool TryApply<TSpace, TResult>(IProjectionDefinition<TSpace, TResult> projection, Plane<TSpace> availableSpace, ProjectionContext context, out AppliedResult<TResult> result)
       where TSpace : class, ISpace
     {
       if (!TryPlace(projection, availableSpace, context, strict: false, out var placed))
@@ -59,7 +59,7 @@ namespace Unrect.Projections
       return true;
     }
 
-    private static Placed<TSpace> Place<TSpace>(IProjection projection, Plane<TSpace> availableSpace, ProjectionContext context)
+    private static Placed<TSpace> Place<TSpace>(IProjectionDefinition projection, Plane<TSpace> availableSpace, ProjectionContext context)
       where TSpace : class, ISpace
     {
       // Unreachable: TryPlace(strict: true) throws on every path that would return false. It stays
@@ -76,7 +76,7 @@ namespace Unrect.Projections
     /// <paramref name="strict"/> is false (that is what a repeat asks for); every other way a
     /// strategy can fail is a malformed declaration and throws either way.
     /// </summary>
-    private static bool TryPlace<TSpace>(IProjection projection, Plane<TSpace> availableSpace, ProjectionContext context, bool strict, out Placed<TSpace> placed)
+    private static bool TryPlace<TSpace>(IProjectionDefinition projection, Plane<TSpace> availableSpace, ProjectionContext context, bool strict, out Placed<TSpace> placed)
       where TSpace : class, ISpace
     {
       placed = default;
@@ -189,7 +189,7 @@ namespace Unrect.Projections
     /// child of the same flow measures the whole tail first.
     /// </para>
     /// </summary>
-    private static Bound? Bind<TSpace>(IProjection projection, Plane<TSpace> inner, Plane<ISpace> innerSpace, ProjectionContext scope, bool strict)
+    private static Bound? Bind<TSpace>(IProjectionDefinition projection, Plane<TSpace> inner, Plane<ISpace> innerSpace, ProjectionContext scope, bool strict)
       where TSpace : class, ISpace
     {
       if (!strict || _forcedEager || projection.Placement.Area is not IIncrementalAreaStrategy incremental)
@@ -237,7 +237,7 @@ namespace Unrect.Projections
       return new Placed<TSpace>(offset, extent, scope, hasDeclaredArea);
     }
 
-    private static AppliedResult<TResult> Project<TSpace, TResult>(IProjection<TSpace, TResult> projection, Placed<TSpace> placed)
+    private static AppliedResult<TResult> Project<TSpace, TResult>(IProjectionDefinition<TSpace, TResult> projection, Placed<TSpace> placed)
       where TSpace : class, ISpace
     {
       ProjectionResult<TResult> result;
@@ -294,7 +294,7 @@ namespace Unrect.Projections
     /// expression from the same scope, projection and space. Only the moment differs.
     /// </para>
     /// </summary>
-    private static ProjectionException AreaFailure<TSpace>(ProjectionContext scope, IProjection projection, Plane<TSpace> inner, Exception exception)
+    private static ProjectionException AreaFailure<TSpace>(ProjectionContext scope, IProjectionDefinition projection, Plane<TSpace> inner, Exception exception)
       where TSpace : class, ISpace
       => exception is OutOfBoundsException
         ? scope.Failure(projection, "its area ran past the space available here", inner, null, exception)
