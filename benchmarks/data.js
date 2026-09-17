@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789613138870,
+  "lastUpdate": 1789613139130,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -10369,6 +10369,80 @@ window.BENCHMARK_DATA = {
           {
             "name": "Unrect.Benchmarks.Values.Slice_Million",
             "value": 3,
+            "unit": "bytes"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "0f34f159151554afcc0555f7afc83fdd486b8c06",
+          "message": "Merge experiment/point-follow-ups: Extents into Plane, Unrect.Interactive, and the typed-predicate lift\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01Wk5ZXojzv4hibCXDkjRu3g",
+          "timestamp": "2026-09-17T02:37:19Z",
+          "tree_id": "cfa1d003f75555e9d6f330d316cdd949a1da2b25",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/0f34f159151554afcc0555f7afc83fdd486b8c06"
+        },
+        "date": 1789613139071,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Values.Create_FromInts",
+            "value": 56,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Create_FromObjects",
+            "value": 30400200,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.IsBlank_Million",
+            "value": 1,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.IsText_Million",
+            "value": 1,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.AsText_Million_Text",
+            "value": 6,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Decimal_Million",
+            "value": 40000023,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Point_Mint_Million",
+            "value": 1,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Predicate_Million",
+            "value": 6,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.TypedPredicate_Million",
+            "value": 46,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Slice_Million",
+            "value": 1,
             "unit": "bytes"
           }
         ]
