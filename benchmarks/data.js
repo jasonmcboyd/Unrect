@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789531992399,
+  "lastUpdate": 1789613136446,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -1016,6 +1016,66 @@ window.BENCHMARK_DATA = {
             "value": 14364354.085416667,
             "unit": "ns",
             "range": "± 90712.64290832733"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "0f34f159151554afcc0555f7afc83fdd486b8c06",
+          "message": "Merge experiment/point-follow-ups: Extents into Plane, Unrect.Interactive, and the typed-predicate lift\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01Wk5ZXojzv4hibCXDkjRu3g",
+          "timestamp": "2026-09-17T02:37:19Z",
+          "tree_id": "cfa1d003f75555e9d6f330d316cdd949a1da2b25",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/0f34f159151554afcc0555f7afc83fdd486b8c06"
+        },
+        "date": 1789613135649,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Engine.VerticalFlow_ManyChildren",
+            "value": 820477.1328125,
+            "unit": "ns",
+            "range": "± 15166.140082512868"
+          },
+          {
+            "name": "Unrect.Benchmarks.Engine.Flow_Nested",
+            "value": 273429.0503540039,
+            "unit": "ns",
+            "range": "± 5155.144884039172"
+          },
+          {
+            "name": "Unrect.Benchmarks.Engine.Overlay_AnchoredChildren",
+            "value": 225449.4067545573,
+            "unit": "ns",
+            "range": "± 3911.3836120487913"
+          },
+          {
+            "name": "Unrect.Benchmarks.Engine.Repeat_SeparatedBlocks",
+            "value": 429047.8026012074,
+            "unit": "ns",
+            "range": "± 13262.491450882571"
+          },
+          {
+            "name": "Unrect.Benchmarks.Engine.Under_CaptionedSection",
+            "value": 63912.35034649189,
+            "unit": "ns",
+            "range": "± 517.3919155434099"
+          },
+          {
+            "name": "Unrect.Benchmarks.Engine.Range_ReadAllCells",
+            "value": 5180270.985514323,
+            "unit": "ns",
+            "range": "± 203751.55354333832"
           }
         ]
       }
