@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789613138321,
+  "lastUpdate": 1789613138588,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -8224,6 +8224,65 @@ window.BENCHMARK_DATA = {
           {
             "name": "Unrect.Benchmarks.Strategies.Seek_HitAt10Percent",
             "value": 457,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_HitAt90Percent",
+            "value": 462,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_MissWholeGrid",
+            "value": 3358,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Until_BoundResolution",
+            "value": 670,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.BlankRows_Skip",
+            "value": 457,
+            "unit": "bytes"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "0f34f159151554afcc0555f7afc83fdd486b8c06",
+          "message": "Merge experiment/point-follow-ups: Extents into Plane, Unrect.Interactive, and the typed-predicate lift\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01Wk5ZXojzv4hibCXDkjRu3g",
+          "timestamp": "2026-09-17T02:37:19Z",
+          "tree_id": "cfa1d003f75555e9d6f330d316cdd949a1da2b25",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/0f34f159151554afcc0555f7afc83fdd486b8c06"
+        },
+        "date": 1789613138523,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Strategies.RowsWhileAnyValue_FullHeight",
+            "value": 553,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.RowsWhileAnyValue_Sparse",
+            "value": 553,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_HitAt10Percent",
+            "value": 456,
             "unit": "bytes"
           },
           {
