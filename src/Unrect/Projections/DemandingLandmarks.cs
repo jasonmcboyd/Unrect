@@ -37,4 +37,31 @@ namespace Unrect.Projections
     /// <summary>The matcher as the strategy calculus takes it, its demand discharged by the lift.</summary>
     IColumnLandmark Landmark { get; }
   }
+
+  internal static partial class Demanding
+  {
+    internal static IRowLandmark<TSpace> Row<TSpace>(IRowLandmark landmark)
+      where TSpace : class, ISpace
+      => new DemandedRow<TSpace>(landmark);
+
+    internal static IColumnLandmark<TSpace> Column<TSpace>(IColumnLandmark landmark)
+      where TSpace : class, ISpace
+      => new DemandedColumn<TSpace>(landmark);
+
+    private sealed class DemandedRow<TSpace> : IRowLandmark<TSpace>
+      where TSpace : class, ISpace
+    {
+      internal DemandedRow(IRowLandmark landmark) => Landmark = landmark;
+
+      public IRowLandmark Landmark { get; }
+    }
+
+    private sealed class DemandedColumn<TSpace> : IColumnLandmark<TSpace>
+      where TSpace : class, ISpace
+    {
+      internal DemandedColumn(IColumnLandmark landmark) => Landmark = landmark;
+
+      public IColumnLandmark Landmark { get; }
+    }
+  }
 }

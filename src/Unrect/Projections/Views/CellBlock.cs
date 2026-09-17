@@ -101,7 +101,7 @@ namespace Unrect.Projections
       if (!Space.HasRow(index))
         throw new ArgumentOutOfRangeException(nameof(index), index, $"The block is {Height} rows tall.");
 
-      return new CellStrip<TSpace>(Space.Cut(new Offset(0, index), new Area(Width, 1)), Orientation.Horizontal, Context);
+      return new CellStrip<TSpace>(Space.Slice(new Offset(0, index), new Area(Width, 1)), Orientation.Horizontal, Context);
     }
 
     /// <summary>
@@ -114,7 +114,7 @@ namespace Unrect.Projections
       if (index < 0 || index >= Width)
         throw new ArgumentOutOfRangeException(nameof(index), index, $"The block is {Width} columns wide.");
 
-      return new CellStrip<TSpace>(Space.Cut(new Offset(index, 0), new Area(1, Height)), Orientation.Vertical, Context);
+      return new CellStrip<TSpace>(Space.Slice(new Offset(index, 0), new Area(1, Height)), Orientation.Vertical, Context);
     }
 
     /// <summary>

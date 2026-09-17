@@ -14,21 +14,37 @@ namespace Unrect.Analyzers
   /// </summary>
   internal sealed class UnrectSymbols
   {
+    /// <summary>
+    /// The generic types that carry a demand in their first type argument, in the order
+    /// <see cref="DemandOf"/> asks them: the projection itself, then the phantoms — the two matchers
+    /// and the five strategies.
+    /// </summary>
+    private static readonly string[] PhantomNames =
+    {
+      "Unrect.Projections.IRowLandmark`1",
+      "Unrect.Projections.IColumnLandmark`1",
+      "Unrect.Projections.ISizeStrategy`1",
+      "Unrect.Projections.IOffsetStrategy`1",
+      "Unrect.Projections.IAreaStrategy`1",
+      "Unrect.Projections.IRowStrategy`1",
+      "Unrect.Projections.IColumnStrategy`1",
+    };
+
+    private readonly IReadOnlyList<INamedTypeSymbol> _demanding;
+
     private UnrectSymbols(
       INamedTypeSymbol space,
       INamedTypeSymbol projection,
       INamedTypeSymbol builders,
       INamedTypeSymbol stage,
-      INamedTypeSymbol? rowLandmark,
-      INamedTypeSymbol? columnLandmark,
+      IReadOnlyList<INamedTypeSymbol> demanding,
       INamedTypeSymbol? cursor)
     {
       Space = space;
       Projection = projection;
       Builders = builders;
       Stage = stage;
-      RowLandmark = rowLandmark;
-      ColumnLandmark = columnLandmark;
+      _demanding = demanding;
       Cursor = cursor;
     }
 
@@ -43,12 +59,6 @@ namespace Unrect.Analyzers
 
     /// <summary><c>PlacementStage&lt;TSpace&gt;</c>, the base of the pipeline stages.</summary>
     public INamedTypeSymbol Stage { get; }
-
-    /// <summary><c>IRowLandmark&lt;TSpace&gt;</c>; null if the projection layer predates it.</summary>
-    public INamedTypeSymbol? RowLandmark { get; }
-
-    /// <summary><c>IColumnLandmark&lt;TSpace&gt;</c>; null if the projection layer predates it.</summary>
-    public INamedTypeSymbol? ColumnLandmark { get; }
 
     /// <summary><c>LayoutCursor&lt;TSpace&gt;</c>, the receiver a layout's child is declared on.</summary>
     public INamedTypeSymbol? Cursor { get; }
@@ -68,13 +78,22 @@ namespace Unrect.Analyzers
       if (space is null || projection is null || builders is null || stage is null)
         return null;
 
+      // A phantom the referenced Unrect predates is simply absent: the list is what this
+      // compilation has, and a demand nothing can express is a demand nothing can fail.
+      var demanding = new List<INamedTypeSymbol> { projection };
+
+      foreach (var name in PhantomNames)
+      {
+        if (compilation.GetTypeByMetadataName(name) is INamedTypeSymbol phantom)
+          demanding.Add(phantom);
+      }
+
       return new UnrectSymbols(
         space,
         projection,
         builders,
         stage,
-        compilation.GetTypeByMetadataName("Unrect.Projections.IRowLandmark`1"),
-        compilation.GetTypeByMetadataName("Unrect.Projections.IColumnLandmark`1"),
+        demanding,
         compilation.GetTypeByMetadataName("Unrect.Projections.LayoutCursor`1"));
     }
 
@@ -83,9 +102,15 @@ namespace Unrect.Analyzers
     /// it is — or null where the type says nothing about a space at all.
     /// </summary>
     public ITypeSymbol? DemandOf(ITypeSymbol? type)
-      => SpaceArgumentOf(type, Projection)
-        ?? SpaceArgumentOf(type, RowLandmark)
-        ?? SpaceArgumentOf(type, ColumnLandmark);
+    {
+      foreach (var definition in _demanding)
+      {
+        if (SpaceArgumentOf(type, definition) is ITypeSymbol demanded)
+          return demanded;
+      }
+
+      return null;
+    }
 
     /// <summary>True for <c>ISpace</c> itself — the space that asks for nothing.</summary>
     public bool IsSpace(ITypeSymbol type) => SymbolEqualityComparer.Default.Equals(type, Space);

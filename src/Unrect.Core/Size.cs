@@ -24,5 +24,11 @@ namespace Unrect.Core
     /// <summary>Adds width to width and height to height.</summary>
     public static Size operator +(Size first, Size second)
       => new Size(first.Width + second.Width, first.Height + second.Height);
+
+    /// <summary>
+    /// The extent as <c>WxH</c>, width first — the same rendering <see cref="Plane{TSpace}"/> gives
+    /// the region it names, so an extent reads the same wherever it is printed.
+    /// </summary>
+    public override string ToString() => $"{Width}x{Height}";
   }
 }

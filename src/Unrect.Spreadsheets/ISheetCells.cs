@@ -64,6 +64,16 @@ namespace Unrect.Spreadsheets
     bool BooleanAt(int column, int row, out bool value, out CellProblem? problem);
 
     /// <summary>
+    /// Which kind the cell is, asked rather than asserted: the question a predicate puts to a cell
+    /// before deciding anything about it, where the six reads above assert a kind and refuse a cell
+    /// that disagrees. It answers for every cell and fails for none.
+    /// </summary>
+    /// <param name="column">The 0-based column.</param>
+    /// <param name="row">The 0-based row.</param>
+    /// <exception cref="OutOfBoundsException">The coordinate lies outside <see cref="ISpace.Area"/>.</exception>
+    CellKind KindAt(int column, int row);
+
+    /// <summary>
     /// What kind of thing the cell is, in the document's own vocabulary — <c>Text</c>,
     /// <c>Number</c>, <c>Blank</c>, or an error's own spelling. What a message says a cell holds
     /// when it is not what was asked for.

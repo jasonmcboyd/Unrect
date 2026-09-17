@@ -86,6 +86,21 @@ namespace Unrect.Core
     public Point<ISpace> Erased() => new Point<ISpace>(Space, Column, Row);
 
     /// <summary>
+    /// The same cell, named over <typeparamref name="TOther"/> — the way back from the canonical
+    /// surface for a caller that knows which space it erased.
+    /// <para>
+    /// The mirror of <see cref="Erased"/>, and the same cost: a copy of a reference and two
+    /// integers, nothing read, the same space object underneath. A space that is not a
+    /// <typeparamref name="TOther"/> throws <see cref="InvalidCastException"/>.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="TOther">The space to name this cell over.</typeparam>
+    /// <exception cref="InvalidCastException">This cell's space is not a <typeparamref name="TOther"/>.</exception>
+    internal Point<TOther> Retyped<TOther>()
+      where TOther : class, ISpace
+      => new Point<TOther>((TOther)(object)Space, Column, Row);
+
+    /// <summary>
     /// Whether <paramref name="other"/> names the same cell of the same space — see the type's own
     /// summary for why this is not a comparison of values.
     /// </summary>

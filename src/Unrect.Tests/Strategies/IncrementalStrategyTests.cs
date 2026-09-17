@@ -3,6 +3,7 @@ using System;
 using System.Globalization;
 
 using Unrect.Core;
+using Unrect.Projections;
 using Unrect.Spreadsheets;
 using Unrect.Strategies;
 
@@ -222,15 +223,11 @@ namespace Unrect.Tests.Strategies
       "RowsWhileAnyValue" => SizeStrategies.RowsWhileAnyValue(),
       // The law is SelectRows == the hand-written fold, whatever the rule is; the rule's own
       // content is immaterial to it, so a canonical predicate that partitions the same rows is a
-      // faithful pin.
+      // faithful pin, and this half of the file stays over the calculus it is about.
       //
-      // MARKER (spec §15, phase 7): this is a kind/value rule spelled over the canonical four
-      // because Point<ISpace> cannot say "is a number". It comes back as a typed-layer lift.
-      //
-      // TryParse rather than Parse, and that is the faithful half: the rule this replaced was
-      // `TryGetInt() < 7`, which answers FALSE for a cell that is not a whole number rather than
-      // throwing. Parsing strictly would agree over the grids of ints and throw the moment one of
-      // these rules met the labels grid below — a fixture coupling with no upside.
+      // TryParse rather than Parse: the predicate answers FALSE for a cell that is not a whole
+      // number rather than throwing. Parsing strictly would agree over the grids of ints and throw
+      // the moment one of these rules met the labels grid below — a fixture coupling with no upside.
       "RowsWhileAny" => SizeStrategies.RowsWhileAny(
         value => int.TryParse(value.AsText(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var number) && number < 7),
 
@@ -279,6 +276,40 @@ namespace Unrect.Tests.Strategies
 
       var area = lifted.GetArea(space);
       var scan = lifted.BeginArea(space);
+
+      Assert.Equal(width, area.Width);
+      Assert.Equal(height, area.Height);
+
+      Assert.Equal(width, scan.Width);
+      Assert.Equal(height, Fold(scan, space));
+    }
+
+    /// <summary>
+    /// The same rule as the theory above, written as a declaration writes it: a kind question and a
+    /// value question about a sheet's cell, which the canonical predicate can only approximate
+    /// through the rendering.
+    /// </summary>
+    private static IAreaStrategy SmallNumberRows()
+      => ProjectionBuilders<ISheetCells>
+        .RowsWhileAny(cell => cell.Kind() == CellKind.Number && cell.Integer() < 7)
+        .Strategy;
+
+    [Theory]
+    [InlineData("dense", 3, 2)]
+    [InlineData("sparse", 3, 2)]
+    [InlineData("empty", 3, 0)]
+    [InlineData("blank", 3, 0)]
+    public void ATypedRulesExtentIsIncrementalAndFoldsTheSameWay(string grid, int width, int height)
+    {
+      // The obligation a new incremental strategy carries, discharged for the typed vocabulary: it
+      // introduces no strategy of its own, so what a declaration gets is the calculus's own object
+      // — still incremental, still folding to what it measures, over the same theory data as the
+      // canonical rule it spells more precisely.
+      var space = Space(grid);
+      var incremental = Assert.IsAssignableFrom<IIncrementalAreaStrategy>(SmallNumberRows());
+
+      var area = incremental.GetArea(space);
+      var scan = incremental.BeginArea(space);
 
       Assert.Equal(width, area.Width);
       Assert.Equal(height, area.Height);

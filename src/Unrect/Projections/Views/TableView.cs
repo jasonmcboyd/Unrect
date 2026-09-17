@@ -31,7 +31,7 @@ namespace Unrect.Projections
       HeaderRows = headerRows;
 
       Header = new CellStrip<TSpace>(
-        space.Cut(new Offset(0, 0), new Area(HasHeader ? ColumnCount : 0, headerRows)),
+        space.Slice(new Offset(0, 0), new Area(HasHeader ? ColumnCount : 0, headerRows)),
         Orientation.Horizontal,
         context);
 
@@ -126,7 +126,7 @@ namespace Unrect.Projections
       {
         var offset = new Offset(0, row);
 
-        yield return (Space.Cut(offset, new Area(ColumnCount, bandHeight)), Context);
+        yield return (Space.Slice(offset, new Area(ColumnCount, bandHeight)), Context);
       }
     }
 

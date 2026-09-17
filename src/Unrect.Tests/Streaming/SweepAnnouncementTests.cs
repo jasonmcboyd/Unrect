@@ -84,6 +84,8 @@ namespace Unrect.Tests.Streaming
       public bool BooleanAt(int column, int row, out bool value, out CellProblem? problem)
         => _inner.BooleanAt(column, row, out value, out problem);
 
+      public CellKind KindAt(int column, int row) => _inner.KindAt(column, row);
+
       public string Describe(int column, int row) => _inner.Describe(column, row);
 
       public bool IsErrorAt(int column, int row) => _inner.IsErrorAt(column, row);
@@ -248,6 +250,8 @@ namespace Unrect.Tests.Streaming
 
       public bool BooleanAt(int column, int row, out bool value, out CellProblem? problem)
         => _inner.BooleanAt(column, row, out value, out problem);
+
+      public CellKind KindAt(int column, int row) => _inner.KindAt(column, row);
 
       public string Describe(int column, int row) => _inner.Describe(column, row);
 

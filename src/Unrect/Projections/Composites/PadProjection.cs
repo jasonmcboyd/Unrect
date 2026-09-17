@@ -57,7 +57,7 @@ namespace Unrect.Projections
       // sheet's own coordinates, so the inset region already knows where it is.
       var applied = ProjectionEngine.Apply(
         Inner,
-        extent.Cut(new Offset(Left, Top), new Area(width, height)),
+        extent.Slice(new Offset(Left, Top), new Area(width, height)),
         context);
 
       return new ProjectionResult<TResult>(

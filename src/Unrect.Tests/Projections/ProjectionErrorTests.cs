@@ -74,10 +74,10 @@ namespace Unrect.Tests.Projections
 
       Assert.Contains("no row containing 'Total' exists", Missing(OffsetStrategies.To(RowContaining("Total")), space));
       Assert.Contains("no column containing 'Total' exists", Missing(OffsetStrategies.To(ColumnContaining("Total")), space));
-      Assert.Contains("no row with a matching cell exists", Missing(OffsetStrategies.To(RowWithCell(_ => false)), space));
-      Assert.Contains("no column with a matching cell exists", Missing(OffsetStrategies.To(ColumnWithCell(_ => false)), space));
-      Assert.Contains("no matching row exists", Missing(OffsetStrategies.To(RowWhere((_, _) => false)), space));
-      Assert.Contains("no matching column exists", Missing(OffsetStrategies.To(ColumnWhere((_, _) => false)), space));
+      Assert.Contains("no row with a matching cell exists", Missing(OffsetStrategies.To(RowWithCell(_ => false).Landmark), space));
+      Assert.Contains("no column with a matching cell exists", Missing(OffsetStrategies.To(ColumnWithCell(_ => false).Landmark), space));
+      Assert.Contains("no matching row exists", Missing(OffsetStrategies.To(RowWhere((_, _) => false).Landmark), space));
+      Assert.Contains("no matching column exists", Missing(OffsetStrategies.To(ColumnWhere((_, _) => false).Landmark), space));
     }
 
     [Fact]

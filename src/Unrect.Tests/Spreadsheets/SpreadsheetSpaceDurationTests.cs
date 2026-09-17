@@ -3,6 +3,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Text;
 
+using Unrect.Core;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
 
@@ -48,7 +49,7 @@ namespace Unrect.Tests.Spreadsheets
       var space = Durations();
 
       Assert.Equal("Number", space.Describe(0, 1));
-      Assert.Equal(1.5, space.Extent()[0, 1].Double());
+      Assert.Equal(1.5, Plane<ISheetCells>.Of(space)[0, 1].Double());
     }
 
     [Fact]
@@ -59,7 +60,7 @@ namespace Unrect.Tests.Spreadsheets
       var space = Durations();
 
       Assert.Equal("Number", space.Describe(0, 2));
-      Assert.Equal(0.25, space.Extent()[0, 2].Double());
+      Assert.Equal(0.25, Plane<ISheetCells>.Of(space)[0, 2].Double());
     }
 
     [Fact]
@@ -70,7 +71,7 @@ namespace Unrect.Tests.Spreadsheets
       // change what the cell is worth.
       var space = Durations();
 
-      var cells = space.Extent();
+      var cells = Plane<ISheetCells>.Of(space);
 
       Assert.Equal(cells[1, 1].Double(), cells[0, 1].Double());
       Assert.Equal(cells[1, 2].Double(), cells[0, 2].Double());
@@ -87,7 +88,7 @@ namespace Unrect.Tests.Spreadsheets
 
       Assert.False(space.DateTimeAt(0, 1, out _, out var problem));
       Assert.Equal("expected Temporal at A2, found Number", problem!("A2"));
-      Assert.Throws<CellReadException>(() => space.Extent()[0, 1].Date());
+      Assert.Throws<CellReadException>(() => Plane<ISheetCells>.Of(space)[0, 1].Date());
     }
 
     [Fact]
@@ -98,7 +99,7 @@ namespace Unrect.Tests.Spreadsheets
       var space = Durations();
 
       Assert.False(space.IsBlank(0, 1));
-      Assert.True(space.Extent()[0, 1].HasValue);
+      Assert.True(Plane<ISheetCells>.Of(space)[0, 1].HasValue);
     }
 
     // --- The fixture ----------------------------------------------------------------------------

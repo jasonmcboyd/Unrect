@@ -42,7 +42,7 @@ namespace Unrect.Projections
       // body is handed through untouched, forcing nothing.
       var width = Map.Labels.Count;
       var body = extent.Width > width
-        ? extent.Narrow(width)
+        ? extent.Narrowed(width)
         : extent;
 
       var applied = ProjectionEngine.Apply(Body, body, context.PushLabels(Axis, Map, body.Origin));

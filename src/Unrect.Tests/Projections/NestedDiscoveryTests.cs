@@ -1,7 +1,5 @@
-using Unrect.Core;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
-using Unrect.Strategies;
 
 using Xunit;
 
@@ -72,25 +70,19 @@ namespace Unrect.Tests.Projections
         return declaration.Map(Disagreeing());
     }
 
-    /// <summary>
-    /// The outer rule: rows while any cell of them is a number, which stops after row 2.
-    /// <para>
-    /// Spelled over the canonical four as "has a value and is not text", which is exactly "is a
-    /// number" for this fixture — it holds numbers, strings and blanks and nothing else. The kind
-    /// predicate itself returns with the typed layer.
-    /// </para>
-    /// </summary>
-    private static IAreaStrategy NumericRowsOnly() => RowsWhileAny(value => !value.IsBlank && !value.IsText);
+    /// <summary>The outer rule: rows while any cell of them is a number, which stops after row 2.</summary>
+    private static IAreaStrategy<ISheetCells> NumericRowsOnly()
+      => RowsWhileAny(cell => cell.Kind() == CellKind.Number);
 
     /// <summary>
     /// The same rule as a row-and-column pair, which resolves to the interleaved strategy — the one
     /// whose scan carries replay state, and therefore the one that reads the space it was begun with
     /// rather than the space it is handed per row.
     /// </summary>
-    private static IAreaStrategy NumericRowsAndValuedColumns()
-      => AreaStrategies.RowsThenColumns(
-        RowStrategies.TakeRowsWhileAny(value => !value.IsBlank && !value.IsText),
-        ColumnStrategies.TakeColumnsWhileAnyValue());
+    private static IAreaStrategy<ISheetCells> NumericRowsAndValuedColumns()
+      => RowsThenColumns(
+        TakeRowsWhileAny(cell => cell.Kind() == CellKind.Number),
+        TakeColumnsWhileAny(cell => cell.HasValue));
 
     [Theory]
     [MemberData(nameof(ForcingModes))]

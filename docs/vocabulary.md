@@ -165,7 +165,7 @@ backend's own leaf: `Below(mark).Of(Formula())`).
 **A demanding matcher opens a demanding pipeline with nothing annotated.** `On(rowMatcher)` and
 `Below(rowMatcher)` are overloaded on `IRowLandmark<TSpace>` as well as the plain `IRowLandmark`
 (and the column twins), so `On(RowWithFormula())` infers `TSpace : IFormulaSpace` from the
-matcher's own type and hands back a demanding `OffsetStage<TSpace>` — see "The landmark phantom"
+matcher's own type and hands back a demanding `OffsetStage<TSpace>` — see "The typed phantoms"
 under Matchers, below.
 
 ## Extent — where things end
@@ -174,14 +174,21 @@ under Matchers, below.
 |---|---|
 | `.Sized(area)` | Declared extent, consumed in full; replaces a shape's own default extent, refuses a second `.Sized` |
 | `.Until(matcher)` / `.Until(matcher, orEnd: true)` / `.UntilColumn(...)` | Extent ends just BEFORE a forward landmark; the bound is consumed in full so the next sibling starts AT the landmark |
-| `Extent(w, h)` `WholeExtent()` `NoExtent()` `RowsWhileAnyValue()` `RowsWhileAny(p)` `ColumnsWhileAnyValue()` `ColumnsWhileAny(p)` | The area vocabulary, mirrored on both axes; `p` is `Func<Point<ISpace>, bool>` |
+| `Extent(w, h)` `WholeExtent()` `NoExtent()` `RowsWhileAnyValue()` `RowsWhileAny(p)` `ColumnsWhileAnyValue()` `ColumnsWhileAny(p)` | The area vocabulary, mirrored on both axes; `p` is `Func<Point<TSpace>, bool>` over the file's own space, so it may ask a cell's kind or its value |
 | `TakeRows(n)` `TakeColumns(n)` `AllRows()` `AllColumns()` | Axis selectors, not area strategies — for `Row(AllColumns(), ...)` and for composing an extent from its two axes |
+| `TakeRowsWhile(p)` `TakeRowsTo(p)` `TakeRowsWhileAll(p)` `TakeRowsWhileAny(p)` and the four `TakeColumns…` twins | Predicate-driven axis selectors, over the file's space |
+| `RowsThenColumns(rows, columns)` / `ColumnsThenRows(columns, rows)` | The two axes as one extent; each axis is taken as it comes, demanding or not |
+| `SelectSize(f)` `SelectArea(f)` `SelectOffset(f)` | Measured by hand, `f` being `Func<Plane<TSpace>, Size>` |
+| `SkipRowsWhileAll(p)` `SkipRowsWhileAny(p)` and the column twins | Offsets past a leading band, over the file's space |
 
 ## Matchers — one family, four rules, four modifiers
 
 `RowContaining(text)` · `RowWhere(spacePredicate)` · `RowWithCell(cellPredicate)` · `RowSaying(text)`
-— and the three column twins. Predicates are over the *erased canonical* seam:
-`Func<Plane<ISpace>, int, bool>` for `Where`, `Func<Point<ISpace>, bool>` for `WithCell`. Naming
+— and the three column twins. Predicates read the file's own space:
+`Func<Plane<TSpace>, int, bool>` for `Where`, `Func<Point<TSpace>, bool>` for `WithCell`, so a
+matcher can ask what a cell *is* as well as what it says, and what it hands back carries that
+demand (see "The typed phantoms", below). The erased spellings live on in `Unrect.Strategies`
+(`RowLandmarks`/`ColumnLandmarks`), which is the calculus a helper writes against. Naming
 law: bare `Where`/`While` = a space predicate; a cell predicate is always marked (`WithCell`,
 `WhileAll`, `WhileAny`); `Containing` = whole-cell text, trimmed, case-insensitive; `Saying` is the
 one rule that looks past a cell's kind — the same whole-cell comparison against what a cell
@@ -200,25 +207,54 @@ reflective `Table<T>` binding and the `Table()` dictionary's keys — case- and
 whitespace-insensitive, bridging caption ↔ identifier). A declaration must never start in one and
 end in another.
 
-### The landmark phantom — a capability-demanding matcher
+### The typed phantoms — a demand that crosses the erased seam
 
-A matcher over a canonical `Func<Point<ISpace>, bool>` cannot see a capability. A backend that
-needs one (`Unrect.Spreadsheets.SpreadsheetProjections.RowWithFormula()`) implements both the
-plain `IRowLandmark` the strategy calculus takes *and* a generic `IRowLandmark<TSpace>` with one
-member, `Landmark`, that unwraps back to the plain form:
+**A canonical predicate asks the four questions; anything about kind or value is a typed predicate
+and names its space.** The strategy and landmark interfaces in `Unrect.Core` speak
+`Plane<ISpace>`/`Point<ISpace>`, which answers `IsBlank`/`HasValue`/`IsText`/`AsText` and nothing
+else — so a rule that asks "is this a number" has to carry the space it needs. Seven interfaces
+do that, one per thing the calculus takes:
 
 ```csharp
-public interface IRowLandmark<in TSpace> where TSpace : class, ISpace
-{
-  IRowLandmark Landmark { get; }
-}
+public interface IRowLandmark<in TSpace>    where TSpace : class, ISpace { IRowLandmark    Landmark { get; } }
+public interface IColumnLandmark<in TSpace> where TSpace : class, ISpace { IColumnLandmark Landmark { get; } }
+
+public interface ISizeStrategy<in TSpace>   where TSpace : class, ISpace { ISizeStrategy   Strategy { get; } }
+public interface IOffsetStrategy<in TSpace> where TSpace : class, ISpace { IOffsetStrategy Strategy { get; } }
+public interface IAreaStrategy<in TSpace>   where TSpace : class, ISpace { IAreaStrategy   Strategy { get; } }
+public interface IRowStrategy<in TSpace>    where TSpace : class, ISpace { IRowStrategy    Strategy { get; } }
+public interface IColumnStrategy<in TSpace> where TSpace : class, ISpace { IColumnStrategy Strategy { get; } }
 ```
 
-`On`/`Below`/`Until` are overloaded on the generic form too, so `On(RowWithFormula())` infers
-`TSpace : IFormulaSpace` from the matcher's own static type and hands back a demanding pipeline
-with nothing annotated by the caller — the one place a typed demand crosses the otherwise-erased
-canonical seam, and it does so by ordinary contravariant inference, never a runtime capability
-walk.
+None of them derives from the plain form. That is the whole mechanism: a member that takes a
+phantom (`Sized`, `OffsetBy`, `Row`, `Column`, `Range`, the repeats' `separatedBy:`, `On`,
+`Below`, `RightOf`, `Until`) is overloaded on both, so the demanding argument is the one the
+compiler picks and the demand is inferred with nothing annotated. `Strategy` (or `Landmark` for a
+matcher) unwraps back to what the calculus takes, and unwrapping is what the lift does, once, at
+construction — the object the engine receives is the calculus's own, so nothing is wrapped and no
+incremental scan is lost.
+
+The vocabulary's own factories build them: `RowsWhileAny(p => p.Kind() == CellKind.Number)` over
+`ProjectionBuilders<ISheetCells>` lowers the predicate and hands back an `IAreaStrategy<ISheetCells>`.
+`in TSpace` is what makes a shared helper work — a rule built at `ProjectionBuilders<ISpace>` flows
+into every file:
+
+```csharp
+static IAreaStrategy<ISpace> Populated() => ProjectionBuilders<ISpace>.RowsWhileAny(p => !p.IsBlank);
+
+var header = Sized(Populated()).Row(r => r[0].Text());   // in an ISheetCells file, nothing annotated
+```
+
+A capability-demanding *matcher* is the same trick from the other end:
+`Unrect.Spreadsheets.SpreadsheetProjections.RowWithFormula()` implements the plain `IRowLandmark`
+the calculus takes *and* `IRowLandmark<IFormulaSpace>`, so `On(RowWithFormula())` hands back a
+pipeline demanding `IFormulaSpace`. It is ordinary contravariant inference throughout, never a
+runtime capability walk.
+
+The predicate is lowered, so the cast to `TSpace` happens once per cell rather than once per
+measurement. A rule that reaches a space it was not written for — which takes unwrapping it and
+passing the bare strategy through the canonical door — faults with `InvalidCastException`, and a
+fault is never absorbed by `.Optional()` or `.Else()`.
 
 ## Wrappers and boundaries
 
@@ -345,7 +381,7 @@ declaration composes or a `Map` call is made — there is no runtime capability 
 | Operator | Meaning |
 |---|---|
 | `Formula()` | One cell, read as the formula behind it — the file's own expression without the `=`, null where the cell is a plain value. A cell has a value *and* a formula, so reading both is an `Overlay`, never a flow |
-| `RowWithFormula()` / `RowWithFormula(containing)` and the column twins | Matchers over formulas — see "The landmark phantom," above, for how they carry their demand through `On`/`Below`/`Until` with nothing annotated. `containing` is a **substring, case-insensitively** |
+| `RowWithFormula()` / `RowWithFormula(containing)` and the column twins | Matchers over formulas — see "The typed phantoms," above, for how they carry their demand through `On`/`Below`/`Until` with nothing annotated. `containing` is a **substring, case-insensitively** |
 | `IFormulaSpace` / `ISpreadsheetSpace` | The capability, and the bundle a declaration written over "a spreadsheet" demands |
 
 **Where they come from.** `SpreadsheetSpace.CreateWithFormulas(path, sheet)` is a second factory

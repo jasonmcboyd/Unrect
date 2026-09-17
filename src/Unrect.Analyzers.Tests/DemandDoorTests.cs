@@ -112,5 +112,50 @@ namespace Unrect.Analyzers.Tests
           static void Give() => Take({|CS1503:SpreadsheetProjections.Formula<IFormulaSpace>()|});
         }
         """);
+
+    /// <summary>
+    /// A demand reaches a factory through a strategy as well as through a child declaration: a
+    /// separator that reads a formula is refused by a repeat declared over a sheet, and the edit is
+    /// the same one — the factory, named over the space the rule asks for.
+    /// <para>
+    /// The item is left undeclared so that the separator is the only thing the call is refused for:
+    /// what is under test is that a demand carried by a <em>rule</em> reaches the fix at all.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public Task A_separator_that_demands_more_than_the_repeat_is_offered_the_vocabulary_that_carries_it()
+      => Verify.FixesCompilerError<DemandDoorCodeFixProvider>(
+        """
+        class Report
+        {
+          static object Blocks(IOffsetStrategy<ISpreadsheetSpace> gap)
+            => VerticalRepeat<string>(default!, {|CS1503:gap|});
+        }
+        """,
+        """
+        class Report
+        {
+          static object Blocks(IOffsetStrategy<ISpreadsheetSpace> gap)
+            => ProjectionBuilders<ISpreadsheetSpace>.VerticalRepeat<string>(default!, gap);
+        }
+        """,
+        titled:
+          "Use 'ProjectionBuilders<ISpreadsheetSpace>.VerticalRepeat' here — this child demands "
+          + "'ISpreadsheetSpace', which a 'VerticalRepeat' declared over 'ISheetCells' cannot carry");
+
+    /// <summary>
+    /// The same mis-scoped rule handed to <c>Sized</c>, which composes no child: there is no factory
+    /// to re-declare, so nothing is offered and the compiler's own message — which names both
+    /// strategy types — is the whole of what can be said.
+    /// </summary>
+    [Fact]
+    public Task A_mis_scoped_rule_outside_a_composing_factory_is_left_to_the_compiler()
+      => Verify.OffersNoFixForCompilerError<DemandDoorCodeFixProvider>(
+        """
+        class Report
+        {
+          static object Header(IAreaStrategy<ISpreadsheetSpace> rule) => Sized({|CS1503:rule|}).Of(AsText());
+        }
+        """);
   }
 }

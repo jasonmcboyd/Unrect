@@ -1,3 +1,5 @@
+using System;
+
 using Unrect.Spreadsheets;
 
 using Xunit;
@@ -121,11 +123,48 @@ namespace Unrect.Tests.Spreadsheets
       // refusal left the parse's numbers behind); fixed the same day. The TryParse contract this
       // now states: a refusal leaves nothing behind — a caller that trusts the usual discipline
       // reads zeros, not a column that does not exist.
-      Assert.False(A1Reference.TryParse("ZZZ1", out var column, out _));
+      Assert.False(A1Reference.TryParse("ZZZ1", out var column, out var lettersRow));
       Assert.Equal(0, column);
+      Assert.Equal(0, lettersRow);
 
-      Assert.False(A1Reference.TryParse("A1048577", out _, out var row));
+      // BOTH outs, on both refusals: the row is the half that parsed cleanly on the first of these
+      // and the column is the half that parsed cleanly on the second, so a reset that covered only
+      // the component that failed would pass one of them and leave the other's answer behind.
+      Assert.False(A1Reference.TryParse("A1048577", out var digitsColumn, out var row));
+      Assert.Equal(0, digitsColumn);
       Assert.Equal(0, row);
+    }
+
+    [Fact]
+    public void NoReferenceAtAllIsAnArgumentBugAndNotARefusal()
+    {
+      // The one input that is not a badly-spelled reference but the absence of one. A TryParse
+      // returns false for a string that does not name a cell; null is not such a string, and
+      // answering false for it would fold "you passed nothing" into "what you passed is not an
+      // address" — two different mistakes with two different fixes.
+      //
+      // It matters because this member is public. While the class was internal every caller was the
+      // reader, which never had a null to pass; a script does, and used to get a
+      // NullReferenceException from the first character read.
+      Assert.Equal("reference", Assert.Throws<ArgumentNullException>(() => A1Reference.TryParse(null!, out _, out _)).ParamName);
+    }
+
+    // --- The public seam ------------------------------------------------------------------------------
+
+    [Fact]
+    public void ReadingACellAddressIsPartOfTheSurfaceRatherThanTheReadersOwnBusiness()
+    {
+      // Everything else in this class is the reader's, and this one member is not: Unrect.Interactive
+      // reads "B4" through it so a script can name a cell the way the sheet does, and the alternative
+      // was an InternalsVisibleTo grant onto everything the reader knows.
+      //
+      // Asserted by reflection because nothing else here can. This assembly sees the internals of
+      // Unrect.Spreadsheets, so every test above would go on compiling and passing if the type were
+      // made internal again tomorrow — and the package would be broken for every consumer outside it.
+      Assert.True(typeof(A1Reference).IsPublic, "A1Reference is a published type; Unrect.Interactive compiles against it.");
+      Assert.True(
+        typeof(A1Reference).GetMethod(nameof(A1Reference.TryParse))!.IsPublic,
+        "TryParse is the one member of A1Reference that is published.");
     }
   }
 }

@@ -218,7 +218,7 @@ namespace Unrect.Tests.Projections
     {
       // An explicit request for part of the extent is not a question about the whole of it — so a
       // nested projection placed inside a discovered bound costs its own rows and not the bound's.
-      var (observed, _) = Observe(space => space.Cut(new Offset(0, offset), new Area(2, height)));
+      var (observed, _) = Observe(space => space.Slice(new Offset(0, offset), new Area(2, height)));
 
       Assert.Equal(rowsTouched, observed);
     }

@@ -42,7 +42,7 @@ namespace Unrect.Projections
       if (size.Height != 1)
         throw context.Failure($"a Caption must be exactly one row tall; this one is {size.Height} rows tall", extent);
 
-      var cells = extent.AsCanonical();
+      var cells = extent.Erased();
 
       for (var column = 0; column < size.Width; column++)
         if (Match(cells[column, 0]))

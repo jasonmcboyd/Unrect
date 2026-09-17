@@ -71,6 +71,9 @@ namespace Unrect.Spreadsheets
       => CellReading.Boolean(CellAt(column, row), out value, out problem);
 
     /// <inheritdoc/>
+    public CellKind KindAt(int column, int row) => CellAt(column, row).Kind;
+
+    /// <inheritdoc/>
     public string Describe(int column, int row) => CellReading.Describe(CellAt(column, row));
 
     /// <inheritdoc/>

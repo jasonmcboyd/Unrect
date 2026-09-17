@@ -23,5 +23,11 @@ namespace Unrect.Core
 
     /// <summary>The region's height — <c>Size.Height</c>, for reading without the hop.</summary>
     public int Height => Size.Height;
+
+    /// <summary>
+    /// The extent as <c>WxH</c>, width first — <see cref="Core.Size.ToString"/>'s rendering, which is
+    /// also the half of <see cref="Plane{TSpace}"/>'s that says how big a region is.
+    /// </summary>
+    public override string ToString() => Size.ToString();
   }
 }

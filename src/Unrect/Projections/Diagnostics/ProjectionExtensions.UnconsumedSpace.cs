@@ -41,7 +41,7 @@ namespace Unrect.Projections
         DiagnosticSeverity.Info,
         projection,
         $"the projection consumed {string.Join(" and ", counts)}; {string.Join(" and ", undescribed)} were not described",
-        space.Tail(first));
+        space.Slice(first));
     }
 
     /// <summary>

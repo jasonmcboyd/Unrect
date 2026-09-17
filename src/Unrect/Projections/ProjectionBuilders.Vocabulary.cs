@@ -61,6 +61,12 @@ namespace Unrect.Projections
     public static IProjection<TSpace, T> Row<T>(IColumnStrategy columns, Func<CellStrip<TSpace>, T> project)
       => Strip(Orientation.Horizontal, project, RowsThenColumns(RowStrategies.TakeRows(1), columns), "Row");
 
+    /// <inheritdoc cref="Row{T}(IColumnStrategy, Func{CellStrip{TSpace}, T})"/>
+    /// <param name="columns">The columns the row spans. A rule demanding less is accepted as it is.</param>
+    /// <param name="project">The reading applied to the row's cells.</param>
+    public static IProjection<TSpace, T> Row<T>(IColumnStrategy<TSpace> columns, Func<CellStrip<TSpace>, T> project)
+      => Row(Required(columns).Strategy, project);
+
     /// <summary>One column, as tall as the leading rows that carry values.</summary>
     public static IProjection<TSpace, T> Column<T>(Func<CellStrip<TSpace>, T> project)
       => Strip(Orientation.Vertical, project, ColumnStrategies.TakeColumns(1).TakeRowsWhileAnyValue(), "Column");
@@ -72,6 +78,12 @@ namespace Unrect.Projections
     /// <summary>One column, as tall as <paramref name="rows"/> selects.</summary>
     public static IProjection<TSpace, T> Column<T>(IRowStrategy rows, Func<CellStrip<TSpace>, T> project)
       => Strip(Orientation.Vertical, project, ColumnsThenRows(ColumnStrategies.TakeColumns(1), rows), "Column");
+
+    /// <inheritdoc cref="Column{T}(IRowStrategy, Func{CellStrip{TSpace}, T})"/>
+    /// <param name="rows">The rows the column spans. A rule demanding less is accepted as it is.</param>
+    /// <param name="project">The reading applied to the column's cells.</param>
+    public static IProjection<TSpace, T> Column<T>(IRowStrategy<TSpace> rows, Func<CellStrip<TSpace>, T> project)
+      => Column(Required(rows).Strategy, project);
 
     /// <summary>
     /// A rectangular region, read through a <see cref="CellBlock{TSpace}"/>: the maximal leading block of
@@ -90,6 +102,12 @@ namespace Unrect.Projections
         project,
         Placement.Of(area ?? throw new ArgumentNullException(nameof(area))),
         "Range");
+
+    /// <inheritdoc cref="Range{T}(IAreaStrategy, Func{CellBlock{TSpace}, T})"/>
+    /// <param name="area">How far the region extends. A rule demanding less is accepted as it is.</param>
+    /// <param name="project">The reading applied to the region's cells.</param>
+    public static IProjection<TSpace, T> Range<T>(IAreaStrategy<TSpace> area, Func<CellBlock<TSpace>, T> project)
+      => Range(Required(area).Strategy, project);
 
     /// <summary>
     /// The row that holds <paramref name="text"/>, as declared content: the projection finds that row,
@@ -489,7 +507,7 @@ namespace Unrect.Projections
     /// <summary>
     /// One body row, read by <paramref name="record"/> — the compute-legal binder decoupled from
     /// <c>Table</c>. Its extent is a one-row band at the full width, so under a
-    /// <see cref="VerticalRepeat{T}"/> each occurrence reads one row and the repeat stops past the
+    /// <see cref="VerticalRepeat{T}(IProjection{TSpace, T}, IOffsetStrategy, int, string)"/> each occurrence reads one row and the repeat stops past the
     /// last. Columns are resolved by name through whatever <see cref="WithColumnLabels{T}(LabelMap,
     /// IProjection{TSpace, T})"/> pushed; used with no labels in scope, a by-name read reports the headerless
     /// message, exactly as a headerless table's row does.
@@ -672,9 +690,26 @@ namespace Unrect.Projections
       [CallerArgumentExpression("item")] string? declared = null)
       => Repeat(Orientation.Vertical, item, separatedBy, atLeast, declared);
 
+    /// <inheritdoc cref="VerticalRepeat{T}(IProjection{TSpace, T}, IOffsetStrategy, int, string)"/>
+    /// <typeparam name="T">What one occurrence reads.</typeparam>
+    /// <param name="item">The projection to apply repeatedly.</param>
+    /// <param name="separatedBy">
+    /// The offset between occurrences; never applied before the first. It is required rather than
+    /// optional here because carrying the separator's demand is the whole reason this overload
+    /// exists.
+    /// </param>
+    /// <param name="atLeast">How many occurrences make a well-formed section.</param>
+    /// <param name="declared">Supplied by the compiler as the text of the <paramref name="item"/> argument.</param>
+    public static IProjection<TSpace, IReadOnlyList<T>> VerticalRepeat<T>(
+      IProjection<TSpace, T> item,
+      IOffsetStrategy<TSpace> separatedBy,
+      int atLeast = 0,
+      [CallerArgumentExpression("item")] string? declared = null)
+      => Repeat(Orientation.Vertical, item, Required(separatedBy).Strategy, atLeast, declared);
+
     /// <summary>
     /// One item stacked rightwards as many times as the space supports; see
-    /// <see cref="VerticalRepeat{T}"/> for <paramref name="separatedBy"/>,
+    /// <see cref="VerticalRepeat{T}(IProjection{TSpace, T}, IOffsetStrategy, int, string)"/> for <paramref name="separatedBy"/>,
     /// <paramref name="atLeast"/>, and how the item is named.
     /// </summary>
     public static IProjection<TSpace, IReadOnlyList<T>> HorizontalRepeat<T>(
@@ -685,6 +720,19 @@ namespace Unrect.Projections
       => Repeat(Orientation.Horizontal, item, separatedBy, atLeast, declared);
 
     /// <summary>
+    /// One item stacked rightwards as many times as the space supports, separated by a rule that
+    /// names the space it reads; see
+    /// <see cref="VerticalRepeat{T}(IProjection{TSpace, T}, IOffsetStrategy{TSpace}, int, string)"/>
+    /// for <paramref name="separatedBy"/>, <paramref name="atLeast"/>, and how the item is named.
+    /// </summary>
+    public static IProjection<TSpace, IReadOnlyList<T>> HorizontalRepeat<T>(
+      IProjection<TSpace, T> item,
+      IOffsetStrategy<TSpace> separatedBy,
+      int atLeast = 0,
+      [CallerArgumentExpression("item")] string? declared = null)
+      => Repeat(Orientation.Horizontal, item, Required(separatedBy).Strategy, atLeast, declared);
+
+    /// <summary>
     /// The extent cut into bands <paramref name="rows"/> rows tall, top to bottom, each projected by
     /// <paramref name="each"/>. A band's boundaries come from the stride alone — nothing is searched
     /// for and no band can be a different size — and the tiling ends when fewer than
@@ -692,7 +740,7 @@ namespace Unrect.Projections
     /// <para>
     /// It declares no extent of its own: how far it runs is whatever places it — a <c>.Sized</c>, a
     /// discovered block, or simply the space it is handed. That is the difference from
-    /// <see cref="VerticalRepeat{T}"/>, which discovers each occurrence's size from the item and
+    /// <see cref="VerticalRepeat{T}(IProjection{TSpace, T}, IOffsetStrategy, int, string)"/>, which discovers each occurrence's size from the item and
     /// stops where the item stops fitting.
     /// </para>
     /// </summary>

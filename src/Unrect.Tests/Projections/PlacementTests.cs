@@ -569,7 +569,7 @@ namespace Unrect.Tests.Projections
     {
       // Only the constructor may take a null area, where it means "derive the extent". Anywhere
       // else a null would quietly turn a declared extent into a derived one.
-      Assert.Equal("area", Assert.Throws<ArgumentNullException>(() => Sized(null!).Of(IntCell())).ParamName);
+      Assert.Equal("area", Assert.Throws<ArgumentNullException>(() => Sized((Unrect.Core.IAreaStrategy)null!).Of(IntCell())).ParamName);
       Assert.Equal("area", Assert.Throws<ArgumentNullException>(() => Placement.Default.WithArea(null!)).ParamName);
       Assert.Equal("area", Assert.Throws<ArgumentNullException>(() => Placement.Of(null!)).ParamName);
     }

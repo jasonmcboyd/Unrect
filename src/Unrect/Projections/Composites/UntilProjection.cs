@@ -56,7 +56,7 @@ namespace Unrect.Projections
     public override ProjectionResult<TResult> Project(Plane<TSpace> extent, ProjectionContext context)
     {
       var size = extent.Area.Size;
-      var found = Landmark.Find(extent.AsCanonical());
+      var found = Landmark.Find(extent.Erased());
       var limit = found ?? (IsVertical ? size.Height : size.Width);
 
       // A missing end is a disagreement about the shape of the data, not a bug in the reading code,
@@ -69,7 +69,7 @@ namespace Unrect.Projections
       if (found is null)
         context.Report(DiagnosticSeverity.Info, this, $"{Landmark.Description} exists to end this projection, so it ran to the end of the space", extent);
 
-      var applied = ProjectionEngine.Apply(Inner, extent.Cut(Bound(limit, size)), context);
+      var applied = ProjectionEngine.Apply(Inner, extent.Slice(Bound(limit, size)), context);
 
       // The bound is consumed whether or not the inner projection used it all, exactly as a
       // declared area is: that is what puts the next sibling ON the landmark rather than somewhere
