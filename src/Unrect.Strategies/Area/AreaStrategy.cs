@@ -2,6 +2,7 @@ using Unrect.Core;
 
 namespace Unrect.Strategies
 {
+  /// <summary>A size strategy under the name a placement declares it by: the same scan.</summary>
   internal sealed class AreaStrategy : IAreaStrategy
   {
     public AreaStrategy(ISizeStrategy strategy)
@@ -11,6 +12,6 @@ namespace Unrect.Strategies
 
     internal ISizeStrategy Strategy { get; }
 
-    public Area GetArea(Plane<ISpace> availableSpace) => new Area(Strategy.GetSize(availableSpace));
+    public ISizeScan Begin(Orientation along) => Strategy.Begin(along);
   }
 }

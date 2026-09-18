@@ -6,14 +6,16 @@ namespace Unrect.Projections
 {
   /// <summary>
   /// Placement for a child the engine held whole: its offset and area resolved over the region it
-  /// was offered, with the strategies' whole-region form, once that region is known. What a child
-  /// whose placement has no per-span form gets instead of being driven.
+  /// was offered by folding the placement's scans over it, once that region is known. What a
+  /// child whose scans answer only at the end, or whose axis is not the driver's, gets instead of
+  /// being driven.
   /// </summary>
   internal static class EagerPlacement
   {
     internal static bool TryPlace<TSpace>(
       IProjectionDefinition projection,
       Plane<TSpace> region,
+      Orientation along,
       ProjectorScope<TSpace> parent,
       bool strict,
       out Offset offset,
@@ -28,7 +30,7 @@ namespace Unrect.Projections
 
       try
       {
-        offset = projection.Placement.Offset.GetOffset(region.Erased());
+        offset = Scans.FoldOffset(projection.Placement.Offset.Begin(along), region.Erased(), along);
       }
       catch (ProjectionException)
       {
@@ -66,7 +68,7 @@ namespace Unrect.Projections
 
       try
       {
-        area = projection.Placement.Area.GetArea(inner.Erased());
+        area = new Area(Scans.FoldSize(projection.Placement.Area.Begin(along), inner.Erased(), along));
       }
       catch (ProjectionException)
       {

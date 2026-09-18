@@ -1,9 +1,10 @@
 using System;
+
 using Unrect.Core;
 
 namespace Unrect.Strategies
 {
-  internal sealed class TakeWhileAllRowStrategy : IIncrementalRowStrategy, IRowScan
+  internal sealed class TakeWhileAllRowStrategy : IRowStrategy, IRowScan
   {
     public TakeWhileAllRowStrategy(Func<Point<ISpace>, bool> predicate)
     {
@@ -13,9 +14,9 @@ namespace Unrect.Strategies
     private Func<Point<ISpace>, bool> Predicate { get; }
 
     // The rule carries nothing from row to row, so one instance is every scan of it.
-    public IRowScan BeginRows() => this;
+    public IRowScan Begin() => this;
 
-    public int SelectRows(Plane<ISpace> space) => Scans.Fold(BeginRows(), space);
+    public int? Required => null;
 
     public bool IncludesRow(Plane<ISpace> space, int row)
     {

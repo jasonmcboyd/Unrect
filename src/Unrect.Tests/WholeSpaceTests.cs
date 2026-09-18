@@ -136,45 +136,5 @@ namespace Unrect.Tests
       Assert.Equal(landmark.FindColumn(Plane<ISpace>.Of(space)), landmark.FindColumn(space));
       Assert.Equal(3, landmark.FindColumn(space));
     }
-
-    [Fact]
-    public void BeginAreaForwards()
-    {
-      var space = Sheet();
-      var strategy = Assert.IsAssignableFrom<IIncrementalAreaStrategy>(
-        SizeStrategies.RowsWhileAnyValue().ToAreaStrategy());
-
-      Assert.Equal(strategy.BeginArea(Plane<ISpace>.Of(space)).Width, strategy.BeginArea(space).Width);
-      Assert.Equal(4, strategy.BeginArea(space).Width);
-    }
-
-    [Fact]
-    public void BeginSizeForwards()
-    {
-      var space = Sheet();
-      var strategy = Assert.IsAssignableFrom<IIncrementalSizeStrategy>(SizeStrategies.RowsWhileAnyValue());
-
-      Assert.Equal(strategy.BeginSize(Plane<ISpace>.Of(space)).Width, strategy.BeginSize(space).Width);
-      Assert.Equal(4, strategy.BeginSize(space).Width);
-    }
-
-    [Fact]
-    public void IncludesRowForwards()
-    {
-      // A scan is one-shot and reads in order, so each spelling gets its own — and the claim is that
-      // the two scans agree row by row, which is stronger than agreeing on a total.
-      var space = Sheet();
-      var strategy = Assert.IsAssignableFrom<IIncrementalSizeStrategy>(SizeStrategies.RowsWhileAnyValue());
-
-      var throughSpace = strategy.BeginSize(space);
-      var throughRegion = strategy.BeginSize(Plane<ISpace>.Of(space));
-
-      for (var row = 0; row < space.Area.Height; row++)
-        Assert.Equal(throughRegion.IncludesRow(Plane<ISpace>.Of(space), row), throughSpace.IncludesRow(space, row));
-
-      // Non-vacuity: the answers are not all the same, so agreeing is a real agreement.
-      Assert.True(strategy.BeginSize(space).IncludesRow(space, 0));
-      Assert.False(strategy.BeginSize(space).IncludesRow(space, 2));
-    }
   }
 }

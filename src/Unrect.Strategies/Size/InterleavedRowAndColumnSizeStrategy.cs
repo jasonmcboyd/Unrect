@@ -3,112 +3,82 @@ using Unrect.Core;
 namespace Unrect.Strategies
 {
   /// <summary>
-  /// Rows over the full available width, then columns within the rows they found — the
-  /// <see cref="RowAndColumnSizeStrategy"/> reading of that, taken as ONE forward walk instead of two
-  /// passes, so the height stays discoverable a row at a time after the width has been decided.
-  /// <para>
-  /// The width has to be settled before the extent is handed out and it depends on the row bound,
-  /// which looks like a contradiction and is not: both halves consume the same rows in the same
-  /// order. The walk asks the row rule about row 0, 1, 2, … and feeds each row it accepts to the
-  /// column accumulator, stopping as soon as the accumulator can no longer change — one row, where
-  /// the data is dense. The rows it consumed are therefore exactly the rows the height would have
-  /// consumed first: nothing is read twice, and nothing is read early. Where the data is sparse
-  /// enough that the columns need the whole band, the width decision forces the whole bound, which
-  /// is honest rather than lazy.
-  /// </para>
-  /// <para>
-  /// Settling early gives the answer the whole band would, because each accumulator's answer is
-  /// monotone in the rows it has seen and "settled" is that monotone sequence's fixed point. An "any"
-  /// rule's leading run of matched columns only ever grows, so once it spans the full width no
-  /// further row can move it; an "all" rule's leading run only ever shrinks, so once it reaches zero
-  /// no further row can move it either. In both cases the answer after <c>k</c> accepted rows is the
-  /// answer after all of them — which is what <c>GetSize</c>, defined as the fold of this scan, has
-  /// to keep true against the two-pass reading.
-  /// </para>
+  /// Rows and columns discovered in one pass: each row the row rule accepts is told to the column
+  /// accumulator as it is taken, so the width settles as soon as no further row could change it
+  /// and the height as soon as a row is refused. A discovered block, streamed.
   /// </summary>
-  internal sealed class InterleavedRowAndColumnSizeStrategy : IIncrementalSizeStrategy
+  internal sealed class InterleavedRowAndColumnSizeStrategy : ISizeStrategy
   {
-    public InterleavedRowAndColumnSizeStrategy(
-      IIncrementalRowStrategy rowSelectionStrategy,
-      IRowMajorColumnStrategy columnSelectionStrategy)
+    public InterleavedRowAndColumnSizeStrategy(IRowStrategy rowSelectionStrategy, IRowMajorColumnStrategy columnSelectionStrategy)
     {
       RowSelectionStrategy = rowSelectionStrategy;
       ColumnSelectionStrategy = columnSelectionStrategy;
     }
 
-    internal IIncrementalRowStrategy RowSelectionStrategy { get; }
+    internal IRowStrategy RowSelectionStrategy { get; }
+
     internal IRowMajorColumnStrategy ColumnSelectionStrategy { get; }
 
-    public IAreaScan BeginSize(Plane<ISpace> availableSpace)
-      => new Scan(
-        availableSpace,
-        RowSelectionStrategy.BeginRows(),
-        ColumnSelectionStrategy.BeginColumns(availableSpace.Width));
+    public ISizeScan Begin(Orientation along)
+      => along == Orientation.Vertical
+        ? new Scan(RowSelectionStrategy.Begin(), ColumnSelectionStrategy)
+        : new Scanning.WholeSize(Whole, along);
 
-    public Size GetSize(Plane<ISpace> availableSpace) => Scans.FoldSize(BeginSize(availableSpace), availableSpace);
-
-    private sealed class Scan : IAreaScan
+    private Size Whole(Plane<ISpace> region)
     {
-      /// <summary>
-      /// How many rows the width phase took a verdict on and accepted. They are rows 0 to
-      /// <c>_accepted - 1</c>, contiguously, because the first refusal ends the walk.
-      /// </summary>
-      private int _accepted;
+      var rows = Scans.SelectRows(RowSelectionStrategy, region);
+      var columns = ColumnAccumulators.Fold(ColumnSelectionStrategy.BeginColumns(region.Width), region.Slice(new Area(region.Width, rows)));
 
-      /// <summary>
-      /// Whether the width phase read the row that ends the extent — the row at <see cref="_accepted"/>,
-      /// whose refusal is remembered here rather than asked for again.
-      /// </summary>
+      return new Size(columns, rows);
+    }
+
+    private sealed class Scan : ISizeScan
+    {
+      private readonly IRowScan _rows;
+      private readonly IRowMajorColumnStrategy _columns;
+      private IColumnAccumulator? _accumulator;
       private bool _stopped;
 
-      public Scan(Plane<ISpace> space, IRowScan rows, IColumnAccumulator columns)
+      internal Scan(IRowScan rows, IRowMajorColumnStrategy columns)
       {
-        Rows = rows;
-        Width = DecideWidth(space, rows, columns);
+        _rows = rows;
+        _columns = columns;
       }
 
-      /// <inheritdoc/>
-      public int Width { get; }
+      public bool Incremental => true;
 
-      private IRowScan Rows { get; }
-
-      /// <inheritdoc/>
-      public bool IncludesRow(Plane<ISpace> space, int row)
+      public bool Take(Plane<ISpace> region, int taken)
       {
-        // Replayed, not re-read. A row rule is told each row once — some carry state that says so —
-        // and the width phase already told this one about every row up to and including the one that
-        // stopped it. Replaying from what that phase recorded is what keeps the cell reads single-pass.
-        if (row < _accepted)
-          return true;
-
         if (_stopped)
           return false;
 
-        return Rows.IncludesRow(space, row);
-      }
+        _accumulator ??= _columns.BeginColumns(region.Width);
 
-      /// <summary>
-      /// The one forward walk: the row rule's verdicts, with every accepted row fed to the column
-      /// accumulator, for as long as the accumulator could still change its mind.
-      /// </summary>
-      private int DecideWidth(Plane<ISpace> space, IRowScan rows, IColumnAccumulator columns)
-      {
-        var height = space.Area.Height;
-
-        while (!columns.IsSettled && _accepted < height)
+        if (!_rows.IncludesRow(region, taken))
         {
-          if (!rows.IncludesRow(space, _accepted))
-          {
-            _stopped = true;
-            break;
-          }
-
-          columns.Include(space, _accepted);
-          _accepted++;
+          _stopped = true;
+          return false;
         }
 
-        return columns.Count;
+        if (!_accumulator.IsSettled)
+          _accumulator.Include(region, taken);
+
+        return true;
       }
+
+      public int? Across(Plane<ISpace> region, int taken, bool final)
+      {
+        _accumulator ??= _columns.BeginColumns(region.Width);
+
+        return _accumulator.IsSettled || _stopped || final ? _accumulator.Count : (int?)null;
+      }
+
+      public int Along(Plane<ISpace> region, int taken)
+        => _rows.Required is int required && taken < required ? throw new OutOfBoundsException() : taken;
+
+      public bool Complete(int taken) => _rows.Required is not int required || taken == required;
+
+      public Size Declared => default;
     }
   }
 }

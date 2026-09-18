@@ -70,7 +70,7 @@ namespace Unrect.Strategies
     /// reads as "past the blank band, then one more row".
     /// </summary>
     public static IOffsetStrategy Then(params IOffsetStrategy[] offsets)
-      => new CompositeOffsetSizeStrategy(offsets).ToOffsetStrategy();
+      => new CompositeOffsetStrategy(offsets);
 
     // --- The two lifts: where a matcher puts a projection ---------------------------------------------
     //
@@ -90,11 +90,11 @@ namespace Unrect.Strategies
     /// projection owns it — a caption its section should describe, or a label row it reads.
     /// </summary>
     public static IOffsetStrategy To(IRowLandmark landmark)
-      => Lift(new LandmarkRowStrategy(NotNull(landmark, nameof(landmark)), past: false));
+      => new RowLandmarkOffsetStrategy(NotNull(landmark, nameof(landmark)), past: false);
 
     /// <summary>Onto the column <paramref name="landmark"/> matches; the column twin of <see cref="To(IRowLandmark)"/>.</summary>
     public static IOffsetStrategy To(IColumnLandmark landmark)
-      => Lift(new LandmarkColumnStrategy(NotNull(landmark, nameof(landmark)), past: false));
+      => new ColumnLandmarkOffsetStrategy(NotNull(landmark, nameof(landmark)), past: false);
 
     /// <summary>
     /// Onto the row after the one <paramref name="landmark"/> matches, for a projection that starts
@@ -102,11 +102,11 @@ namespace Unrect.Strategies
     /// without the hard-coded 1 that stood in for the matched row's own height.
     /// </summary>
     public static IOffsetStrategy Past(IRowLandmark landmark)
-      => Lift(new LandmarkRowStrategy(NotNull(landmark, nameof(landmark)), past: true));
+      => new RowLandmarkOffsetStrategy(NotNull(landmark, nameof(landmark)), past: true);
 
     /// <summary>Onto the column after the match; the column twin of <see cref="Past(IRowLandmark)"/>.</summary>
     public static IOffsetStrategy Past(IColumnLandmark landmark)
-      => Lift(new LandmarkColumnStrategy(NotNull(landmark, nameof(landmark)), past: true));
+      => new ColumnLandmarkOffsetStrategy(NotNull(landmark, nameof(landmark)), past: true);
 
     // --- Anchoring to the far edge --------------------------------------------------------------
     //

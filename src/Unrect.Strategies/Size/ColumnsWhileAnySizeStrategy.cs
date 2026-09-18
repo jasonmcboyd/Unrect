@@ -1,12 +1,10 @@
 using System;
+
 using Unrect.Core;
 
 namespace Unrect.Strategies
 {
-  /// <summary>
-  /// The column transpose of <see cref="RowsWhileAnySizeStrategy"/>: full available height, and as
-  /// many leading columns as have at least one cell satisfying the predicate.
-  /// </summary>
+  /// <summary>The leading columns in which some cell satisfies the predicate, the full height down.</summary>
   internal sealed class ColumnsWhileAnySizeStrategy : ISizeStrategy
   {
     public ColumnsWhileAnySizeStrategy(Func<Point<ISpace>, bool> predicate)
@@ -16,7 +14,9 @@ namespace Unrect.Strategies
 
     private IColumnStrategy ColumnSelectionStrategy { get; }
 
-    public Size GetSize(Plane<ISpace> availableSpace)
-      => new Size(ColumnSelectionStrategy.SelectColumns(availableSpace), availableSpace.Area.Height);
+    public ISizeScan Begin(Orientation along)
+      => along == Orientation.Horizontal
+        ? new ColumnsSizeScan(ColumnSelectionStrategy.Begin(), fullHeight: true)
+        : new Scanning.WholeSize(region => new Size(Scans.SelectColumns(ColumnSelectionStrategy, region), region.Area.Height), along);
   }
 }

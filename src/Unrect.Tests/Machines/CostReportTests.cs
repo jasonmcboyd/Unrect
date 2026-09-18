@@ -41,8 +41,9 @@ namespace Unrect.Tests.Machines
     [Fact]
     public void ABlockStreamsUnderTheVocabularysOwnAreasAndHoldsUnderAnOpaqueOne()
     {
-      // The bare Range is the discovered block, a rule the engine can run per row; a lambda area
-      // is a function of the whole plane, so the block that carries it is held and placed at close.
+      // The bare Range is the discovered block, whose scan answers per row; a lambda area is a
+      // function of the whole plane, its scan answers only at the end, and the block that carries
+      // it is held and placed at close.
       var discovered = CostReport.Of(Range(b => b.Height));
       var opaque = CostReport.Of(Sized(SelectArea(plane => new Size(1, 1))).Of(Range(b => b.Height)));
 
@@ -51,7 +52,7 @@ namespace Unrect.Tests.Machines
       Assert.Equal(Axes.None, discovered.Lines[0].Axis);
 
       Assert.False(opaque.Lines[0].Streams);
-      Assert.Equal("its placement has no per-span form under a row driver", opaque.Lines[0].Hold);
+      Assert.Equal("its placement answers only over its whole extent under a row driver", opaque.Lines[0].Hold);
     }
 
     [Fact]
@@ -82,7 +83,7 @@ namespace Unrect.Tests.Machines
       var report = CostReport.Of(RightOf(ColumnContaining("Investor")).Of(Text()));
 
       Assert.False(report.Lines[0].Streams);
-      Assert.Equal("its placement has no per-span form under a row driver", report.Lines[0].Hold);
+      Assert.Equal("its placement answers only over its whole extent under a row driver", report.Lines[0].Hold);
     }
 
     [Fact]

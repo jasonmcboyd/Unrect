@@ -1,29 +1,16 @@
 namespace Unrect.Core
 {
   /// <summary>
-  /// The per-row half of a row strategy, exposed so a bound can be discovered as a projection
-  /// consumes it instead of measured before the projection starts.
-  /// <para>
-  /// A scan is one-shot and may carry state: <see cref="IncludesRow"/> is called with
-  /// <c>row = 0, 1, 2, …</c> in order, never repeated and never skipped, and the first <c>false</c>
-  /// ends the extent — no call is made after it. A scan is never told how much space is available,
-  /// which is why a strategy that guarantees something about the available height cannot be one.
-  /// </para>
+  /// The machine a row strategy builds: asked one row at a time whether the row belongs to the
+  /// region, over the rows shown so far. A scan is asked each row once, in order, so it may carry
+  /// state from one to the next.
   /// </summary>
   public interface IRowScan
   {
-    /// <summary>
-    /// Whether <paramref name="row"/> of <paramref name="space"/> lies inside the extent.
-    /// <para>
-    /// Every call must pass the same space the scan was begun over: the argument to
-    /// <see cref="IIncrementalSizeStrategy.BeginSize"/> or
-    /// <see cref="IIncrementalAreaStrategy.BeginArea"/>, or — for a scan from
-    /// <see cref="IIncrementalRowStrategy.BeginRows"/>, which is told no space at all — whichever
-    /// space the first call hands it. A scan may answer from state it recorded while deciding its
-    /// width rather than consulting the space, so folding one over any other space is undefined
-    /// rather than merely slower. This is the invariant the interleaved strategy's replay rests on.
-    /// </para>
-    /// </summary>
+    /// <summary>Whether row <paramref name="row"/> of <paramref name="space"/> belongs to the region.</summary>
     bool IncludesRow(Plane<ISpace> space, int row);
+
+    /// <summary>The number of rows the scan is owed, for one that counts them; null for one that discovers them.</summary>
+    int? Required { get; }
   }
 }

@@ -1,9 +1,13 @@
 namespace Unrect.Core
 {
-  /// <summary>How a projection's declared extent is found, once its origin is already known.</summary>
+  /// <summary>
+  /// The area a region occupies — a size strategy under the name a placement declares it by.
+  /// The same machine, <see cref="ISizeScan"/>; what a whole region answers is
+  /// <see cref="Scans.GetArea"/>.
+  /// </summary>
   public interface IAreaStrategy
   {
-    /// <summary>The rectangle to use, measured from the top-left of <paramref name="availableSpace"/>. Throws <see cref="OutOfBoundsException"/> when none fits.</summary>
-    Area GetArea(Plane<ISpace> availableSpace);
+    /// <summary>A fresh scan, to be shown spans along <paramref name="along"/>.</summary>
+    ISizeScan Begin(Orientation along);
   }
 }

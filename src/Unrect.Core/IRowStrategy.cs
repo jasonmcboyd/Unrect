@@ -1,9 +1,12 @@
 namespace Unrect.Core
 {
-  /// <summary>How many of a space's leading rows a projection claims — the row half of an area, picked independently of the column half.</summary>
+  /// <summary>
+  /// Which leading rows of a region belong to it — declared as the machine that decides, one row
+  /// at a time. What a whole region answers is the fold of the scan: <see cref="Scans.SelectRows"/>.
+  /// </summary>
   public interface IRowStrategy
   {
-    /// <summary>How many leading rows of <paramref name="space"/>, from the top, this strategy selects.</summary>
-    int SelectRows(Plane<ISpace> space);
+    /// <summary>A fresh scan, to be asked row by row.</summary>
+    IRowScan Begin();
   }
 }

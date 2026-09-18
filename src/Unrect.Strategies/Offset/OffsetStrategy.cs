@@ -2,6 +2,7 @@ using Unrect.Core;
 
 namespace Unrect.Strategies
 {
+  /// <summary>A size read as an offset: skip while the size takes, start where it stops.</summary>
   internal sealed class OffsetStrategy : IOffsetStrategy
   {
     public OffsetStrategy(ISizeStrategy strategy)
@@ -11,6 +12,6 @@ namespace Unrect.Strategies
 
     internal ISizeStrategy Strategy { get; }
 
-    public Offset GetOffset(Plane<ISpace> availableSpace) => new Offset(Strategy.GetSize(availableSpace));
+    public IOffsetScan Begin(Orientation along) => new Scanning.SizeAsOffset(Strategy.Begin(along), along);
   }
 }

@@ -1,17 +1,13 @@
 using System;
+
 using Unrect.Core;
 
 namespace Unrect.Strategies
 {
   /// <summary>
-  /// Column <c>c</c> is included when every one of its cells satisfies the predicate, and columns are
-  /// taken while that holds contiguously from 0.
-  /// <para>
-  /// Read row-major, for the reasons given on <see cref="TakeWhileAnyColumnStrategy"/>. The early
-  /// exit is that strategy's dual: the answer starts at the full width and only ever falls, so it is
-  /// settled once it reaches zero, where the "any" answer starts at zero and is settled once it
-  /// reaches the full width.
-  /// </para>
+  /// The leading columns in which every cell satisfies the predicate. Asked column by column it
+  /// reads the column; asked a row at a time, as a discovered block's width is under a row driver,
+  /// it accumulates: a failing cell in column c rules out c and every column after it.
   /// </summary>
   internal sealed class TakeWhileAllColumnStrategy : IRowMajorColumnStrategy
   {
@@ -24,8 +20,14 @@ namespace Unrect.Strategies
 
     public IColumnAccumulator BeginColumns(int width) => new Accumulator(Predicate, width);
 
-    public int SelectColumns(Plane<ISpace> space)
-      => ColumnAccumulators.Fold(BeginColumns(space.Width), space);
+    public IColumnScan Begin() => new Scanning.RowMajorColumns(this, (space, column) =>
+    {
+      for (var row = 0; space.HasRow(row); row++)
+        if (!Predicate(space[column, row]))
+          return false;
+
+      return true;
+    });
 
     private sealed class Accumulator : IColumnAccumulator
     {
@@ -35,18 +37,14 @@ namespace Unrect.Strategies
         Count = width;
       }
 
-      /// <summary>The leading run of columns no row has ruled out yet — the answer so far.</summary>
       public int Count { get; private set; }
 
-      /// <summary>Nothing is left to rule out once the run is empty, so zero is where it settles.</summary>
       public bool IsSettled => Count == 0;
 
       private Func<Point<ISpace>, bool> Predicate { get; }
 
       public void Include(Plane<ISpace> space, int row)
       {
-        // A failing cell in column c rules out c and every column after it, and no later row can
-        // bring one back — so columns at or past the answer are never read again.
         for (var column = 0; column < Count; column++)
         {
           if (!Predicate(space[column, row]))

@@ -1,12 +1,9 @@
 using System;
+
 using Unrect.Core;
 
 namespace Unrect.Strategies
 {
-  /// <summary>
-  /// The column transpose of <see cref="TakeToRowStrategy"/>: scans right to the first matching
-  /// column and takes the columns before it, optionally including the match itself.
-  /// </summary>
   internal sealed class TakeToColumnStrategy : IColumnStrategy
   {
     public TakeToColumnStrategy(Func<Plane<ISpace>, int, bool> predicate)
@@ -16,15 +13,26 @@ namespace Unrect.Strategies
 
     private Func<Plane<ISpace>, int, bool> Predicate { get; }
 
-    public int SelectColumns(Plane<ISpace> space)
+    public IColumnScan Begin() => new Scan(Predicate);
+
+    /// <summary>Inclusive: TakeColumnsTo means "up to and including the match".</summary>
+    private sealed class Scan : IColumnScan
     {
-      int count = 0;
+      private readonly Func<Plane<ISpace>, int, bool> _predicate;
+      private bool _matched;
 
-      while (count < space.Width && !Predicate(space, count))
-        count++;
+      internal Scan(Func<Plane<ISpace>, int, bool> predicate) => _predicate = predicate;
 
-      // Inclusive: TakeColumnsTo means "up to and including the match".
-      return count < space.Width ? count + 1 : count;
+      public int? Required => null;
+
+      public bool IncludesColumn(Plane<ISpace> space, int column)
+      {
+        if (_matched)
+          return false;
+
+        _matched = _predicate(space, column);
+        return true;
+      }
     }
   }
 }

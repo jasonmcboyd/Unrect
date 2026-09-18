@@ -31,10 +31,6 @@ namespace Unrect.Tests
 
     public static int? FindColumn(this IColumnLandmark landmark, ISheetCells space) => landmark.FindColumn(space.Region());
 
-    public static IAreaScan BeginArea(this IIncrementalAreaStrategy strategy, ISheetCells space) => strategy.BeginArea(space.Region());
-
-    public static IAreaScan BeginSize(this IIncrementalSizeStrategy strategy, ISheetCells space) => strategy.BeginSize(space.Region());
-
     public static bool IncludesRow(this IRowScan scan, ISheetCells space, int row) => scan.IncludesRow(space.Region(), row);
   }
 }

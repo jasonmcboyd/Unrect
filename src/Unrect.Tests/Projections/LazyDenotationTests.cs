@@ -25,7 +25,7 @@ namespace Unrect.Tests.Projections
   /// <para>
   /// The suite is only worth anything if the declarations it sweeps actually take the deferred
   /// branch, which is why the census at the bottom exists. That branch is reached by exactly one
-  /// thing: an area strategy that is an <see cref="IIncrementalAreaStrategy"/>. Two families are —
+  /// thing: an area strategy that is an a scan that answers row by row. Two families are —
   /// a per-row height at the full available width
   /// (<c>RowsWhileAnyValue()</c>/<c>RowsWhileAny(…)</c>, spelled through <c>Range(strategy, …)</c>
   /// or <c>.Sized(…)</c>), and, since the width/height interleave landed, a discovered block, which
@@ -463,38 +463,11 @@ namespace Unrect.Tests.Projections
       };
 
       // Both, and .Sized is no longer the difference. A table's own extent is a discovered block,
-      // which the width/height interleave made an incremental area strategy — so every rung defers
-      // as written, and .Sized now changes only how the width is arrived at (taken as the available
-      // one, rather than walked for) and not whether the height can be discovered.
-      Assert.IsAssignableFrom<IIncrementalAreaStrategy>(declared.Placement.Area);
-      Assert.IsAssignableFrom<IIncrementalAreaStrategy>(sized.Placement.Area);
-    }
-
-    [Theory]
-    [InlineData("Range(width, height)")]
-    [InlineData("WholeExtent")]
-    [InlineData("Extent(width, height)")]
-    public void ADeclarationWhoseExtentIsNotAPerRowRuleIsEagerBothWays(string spelling)
-    {
-      // The other half of the census, and the honest statement of what Part 2 does not cover. None
-      // of these extents is an IIncrementalAreaStrategy — each is a fixed size, which has nothing
-      // to discover and so nothing to defer — so the sweep above proves nothing about them.
-      // Range()'s discovered block left this theory when the width/height interleave landed; it is
-      // now ADefaultPlacementDiscoversItsWidthFromTheRowsItsHeightWouldHaveReadAnyway.
-      Func<Func<CellBlock<ISheetCells>, int>, IProjectionDefinition<ISheetCells, int>> declare = spelling switch
-      {
-        "Range(width, height)" => project => Range(3, 3, project),
-        "WholeExtent" => project => Range(WholeExtent(), project),
-        "Extent(width, height)" => project => Range(Extent(3, 3), project),
-
-        _ => throw new ArgumentOutOfRangeException(nameof(spelling), spelling, "No such spelling."),
-      };
-
-      Assert.IsNotAssignableFrom<IIncrementalAreaStrategy>(declare(_ => 0).Placement.Area);
-
-      Assert.Equal(
-        RowsReadBeforeTheProjectionRuns(declare, Sheet(), eager: true),
-        RowsReadBeforeTheProjectionRuns(declare, Sheet(), eager: false));
+      // whose scan answers a row at a time — so every rung streams as written, and .Sized now
+      // changes only how the width is arrived at (taken as the available one, rather than walked
+      // for) and not whether the height can be discovered.
+      Assert.True(declared.Placement.Area!.Begin(Orientation.Vertical).Incremental);
+      Assert.True(sized.Placement.Area!.Begin(Orientation.Vertical).Incremental);
     }
 
     /// <summary>
@@ -595,19 +568,23 @@ namespace Unrect.Tests.Projections
     /// for it, and a branch the differential sweep never enters is a branch the sweep does not
     /// cover.
     /// </summary>
-    private sealed class OverwideStrategy : IIncrementalAreaStrategy
+    private sealed class OverwideStrategy : IAreaStrategy
     {
-      public IAreaScan BeginArea(Plane<ISpace> availableSpace) => new Scan(availableSpace.Area.Width + 1);
+      public ISizeScan Begin(Orientation along) => new Scan();
 
-      public Area GetArea(Plane<ISpace> availableSpace) => Scans.FoldArea(BeginArea(availableSpace), availableSpace);
-
-      private sealed class Scan : IAreaScan
+      private sealed class Scan : ISizeScan
       {
-        public Scan(int width) => Width = width;
+        public bool Incremental => true;
 
-        public int Width { get; }
+        public bool Take(Plane<ISpace> region, int taken) => !region[0, taken].IsBlank;
 
-        public bool IncludesRow(Plane<ISpace> space, int row) => !space[0, row].IsBlank;
+        public int? Across(Plane<ISpace> region, int taken, bool final) => region.Width + 1;
+
+        public int Along(Plane<ISpace> region, int taken) => taken;
+
+        public bool Complete(int taken) => true;
+
+        public Size Declared => default;
       }
     }
   }

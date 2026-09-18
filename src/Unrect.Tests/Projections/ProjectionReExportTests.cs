@@ -109,18 +109,8 @@ namespace Unrect.Tests.Projections
       return data;
     }
 
-    /// <summary>
-    /// The two objects say the same thing about their own nature: same runtime type, and the same
-    /// answer to each incremental interface the engine type-tests for.
-    /// </summary>
-    private static void AssertTransparent(object typed, object erased)
-    {
-      Assert.IsType(erased.GetType(), typed);
-
-      Assert.Equal(erased is IIncrementalAreaStrategy, typed is IIncrementalAreaStrategy);
-      Assert.Equal(erased is IIncrementalRowStrategy, typed is IIncrementalRowStrategy);
-      Assert.Equal(erased is IIncrementalSizeStrategy, typed is IIncrementalSizeStrategy);
-    }
+    /// <summary>The two objects are the same thing: the same runtime type, so the same scan when asked.</summary>
+    private static void AssertTransparent(object typed, object erased) => Assert.IsType(erased.GetType(), typed);
 
     private static (IAreaStrategy Typed, IAreaStrategy Erased) Extents(string name) => name switch
     {

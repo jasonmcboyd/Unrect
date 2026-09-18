@@ -1,21 +1,13 @@
 using System;
+
 using Unrect.Core;
 
 namespace Unrect.Strategies
 {
   /// <summary>
-  /// Column <c>c</c> is included when at least one of its cells satisfies the predicate, and columns
-  /// are taken while that holds contiguously from 0.
-  /// <para>
-  /// Read row-major rather than column-major, which is the same answer for one forward pass instead
-  /// of one pass per column, and — the reason for the shape — asks for the height only as the walk's
-  /// terminal condition. A column-major scan asks for the full height of every column it reads,
-  /// which against a lazily bounded space resolves the whole bound before anything has consumed it.
-  /// </para>
-  /// <para>
-  /// The walk lives in the accumulator rather than in <c>SelectColumns</c>, so the same steps serve
-  /// a rows-then-columns extent measuring its width and its height in one pass.
-  /// </para>
+  /// The leading columns in which some cell satisfies the predicate. Asked column by column it
+  /// reads the column; asked a row at a time it accumulates, and settles once every column has
+  /// matched.
   /// </summary>
   internal sealed class TakeWhileAnyColumnStrategy : IRowMajorColumnStrategy
   {
@@ -28,8 +20,14 @@ namespace Unrect.Strategies
 
     public IColumnAccumulator BeginColumns(int width) => new Accumulator(Predicate, width);
 
-    public int SelectColumns(Plane<ISpace> space)
-      => ColumnAccumulators.Fold(BeginColumns(space.Width), space);
+    public IColumnScan Begin() => new Scanning.RowMajorColumns(this, (space, column) =>
+    {
+      for (var row = 0; space.HasRow(row); row++)
+        if (Predicate(space[column, row]))
+          return true;
+
+      return false;
+    });
 
     private sealed class Accumulator : IColumnAccumulator
     {
@@ -41,10 +39,8 @@ namespace Unrect.Strategies
         _matched = new bool[width];
       }
 
-      /// <summary>The leading run of matched columns — the answer so far.</summary>
       public int Count { get; private set; }
 
-      /// <summary>A later row can only extend the run, so it is settled once it spans the full width.</summary>
       public bool IsSettled => Count == _matched.Length;
 
       private Func<Point<ISpace>, bool> Predicate { get; }

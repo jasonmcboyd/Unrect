@@ -6,24 +6,24 @@ namespace Unrect.Projections
 {
   /// <summary>
   /// What a driven child's placement decides, span by span: where it starts, whether it takes the
-  /// next span, and how wide it is once that can be known. Owns the placement's two rules and the
+  /// next span, and how wide it is once that can be known. Owns the placement's two scans and the
   /// wording of every failure they can raise, so the handle around it is left with the protocol —
   /// which spans were offered, which were kept, what the inner machine was fed.
   /// </summary>
   internal sealed class StreamingPlacement<TSpace>
     where TSpace : class, ISpace
   {
-    private readonly OffsetRule? _offsetRule;
-    private readonly SizeRule? _sizeRule;
+    private readonly IOffsetScan _offset;
+    private readonly ISizeScan? _size;
     private readonly IProjectionDefinition _definition;
     private readonly Orientation _driver;
     private readonly bool _strict;
     private int _skipped;
 
-    internal StreamingPlacement(OffsetRule? offsetRule, SizeRule? sizeRule, bool derived, IProjectionDefinition definition, Orientation driver, bool strict)
+    internal StreamingPlacement(IOffsetScan offset, ISizeScan? size, bool derived, IProjectionDefinition definition, Orientation driver, bool strict)
     {
-      _offsetRule = offsetRule;
-      _sizeRule = sizeRule;
+      _offset = offset;
+      _size = size;
       Derived = derived;
       _definition = definition;
       _driver = driver;
@@ -40,7 +40,7 @@ namespace Unrect.Projections
     internal int? Width { get; private set; }
 
     /// <summary>What the size rule declared, for a message about an extent that does not fit.</summary>
-    internal Size Declared => _sizeRule!.Declared;
+    internal Size Declared => _size!.Declared;
 
     /// <summary>
     /// Set when a placement failed and the child was started non-strictly: the parent reads the
@@ -62,7 +62,7 @@ namespace Unrect.Projections
 
       try
       {
-        step = _offsetRule!.Next(region, index, out column);
+        step = _offset.Next(region, index, out column);
       }
       catch (ProjectionException)
       {
@@ -108,7 +108,7 @@ namespace Unrect.Projections
     {
       try
       {
-        return _sizeRule!.Take(region, taken);
+        return _size!.Take(region, taken);
       }
       catch (ProjectionException)
       {
@@ -140,7 +140,7 @@ namespace Unrect.Projections
 
       try
       {
-        width = _sizeRule!.Width(region, taken, rowsSettled);
+        width = _size!.Across(region, taken, rowsSettled);
       }
       catch (ProjectionException)
       {
@@ -167,7 +167,7 @@ namespace Unrect.Projections
         if (!rowsSettled)
           return false;
 
-        var size = _sizeRule.Declared.Height > 0 ? _sizeRule.Declared : new Size(settled, taken);
+        var size = _size.Declared.Height > 0 ? _size.Declared : new Size(settled, taken);
 
         if (_strict)
           throw child.Failure(_definition, $"an extent of {EngineRules.Describe(size)} does not fit here", region, size, null);
@@ -181,6 +181,6 @@ namespace Unrect.Projections
     }
 
     /// <summary>Whether <paramref name="taken"/> spans satisfy the size rule — an explicit height wants all of them.</summary>
-    internal bool Complete(int taken) => _sizeRule!.Complete(taken);
+    internal bool Complete(int taken) => _size!.Complete(taken);
   }
 }

@@ -64,8 +64,8 @@ namespace Unrect.Projections
       _child = PathRenderer.Skipped(definition) ? parent.Blaming(definition) : parent.Descend(definition);
 
       // Driven or held is PlacementRules' decision, shared with the cost report so the two agree.
-      if (PlacementRules.Streams(definition, _driver, out var offsetRule, out var sizeRule, out var derived, out _))
-        _placement = new StreamingPlacement<TSpace>(offsetRule, sizeRule, derived, definition, _driver, strict);
+      if (PlacementRules.Streams(definition, _driver, out var offset, out var size, out var derived, out _))
+        _placement = new StreamingPlacement<TSpace>(offset, size, derived, definition, _driver, strict);
 
       Reach = _placement is null ? Reach.Extent : definition.Reach;
     }
@@ -388,7 +388,7 @@ namespace Unrect.Projections
     {
       var region = _offered.Count == 0 ? Spans.Empty(_anchor, _driver) : Spans.Region(_offered[0], _offered.Count, _driver);
 
-      if (!EagerPlacement.TryPlace(_definition, region, _parent, _strict, out var offset, out var inner, out var scope, out var declared))
+      if (!EagerPlacement.TryPlace(_definition, region, _driver, _parent, _strict, out var offset, out var inner, out var scope, out var declared))
       {
         PlacementFailed = true;
         SettleNothing();
