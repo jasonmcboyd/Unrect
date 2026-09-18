@@ -115,20 +115,14 @@ namespace Unrect.Tests
     {
       try
       {
-        var scope = SessionScope<TSpace>.Root(space);
-        var mark = scope.Diagnostics.Mark();
-        var extent = Plane<TSpace>.Of(space);
-        var applied = PushSession<TSpace>.Apply(projection, space, scope);
-
-        if (!(applied.Advance.Width == 0 && applied.Advance.Height == 0 && scope.Diagnostics.AbsorbedAt(mark)))
-          ProjectionExtensions.ReportUnconsumed(projection, extent, applied.Offset.Size, applied.Consumed, scope);
+        var (applied, diagnostics) = ProjectionMapping.ApplyWithDiagnostics(projection, space);
 
         return new Observation(
           RenderValue(applied.Value),
           Render(applied.Consumed),
           Render(applied.Offset.Size),
           Render(applied.Advance),
-          scope.Diagnostics.Snapshot().Select(Describe).ToList(),
+          diagnostics.Select(Describe).ToList(),
           null,
           null,
           null);

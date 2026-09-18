@@ -1,13 +1,16 @@
 using System;
+using System.Collections.Generic;
 
 using Unrect.Core;
 
 namespace Unrect.Projections
 {
   /// <summary>
-  /// Applying a definition to a space: the engine's door. <see cref="Map"/> hands back the value,
-  /// <see cref="Apply"/> the value with what it consumed, <see cref="MapWithDiagnostics"/> the value
-  /// with everything the run had to say. A run is one forward pass over the space's rows.
+  /// Applying a definition to a space: the engine's door, and the run behind it. <see cref="Map"/>
+  /// hands back the value, <see cref="Apply"/> the value with what it consumed,
+  /// <see cref="MapWithDiagnostics"/> the value with everything the run had to say. A run is one
+  /// forward pass over the space's rows: each offered to the root machine in order, and, over a
+  /// streamed source, released once no open machine may still read it.
   /// </summary>
   public static class ProjectionMapping
   {
@@ -55,7 +58,7 @@ namespace Unrect.Projections
       if (space is null)
         throw new ArgumentNullException(nameof(space));
 
-      return PushSession<TSpace>.Apply(projection, space, SessionScope<TSpace>.Root(space));
+      return Run(projection, space, SessionScope<TSpace>.Root(space));
     }
 
     /// <summary>
@@ -84,6 +87,21 @@ namespace Unrect.Projections
     public static MapResult<TResult> MapWithDiagnostics<TSpace, TResult>(this IProjectionDefinition<TSpace, TResult> projection, TSpace space)
       where TSpace : class, ISpace
     {
+      var (applied, diagnostics) = ApplyWithDiagnostics(projection, space);
+
+      return new MapResult<TResult>(applied.Value, diagnostics);
+    }
+
+    /// <summary>
+    /// <see cref="Apply{TSpace, TResult}"/> together with everything the run noticed, unconsumed
+    /// space included — what <see cref="MapWithDiagnostics{TSpace, TResult}"/> hands back the value
+    /// half of, and what a test observes whole.
+    /// </summary>
+    internal static (AppliedResult<TResult> Applied, IReadOnlyList<ProjectionDiagnostic> Diagnostics) ApplyWithDiagnostics<TSpace, TResult>(
+      IProjectionDefinition<TSpace, TResult> projection,
+      TSpace space)
+      where TSpace : class, ISpace
+    {
       if (projection is null)
         throw new ArgumentNullException(nameof(projection));
       if (space is null)
@@ -92,14 +110,112 @@ namespace Unrect.Projections
       var scope = SessionScope<TSpace>.Root(space);
       var mark = scope.Diagnostics.Mark();
       var extent = Plane<TSpace>.Of(space);
-      var applied = PushSession<TSpace>.Apply(projection, space, scope);
+      var applied = Run(projection, space, scope);
 
       // Suppressed only when the whole parse is one absorbed failure: two boundaries that each
       // absorbed something have left a gap worth mentioning, even though neither consumed anything.
       if (!(applied.Advance.Width == 0 && applied.Advance.Height == 0 && scope.Diagnostics.AbsorbedAt(mark)))
         ProjectionExtensions.ReportUnconsumed(projection, extent, applied.Offset.Size, applied.Consumed, scope);
 
-      return new MapResult<TResult>(applied.Value, scope.Diagnostics.Snapshot());
+      return (applied, scope.Diagnostics.Snapshot());
+    }
+
+    /// <summary>
+    /// The run: <paramref name="definition"/>'s rows pushed at the machine it builds. A space that
+    /// is an <see cref="IRowFeed"/> is fed as its rows arrive, and after every row the feed is told
+    /// what the open machines still hold, so it may drop the rest; any other space retains its rows
+    /// and is simply cut into them.
+    /// </summary>
+    private static AppliedResult<TResult> Run<TSpace, TResult>(IProjectionDefinition<TSpace, TResult> definition, TSpace space, SessionScope<TSpace> scope)
+      where TSpace : class, ISpace
+    {
+      var whole = Plane<TSpace>.Of(space);
+      var root = scope.Start(new Child(definition, default), definition, scope.Anchor);
+
+      if (space is IRowFeed feed)
+      {
+        var width = whole.Width;
+
+        // Row-indexed rather than driven off what the feed has loaded: a direct read inside a
+        // machine may have loaded rows ahead of the offer, and every one of them is still offered.
+        for (var row = 0; Load(feed, row, definition, whole, scope); row++)
+        {
+          var span = whole.Slice(new Offset(0, row), new Area(width, 1));
+
+          if (!root.Next(span))
+            break;
+
+          Trim(feed, root, definition, row, span, scope);
+        }
+      }
+      else
+      {
+        foreach (var span in Spans.Of(whole, Orientation.Vertical))
+          if (!root.Next(span))
+            break;
+      }
+
+      var settlement = root.Close();
+
+      return new AppliedResult<TResult>(settlement.Value, root.Offset, settlement.Consumed);
+    }
+
+    /// <summary>
+    /// Has the feed load <paramref name="row"/>, or says the source is exhausted. A source that
+    /// throws — the disk, a file replaced mid-read — is a fault, never a statement about the data.
+    /// </summary>
+    private static bool Load<TSpace, TResult>(IRowFeed feed, int row, IProjectionDefinition<TSpace, TResult> definition, Plane<TSpace> whole, ProjectorScope<TSpace> scope)
+      where TSpace : class, ISpace
+    {
+      while (feed.Loaded <= row)
+      {
+        bool more;
+
+        try
+        {
+          more = feed.Advance();
+        }
+        catch (Exception exception) when (exception is not ProjectionException)
+        {
+          var at = row < whole.Area.Height ? whole.Slice(new Offset(0, row), new Area(whole.Width, 1)) : whole;
+
+          throw scope.Failure(definition, $"the source threw {exception.GetType().Name}: {exception.Message}", at, null, exception, isFault: true);
+        }
+
+        if (!more)
+          return false;
+      }
+
+      return true;
+    }
+
+    /// <summary>
+    /// Releases every row before the oldest one still needed, asked of the root and answered for
+    /// the whole tree, then checks the cap: more rows held than the feed allows is a fault naming
+    /// the innermost machine holding that oldest row — an enclosing boundary holds whatever its
+    /// child holds, so blaming it would name the wrapper for the leaf's reach.
+    /// </summary>
+    private static void Trim<TSpace>(IRowFeed feed, IChildHandle<TSpace> root, IProjectionDefinition definition, int current, Plane<TSpace> span, ProjectorScope<TSpace> scope)
+      where TSpace : class, ISpace
+    {
+      var hold = root.Retained(current);
+      var oldest = hold?.Row ?? current;
+
+      feed.Release(oldest);
+
+      if (feed.Cap is int cap && feed.Retained > cap)
+      {
+        var who = hold is Hold held ? PathRenderer.Describe(held.Holder) : "the declaration";
+
+        throw scope.Failure(
+          hold?.Holder ?? definition,
+          $"{who} is holding {feed.Retained} rows, from row {oldest + 1} through row {current + 1}, more than the {cap} the source allows: "
+          + "the declaration asks for more than a forward pass can keep. Raise the source's buffer cap, or bound the shape that holds",
+          span,
+          null,
+          null,
+          isFault: true);
+      }
     }
   }
 }
