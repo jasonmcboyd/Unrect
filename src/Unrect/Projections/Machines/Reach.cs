@@ -56,6 +56,6 @@ namespace Unrect.Projections
     public static bool operator !=(Reach first, Reach second) => !first.Equals(second);
 
     /// <inheritdoc/>
-    public override string ToString() => IsNone ? "none" : IsExtent ? "extent" : $"{_spans} spans";
+    public override string ToString() => IsNone ? "none" : IsExtent ? "extent" : _spans == 1 ? "1 span" : $"{_spans} spans";
   }
 }

@@ -50,6 +50,49 @@ namespace Unrect.Projections
   /// </summary>
   internal static class PlacementRules
   {
+    /// <summary>
+    /// Whether <paramref name="definition"/> is driven span by span under a <paramref name="driver"/>
+    /// or held whole — the one decision the placement machine and the cost report share. A
+    /// definition streams when its placement has a per-span form along the driver and it can take
+    /// the driver's spans: along an axis it announces, or, for a collector that announces none,
+    /// under a declared rule that bounds it. Otherwise <paramref name="hold"/> says why not.
+    /// </summary>
+    internal static bool Streams(IProjectionDefinition definition, Orientation driver, out string? hold)
+      => Streams(definition, driver, out _, out _, out _, out hold);
+
+    /// <summary>The same decision, handing back the rules a streamed placement runs on.</summary>
+    internal static bool Streams(IProjectionDefinition definition, Orientation driver, out OffsetRule? offset, out SizeRule? size, out bool derived, out string? hold)
+    {
+      var spans = driver == Orientation.Vertical ? "row" : "column";
+
+      if (!TryStream(definition.Placement, driver, out offset, out size, out derived))
+      {
+        hold = $"its placement has no per-span form under a {spans} driver";
+        return false;
+      }
+
+      if (definition.Axis.Streams(driver))
+      {
+        hold = null;
+        return true;
+      }
+
+      if (definition.Axis == Axes.None)
+      {
+        if (!derived)
+        {
+          hold = null;
+          return true;
+        }
+
+        hold = "it reads its extent whole and bounds it itself";
+        return false;
+      }
+
+      hold = $"it streams along {(definition.Axis == Axes.Vertical ? "rows" : "columns")} only";
+      return false;
+    }
+
     internal static bool TryStream(Placement placement, Orientation driver, out OffsetRule? offset, out SizeRule? size, out bool derived)
     {
       size = null;

@@ -62,12 +62,8 @@ namespace Unrect.Projections
       _strict = strict;
       _driver = scope.Driver;
       _child = PathRenderer.Skipped(definition) ? parent.Blaming(definition) : parent.Descend(definition);
-      // A machine is driven when its placement streams and it can take the driver's spans: along
-      // an axis it announces, or — for a collector, which announces none — under a declared rule,
-      // since then the rule bounds it and it reads the region whole at close, along whichever axis
-      // the rule ran. A collector left to bound itself is held, and handed the region as one span.
-      _held = !PlacementRules.TryStream(definition.Placement, _driver, out _offsetRule, out _sizeRule, out _derived)
-        || !(definition.Axis.Streams(_driver) || (!_derived && definition.Axis == Axes.None));
+      // Driven or held is PlacementRules' decision, shared with the cost report so the two agree.
+      _held = !PlacementRules.Streams(definition, _driver, out _offsetRule, out _sizeRule, out _derived, out _);
       Reach = _held ? Reach.Extent : definition.Reach;
       scope.Session.Opened(this);
     }

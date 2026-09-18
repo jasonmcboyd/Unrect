@@ -121,12 +121,15 @@ namespace Unrect.Projections
     /// A boundary's unit label, unquoted, joined to its instance name as <c>label:name</c> when it
     /// also carries one; anything else as a reader would name it.
     /// </summary>
-    private static string SegmentName(PathNode node)
-    {
-      if (node.Projection.UnitName is not string label)
-        return Describe(node.Projection, node.Site);
+    private static string SegmentName(PathNode node) => SegmentName(node.Projection, node.Site);
 
-      return node.Projection.Name is string instance ? $"{label}:{instance}" : label;
+    /// <summary>The same, for a definition and the site that labels it, without a path to stand in.</summary>
+    internal static string SegmentName(IProjectionDefinition projection, UseSite site)
+    {
+      if (projection.UnitName is not string label)
+        return Describe(projection, site);
+
+      return projection.Name is string instance ? $"{label}:{instance}" : label;
     }
 
     /// <summary>
