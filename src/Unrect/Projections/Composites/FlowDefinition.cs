@@ -52,7 +52,7 @@ namespace Unrect.Projections
       private Plane<TSpace>? _first;
       private int _index;
       private IChildHandle<TSpace>? _current;
-      private int _along_;
+      private int _length;
       private int _across;
       private int _previous;
       private bool _finished;
@@ -93,7 +93,7 @@ namespace Unrect.Projections
           throw _scope.Reading(failure, Extent());
         }
 
-        return new Settlement<T>(value, Spans.ToSize(_along_, _across, _along));
+        return new Settlement<T>(value, Spans.ToSize(_length, _across, _along));
       }
 
       private bool Offer(Plane<TSpace> span)
@@ -120,7 +120,7 @@ namespace Unrect.Projections
         }
 
         var anchor = _first is Plane<TSpace> first
-          ? Spans.EmptyAt(first, _along_, _along)
+          ? Spans.EmptyAt(first, _length, _along)
           : _scope.Anchor;
 
         return _flow.Layout.Runners[index].Start(_scope, _flow.Layout.Children[index], anchor);
@@ -144,7 +144,7 @@ namespace Unrect.Projections
 
         _values[_index] = value;
         _previous = Spans.Along(closed.Advance, _along);
-        _along_ += _previous;
+        _length += _previous;
         _across = Math.Max(_across, Spans.Across(closed.Advance, _along));
         _index++;
 
@@ -161,11 +161,11 @@ namespace Unrect.Projections
       /// reading the very cells that just failed, so it fails the same way for the same reason.
       /// </summary>
       private bool FollowsAnEmptySibling(ProjectionException failure)
-        => _index > 0 && _previous == 0 && _first is Plane<TSpace> first && failure.Location.IsAt(first.Origin + Spans.Step(_along_, _along));
+        => _index > 0 && _previous == 0 && _first is Plane<TSpace> first && failure.Location.IsAt(first.Origin + Spans.Step(_length, _along));
 
       private Plane<TSpace> Extent()
         => _first is Plane<TSpace> first
-          ? new Plane<TSpace>(first.Space, first.Origin, new Area(Spans.ToSize(_along_, Math.Max(_across, first.Width), _along)))
+          ? new Plane<TSpace>(first.Space, first.Origin, new Area(Spans.ToSize(_length, Math.Max(_across, first.Width), _along)))
           : _scope.Anchor;
     }
   }

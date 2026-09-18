@@ -27,7 +27,6 @@ namespace Unrect.Projections
 
     public override Axes Axis => Axes.Vertical;
 
-
     internal override int SpanCount => HeaderRows;
 
     internal override Settlement<LabelMap> Collect(Plane<TSpace> extent, ProjectorScope<TSpace> scope)

@@ -74,6 +74,7 @@ namespace Unrect.Projections
       private Plane<TSpace>? _first;
       private int _along;
       private int _across;
+      private T? _value;
       private bool _finished;
 
       public Machine(LabelledDefinition<TSpace, T> labelled, ProjectorScope<TSpace> scope)
@@ -101,8 +102,6 @@ namespace Unrect.Projections
 
         return new Settlement<T>(_body!.Consumed.Width == 0 && _body.Consumed.Height == 0 && _header!.Consumed.Height == 0 ? default! : _value!, Spans.ToSize(_along, _across, Orientation.Vertical));
       }
-
-      private T? _value;
 
       private bool Offer(Plane<TSpace> span)
       {

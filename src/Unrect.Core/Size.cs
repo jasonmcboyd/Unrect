@@ -19,7 +19,7 @@ namespace Unrect.Core
     public int Width { get; }
 
     /// <summary>How tall.</summary>
-    public int Height{ get; }
+    public int Height { get; }
 
     /// <summary>Adds width to width and height to height.</summary>
     public static Size operator +(Size first, Size second)

@@ -185,7 +185,7 @@ namespace Unrect.Projections
       catch
       {
         // A span the machine threw on was not taken.
-        if (_offered.Count > 0 && ReferenceEquals(_offered[_offered.Count - 1].Space, span.Space) && _offered[_offered.Count - 1].Equals(span))
+        if (_offered.Count > 0 && _offered[_offered.Count - 1].Equals(span))
           _offered.RemoveAt(_offered.Count - 1);
 
         throw;
@@ -208,9 +208,9 @@ namespace Unrect.Projections
         else
         {
           var region = Spans.Region(_offered[0], index + 1, _driver).Erased();
-          var step = _placement.Advance(region, index, Spans.Across(span.Area.Size, _driver), _parent, out var refused);
+          var step = _placement.Advance(region, index, Spans.Across(span.Area.Size, _driver), _parent);
 
-          if (refused)
+          if (_placement.Failed)
           {
             PlacementFailed = true;
             return Refuse(live);

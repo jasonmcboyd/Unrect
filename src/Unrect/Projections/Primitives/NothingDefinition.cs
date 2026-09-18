@@ -30,7 +30,6 @@ namespace Unrect.Projections
 
     public override string Description => "Nothing";
 
-
     internal override int SpanCount => 0;
 
     internal override Settlement<T> Collect(Plane<TSpace> extent, ProjectorScope<TSpace> scope)

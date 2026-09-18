@@ -50,13 +50,12 @@ namespace Unrect.Projections
 
     /// <summary>
     /// The offset rule's answer for the newest span: skip it, start on it, start on the one after,
-    /// or refuse — the last with <see cref="Failed"/> set. <paramref name="region"/> is every span
-    /// offered so far; <paramref name="across"/> is how far the newest one reaches across the
-    /// driver's axis, which a column offset must fit inside.
+    /// or refuse, which sets <see cref="Failed"/>. <paramref name="region"/> is every span offered
+    /// so far; <paramref name="across"/> is how far the newest one reaches across the driver's
+    /// axis, which a column offset must fit inside.
     /// </summary>
-    internal OffsetStep Advance(Plane<ISpace> region, int index, int across, ProjectorScope<TSpace> parent, out bool refused)
+    internal OffsetStep Advance(Plane<ISpace> region, int index, int across, ProjectorScope<TSpace> parent)
     {
-      refused = false;
       OffsetStep step;
       int column;
 
@@ -69,7 +68,7 @@ namespace Unrect.Projections
         if (_strict)
           throw parent.Failure(_definition, EngineRules.Missing(exception), region, null, exception);
 
-        Failed = refused = true;
+        Failed = true;
         return OffsetStep.Skip;
       }
       catch (Exception exception) when (exception is not ProjectionException)
@@ -93,7 +92,7 @@ namespace Unrect.Projections
         if (_strict)
           throw parent.Failure(_definition, $"an offset of {EngineRules.Describe(Offset.Size)} does not fit the available space", region, Offset.Size, null);
 
-        Failed = refused = true;
+        Failed = true;
       }
 
       return step;

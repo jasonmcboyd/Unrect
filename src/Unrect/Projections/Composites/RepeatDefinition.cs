@@ -72,6 +72,7 @@ namespace Unrect.Projections
       private int _along;
       private int _across;
       private int _attemptStart;
+      private int _itemStart;
       private int _mark;
       private IChildHandle<TSpace, T>? _item;
       private bool _separating;
@@ -234,8 +235,6 @@ namespace Unrect.Projections
         else
           _item = StartItem(position);
       }
-
-      private int _itemStart;
 
       private IChildHandle<TSpace, T> StartItem(int at)
       {
