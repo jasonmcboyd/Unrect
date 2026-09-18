@@ -1,9 +1,10 @@
 # The push interpreter: what each machine does with a span
 
-**Status.** First cut, 2026-09-18, for the owner's review. Phase 2 of `engine-split.md` §9. Written
-against `272032b`, the end of phase 1, on `experiment/engine-split`. Nothing here is built. The
-rulings in §0 were settled with the owner in the session that produced this document; the
-decisions in §11 were not, and are recommendations.
+**Status.** Accepted by the owner, 2026-09-18, after two revisions in review (§5.1 added; §8
+reframed around one door). Phase 2 of `engine-split.md` §9, complete; it is the design phase 3 builds
+from. Written against `272032b`, the end of phase 1, on `experiment/engine-split`. Nothing here is
+built yet. The rulings in §0 were settled with the owner in the session that produced this document;
+the decisions in §11 were accepted as recommended.
 
 `engine-split.md` fixed the shape: a definition builds its own machine (`Start`), the machine is
 `bool Next(span)` and `Close()`, buffering is announced upward, and `Unrect.Engine` holds only the
@@ -481,7 +482,7 @@ half renamed as the calculus.
 
 ---
 
-## 11. Decisions for the owner
+## 11. Decisions (accepted as recommended, 2026-09-18)
 
 | # | Decision | Recommendation |
 |---|---|---|
