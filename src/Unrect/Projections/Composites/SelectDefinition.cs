@@ -53,19 +53,5 @@ namespace Unrect.Projections
         }
       }
     }
-
-    public override ProjectionResult<TResult> Project(Plane<TSpace> extent, ProjectionContext context)
-    {
-      var applied = ProjectionEngine.Apply(Inner, extent, context);
-
-      try
-      {
-        return new ProjectionResult<TResult>(Selector(applied.Value), applied.Advance, applied.Presence);
-      }
-      catch (CellReadException failure)
-      {
-        throw context.Reading(failure, extent);
-      }
-    }
   }
 }

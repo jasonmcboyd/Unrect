@@ -95,20 +95,5 @@ namespace Unrect.Projections
         return scope.Start(_labelled.Children[0], _labelled.Body, scope.Anchor, inheritSite: true);
       }
     }
-
-    public override ProjectionResult<T> Project(Plane<TSpace> extent, ProjectionContext context)
-    {
-      // Bound the body to the labelled width only when the extent is wider, so a sheet with trailing
-      // blank columns reads under the same columns the labels describe. On an exact-width extent the
-      // body is handed through untouched, forcing nothing.
-      var width = Map.Labels.Count;
-      var body = extent.Width > width
-        ? extent.Narrowed(width)
-        : extent;
-
-      var applied = ProjectionEngine.Apply(Body, body, context.PushLabels(LabelledAxis, Map, body.Origin));
-
-      return new ProjectionResult<T>(applied.Value, applied.Advance, applied.Presence);
-    }
   }
 }

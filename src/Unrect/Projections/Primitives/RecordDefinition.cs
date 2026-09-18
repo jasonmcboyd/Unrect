@@ -35,14 +35,14 @@ namespace Unrect.Projections
 
     internal override Reach Retains => Reach.Spans(1);
 
-    public override ProjectionResult<T> Project(Plane<TSpace> extent, ProjectionContext context)
+    internal override Settlement<T> Collect(Plane<TSpace> extent, ProjectionContext context)
     {
       var strip = new CellStrip<TSpace>(extent, Orientation.Horizontal, context);
       var row = new TableRow<TSpace>(context.Ordinal ?? 0, strip, context);
 
       try
       {
-        return new ProjectionResult<T>(Record(row), extent.Area.Size);
+        return new Settlement<T>(Record(row), extent.Area.Size);
       }
       catch (CellReadException failure)
       {

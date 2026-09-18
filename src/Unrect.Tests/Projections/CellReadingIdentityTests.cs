@@ -249,7 +249,9 @@ namespace Unrect.Tests.Projections
       // And the scaffolding the column is read through is visible only in the full path: the
       // record's overlay is how a row places its columns, not something a reader declared, so it is
       // folded out of the path proper and kept here where a maintainer can still see it.
-      Assert.Equal("Table<Money>[0] -> Overlay -> column 'Amount'", failure.FullPath);
+      // The full path is the drill-through: the bind rung is a header, then one band per row, the
+      // same composition the row-slot rung is made of, with the record's overlay inside the band.
+      Assert.Equal("Table<Money> -> UnderColumnLabels -> VerticalBands#2[0] -> Overlay -> column 'Amount'", failure.FullPath);
     }
 
     // --- Blank tolerance agrees too ------------------------------------------------------------------------------

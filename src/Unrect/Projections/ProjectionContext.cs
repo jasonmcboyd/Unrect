@@ -9,7 +9,7 @@ namespace Unrect.Projections
   /// The decomposition's position in the projection tree and on the sheet. Immutable: a fresh tree
   /// is built per <c>Map</c> call, so the same projection can be applied to many spaces at once.
   /// </summary>
-  public sealed class ProjectionContext
+  internal sealed class ProjectionContext
   {
     private ProjectionContext(
       ProjectionContext? parent,

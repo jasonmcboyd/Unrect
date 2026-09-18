@@ -17,6 +17,27 @@ namespace Unrect.Projections
     where TSpace : class, ISpace
   {
     public LabelledDefinition(LabelAxis axis, IProjectionDefinition<TSpace, LabelMap> header, IProjectionDefinition<TSpace, T> body, Placement placement, string? description = null)
+      : this(axis, header, placement, description)
+    {
+      Body = body ?? throw new ArgumentNullException(nameof(body));
+
+      // The header is child one and the body child two, as a flow would have numbered them.
+      Children = new[] { new Child(header, UseSite.From(null, 1)), new Child(body, UseSite.From(null, 2)) };
+    }
+
+    /// <summary>
+    /// A body built from the header once it is read — the bind rung. The body is not a child the
+    /// tree can see, and <paramref name="opacity"/> says so.
+    /// </summary>
+    public LabelledDefinition(LabelAxis axis, IProjectionDefinition<TSpace, LabelMap> header, Func<LabelMap, IProjectionDefinition<TSpace, T>?> body, string opacity, Placement placement, string? description = null)
+      : this(axis, header, placement, description)
+    {
+      LateBody = body ?? throw new ArgumentNullException(nameof(body));
+      Opacity = opacity ?? throw new ArgumentNullException(nameof(opacity));
+      Children = new[] { new Child(header, UseSite.From(null, 1)) };
+    }
+
+    private LabelledDefinition(LabelAxis axis, IProjectionDefinition<TSpace, LabelMap> header, Placement placement, string? description)
       : base(placement)
     {
       if (axis != LabelAxis.Column)
@@ -24,20 +45,20 @@ namespace Unrect.Projections
 
       LabelledAxis = axis;
       Header = header ?? throw new ArgumentNullException(nameof(header));
-      Body = body ?? throw new ArgumentNullException(nameof(body));
       Description = description ?? "UnderColumnLabels";
-
-      // The header is child one and the body child two, as a flow would have numbered them.
-      Children = new[] { new Child(header, UseSite.From(null, 1)), new Child(body, UseSite.From(null, 2)) };
+      Children = Array.Empty<Child>();
     }
 
     private LabelAxis LabelledAxis { get; }
     private IProjectionDefinition<TSpace, LabelMap> Header { get; }
-    private IProjectionDefinition<TSpace, T> Body { get; }
+    private IProjectionDefinition<TSpace, T>? Body { get; }
+    private Func<LabelMap, IProjectionDefinition<TSpace, T>?>? LateBody { get; }
 
     public override string Description { get; }
 
     public override IReadOnlyList<Child> Children { get; }
+
+    public override string? Opacity { get; }
 
     public override Axes Axis => Axes.Vertical;
 
@@ -121,9 +142,16 @@ namespace Unrect.Projections
         Took(_header.Advance, _header.Presence);
 
         var at = _first is Plane<TSpace> first ? Spans.EmptyAt(first, _along, Orientation.Vertical) : _scope.Anchor;
-        var body = new WithLabelsDefinition<TSpace, T>(_labelled.LabelledAxis, labels, _labelled.Body, Placement.Default);
 
-        _body = _scope.Start(_labelled.Children[1], body, at);
+        // A late body is built here, from the captions just read; a bind that throws is a foreign
+        // exception the placement machine around this one classifies, so nothing is caught here.
+        var inner = _labelled.Body
+          ?? _labelled.LateBody!(labels)
+          ?? throw _scope.Context.Failure(_labelled, "the row bind returned null; it must return the projection that reads one record", Extent(), null, null, isFault: true);
+        var edge = _labelled.Body is null ? new Child(inner, UseSite.From(null, 2)) : _labelled.Children[1];
+        var body = new WithLabelsDefinition<TSpace, T>(_labelled.LabelledAxis, labels, inner, Placement.Default);
+
+        _body = _scope.Start(edge, body, at);
 
         foreach (var span in _header.Shortfall())
           if (!Offer(span))
@@ -137,24 +165,15 @@ namespace Unrect.Projections
         Took(_body.Advance, _body.Presence);
       }
 
+      private Plane<TSpace> Extent()
+        => _first is Plane<TSpace> first ? Spans.Region(first, _along, Orientation.Vertical) : _scope.Anchor;
+
       private void Took(Size advance, Presence presence)
       {
         _along += advance.Height;
         _across = Math.Max(_across, advance.Width);
         _read |= presence == Presence.Read;
       }
-    }
-
-    public override ProjectionResult<T> Project(Plane<TSpace> extent, ProjectionContext context)
-    {
-      // A vertical flow of two: the header band, then the body under the labels it produced. The
-      // same arithmetic and the same sibling rule as any flow, because it runs on a flow's state.
-      var state = new FlowState<TSpace>(Orientation.Vertical, extent, context);
-
-      var labels = state.Next(Header, Children[0].Site);
-      var value = state.Next(new WithLabelsDefinition<TSpace, T>(LabelledAxis, labels, Body, Placement.Default), Children[1].Site);
-
-      return new ProjectionResult<T>(value, state.Consumed, state.Presence);
     }
   }
 }

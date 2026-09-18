@@ -28,6 +28,9 @@ namespace Unrect.Projections
 
     public override IReadOnlyList<Child> Children { get; }
 
+    /// <summary>A unit hides nothing of its own; what its body cannot show, it says for it.</summary>
+    public override string? Opacity => Body.Opacity;
+
     public override Axes Axis => Body.Axis.OrEither();
 
     public override Reach Reach => Body.Reach;
@@ -42,13 +45,6 @@ namespace Unrect.Projections
       }
 
       protected override T Finish(T value) => value;
-    }
-
-    public override ProjectionResult<T> Project(Plane<TSpace> extent, ProjectionContext context)
-    {
-      var applied = ProjectionEngine.Apply(Body, extent, context);
-
-      return new ProjectionResult<T>(applied.Value, applied.Advance, applied.Presence);
     }
   }
 }

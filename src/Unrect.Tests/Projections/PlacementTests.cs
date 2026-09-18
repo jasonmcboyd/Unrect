@@ -14,7 +14,7 @@ namespace Unrect.Tests.Projections
 {
   /// <summary>
   /// Placement is the anti-trap commitment: a projection's offset and area say where it sits in the
-  /// space it is handed, and <see cref="ProjectionEngine"/> applies them exactly once, at every
+  /// space it is handed, and the engine's placement machine applies them exactly once, at every
   /// level, including the top-level <c>Map</c>. These tests pin that rule from both ends — that it
   /// is applied at the root at all, and that it is never applied twice.
   /// </summary>

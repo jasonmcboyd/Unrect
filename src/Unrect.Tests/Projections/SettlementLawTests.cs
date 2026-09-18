@@ -25,7 +25,7 @@ namespace Unrect.Tests.Projections
   /// <list type="number">
   /// <item><strong>Repeat</strong> — an item's verdict settles before collection: the repeat must know
   /// whether the next occurrence exists, and how far it reaches, before it may keep it and move on.
-  /// Enforced by <c>ProjectionEngine.Bind</c>'s second condition (a non-strict placement never
+  /// Enforced by <c>EngineRules.Bind</c>'s second condition (a non-strict placement never
   /// defers), so a repeat's item is measured up front however it is declared.</item>
   /// <item><strong>Flow</strong> — a child settles by the advance: the band a following sibling gets
   /// is the previous child's, so a deferred failure may not outlive the cursor's step past it.</item>

@@ -5,12 +5,18 @@ namespace Unrect.Projections
   /// <summary>
   /// What a machine yields at <c>Close</c>: the value, how much of its extent it kept — both
   /// dimensions, because a parent across the machine's axis needs the other one — and the presence
-  /// it reports, as a projection result does today.
+  /// it reports.
   /// </summary>
   /// <typeparam name="TResult">What the machine reads.</typeparam>
   public readonly struct Settlement<TResult>
   {
-    /// <summary>A settlement of <paramref name="value"/> over <paramref name="consumed"/>, reporting <paramref name="presence"/>.</summary>
+    /// <summary>A settlement that read what it consumed.</summary>
+    public Settlement(TResult value, Size consumed)
+      : this(value, consumed, Presence.Read)
+    {
+    }
+
+    /// <summary>A settlement of <paramref name="value"/> over <paramref name="consumed"/>, with what its presence says.</summary>
     public Settlement(TResult value, Size consumed, Presence presence)
     {
       Value = value;

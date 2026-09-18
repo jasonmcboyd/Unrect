@@ -7,7 +7,7 @@ namespace Unrect.Projections
   /// <summary>
   /// A declared region of a space together with the projection that turns it into a value. A
   /// projection says where it sits inside the space it is handed (<see cref="Placement"/>) and what
-  /// to make of that region; <see cref="ProjectionEngine"/> is the only code that applies the
+  /// to make of that region; the engine's placement machine is the only code that applies the
   /// placement.
   /// </summary>
   public interface IProjectionDefinition
@@ -96,8 +96,9 @@ namespace Unrect.Projections
   /// </para>
   /// <para>
   /// <typeparamref name="TResult"/> is what projecting produces, and the whole of what a caller gets
-  /// back: by the time <see cref="Project"/> runs the placement is resolved, so a projection can
-  /// neither observe nor re-apply where it sits.
+  /// back: the machine <see cref="IProjectionDefinition{TSpace, TResult}.Build"/> hands back is fed
+  /// spans the placement already resolved, so a projection can neither observe nor re-apply where
+  /// it sits.
   /// </para>
   /// </summary>
   /// <typeparam name="TSpace">The space this projection is written over.</typeparam>
@@ -105,12 +106,6 @@ namespace Unrect.Projections
   public interface IProjectionDefinition<TSpace, TResult> : IProjectionDefinition
     where TSpace : class, ISpace
   {
-    /// <summary>
-    /// Projects the projection's <em>resolved</em> extent — the region the engine cut for it, with
-    /// the placement already applied.
-    /// </summary>
-    ProjectionResult<TResult> Project(Plane<TSpace> extent, ProjectionContext context);
-
     /// <summary>
     /// A copy of this projection carrying <paramref name="annotations"/> in place of its own — what
     /// <c>.Named</c>, <c>.AsUnit</c>, <c>.AsScaffolding</c> and every placement stage build.

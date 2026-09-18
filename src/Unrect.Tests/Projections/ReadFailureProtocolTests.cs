@@ -254,9 +254,9 @@ namespace Unrect.Tests.Projections
       // The same law from the streaming side, and the reason it matters: a read that failed because
       // the file is gone must never be reported as a section that was not there. Classified from the
       // exception type, so every absorbing site gets it without knowing what a workbook is.
-      Assert.True(ProjectionEngine.IsFault(new ObjectDisposedException("Workbook")));
-      Assert.True(ProjectionEngine.IsFault(new System.IO.IOException("the share went away")));
-      Assert.False(ProjectionEngine.IsFault(new InvalidOperationException("a lambda blew up")));
+      Assert.True(EngineRules.IsFault(new ObjectDisposedException("Workbook")));
+      Assert.True(EngineRules.IsFault(new System.IO.IOException("the share went away")));
+      Assert.False(EngineRules.IsFault(new InvalidOperationException("a lambda blew up")));
     }
   }
 }

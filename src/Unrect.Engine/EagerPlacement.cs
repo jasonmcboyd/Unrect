@@ -40,19 +40,19 @@ namespace Unrect.Projections
         offset = default;
 
         if (strict)
-          throw context.Failure(projection, ProjectionEngine.Missing(exception), region, null, exception);
+          throw context.Failure(projection, EngineRules.Missing(exception), region, null, exception);
 
         return false;
       }
       catch (Exception exception)
       {
-        throw context.Failure(projection, ProjectionEngine.Threw("offset", exception), region, null, exception, ProjectionEngine.IsFault(exception));
+        throw context.Failure(projection, EngineRules.Threw("offset", exception), region, null, exception, EngineRules.IsFault(exception));
       }
 
-      if (ProjectionEngine.Exceeds(offset.Size, region))
+      if (EngineRules.Exceeds(offset.Size, region))
       {
         if (strict)
-          throw context.Failure(projection, $"an offset of {ProjectionEngine.Describe(offset.Size)} does not fit the available space", region, offset.Size, null);
+          throw context.Failure(projection, $"an offset of {EngineRules.Describe(offset.Size)} does not fit the available space", region, offset.Size, null);
 
         return false;
       }
@@ -76,19 +76,19 @@ namespace Unrect.Projections
       catch (OutOfBoundsException exception)
       {
         if (strict)
-          throw ProjectionEngine.AreaFailure(scope, projection, inner, exception);
+          throw EngineRules.AreaFailure(scope, projection, inner, exception);
 
         return false;
       }
       catch (Exception exception)
       {
-        throw ProjectionEngine.AreaFailure(scope, projection, inner, exception);
+        throw EngineRules.AreaFailure(scope, projection, inner, exception);
       }
 
-      if (ProjectionEngine.Exceeds(area.Size, inner))
+      if (EngineRules.Exceeds(area.Size, inner))
       {
         if (strict)
-          throw scope.Failure(projection, $"an extent of {ProjectionEngine.Describe(area.Size)} does not fit here", inner, area.Size, null);
+          throw scope.Failure(projection, $"an extent of {EngineRules.Describe(area.Size)} does not fit here", inner, area.Size, null);
 
         return false;
       }

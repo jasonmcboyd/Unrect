@@ -237,18 +237,20 @@ namespace Unrect.Projections
       if (eachRow is null)
         throw new ArgumentNullException(nameof(eachRow));
 
-      var site = UseSite.From(declared, null);
       var rows = ValidateBindHeaderRows(headerRows);
 
-      // The bind runs inside the table's own Project, so a bind that throws is wrapped exactly as
-      // any other user code the engine calls: ProjectionEngine classifies it, and a broken read —
-      // an IO failure, a null bug — is a fault no tolerance boundary can absorb.
-      return new TableViewDefinition<TSpace, IReadOnlyList<T>>(
-        rows,
-        table => ProjectRecords(table, BoundRow(table, eachRow), site, onBlank),
-        TablePlacement(onBlank),
-        "Table",
-        opacity: "the row projection is built from the header's captions; it is known only once a header is read");
+      // The bind runs when the header closes, inside the labelled composite's machine, so a bind
+      // that throws is wrapped exactly as any other user code the engine calls: a broken read — an
+      // IO failure, a null bug — is a fault no tolerance boundary can absorb. The body it builds is
+      // one band per row; the placement already stops at a blank row unless the policy says to go on.
+      var composed = new LabelledDefinition<TSpace, IReadOnlyList<T>>(
+        LabelAxis.Column,
+        ColumnLabels(rows).AsScaffolding(),
+        labels => eachRow(labels) is { } row ? VerticalBands(1, row, onBlank.IsStop ? null : onBlank, declared).AsScaffolding() : null,
+        "the row projection is built from the header's captions; it is known only once a header is read",
+        Placement.Default).AsScaffolding();
+
+      return new UnitDefinition<TSpace, IReadOnlyList<T>>(composed, Array.Empty<Child>(), "Table", TablePlacement(onBlank));
     }
 
     /// <summary>
@@ -341,7 +343,6 @@ namespace Unrect.Projections
     /// </summary>
     private static IProjectionDefinition<TSpace, IReadOnlyList<T>> UnderColumnLabels<T>(IProjectionDefinition<TSpace, LabelMap> header, IProjectionDefinition<TSpace, IReadOnlyList<T>> body)
       => new LabelledDefinition<TSpace, IReadOnlyList<T>>(LabelAxis.Column, header, body, Placement.Default);
-
 
     /// <summary>
     /// Every body row as a dictionary keyed by the column captions, with the cells themselves for
@@ -850,45 +851,6 @@ namespace Unrect.Projections
     }
 
     // --- Shared construction ------------------------------------------------------------------
-
-    /// <summary>
-    /// Applies a record projection to every body row of a table, through the engine — so a record's
-    /// own placement is resolved exactly once, where every other placement is, and a failure inside
-    /// one carries the path and the cell. Which rows become records is
-    /// <paramref name="onBlank"/>'s: under <c>Stop</c> the extent already excludes blank rows and
-    /// this walks every row there is.
-    /// </summary>
-    private static IReadOnlyList<T> ProjectRecords<T>(TableView<TSpace> table, IProjectionDefinition<TSpace, T> eachRow, UseSite site, BlankRowStrategy onBlank)
-    {
-      // Grown rather than pre-sized, as the other row rungs are: asking how many records there are
-      // is the forcing question streaming exists to avoid.
-      var records = new List<T>();
-
-      foreach (var row in table.StreamBodyRows(onBlank))
-      {
-        // The index belongs to the table's own segment and the label to the record's, exactly as a
-        // repeat labels its occurrences. It counts body rows rather than records, so a record still
-        // cites the row it was read from where a blank one was passed over.
-        var scope = row.Context.WithIndex(row.Index).WithUseSite(site);
-
-        records.Add(ProjectionEngine.Apply(eachRow, row.Space, scope).Value);
-      }
-
-      records.TrimExcess();
-
-      return records;
-    }
-
-    /// <summary>
-    /// Runs a row bind: once per application of the table, after the header has been read and before any body
-    /// row, which is the moment the caption map exists and the only moment the description is
-    /// built. A bind that throws is not caught here — the engine wraps every foreign exception a
-    /// projection raises and classifies it, so a broken read stays a fault and a disagreement with
-    /// the data stays absorbable.
-    /// </summary>
-    private static IProjectionDefinition<TSpace, T> BoundRow<T>(TableView<TSpace> table, Func<LabelMap, IProjectionDefinition<TSpace, T>> eachRow)
-      => eachRow(table.Labels)
-        ?? throw table.Fault("the row bind returned null; it must return the projection that reads one record");
 
     private static IProjectionDefinition<TSpace, T> Strip<T>(Orientation orientation, Func<CellStrip<TSpace>, T> project, IAreaStrategy area, string description)
       => new StripDefinition<TSpace, T>(orientation, project, Placement.Of(area), description);

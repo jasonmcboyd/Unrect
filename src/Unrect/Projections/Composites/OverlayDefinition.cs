@@ -19,9 +19,6 @@ namespace Unrect.Projections
 
     public override string Description => "Overlay";
 
-    protected override LayoutState<TSpace> NewState(Plane<TSpace> extent, ProjectionContext context)
-      => new OverlayState<TSpace>(extent, context);
-
     /// <summary>An overlay streams along whatever axis every child streams along: its children run concurrently on the same spans.</summary>
     public override Axes Axis
     {

@@ -2,7 +2,7 @@ namespace Unrect.Projections
 {
   /// <summary>
   /// What kind of something — or of nothing — a projection made of the extent it was handed. It
-  /// rides beside <see cref="ProjectionResult{T}.Consumed"/> because a consumed extent of zero says
+  /// rides beside <see cref="Settlement{TResult}.Consumed"/> because a consumed extent of zero says
   /// four different things at once: a repetition with no next item, a tolerance boundary that
   /// absorbed a failure, a region that is legitimately empty, and the trigger for the
   /// following-sibling note. The rules that used to infer which of those a zero meant read it here

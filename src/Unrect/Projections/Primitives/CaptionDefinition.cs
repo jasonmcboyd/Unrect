@@ -39,7 +39,7 @@ namespace Unrect.Projections
 
     internal override Reach Retains => Reach.Spans(1);
 
-    public override ProjectionResult<string> Project(Plane<TSpace> extent, ProjectionContext context)
+    internal override Settlement<string> Collect(Plane<TSpace> extent, ProjectionContext context)
     {
       var size = extent.Area.Size;
 
@@ -56,7 +56,7 @@ namespace Unrect.Projections
           // The file's text, not the declaration's: the literal is the matcher, the cell is the
           // datum, and untrimmed because trimming is the matcher's business. Non-null because the
           // match is a text match, and a blank cell never matches one.
-          return new ProjectionResult<string>(extent[column, 0].AsText()!, size);
+          return new Settlement<string>(extent[column, 0].AsText()!, size);
 
       throw context.Failure($"expected a row containing '{Text}' here", extent);
     }

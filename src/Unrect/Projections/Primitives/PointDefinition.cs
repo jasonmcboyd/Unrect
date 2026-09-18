@@ -22,7 +22,7 @@ namespace Unrect.Projections
 
     internal override Reach Retains => Reach.Spans(1);
 
-    public override ProjectionResult<Point<TSpace>> Project(Plane<TSpace> extent, ProjectionContext context)
+    internal override Settlement<Point<TSpace>> Collect(Plane<TSpace> extent, ProjectionContext context)
     {
       var size = extent.Area.Size;
 
@@ -31,7 +31,7 @@ namespace Unrect.Projections
       if (size.Width != 1 || size.Height != 1)
         throw context.Failure($"a Point must be exactly one cell; this one is {size.Width}x{size.Height}", extent);
 
-      return new ProjectionResult<Point<TSpace>>(extent[0, 0], size);
+      return new Settlement<Point<TSpace>>(extent[0, 0], size);
     }
   }
 }

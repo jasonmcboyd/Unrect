@@ -12,7 +12,7 @@ namespace Unrect.Spreadsheets
   /// <para>
   /// Which band is open is the one thing this layer cannot work out for itself, because a region is
   /// arithmetic over the sheet rather than an object wrapping part of it. The engine says so
-  /// instead, once per placement, through <see cref="ISweepAware"/>.
+  /// instead, once per placement, by the interpreter that read it.
   /// </para>
   /// <para>
   /// A view is a value, not a handle. It has no <c>Dispose</c>, no <c>Close</c>: it can be sliced,
@@ -26,7 +26,7 @@ namespace Unrect.Spreadsheets
   /// <see cref="OutOfBoundsException"/> as it is for any space.
   /// </para>
   /// </summary>
-  internal sealed class WindowedSpace : SheetCellsBase, ISweepAware
+  internal sealed class WindowedSpace : SheetCellsBase
   {
     internal WindowedSpace(SheetStore store)
     {
@@ -50,14 +50,5 @@ namespace Unrect.Spreadsheets
 
       return Store.GetCell(column, row);
     }
-
-    /// <summary>
-    /// The band a placement has opened, passed to the store so its window keeps those rows while
-    /// the band is being swept. The origin is a sheet row already, because this space is the whole
-    /// sheet and a plane's coordinates are root.
-    /// </summary>
-    /// <param name="origin">Where the region starts.</param>
-    /// <param name="area">How big the region was declared.</param>
-    public void Sweeping(Offset origin, Area area) => Store.Sweeping(origin.Height, area.Height);
   }
 }

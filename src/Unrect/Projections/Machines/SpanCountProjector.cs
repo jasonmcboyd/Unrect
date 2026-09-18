@@ -55,9 +55,7 @@ namespace Unrect.Projections
       else
         extent = Spans.Region(first, _taken, _scope.Driver);
 
-      var result = _definition.Project(extent, _scope.Context);
-
-      return new Settlement<T>(result.Value, result.Consumed, result.Presence);
+      return _definition.Collect(extent, _scope.Context);
     }
   }
 }

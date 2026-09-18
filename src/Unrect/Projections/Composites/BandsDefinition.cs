@@ -158,51 +158,6 @@ namespace Unrect.Projections
 
     internal override Reach Retains => Reach.Spans(Stride);
 
-    public override ProjectionResult<IReadOnlyList<T>> Project(Plane<TSpace> extent, ProjectionContext context)
-    {
-      // The across axis, measured once. A vertical tiler takes the width, which is free even on an
-      // extent still being discovered; a horizontal one takes the height, which on such an extent
-      // settles it — a band spanning the other axis in full is what "column" means, so the cost
-      // comes with the axis rather than with this walk.
-      var across = Orientation == Orientation.Vertical ? extent.Width : extent.Area.Height;
-
-      var values = new List<T>();
-      var bands = 0;
-      var cursor = 0;
-
-      while (across > 0 && HasBand(extent, cursor))
-      {
-        var offset = Step(cursor);
-        var band = Band(extent, offset, across);
-
-        if (OnBlank is BlankRowStrategy onBlank && IsBlank(band))
-        {
-          if (onBlank.IsStop)
-            break;
-
-          ReportBlank(onBlank, band, context);
-        }
-        else
-        {
-          var scope = context.WithIndex(bands).WithOrdinal(bands).WithUseSite(EachSite);
-
-          values.Add(ProjectionEngine.Apply(Each, band, scope).Value);
-        }
-
-        bands++;
-        cursor += Stride;
-      }
-
-      values.TrimExcess();
-
-      // The cursor is bands VISITED times the stride, not bands collected: a band the policy omitted
-      // was still cut out of the extent, and the shape after this one starts past it.
-      return new ProjectionResult<IReadOnlyList<T>>(
-        values,
-        Extent(cursor, across),
-        values.Count == 0 ? Presence.Empty : Presence.Read);
-    }
-
     /// <summary>Whether a whole band is left at <paramref name="cursor"/>; a part-band is not one.</summary>
     private bool HasBand(Plane<TSpace> extent, int cursor)
       => Orientation == Orientation.Vertical

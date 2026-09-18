@@ -185,34 +185,5 @@ namespace Unrect.Projections
     }
 
     internal override Reach Retains => Reach.Spans(Bottom + 1);
-
-    public override ProjectionResult<TResult> Project(Plane<TSpace> extent, ProjectionContext context)
-    {
-      var size = extent.Area.Size;
-      var width = size.Width - Left - Right;
-      var height = size.Height - Top - Bottom;
-
-      // Blames itself explicitly: an unnamed pad is transparent, so the context belongs to its
-      // parent and would otherwise take the blame for the padding.
-      if (width < 0 || height < 0)
-        throw context.Failure(
-          this,
-          $"a padding of {Left} left, {Top} top, {Right} right, {Bottom} bottom does not fit an extent of {size.Width}x{size.Height}",
-          extent,
-          null,
-          null);
-
-      // The context is handed on unchanged: a location comes from the plane, which carries the
-      // sheet's own coordinates, so the inset region already knows where it is.
-      var applied = ProjectionEngine.Apply(
-        Inner,
-        extent.Slice(new Offset(Left, Top), new Area(width, height)),
-        context);
-
-      return new ProjectionResult<TResult>(
-        applied.Value,
-        applied.Advance + new Size(Left + Right, Top + Bottom),
-        applied.Presence);
-    }
   }
 }

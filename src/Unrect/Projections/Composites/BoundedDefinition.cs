@@ -135,31 +135,6 @@ namespace Unrect.Projections
 
     internal override Reach Retains => Reach.Extent;
 
-    public override ProjectionResult<TResult> Project(Plane<TSpace> extent, ProjectionContext context)
-    {
-      var size = extent.Area.Size;
-      var found = Landmark.Find(extent.Erased());
-      var limit = found ?? (IsVertical ? size.Height : size.Width);
-
-      // A missing end is a disagreement about the shape of the data, not a bug in the reading code,
-      // so it is absorbable — and it is blamed on the projection being bounded, because "Until" is
-      // not what the user was looking for.
-      if (found is null && !OrEnd)
-        throw context.Failure(PathRenderer.Through(this), $"{Landmark.Description} exists to end this projection", extent, null, null);
-
-      // Declared alternation rather than tolerance after a failure, so Info rather than Warning.
-      if (found is null)
-        context.Report(DiagnosticSeverity.Info, this, $"{Landmark.Description} exists to end this projection, so it ran to the end of the space", extent);
-
-      var applied = ProjectionEngine.Apply(Inner, extent.Slice(Bound(limit, size)), context);
-
-      // The bound is consumed whether or not the inner projection used it all, exactly as a
-      // declared area is: that is what puts the next sibling ON the landmark rather than somewhere
-      // before it. Across the axis, only what the inner projection reached — bounding rows must not
-      // claim columns.
-      return new ProjectionResult<TResult>(applied.Value, Consumed(limit, applied.Advance), applied.Presence);
-    }
-
     /// <summary>The word a reader wrote for a bound on this axis, which is also how it describes itself.</summary>
     private static string Spelling(Landmark landmark)
       => landmark.Orientation == Orientation.Vertical ? "Until" : "UntilColumn";

@@ -176,14 +176,14 @@ namespace Unrect.Projections
           catch (OutOfBoundsException exception)
           {
             if (_strict)
-              throw _parent.Failure(_definition, ProjectionEngine.Missing(exception), region, null, exception);
+              throw _parent.Failure(_definition, EngineRules.Missing(exception), region, null, exception);
 
             PlacementFailed = true;
             return Refuse();
           }
           catch (Exception exception)
           {
-            throw _parent.Failure(_definition, ProjectionEngine.Threw("offset", exception), region, null, exception, ProjectionEngine.IsFault(exception));
+            throw _parent.Failure(_definition, EngineRules.Threw("offset", exception), region, null, exception, EngineRules.IsFault(exception));
           }
 
           if (step == OffsetStep.Skip)
@@ -201,7 +201,7 @@ namespace Unrect.Projections
           if (_column > Spans.Across(span.Declared.Size, _driver))
           {
             if (_strict)
-              throw _parent.Failure(_definition, $"an offset of {ProjectionEngine.Describe(Offset.Size)} does not fit the available space", Spans.Region(_offered[0], _offered.Count, _driver), Offset.Size, null);
+              throw _parent.Failure(_definition, $"an offset of {EngineRules.Describe(Offset.Size)} does not fit the available space", Spans.Region(_offered[0], _offered.Count, _driver), Offset.Size, null);
 
             PlacementFailed = true;
             return Refuse();
@@ -286,14 +286,14 @@ namespace Unrect.Projections
       catch (OutOfBoundsException exception)
       {
         if (_strict)
-          throw ProjectionEngine.AreaFailure(_child, _definition, region, exception);
+          throw EngineRules.AreaFailure(_child, _definition, region, exception);
 
         PlacementFailed = true;
         return Refuse();
       }
       catch (Exception exception)
       {
-        throw ProjectionEngine.AreaFailure(_child, _definition, region, exception);
+        throw EngineRules.AreaFailure(_child, _definition, region, exception);
       }
 
       if (!take)
@@ -355,7 +355,7 @@ namespace Unrect.Projections
       catch (OutOfBoundsException exception)
       {
         if (_strict)
-          throw ProjectionEngine.AreaFailure(_child, _definition, region, exception);
+          throw EngineRules.AreaFailure(_child, _definition, region, exception);
 
         PlacementFailed = true;
         _phase = Phase.Finished;
@@ -363,7 +363,7 @@ namespace Unrect.Projections
       }
       catch (Exception exception)
       {
-        throw ProjectionEngine.AreaFailure(_child, _definition, region, exception);
+        throw EngineRules.AreaFailure(_child, _definition, region, exception);
       }
 
       if (width is not int settled)
@@ -379,7 +379,7 @@ namespace Unrect.Projections
         var size = _sizeRule.Declared.Height > 0 ? _sizeRule.Declared : new Size(settled, _taken);
 
         if (_strict)
-          throw _child.Failure(_definition, $"an extent of {ProjectionEngine.Describe(size)} does not fit here", region, size, null);
+          throw _child.Failure(_definition, $"an extent of {EngineRules.Describe(size)} does not fit here", region, size, null);
 
         PlacementFailed = true;
         _phase = Phase.Finished;
@@ -447,7 +447,7 @@ namespace Unrect.Projections
         extent,
         null,
         exception,
-        ProjectionEngine.IsFault(exception));
+        EngineRules.IsFault(exception));
 
     private Plane<TSpace> InnerPlane(int rows)
     {
@@ -477,7 +477,7 @@ namespace Unrect.Projections
           var region = InnerRegion(_taken);
 
           if (_strict)
-            throw _child.Failure(_definition, $"an extent of {ProjectionEngine.Describe(_sizeRule.Declared)} does not fit here", region, _sizeRule.Declared, null);
+            throw _child.Failure(_definition, $"an extent of {EngineRules.Describe(_sizeRule.Declared)} does not fit here", region, _sizeRule.Declared, null);
 
           PlacementFailed = true;
           SettleNothing();
@@ -494,7 +494,7 @@ namespace Unrect.Projections
       var declared = !_derived;
       var consumed = declared ? Spans.ToSize(_taken, _width!.Value, _driver) : settlement.Consumed;
 
-      Settle(settlement.Value, consumed, ProjectionEngine.Settled(settlement.Presence, declared, consumed));
+      Settle(settlement.Value, consumed, EngineRules.Settled(settlement.Presence, declared, consumed));
     }
 
     private void ResolveEagerly()
@@ -529,7 +529,7 @@ namespace Unrect.Projections
 
       var consumed = declared ? inner.Area.Size : settlement.Consumed;
 
-      Settle(settlement.Value, consumed, ProjectionEngine.Settled(settlement.Presence, declared, consumed));
+      Settle(settlement.Value, consumed, EngineRules.Settled(settlement.Presence, declared, consumed));
     }
 
     private void Settle(T value, Size consumed, Presence presence)

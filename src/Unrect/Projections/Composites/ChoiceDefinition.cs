@@ -189,39 +189,6 @@ namespace Unrect.Projections
 
     internal override Reach Retains => Reach.Extent;
 
-    public override ProjectionResult<T> Project(Plane<TSpace> extent, ProjectionContext context)
-    {
-      ProjectionException[]? failures = null;
-
-      for (var index = 0; index < Alternatives.Length; index++)
-      {
-        var mark = context.Diagnostics.Mark();
-
-        try
-        {
-          var applied = ProjectionEngine.Apply(Alternatives[index], extent, context);
-          return new ProjectionResult<T>(applied.Value, applied.Advance, applied.Presence);
-        }
-        // A projection that broke rather than disagreed is a bug in the reading code; trying the
-        // next alternative would only bury it.
-        catch (ProjectionException failure) when (!failure.IsFault)
-        {
-          // Whatever this branch tolerated on its way to failing goes with it.
-          context.Diagnostics.Rollback(mark);
-          context.Report(
-            DiagnosticSeverity.Info,
-            failure,
-            PathRenderer.Describe(this),
-            $"alternative {index + 1} ({PathRenderer.DescribeThrough(Alternatives[index])}) did not match: {failure.Problem}");
-
-          failures ??= new ProjectionException[Alternatives.Length];
-          failures[index] = failure;
-        }
-      }
-
-      throw context.Failure(this, Summarise(failures!), extent, null, failures![failures.Length - 1]);
-    }
-
     private static readonly string[] LineBreaks = { "\r\n", "\n" };
 
     private const string Indent = "    ";

@@ -60,7 +60,7 @@ namespace Unrect.Projections
 
     internal override Reach Retains => Reach.Spans(1);
 
-    public override ProjectionResult<TResult> Project(Plane<TSpace> extent, ProjectionContext context)
+    internal override Settlement<TResult> Collect(Plane<TSpace> extent, ProjectionContext context)
     {
       var size = extent.Area.Size;
 
@@ -70,12 +70,12 @@ namespace Unrect.Projections
       var cell = extent[0, 0];
 
       if (BlankIsNull && cell.IsBlank)
-        return new ProjectionResult<TResult>(default!, size);
+        return new Settlement<TResult>(default!, size);
 
       if (!Read(cell, out var value, out var problem))
         throw context.Failure(problem!(context.Locate(extent).A1), extent);
 
-      return new ProjectionResult<TResult>(value, size);
+      return new Settlement<TResult>(value, size);
     }
 
     /// <summary>

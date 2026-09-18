@@ -31,9 +31,6 @@ namespace Unrect.Projections
     public override string Description
       => Declared ?? (Orientation == Orientation.Vertical ? "VerticalFlow" : "HorizontalFlow");
 
-    protected override LayoutState<TSpace> NewState(Plane<TSpace> extent, ProjectionContext context)
-      => new FlowState<TSpace>(Orientation, extent, context);
-
     public override Axes Axis => Orientation.Of();
 
     public override IProjector<TSpace, T> Build(ProjectorScope<TSpace> scope) => new Machine(this, scope);

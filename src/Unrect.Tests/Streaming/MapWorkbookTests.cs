@@ -362,7 +362,7 @@ namespace Unrect.Tests.Streaming
 
       Assert.Throws<ObjectDisposedException>(() => fund.AsText());
       Assert.Throws<ObjectDisposedException>(() => fund.Text());
-      Assert.True(ProjectionEngine.IsFault(new ObjectDisposedException("Workbook")));
+      Assert.True(EngineRules.IsFault(new ObjectDisposedException("Workbook")));
     }
 
     [Fact]

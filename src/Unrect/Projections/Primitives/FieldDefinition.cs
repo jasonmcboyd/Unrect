@@ -37,7 +37,7 @@ namespace Unrect.Projections
 
     internal override Reach Retains => Reach.Spans(1);
 
-    public override ProjectionResult<Point<TSpace>> Project(Plane<TSpace> extent, ProjectionContext context)
+    internal override Settlement<Point<TSpace>> Collect(Plane<TSpace> extent, ProjectionContext context)
     {
       var size = extent.Area.Size;
 
@@ -53,7 +53,7 @@ namespace Unrect.Projections
           $"expected a label reading '{Label}' here, but this cell {Describe(extent[0, 0])}",
           extent);
 
-      return new ProjectionResult<Point<TSpace>>(extent[1, 0], size);
+      return new Settlement<Point<TSpace>>(extent[1, 0], size);
     }
 
     /// <summary>

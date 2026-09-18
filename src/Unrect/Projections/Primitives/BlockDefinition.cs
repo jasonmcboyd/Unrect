@@ -26,7 +26,7 @@ namespace Unrect.Projections
 
     internal override Reach Retains => Reach.Extent;
 
-    public override ProjectionResult<T> Project(Plane<TSpace> extent, ProjectionContext context)
+    internal override Settlement<T> Collect(Plane<TSpace> extent, ProjectionContext context)
     {
       T value;
 
@@ -41,7 +41,7 @@ namespace Unrect.Projections
 
       // The extent is measured after the projection has run, never before: on a bound still being
       // discovered, asking first would settle it before the projection had read a row.
-      return new ProjectionResult<T>(value, extent.Area.Size);
+      return new Settlement<T>(value, extent.Area.Size);
     }
   }
 }

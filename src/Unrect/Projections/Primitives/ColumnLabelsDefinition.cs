@@ -32,7 +32,7 @@ namespace Unrect.Projections
 
     internal override Reach Retains => Reach.Spans(HeaderRows);
 
-    public override ProjectionResult<LabelMap> Project(Plane<TSpace> extent, ProjectionContext context)
+    internal override Settlement<LabelMap> Collect(Plane<TSpace> extent, ProjectionContext context)
     {
       var width = extent.Width;
 
@@ -46,7 +46,7 @@ namespace Unrect.Projections
       var headerBand = extent.Slice(new Offset(0, 0), new Area(width, HeaderRows));
       var header = new CellStrip<TSpace>(headerBand, Orientation.Horizontal, context);
 
-      return new ProjectionResult<LabelMap>(LabelMap.FromHeader(header), new Size(width, HeaderRows));
+      return new Settlement<LabelMap>(LabelMap.FromHeader(header), new Size(width, HeaderRows));
     }
   }
 }

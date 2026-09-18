@@ -99,7 +99,6 @@ namespace Unrect.Projections
       return clone;
     }
 
-
   }
 
   /// <summary>
@@ -127,10 +126,15 @@ namespace Unrect.Projections
     }
 
     /// <inheritdoc/>
-    public abstract ProjectionResult<TResult> Project(Plane<TSpace> extent, ProjectionContext context);
-
-    /// <inheritdoc/>
     public abstract IProjector<TSpace, TResult> Build(ProjectorScope<TSpace> scope);
+
+    /// <summary>
+    /// Reads <paramref name="extent"/> whole — a collector's own act, once the spans it was fed
+    /// are known: a cell, a strip, a block, a header, a table view. A node that is not a collector
+    /// builds a machine instead and is never asked.
+    /// </summary>
+    internal virtual Settlement<TResult> Collect(Plane<TSpace> extent, ProjectionContext context)
+      => throw new InvalidOperationException($"{Description} is not read whole; it builds a machine.");
 
     /// <inheritdoc/>
     IProjectionDefinition<TSpace, TResult> IProjectionDefinition<TSpace, TResult>.With(Annotations annotations)

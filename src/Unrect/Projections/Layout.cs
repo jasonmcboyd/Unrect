@@ -139,8 +139,6 @@ namespace Unrect.Projections
   internal abstract class LayoutRunner<TSpace>
     where TSpace : class, ISpace
   {
-    public abstract object? Apply(LayoutState<TSpace> state, UseSite site);
-
     /// <summary>Starts the child under the push engine, behind its placement machine, at <paramref name="edge"/>.</summary>
     public abstract IChildHandle<TSpace> Start(ProjectorScope<TSpace> scope, Child edge, Plane<TSpace> anchor);
   }
@@ -151,8 +149,6 @@ namespace Unrect.Projections
     public LayoutRunner(IProjectionDefinition<TSpace, T> projection) => Projection = projection;
 
     private IProjectionDefinition<TSpace, T> Projection { get; }
-
-    public override object? Apply(LayoutState<TSpace> state, UseSite site) => state.Next(Projection, site);
 
     public override IChildHandle<TSpace> Start(ProjectorScope<TSpace> scope, Child edge, Plane<TSpace> anchor)
       => scope.Start(edge, Projection, anchor);

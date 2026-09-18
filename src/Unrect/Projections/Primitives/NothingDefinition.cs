@@ -33,7 +33,7 @@ namespace Unrect.Projections
     public override IProjector<TSpace, T> Build(ProjectorScope<TSpace> scope)
       => new SpanCountProjector<TSpace, T>(this, scope, 0);
 
-    public override ProjectionResult<T> Project(Plane<TSpace> extent, ProjectionContext context)
-      => new ProjectionResult<T>(default!, new Size(0, 0), Presence.Empty);
+    internal override Settlement<T> Collect(Plane<TSpace> extent, ProjectionContext context)
+      => new Settlement<T>(default!, new Size(0, 0), Presence.Empty);
   }
 }
