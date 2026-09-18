@@ -71,6 +71,9 @@ namespace Unrect.Projections
       return TrySize(placement.Area, out size);
     }
 
+    /// <summary>The per-span form of <paramref name="strategy"/>, for a repeat's separator; false when it has none.</summary>
+    internal static bool TryOffsetRule(IOffsetStrategy strategy, out OffsetRule? rule) => TryOffset(strategy, out rule);
+
     private static bool TryOffset(IOffsetStrategy strategy, out OffsetRule? rule)
     {
       switch (strategy)

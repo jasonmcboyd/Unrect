@@ -48,6 +48,152 @@ namespace Unrect.Projections
 
     public override bool IsWrapper => true;
 
+    public override Axes Axis => Fallback is null ? Inner.Axis : Inner.Axis & Fallback.Axis;
+
+    /// <summary>A boundary may hand back everything the inner took: what it absorbs, it did not consume.</summary>
+    public override Reach Reach => Reach.Extent;
+
+    public override IProjector<TSpace, T> Start(ProjectorScope<TSpace> scope) => new Machine(this, scope);
+
+    /// <summary>
+    /// Forwards to the inner. When the inner fails with a failure rather than a fault, the
+    /// diagnostics recorded since the boundary started roll back, the one Warning that replaces them
+    /// is recorded, and either the fallback is started and fed everything the inner took, or the
+    /// boundary settles on nothing with <see cref="Presence.Absorbed"/>.
+    /// </summary>
+    private sealed class Machine : IProjector<TSpace, T>
+    {
+      private readonly FallbackDefinition<TSpace, T> _boundary;
+      private readonly ProjectorScope<TSpace> _scope;
+      private readonly int _mark;
+      private ChildProjector<TSpace, T>? _current;
+      private bool _fallingBack;
+      private bool _absorbed;
+      private ProjectionException? _primary;
+      private Plane<TSpace>? _first;
+      private bool _finished;
+      private bool _closed;
+
+      public Machine(FallbackDefinition<TSpace, T> boundary, ProjectorScope<TSpace> scope)
+      {
+        _boundary = boundary;
+        _scope = scope;
+        _mark = scope.Context.Diagnostics.Mark();
+      }
+
+      public bool Next(Plane<TSpace> span)
+      {
+        if (_closed)
+          throw _scope.Context.Failure(_boundary, $"{ProjectionContext.Describe(_boundary)} was fed a span after it was closed", span, null, null, isFault: true);
+
+        _first ??= span;
+
+        return Offer(span);
+      }
+
+      public Settlement<T> Close()
+      {
+        _closed = true;
+
+        if (_absorbed)
+          return new Settlement<T>(_boundary.FallbackValue, new Size(0, 0), Presence.Absorbed);
+
+        _current ??= StartInner(_scope.Anchor);
+
+        try
+        {
+          var settlement = _current.Close();
+          return new Settlement<T>(settlement.Value, _current.Advance, _current.Presence);
+        }
+        catch (ProjectionException failure) when (!_fallingBack && !failure.IsFault)
+        {
+          var taken = Absorb(failure);
+
+          if (_absorbed)
+            return new Settlement<T>(_boundary.FallbackValue, new Size(0, 0), Presence.Absorbed);
+
+          foreach (var span in taken)
+            if (!Offer(span))
+              break;
+
+          try
+          {
+            var settlement = _current!.Close();
+            return new Settlement<T>(settlement.Value, _current.Advance, _current.Presence);
+          }
+          catch (ProjectionException fallbackFailure)
+          {
+            throw fallbackFailure.WithNote($"it stands in for {_primary!.Subject}, which failed too: {_primary.Problem}");
+          }
+        }
+        catch (ProjectionException fallbackFailure) when (_fallingBack)
+        {
+          throw fallbackFailure.WithNote($"it stands in for {_primary!.Subject}, which failed too: {_primary.Problem}");
+        }
+      }
+
+      private bool Offer(Plane<TSpace> span)
+      {
+        if (_finished)
+          return false;
+
+        _current ??= StartInner(Spans.Empty(span, _scope.Driver));
+
+        try
+        {
+          if (_current.Next(span))
+            return true;
+
+          _finished = true;
+          return false;
+        }
+        catch (ProjectionException failure) when (!_fallingBack && !failure.IsFault)
+        {
+          var taken = Absorb(failure);
+
+          if (_absorbed)
+          {
+            _finished = true;
+            return false;
+          }
+
+          foreach (var replayed in taken)
+            if (!Offer(replayed))
+              return false;
+
+          return Offer(span);
+        }
+        catch (ProjectionException fallbackFailure) when (_fallingBack)
+        {
+          throw fallbackFailure.WithNote($"it stands in for {_primary!.Subject}, which failed too: {_primary.Problem}");
+        }
+      }
+
+      /// <summary>Rolls back, records the Warning, and either settles on nothing or starts the fallback — handing back what the inner took.</summary>
+      private List<Plane<TSpace>> Absorb(ProjectionException failure)
+      {
+        _primary = failure;
+        _scope.Context.Diagnostics.Rollback(_mark);
+        _scope.Context.Report(DiagnosticSeverity.Warning, failure);
+
+        var taken = new List<Plane<TSpace>>(_current!.Shortfall());
+
+        if (_boundary.Fallback is null)
+        {
+          _absorbed = true;
+          _current = null;
+          return taken;
+        }
+
+        _fallingBack = true;
+        _current = _scope.Start(_boundary.Children[1], _boundary.Fallback, _first is Plane<TSpace> first ? Spans.Empty(first, _scope.Driver) : _scope.Anchor);
+        return taken;
+      }
+
+      private ChildProjector<TSpace, T> StartInner(Plane<TSpace> at)
+        => _scope.Start(_boundary.Children[0], _boundary.Inner, at, inheritSite: true);
+    }
+
     public override ProjectionResult<T> Project(Plane<TSpace> extent, ProjectionContext context)
     {
       var mark = context.Diagnostics.Mark();

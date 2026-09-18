@@ -25,8 +25,8 @@ namespace Unrect.Projections
     /// <summary>Where a machine started under this scope would begin — used only when it is never offered a span.</summary>
     internal abstract Plane<TSpace> Anchor { get; }
 
-    /// <summary>This scope at <paramref name="context"/> and <paramref name="anchor"/>.</summary>
-    internal abstract ProjectorScope<TSpace> At(ProjectionContext context, Plane<TSpace> anchor);
+    /// <summary>This scope at <paramref name="context"/> and <paramref name="anchor"/>, driving along <paramref name="driver"/>.</summary>
+    internal abstract ProjectorScope<TSpace> At(ProjectionContext context, Plane<TSpace> anchor, Orientation driver);
 
     /// <summary>
     /// Starts <paramref name="definition"/> as a child at <paramref name="edge"/>, behind the
@@ -36,7 +36,7 @@ namespace Unrect.Projections
     /// <paramref name="strict"/> false makes a placement failure a refusal the parent reads off the
     /// handle rather than a thrown failure — a repeat's stopping condition.
     /// </summary>
-    internal abstract ChildProjector<TSpace, T> Start<T>(Child edge, IProjectionDefinition<TSpace, T> definition, Plane<TSpace> anchor, int? occurrence = null, bool strict = true);
+    internal abstract ChildProjector<TSpace, T> Start<T>(Child edge, IProjectionDefinition<TSpace, T> definition, Plane<TSpace> anchor, int? occurrence = null, bool strict = true, bool inheritSite = false);
 
     /// <summary>Drives <paramref name="machine"/> over <paramref name="region"/> along <paramref name="along"/> (or as one span when null) and closes it.</summary>
     internal abstract Settlement<T> Drive<T>(IProjector<TSpace, T> machine, Plane<TSpace> region, Orientation? along);

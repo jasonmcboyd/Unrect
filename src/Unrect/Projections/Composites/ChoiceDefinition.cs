@@ -39,6 +39,139 @@ namespace Unrect.Projections
 
     public override IReadOnlyList<Child> Children { get; }
 
+    public override Axes Axis
+    {
+      get
+      {
+        var axis = Axes.Either;
+
+        foreach (var alternative in Alternatives)
+          axis &= alternative.Axis;
+
+        return axis;
+      }
+    }
+
+    /// <summary>A choice replays everything a losing alternative took into the next.</summary>
+    public override Reach Reach => Reach.Extent;
+
+    public override IProjector<TSpace, T> Start(ProjectorScope<TSpace> scope) => new Machine(this, scope);
+
+    /// <summary>
+    /// Alternatives in declaration order, one at a time. An alternative that fails with a failure
+    /// rather than a fault is abandoned: the diagnostics since the choice started roll back, the
+    /// Info line naming it is recorded, and everything it took is fed to the next. The first to
+    /// close without failing wins; none left is the summarising failure.
+    /// </summary>
+    private sealed class Machine : IProjector<TSpace, T>
+    {
+      private readonly ChoiceDefinition<TSpace, T> _choice;
+      private readonly ProjectorScope<TSpace> _scope;
+      private readonly int _mark;
+      private readonly ProjectionException[] _failures;
+      private int _index;
+      private ChildProjector<TSpace, T>? _current;
+      private Plane<TSpace>? _first;
+      private bool _finished;
+      private bool _closed;
+
+      public Machine(ChoiceDefinition<TSpace, T> choice, ProjectorScope<TSpace> scope)
+      {
+        _choice = choice;
+        _scope = scope;
+        _mark = scope.Context.Diagnostics.Mark();
+        _failures = new ProjectionException[choice.Alternatives.Length];
+      }
+
+      public bool Next(Plane<TSpace> span)
+      {
+        if (_closed)
+          throw _scope.Context.Failure(_choice, $"{ProjectionContext.Describe(_choice)} was fed a span after it was closed", span, null, null, isFault: true);
+
+        _first ??= span;
+
+        return Offer(span);
+      }
+
+      public Settlement<T> Close()
+      {
+        _closed = true;
+
+        while (true)
+        {
+          _current ??= StartAlternative(_scope.Anchor);
+
+          try
+          {
+            var settlement = _current.Close();
+            return new Settlement<T>(settlement.Value, _current.Advance, _current.Presence);
+          }
+          catch (ProjectionException failure) when (!failure.IsFault)
+          {
+            var taken = Abandon(failure);
+
+            foreach (var span in taken)
+              if (!Offer(span))
+                break;
+          }
+        }
+      }
+
+      private bool Offer(Plane<TSpace> span)
+      {
+        if (_finished)
+          return false;
+
+        _current ??= StartAlternative(Spans.Empty(span, _scope.Driver));
+
+        try
+        {
+          if (_current.Next(span))
+            return true;
+
+          _finished = true;
+          return false;
+        }
+        catch (ProjectionException failure) when (!failure.IsFault)
+        {
+          var taken = Abandon(failure);
+
+          foreach (var replayed in taken)
+            if (!Offer(replayed))
+              return false;
+
+          return Offer(span);
+        }
+      }
+
+      /// <summary>Rolls back, records the Info, and moves to the next alternative — or throws the summary when there is none.</summary>
+      private List<Plane<TSpace>> Abandon(ProjectionException failure)
+      {
+        _scope.Context.Diagnostics.Rollback(_mark);
+        _scope.Context.Report(
+          DiagnosticSeverity.Info,
+          failure,
+          ProjectionContext.Describe(_choice),
+          $"alternative {_index + 1} ({ProjectionContext.DescribeThrough(_choice.Alternatives[_index])}) did not match: {failure.Problem}");
+        _failures[_index] = failure;
+
+        var taken = new List<Plane<TSpace>>(_current!.Shortfall());
+        _current = null;
+        _index++;
+
+        if (_index == _choice.Alternatives.Length)
+        {
+          var extent = _first is Plane<TSpace> first ? Spans.Region(first, taken.Count, _scope.Driver) : _scope.Anchor;
+          throw _scope.Context.Failure(_choice, _choice.Summarise(_failures), extent, null, _failures[_failures.Length - 1]);
+        }
+
+        return taken;
+      }
+
+      private ChildProjector<TSpace, T> StartAlternative(Plane<TSpace> at)
+        => _scope.Start(_choice.Children[_index], _choice.Alternatives[_index], at, inheritSite: true);
+    }
+
     public override ProjectionResult<T> Project(Plane<TSpace> extent, ProjectionContext context)
     {
       ProjectionException[]? failures = null;

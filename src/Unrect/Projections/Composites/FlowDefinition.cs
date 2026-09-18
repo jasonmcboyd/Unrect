@@ -84,13 +84,11 @@ namespace Unrect.Projections
       {
         _closed = true;
 
-        if (_current is not null)
-          CloseCurrent();
-
-        // Every child never reached is closed on nothing and answers for itself.
-        while (_index < _values.Length)
+        // The open child is closed; what it hands back may open the next, which is closed in turn;
+        // every child never reached is closed on nothing and answers for itself.
+        while (_current is not null || _index < _values.Length)
         {
-          _current = StartChild(_index);
+          _current ??= StartChild(_index);
           CloseCurrent();
         }
 

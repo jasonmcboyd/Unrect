@@ -51,6 +51,111 @@ namespace Unrect.Projections
 
     public override IReadOnlyList<Child> Children { get; }
 
+    public override Axes Axis => Orientation.Of();
+
+    /// <summary>A tiler must see a whole band before it can say the band is blank, and hands an incomplete one back.</summary>
+    public override Reach Reach => base.Reach.Join(Reach.Spans(Stride));
+
+    public override IProjector<TSpace, IReadOnlyList<T>> Start(ProjectorScope<TSpace> scope) => new Machine(this, scope);
+
+    /// <summary>
+    /// Gathers <c>Stride</c> spans into a band; a complete band is either the blank policy's or its
+    /// child's, which is started, fed the band and closed. A blank band under <c>Stop</c> ends the
+    /// run and is not the tiler's; an incomplete band at the end of the feed is not a band and is
+    /// handed back.
+    /// </summary>
+    private sealed class Machine : IProjector<TSpace, IReadOnlyList<T>>
+    {
+      private readonly BandsDefinition<TSpace, T> _tiler;
+      private readonly ProjectorScope<TSpace> _scope;
+      private readonly List<T> _values = new List<T>();
+      private readonly List<Plane<TSpace>> _band = new List<Plane<TSpace>>();
+      private Plane<TSpace>? _first;
+      private int _bands;
+      private int _cursor;
+      private int _across;
+      private bool _finished;
+      private bool _closed;
+
+      public Machine(BandsDefinition<TSpace, T> tiler, ProjectorScope<TSpace> scope)
+      {
+        _tiler = tiler;
+        _scope = scope;
+      }
+
+      private Orientation Along => _tiler.Orientation;
+
+      public bool Next(Plane<TSpace> span)
+      {
+        if (_closed)
+          throw _scope.Context.Failure(_tiler, $"{ProjectionContext.Describe(_tiler)} was fed a span after it was closed", span, null, null, isFault: true);
+
+        if (_finished)
+          return false;
+
+        if (_first is null)
+        {
+          _first = span;
+          _across = Spans.Across(span.Declared.Size, Along);
+        }
+
+        if (_across == 0)
+        {
+          _finished = true;
+          return false;
+        }
+
+        _band.Add(span);
+
+        if (_band.Count < _tiler.Stride)
+          return true;
+
+        var band = Spans.Region(_band[0], _tiler.Stride, Along);
+
+        if (_tiler.OnBlank is BlankRowStrategy onBlank && IsBlank(band))
+        {
+          if (onBlank.IsStop)
+          {
+            // The blank band is not the tiler's: the spans gathered for it were offered but are
+            // not kept, and the parent reads them back off the settlement.
+            _finished = true;
+            return false;
+          }
+
+          _tiler.ReportBlank(onBlank, band, _scope.Context);
+        }
+        else
+        {
+          var child = _scope.Start(_tiler.Children[0], _tiler.Each, Spans.Empty(band, Along), occurrence: _bands);
+          var open = true;
+
+          foreach (var s in _band)
+            if (open && !child.Next(s))
+              open = false;
+
+          _values.Add(child.Close().Value);
+        }
+
+        _band.Clear();
+        _bands++;
+        _cursor += _tiler.Stride;
+        return true;
+      }
+
+      public Settlement<IReadOnlyList<T>> Close()
+      {
+        _closed = true;
+        _values.TrimExcess();
+
+        // The cursor is bands VISITED times the stride: a band the policy omitted was still cut out
+        // of the extent; an incomplete band at the end was not.
+        return new Settlement<IReadOnlyList<T>>(
+          _values,
+          Spans.ToSize(_cursor, _across, Along),
+          _values.Count == 0 ? Presence.Empty : Presence.Read);
+      }
+    }
+
     public override ProjectionResult<IReadOnlyList<T>> Project(Plane<TSpace> extent, ProjectionContext context)
     {
       // The across axis, measured once. A vertical tiler takes the width, which is free even on an
@@ -115,7 +220,7 @@ namespace Unrect.Projections
     private Plane<TSpace> Band(Plane<TSpace> extent, Offset offset, int across)
       => extent.Slice(offset, new Area(Extent(Stride, across)));
 
-    private void ReportBlank(BlankRowStrategy onBlank, Plane<TSpace> band, ProjectionContext scope)
+    internal void ReportBlank(BlankRowStrategy onBlank, Plane<TSpace> band, ProjectionContext scope)
     {
       var noun = Stride == 1 ? "row" : "band";
       var at = scope.Locate(band).A1;

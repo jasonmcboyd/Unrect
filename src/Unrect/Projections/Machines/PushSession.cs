@@ -28,7 +28,7 @@ namespace Unrect.Projections
 
       var session = new PushSession<TSpace>(Orientation.Vertical);
       var whole = Plane<TSpace>.Of(space);
-      var scope = new SessionScope<TSpace>(session, context, Spans.Empty(whole, Orientation.Vertical));
+      var scope = new SessionScope<TSpace>(session, context, Spans.Empty(whole, Orientation.Vertical), Orientation.Vertical);
       var root = scope.Start(new Child(definition, default), definition, scope.Anchor);
 
       foreach (var span in Spans.Of(whole, Orientation.Vertical))
@@ -44,32 +44,40 @@ namespace Unrect.Projections
   internal sealed class SessionScope<TSpace> : ProjectorScope<TSpace>
     where TSpace : class, ISpace
   {
-    internal SessionScope(PushSession<TSpace> session, ProjectionContext context, Plane<TSpace> anchor)
+    internal SessionScope(PushSession<TSpace> session, ProjectionContext context, Plane<TSpace> anchor, Orientation driver)
     {
       Session = session;
       Context = context;
       Anchor = anchor;
+      Driver = driver;
     }
 
     private PushSession<TSpace> Session { get; }
 
-    internal override Orientation Driver => Session.Driver;
+    /// <summary>The axis spans arrive along here: the session's at the root, a held node's own where it is re-driven.</summary>
+    internal override Orientation Driver { get; }
 
     internal override ProjectionContext Context { get; }
 
     internal override Plane<TSpace> Anchor { get; }
 
-    internal override ProjectorScope<TSpace> At(ProjectionContext context, Plane<TSpace> anchor)
-      => new SessionScope<TSpace>(Session, context, anchor);
+    internal override ProjectorScope<TSpace> At(ProjectionContext context, Plane<TSpace> anchor, Orientation driver)
+      => new SessionScope<TSpace>(Session, context, anchor, driver);
 
-    internal override ChildProjector<TSpace, T> Start<T>(Child edge, IProjectionDefinition<TSpace, T> definition, Plane<TSpace> anchor, int? occurrence = null, bool strict = true)
+    internal override ChildProjector<TSpace, T> Start<T>(Child edge, IProjectionDefinition<TSpace, T> definition, Plane<TSpace> anchor, int? occurrence = null, bool strict = true, bool inheritSite = false)
     {
       var parent = Context;
 
       if (occurrence is int index)
         parent = parent.WithIndex(index).WithOrdinal(index);
 
-      return new ChildProjector<TSpace, T>(this, parent.WithUseSite(edge.Site), definition, anchor, strict);
+      // A transparent wrapper's inner is labelled by whatever site was waiting for the wrapper —
+      // the wrapper contributed no segment and claims no site — exactly as the pull engine hands
+      // its context on unchanged.
+      if (!inheritSite)
+        parent = parent.WithUseSite(edge.Site);
+
+      return new ChildProjector<TSpace, T>(this, parent, definition, anchor, strict);
     }
 
     internal override Settlement<T> Drive<T>(IProjector<TSpace, T> machine, Plane<TSpace> region, Orientation? along)

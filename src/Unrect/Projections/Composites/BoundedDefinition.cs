@@ -53,6 +53,82 @@ namespace Unrect.Projections
         + "replacing, so a Select or a Padded between the two leaves both ends in force.",
         "projection");
 
+    /// <summary>A bound is driven along its landmark's axis: a row landmark is looked for on each row span, a column landmark on each column span.</summary>
+    public override Axes Axis => Landmark.Orientation.Of();
+
+    public override IProjector<TSpace, TResult> Start(ProjectorScope<TSpace> scope) => new Machine(this, scope);
+
+    /// <summary>
+    /// A span matching the landmark is refused and ends the bound; every other span is the bound's,
+    /// forwarded to the inner while it takes them and consumed by the bound after it stops — a
+    /// bound is consumed in full, as a declared area is, which is what puts the next sibling on the
+    /// landmark. A landmark never seen is the failure or the Info <c>orEnd</c> decides.
+    /// </summary>
+    private sealed class Machine : IProjector<TSpace, TResult>
+    {
+      private readonly BoundedDefinition<TSpace, TResult> _bounded;
+      private readonly ProjectorScope<TSpace> _scope;
+      private ChildProjector<TSpace, TResult>? _inner;
+      private Plane<TSpace>? _first;
+      private int _offered;
+      private bool _found;
+      private bool _innerRefused;
+      private bool _finished;
+      private bool _closed;
+
+      public Machine(BoundedDefinition<TSpace, TResult> bounded, ProjectorScope<TSpace> scope)
+      {
+        _bounded = bounded;
+        _scope = scope;
+      }
+
+      private Orientation Along => _bounded.Landmark.Orientation;
+
+      public bool Next(Plane<TSpace> span)
+      {
+        if (_closed)
+          throw _scope.Context.Failure(_bounded, $"{ProjectionContext.Describe(_bounded)} was fed a span after it was closed", span, null, null, isFault: true);
+
+        if (_finished)
+          return false;
+
+        if (_bounded.Landmark.Find(span.Erased()) is not null)
+        {
+          _found = true;
+          _finished = true;
+          return false;
+        }
+
+        _first ??= span;
+        _offered++;
+        _inner ??= _scope.Start(_bounded.Children[0], _bounded.Inner, Spans.Empty(span, _scope.Driver), inheritSite: true);
+
+        if (!_innerRefused && !_inner.Next(span))
+          _innerRefused = true;
+
+        return true;
+      }
+
+      public Settlement<TResult> Close()
+      {
+        _closed = true;
+
+        var extent = _first is Plane<TSpace> first ? Spans.Region(first, _offered, Along) : _scope.Anchor;
+
+        if (!_found && !_bounded.OrEnd)
+          throw _scope.Context.Failure(ProjectionContext.Through(_bounded), $"{_bounded.Landmark.Description} exists to end this projection", extent, null, null);
+
+        if (!_found)
+          _scope.Context.Report(DiagnosticSeverity.Info, _bounded, $"{_bounded.Landmark.Description} exists to end this projection, so it ran to the end of the space", extent);
+
+        _inner ??= _scope.Start(_bounded.Children[0], _bounded.Inner, _scope.Anchor, inheritSite: true);
+
+        var settlement = _inner.Close();
+
+        return new Settlement<TResult>(settlement.Value, _bounded.Consumed(_offered, _inner.Advance), _inner.Presence);
+      }
+    }
+
     public override ProjectionResult<TResult> Project(Plane<TSpace> extent, ProjectionContext context)
     {
       var size = extent.Area.Size;

@@ -51,6 +51,217 @@ namespace Unrect.Projections
     /// extent before the first occurrence.
     /// </para>
     /// </summary>
+    public override Axes Axis => Orientation.Of();
+
+    /// <summary>A repeat hands back the item that failed to place, and the gap before it.</summary>
+    public override Reach Reach => Reach.Extent;
+
+    public override IProjector<TSpace, IReadOnlyList<T>> Start(ProjectorScope<TSpace> scope) => new Machine(this, scope);
+
+    /// <summary>
+    /// The walk, one span at a time. With no item open: after a committed occurrence the separator
+    /// takes the gap; then an item is started non-strictly, so a placement that cannot find its
+    /// anchor is a refusal read off the handle rather than a thrown failure. With an item open: the
+    /// span is offered; a refusal closes the item, and it commits — advancing the run — or ends the
+    /// run: a placement that failed, or an occurrence that occupied nothing. Nothing an ended run
+    /// took past its last committed occurrence is the repeat's, so the parent reads it back off the
+    /// settlement.
+    /// </summary>
+    private sealed class Machine : IProjector<TSpace, IReadOnlyList<T>>
+    {
+      private readonly RepeatDefinition<TSpace, T> _repeat;
+      private readonly ProjectorScope<TSpace> _scope;
+      private readonly List<T> _values = new List<T>();
+      private readonly OffsetRule? _separator;
+      private Plane<TSpace>? _first;
+      private int _offered;
+      private int _along;
+      private int _across;
+      private int _attemptStart;
+      private int _mark;
+      private ChildProjector<TSpace, T>? _item;
+      private bool _separating;
+      private bool _absorbed;
+      private bool _finished;
+      private bool _closed;
+
+      public Machine(RepeatDefinition<TSpace, T> repeat, ProjectorScope<TSpace> scope)
+      {
+        _repeat = repeat;
+        _scope = scope;
+
+        if (repeat.Separator is IOffsetStrategy separator && !PlacementRules.TryOffsetRule(separator, out _separator))
+          throw new NotSupportedException($"{ProjectionContext.Describe(repeat)} has a separator the push interpreter cannot drive per span yet.");
+      }
+
+      private Orientation Along => _repeat.Orientation;
+
+      public bool Next(Plane<TSpace> span)
+      {
+        if (_closed)
+          throw _scope.Context.Failure(_repeat, $"{ProjectionContext.Describe(_repeat)} was fed a span after it was closed", span, null, null, isFault: true);
+
+        if (_finished)
+          return false;
+
+        if (_first is null)
+        {
+          _first = span;
+          _across = 0;
+
+          if (Spans.Across(span.Declared.Size, Along) == 0)
+          {
+            _finished = true;
+            return false;
+          }
+        }
+
+        var position = _offered;
+        _offered++;
+
+        if (Offer(span, position))
+          return true;
+
+        _offered--;
+        return false;
+      }
+
+      /// <summary>
+      /// The walk for one span at <paramref name="position"/> — its index among the spans the
+      /// repeat has been offered, which a replayed span keeps from its first offering.
+      /// </summary>
+      private bool Offer(Plane<TSpace> span, int position)
+      {
+        while (!_finished)
+        {
+          if (_item is null && !_separating)
+            BeginAttempt(position);
+
+          if (_item is null)
+          {
+            // The gap between occurrences, taken tentatively: it is the repeat's only if an
+            // occurrence follows it.
+            var region = Spans.Region(_first!.Value, position + 1, Along).Slice(Spans.Step(_attemptStart, Along)).Erased();
+            var step = _separator!.Next(region, position - _attemptStart, out _);
+
+            if (step == OffsetStep.Skip)
+              return true;
+
+            _separating = false;
+
+            if (step == OffsetStep.StartNext)
+            {
+              _item = StartItem(position + 1);
+              return true;
+            }
+
+            _item = StartItem(position);
+          }
+
+          if (_item.Next(span))
+            return true;
+
+          // The item refused this span: it commits and the span goes to a fresh attempt, or it
+          // ended the run and the span is not the repeat's.
+          if (!CloseItem())
+            return false;
+        }
+
+        return false;
+      }
+
+      public Settlement<IReadOnlyList<T>> Close()
+      {
+        _closed = true;
+
+        // Closing an item may replay what it did not keep into fresh attempts, which may leave
+        // another item open; each replay moves strictly forward, so this ends.
+        while (_item is not null && CloseItem())
+        {
+        }
+
+        if (_absorbed)
+          _scope.Context.Report(DiagnosticSeverity.Info, _repeat, RepeatDefinition<TSpace, T>.EndedByTolerance(_values.Count), Extent());
+
+        if (_values.Count < _repeat.AtLeast)
+          throw _scope.Context.Failure(_repeat, $"expected at least {_repeat.AtLeast} occurrences but found {_values.Count}", Extent(), null, null);
+
+        return new Settlement<IReadOnlyList<T>>(
+          _values,
+          Spans.ToSize(_along, _across, Along),
+          _values.Count == 0 ? Presence.Empty : Presence.Read);
+      }
+
+      private void BeginAttempt(int position)
+      {
+        _mark = _scope.Context.Diagnostics.Mark();
+        _attemptStart = position;
+
+        if (_values.Count > 0 && _separator is not null)
+          _separating = true;
+        else
+          _item = StartItem(position);
+      }
+
+      private int _itemStart;
+
+      private ChildProjector<TSpace, T> StartItem(int at)
+      {
+        _itemStart = at;
+
+        return _scope.Start(
+          _repeat.Children[0],
+          _repeat.Item,
+          _first is Plane<TSpace> first ? Spans.EmptyAt(first, at, Along) : _scope.Anchor,
+          occurrence: _values.Count,
+          strict: false);
+      }
+
+      /// <summary>
+      /// Closes the open item: true when it committed and the walk goes on, false when it ended the
+      /// run. A committed item that kept fewer spans than it took — a held item, placed at its close
+      /// — hands the rest back, and they are re-offered here to the attempts that follow.
+      /// </summary>
+      private bool CloseItem()
+      {
+        var item = _item!;
+        _item = null;
+
+        var settlement = item.Close();
+
+        if (item.PlacementFailed)
+        {
+          _scope.Context.Diagnostics.Rollback(_mark);
+          _finished = true;
+          return false;
+        }
+
+        // An item that occupies nothing, or advances nowhere, would repeat forever.
+        if (item.Consumed.Width == 0 || item.Consumed.Height == 0 || Spans.Along(item.Advance, Along) == 0)
+        {
+          _absorbed = item.Presence == Presence.Absorbed;
+          _scope.Context.Diagnostics.Rollback(_mark);
+          _finished = true;
+          return false;
+        }
+
+        _values.Add(settlement.Value);
+        _along = _itemStart + Spans.Along(item.Advance, Along);
+        _across = Math.Max(_across, Spans.Across(item.Advance, Along));
+
+        var position = _along;
+
+        foreach (var span in item.Shortfall())
+          if (!Offer(span, position++))
+            return false;
+
+        return !_finished;
+      }
+
+      private Plane<TSpace> Extent()
+        => _first is Plane<TSpace> first ? Spans.Region(first, _offered, Along) : _scope.Anchor;
+    }
+
     public override ProjectionResult<IReadOnlyList<T>> Project(Plane<TSpace> extent, ProjectionContext context)
     {
       // The across axis, read without settling a discovered extent: a vertical walk asks the width,
@@ -108,7 +319,7 @@ namespace Unrect.Projections
     /// <c>VerticalRepeat[n]</c> segments a reader is already looking at.
     /// </para>
     /// </summary>
-    private static string EndedByTolerance(int occurrence)
+    internal static string EndedByTolerance(int occurrence)
       => $"the repetition ended at occurrence [{occurrence}]: the item's failure was absorbed by a tolerance "
        + "boundary, and a tolerated item cannot drive a repetition — drop the boundary, or declare "
        + "atLeast: 0 if an empty run is the concern";

@@ -169,7 +169,7 @@ namespace Unrect.Projections
       }
 
       private ChildProjector<TSpace, TResult> StartInner(Plane<TSpace> at)
-        => _scope.Start(_pad.Children[0], _pad.Inner, Spans.Empty(at, _scope.Driver));
+        => _scope.Start(_pad.Children[0], _pad.Inner, Spans.Empty(at, _scope.Driver), inheritSite: true);
 
       private ProjectionException DoesNotFit(Plane<TSpace> extent)
       {

@@ -18,7 +18,7 @@ namespace Unrect.Projections
     {
       Owner = owner;
       Scope = scope;
-      Child = scope.Start(edge, inner, scope.Anchor);
+      Child = scope.Start(edge, inner, scope.Anchor, inheritSite: true);
     }
 
     protected IProjectionDefinition Owner { get; }
