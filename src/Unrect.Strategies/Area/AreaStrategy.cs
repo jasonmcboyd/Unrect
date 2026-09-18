@@ -9,7 +9,7 @@ namespace Unrect.Strategies
       Strategy = strategy;
     }
 
-    private ISizeStrategy Strategy { get; }
+    internal ISizeStrategy Strategy { get; }
 
     public Area GetArea(Plane<ISpace> availableSpace) => new Area(Strategy.GetSize(availableSpace));
   }

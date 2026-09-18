@@ -36,8 +36,8 @@ namespace Unrect.Strategies
       ColumnSelectionStrategy = columnSelectionStrategy;
     }
 
-    private IIncrementalRowStrategy RowSelectionStrategy { get; }
-    private IRowMajorColumnStrategy ColumnSelectionStrategy { get; }
+    internal IIncrementalRowStrategy RowSelectionStrategy { get; }
+    internal IRowMajorColumnStrategy ColumnSelectionStrategy { get; }
 
     public IAreaScan BeginSize(Plane<ISpace> availableSpace)
       => new Scan(

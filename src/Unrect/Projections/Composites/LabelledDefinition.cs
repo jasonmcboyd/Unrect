@@ -22,7 +22,7 @@ namespace Unrect.Projections
       if (axis != LabelAxis.Column)
         throw new ArgumentOutOfRangeException(nameof(axis), axis, "Only a column header is read above its body in this release.");
 
-      Axis = axis;
+      LabelledAxis = axis;
       Header = header ?? throw new ArgumentNullException(nameof(header));
       Body = body ?? throw new ArgumentNullException(nameof(body));
       Description = description ?? "UnderColumnLabels";
@@ -31,7 +31,7 @@ namespace Unrect.Projections
       Children = new[] { new Child(header, UseSite.From(null, 1)), new Child(body, UseSite.From(null, 2)) };
     }
 
-    private LabelAxis Axis { get; }
+    private LabelAxis LabelledAxis { get; }
     private IProjectionDefinition<TSpace, LabelMap> Header { get; }
     private IProjectionDefinition<TSpace, T> Body { get; }
 
@@ -46,7 +46,7 @@ namespace Unrect.Projections
       var state = new FlowState<TSpace>(Orientation.Vertical, extent, context);
 
       var labels = state.Next(Header, Children[0].Site);
-      var value = state.Next(new WithLabelsDefinition<TSpace, T>(Axis, labels, Body, Placement.Default), Children[1].Site);
+      var value = state.Next(new WithLabelsDefinition<TSpace, T>(LabelledAxis, labels, Body, Placement.Default), Children[1].Site);
 
       return new ProjectionResult<T>(value, state.Consumed, state.Presence);
     }

@@ -55,6 +55,9 @@ namespace Unrect.Projections
 
     public override string Description => BlankIsNull ? Kind + "?" : Kind;
 
+    public override IProjector<TSpace, TResult> Start(ProjectorScope<TSpace> scope)
+      => new SpanCountProjector<TSpace, TResult>(this, scope, 1);
+
     public override ProjectionResult<TResult> Project(Plane<TSpace> extent, ProjectionContext context)
     {
       var size = extent.Area.Size;

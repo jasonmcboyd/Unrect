@@ -14,8 +14,8 @@ namespace Unrect.Strategies
       Height = height;
     }
 
-    private int Width { get; }
-    private int Height { get; }
+    internal int Width { get; }
+    internal int Height { get; }
 
     public Size GetSize(Plane<ISpace> availableSpace) => new Size(Width, Height);
   }

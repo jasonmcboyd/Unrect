@@ -10,7 +10,7 @@ namespace Unrect.Strategies
       RowSelectionStrategy = new TakeWhileAnyRowStrategy(predicate);
     }
 
-    private IIncrementalRowStrategy RowSelectionStrategy { get; }
+    internal IIncrementalRowStrategy RowSelectionStrategy { get; }
 
     public IAreaScan BeginSize(Plane<ISpace> availableSpace)
       => new Scan(availableSpace.Width, RowSelectionStrategy.BeginRows());

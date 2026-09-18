@@ -15,7 +15,7 @@ namespace Unrect.Strategies
       Strategy = strategy;
     }
 
-    private IIncrementalSizeStrategy Strategy { get; }
+    internal IIncrementalSizeStrategy Strategy { get; }
 
     public IAreaScan BeginArea(Plane<ISpace> availableSpace) => Strategy.BeginSize(availableSpace);
 

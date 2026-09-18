@@ -21,7 +21,7 @@ namespace Unrect.Projections
       Layout = layout ?? throw new ArgumentNullException(nameof(layout));
     }
 
-    private Layout<TSpace, T> Layout { get; }
+    private protected Layout<TSpace, T> Layout { get; }
 
     public override IReadOnlyList<Child> Children => Layout.Children;
 

@@ -28,6 +28,12 @@ namespace Unrect.Projections
     /// </summary>
     public override string? Opacity { get; }
 
+    /// <summary>A view lambda reads its table at random, so it streams along no axis: held, then handed the region as one span.</summary>
+    public override Axes Axis => Axes.None;
+
+    public override IProjector<TSpace, T> Start(ProjectorScope<TSpace> scope)
+      => new SpanCountProjector<TSpace, T>(this, scope, 1);
+
     public override ProjectionResult<T> Project(Plane<TSpace> extent, ProjectionContext context)
     {
       // "Is there a row for the header" rather than "how tall are you": the same question of a

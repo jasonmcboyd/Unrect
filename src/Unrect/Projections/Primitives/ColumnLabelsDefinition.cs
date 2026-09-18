@@ -25,6 +25,11 @@ namespace Unrect.Projections
 
     public override string Description => "ColumnLabels";
 
+    public override Axes Axis => Axes.Vertical;
+
+    public override IProjector<TSpace, LabelMap> Start(ProjectorScope<TSpace> scope)
+      => new SpanCountProjector<TSpace, LabelMap>(this, scope, HeaderRows);
+
     public override ProjectionResult<LabelMap> Project(Plane<TSpace> extent, ProjectionContext context)
     {
       var width = extent.Width;

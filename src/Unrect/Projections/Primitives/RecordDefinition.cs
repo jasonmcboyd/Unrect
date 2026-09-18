@@ -28,6 +28,11 @@ namespace Unrect.Projections
 
     public override string Description => "Record";
 
+    public override Axes Axis => Axes.Vertical;
+
+    public override IProjector<TSpace, T> Start(ProjectorScope<TSpace> scope)
+      => new SpanCountProjector<TSpace, T>(this, scope, 1);
+
     public override ProjectionResult<T> Project(Plane<TSpace> extent, ProjectionContext context)
     {
       var strip = new CellStrip<TSpace>(extent, Orientation.Horizontal, context);

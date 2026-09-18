@@ -12,7 +12,7 @@ namespace Unrect.Strategies
       Count = count;
     }
 
-    private int Count { get; }
+    internal int Count { get; }
 
     public int SelectColumns(Plane<ISpace> space)
       => Count <= space.Width ? Count : throw new OutOfBoundsException();

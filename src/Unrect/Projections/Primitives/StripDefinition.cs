@@ -20,6 +20,12 @@ namespace Unrect.Projections
 
     public override string Description { get; }
 
+    /// <summary>A row strip is one row-span; a column strip is one column-span, held and re-driven under a row-major driver.</summary>
+    public override Axes Axis => Orientation == Orientation.Horizontal ? Axes.Vertical : Axes.Horizontal;
+
+    public override IProjector<TSpace, T> Start(ProjectorScope<TSpace> scope)
+      => new SpanCountProjector<TSpace, T>(this, scope, 1);
+
     public override ProjectionResult<T> Project(Plane<TSpace> extent, ProjectionContext context)
     {
       var size = extent.Area.Size;

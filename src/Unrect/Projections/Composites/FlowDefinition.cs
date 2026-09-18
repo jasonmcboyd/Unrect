@@ -1,3 +1,5 @@
+using System;
+
 using Unrect.Core;
 
 namespace Unrect.Projections
@@ -31,5 +33,153 @@ namespace Unrect.Projections
 
     protected override LayoutState<TSpace> NewState(Plane<TSpace> extent, ProjectionContext context)
       => new FlowState<TSpace>(Orientation, extent, context);
+
+    public override Axes Axis => Orientation.Of();
+
+    public override IProjector<TSpace, T> Start(ProjectorScope<TSpace> scope) => new Machine(this, scope);
+
+    /// <summary>
+    /// Children in declaration order, one open at a time: offer the span to the open child; when it
+    /// refuses, close it into its slot, start the next, replay any shortfall into it, and re-offer.
+    /// Refuse when the last child has. The sibling note is raised here, as the state raises it
+    /// today, because the flow is what knows both facts.
+    /// </summary>
+    private sealed class Machine : IProjector<TSpace, T>
+    {
+      private const string SiblingNote = "the preceding sibling consumed nothing at this position";
+
+      private readonly FlowDefinition<TSpace, T> _flow;
+      private readonly ProjectorScope<TSpace> _scope;
+      private readonly Orientation _along;
+      private readonly object?[] _values;
+      private Plane<TSpace>? _first;
+      private int _index;
+      private IChildHandle<TSpace>? _current;
+      private int _along_;
+      private int _across;
+      private int _previous;
+      private bool _read;
+      private bool _finished;
+      private bool _closed;
+
+      public Machine(FlowDefinition<TSpace, T> flow, ProjectorScope<TSpace> scope)
+      {
+        _flow = flow;
+        _scope = scope;
+        _along = flow.Orientation;
+        _values = new object?[flow.Layout.Children.Count];
+      }
+
+      public bool Next(Plane<TSpace> span)
+      {
+        if (_closed)
+          throw _scope.Context.Failure(_flow, $"{ProjectionContext.Describe(_flow)} was fed a span after it was closed", span, null, null, isFault: true);
+
+        _first ??= span;
+
+        return Offer(span);
+      }
+
+      public Settlement<T> Close()
+      {
+        _closed = true;
+
+        if (_current is not null)
+          CloseCurrent();
+
+        // Every child never reached is closed on nothing and answers for itself.
+        while (_index < _values.Length)
+        {
+          _current = StartChild(_index);
+          CloseCurrent();
+        }
+
+        T value;
+
+        try
+        {
+          value = _flow.Layout.Combine(new Reading(_flow.Layout.Builder, _values));
+        }
+        catch (CellReadException failure)
+        {
+          throw _scope.Context.Reading(failure, Extent());
+        }
+
+        return new Settlement<T>(value, Spans.ToSize(_along_, _across, _along), _read ? Presence.Read : Presence.Empty);
+      }
+
+      private bool Offer(Plane<TSpace> span)
+      {
+        while (!_finished)
+        {
+          _current ??= StartChild(_index);
+
+          if (_current.Next(span))
+            return true;
+
+          CloseCurrent();
+        }
+
+        return false;
+      }
+
+      private IChildHandle<TSpace> StartChild(int index)
+      {
+        if (index == _values.Length)
+        {
+          _finished = true;
+          throw new InvalidOperationException("A flow started a child past its last.");
+        }
+
+        var anchor = _first is Plane<TSpace> first
+          ? Spans.EmptyAt(first, _along_, _along)
+          : _scope.Anchor;
+
+        return _flow.Layout.Runners[index].Start(_scope, _flow.Layout.Children[index], anchor);
+      }
+
+      private void CloseCurrent()
+      {
+        var closed = _current!;
+        _current = null;
+
+        object? value;
+
+        try
+        {
+          value = closed.CloseBoxed();
+        }
+        catch (ProjectionException failure) when (FollowsAnEmptySibling(failure))
+        {
+          throw failure.WithNote(SiblingNote);
+        }
+
+        _values[_index] = value;
+        _previous = Spans.Along(closed.Advance, _along);
+        _along_ += _previous;
+        _across = Math.Max(_across, Spans.Across(closed.Advance, _along));
+        _read |= closed.Presence == Presence.Read;
+        _index++;
+
+        if (_index == _values.Length)
+          _finished = true;
+
+        foreach (var span in closed.Shortfall())
+          if (!Offer(span))
+            break;
+      }
+
+      /// <summary>
+      /// A sibling that consumed nothing — an absorbed boundary, most often — leaves this child
+      /// reading the very cells that just failed, so it fails the same way for the same reason.
+      /// </summary>
+      private bool FollowsAnEmptySibling(ProjectionException failure)
+        => _index > 0 && _previous == 0 && _first is Plane<TSpace> first && failure.Location.IsAt(first.Origin + Spans.Step(_along_, _along));
+
+      private Plane<TSpace> Extent()
+        => _first is Plane<TSpace> first
+          ? new Plane<TSpace>(first.Space, first.Origin, new Area(Spans.ToSize(_along_, Math.Max(_across, first.Width), _along)))
+          : _scope.Anchor;
+    }
   }
 }

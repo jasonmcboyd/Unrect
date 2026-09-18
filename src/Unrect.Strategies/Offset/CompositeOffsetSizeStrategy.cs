@@ -21,7 +21,7 @@ namespace Unrect.Strategies
           throw new ArgumentException("An offset strategy is null.", nameof(strategies));
     }
 
-    private IOffsetStrategy[] Strategies { get; }
+    internal IOffsetStrategy[] Strategies { get; }
 
     public Size GetSize(Plane<ISpace> availableSpace)
     {

@@ -29,6 +29,31 @@ namespace Unrect.Projections
 
     public override bool IsWrapper => true;
 
+    public override Axes Axis => Inner.Axis;
+
+    public override IProjector<TSpace, TResult> Start(ProjectorScope<TSpace> scope) => new Machine(this, scope);
+
+    private sealed class Machine : ForwardingProjector<TSpace, TSource, TResult>
+    {
+      private readonly SelectDefinition<TSpace, TSource, TResult> _select;
+
+      public Machine(SelectDefinition<TSpace, TSource, TResult> select, ProjectorScope<TSpace> scope)
+        : base(select, scope, select.Children[0], select.Inner)
+        => _select = select;
+
+      protected override TResult Finish(TSource value)
+      {
+        try
+        {
+          return _select.Selector(value);
+        }
+        catch (CellReadException failure)
+        {
+          throw Scope.Context.Reading(failure, Extent);
+        }
+      }
+    }
+
     public override ProjectionResult<TResult> Project(Plane<TSpace> extent, ProjectionContext context)
     {
       var applied = ProjectionEngine.Apply(Inner, extent, context);

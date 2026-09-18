@@ -11,12 +11,12 @@ namespace Unrect.Projections
   /// It is denotation metadata, not geometry: nothing about it changes what a projection consumes.
   /// </para>
   /// <para>
-  /// Internal deliberately. The engine, the composites and the diagnostics use it; nothing public
-  /// changes shape. "Was that section absent or empty?" is a real caller's question, but it is
+  /// Public because a <see cref="Settlement{TResult}"/> carries it; still nothing a caller of
+  /// <c>Map</c> sees. "Was that section absent or empty?" is a real caller's question, but it is
   /// answered additively later, by a caller that exists.
   /// </para>
   /// </summary>
-  internal enum Presence
+  public enum Presence
   {
     /// <summary>
     /// Content was recognized: the region is real and non-vacuous. The default, so a projection

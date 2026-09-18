@@ -22,8 +22,8 @@ namespace Unrect.Strategies
       Past = past;
     }
 
-    private IRowLandmark Landmark { get; }
-    private bool Past { get; }
+    internal IRowLandmark Landmark { get; }
+    internal bool Past { get; }
 
     public int SelectRows(Plane<ISpace> space)
       => Landmark.FindRow(space) is int row

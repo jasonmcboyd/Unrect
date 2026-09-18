@@ -9,7 +9,7 @@ namespace Unrect.Strategies
       RowSelectionStrategy = rowSelectionStrategy;
     }
 
-    private IRowStrategy RowSelectionStrategy { get; }
+    internal IRowStrategy RowSelectionStrategy { get; }
 
     public Size GetSize(Plane<ISpace> availableSpace)
       => new Size(0, RowSelectionStrategy.SelectRows(availableSpace));

@@ -43,6 +43,23 @@ namespace Unrect.Projections
     /// <summary>A level of the tree by default; only a wrapper overrides this to true.</summary>
     public virtual bool IsWrapper => false;
 
+    /// <summary>The children's reach joined, by default; a node with a rule of its own joins it in.</summary>
+    public virtual Reach Reach
+    {
+      get
+      {
+        var reach = Reach.None;
+
+        foreach (var child in Children)
+          reach = reach.Join(child.Definition.Reach);
+
+        return reach;
+      }
+    }
+
+    /// <summary>Either axis by default — a leaf's span is one cell whichever way it arrives; a shape with an orientation overrides this.</summary>
+    public virtual Axes Axis => Axes.Either;
+
     /// <summary>Children are the whole truth by default; a layout overrides this to say why they are not.</summary>
     public virtual string? Opacity => null;
 
@@ -96,6 +113,10 @@ namespace Unrect.Projections
 
     /// <inheritdoc/>
     public abstract ProjectionResult<TResult> Project(Plane<TSpace> extent, ProjectionContext context);
+
+    /// <inheritdoc/>
+    public virtual IProjector<TSpace, TResult> Start(ProjectorScope<TSpace> scope)
+      => throw new NotSupportedException($"{Description} has no push machine yet.");
 
     /// <inheritdoc/>
     IProjectionDefinition<TSpace, TResult> IProjectionDefinition<TSpace, TResult>.With(Annotations annotations)

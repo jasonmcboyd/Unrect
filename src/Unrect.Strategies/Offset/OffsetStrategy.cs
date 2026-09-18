@@ -9,7 +9,7 @@ namespace Unrect.Strategies
       Strategy = strategy;
     }
 
-    private ISizeStrategy Strategy { get; }
+    internal ISizeStrategy Strategy { get; }
 
     public Offset GetOffset(Plane<ISpace> availableSpace) => new Offset(Strategy.GetSize(availableSpace));
   }

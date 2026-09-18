@@ -28,6 +28,22 @@ namespace Unrect.Projections
 
     public override IReadOnlyList<Child> Children { get; }
 
+    public override Axes Axis => Body.Axis;
+
+    public override Reach Reach => Body.Reach;
+
+    public override IProjector<TSpace, T> Start(ProjectorScope<TSpace> scope) => new Machine(this, scope);
+
+    private sealed class Machine : ForwardingProjector<TSpace, T, T>
+    {
+      public Machine(UnitDefinition<TSpace, T> unit, ProjectorScope<TSpace> scope)
+        : base(unit, scope, new Child(unit.Body, default), unit.Body)
+      {
+      }
+
+      protected override T Finish(T value) => value;
+    }
+
     public override ProjectionResult<T> Project(Plane<TSpace> extent, ProjectionContext context)
     {
       var applied = ProjectionEngine.Apply(Body, extent, context);

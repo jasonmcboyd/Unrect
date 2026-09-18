@@ -68,6 +68,15 @@ namespace Unrect.Projections
     /// children's place.
     /// </summary>
     string? Opacity { get; }
+
+    /// <summary>
+    /// How far back the engine may need to reach for this definition's machine before it settles —
+    /// its own rule joined with its children's. The promise a parent reads before starting it.
+    /// </summary>
+    Reach Reach { get; }
+
+    /// <summary>The axes this definition's machine streams along; the engine holds and re-drives it under any other driver.</summary>
+    Axes Axis { get; }
   }
 
   /// <summary>
@@ -107,5 +116,13 @@ namespace Unrect.Projections
     /// <c>.Named</c>, <c>.AsUnit</c>, <c>.AsScaffolding</c> and every placement stage build.
     /// </summary>
     IProjectionDefinition<TSpace, TResult> With(Annotations annotations);
+
+    /// <summary>
+    /// The machine that reads this definition, for ONE application. A composite starts its children
+    /// and wires them into its own machine; a leaf returns a machine over its own read. Called once
+    /// per application, so a definition stays a reusable value applied to many spaces at once — all
+    /// per-run state lives in the projector, none in the definition.
+    /// </summary>
+    IProjector<TSpace, TResult> Start(ProjectorScope<TSpace> scope);
   }
 }

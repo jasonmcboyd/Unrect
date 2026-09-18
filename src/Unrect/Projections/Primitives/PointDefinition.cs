@@ -17,6 +17,9 @@ namespace Unrect.Projections
 
     public override string Description => "Point";
 
+    public override IProjector<TSpace, Point<TSpace>> Start(ProjectorScope<TSpace> scope)
+      => new SpanCountProjector<TSpace, Point<TSpace>>(this, scope, 1);
+
     public override ProjectionResult<Point<TSpace>> Project(Plane<TSpace> extent, ProjectionContext context)
     {
       var size = extent.Area.Size;

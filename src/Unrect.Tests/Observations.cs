@@ -146,6 +146,48 @@ namespace Unrect.Tests
       }
     }
 
+    /// <summary>
+    /// The same reading through the push interpreter: the machine the definition builds, driven
+    /// over the space's rows. What phase 4 runs the whole suite against; here, what the
+    /// equivalence theories compare to <see cref="Observe{TSpace, T}"/>.
+    /// </summary>
+    public static Observation ObservePush<TSpace, T>(IProjectionDefinition<TSpace, T> projection, TSpace space)
+      where TSpace : class, ISpace
+    {
+      try
+      {
+        var context = ProjectionContext.Root(space);
+        var mark = context.Diagnostics.Mark();
+        var extent = Plane<TSpace>.Of(space);
+        var applied = PushSession<TSpace>.Apply(projection, space, context);
+
+        if (!(applied.Advance.Width == 0 && applied.Advance.Height == 0 && context.Diagnostics.AbsorbedAt(mark)))
+          ProjectionExtensions.ReportUnconsumed(projection, extent, applied.Offset.Size, applied.Consumed, context);
+
+        return new Observation(
+          RenderValue(applied.Value),
+          Render(applied.Consumed),
+          Render(applied.Offset.Size),
+          Render(applied.Advance),
+          context.Diagnostics.Snapshot().Select(Describe).ToList(),
+          null,
+          null,
+          null);
+      }
+      catch (ProjectionException failure)
+      {
+        return new Observation(
+          "<threw>",
+          "<threw>",
+          "<threw>",
+          "<threw>",
+          Array.Empty<string>(),
+          Describe(failure),
+          failure.Subject,
+          failure.Path);
+      }
+    }
+
     /// <summary>L1: the same value, or the same failure said in the same words about the same cell.</summary>
     public static void AssertL1(Observation expected, Observation actual)
     {

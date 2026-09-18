@@ -279,7 +279,7 @@ namespace Unrect.Projections
     /// repetition's own <see cref="Presence.Empty"/> — outranks this, because it knows why.
     /// </para>
     /// </summary>
-    private static Presence Settled(Presence presence, bool hasDeclaredArea, Size consumed)
+    internal static Presence Settled(Presence presence, bool hasDeclaredArea, Size consumed)
       => presence == Presence.Read && hasDeclaredArea && (consumed.Width == 0 || consumed.Height == 0)
         ? Presence.Empty
         : presence;
@@ -294,7 +294,7 @@ namespace Unrect.Projections
     /// expression from the same scope, projection and space. Only the moment differs.
     /// </para>
     /// </summary>
-    private static ProjectionException AreaFailure<TSpace>(ProjectionContext scope, IProjectionDefinition projection, Plane<TSpace> inner, Exception exception)
+    internal static ProjectionException AreaFailure<TSpace>(ProjectionContext scope, IProjectionDefinition projection, Plane<TSpace> inner, Exception exception)
       where TSpace : class, ISpace
       => exception is OutOfBoundsException
         ? scope.Failure(projection, "its area ran past the space available here", inner, null, exception)
@@ -346,19 +346,19 @@ namespace Unrect.Projections
 
     // Asked as "is there a row at size.Height - 1" rather than "how tall are you": the same answer
     // on a measured extent, and one row rather than all of them on one still being discovered.
-    private static bool Exceeds<TSpace>(Size size, Plane<TSpace> space)
+    internal static bool Exceeds<TSpace>(Size size, Plane<TSpace> space)
       where TSpace : class, ISpace
       => size.Width > space.Width
       || (size.Height > 0 && !space.HasRow(size.Height - 1));
 
-    private static string Describe(Size size) => $"{size.Width}x{size.Height}";
+    internal static string Describe(Size size) => $"{size.Width}x{size.Height}";
 
     internal static string Threw(string what, Exception exception)
       => $"its {what} strategy threw {exception.GetType().Name}: {exception.Message}";
 
     // A matcher that found nothing says what it was looking for; anything else just ran out of
     // room.
-    private static string Missing(OutOfBoundsException exception)
+    internal static string Missing(OutOfBoundsException exception)
       => exception is AnchorNotFoundException anchor
         ? $"{anchor.Description} exists in the available space"
         : "its offset ran past the available space";

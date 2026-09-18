@@ -19,17 +19,17 @@ namespace Unrect.Projections
     public WithLabelsDefinition(LabelAxis axis, LabelMap map, IProjectionDefinition<TSpace, T> body, Placement placement)
       : base(placement)
     {
-      Axis = axis;
+      LabelledAxis = axis;
       Map = map ?? throw new ArgumentNullException(nameof(map));
       Body = body ?? throw new ArgumentNullException(nameof(body));
       Children = new[] { new Child(body, default) };
     }
 
-    private LabelAxis Axis { get; }
+    private LabelAxis LabelledAxis { get; }
     private LabelMap Map { get; }
     private IProjectionDefinition<TSpace, T> Body { get; }
 
-    public override string Description => Axis == LabelAxis.Column ? "WithColumnLabels" : "WithRowLabels";
+    public override string Description => LabelledAxis == LabelAxis.Column ? "WithColumnLabels" : "WithRowLabels";
 
     public override IReadOnlyList<Child> Children { get; }
 
@@ -45,7 +45,7 @@ namespace Unrect.Projections
         ? extent.Narrowed(width)
         : extent;
 
-      var applied = ProjectionEngine.Apply(Body, body, context.PushLabels(Axis, Map, body.Origin));
+      var applied = ProjectionEngine.Apply(Body, body, context.PushLabels(LabelledAxis, Map, body.Origin));
 
       return new ProjectionResult<T>(applied.Value, applied.Advance, applied.Presence);
     }

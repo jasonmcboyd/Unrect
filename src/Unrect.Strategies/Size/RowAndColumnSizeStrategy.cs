@@ -19,9 +19,9 @@ namespace Unrect.Strategies
       RowFirst = rowFirst;
     }
 
-    private IRowStrategy RowSelectionStrategy { get; }
-    private IColumnStrategy ColumnSelectionStrategy { get; }
-    private bool RowFirst { get; }
+    internal IRowStrategy RowSelectionStrategy { get; }
+    internal IColumnStrategy ColumnSelectionStrategy { get; }
+    internal bool RowFirst { get; }
 
     /// <summary>
     /// Rows over the full width, then columns within them — as one forward walk where both halves are
