@@ -29,21 +29,12 @@ namespace Unrect.Benchmarks
     public const int Columns = 8;
 
     /// <summary>The default window, in rows — the same default a <c>Workbook</c> would use.</summary>
-    public const int WindowRows = 8192;
-
     /// <summary>
     /// A band five children sweep together. Sized so the pair around it is a real comparison: the
     /// "fits" half gets twice this in window and loads each chunk once; the "too small" half gets
     /// half of it and reloads. Measured at this size, 118 loads / 0 reloads against 590 / 472.
     /// </summary>
     public const int BandRows = 40_000;
-
-    /// <summary>
-    /// The smallest window the store will build, in rows. The reach-back rows use it deliberately:
-    /// with a window that can hold both ends of the sheet at once, alternating between them is all
-    /// resident reads after the first pass and the pool is never asked for anything.
-    /// </summary>
-    public static int SmallestWindowRows => SheetStore.DefaultChunkRows(Columns) * SheetStore.MinimumWindowChunks;
 
     /// <summary>
     /// Rows read at each end on each reach-back turn. Three chunks' worth, so the two ends together
@@ -91,26 +82,10 @@ namespace Unrect.Benchmarks
     }
 
     /// <summary>A pool over a fresh synthetic source.</summary>
-    public static ReaderPool Pool(int maxReaders = 3, int rows = Rows, int columns = Columns)
-    {
-      var pool = new ReaderPool(new SyntheticRowSource(rows, columns), maxReaders, warmReaders: false);
+    /// <summary>A workbook over a synthetic sheet of <paramref name="rows"/> by <paramref name="columns"/>, with no cap unless one is given.</summary>
+    public static Workbook Book(int rows = Rows, int columns = Columns, int? bufferRows = null)
+      => Workbook.Over(new SyntheticRowSource(rows, columns), new WorkbookOptions { BufferRows = bufferRows });
 
-      // What a workbook does at Open: park a reader and adopt it as the first lease.
-      pool.Adopt(pool.OpenParked(), 0, 0);
-
-      return pool;
-    }
-
-    /// <summary>A window over a synthetic sheet, sized in rows.</summary>
-    public static ISheetCells Windowed(ReaderPool pool, int windowRows = WindowRows, int rows = Rows, int columns = Columns)
-    {
-      var chunkRows = SheetStore.DefaultChunkRows(columns);
-
-      return new WindowedSpace(
-        new SheetStore(pool, 0, "Data", rows, columns, chunkRows, SheetStore.WindowChunksFor(windowRows, chunkRows)));
-    }
-
-    /// <summary>Rows generated on demand: a reader's shape, with none of a reader's cost.</summary>
     private sealed class SyntheticRowSource : IRowSource
     {
       private readonly int _rows;

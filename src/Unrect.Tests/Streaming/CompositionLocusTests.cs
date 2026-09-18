@@ -47,23 +47,12 @@ namespace Unrect.Tests.Streaming
   {
     private static string Path(string file) => System.IO.Path.Combine(AppContext.BaseDirectory, "TestData", file);
 
-    /// <summary>A 256-row window in 64-row chunks, warming off — the tall-sheet gate's own sizing.</summary>
-    private static WorkbookOptions Cold() =>
-      new WorkbookOptions { WarmReaders = false, WindowRows = 256, ChunkRows = 64, MaxReaders = 3 };
-
-    /// <summary>
-    /// <paramref name="area"/> applied to the tall ledger through the streaming door: the extent it
-    /// settled on, and the counters it cost. The statistics die with the workbook, so they are taken
-    /// out before the <c>using</c> closes.
-    /// </summary>
-    private static (string Read, long ChunkLoads, long ChunkReloads, long Evictions, long RowsMaterialised, long WindowOverruns) Measure(IAreaStrategy area)
+    /// <summary><paramref name="area"/> applied to the tall ledger through the streaming door: the extent it settled on.</summary>
+    private static string Streamed(IAreaStrategy area)
     {
-      using var book = Workbook.Open(Path("tall-ledger.xlsx"), Cold());
+      using var book = Workbook.Open(Path("tall-ledger.xlsx"));
 
-      var read = Sized(area).Of(Range(block => $"{block.Width}x{block.Height}")).Map(book.Sheet("Ledger"));
-      var stats = book.Statistics("Ledger")!.Value;
-
-      return (read, stats.ChunkLoads, stats.ChunkReloads, stats.Evictions, stats.RowsMaterialised, stats.WindowOverruns);
+      return Sized(area).Of(Range(block => $"{block.Width}x{block.Height}")).Map(book.Sheet("Ledger"));
     }
 
     /// <summary>The same declaration through the eager door, where there is no window to announce anything to.</summary>
@@ -83,49 +72,17 @@ namespace Unrect.Tests.Streaming
     private static IAreaStrategy FirstHalfReads()
       => AreaStrategies.RowsThenColumns(RowStrategies.TakeRowsWhileAnyValue(), ColumnStrategies.TakeColumnsWhileAnyValue());
 
-    [Fact]
-    public void AColumnScanInsideAnUnreadRowCountAnnouncesNothingOfItsOwn()
-    {
-      // The recorded numbers, and what each of them is saying.
-      //
-      // The extent is three columns by two rows and costs ONE chunk — 64 rows materialised, which is
-      // the smallest unit this window deals in, for a reading that wanted two. Nothing is evicted
-      // and nothing is reloaded, because nothing competes for residency.
-      //
-      // WindowOverruns is 0, and that is the whole point of the file. What is announced is the
-      // placement's own region, once, where the engine cuts it — three by two, which fits a 256-row
-      // window with room to spare. The column scan's reads announce nothing: the strategy's spelling
-      // (narrowing by arithmetic rather than cutting a second subspace object, which is what buys
-      // the composition one object per call) no longer reaches the store at all.
-      //
-      // This read 1 until phase 6, when the band was inferred from whichever object made the read
-      // and the scan's reads therefore carried its parent's 1,201 rows. That overrun described the
-      // declaration's spelling and not its reading — a hint given wrongly — and it is gone with the
-      // inference that produced it, not suppressed.
-      var (read, loads, reloads, evictions, materialised, overruns) = Measure(FirstHalfReadsNothing());
-
-      Assert.Equal("3x2", read);
-
-      Assert.Equal(1L, loads);
-      Assert.Equal(0L, reloads);
-      Assert.Equal(0L, evictions);
-      Assert.Equal(64L, materialised);
-      Assert.Equal(0L, overruns);
-    }
-
     [Theory]
     [InlineData("first-half-reads-nothing", "3x2")]
     [InlineData("first-half-reads", "3x1201")]
     public void AndTheAnswerIsTheSameThroughEitherDoor(string composition, string extent)
     {
-      // Why none of the above is visible anywhere else, stated as a test rather than as prose: the
-      // locus governs cost and never content, so the eager door — which has no window and is told
-      // nothing — settles on exactly the same rectangle. A change to the announcement can therefore
-      // only ever be caught by counters, which is the argument for pinning them at all.
+      // The two doors settle on exactly the same rectangle: a composed area strategy whose first
+      // half reads nothing, or reads the whole sheet, means the same through a stream as whole.
       var area = composition == "first-half-reads-nothing" ? FirstHalfReadsNothing() : FirstHalfReads();
 
       Assert.Equal(extent, Eager(area));
-      Assert.Equal(extent, Measure(area).Read);
+      Assert.Equal(extent, Streamed(area));
     }
   }
 }

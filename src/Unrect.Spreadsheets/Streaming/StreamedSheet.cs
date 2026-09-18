@@ -7,23 +7,28 @@ using Unrect.Projections;
 namespace Unrect.Spreadsheets
 {
   /// <summary>
-  /// One sheet read once, forward, under the push interpreter: rows are loaded as the driver asks
-  /// for them and dropped as soon as no open machine may still read them. A cell of a dropped row
-  /// is a located read failure — a forward pass cannot go back — and a cell of a row not yet loaded
-  /// is a bounds condition. The sheet's extent is what the file declares, so a plane over it can be
-  /// cut before its rows have arrived.
+  /// One sheet read forward over its own cursor: what <see cref="Workbook.Sheet"/> hands back. Rows
+  /// are loaded as they are asked for — by the engine one at a time, or by a direct read of a cell
+  /// further down — and released as the engine says no open machine may still read them. A cell of
+  /// a released row is a located read failure, since a forward pass cannot go back; a cell of a
+  /// disposed workbook's sheet says the workbook is gone. The sheet's extent is what the file
+  /// declares, so a plane over it can be cut before its rows have arrived.
   /// </summary>
   internal sealed class StreamedSheet : SheetCellsBase, IRowFeed, IDisposable
   {
     private readonly IRowCursor _cursor;
+    private readonly StringInterner _strings;
     private readonly List<Cell[]> _rows = new List<Cell[]>();
+    private readonly long _rowsMeasured;
     private int _first;
     private bool _exhausted;
     private bool _disposed;
 
-    internal StreamedSheet(IRowCursor cursor, string name, int rowCount, int columnCount, int? cap)
+    internal StreamedSheet(IRowCursor cursor, StringInterner strings, string name, int rowCount, int columnCount, int? cap, long rowsMeasured)
     {
       _cursor = cursor;
+      _strings = strings;
+      _rowsMeasured = rowsMeasured;
       Name = name;
       Area = new Area(columnCount, rowCount);
       Cap = cap;
@@ -40,12 +45,14 @@ namespace Unrect.Spreadsheets
     public int? Cap { get; }
 
     /// <summary>The most rows held at once over the sheet's life — what the declaration cost.</summary>
-    public int PeakRetained { get; private set; }
+    internal int PeakRetained { get; private set; }
+
+    internal StreamingStatistics Statistics => new StreamingStatistics(Name, Loaded, PeakRetained, Cap, _rowsMeasured);
 
     public bool Advance()
     {
       if (_disposed)
-        throw new ObjectDisposedException(nameof(Workbook), "the workbook was disposed under the map");
+        throw new ObjectDisposedException(nameof(Workbook), "the workbook that lent this sheet has been disposed");
 
       if (_exhausted || Loaded >= Area.Height || !_cursor.Read())
       {
@@ -56,7 +63,7 @@ namespace Unrect.Spreadsheets
       var row = new Cell[Area.Width];
 
       for (var column = 0; column < row.Length; column++)
-        row[column] = _cursor[column];
+        row[column] = _strings.Share(_cursor[column]);
 
       _rows.Add(row);
       Loaded++;
@@ -88,6 +95,11 @@ namespace Unrect.Spreadsheets
         throw new CellReadException(
           new Point<ISpace>(this, column, row),
           at => $"row {row + 1} of '{Name}' has left the buffer: a streamed sheet is read once, forward, so read {at} inside the projection rather than after it");
+
+      // A row not yet loaded is ahead, and a forward pass can reach it: load up to it.
+      while (row >= Loaded && Advance())
+      {
+      }
 
       if (row >= Loaded)
         throw new OutOfBoundsException();

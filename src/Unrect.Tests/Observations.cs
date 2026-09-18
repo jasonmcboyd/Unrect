@@ -105,29 +105,30 @@ namespace Unrect.Tests
   internal static class Observations
   {
     /// <summary>
-    /// Reads <paramref name="projection"/> over <paramref name="space"/> and records everything a
-    /// caller can observe about the reading.
-    /// <para>
-    /// Two entry points because they answer different halves of the question: the value and what the
-    /// parse noticed come from <c>MapWithDiagnostics</c>, the offset and the extent consumed from
-    /// <c>Apply</c>. A projection is a value safe to apply twice, so this is one reading asked about
-    /// twice rather than two readings.
-    /// </para>
+    /// Reads <paramref name="projection"/> over <paramref name="space"/> once and records everything
+    /// a caller can observe about the reading: the value, the offset and extent consumed, and what
+    /// the parse noticed, unconsumed space included. One pass through the session, since a streamed
+    /// space can be read only once.
     /// </summary>
     public static Observation Observe<TSpace, T>(IProjectionDefinition<TSpace, T> projection, TSpace space)
       where TSpace : class, ISpace
     {
       try
       {
-        var mapped = projection.MapWithDiagnostics(space);
-        var applied = projection.Apply(space);
+        var context = ProjectionContext.Root(space);
+        var mark = context.Diagnostics.Mark();
+        var extent = Plane<TSpace>.Of(space);
+        var applied = PushSession<TSpace>.Apply(projection, space, context);
+
+        if (!(applied.Advance.Width == 0 && applied.Advance.Height == 0 && context.Diagnostics.AbsorbedAt(mark)))
+          ProjectionExtensions.ReportUnconsumed(projection, extent, applied.Offset.Size, applied.Consumed, context);
 
         return new Observation(
-          RenderValue(mapped.Value),
+          RenderValue(applied.Value),
           Render(applied.Consumed),
           Render(applied.Offset.Size),
           Render(applied.Advance),
-          mapped.Diagnostics.Select(Describe).ToList(),
+          context.Diagnostics.Snapshot().Select(Describe).ToList(),
           null,
           null,
           null);

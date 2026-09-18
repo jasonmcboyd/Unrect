@@ -30,7 +30,8 @@ namespace Unrect.Projections
     public override IProjector<TSpace, LabelMap> Build(ProjectorScope<TSpace> scope)
       => new SpanCountProjector<TSpace, LabelMap>(this, scope, HeaderRows);
 
-    internal override Reach Retains => Reach.Spans(HeaderRows);
+    internal override bool Collects => true;
+
 
     internal override Settlement<LabelMap> Collect(Plane<TSpace> extent, ProjectionContext context)
     {

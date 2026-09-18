@@ -294,9 +294,9 @@ namespace Unrect.Benchmarks
     /// </summary>
     private static object StreamingResult(bool unique, int rows)
     {
-      using var pool = RetentionSpaces.Pool(unique, rows: rows);
+      using var book = RetentionSpaces.Book(unique, rows: rows);
 
-      return Ledger.Map(RetentionSpaces.Windowed(pool, rows: rows));
+      return Ledger.Map(book.Sheet("Data"));
     }
 
     /// <summary>

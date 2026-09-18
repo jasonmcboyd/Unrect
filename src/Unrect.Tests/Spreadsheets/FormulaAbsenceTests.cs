@@ -166,7 +166,7 @@ namespace Unrect.Tests.Spreadsheets
       // plain spaces. Absence by TYPE rather than by answer, exactly as the plain eager door is: this
       // is the same decision the second eager factory exists to make, kept by a door that has no
       // second factory to offer.
-      using var book = Workbook.Over(FakeRowSource.Of(rows: 8, columns: 3), new WorkbookOptions { WarmReaders = false });
+      using var book = Workbook.Over(FakeRowSource.Of(rows: 8, columns: 3), new WorkbookOptions());
 
       var sheet = book.Sheet("Data");
 
@@ -187,7 +187,7 @@ namespace Unrect.Tests.Spreadsheets
       // is still being discovered is a locator over the sheet rather than a wrapper around it, so
       // the space a projection reads through is the very object the door vended. There is nothing
       // left that could hide a capability the sheet has, or manufacture one it has not.
-      using var book = Workbook.Over(FakeRowSource.Of(rows: 8, columns: 3), new WorkbookOptions { WarmReaders = false });
+      using var book = Workbook.Over(FakeRowSource.Of(rows: 8, columns: 3), new WorkbookOptions());
 
       var sheet = book.Sheet("Data");
 

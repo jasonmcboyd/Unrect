@@ -83,14 +83,16 @@ namespace Unrect.Projections
         return true;
       }
 
+      // A collector under a declared rule takes the driver's spans whichever axis it announces:
+      // the rule bounds it, and it reads the region whole at close.
+      if (!derived && definition is DefinitionNode collector && collector.Collects)
+      {
+        hold = null;
+        return true;
+      }
+
       if (definition.Axis == Axes.None)
       {
-        if (!derived)
-        {
-          hold = null;
-          return true;
-        }
-
         hold = "it reads its extent whole and bounds it itself";
         return false;
       }

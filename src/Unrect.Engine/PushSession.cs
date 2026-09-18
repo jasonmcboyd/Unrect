@@ -42,9 +42,10 @@ namespace Unrect.Projections
       {
         var width = whole.Width;
 
-        while (feed.Advance())
+        // Row-indexed rather than driven off what the feed has loaded: a direct read inside a
+        // machine may have loaded rows ahead of the offer, and every one of them is still offered.
+        for (var row = 0; Load(feed, row, definition, whole, context); row++)
         {
-          var row = feed.Loaded - 1;
           var span = whole.Slice(new Offset(0, row), new Area(width, 1));
 
           if (!root.Next(span))
@@ -63,6 +64,38 @@ namespace Unrect.Projections
       var settlement = root.Close();
 
       return new AppliedResult<T>(settlement.Value, root.Offset, settlement.Consumed, settlement.Presence);
+    }
+
+    /// <summary>
+    /// Has the feed load <paramref name="row"/>, or says the source is exhausted. A source that
+    /// throws — the disk, a file replaced mid-read — is a fault, never a statement about the data.
+    /// </summary>
+    private static bool Load<T>(IRowFeed feed, int row, IProjectionDefinition<TSpace, T> definition, Plane<TSpace> whole, ProjectionContext context)
+    {
+      while (feed.Loaded <= row)
+      {
+        bool more;
+
+        try
+        {
+          more = feed.Advance();
+        }
+        catch (ProjectionException)
+        {
+          throw;
+        }
+        catch (Exception exception)
+        {
+          var at = row < whole.Area.Height ? whole.Slice(new Offset(0, row), new Area(whole.Width, 1)) : whole;
+
+          throw context.Failure(definition, $"the source threw {exception.GetType().Name}: {exception.Message}", at, null, exception, isFault: true);
+        }
+
+        if (!more)
+          return false;
+      }
+
+      return true;
     }
 
     internal void Opened(IRetaining machine) => _open.Add(machine);

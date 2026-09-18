@@ -60,8 +60,6 @@ namespace Unrect.Benchmarks
     public const int Columns = 8;
 
     /// <summary>The default window, in rows — the same default a <c>Workbook</c> would use.</summary>
-    public const int WindowRows = 8192;
-
     /// <summary>
     /// Distinct values per text column in the duplicated flavour. Chosen to span the range real
     /// sheets actually show: a currency code repeats tens of thousands of times, a client identifier
@@ -137,25 +135,9 @@ namespace Unrect.Benchmarks
         RetentionWorkbooks.Path(unique, sharedStrings, rows, columns),
         RetentionWorkbooks.SheetName);
 
-    /// <summary>A pool over a fresh synthetic ledger source.</summary>
-    public static ReaderPool Pool(bool unique, int maxReaders = 3, int rows = Rows, int columns = Columns)
-    {
-      var pool = new ReaderPool(new LedgerRowSource(rows, columns, unique), maxReaders, warmReaders: false);
-
-      // What a workbook does at Open: park a reader and adopt it as the first lease.
-      pool.Adopt(pool.OpenParked(), 0, 0);
-
-      return pool;
-    }
-
-    /// <summary>A window over a synthetic ledger sheet, sized in rows.</summary>
-    public static ISheetCells Windowed(ReaderPool pool, int windowRows = WindowRows, int rows = Rows, int columns = Columns)
-    {
-      var chunkRows = SheetStore.DefaultChunkRows(columns);
-
-      return new WindowedSpace(
-        new SheetStore(pool, 0, "Data", rows, columns, chunkRows, SheetStore.WindowChunksFor(windowRows, chunkRows)));
-    }
+    /// <summary>A workbook over a fresh synthetic ledger source.</summary>
+    public static Workbook Book(bool unique, int rows = Rows, int columns = Columns)
+      => Workbook.Over(new LedgerRowSource(rows, columns, unique), new WorkbookOptions());
 
     /// <summary>Rows generated on demand: a reader's shape, with none of a reader's cost.</summary>
     private sealed class LedgerRowSource : IRowSource

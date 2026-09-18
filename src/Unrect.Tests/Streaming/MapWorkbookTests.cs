@@ -30,8 +30,7 @@ namespace Unrect.Tests.Streaming
   {
     private static string Path(string file) => System.IO.Path.Combine(AppContext.BaseDirectory, "TestData", file);
 
-    /// <summary>Warming off, as everywhere else here: a background open makes nothing wrong, only noisy.</summary>
-    private static WorkbookOptions Cold() => new WorkbookOptions { WarmReaders = false };
+    private static WorkbookOptions Cold() => new WorkbookOptions();
 
     /// <summary>
     /// The Detail sheet of multi-sheet.xlsx: captions Fund / Date / Amount over five records. Date is
@@ -173,13 +172,13 @@ namespace Unrect.Tests.Streaming
     [Fact]
     public void OptionsAreValidatedBeforeAnythingIsRead()
     {
-      // The option object reaches Workbook.Open unchanged, which is what this catches: a window of no
+      // The option object reaches Workbook.Open unchanged, which is what this catches: a cap of no
       // rows is refused by the workbook's own validation, and it is refused over a file that does not
       // exist — so the refusal cannot have come from reading anything.
       var failure = Assert.Throws<ArgumentOutOfRangeException>(() =>
-        Text().MapWorkbook(Path("no-such-workbook.xlsx"), "Any", new WorkbookOptions { WindowRows = 0 }));
+        Text().MapWorkbook(Path("no-such-workbook.xlsx"), "Any", new WorkbookOptions { BufferRows = 0 }));
 
-      Assert.Equal("WindowRows", failure.ParamName);
+      Assert.Equal("BufferRows", failure.ParamName);
     }
 
     [Fact]
@@ -209,23 +208,6 @@ namespace Unrect.Tests.Streaming
       Assert.Equal(
         "  ",
         cell.MapWorkbook(Path("edge-cases.xlsx"), "Edges", new WorkbookOptions { IsBlank = _ => false }));
-    }
-
-    [Fact]
-    public void ASmallWindowChangesTheCostAndNotTheAnswer()
-    {
-      // What WindowRows is honestly assertable for from out here. The window governs cost, and the
-      // statistics that would show it die with the workbook — which is one of the documented reasons
-      // to open the book yourself. What a caller CAN check is that turning the knob does not change
-      // the reading, over a file tall enough for the window to matter.
-      var ledger = Column(row => row.Count);
-      var path = Path("tall-ledger.xlsx");
-
-      var wide = ledger.MapWorkbook(path, "Ledger");
-      var narrow = ledger.MapWorkbook(path, "Ledger", new WorkbookOptions { WarmReaders = false, WindowRows = 64, ChunkRows = 16 });
-
-      Assert.Equal(1201, wide);
-      Assert.Equal(wide, narrow);
     }
 
     // --- Refusals ---------------------------------------------------------------------------------------

@@ -63,7 +63,7 @@ namespace Unrect.Tests.Projections
     private static ISheetCells Sheet(string door)
       => door == "grid"
         ? CoordinateGrid(5, 8)
-        : Windowed(FakeSheet.Of("Data", Rows()));
+        : Streamed(FakeSheet.Of("Data", Rows()));
 
     private static object?[][] Rows()
     {

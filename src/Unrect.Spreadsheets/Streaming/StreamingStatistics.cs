@@ -1,141 +1,45 @@
 namespace Unrect.Spreadsheets
 {
   /// <summary>
-  /// What reading one sheet through a window has cost.
-  /// <para>
-  /// The numbers to act on are <see cref="ChunkReloads"/> and <see cref="WindowOverruns"/>: the
-  /// first says rows were read more than once, the second says why. A window must be at least as
-  /// tall as the tallest extent open at one time — a walk down a sheet has an open extent of one
-  /// chunk, but a
-  /// <c>HorizontalFlow</c> or an <c>Overlay</c> over a band has an open extent of the whole band —
-  /// and undersizing it is not a gentle degradation. Measured: a ten-chunk window over a seven-chunk
-  /// band took 0.01s; a four-chunk window over a thirteen-chunk band took 29.5s. Three orders of
-  /// magnitude, from one chunk of shortfall.
-  /// </para>
-  /// <para>
-  /// <b>The floor these numbers do not include.</b> <see cref="ResidentBytes"/> counts
-  /// <see cref="Cell"/> structs only. Strings that <c>Text</c> cells point at are
-  /// owned by the reader's shared-string table, are not counted here, and do not shrink with the
-  /// window. On a text-heavy sheet that table can dominate: streaming removes the materialised grid,
-  /// not the parser.
-  /// </para>
+  /// What reading one sheet through <see cref="Workbook.Sheet"/> has cost: the rows the pass
+  /// loaded, the most it held at once, the cap it was held under, and the rows a sheet that would
+  /// not say how big it was had to be read to measure. The vocabulary to act on: a peak near the
+  /// sheet's height says the declaration holds its extent, and the shape that holds is what to
+  /// bound.
   /// </summary>
   public readonly struct StreamingStatistics
   {
-    internal StreamingStatistics(
-      string sheetName,
-      int chunkRows,
-      int windowChunks,
-      long chunkLoads,
-      long chunkReloads,
-      long evictions,
-      long windowOverruns,
-      long rowsMaterialised,
-      long rowsSkipped,
-      long rowsMeasured,
-      int residentChunks,
-      int peakResidentChunks,
-      long bytesPerChunk)
+    internal StreamingStatistics(string sheetName, long rowsRead, int peakRetained, int? cap, long rowsMeasured)
     {
       SheetName = sheetName;
-      ChunkRows = chunkRows;
-      WindowChunks = windowChunks;
-      ChunkLoads = chunkLoads;
-      ChunkReloads = chunkReloads;
-      Evictions = evictions;
-      WindowOverruns = windowOverruns;
-      RowsMaterialised = rowsMaterialised;
-      RowsSkipped = rowsSkipped;
+      RowsRead = rowsRead;
+      PeakRetained = peakRetained;
+      Cap = cap;
       RowsMeasured = rowsMeasured;
-      ResidentChunks = residentChunks;
-      PeakResidentChunks = peakResidentChunks;
-      ResidentBytes = residentChunks * bytesPerChunk;
-      PeakResidentBytes = peakResidentChunks * bytesPerChunk;
     }
 
-    /// <summary>The sheet these numbers describe.</summary>
+    /// <summary>The sheet these figures are for.</summary>
     public string SheetName { get; }
 
-    /// <summary>Rows in one chunk — the unit the window is loaded and evicted in.</summary>
-    public int ChunkRows { get; }
+    /// <summary>Rows loaded by the pass — every row the declaration was offered, or asked for directly.</summary>
+    public long RowsRead { get; }
 
-    /// <summary>The window budget, in chunks.</summary>
-    public int WindowChunks { get; }
+    /// <summary>The most rows held at once — what the declaration's holds cost.</summary>
+    public int PeakRetained { get; }
 
-    /// <summary>The window budget, in rows: <see cref="ChunkRows"/> × <see cref="WindowChunks"/>.</summary>
-    public int WindowRows => ChunkRows * WindowChunks;
-
-    /// <summary>Chunks materialised, re-materialisations included.</summary>
-    public long ChunkLoads { get; }
+    /// <summary>The cap the pass ran under (<see cref="WorkbookOptions.BufferRows"/>), or null for none.</summary>
+    public int? Cap { get; }
 
     /// <summary>
-    /// Loads of a chunk this store had already thrown away. Zero for a walk down a sheet; above zero
-    /// means something reached back into rows the window had moved past.
-    /// <para>
-    /// This is the cost meter. <see cref="WindowOverruns"/> says a band did not fit; this says what
-    /// not fitting cost.
-    /// </para>
-    /// </summary>
-    public long ChunkReloads { get; }
-
-    /// <summary>Chunks dropped to stay inside the budget.</summary>
-    public long Evictions { get; }
-
-    /// <summary>
-    /// How many times a band did not fit the window: once per run of announcements of a band too
-    /// tall to be held — the same band announced again, consecutively, is not counted again — plus
-    /// each eviction forced from inside the band being swept, which is not deduplicated at all.
-    /// Above zero means the window is smaller than the declaration needs, and raising
-    /// <c>WindowRows</c> is the fix. The count is the store's and outlives a single <c>Map</c>.
-    /// <para>
-    /// The two counters divide the labour: this one says <em>why</em> — a band did not fit — and
-    /// <see cref="ChunkReloads"/> says <em>what it cost</em>, in rows that had to be read again.
-    /// Overruns without reloads is a band that did not fit but was never swept twice, which costs
-    /// nothing; overruns with many reloads is the collapse the sizing law exists to prevent.
-    /// </para>
-    /// </summary>
-    public long WindowOverruns { get; }
-
-    /// <summary>Rows read from the source and adapted into cells.</summary>
-    public long RowsMaterialised { get; }
-
-    /// <summary>
-    /// Rows parsed and discarded to move a reader to a wanted chunk. Window sizing owns this
-    /// number; the reader pool does not touch it, which is why it is invariant under
-    /// <c>MaxReaders</c>.
-    /// </summary>
-    public long RowsSkipped { get; }
-
-    /// <summary>
-    /// Rows read by the survey that sized this sheet, and zero for a sheet whose reader reported its
-    /// own dimension. A sheet with no <c>dimension</c> element is read once, before the window sees
-    /// anything, to find out how big it is; that pass costs time and no memory, and this is the only
-    /// counter it moves. Above zero means a whole extra forward pass over the file was paid for.
+    /// Rows read to measure a sheet that would not say how big it was — a pass the caller never
+    /// asked for, visible where its cost is read. Zero for a sheet that described itself.
     /// </summary>
     public long RowsMeasured { get; }
 
-    /// <summary>Chunks held right now.</summary>
-    public int ResidentChunks { get; }
-
-    /// <summary>The most chunks ever held at once. Never exceeds <see cref="WindowChunks"/>.</summary>
-    public int PeakResidentChunks { get; }
-
-    /// <summary>Bytes of cells resident right now.</summary>
-    public long ResidentBytes { get; }
-
-    /// <summary>Bytes of cells resident at the peak.</summary>
-    public long PeakResidentBytes { get; }
-
-    /// <summary>
-    /// The one-line form, for reading a run. <see cref="RowsMeasured"/> appears only when a survey
-    /// happened: it is zero for every sheet that described itself, which is nearly all of them, and a
-    /// column of zeroes is not worth the width.
-    /// </summary>
+    /// <summary>One line: rows read, peak retained, the cap, and the survey if there was one.</summary>
     public override string ToString() =>
-      $"'{SheetName}' chunk {ChunkRows}r x {WindowChunks} ({WindowRows:N0} rows) | " +
-      $"loads {ChunkLoads:N0} (reloads {ChunkReloads:N0}) | evictions {Evictions:N0} | " +
-      $"overruns {WindowOverruns:N0} | rows read {RowsMaterialised:N0} skipped {RowsSkipped:N0} | " +
-      $"resident {ResidentChunks} chunks / {ResidentBytes:N0}B (peak {PeakResidentChunks} / {PeakResidentBytes:N0}B)" +
-      (RowsMeasured > 0 ? $" | measured {RowsMeasured:N0} rows" : string.Empty);
+      $"'{SheetName}': {RowsRead} rows read, peak {PeakRetained} retained"
+      + (Cap is int cap ? $" of {cap} allowed" : string.Empty)
+      + (RowsMeasured > 0 ? $", {RowsMeasured} measured" : string.Empty);
   }
 }

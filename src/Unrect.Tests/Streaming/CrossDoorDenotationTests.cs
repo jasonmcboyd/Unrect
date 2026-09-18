@@ -63,8 +63,7 @@ namespace Unrect.Tests.Streaming
       }
     }
 
-    /// <summary>Warming off everywhere, as in the sibling suites: it makes nothing wrong, only noisy.</summary>
-    private static WorkbookOptions Cold() => new WorkbookOptions { WarmReaders = false };
+    private static WorkbookOptions Cold() => new WorkbookOptions();
 
     // --- The grids ---------------------------------------------------------------------------------
     //
@@ -606,38 +605,6 @@ namespace Unrect.Tests.Streaming
     }
 
     // --- The window moves the cost and not the reading ------------------------------------------------------
-
-    [Fact]
-    public void AWindowTooSmallForTheSheetChangesTheCostAndNotTheDenotation()
-    {
-      // The denotation-versus-cost separation, stated at L3 rather than on values alone. The
-      // declaration is anchored at the top of a forty-row sheet and bounded at the bottom of it, so
-      // finding its extent reads past what an eight-row window can hold and reading its records then
-      // reaches back — which is the shape of walk the counters are for. What must not move is
-      // anything a caller can observe.
-      var path = Fixture("tall");
-      var declaration = TallLedger();
-
-      var eager = Observe(declaration, SpreadsheetSpace.Create(path, SheetName));
-
-      using var book = Workbook.Open(
-        path,
-        new WorkbookOptions { WarmReaders = false, WindowRows = 8, ChunkRows = 2 });
-
-      var streamed = Observe(declaration, book.Sheet(SheetName));
-
-      AssertNonVacuous("a tall ledger between two landmarks", eager);
-      AssertL3(eager, streamed);
-
-      // ...and the cost really did move, which is what makes the equality above worth asserting. The
-      // window holds eight of the sheet's forty rows, and the reading paid for the difference.
-      var statistics = book.Statistics(SheetName)!.Value;
-
-      Assert.Equal(8, statistics.WindowChunks * statistics.ChunkRows);
-      Assert.True(
-        statistics.ChunkReloads > 0,
-        $"the window was expected to be re-read; the counters say {statistics.ChunkReloads} reloads.");
-    }
 
     // --- The sugar reads what the two-step form reads ----------------------------------------------------------
 

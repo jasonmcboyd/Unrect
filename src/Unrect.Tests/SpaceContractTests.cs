@@ -152,7 +152,7 @@ namespace Unrect.Tests
           return ProjectionTestSpaces.Mixed(cells);
 
         case "windowed":
-          return ProjectionTestSpaces.Windowed(FakeSheet.Of("Edges", EdgeRows()));
+          return ProjectionTestSpaces.Streamed(FakeSheet.Of("Edges", EdgeRows()));
 
         case "xlsx":
           return SpreadsheetSpace.Create(file, "Edges");
@@ -439,7 +439,7 @@ namespace Unrect.Tests
     }
 
     [Fact]
-    public void AZeroColumnSheetReadsTheSameThroughAWindowAsInMemory()
+    public void AZeroColumnSheetReadsTheSameThroughAStreamAsInMemory()
     {
       // A sheet with rows and no columns is a real thing — an export whose only content was deleted,
       // a worksheet holding nothing but formatting — and the two doors have to say the same about
@@ -447,9 +447,8 @@ namespace Unrect.Tests
       // both refuse the only cell anyone could ask for.
       var eager = SheetGrid.Of(new Cell[10, 0]);
 
-      var source = new FakeRowSource(new FakeSheet("Empty", 10, 0));
-      var pool = new ReaderPool(source, 1, warmReaders: false);
-      ISheetCells streamed = new WindowedSpace(new SheetStore(pool, 0, "Empty", 10, 0, chunkRows: 100, windowChunks: 4));
+      using var book = Workbook.Over(new FakeRowSource(new FakeSheet("Empty", 10, 0)), new WorkbookOptions());
+      var streamed = book.Sheet("Empty");
 
       Assert.Equal(0, eager.Area.Size.Width);
       Assert.Equal(eager.Area.Size.Width, streamed.Area.Size.Width);
@@ -468,7 +467,7 @@ namespace Unrect.Tests
       // answer — "it is blank", "it is not text", "it says nothing" — and each would be a claim
       // about a cell that is not there, made by a space that could not have looked.
       ISpace eager = SheetGrid.Of(new Cell[10, 0]);
-      ISpace streamed = ProjectionTestSpaces.Windowed(new FakeSheet("Empty", 10, 0), chunkRows: 100);
+      ISpace streamed = ProjectionTestSpaces.Streamed(new FakeSheet("Empty", 10, 0));
 
       foreach (var space in new[] { eager, streamed })
       {
@@ -646,9 +645,8 @@ namespace Unrect.Tests
       // The width is nothing, but the rows are real, so a declaration may still bound itself against
       // them. A locator that rejected the slice would turn an empty sheet into an exception rather
       // than an empty answer.
-      var source = new FakeRowSource(new FakeSheet("Empty", 10, 0));
-      var pool = new ReaderPool(source, 1, warmReaders: false);
-      ISheetCells streamed = new WindowedSpace(new SheetStore(pool, 0, "Empty", 10, 0, chunkRows: 100, windowChunks: 4));
+      using var book = Workbook.Over(new FakeRowSource(new FakeSheet("Empty", 10, 0)), new WorkbookOptions());
+      var streamed = book.Sheet("Empty");
 
       var slice = Plane<ISheetCells>.Of(streamed).Slice(new Offset(0, 2), new Area(0, 5));
 

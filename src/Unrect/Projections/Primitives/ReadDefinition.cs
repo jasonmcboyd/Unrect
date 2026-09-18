@@ -58,7 +58,8 @@ namespace Unrect.Projections
     public override IProjector<TSpace, TResult> Build(ProjectorScope<TSpace> scope)
       => new SpanCountProjector<TSpace, TResult>(this, scope, 1);
 
-    internal override Reach Retains => Reach.Spans(1);
+    internal override bool Collects => true;
+
 
     internal override Settlement<TResult> Collect(Plane<TSpace> extent, ProjectionContext context)
     {

@@ -40,13 +40,10 @@ namespace Unrect.Tests.Streaming
         : new ObjectDisposedException("Workbook", "the workbook was disposed under the map");
 
     /// <summary>
-    /// Six rows of readable data whose row <paramref name="faultRow"/> cannot be read.
-    /// <para>
-    /// One chunk per row, so the failure happens exactly when a declaration reaches that row and
+    /// Six rows of readable data whose row <paramref name="faultRow"/> cannot be read. A pass loads
+    /// one row at a time, so the failure happens exactly when a declaration reaches that row and
     /// not a moment earlier — which is what makes "this projection got that far" a fact rather than
-    /// an inference. A fresh space per call, because the failure is in the load and a store that
-    /// has already failed would fail differently the second time.
-    /// </para>
+    /// an inference. A fresh pass per call, because the failure is in the load.
     /// </summary>
     private static ISheetCells Faulting(string fault, int faultRow = 4)
     {
@@ -63,9 +60,7 @@ namespace Unrect.Tests.Streaming
         FaultRow = faultRow
       };
 
-      var pool = new ReaderPool(source, 2, warmReaders: false);
-
-      return new WindowedSpace(new SheetStore(pool, 0, "Data", 6, 2, chunkRows: 1, windowChunks: 4));
+      return Workbook.Over(source, new WorkbookOptions()).Sheet("Data");
     }
 
     private static void AssertSurfacedAsAFault(string fault, Func<ISheetCells, object?> map)

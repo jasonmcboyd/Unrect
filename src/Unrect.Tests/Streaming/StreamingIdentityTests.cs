@@ -5,7 +5,6 @@ using System.Linq;
 using Unrect.Core;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
-using Unrect.Strategies;
 
 using Xunit;
 
@@ -45,35 +44,16 @@ namespace Unrect.Tests.Streaming
 
     [Theory]
     [MemberData(nameof(Workbooks))]
-    public void EveryCellOfEveryWorkbookReadsTheSameThroughAWindow(string file, string sheet)
+    public void EveryCellOfEveryWorkbookReadsTheSameThroughAStream(string file, string sheet)
     {
       var eager = SpreadsheetSpace.Create(Path(file), sheet);
-      using var book = Workbook.Open(Path(file), new WorkbookOptions { WarmReaders = false });
+      using var book = Workbook.Open(Path(file), new WorkbookOptions());
       var streamed = book.Sheet(sheet);
 
       Assert.Equal(eager.Area.Size.Width, streamed.Area.Size.Width);
       Assert.Equal(eager.Area.Size.Height, streamed.Area.Size.Height);
 
       AssertEveryCellAgrees(eager, streamed);
-    }
-
-    [Theory]
-    [MemberData(nameof(Workbooks))]
-    public void EveryCellStillReadsTheSameThroughAWindowFarTooSmallForIt(string file, string sheet)
-    {
-      // One row per chunk, floored to the four-chunk minimum: a window deliberately far below the
-      // sizing law. An undersized window is slow — it re-reads, and the counters say so — and it is
-      // never wrong. That is the property that makes WindowRows a performance knob rather than a
-      // correctness one.
-      var eager = SpreadsheetSpace.Create(Path(file), sheet);
-      using var book = Workbook.Open(
-        Path(file),
-        new WorkbookOptions { WarmReaders = false, ChunkRows = 1, WindowRows = 1 });
-      var streamed = book.Sheet(sheet);
-
-      AssertEveryCellAgrees(eager, streamed);
-
-      Assert.Equal(1, book.Statistics(sheet)!.Value.ChunkRows);
     }
 
     [Fact]
@@ -87,7 +67,7 @@ namespace Unrect.Tests.Streaming
       // its grid from the counts the reader would not give and yielded an empty space for a file
       // with four rows in it. Both now read the sheet to find out, and get the same answer.
       var eager = SpreadsheetSpace.Create(Path("no-extent.xlsx"), "Undeclared");
-      using var book = Workbook.Open(Path("no-extent.xlsx"), new WorkbookOptions { WarmReaders = false });
+      using var book = Workbook.Open(Path("no-extent.xlsx"), new WorkbookOptions());
       var streamed = book.Sheet("Undeclared");
 
       Assert.Equal(4, eager.Area.Size.Height);
@@ -103,7 +83,7 @@ namespace Unrect.Tests.Streaming
 
     [Theory]
     [MemberData(nameof(Workbooks))]
-    public void EveryWorkbookSharesItsRepeatedTextTheSameWayThroughAWindow(string file, string sheet)
+    public void EveryWorkbookSharesItsRepeatedTextTheSameWayThroughAStream(string file, string sheet)
     {
       // The differential form applied to identity rather than to value. Each door is asked, for
       // every text cell of a sheet, which earlier cell it shares its characters with — and the two
@@ -114,7 +94,7 @@ namespace Unrect.Tests.Streaming
       // 257-character neighbours land on opposite sides of the guard, and both doors must put them
       // there); the rest are the control.
       var eager = SpreadsheetSpace.Create(Path(file), sheet);
-      using var book = Workbook.Open(Path(file), new WorkbookOptions { WarmReaders = false });
+      using var book = Workbook.Open(Path(file), new WorkbookOptions());
       var streamed = book.Sheet(sheet);
 
       Assert.Equal(SharingPattern(eager), SharingPattern(streamed));
@@ -187,7 +167,7 @@ namespace Unrect.Tests.Streaming
 
       var eager = declaration.Map(SpreadsheetSpace.Create(Path("investor-irr.xlsx"), "IRR"));
 
-      using var book = Workbook.Open(Path("investor-irr.xlsx"), new WorkbookOptions { WarmReaders = false });
+      using var book = Workbook.Open(Path("investor-irr.xlsx"), new WorkbookOptions());
       var streamed = declaration.Map(book.Sheet("IRR"));
 
       Assert.Equal(eager.Title, streamed.Title);
@@ -212,10 +192,9 @@ namespace Unrect.Tests.Streaming
       var eager = declaration.MapWithDiagnostics(eagerSpace);
       var eagerExtent = declaration.Apply(eagerSpace);
 
-      using var book = Workbook.Open(Path("investor-irr.xlsx"), new WorkbookOptions { WarmReaders = false });
-      var streamedSpace = book.Sheet("IRR");
-      var streamed = declaration.MapWithDiagnostics(streamedSpace);
-      var streamedExtent = declaration.Apply(streamedSpace);
+      using var book = Workbook.Open(Path("investor-irr.xlsx"), new WorkbookOptions());
+      var streamed = declaration.MapWithDiagnostics(book.Sheet("IRR"));
+      var streamedExtent = declaration.Apply(book.Sheet("IRR"));
 
       Assert.Equal(eagerExtent.Consumed.Width, streamedExtent.Consumed.Width);
       Assert.Equal(eagerExtent.Consumed.Height, streamedExtent.Consumed.Height);
@@ -223,35 +202,10 @@ namespace Unrect.Tests.Streaming
       Assert.Empty(streamed.Diagnostics);
     }
 
-    [Fact]
-    public void TheFlagshipDeclarationIsUnchangedByAWindowSmallerThanTheSheet()
-    {
-      // The backward-reaching, multi-pass projection against a window that cannot hold what it
-      // sweeps. The counters move — that is the cost model working — and the answer does not.
-      var declaration = InvestorIrr();
-
-      var eager = declaration.Map(SpreadsheetSpace.Create(Path("investor-irr.xlsx"), "IRR"));
-
-      using var book = Workbook.Open(
-        Path("investor-irr.xlsx"),
-        new WorkbookOptions { WarmReaders = false, ChunkRows = 1, WindowRows = 1 });
-      var streamed = declaration.Map(book.Sheet("IRR"));
-
-      Assert.Equal(eager.Title, streamed.Title);
-      Assert.Equal(eager.Summary, streamed.Summary);
-      Assert.Equal(eager.ByTransferDate.Count, streamed.ByTransferDate.Count);
-      Assert.Equal(eager.ByInception.Count, streamed.ByInception.Count);
-
-      var stats = book.Statistics("IRR")!.Value;
-
-      Assert.True(stats.RowsMaterialised > 0);
-      Assert.True(stats.PeakResidentChunks <= stats.WindowChunks);
-    }
-
     // --- The other example declarations -----------------------------------------------------------------
 
     [Fact]
-    public void ADeclarationOverRepeatedBlocksReadsTheSameThroughAWindow()
+    public void ADeclarationOverRepeatedBlocksReadsTheSameThroughAStream()
     {
       // investors-by-deal: repeating blocks separated by blank bands, which is the projection whose
       // termination depends on reading past the end of one block and into the next.
@@ -269,7 +223,7 @@ namespace Unrect.Tests.Streaming
 
       var eager = declaration.Map(SpreadsheetSpace.Create(Path("investors-by-deal.xlsx"), "Investors"));
 
-      using var book = Workbook.Open(Path("investors-by-deal.xlsx"), new WorkbookOptions { WarmReaders = false });
+      using var book = Workbook.Open(Path("investors-by-deal.xlsx"), new WorkbookOptions());
       var streamed = declaration.Map(book.Sheet("Investors"));
 
       Assert.Equal(eager.Select(block => block.Deal), streamed.Select(block => block.Deal));
@@ -279,7 +233,7 @@ namespace Unrect.Tests.Streaming
     }
 
     [Fact]
-    public void ATableBoundByItsHeaderReadsTheSameThroughAWindow()
+    public void ATableBoundByItsHeaderReadsTheSameThroughAStream()
     {
       var declaration = VerticalFlow(v =>
       {
@@ -293,7 +247,7 @@ namespace Unrect.Tests.Streaming
 
       var eager = declaration.Map(SpreadsheetSpace.Create(Path("simple-report.xlsx"), "Report"));
 
-      using var book = Workbook.Open(Path("simple-report.xlsx"), new WorkbookOptions { WarmReaders = false });
+      using var book = Workbook.Open(Path("simple-report.xlsx"), new WorkbookOptions());
       var streamed = declaration.Map(book.Sheet("Report"));
 
       Assert.Equal(eager.Header, streamed.Header);
@@ -328,13 +282,13 @@ namespace Unrect.Tests.Streaming
     }
 
     [Fact]
-    public void ATableOfRecordProjectionsReadsTheSameThroughAWindow()
+    public void ATableOfRecordProjectionsReadsTheSameThroughAStream()
     {
       var declaration = Ledger();
 
       var eager = declaration.Map(SpreadsheetSpace.Create(Path("tall-ledger.xlsx"), "Ledger"));
 
-      using var book = Workbook.Open(Path("tall-ledger.xlsx"), new WorkbookOptions { WarmReaders = false });
+      using var book = Workbook.Open(Path("tall-ledger.xlsx"), new WorkbookOptions());
       var streamed = declaration.Map(book.Sheet("Ledger"));
 
       Assert.Equal(1200, eager.Count);
@@ -363,18 +317,16 @@ namespace Unrect.Tests.Streaming
     }
 
     [Fact]
-    public void AndAHeaderedOneCostsNoRereadingEither()
+    public void AndAHeaderedOneHoldsNothingBehindItEither()
     {
-      // The header is the part that could have cost a reload: it is read once, before the body, and
-      // the body then walks forward from the row after it. If the composition reached back for its
-      // captions per record — or measured the block before projecting — this counter would say so.
+      // The header is the part that could have been held: it is read once, before the body, and the
+      // body then walks forward from the row after it. If the composition reached back for its
+      // captions per record — or held the block before projecting — the peak would say so.
       var declaration = HeaderedLedger();
 
       var eager = declaration.Map(SpreadsheetSpace.Create(Path("tall-ledger.xlsx"), "Ledger"));
 
-      using var book = Workbook.Open(
-        Path("tall-ledger.xlsx"),
-        new WorkbookOptions { WarmReaders = false, ChunkRows = 1, WindowRows = 1 });
+      using var book = Workbook.Open(Path("tall-ledger.xlsx"), new WorkbookOptions { BufferRows = 16 });
 
       var streamed = declaration.Map(book.Sheet("Ledger"));
 
@@ -382,55 +334,10 @@ namespace Unrect.Tests.Streaming
 
       Assert.Equal(1200, streamed.Count);
       Assert.Equal(eager, streamed);
-      Assert.Equal(0, stats.ChunkReloads);
+      Assert.True(stats.PeakRetained <= 16, $"peak retained {stats.PeakRetained}");
     }
 
     // --- A band sweep, which is what the residency law was written for --------------------------------
-
-    [Fact]
-    public void ABandSweptAcrossByAHorizontalFlowCostsNoReloading()
-    {
-      // The case plain LRU gets wrong, and the reason the locus exists at all. A HorizontalFlow over
-      // a band reads it once per child, and the order the children read in is not something the
-      // store gets to choose — so a band that FITS the window must survive being swept across, and
-      // ChunkReloads is how that is said. A window of 64 rows over a three-row band leaves room to
-      // spare; a reload here would mean the store had dropped a chunk of the band it was told about.
-      //
-      // The whole sheet is 1,201 rows, so this is not a declaration that happens to fit by reading
-      // everything: it is a bounded band inside a sheet two orders of magnitude bigger.
-      var band = On(RowContaining("Entry")).Sized(AreaStrategies.ExplicitArea(3, 3)).Of(
-        HorizontalFlow(h =>
-        {
-          var columnSlot = h.Next(Column(3, c => c.Count));
-          var columnSlot2 = h.Next(Column(3, c => c.Count));
-          var columnSlot3 = h.Next(Column(3, c => c.Count));
-
-          return h.Build(read => $"{read.Of(columnSlot)}|{read.Of(columnSlot2)}|{read.Of(columnSlot3)}");
-        }));
-
-      using var book = Workbook.Open(
-        Path("tall-ledger.xlsx"),
-        new WorkbookOptions { WarmReaders = false, ChunkRows = 16, WindowRows = 64 });
-
-      Assert.Equal("3|3|3", band.Map(book.Sheet("Ledger")));
-
-      var stats = book.Statistics("Ledger")!.Value;
-
-      Assert.Equal(0, stats.ChunkReloads);
-      Assert.Equal(0, stats.WindowOverruns);
-    }
-
-    /// <summary>The overruns a declaration costs over the tall ledger, through a window it does not fit.</summary>
-    private static long Overruns<T>(IProjectionDefinition<ISheetCells, T> declaration)
-    {
-      using var book = Workbook.Open(
-        Path("tall-ledger.xlsx"),
-        new WorkbookOptions { WarmReaders = false, ChunkRows = 16, WindowRows = 64 });
-
-      declaration.Map(book.Sheet("Ledger"));
-
-      return book.Statistics("Ledger")!.Value.WindowOverruns;
-    }
 
     // --- Failures are identical too -----------------------------------------------------------------------
 
@@ -445,7 +352,7 @@ namespace Unrect.Tests.Streaming
       var eager = Assert.Throws<ProjectionException>(
         () => declaration.Map(SpreadsheetSpace.Create(Path("edge-cases.xlsx"), "Edges")));
 
-      using var book = Workbook.Open(Path("edge-cases.xlsx"), new WorkbookOptions { WarmReaders = false });
+      using var book = Workbook.Open(Path("edge-cases.xlsx"), new WorkbookOptions());
       var streamed = Assert.Throws<ProjectionException>(() => declaration.Map(book.Sheet("Edges")));
 
       Assert.Equal(eager.Message, streamed.Message);
@@ -454,12 +361,12 @@ namespace Unrect.Tests.Streaming
     }
 
     [Fact]
-    public void AnErrorCellReadsAsAnErrorThroughAWindow()
+    public void AnErrorCellReadsAsAnErrorThroughAStream()
     {
       // The adapter is the same one either way — the row source applies blankness and adapts kinds
       // exactly as the eager reader does — and an error cell is the sharpest test of that, because
       // it is the kind a careless adapter turns into a Blank.
-      using var book = Workbook.Open(Path("edge-cases.xlsx"), new WorkbookOptions { WarmReaders = false });
+      using var book = Workbook.Open(Path("edge-cases.xlsx"), new WorkbookOptions());
       var streamed = book.Sheet("Edges");
 
       Assert.True(streamed.IsErrorAt(0, 1));

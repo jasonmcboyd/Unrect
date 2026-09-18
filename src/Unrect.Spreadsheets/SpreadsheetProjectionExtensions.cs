@@ -142,9 +142,7 @@ namespace Unrect.Spreadsheets
     {
       using var book = Workbook.Open(path, options ?? new WorkbookOptions());
 
-      // The sheet is a stream: one forward pass, holding only what the declaration's open machines
-      // may still read.
-      return read(book.Stream(sheetName));
+      return read(book.Sheet(sheetName));
     }
   }
 }

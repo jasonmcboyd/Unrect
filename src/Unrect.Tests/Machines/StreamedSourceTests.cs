@@ -61,7 +61,7 @@ namespace Unrect.Tests.Machines
 
       using var book = Workbook.Over(new FakeRowSource(sheet), new WorkbookOptions());
       {
-        var streamed = BlockTotals().Map(book.Stream("Data"));
+        var streamed = BlockTotals().Map(book.Sheet("Data"));
 
         Assert.Equal(expected.Select(block => block.Sum()), streamed.Select(block => block.Sum()));
         Assert.Equal(20, streamed.Count);
@@ -77,10 +77,11 @@ namespace Unrect.Tests.Machines
 
       using var book = Workbook.Over(new FakeRowSource(sheet), new WorkbookOptions());
       {
-        var stream = (StreamedSheet)book.Stream("Data");
+        Assert.Equal(100, BlockTotals().Map(book.Sheet("Data")).Count);
 
-        Assert.Equal(100, BlockTotals().Map(stream).Count);
-        Assert.True(stream.PeakRetained <= 6, $"peak retained {stream.PeakRetained} of {sheet.RowCount}");
+        var statistics = book.Statistics("Data")!.Value;
+        Assert.True(statistics.PeakRetained <= 6, $"peak retained {statistics.PeakRetained} of {sheet.RowCount}");
+        Assert.Equal(sheet.RowCount, statistics.RowsRead);
       }
     }
 
@@ -94,7 +95,7 @@ namespace Unrect.Tests.Machines
 
       using var book = Workbook.Over(new FakeRowSource(sheet), new WorkbookOptions { BufferRows = 5 });
       {
-        var failure = Assert.Throws<ProjectionException>(() => Range(b => b.Height).Optional().Map(book.Stream("Data")));
+        var failure = Assert.Throws<ProjectionException>(() => Range(b => b.Height).Optional().Map(book.Sheet("Data")));
 
         Assert.True(failure.IsFault);
         Assert.Contains("Range is holding", failure.Message);
@@ -108,7 +109,7 @@ namespace Unrect.Tests.Machines
       var sheet = Blocks(blocks: 100, blockRows: 3);
 
       using var book = Workbook.Over(new FakeRowSource(sheet), new WorkbookOptions { BufferRows = 6 });
-        Assert.Equal(100, BlockTotals().Map(book.Stream("Data")).Count);
+        Assert.Equal(100, BlockTotals().Map(book.Sheet("Data")).Count);
     }
 
     [Fact]
@@ -128,7 +129,7 @@ namespace Unrect.Tests.Machines
 
       using var book = Workbook.Over(new FakeRowSource(sheet), new WorkbookOptions());
       {
-        var failure = Assert.Throws<ProjectionException>(() => late.Map(book.Stream("Data")));
+        var failure = Assert.Throws<ProjectionException>(() => late.Map(book.Sheet("Data")));
 
         Assert.Contains("has left the buffer", failure.Message);
         Assert.Contains("read A1 inside the projection", failure.Message);
@@ -150,7 +151,7 @@ namespace Unrect.Tests.Machines
       });
 
       using var book = Workbook.Over(new FakeRowSource(sheet), new WorkbookOptions());
-        Assert.Equal("block 0:30", inside.Map(book.Stream("Data")));
+        Assert.Equal("block 0:30", inside.Map(book.Sheet("Data")));
     }
 
     [Fact]

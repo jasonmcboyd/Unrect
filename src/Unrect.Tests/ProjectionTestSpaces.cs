@@ -60,7 +60,7 @@ namespace Unrect.Tests
           });
 
         case "windowed":
-          return Windowed(new FakeSheet("Data", 2, 3), chunkRows: 1);
+          return Streamed(new FakeSheet("Data", 2, 3));
 
         case "xlsx":
           return Eager("simple-report.xlsx", "Report");
@@ -73,16 +73,12 @@ namespace Unrect.Tests
     }
 
     /// <summary>
-    /// <paramref name="sheet"/> read a window at a time, over a synthetic row source rather than a
-    /// file: the streaming door's own machinery with nothing of the adapter's in the way.
+    /// <paramref name="sheet"/> read forward as one pass, over a synthetic row source rather than a
+    /// file: the streaming door's own machinery with nothing of the adapter's in the way. The
+    /// workbook behind it is never disposed; a fake source holds nothing to release.
     /// </summary>
-    public static ISheetCells Windowed(FakeSheet sheet, int chunkRows = 1, int windowChunks = 4)
-    {
-      var pool = new ReaderPool(new FakeRowSource(sheet), 1, warmReaders: false);
-
-      return new WindowedSpace(
-        new SheetStore(pool, 0, sheet.Name, sheet.RowCount, sheet.ColumnCount, chunkRows, windowChunks));
-    }
+    public static ISheetCells Streamed(FakeSheet sheet)
+      => Workbook.Over(new FakeRowSource(sheet), new WorkbookOptions()).Sheet(sheet.Name);
 
     /// <summary>A sheet of <paramref name="file"/> in <c>TestData</c>, read whole.</summary>
     public static ISheetCells Eager(string file, string sheet)

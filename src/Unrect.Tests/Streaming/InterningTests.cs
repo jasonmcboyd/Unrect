@@ -35,16 +35,23 @@ namespace Unrect.Tests.Streaming
     /// </summary>
     private static Cell Fresh(string value) => Cell.Of(new string(value.ToCharArray()));
 
+    /// <summary>Every cell of <paramref name="sheet"/> read, since a pass loads rows only as they are asked for.</summary>
+    private static ISheetCells ReadEveryCell(ISheetCells sheet)
+    {
+      for (var row = 0; row < sheet.Area.Height; row++)
+        for (var column = 0; column < sheet.Area.Width; column++)
+          _ = sheet.AsText(column, row);
+
+      return sheet;
+    }
+
     /// <summary>A sheet whose every cell is a fresh copy of one repeated value.</summary>
     private static FakeSheet Repeating(string name, int rows, int columns, string value = "Capital Call") =>
       new FakeSheet(name, rows, columns, (_, _) => Fresh(value));
 
-    private static SheetStore Store(FakeRowSource source, int rows, int columns, int chunkRows, int windowChunks) =>
-      new SheetStore(new ReaderPool(source, 2, warmReaders: false), 0, "Data", rows, columns, chunkRows, windowChunks);
-
-    /// <summary>A workbook over <paramref name="source"/>, warming off so the counts are deterministic.</summary>
+    /// <summary>A workbook over <paramref name="source"/>.</summary>
     private static Workbook Book(FakeRowSource source, WorkbookOptions? options = null) =>
-      Workbook.Over(source, options ?? new WorkbookOptions { WarmReaders = false });
+      Workbook.Over(source, options ?? new WorkbookOptions());
 
     // --- The table -------------------------------------------------------------------------------
 
@@ -314,47 +321,6 @@ namespace Unrect.Tests.Streaming
     // --- Through the window ------------------------------------------------------------------------
 
     [Fact]
-    public void EqualCellsShareAcrossAChunkBoundary()
-    {
-      // A chunk is filled from the reader a chunk at a time, so cells in different chunks are adapted
-      // by different fills. Sharing that stopped at a chunk edge would leave a sheet holding one
-      // instance per chunk of every repeated caption — which is most of the saving, on the sheets
-      // this exists for.
-      //
-      // The store here is built WITHOUT a table, which is the other half of the claim: a store that
-      // was handed none makes its own at the default cap, so there is no configuration under which a
-      // chunk fill hands out avoidable duplicates.
-      var store = Store(new FakeRowSource(Repeating("Data", 20, 1)), rows: 20, columns: 1, chunkRows: 5, windowChunks: 4);
-
-      var first = store.GetCell(0, 0).AsText();
-      var acrossTheBoundary = store.GetCell(0, 9).AsText();
-
-      Assert.Same(first, acrossTheBoundary);
-      Assert.Equal(2, store.Snapshot().ChunkLoads);   // two fills, so the two cells really were adapted apart
-    }
-
-    [Fact]
-    public void AChunkReadAgainAfterEvictionRejoinsTheValuesTheFirstParseCanonicalised()
-    {
-      // The case the table is scoped to the book FOR. A chase reader re-parsing rows the window has
-      // dropped builds fresh strings for them, and without a table that outlives the window each
-      // reload would start a second family of instances for values the first parse had already
-      // canonicalised — so a declaration that reaches backwards would pay in retention for every
-      // pass. The reload is real: the counter says so.
-      var store = Store(new FakeRowSource(Repeating("Data", 60, 1)), rows: 60, columns: 1, chunkRows: 5, windowChunks: 4);
-
-      var first = store.GetCell(0, 0).AsText();
-
-      for (var row = 0; row < 60; row++)
-        _ = store.GetCell(0, row);
-
-      var afterTheReload = store.GetCell(0, 0).AsText();
-
-      Assert.Equal(1, store.Snapshot().ChunkReloads);
-      Assert.Same(first, afterTheReload);
-    }
-
-    [Fact]
     public void TheSheetsOfOneWorkbookShareOneTable()
     {
       // Captions, codes and categories repeat ACROSS the sheets of a book, so a table per sheet would
@@ -364,8 +330,8 @@ namespace Unrect.Tests.Streaming
         Repeating("Summary", 3, 1, "Alpha Fund"),
         Repeating("Detail", 3, 1, "Alpha Fund")));
 
-      var summary = book.Sheet("Summary");
-      var detail = book.Sheet("Detail");
+      var summary = ReadEveryCell(book.Sheet("Summary"));
+      var detail = ReadEveryCell(book.Sheet("Detail"));
 
       Assert.Same(summary.AsText(0, 0), detail.AsText(0, 0));
 
@@ -414,7 +380,7 @@ namespace Unrect.Tests.Streaming
       // their identity differs — the same promise sharing makes, read backwards.
       using var book = Book(
         new FakeRowSource(Repeating("Data", 4, 1)),
-        new WorkbookOptions { WarmReaders = false, MaxInternedStrings = 0 });
+        new WorkbookOptions { MaxInternedStrings = 0 });
 
       var sheet = book.Sheet("Data");
 
@@ -438,7 +404,7 @@ namespace Unrect.Tests.Streaming
       // and every entry it holds for the book's life is one that will never score a hit.
       using var book = Book(
         new FakeRowSource(new FakeSheet("Data", 4, 1, (_, row) => Fresh($"Fund {row}"))),
-        new WorkbookOptions { WarmReaders = false, MaxInternedStrings = 2 });
+        new WorkbookOptions { MaxInternedStrings = 2 });
 
       var sheet = book.Sheet("Data");
 
@@ -478,7 +444,7 @@ namespace Unrect.Tests.Streaming
       // of asking.
       var book = Book(new FakeRowSource(Repeating("Data", 6, 2)));
 
-      _ = book.Sheet("Data").AsText(0, 0);
+      ReadEveryCell(book.Sheet("Data"));
 
       var before = book.InterningStatistics;
 

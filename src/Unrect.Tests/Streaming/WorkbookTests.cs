@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 
 using Unrect.Core;
@@ -28,8 +27,11 @@ namespace Unrect.Tests.Streaming
     private static string Path(string file) => System.IO.Path.Combine(AppContext.BaseDirectory, "TestData", file);
 
     /// <summary>Warming off by default here: a background open makes counting non-deterministic, and most of these are about counts.</summary>
-    private static WorkbookOptions Cold(int windowRows = 8192, int chunkRows = 0, int maxReaders = 3) =>
-      new WorkbookOptions { WarmReaders = false, WindowRows = windowRows, ChunkRows = chunkRows, MaxReaders = maxReaders };
+    private static WorkbookOptions Cold() => new WorkbookOptions();
+
+    /// <summary>The tall ledger's body, one band per row: what a forward pass streams without holding.</summary>
+    private static IProjectionDefinition<ISheetCells, IReadOnlyList<string>> LedgerRows()
+      => On(RowContaining("Entry")).Of(Table(headerRows: 1, eachRow: Row(3, cells => cells[2].AsText()!)));
 
     // --- Vending ----------------------------------------------------------------------------------
 
@@ -46,31 +48,43 @@ namespace Unrect.Tests.Streaming
     }
 
     [Fact]
-    public void SheetTwiceReadsFromOneStore()
+    public void SheetTwiceIsTwoPassesThatReadTheSameThing()
     {
-      // The single most valuable property of the design: a second declaration over an already-open
-      // book re-pays neither the reader open nor, when the rows are still resident, the read. Both
-      // counters have to be unchanged — Opens says no file was touched, ChunkLoads says no row was.
+      // Each call is a fresh pass over its own cursor: a second declaration over an already-open
+      // book reads the sheet again, from the top, and gets the same answer.
       using var book = Workbook.Open(Path("simple-report.xlsx"), Cold());
       var declaration = Column(4, c => c[0].Text());
 
-      _ = declaration.Map(book.Sheet("Report"));
+      var first = declaration.Map(book.Sheet("Report"));
+      var second = declaration.Map(book.Sheet("Report"));
 
-      var opens = book.ReaderStatistics.Opens;
-      var loads = book.Statistics("Report")!.Value.ChunkLoads;
+      Assert.Equal(first, second);
 
-      _ = declaration.Map(book.Sheet("Report"));
+      // Four rows taken, and the fifth loaded to be offered and refused: a rule that stops sees
+      // the row it stops at.
+      Assert.Equal(5, book.Statistics("Report")!.Value.RowsRead);
+    }
 
-      Assert.Equal(opens, book.ReaderStatistics.Opens);
-      Assert.Equal(loads, book.Statistics("Report")!.Value.ChunkLoads);
+    [Fact]
+    public void ASheetIsOnePassAndASecondMapOverItIsRefusedAsARead()
+    {
+      // The pass releases rows behind the declaration as it goes, so the same sheet value driven
+      // again cannot go back: the failure says so, and says to ask the workbook again.
+      using var book = Workbook.Open(Path("tall-ledger.xlsx"), Cold());
+      var sheet = book.Sheet("Ledger");
+
+      _ = LedgerRows().Map(sheet);
+
+      var failure = Assert.Throws<ProjectionException>(() => Column(4, c => c[0].AsText()).Map(sheet));
+
+      Assert.Contains("has left the buffer", failure.Message);
     }
 
     [Fact]
     public void AViewIsAValueRatherThanAHandle()
     {
-      // Sheet() hands back a new view each time and they share one store, which is what makes a
-      // view free to slice, pass around and keep. Reference equality would be the wrong promise —
-      // the promise is that they read the same rows.
+      // Sheet() hands back a new pass each time, each over its own cursor; what they read is the
+      // same rows.
       using var book = Workbook.Open(Path("simple-report.xlsx"), Cold());
 
       var first = book.Sheet("Report");
@@ -79,14 +93,13 @@ namespace Unrect.Tests.Streaming
       Assert.NotSame(first, second);
       Assert.Equal(first.AsText(0, 0), second.AsText(0, 0));
       Assert.Equal(first.Describe(0, 0), second.Describe(0, 0));
-      Assert.Equal(1, book.Statistics("Report")!.Value.ChunkLoads);
     }
 
     [Fact]
     public void ASlicedViewSharesTheStoreAndReadsTheRightCells()
     {
-      // Slicing is free and slices share the window, so a declaration that decomposes a sheet into
-      // a hundred regions still holds one window rather than a hundred.
+      // Slicing is free and slices share the pass, so a declaration that decomposes a sheet into
+      // a hundred regions still reads it once.
       using var book = Workbook.Open(Path("simple-report.xlsx"), Cold());
       var sheet = Plane<ISheetCells>.Of(book.Sheet("Report"));
       var slice = sheet.Slice(new Offset(0, 5), new Area(4, 5));
@@ -98,12 +111,11 @@ namespace Unrect.Tests.Streaming
 
       Assert.Equal(sheet[1, 6], nested[0, 0]);
 
-      // ...and the cells really are read, through the one window: naming a cell costs nothing at
-      // all, so without a read there would be no chunk load to count and the claim below would hold
-      // vacuously over a store nobody had touched.
+      // ...and the cells really are read: naming a cell costs nothing at all, so the claim above
+      // would hold vacuously over a sheet nobody had touched.
       Assert.Equal(sheet[1, 6].AsText(), nested[0, 0].AsText());
       Assert.Equal(sheet[2, 7].AsText(), slice[2, 2].AsText());
-      Assert.Equal(1, book.Statistics("Report")!.Value.ChunkLoads);
+      Assert.Equal(8, book.Statistics("Report")!.Value.RowsRead);
     }
 
     [Fact]
@@ -176,29 +188,6 @@ namespace Unrect.Tests.Streaming
     }
 
     [Fact]
-    public void WalkingOnToALaterSheetIsServedByTheReadersRatherThanByAnewOne()
-    {
-      // The walk is an ordinary forward read: the reader already parked in the workbook does it.
-      // Vending a second sheet therefore costs no open at all, and what the reading afterwards
-      // costs is one reach backwards — to Summary, which the walk to Detail has now moved past.
-      using var book = Workbook.Open(Path("multi-sheet.xlsx"), Cold());
-
-      var summary = book.Sheet("Summary");
-      var detail = book.Sheet("Detail");
-
-      Assert.Equal(1, book.ReaderStatistics.Opens);
-      Assert.Equal(1, book.ReaderStatistics.ReadersOpen);
-
-      _ = detail.AsText(0, 1);
-      _ = summary.AsText(0, 1);
-
-      var stats = book.ReaderStatistics;
-
-      Assert.Equal(2, stats.Opens);
-      Assert.Equal(0, stats.Reopens);
-    }
-
-    [Fact]
     public void TheLastSheetCanBeAskedForFirst()
     {
       // Skipping straight to the end records everything on the way, so the sheets before it cost
@@ -207,7 +196,6 @@ namespace Unrect.Tests.Streaming
       using var book = Workbook.Open(Path("multi-sheet.xlsx"), Cold());
 
       Assert.Equal(6, book.Sheet("Detail").Area.Size.Height);
-      Assert.Equal(1, book.ReaderStatistics.Opens);
 
       Assert.Equal("Alpha Fund", book.Sheet("Summary").AsText(0, 1));
       Assert.Equal("Quarterly Pack", book.Sheet("Cover").AsText(0, 0));
@@ -231,29 +219,6 @@ namespace Unrect.Tests.Streaming
 
         Assert.Equal("Fund", book.Sheet("Detail").AsText(0, 0));
       }
-    }
-
-    /// <summary>
-    /// Every row of <paramref name="space"/>, read once, top to bottom, as a declaration placed over
-    /// the whole sheet — which is the shape of every monotone parse.
-    /// <para>
-    /// A declaration rather than a bare loop, because the band a reader is sweeping is something the
-    /// engine announces at a placement and nothing a cell read says for itself. A loop reads exactly
-    /// the same cells in exactly the same order and tells the window nothing about why, which is a
-    /// different measurement from the one these tests are about.
-    /// </para>
-    /// </summary>
-    private static void WalkEveryRow(ISheetCells space)
-    {
-      var rows = space.Area.Size.Height;
-
-      _ = Column(rows, column =>
-      {
-        for (var row = 0; row < rows; row++)
-          _ = column[row].IsBlank;
-
-        return rows;
-      }).Map(space);
     }
 
     private static IEnumerable<string[]> Permutations(string[] values) =>
@@ -304,7 +269,7 @@ namespace Unrect.Tests.Streaming
     {
       using var book = Workbook.Open(
         Path("multi-sheet.xlsx"),
-        new WorkbookOptions { WarmReaders = false, CaseSensitiveSheetNames = true });
+        new WorkbookOptions { CaseSensitiveSheetNames = true });
 
       Assert.Equal(6, book.Sheet("Detail").Area.Size.Height);
       Assert.Throws<ArgumentException>(() => book.Sheet("detail"));
@@ -313,120 +278,37 @@ namespace Unrect.Tests.Streaming
     // --- The one open at Open -----------------------------------------------------------------------
 
     [Fact]
-    public void OpeningAndReadingOneSheetCostsOneReader()
+    public void AWalkDownATallSheetReleasesAsItGoesAndReadsEveryRowOnce()
     {
-      // The lazy catalogue's whole purpose. Open parks a reader at sheet 0; Sheet(name) walks it to
-      // the sheet asked for, recording what it passes, and then ADOPTS it — already open, already
-      // in the right place. Walking the whole catalogue eagerly would give better errors and a free
-      // SheetNames at the cost of a second multi-second open in the single-sheet case that is most
-      // usage, which is the trade this number represents.
-      using var book = Workbook.Open(Path("simple-report.xlsx"), Cold());
-
-      _ = Column(4, c => c[0].Text()).Map(book.Sheet("Report"));
-
-      Assert.Equal(1, book.ReaderStatistics.Opens);
-      Assert.Equal(1, book.ReaderStatistics.ReadersOpen);
-    }
-
-    [Fact]
-    public void WarmingOpensASpareNobodyAskedFor()
-    {
-      // Two, by default, and NOT a regression. The two are the reader Open parked and Sheet then
-      // ADOPTED, plus one warm spare opened on a background task so the first backward reach does
-      // not have to pay five seconds for it. Neither of them is a second catalogue walk — the count
-      // above shows the walk is free — and there is no third, because the slot the parked reader
-      // will be adopted into is reserved and never a warm target.
-      //
-      // Waiting for the count rather than reading it once: warming is a background task, so "has
-      // the spare arrived" is a question with a settling time. The wait fails the test if the spare
-      // never comes and costs milliseconds when it does.
-      using var book = Workbook.Open(Path("simple-report.xlsx"), new WorkbookOptions());
-
-      _ = Column(4, c => c[0].Text()).Map(book.Sheet("Report"));
-
-      Assert.True(
-        SpinWait.SpinUntil(() => book.ReaderStatistics.ReadersOpen == 2, TimeSpan.FromSeconds(10)),
-        $"a spare reader should have been warmed; readers were {book.ReaderStatistics}");
-
-      var stats = book.ReaderStatistics;
-
-      Assert.Equal(2, stats.Opens);
-      Assert.Equal(1, stats.SpareOpens);
-      Assert.Equal(0, stats.Reopens);
-    }
-
-    [Fact]
-    public void TheReaderThatWalksOnToALaterSheetIsTheOneThatThenReadsIt()
-    {
-      // Cross-sheet reuse, at the workbook level. Naming a sheet beyond the catalogue's edge walks
-      // a reader forward to find it, and that reader is left standing exactly where the reading is
-      // about to begin — so the rows of the second sheet cost nothing beyond the walk itself. This
-      // is the argument for owning the readers at the book rather than at the sheet: a position is
-      // a place in a WORKBOOK, and moving on to the next sheet is a forward move like any other.
-      using var book = Workbook.Open(Path("multi-sheet.xlsx"), Cold());
-
-      var summary = book.Sheet("Summary");
-
-      for (var row = 0; row < summary.Area.Size.Height; row++)
-        _ = summary.AsText(0, row);
-
-      var detail = book.Sheet("Detail");
-      var afterWalk = book.ReaderStatistics;
-
-      for (var row = 0; row < detail.Area.Size.Height; row++)
-        _ = detail.AsText(0, row);
-
-      var afterReading = book.ReaderStatistics;
-
-      Assert.Equal(afterWalk.Opens, afterReading.Opens);
-      Assert.Equal(0, afterReading.Reopens);
-      Assert.Equal("Alpha Fund", detail.AsText(0, 1));
-      Assert.True(
-        afterReading.RowsPerReader.Sum() > afterWalk.RowsPerReader.Sum(),
-        "the reader already on Detail did the reading rather than a new one being opened");
-    }
-
-    [Fact]
-    public void AWalkDownATallSheetEvictsAsItGoesAndReadsEveryRowOnce()
-    {
-      // The window doing its job on a real workbook. 1,201 rows in 64-row chunks is nineteen loads;
-      // a four-chunk budget means fifteen of them are dropped again on the way down; and not one
-      // row is read twice. This is the shape of every monotone parse, and the reason streaming
-      // costs about a third more time for about a third of the memory.
-      using var book = Workbook.Open(Path("tall-ledger.xlsx"), Cold(windowRows: 256, chunkRows: 64));
+      // The pass doing its job on a real workbook: 1,201 rows read once, and at no point more than
+      // a handful held — the row in hand, the band being placed, nothing behind them. This is the
+      // shape of every monotone parse, and the reason a forward pass costs so little memory.
+      using var book = Workbook.Open(Path("tall-ledger.xlsx"), Cold());
       var space = book.Sheet("Ledger");
 
-      WalkEveryRow(space);
+      Assert.Equal(1200, LedgerRows().Map(space).Count);
 
       var walked = book.Statistics("Ledger")!.Value;
 
-      Assert.Equal(19, walked.ChunkLoads);
-      Assert.Equal(0, walked.ChunkReloads);
-      Assert.Equal(15, walked.Evictions);
-      Assert.Equal(4, walked.ResidentChunks);
-      Assert.Equal(4, walked.PeakResidentChunks);
-      Assert.Equal(1201, walked.RowsMaterialised);
+      Assert.Equal(1201, walked.RowsRead);
+      Assert.True(walked.PeakRetained < 16, $"peak retained {walked.PeakRetained}");
 
-      // ...and reaching back to a row the window has dropped costs exactly one reload.
-      _ = space.AsText(0, 0);
-
-      Assert.Equal(1, book.Statistics("Ledger")!.Value.ChunkReloads);
+      // ...and reaching back to a row the pass has released is a read failure, not a reload.
+      Assert.Throws<CellReadException>(() => space.AsText(0, 0));
     }
 
     [Fact]
-    public void AWalkDownASheetThatFitsTheWindowReportsNoOverrunAtAll()
+    public void ADeclarationThatHoldsTheSheetIsFaultedByTheCap()
     {
-      // The other side of the same rule, so the pair cannot be read as "overruns are meaningless".
-      // A sheet small enough to be held whole is a band that fits, and nothing is reported.
-      using var book = Workbook.Open(Path("simple-report.xlsx"), Cold());
-      var space = book.Sheet("Report");
+      // A column lambda reads its whole extent at random, so the pass has to hold every row it is
+      // offered; a cap below the sheet's height is a fault naming the shape that holds.
+      using var book = Workbook.Open(Path("tall-ledger.xlsx"), new WorkbookOptions { BufferRows = 100 });
 
-      WalkEveryRow(space);
+      var failure = Assert.Throws<ProjectionException>(() => Column(row => row.Count).Map(book.Sheet("Ledger")));
 
-      var stats = book.Statistics("Report")!.Value;
-
-      Assert.Equal(0, stats.WindowOverruns);
-      Assert.Equal(0, stats.ChunkReloads);
+      Assert.True(failure.IsFault);
+      Assert.Contains("Column is holding", failure.Message);
+      Assert.Contains("more than the 100 the source allows", failure.Message);
     }
 
     // --- Statistics ----------------------------------------------------------------------------------
@@ -447,7 +329,7 @@ namespace Unrect.Tests.Streaming
 
       Assert.NotNull(stats);
       Assert.Equal("Report", stats!.Value.SheetName);
-      Assert.True(stats.Value.RowsMaterialised > 0);
+      Assert.Equal(1, stats.Value.RowsRead);
     }
 
     [Fact]
@@ -458,34 +340,18 @@ namespace Unrect.Tests.Streaming
       Assert.Null(book.Statistics("No Such Sheet"));
     }
 
-    [Fact]
-    public void TheWindowIsSizedFromTheOptionsInRows()
-    {
-      // The knob a caller turns is rows; chunks are what the store thinks in. This is where the two
-      // meet, and the floor of four chunks is visible in it.
-      using var book = Workbook.Open(Path("tall-ledger.xlsx"), Cold(windowRows: 256, chunkRows: 64));
-      var space = book.Sheet("Ledger");
-      _ = space.AsText(0, 0);
-
-      var stats = book.Statistics("Ledger")!.Value;
-
-      Assert.Equal(64, stats.ChunkRows);
-      Assert.Equal(4, stats.WindowChunks);
-      Assert.Equal(256, stats.WindowRows);
-    }
-
     // --- Lifetime --------------------------------------------------------------------------------------
 
     [Fact]
     public void AViewReadAfterDisposeThrows_EvenWhereItsRowsAreStillInMemory()
     {
-      // A view is undisposable and outlives nothing: the only thing that invalidates it is the
-      // workbook going away. The check runs before the resident fast path so this does not depend
-      // on whether the window happens still to hold the row.
+      // A sheet is undisposable and outlives nothing: the only thing that invalidates it is the
+      // workbook going away. The check runs before the buffer is consulted, so this does not depend
+      // on whether the row happens still to be held.
       var book = Workbook.Open(Path("simple-report.xlsx"), Cold());
       var space = book.Sheet("Report");
 
-      _ = space.AsText(0, 0);        // the chunk is now resident
+      _ = space.AsText(0, 0);        // the row is now held
 
       book.Dispose();
 
@@ -569,18 +435,16 @@ namespace Unrect.Tests.Streaming
     }
 
     [Fact]
-    public void ManyThreadsReadingOneSheetSeeTheSameCells()
+    public void ManyThreadsEachReadingTheirOwnPassSeeTheSameCells()
     {
-      // Maps over ONE sheet serialise on that sheet's store gate — a documented v1 limitation, not
-      // a correctness one. What must hold is that serialising is all that happens: no torn read, no
-      // chunk installed twice, no thread seeing a cell another thread was loading.
-      using var book = Workbook.Open(Path("tall-ledger.xlsx"), Cold(windowRows: 256, chunkRows: 64));
-      var space = book.Sheet("Ledger");
-
-      var sheet = Plane<ISheetCells>.Of(space);
+      // A pass is one consumer's; many threads over one workbook each ask for their own, and share
+      // only the string table. What must hold is that nothing is torn: every pass reads every cell.
+      using var book = Workbook.Open(Path("tall-ledger.xlsx"), Cold());
 
       Parallel.For(0, 16, worker =>
       {
+        var sheet = Plane<ISheetCells>.Of(book.Sheet("Ledger"));
+
         for (var row = 1; row <= 200; row++)
           Assert.Equal(row, sheet[0, row].Integer());
       });
@@ -591,34 +455,10 @@ namespace Unrect.Tests.Streaming
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]
-    public void AWindowOfNoRowsIsRejected(int windowRows)
+    public void ABufferCapOfNoRowsIsRejected(int bufferRows)
     {
       Assert.Throws<ArgumentOutOfRangeException>(
-        () => Workbook.Open(Path("simple-report.xlsx"), new WorkbookOptions { WindowRows = windowRows }));
-    }
-
-    [Theory]
-    [InlineData(0)]
-    [InlineData(-1)]
-    public void AWorkbookWithNoReadersIsRejected(int maxReaders)
-    {
-      Assert.Throws<ArgumentOutOfRangeException>(
-        () => Workbook.Open(Path("simple-report.xlsx"), new WorkbookOptions { MaxReaders = maxReaders }));
-    }
-
-    [Fact]
-    public void ANegativeChunkSizeIsRejected_ButZeroMeansDeriveIt()
-    {
-      var failure = Assert.Throws<ArgumentOutOfRangeException>(
-        () => Workbook.Open(Path("simple-report.xlsx"), new WorkbookOptions { ChunkRows = -1 }));
-
-      Assert.Contains("pass 0 to derive it", failure.Message);
-
-      using var book = Workbook.Open(Path("simple-report.xlsx"), new WorkbookOptions { WarmReaders = false, ChunkRows = 0 });
-      var space = book.Sheet("Report");
-      _ = space.AsText(0, 0);
-
-      Assert.Equal(SheetStore.DefaultChunkRows(space.Area.Size.Width), book.Statistics("Report")!.Value.ChunkRows);
+        () => Workbook.Open(Path("simple-report.xlsx"), new WorkbookOptions { BufferRows = bufferRows }));
     }
 
     [Fact]
@@ -642,7 +482,7 @@ namespace Unrect.Tests.Streaming
       using var lenient = Workbook.Open(Path("edge-cases.xlsx"), Cold());
       using var strict = Workbook.Open(
         Path("edge-cases.xlsx"),
-        new WorkbookOptions { WarmReaders = false, IsBlank = _ => false });
+        new WorkbookOptions { IsBlank = _ => false });
 
       Assert.True(lenient.Sheet("Edges").IsBlank(0, 2));
       Assert.Equal("  ", strict.Sheet("Edges").AsText(0, 2));

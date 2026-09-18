@@ -117,7 +117,7 @@ namespace Unrect.Tests.Projections
       // said: the typed layer belongs to the vocabulary, so it cannot know which door answered.
       var path = Path.Combine(AppContext.BaseDirectory, "TestData", "multi-sheet.xlsx");
 
-      using var book = Workbook.Open(path, new WorkbookOptions { WarmReaders = false });
+      using var book = Workbook.Open(path, new WorkbookOptions());
 
       // Captions, then five records whose amounts are 100, 150, 400, 500, 1500. The section is the
       // records under 200: found by the first row holding a number, sized by the amounts.

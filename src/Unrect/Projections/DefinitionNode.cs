@@ -62,11 +62,11 @@ namespace Unrect.Projections
 
     /// <summary>
     /// How far back this node's own machine may still read, apart from its children's needs: none
-    /// for a composite that reads nothing itself, the spans it was fed for a leaf that reads them
-    /// at <c>Close</c>, its extent for a node that replays or reads at random. The engine keeps a
-    /// streamed source's rows from the oldest such need among the machines still open.
+    /// for a composite that reads nothing itself, every span it was fed for a collector that reads
+    /// them at <c>Close</c>, its extent for a node that replays. The engine keeps a streamed
+    /// source's rows from the oldest such need among the machines still open.
     /// </summary>
-    internal virtual Reach Retains => Reach.None;
+    internal virtual Reach Retains => Collects ? Reach.Extent : Reach.None;
 
     /// <summary>
     /// Why this node must see its whole extent before it runs, or null when nothing about it says
@@ -74,6 +74,14 @@ namespace Unrect.Projections
     /// it again along its own axis once its extent is known.
     /// </summary>
     internal virtual string? Holds => null;
+
+    /// <summary>
+    /// Whether this node reads its region whole once the spans it was fed are known — a cell, a
+    /// strip, a block, a header, a table view — rather than consuming spans as they arrive. A
+    /// collector under a declared rule is driven along whichever axis the rule runs, since the rule
+    /// bounds it; left to bound itself it is held.
+    /// </summary>
+    internal virtual bool Collects => false;
 
     /// <summary>Children are the whole truth by default; a layout overrides this to say why they are not.</summary>
     public virtual string? Opacity => null;

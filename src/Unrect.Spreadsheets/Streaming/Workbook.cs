@@ -5,77 +5,20 @@ using System.Linq;
 namespace Unrect.Spreadsheets
 {
   /// <summary>
-  /// A spreadsheet file, read a window at a time. Where
-  /// <see cref="SpreadsheetSpace.Create(string, string, bool, Func{Cell, bool})"/> loads a whole
-  /// sheet into memory before anything reads it, a workbook loads rows as the projection asks for them and
-  /// holds only a window of them at once.
-  ///
-  /// <code>
-  /// using var book = Workbook.Open(path);
-  /// var result = projection.Map(book.Sheet("Data"));
-  /// </code>
-  ///
-  /// <para>and the one it is really for — a declaration written once, applied to a directory of
-  /// workbooks, with the peak bounded per iteration rather than by the largest file in the run:</para>
-  ///
-  /// <code>
-  /// var report = VerticalFlow(v =&gt; ...);          // one declaration, reused
-  ///
-  /// foreach (var path in monthlyCloseOfFunds)
-  /// {
-  ///   using var book = Workbook.Open(path);
-  ///   Publish(report.Map(book.Sheet("Detail")));  // bounded memory per iteration
-  /// }
-  /// </code>
-  ///
-  /// <para>Projections are immutable and workbooks are independent, so <c>Parallel.ForEach</c> over that
-  /// same loop needs nothing added. Within one workbook, maps over different sheets run in parallel
-  /// and maps over one sheet serialise.</para>
-  ///
-  /// <para><b>Which door to use.</b> The two paths differ in the shape of their cost, never in their
-  /// results. Eager reads the file once, entirely, and a second pass over the same rows is free
-  /// because it is an array. Streaming reads as the projection asks, and a second pass costs a cheap
-  /// rewind if a reader is parked behind it, or a chunk reload if the window has moved on. A monotone
-  /// walk down a sheet measured about 35% slower than eager while holding about 2.7× less live
-  /// memory; a declaration that sweeps a band taller than its window can be arbitrarily slower. Use
-  /// eager when the file fits comfortably in memory, and a workbook when it does not — or when many
-  /// files go through one declaration and the peak is what matters.</para>
-  ///
-  /// <para><b>The floor, said out loud.</b> Streaming bounds the grid, not the process. The strings a
-  /// <c>Text</c> cell points at are not part of the window and do not shrink with it: the reader's
-  /// shared-string table owns them for a file that spells its text that way, and this adapter holds
-  /// one instance of each distinct value so that equal cells can share it — bounded by
-  /// <see cref="WorkbookOptions.MaxInternedStrings"/>, and reported by
-  /// <see cref="InterningStatistics"/>. That sharing roughly halved the measured floor on an inline
-  /// file, but on a text-heavy sheet what remains can still dominate. What streaming removes is the
-  /// materialised grid, not the parser.</para>
-  ///
-  /// <para><b>No formulas, said out loud.</b> <see cref="Sheet"/> hands back a plain
-  /// <see cref="ISheetCells"/>: a streamed sheet does not implement <see cref="IFormulaSpace"/>, so
-  /// a formula-reading declaration is written over a space this cannot supply and will not compile
-  /// against it. That is the honest absence, not an oversight — a
-  /// space that implemented the capability and answered null everywhere would report a file full of
-  /// formulas as having none. What would justify building it: a declaration that must read formulas
-  /// from a file too large to hold eagerly. The work is a second windowed reader over the sheet's
-  /// XML advancing in step with the value reader, and a shared-formula master that stays resident
-  /// after its window has been evicted, since a follower thirty rows later is spelled from it.</para>
-  ///
-  /// <para><b>Lifetime.</b> The workbook owns every file handle, reader and chunk store. A view from
-  /// <see cref="Sheet"/> is a value, not a handle: it has no <c>Dispose</c>, it can be sliced and
-  /// held freely, and the only thing that invalidates it is this workbook being disposed — after
-  /// which reading one throws <see cref="ObjectDisposedException"/>, deterministically, whether or
-  /// not the rows happen still to be in memory.</para>
+  /// A spreadsheet file open for reading its sheets forward, one pass at a time. <see cref="Sheet"/>
+  /// hands back a sheet as a space the engine drives row by row, holding only what the declaration's
+  /// open machines may still read; ask again for another pass. The workbook owns every cursor it
+  /// opens and one string table shared by all its sheets, and closes them at <see cref="Dispose"/>.
   /// </summary>
   public sealed class Workbook : IDisposable
   {
     private readonly object _gate = new object();
     private readonly WorkbookOptions _options;
-    private readonly ReaderPool _pool;
+    private readonly IRowSource _source;
     private readonly StringInterner _strings;
     private readonly List<SheetEntry> _catalogue = new List<SheetEntry>();
-    private readonly Dictionary<string, SheetStore> _stores;
-    private readonly IRowSource _source;
     private readonly List<StreamedSheet> _streams = new List<StreamedSheet>();
+    private readonly Dictionary<string, StreamedSheet> _latest;
 
     private IRowCursor? _parked;
     private bool _catalogueComplete;
@@ -89,38 +32,26 @@ namespace Unrect.Spreadsheets
       Path = path;
       _options = options;
       _source = source;
-      _pool = new ReaderPool(source, options.MaxReaders, options.WarmReaders);
       // One table for the book, shared by every sheet it vends — see StringInterner for why it is
       // scoped there and not per sheet.
       _strings = new StringInterner(options.MaxInternedStrings);
-      _stores = new Dictionary<string, SheetStore>(
+      _latest = new Dictionary<string, StreamedSheet>(
         options.CaseSensitiveSheetNames ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase);
 
-      try
-      {
-        // Exactly one file open, parked at sheet 0 and neither walked nor thrown away. Sheet(name)
-        // walks it forward to the sheet actually asked for and then adopts it as that sheet's first
-        // reader — already open, already in the right place — which is why the common single-sheet
-        // case costs one open rather than two.
-        _parked = _pool.OpenParked();
-        _pool.BeginWarming();
-      }
-      catch
-      {
-        // A missing or locked file is the most ordinary way this fails, and a constructor that
-        // throws leaves no one holding the pool: dispose it on the way out rather than leaking a
-        // cancellation source and any reader a warmer had already opened.
-        _pool.Dispose();
-        throw;
-      }
+      // Exactly one file open, parked at sheet 0 and neither walked nor thrown away. Sheet(name)
+      // walks it forward to the sheet actually asked for and then adopts it as that sheet's own
+      // cursor — already open, already in the right place — which is why the common single-sheet
+      // case costs one open rather than two.
+      _parked = source.Open();
     }
 
     /// <summary>Opens <paramref name="path"/> with the default options.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="path"/> is null.</exception>
     public static Workbook Open(string path) => Open(path, new WorkbookOptions());
 
     /// <summary>Opens <paramref name="path"/>.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="path"/> or <paramref name="options"/> is null.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">An option is out of range.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">An option is out of range; see <see cref="WorkbookOptions"/>.</exception>
     public static Workbook Open(string path, WorkbookOptions options)
     {
       if (path is null)
@@ -134,11 +65,6 @@ namespace Unrect.Spreadsheets
       return new Workbook(path, new SpreadsheetRowSource(path, options.IsBlank ?? WhitespaceIsBlank), options);
     }
 
-    /// <summary>
-    /// A workbook over an arbitrary row source — the seam the streaming tests read through. Some
-    /// conditions cannot be arranged with a file at all: an IO failure at a chosen row, and a sheet
-    /// whose reader reports no dimensions.
-    /// </summary>
     internal static Workbook Over(IRowSource source, WorkbookOptions options)
     {
       options.Validate();
@@ -149,16 +75,8 @@ namespace Unrect.Spreadsheets
     /// <summary>The file this workbook reads.</summary>
     public string Path { get; }
 
-    /// <summary>
-    /// Every sheet name, in workbook order.
-    /// <para>
-    /// <b>Costs an open if you ask first.</b> Naming every sheet means walking the parked reader to
-    /// the end of the workbook, which leaves it past every sheet and therefore useless as a first
-    /// lease; it is retired, and the first <see cref="Sheet"/> call afterwards pays for a reader of
-    /// its own. Asking for a sheet by name first, and the catalogue afterwards, costs nothing
-    /// extra.
-    /// </para>
-    /// </summary>
+    /// <summary>Every sheet's name, in the file's order. Walks the file once to learn them.</summary>
+    /// <exception cref="ObjectDisposedException">This workbook has been disposed.</exception>
     public IReadOnlyList<string> SheetNames
     {
       get
@@ -174,20 +92,18 @@ namespace Unrect.Spreadsheets
     }
 
     /// <summary>
-    /// The named sheet as a space.
-    /// <para>
-    /// Idempotent: asking twice returns views over one store, so a second declaration mapped over
-    /// an already-open book re-pays neither the reader open nor, if the rows are still resident,
-    /// the read. That warm reuse is the point of holding a workbook open rather than a sheet.
-    /// </para>
+    /// The named sheet, as one forward pass over its own cursor. The engine drives it a row at a
+    /// time and holds only what the declaration's open machines may still read, up to
+    /// <see cref="WorkbookOptions.BufferRows"/>; a cell read directly is loaded on the way to it,
+    /// and a cell of a row the pass has released is a located read failure. Each call is a fresh
+    /// pass: ask again to read the sheet again.
     /// <para>
     /// A sheet whose reader will not say how big it is — for the formats ExcelDataReader handles
     /// that means a sheet with no valued cell, such as a formatted-but-empty export region — is
-    /// measured here, by being read once. See <see cref="Measure"/>. That survey runs
-    /// holding the workbook's gate, so vending such a sheet blocks every other <see cref="Sheet"/>
-    /// and <see cref="Statistics"/> call on this workbook for as long as the pass takes.
+    /// measured first, by being read once; <see cref="Statistics"/> reports the rows that cost.
     /// </para>
     /// </summary>
+    /// <param name="name">The sheet's name.</param>
     /// <exception cref="ArgumentException">No sheet of that name exists.</exception>
     /// <exception cref="ObjectDisposedException">This workbook has been disposed.</exception>
     public ISheetCells Sheet(string name)
@@ -199,80 +115,32 @@ namespace Unrect.Spreadsheets
       {
         ThrowIfDisposed();
 
-        if (_stores.TryGetValue(name, out var existing))
-          return new WindowedSpace(existing);
-
         var entry = WalkTo(name)
           ?? throw new ArgumentException(
             $"No sheet named '{name}' in '{Path}'. Sheets seen so far: {Seen()}.", nameof(name));
 
-        // The parked reader is standing on this very sheet at row 0. Hand it to the pool as the
-        // first lease rather than closing it and opening another — before the measure below, so a
-        // sheet that has to be surveyed is surveyed by the reader already in the right place.
+        var surveyed = entry.RowCount <= 0;
+        var (rowCount, columnCount) = surveyed ? Measure(entry) : (entry.RowCount, entry.ColumnCount);
+
+        // The parked cursor is standing on this very sheet at row 0: hand it over rather than
+        // closing it and opening another.
+        IRowCursor cursor;
+
         if (_parked is not null && _parked.SheetIndex == entry.Index)
         {
-          _pool.Adopt(_parked, entry.Index, 0);
+          cursor = _parked;
           _parked = null;
         }
-
-        var surveyed = entry.RowCount <= 0;
-        var (rowCount, columnCount) = surveyed ? Measure(entry) : (entry.RowCount, entry.ColumnCount);
-
-        var chunkRows = _options.ChunkRows > 0 ? _options.ChunkRows : SheetStore.DefaultChunkRows(columnCount);
-
-        var store = new SheetStore(
-          _pool,
-          entry.Index,
-          entry.Name,
-          rowCount,
-          columnCount,
-          chunkRows,
-          SheetStore.WindowChunksFor(_options.WindowRows, chunkRows),
-          // What the survey read, so the pass a caller never asked for is visible where its cost is
-          // read: zero for a sheet that described itself.
-          rowsMeasured: surveyed ? rowCount : 0,
-          strings: _strings);
-
-        _stores.Add(entry.Name, store);
-
-        return new WindowedSpace(store);
-      }
-    }
-
-    /// <summary>
-    /// The sheet named <paramref name="name"/> as a stream: read once, forward, by the push
-    /// interpreter, holding only the rows a declaration's open machines may still read. The one
-    /// door onto a sheet that a forward pass can promise, and what <see cref="Sheet"/> narrows to
-    /// when the pull interpreter retires. A cell of a row the stream has released is a located read
-    /// failure; the rows it may hold at once are capped by <see cref="WorkbookOptions.BufferRows"/>.
-    /// </summary>
-    /// <param name="name">The sheet's name.</param>
-    public ISheetCells Stream(string name)
-    {
-      if (name is null)
-        throw new ArgumentNullException(nameof(name));
-
-      lock (_gate)
-      {
-        ThrowIfDisposed();
-
-        var entry = WalkTo(name)
-          ?? throw new ArgumentException(
-            $"No sheet named '{name}' in '{Path}'. Sheets seen so far: {Seen()}.", nameof(name));
-
-        var surveyed = entry.RowCount <= 0;
-        var (rowCount, columnCount) = surveyed ? Measure(entry) : (entry.RowCount, entry.ColumnCount);
-
-        var cursor = _source.Open();
+        else
+        {
+          cursor = OpenAt(entry.Index);
+        }
 
         try
         {
-          for (var index = 0; index < entry.Index; index++)
-            if (!cursor.NextSheet())
-              throw new InvalidOperationException($"The file no longer has a sheet at index {entry.Index}.");
-
-          var stream = new StreamedSheet(cursor, entry.Name, rowCount, columnCount, _options.BufferRows);
+          var stream = new StreamedSheet(cursor, _strings, entry.Name, rowCount, columnCount, _options.BufferRows, surveyed ? rowCount : 0);
           _streams.Add(stream);
+          _latest[entry.Name] = stream;
           return stream;
         }
         catch
@@ -282,112 +150,59 @@ namespace Unrect.Spreadsheets
         }
       }
     }
-    /// <exception cref="ArgumentException">No sheet of that name exists.</exception>
-    /// <exception cref="ObjectDisposedException">This workbook has been disposed.</exception>
 
     /// <summary>
-    /// How big <paramref name="entry"/> really is, found by reading it once and counting — for a
-    /// sheet whose reader will not say. (ExcelDataReader derives its counts from a pre-scan of the
-    /// cells on every format, so the reachable trigger is a sheet with no valued cell — not, as
-    /// first recorded, a missing <c>dimension</c> element.) Called holding the gate.
-    /// <para>
-    /// <b>Why measure rather than guess.</b> A space has to answer <c>Area</c>, so an unmeasured
-    /// sheet would have to claim some upper bound instead — and every declaration that scans blank
-    /// rows (a repeat's separator, <c>SkipBlankRows</c>, <c>AfterBlankRows</c>) would then walk
-    /// that bound to the end of it after the content ran out, and every unconsumed-space diagnostic
-    /// would report a sheet that does not exist. The honest extent costs one forward pass, and only
-    /// for a sheet that declined to describe itself.
-    /// </para>
-    /// <para>
-    /// It costs time, never memory: rows are counted and dropped, none is materialised. The pass is
-    /// a reader movement and shows up as one in <see cref="ReaderStatistics"/>, and the rows it
-    /// read are reported as <see cref="StreamingStatistics.RowsMeasured"/> — which is where this
-    /// cost is read, since the sheet's other counters describe reading through the window and this
-    /// pass never touched it. It leaves its reader at the end of the sheet, so the first chunk load
-    /// is served by another reader — or, in a one-reader pool, by a reopen.
-    /// </para>
-    /// <para>
-    /// The width is watched as well as the rows, because a reader that was not told the sheet's
-    /// dimensions may not know how wide it is either until rows go past. A source that never says
-    /// measures 0 wide, and the sheet reads as empty rather than as wrong.
-    /// </para>
+    /// What the most recent pass over <paramref name="sheetName"/> has cost so far, or null when
+    /// that sheet has not been asked for.
     /// </summary>
-    private (int RowCount, int ColumnCount) Measure(SheetEntry entry)
-    {
-      var lease = _pool.Borrow(entry.Index, 0, out _);
-
-      try
-      {
-        var cursor = lease.Cursor!;
-        var rows = 0;
-        var columns = entry.ColumnCount;
-
-        while (cursor.Read())
-        {
-          lease.CountRow();
-          rows++;
-          columns = Math.Max(columns, cursor.ColumnCount);
-        }
-
-        return (rows, columns);
-      }
-      finally
-      {
-        _pool.Return(lease);
-      }
-    }
-
-    /// <summary>
-    /// What reading <paramref name="sheetName"/> has cost so far, or null when that sheet has never
-    /// been vended — a sheet nobody asked for has no story to tell.
-    /// <para>
-    /// Readable after <see cref="Dispose"/>, deliberately, where <see cref="Sheet"/> is not: the
-    /// numbers describe reading that has already happened, and a caller totalling up what an import
-    /// cost should not have to keep the workbook alive to do it.
-    /// </para>
-    /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="sheetName"/> is null.</exception>
     public StreamingStatistics? Statistics(string sheetName)
     {
       if (sheetName is null)
         throw new ArgumentNullException(nameof(sheetName));
 
       lock (_gate)
-        return _stores.TryGetValue(sheetName, out var store) ? store.Snapshot() : (StreamingStatistics?)null;
+        return _latest.TryGetValue(sheetName, out var stream) ? stream.Statistics : (StreamingStatistics?)null;
     }
 
-    /// <summary>What this workbook's readers have cost — shared across every sheet of it.</summary>
-    public ReaderPoolStatistics ReaderStatistics => _pool.Snapshot();
-
-    /// <summary>
-    /// What sharing repeated text has earned this workbook. Like <see cref="ReaderStatistics"/> and
-    /// unlike <see cref="Statistics"/>, it belongs to the book rather than to a sheet: one table
-    /// serves them all, so a per-sheet split would report numbers that do not add up.
-    /// <para>
-    /// Readable after <see cref="Dispose"/>, for the same reason the sheet figures are: the
-    /// counters describe reading that has already happened, and disposing drops the entries and
-    /// keeps them.
-    /// </para>
-    /// </summary>
+    /// <summary>What sharing repeated text has earned this workbook, across every sheet it has read.</summary>
     public InterningStatistics InterningStatistics => _strings.Snapshot();
 
-    /// <summary>
-    /// Finds <paramref name="name"/> in the catalogue, extending the catalogue if it has not
-    /// reached that far yet. Null <paramref name="name"/> walks to the end. Called holding the
-    /// gate.
-    /// <para>
-    /// The catalogue is built as a reader passes each sheet, so a walk stops at the sheet actually
-    /// asked for rather than paying for the whole workbook. Walking eagerly at <c>Open</c> would
-    /// give better errors and a free <see cref="SheetNames"/>, at the cost of a second multi-second
-    /// open in the single-sheet case that is most usage.
-    /// </para>
-    /// <para>
-    /// Any reader can do the walking, which is what keeps later sheets reachable. The parked reader
-    /// does it while it is still parked; afterwards the pool serves the walk like any other forward
-    /// read — a lease positioned at the catalogue's edge steps forward from there, and the rows it
-    /// moves over are counted like every other movement. Walking to a far sheet is a real forward
-    /// read and the statistics see it.
-    /// </para>
-    /// </summary>
+    private IRowCursor OpenAt(int sheetIndex)
+    {
+      var cursor = _source.Open();
+
+      try
+      {
+        for (var index = 0; index < sheetIndex; index++)
+          if (!cursor.NextSheet())
+            throw new InvalidOperationException($"The file no longer has a sheet at index {sheetIndex}.");
+
+        return cursor;
+      }
+      catch
+      {
+        cursor.Dispose();
+        throw;
+      }
+    }
+
+    private (int RowCount, int ColumnCount) Measure(SheetEntry entry)
+    {
+      using var cursor = OpenAt(entry.Index);
+
+      var rows = 0;
+      var columns = entry.ColumnCount;
+
+      while (cursor.Read())
+      {
+        rows++;
+        columns = Math.Max(columns, cursor.ColumnCount);
+      }
+
+      return (rows, columns);
+    }
+
     private SheetEntry? WalkTo(string? name)
     {
       var comparison = _options.CaseSensitiveSheetNames ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
@@ -399,30 +214,12 @@ namespace Unrect.Spreadsheets
       if (_parked is not null)
         return Extend(name, comparison, _parked.SheetIndex, () => Describe(_parked!), () => _parked!.NextSheet());
 
-      // Any reader will do: the walk only steps sheets, never rows, so asking for a position
-      // would turn a free operation into a backward reach and a multi-second open.
-      var lease = _pool.BorrowAnywhere();
+      // Any cursor will do: the walk only steps sheets, never rows.
+      using var cursor = _source.Open();
 
-      try
-      {
-        return Extend(name, comparison, lease.SheetIndex, () => Describe(lease.Cursor!), lease.NextSheet);
-      }
-      finally
-      {
-        _pool.Return(lease);
-      }
+      return Extend(name, comparison, cursor.SheetIndex, () => Describe(cursor), cursor.NextSheet);
     }
 
-    /// <summary>
-    /// Steps a cursor forward from wherever it stands, recording each sheet it reaches beyond the
-    /// catalogue's edge, until <paramref name="name"/> turns up or the workbook runs out.
-    /// <para>
-    /// A reader can only be standing on a sheet the catalogue already knows — reaching a sheet at
-    /// all requires a store for it, and a store requires a catalogue entry — so a walk starts at or
-    /// behind the edge and records exactly when it arrives there. Recording only at
-    /// <c>index == Count</c> keeps sheet index and list position the same thing.
-    /// </para>
-    /// </summary>
     private SheetEntry? Extend(
       string? name,
       StringComparison comparison,
@@ -458,18 +255,10 @@ namespace Unrect.Spreadsheets
     private static SheetEntry Describe(IRowCursor cursor) =>
       new SheetEntry(cursor.SheetIndex, cursor.SheetName, cursor.RowCount, cursor.ColumnCount);
 
-    /// <summary>
-    /// Lets go of the parked reader once it has been walked past every sheet: it can never be a
-    /// first lease now, and the slot it was holding is wanted by ordinary readers.
-    /// </summary>
     private void RetireParked()
     {
-      if (_parked is null)
-        return;
-
-      _parked.Dispose();
+      _parked?.Dispose();
       _parked = null;
-      _pool.ReleaseParked();
     }
 
     private string Seen() =>
@@ -481,16 +270,7 @@ namespace Unrect.Spreadsheets
         throw new ObjectDisposedException(nameof(Workbook), $"The workbook '{Path}' has been disposed.");
     }
 
-    /// <summary>
-    /// Closes every reader and drops every window. Idempotent, and it does not wait on a reader
-    /// being warmed in the background — that warm disposes what it opened when it finds the
-    /// workbook gone, so returning promptly still leaks no handle.
-    /// <para>
-    /// Disposing while a map is running is a caller error rather than corruption: the map fails
-    /// with <see cref="ObjectDisposedException"/>, wrapped by the engine as a fault naming the
-    /// projection and the cell it was reading.
-    /// </para>
-    /// </summary>
+    /// <summary>Closes every cursor this workbook opened. A sheet read after this says the workbook is gone.</summary>
     public void Dispose()
     {
       lock (_gate)
@@ -500,27 +280,20 @@ namespace Unrect.Spreadsheets
 
         _disposed = true;
 
-        foreach (var store in _stores.Values)
-          store.Dispose();
-
         foreach (var stream in _streams)
           stream.Dispose();
 
         _streams.Clear();
 
-        // The table outlives the window by design, so it must not outlive the workbook: a caller
-        // who holds a disposed book to total up what an import cost would otherwise still be
-        // pinning every distinct string of it. The counters survive; the strings do not.
+        // The table outlives a pass by design, so it must not outlive the workbook: a caller who
+        // holds a disposed book to total up what an import cost would otherwise still be pinning
+        // every distinct string of it. The counters survive; the strings do not.
         _strings.Release();
 
-        _parked?.Dispose();
-        _parked = null;
+        RetireParked();
       }
-
-      _pool.Dispose();
     }
 
-    /// <summary>One row of the catalogue: what the parked reader saw as it passed a sheet.</summary>
     private sealed class SheetEntry
     {
       internal SheetEntry(int index, string name, int rowCount, int columnCount)
