@@ -61,12 +61,7 @@ namespace Unrect.Projections
     /// </summary>
     internal virtual string? Holds => null;
 
-    /// <summary>
-    /// Whether this node reads its region whole once the spans it was fed are known — a cell, a
-    /// strip, a block, a header, a table view — rather than consuming spans as they arrive. A
-    /// collector under a declared rule is driven along whichever axis the rule runs, since the rule
-    /// bounds it; left to bound itself it is held.
-    /// </summary>
+    /// <summary>Whether this node is a <see cref="CollectorNode{TSpace, TResult}"/>: one that reads its region whole once the spans it was fed are known.</summary>
     internal virtual bool Collects => false;
 
     /// <summary>Children are the whole truth by default; a layout overrides this to say why they are not.</summary>
@@ -121,14 +116,6 @@ namespace Unrect.Projections
 
     /// <inheritdoc/>
     public abstract IProjector<TSpace, TResult> Build(ProjectorScope<TSpace> scope);
-
-    /// <summary>
-    /// Reads <paramref name="extent"/> whole — a collector's own act, once the spans it was fed
-    /// are known: a cell, a strip, a block, a header, a table view. A node that is not a collector
-    /// builds a machine instead and is never asked.
-    /// </summary>
-    internal virtual Settlement<TResult> Collect(Plane<TSpace> extent, ProjectorScope<TSpace> scope)
-      => throw new InvalidOperationException($"{Description} is not read whole; it builds a machine.");
 
     /// <inheritdoc/>
     IProjectionDefinition<TSpace, TResult> IProjectionDefinition<TSpace, TResult>.With(Annotations annotations)

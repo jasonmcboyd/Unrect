@@ -14,7 +14,7 @@ namespace Unrect.Projections
   /// named — so it is available to the law tests and to whatever mints one while rewriting later.
   /// </para>
   /// </summary>
-  internal sealed class NothingDefinition<TSpace, T> : DefinitionNode<TSpace, T>
+  internal sealed class NothingDefinition<TSpace, T> : CollectorNode<TSpace, T>
     where TSpace : class, ISpace
   {
     /// <summary>
@@ -30,11 +30,8 @@ namespace Unrect.Projections
 
     public override string Description => "Nothing";
 
-    public override IProjector<TSpace, T> Build(ProjectorScope<TSpace> scope)
-      => new SpanCountProjector<TSpace, T>(this, scope, 0);
 
-    internal override bool Collects => true;
-
+    internal override int SpanCount => 0;
 
     internal override Settlement<T> Collect(Plane<TSpace> extent, ProjectorScope<TSpace> scope)
       => new Settlement<T>(default!, new Size(0, 0));

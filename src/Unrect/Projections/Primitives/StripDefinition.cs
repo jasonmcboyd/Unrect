@@ -4,7 +4,7 @@ using Unrect.Core;
 
 namespace Unrect.Projections
 {
-  internal sealed class StripDefinition<TSpace, T> : DefinitionNode<TSpace, T>
+  internal sealed class StripDefinition<TSpace, T> : CollectorNode<TSpace, T>
     where TSpace : class, ISpace
   {
     public StripDefinition(Orientation orientation, Func<CellStrip<TSpace>, T> project, Placement placement, string description)
@@ -22,12 +22,6 @@ namespace Unrect.Projections
 
     /// <summary>A row strip is one row-span; a column strip is one column-span, held and re-driven under a row-major driver.</summary>
     public override Axes Axis => Orientation == Orientation.Horizontal ? Axes.Vertical : Axes.Horizontal;
-
-    public override IProjector<TSpace, T> Build(ProjectorScope<TSpace> scope)
-      => new SpanCountProjector<TSpace, T>(this, scope, 1);
-
-    internal override bool Collects => true;
-
 
     internal override Settlement<T> Collect(Plane<TSpace> extent, ProjectorScope<TSpace> scope)
     {

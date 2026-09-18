@@ -7,7 +7,7 @@ namespace Unrect.Projections
   /// name: a point answers the canonical questions, and a backend's own extension answers the rest.
   /// </summary>
   /// <typeparam name="TSpace">The space the point addresses a cell of.</typeparam>
-  internal sealed class PointDefinition<TSpace> : DefinitionNode<TSpace, Point<TSpace>>
+  internal sealed class PointDefinition<TSpace> : CollectorNode<TSpace, Point<TSpace>>
     where TSpace : class, ISpace
   {
     public PointDefinition(Placement placement)
@@ -16,12 +16,6 @@ namespace Unrect.Projections
     }
 
     public override string Description => "Point";
-
-    public override IProjector<TSpace, Point<TSpace>> Build(ProjectorScope<TSpace> scope)
-      => new SpanCountProjector<TSpace, Point<TSpace>>(this, scope, 1);
-
-    internal override bool Collects => true;
-
 
     internal override Settlement<Point<TSpace>> Collect(Plane<TSpace> extent, ProjectorScope<TSpace> scope)
     {

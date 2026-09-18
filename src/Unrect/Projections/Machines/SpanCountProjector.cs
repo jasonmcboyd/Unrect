@@ -11,13 +11,13 @@ namespace Unrect.Projections
   internal sealed class SpanCountProjector<TSpace, T> : IProjector<TSpace, T>
     where TSpace : class, ISpace
   {
-    private readonly DefinitionNode<TSpace, T> _definition;
+    private readonly CollectorNode<TSpace, T> _definition;
     private readonly ProjectorScope<TSpace> _scope;
     private readonly int _count;
     private Plane<TSpace>? _first;
     private int _taken;
 
-    internal SpanCountProjector(DefinitionNode<TSpace, T> definition, ProjectorScope<TSpace> scope, int count)
+    internal SpanCountProjector(CollectorNode<TSpace, T> definition, ProjectorScope<TSpace> scope, int count)
     {
       _definition = definition;
       _scope = scope;

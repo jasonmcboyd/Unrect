@@ -4,7 +4,7 @@ using Unrect.Core;
 
 namespace Unrect.Projections
 {
-  internal sealed class TableViewDefinition<TSpace, T> : DefinitionNode<TSpace, T>
+  internal sealed class TableViewDefinition<TSpace, T> : CollectorNode<TSpace, T>
     where TSpace : class, ISpace
   {
     public TableViewDefinition(int headerRows, Func<TableView<TSpace>, T> project, Placement placement, string description, string? opacity = null)
@@ -30,12 +30,6 @@ namespace Unrect.Projections
 
     /// <summary>A view lambda reads its table at random, so it streams along no axis: held, then handed the region as one span.</summary>
     public override Axes Axis => Axes.None;
-
-    public override IProjector<TSpace, T> Build(ProjectorScope<TSpace> scope)
-      => new SpanCountProjector<TSpace, T>(this, scope, 1);
-
-    internal override bool Collects => true;
-
 
     internal override Settlement<T> Collect(Plane<TSpace> extent, ProjectorScope<TSpace> scope)
     {

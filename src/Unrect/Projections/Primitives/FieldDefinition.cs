@@ -15,7 +15,7 @@ namespace Unrect.Projections
   /// </para>
   /// </summary>
   /// <typeparam name="TSpace">The space the pair's cells belong to.</typeparam>
-  internal sealed class FieldDefinition<TSpace> : DefinitionNode<TSpace, Point<TSpace>>
+  internal sealed class FieldDefinition<TSpace> : CollectorNode<TSpace, Point<TSpace>>
     where TSpace : class, ISpace
   {
     public FieldDefinition(string label, Placement placement)
@@ -31,12 +31,6 @@ namespace Unrect.Projections
     public override string Description => $"Field(\"{Label}\")";
 
     public override Axes Axis => Axes.Vertical;
-
-    public override IProjector<TSpace, Point<TSpace>> Build(ProjectorScope<TSpace> scope)
-      => new SpanCountProjector<TSpace, Point<TSpace>>(this, scope, 1);
-
-    internal override bool Collects => true;
-
 
     internal override Settlement<Point<TSpace>> Collect(Plane<TSpace> extent, ProjectorScope<TSpace> scope)
     {

@@ -27,7 +27,7 @@ namespace Unrect.Projections
   /// </summary>
   /// <typeparam name="TSpace">The space the leaf is declared over.</typeparam>
   /// <typeparam name="TResult">What the leaf hands back.</typeparam>
-  internal sealed class ReadDefinition<TSpace, TResult> : DefinitionNode<TSpace, TResult>
+  internal sealed class ReadDefinition<TSpace, TResult> : CollectorNode<TSpace, TResult>
     where TSpace : class, ISpace
   {
     internal ReadDefinition(string kind, CellRead<TSpace, TResult> read, Placement placement, bool blankIsNull)
@@ -54,12 +54,6 @@ namespace Unrect.Projections
     public bool BlankIsNull { get; }
 
     public override string Description => BlankIsNull ? Kind + "?" : Kind;
-
-    public override IProjector<TSpace, TResult> Build(ProjectorScope<TSpace> scope)
-      => new SpanCountProjector<TSpace, TResult>(this, scope, 1);
-
-    internal override bool Collects => true;
-
 
     internal override Settlement<TResult> Collect(Plane<TSpace> extent, ProjectorScope<TSpace> scope)
     {

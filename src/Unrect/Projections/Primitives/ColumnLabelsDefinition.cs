@@ -14,7 +14,7 @@ namespace Unrect.Projections
   /// own, so a header and the body beneath it describe the same columns.
   /// </para>
   /// </summary>
-  internal sealed class ColumnLabelsDefinition<TSpace> : DefinitionNode<TSpace, LabelMap>
+  internal sealed class ColumnLabelsDefinition<TSpace> : CollectorNode<TSpace, LabelMap>
     where TSpace : class, ISpace
   {
     public ColumnLabelsDefinition(int headerRows, Placement placement)
@@ -27,11 +27,8 @@ namespace Unrect.Projections
 
     public override Axes Axis => Axes.Vertical;
 
-    public override IProjector<TSpace, LabelMap> Build(ProjectorScope<TSpace> scope)
-      => new SpanCountProjector<TSpace, LabelMap>(this, scope, HeaderRows);
 
-    internal override bool Collects => true;
-
+    internal override int SpanCount => HeaderRows;
 
     internal override Settlement<LabelMap> Collect(Plane<TSpace> extent, ProjectorScope<TSpace> scope)
     {

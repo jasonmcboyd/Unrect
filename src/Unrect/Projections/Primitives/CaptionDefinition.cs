@@ -17,7 +17,7 @@ namespace Unrect.Projections
   /// written again.
   /// </para>
   /// </summary>
-  internal sealed class CaptionDefinition<TSpace> : DefinitionNode<TSpace, string>
+  internal sealed class CaptionDefinition<TSpace> : CollectorNode<TSpace, string>
     where TSpace : class, ISpace
   {
     public CaptionDefinition(string text, Placement placement)
@@ -33,12 +33,6 @@ namespace Unrect.Projections
     public override string Description => $"Caption(\"{Text}\")";
 
     public override Axes Axis => Axes.Vertical;
-
-    public override IProjector<TSpace, string> Build(ProjectorScope<TSpace> scope)
-      => new SpanCountProjector<TSpace, string>(this, scope, 1);
-
-    internal override bool Collects => true;
-
 
     internal override Settlement<string> Collect(Plane<TSpace> extent, ProjectorScope<TSpace> scope)
     {

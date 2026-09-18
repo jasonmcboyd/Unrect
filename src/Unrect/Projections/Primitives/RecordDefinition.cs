@@ -17,7 +17,7 @@ namespace Unrect.Projections
   /// enclosing repeat stamped on the scope, so a decoupled record still numbers its rows.
   /// </para>
   /// </summary>
-  internal sealed class RecordDefinition<TSpace, T> : DefinitionNode<TSpace, T>
+  internal sealed class RecordDefinition<TSpace, T> : CollectorNode<TSpace, T>
     where TSpace : class, ISpace
   {
     public RecordDefinition(Func<TableRow<TSpace>, T> record, Placement placement)
@@ -29,12 +29,6 @@ namespace Unrect.Projections
     public override string Description => "Record";
 
     public override Axes Axis => Axes.Vertical;
-
-    public override IProjector<TSpace, T> Build(ProjectorScope<TSpace> scope)
-      => new SpanCountProjector<TSpace, T>(this, scope, 1);
-
-    internal override bool Collects => true;
-
 
     internal override Settlement<T> Collect(Plane<TSpace> extent, ProjectorScope<TSpace> scope)
     {
