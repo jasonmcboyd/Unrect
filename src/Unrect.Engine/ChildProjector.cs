@@ -562,18 +562,18 @@ namespace Unrect.Projections
     /// <summary>The inner region <paramref name="rows"/> spans tall, from where the inner started, erased for a rule.</summary>
     private Plane<ISpace> InnerRegion(int rows)
       => (rows == 0 ? Spans.Empty(InnerOrigin(), _driver) : Spans.Region(_offered[_innerStart], rows, _driver))
-        .Slice(Across(_column))
+        .Slice(Spans.ToOffset(0, _column, _driver))
         .Erased();
 
     /// <summary>The same region as a plane over the space, clamped to what was offered, for a message or a machine.</summary>
     private Plane<TSpace> InnerPlane(int rows)
     {
       if (_innerStart >= _offered.Count)
-        return Spans.Empty(InnerOrigin(), _driver).Slice(Across(Math.Min(_column, Spans.Across(InnerOrigin().Area.Size, _driver))));
+        return Spans.Empty(InnerOrigin(), _driver).Slice(Spans.ToOffset(0, Math.Min(_column, Spans.Across(InnerOrigin().Area.Size, _driver)), _driver));
 
       var region = rows == 0 ? Spans.Empty(_offered[_innerStart], _driver) : Spans.Region(_offered[_innerStart], Math.Min(rows, _offered.Count - _innerStart), _driver);
 
-      return region.Slice(Across(_column));
+      return region.Slice(Spans.ToOffset(0, _column, _driver));
     }
 
     /// <summary>The span the inner starts on, or the empty span past the last offered when the offset skipped everything.</summary>
@@ -581,10 +581,6 @@ namespace Unrect.Projections
       => _innerStart < _offered.Count
         ? _offered[_innerStart]
         : _offered.Count == 0 ? _anchor : Spans.EmptyAt(_offered[0], _offered.Count, _driver);
-
-    /// <summary>An offset of <paramref name="distance"/> across the driver's axis.</summary>
-    private Offset Across(int distance)
-      => _driver == Orientation.Vertical ? new Offset(distance, 0) : new Offset(0, distance);
 
     /// <summary>The same region, <paramref name="width"/> wide across the driver's axis.</summary>
     private Plane<TSpace> Narrow(Plane<TSpace> region, int width)

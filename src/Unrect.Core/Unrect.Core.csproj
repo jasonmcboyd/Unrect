@@ -45,13 +45,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- So the engine can attach a discovered bottom edge to a region it just cut. Reading one is
-         public (a plane says whether it carries a bound); making one is not, because only the code
-         that owns the scan can honour the contract Plane.Bounded documents. The same grant
-         Unrect.Strategies makes for the same kind of reason. The suite gets the same reach, so a
-         contract law can be stated over a bounded region without going through the engine. -->
+    <!-- The internal helpers — a plane erased to the canonical surface or retyped back, the span
+         arithmetic every scan and machine shares, the one double rendering — are the parts of Core
+         the packages above it are written with and a consumer never touches. -->
     <InternalsVisibleTo Include="Unrect" />
     <InternalsVisibleTo Include="Unrect.Engine" />
+    <InternalsVisibleTo Include="Unrect.Strategies" />
     <InternalsVisibleTo Include="Unrect.Spreadsheets" />
     <InternalsVisibleTo Include="Unrect.Tests" />
   </ItemGroup>

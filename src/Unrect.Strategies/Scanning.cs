@@ -6,30 +6,10 @@ namespace Unrect.Strategies
 {
   /// <summary>
   /// The scans the strategies here are made of: the whole-region forms a strategy falls back to
-  /// when asked along an axis it cannot stream, and the small arithmetic every scan needs to read
-  /// a region along one axis or the other.
+  /// when asked along an axis it cannot stream, and the scans a predicate or a size drives.
   /// </summary>
   internal static class Scanning
   {
-    /// <summary>How many spans <paramref name="region"/> has along <paramref name="along"/>.</summary>
-    internal static int Along(Plane<ISpace> region, Orientation along)
-      => along == Orientation.Vertical ? region.Area.Height : region.Width;
-
-    /// <summary>How far <paramref name="region"/> reaches across <paramref name="along"/>.</summary>
-    internal static int Across(Plane<ISpace> region, Orientation along)
-      => along == Orientation.Vertical ? region.Width : region.Area.Height;
-
-    internal static int Along(Size size, Orientation along) => along == Orientation.Vertical ? size.Height : size.Width;
-
-    internal static int Across(Size size, Orientation along) => along == Orientation.Vertical ? size.Width : size.Height;
-
-    internal static Size ToSize(int along, int across, Orientation orientation)
-      => orientation == Orientation.Vertical ? new Size(across, along) : new Size(along, across);
-
-    /// <summary>The cell of span <paramref name="span"/> at <paramref name="across"/> into it.</summary>
-    internal static Point<ISpace> Cell(Plane<ISpace> region, int span, int across, Orientation along)
-      => along == Orientation.Vertical ? region[across, span] : region[span, across];
-
     /// <summary>
     /// A size scan that answers only over the whole region: it takes every span and settles at
     /// the end with the size of everything it was shown. What a strategy builds
@@ -52,9 +32,9 @@ namespace Unrect.Strategies
 
       public bool Take(Plane<ISpace> region, int taken) => true;
 
-      public int? Across(Plane<ISpace> region, int taken, bool final) => final ? Scanning.Across(Of(region), _along) : (int?)null;
+      public int? Across(Plane<ISpace> region, int taken, bool final) => final ? Spans.Across(Of(region), _along) : (int?)null;
 
-      public int Along(Plane<ISpace> region, int taken) => Scanning.Along(Of(region), _along);
+      public int Along(Plane<ISpace> region, int taken) => Spans.Along(Of(region), _along);
 
       /// <summary>The size of <paramref name="region"/>, read once: the length and the width are two questions about one answer.</summary>
       private Size Of(Plane<ISpace> region)

@@ -63,17 +63,17 @@ namespace Unrect.Core
     /// <exception cref="OutOfBoundsException">The region has no such place.</exception>
     public static Offset FoldOffset(IOffsetScan scan, Plane<ISpace> region, Orientation along)
     {
-      var count = Along(region, along);
+      var count = Spans.Along(region, along);
 
       for (var index = 0; index < count; index++)
       {
-        var step = scan.Next(Prefix(region, index + 1, along), index, out var across);
+        var step = scan.Next(Spans.Prefix(region, index + 1, along), index, out var across);
 
         if (step == OffsetStep.StartHere)
-          return At(index, across, along);
+          return Spans.ToOffset(index, across, along);
 
         if (step == OffsetStep.StartNext)
-          return At(index + 1, across, along);
+          return Spans.ToOffset(index + 1, across, along);
       }
 
       return scan.Settle(region);
@@ -88,28 +88,17 @@ namespace Unrect.Core
     /// <exception cref="OutOfBoundsException">The scan was owed more than the region holds.</exception>
     public static Size FoldSize(ISizeScan scan, Plane<ISpace> region, Orientation along)
     {
-      var count = Along(region, along);
+      var count = Spans.Along(region, along);
       var taken = 0;
 
-      while (taken < count && scan.Take(Prefix(region, taken + 1, along), taken))
+      while (taken < count && scan.Take(Spans.Prefix(region, taken + 1, along), taken))
         taken++;
 
-      var kept = Prefix(region, taken, along);
+      var kept = Spans.Prefix(region, taken, along);
       var length = scan.Along(kept, taken);
       var across = scan.Across(kept, taken, final: true) ?? throw new OutOfBoundsException();
 
-      return along == Orientation.Vertical ? new Size(across, length) : new Size(length, across);
+      return Spans.ToSize(length, across, along);
     }
-
-    private static int Along(Plane<ISpace> region, Orientation along)
-      => along == Orientation.Vertical ? region.Area.Height : region.Width;
-
-    private static Plane<ISpace> Prefix(Plane<ISpace> region, int spans, Orientation along)
-      => along == Orientation.Vertical
-        ? region.Slice(new Area(region.Width, spans))
-        : region.Slice(new Area(spans, region.Area.Height));
-
-    private static Offset At(int index, int across, Orientation along)
-      => along == Orientation.Vertical ? new Offset(across, index) : new Offset(index, across);
   }
 }

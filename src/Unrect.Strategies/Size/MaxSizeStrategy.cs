@@ -17,7 +17,7 @@ namespace Unrect.Strategies
 
       public bool Take(Plane<ISpace> region, int taken) => true;
 
-      public int? Across(Plane<ISpace> region, int taken, bool final) => Scanning.Across(region, _along);
+      public int? Across(Plane<ISpace> region, int taken, bool final) => Spans.Across(region, _along);
 
       public int Along(Plane<ISpace> region, int taken) => taken;
 

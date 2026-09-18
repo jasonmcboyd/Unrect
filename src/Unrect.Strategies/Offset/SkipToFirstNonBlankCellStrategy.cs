@@ -17,10 +17,10 @@ namespace Unrect.Strategies
 
       public OffsetStep Next(Plane<ISpace> region, int index, out int across)
       {
-        var reach = Scanning.Across(region, _along);
+        var reach = Spans.Across(region, _along);
 
         for (across = 0; across < reach; across++)
-          if (Scanning.Cell(region, index, across, _along).HasValue)
+          if (Spans.Cell(region, index, across, _along).HasValue)
             return OffsetStep.StartHere;
 
         across = 0;

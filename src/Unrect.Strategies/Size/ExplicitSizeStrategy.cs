@@ -35,13 +35,13 @@ namespace Unrect.Strategies
 
       public bool Incremental => true;
 
-      public bool Take(Plane<ISpace> region, int taken) => taken < Scanning.Along(_declared, _along);
+      public bool Take(Plane<ISpace> region, int taken) => taken < Spans.Along(_declared, _along);
 
-      public int? Across(Plane<ISpace> region, int taken, bool final) => Scanning.Across(_declared, _along);
+      public int? Across(Plane<ISpace> region, int taken, bool final) => Spans.Across(_declared, _along);
 
-      public int Along(Plane<ISpace> region, int taken) => Scanning.Along(_declared, _along);
+      public int Along(Plane<ISpace> region, int taken) => Spans.Along(_declared, _along);
 
-      public bool Complete(int taken) => taken == Scanning.Along(_declared, _along);
+      public bool Complete(int taken) => taken == Spans.Along(_declared, _along);
 
       public Size Declared => _declared;
     }
