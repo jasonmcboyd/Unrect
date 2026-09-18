@@ -162,7 +162,7 @@ namespace Unrect.Projections
       if (width is not int settled)
         return false;
 
-      if (settled > Spans.Across(region.Declared.Size, _driver))
+      if (settled > Spans.Across(region.Area.Size, _driver))
       {
         if (!rowsSettled)
           return false;

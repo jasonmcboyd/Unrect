@@ -139,7 +139,7 @@ namespace Unrect.Projections
         _closed = true;
 
         var extent = _first is Plane<TSpace> first ? Spans.Region(first, _offered, _scope.Driver) : _scope.Anchor;
-        var across = Spans.Across(extent.Declared.Size, _scope.Driver);
+        var across = Spans.Across(extent.Area.Size, _scope.Driver);
 
         // The withheld spans are the bottom padding; fewer than declared means the padding does not fit.
         if (!_innerRefused && (_withheld.Count < Bottom || across - Leading - Trailing < 0) || _skipped < Top)
@@ -156,7 +156,7 @@ namespace Unrect.Projections
       {
         _inner ??= StartInner(span);
 
-        var across = Spans.Across(span.Declared.Size, _scope.Driver);
+        var across = Spans.Across(span.Area.Size, _scope.Driver);
 
         if (across - Leading - Trailing < 0)
           throw DoesNotFit(Spans.Region(_first!.Value, _offered, _scope.Driver));
@@ -173,7 +173,7 @@ namespace Unrect.Projections
 
       private ProjectionException DoesNotFit(Plane<TSpace> extent)
       {
-        var size = extent.Declared.Size;
+        var size = extent.Area.Size;
 
         return _scope.Failure(
           _pad,

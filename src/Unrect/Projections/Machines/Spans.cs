@@ -12,14 +12,14 @@ namespace Unrect.Projections
       where TSpace : class, ISpace
       => along == Orientation.Vertical
         ? new Plane<TSpace>(first.Space, first.Origin, new Area(first.Width, count))
-        : new Plane<TSpace>(first.Space, first.Origin, new Area(count, first.Declared.Height));
+        : new Plane<TSpace>(first.Space, first.Origin, new Area(count, first.Area.Height));
 
     /// <summary>A region of no spans at <paramref name="anchor"/>'s origin and width.</summary>
     internal static Plane<TSpace> Empty<TSpace>(Plane<TSpace> anchor, Orientation along)
       where TSpace : class, ISpace
       => along == Orientation.Vertical
         ? new Plane<TSpace>(anchor.Space, anchor.Origin, new Area(anchor.Width, 0))
-        : new Plane<TSpace>(anchor.Space, anchor.Origin, new Area(0, anchor.Declared.Height));
+        : new Plane<TSpace>(anchor.Space, anchor.Origin, new Area(0, anchor.Area.Height));
 
     /// <summary>
     /// A region of no spans <paramref name="distance"/> spans along from <paramref name="first"/>'s
@@ -33,7 +33,7 @@ namespace Unrect.Projections
       {
         return along == Orientation.Vertical
           ? new Plane<TSpace>(first.Space, first.Origin + new Offset(0, distance), new Area(first.Width, 0))
-          : new Plane<TSpace>(first.Space, first.Origin + new Offset(distance, 0), new Area(0, first.Declared.Height));
+          : new Plane<TSpace>(first.Space, first.Origin + new Offset(distance, 0), new Area(0, first.Area.Height));
       }
       catch (OutOfBoundsException)
       {

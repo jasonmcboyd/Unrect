@@ -379,7 +379,7 @@ namespace Unrect.Projections
       public override OffsetStep Next(Plane<ISpace> region, int row, out int column)
       {
         column = 0;
-        var height = region.Declared.Height;
+        var height = region.Area.Height;
         var satisfied = _every;
 
         for (var cell = 0; cell < height; cell++)
@@ -411,7 +411,7 @@ namespace Unrect.Projections
 
       public override OffsetStep Next(Plane<ISpace> region, int row, out int column)
       {
-        var across = _driver == Orientation.Vertical ? region.Width : region.Declared.Height;
+        var across = _driver == Orientation.Vertical ? region.Width : region.Area.Height;
 
         for (column = 0; column < across; column++)
         {
@@ -504,7 +504,7 @@ namespace Unrect.Projections
       public override bool Take(Plane<ISpace> region, int row) => true;
 
       public override int? Width(Plane<ISpace> region, int rows, bool rowsSettled)
-        => _driver == Orientation.Vertical ? region.Width : region.Declared.Height;
+        => _driver == Orientation.Vertical ? region.Width : region.Area.Height;
     }
 
     private sealed class ScanSizeRule : SizeRule

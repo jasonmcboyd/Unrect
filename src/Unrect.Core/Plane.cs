@@ -82,9 +82,6 @@ namespace Unrect.Core
     /// <summary>How wide the region is.</summary>
     public int Width => _extent.Width;
 
-    /// <summary>The extent, under the name the engine's span arithmetic reads it by.</summary>
-    internal Area Declared => _extent;
-
     /// <summary>How big the region is.</summary>
     public Area Area => _extent;
 

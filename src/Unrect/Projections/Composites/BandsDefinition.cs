@@ -96,7 +96,7 @@ namespace Unrect.Projections
         if (_first is null)
         {
           _first = span;
-          _across = Spans.Across(span.Declared.Size, Along);
+          _across = Spans.Across(span.Area.Size, Along);
         }
 
         if (_across == 0)

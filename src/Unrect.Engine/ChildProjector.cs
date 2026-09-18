@@ -203,7 +203,7 @@ namespace Unrect.Projections
         else
         {
           var region = Spans.Region(_offered[0], _offered.Count, _driver).Erased();
-          var step = _placement!.Advance(region, _offered.Count - 1, Spans.Across(span.Declared.Size, _driver), _parent, out var refused);
+          var step = _placement!.Advance(region, _offered.Count - 1, Spans.Across(span.Area.Size, _driver), _parent, out var refused);
 
           if (refused)
           {
@@ -525,6 +525,6 @@ namespace Unrect.Projections
     private Plane<TSpace> Cut(Plane<TSpace> span, int column, int? width)
       => _driver == Orientation.Vertical
         ? span.Slice(new Offset(column, 0), new Area(width ?? span.Width - column, 1))
-        : span.Slice(new Offset(0, column), new Area(1, width ?? span.Declared.Height - column));
+        : span.Slice(new Offset(0, column), new Area(1, width ?? span.Area.Height - column));
   }
 }
