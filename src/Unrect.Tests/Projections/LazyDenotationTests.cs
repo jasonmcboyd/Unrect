@@ -18,13 +18,10 @@ using static Unrect.Tests.ProjectionTestSpaces;
 namespace Unrect.Tests.Projections
 {
   /// <summary>
-  /// The differential suite, and the primary evidence for lazy extents: a bound discovered while a
-  /// projection consumes it must mean exactly what the same bound measured up front meant. Every
-  /// case here is one declaration over one space, run twice — once with the engine free to defer
-  /// and once with <see cref="ProjectionEngine.ForceEager"/> holding it to the reading it did
-  /// before Part 2 — and the two readings are compared on everything a caller can observe: the
-  /// projected value, the extent consumed, the diagnostics in order, and, where the declaration
-  /// fails, the failure's message, path, location and fault flag.
+  /// What survives of the pull interpreter's differential suite: the readings that hold whichever
+  /// way an extent is discovered, kept because they pin values, consumed extents and diagnostics a
+  /// caller can observe. The differential half — the same declaration run with extents measured up
+  /// front and compared — retired with the pull interpreter.
   /// <para>
   /// The suite is only worth anything if the declarations it sweeps actually take the deferred
   /// branch, which is why the census at the bottom exists. That branch is reached by exactly one
@@ -426,7 +423,6 @@ namespace Unrect.Tests.Projections
 
       if (eager)
       {
-        using (ProjectionEngine.ForceEager())
           projection.Apply(counter);
       }
       else
@@ -435,35 +431,6 @@ namespace Unrect.Tests.Projections
       }
 
       return observed;
-    }
-
-    [PullOnlyTheory("the eager/incremental identity is the pull interpreter's; push reads one way")]
-    [InlineData("Range(strategy)")]
-    [InlineData("Sized")]
-    [InlineData("inside a flow")]
-    [InlineData("under Optional")]
-    public void TheDeclarationsThisSuiteSweepsDoTakeTheDeferredBranch(string spelling)
-    {
-      Func<Func<CellBlock<ISheetCells>, int>, IProjectionDefinition<ISheetCells, int>> declare = spelling switch
-      {
-        "Range(strategy)" => project => Range(RowsWhileAnyValue(), project),
-        "Sized" => project => Sized(RowsWhileAnyValue()).Of(Range(project)),
-        "inside a flow" => project => VerticalFlow(v =>
-        {
-          var rangeSlot = v.Next(Range(RowsWhileAnyValue(), project));
-
-          return v.Build(read => read.Of(rangeSlot));
-        }),
-        "under Optional" => project => Range(RowsWhileAnyValue(), project).Optional(),
-
-        _ => throw new ArgumentOutOfRangeException(nameof(spelling), spelling, "No such spelling."),
-      };
-
-      // Nothing at all read when the projection starts, against the four rows the eager reading
-      // takes to discover where the values stop. If these two ever agree, the branch is no longer
-      // taken.
-      Assert.Equal(0, RowsReadBeforeTheProjectionRuns(declare, Sheet(), eager: false));
-      Assert.Equal(4, RowsReadBeforeTheProjectionRuns(declare, Sheet(), eager: true));
     }
 
     [Theory]
@@ -503,43 +470,6 @@ namespace Unrect.Tests.Projections
       Assert.IsAssignableFrom<IIncrementalAreaStrategy>(sized.Placement.Area);
     }
 
-    [PullOnlyTheory("the eager/incremental identity is the pull interpreter's; push reads one way")]
-    [InlineData(false, 1)]
-    [InlineData(true, 4)]
-    public void TheRowProjectionSlotGivesTheTableCensusSomewhereToStand(bool eager, int rowsRead)
-    {
-      // The structural probe above is what the lambda rungs allow, because they project the whole
-      // body themselves. A record projection is handed one band at a time, so the observational
-      // reading is available here for the first time inside a table: deferred, the first record
-      // projects having read its own row and nothing else; eagerly, the four rows it costs to find
-      // where the values stop are all behind it. If these two ever agree, the branch is gone.
-      var counter = new CountingSpace(Sheet());
-      var observations = new List<int>();
-
-      var table = Sized(RowsWhileAnyValue()).Of(Table(
-        // A fixed 3x1 record so nothing about the RECORD's placement is being measured here.
-        0,
-        eachRow: Range(3, 1, _ =>
-        {
-          observations.Add(counter.RowsTouched);
-
-          return 0;
-        })));
-
-      if (eager)
-      {
-        using (ProjectionEngine.ForceEager())
-          table.Apply(counter);
-      }
-      else
-      {
-        table.Apply(counter);
-      }
-
-      Assert.Equal(3, observations.Count);
-      Assert.Equal(rowsRead, observations[0]);
-    }
-
     [Theory]
     [InlineData("Range(width, height)")]
     [InlineData("WholeExtent")]
@@ -567,49 +497,6 @@ namespace Unrect.Tests.Projections
         RowsReadBeforeTheProjectionRuns(declare, Sheet(), eager: false));
     }
 
-    [PullOnlyTheory("the eager/incremental identity is the pull interpreter's; push reads one way")]
-    [InlineData("VerticalFlow")]
-    [InlineData("HorizontalFlow")]
-    [InlineData("Overlay")]
-    public void ASizedLayoutCompositeStreamsItsBound(string layout)
-    {
-      // These extents ARE IIncrementalAreaStrategy — the same RowsWhileAnyValue() that defers on a
-      // leaf — and a composite handed one walks it rather than measuring it: placing the first child
-      // asks whether there is a row at the child's offset, and slices the extent without naming a
-      // height. So the one row the fixed 3x1 child probes is the whole cost before it projects,
-      // against the four the eager reading takes to find where the values stop.
-      Func<Func<CellBlock<ISheetCells>, int>, IProjectionDefinition<ISheetCells, int>> declare = layout switch
-      {
-        // A fixed 3x1 child so the child's own placement has nothing to discover: what is measured
-        // here is the parent's bound being settled, not the child's.
-        "VerticalFlow" => project => Sized(RowsWhileAnyValue()).Of(VerticalFlow(v =>
-        {
-          var rangeSlot = v.Next(Range(3, 1, project));
-
-          return v.Build(read => read.Of(rangeSlot));
-        })),
-        "HorizontalFlow" => project => Sized(RowsWhileAnyValue()).Of(HorizontalFlow(h =>
-        {
-          var rangeSlot = h.Next(Range(3, 1, project));
-
-          return h.Build(read => read.Of(rangeSlot));
-        })),
-        "Overlay" => project => Sized(RowsWhileAnyValue()).Of(Overlay(o =>
-        {
-          var rangeSlot = o.Next(Range(3, 1, project));
-
-          return o.Build(read => read.Of(rangeSlot));
-        })),
-
-        _ => throw new ArgumentOutOfRangeException(nameof(layout), layout, "No such layout."),
-      };
-
-      Assert.IsAssignableFrom<IIncrementalAreaStrategy>(declare(_ => 0).Placement.Area);
-
-      Assert.Equal(1, RowsReadBeforeTheProjectionRuns(declare, Sheet(), eager: false));
-      Assert.Equal(4, RowsReadBeforeTheProjectionRuns(declare, Sheet(), eager: true));
-    }
-
     /// <summary>
     /// <see cref="Sheet"/> with a hole in its first row, so an "any" column rule cannot settle the
     /// width there and the walk has to take a second row to find it.
@@ -622,76 +509,6 @@ namespace Unrect.Tests.Projections
       { 0, 0, 0 },
       { 0, 0, 0 },
     });
-
-    [PullOnlyTheory("the eager/incremental identity is the pull interpreter's; push reads one way")]
-    [InlineData("dense first row", 1)]
-    [InlineData("hole in the first row", 2)]
-    public void ADefaultPlacementDiscoversItsWidthFromTheRowsItsHeightWouldHaveReadAnyway(string sheet, int rowsRead)
-    {
-      // The third census entry, and it belongs to itself rather than to the theory above it: a
-      // default placement discovers BOTH dimensions, so unlike a .Sized declaration it cannot start
-      // the projection having read nothing. What it can promise is that the rows it read to settle
-      // the width are a prefix of the rows the height accepts — nothing early, nothing twice —
-      // which is exactly what these numbers say. One row where the first row is dense, two where a
-      // hole in it defers the answer, against the four the eager reading takes either way.
-      var space = sheet switch
-      {
-        "dense first row" => Sheet(),
-        "hole in the first row" => HoledSheet(),
-
-        _ => throw new ArgumentOutOfRangeException(nameof(sheet), sheet, "No such sheet."),
-      };
-
-      Assert.IsAssignableFrom<IIncrementalAreaStrategy>(Range(_ => 0).Placement.Area);
-
-      Assert.Equal(rowsRead, RowsReadBeforeTheProjectionRuns(project => Range(project), space, eager: false));
-      Assert.Equal(4, RowsReadBeforeTheProjectionRuns(project => Range(project), space, eager: true));
-    }
-
-    [PullOnlyFact("the eager/incremental identity is the pull interpreter's; push reads one way")]
-    public void TheRowThatSettlesADiscoveredWidthIsTheFirstRowOfTheExtent()
-    {
-      // Which is the whole argument for the interleave being free in the dense case: the row the
-      // width came from is not a row read early, it is the extent's own first row, and the
-      // projection was going to want it. Reading it back costs nothing further; reading the one
-      // after it costs exactly one more.
-      var counter = new CountingSpace(Sheet());
-      var afterFirst = -1;
-      var afterSecond = -1;
-
-      Range(block =>
-      {
-        Assert.Equal(1, block[0, 0].Integer());
-        afterFirst = counter.RowsTouched;
-
-        Assert.Equal(4, block[0, 1].Integer());
-        afterSecond = counter.RowsTouched;
-
-        return 0;
-      }).Apply(counter);
-
-      Assert.Equal(1, afterFirst);
-      Assert.Equal(2, afterSecond);
-    }
-
-    [PullOnlyFact("the eager/incremental identity is the pull interpreter's; push reads one way")]
-    public void ForcingEagerRestoresRatherThanClearing()
-    {
-      // The switch composes with itself, which matters because a differential case may itself
-      // contain a nested Map. Asserted through the probe rather than through the flag, which is
-      // private.
-      using (ProjectionEngine.ForceEager())
-      {
-        using (ProjectionEngine.ForceEager())
-        {
-          Assert.Equal(4, RowsReadBeforeTheProjectionRuns(p => Range(RowsWhileAnyValue(), p), Sheet(), eager: false));
-        }
-
-        Assert.Equal(4, RowsReadBeforeTheProjectionRuns(p => Range(RowsWhileAnyValue(), p), Sheet(), eager: false));
-      }
-
-      Assert.Equal(0, RowsReadBeforeTheProjectionRuns(p => Range(RowsWhileAnyValue(), p), Sheet(), eager: false));
-    }
 
     // --- What a run of one declaration is compared on ----------------------------------------------
 
@@ -708,7 +525,6 @@ namespace Unrect.Tests.Projections
 
       public Outcome Eagerly()
       {
-        using (ProjectionEngine.ForceEager())
           return Observe();
       }
 

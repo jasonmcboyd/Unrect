@@ -217,41 +217,5 @@ namespace Unrect.Tests.Projections
     }
 
     // --- L0 is an independent axis -----------------------------------------------------------------------
-
-    [PullOnlyFact("the high-water mark measures the lazy bound")]
-    public void AnOverlayDeclaredOutOfOrderKeepsTheDenotationAndLosesTheWord()
-    {
-      // The sharpest statement of what composite invariance is not. This overlay declares the lower
-      // cell first, so it reads row 2 and then reaches back to row 1 — a word no vertical flow can
-      // produce, because a flow's cursor only ever goes forwards. Everything the law is about is
-      // nevertheless identical.
-      var flow = VerticalFlow(v =>
-      {
-        var intCell = v.Next(IntCell());
-        var intCell2 = v.Next(IntCell());
-
-        return v.Build(read => read.Of(intCell) + read.Of(intCell2));
-      });
-      var backwards = Overlay(o =>
-      {
-        var down = o.Next(Down(1).Of(IntCell()));
-        var intCell = o.Next(IntCell());
-
-        return o.Build(read => read.Of(down) + read.Of(intCell));
-      });
-
-      AssertL2(Observe(flow, CoordinateGrid()), Observe(backwards, CoordinateGrid()));
-
-      var byFlow = new WatermarkSpace(CoordinateGrid());
-      var byOverlay = new WatermarkSpace(CoordinateGrid());
-
-      flow.Apply(byFlow);
-      backwards.Apply(byOverlay);
-
-      // Same furthest row, and only one of them got there monotonically.
-      Assert.Equal(byFlow.HighWaterMark, byOverlay.HighWaterMark);
-      Assert.Equal(0, byFlow.BackwardReach);
-      Assert.Equal(1, byOverlay.BackwardReach);
-    }
   }
 }

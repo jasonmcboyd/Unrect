@@ -60,7 +60,6 @@ namespace Unrect.Tests.Machines
       var expected = BlockTotals().Map(Eagerly(sheet));
 
       using var book = Workbook.Over(new FakeRowSource(sheet), new WorkbookOptions());
-      using (ProjectionEngine.UsePush())
       {
         var streamed = BlockTotals().Map(book.Stream("Data"));
 
@@ -77,7 +76,6 @@ namespace Unrect.Tests.Machines
       var sheet = Blocks(blocks: 100, blockRows: 3);
 
       using var book = Workbook.Over(new FakeRowSource(sheet), new WorkbookOptions());
-      using (ProjectionEngine.UsePush())
       {
         var stream = (StreamedSheet)book.Stream("Data");
 
@@ -95,7 +93,6 @@ namespace Unrect.Tests.Machines
       var sheet = new FakeSheet("Data", 50, 2);
 
       using var book = Workbook.Over(new FakeRowSource(sheet), new WorkbookOptions { BufferRows = 5 });
-      using (ProjectionEngine.UsePush())
       {
         var failure = Assert.Throws<ProjectionException>(() => Range(b => b.Height).Optional().Map(book.Stream("Data")));
 
@@ -111,7 +108,6 @@ namespace Unrect.Tests.Machines
       var sheet = Blocks(blocks: 100, blockRows: 3);
 
       using var book = Workbook.Over(new FakeRowSource(sheet), new WorkbookOptions { BufferRows = 6 });
-      using (ProjectionEngine.UsePush())
         Assert.Equal(100, BlockTotals().Map(book.Stream("Data")).Count);
     }
 
@@ -131,7 +127,6 @@ namespace Unrect.Tests.Machines
       });
 
       using var book = Workbook.Over(new FakeRowSource(sheet), new WorkbookOptions());
-      using (ProjectionEngine.UsePush())
       {
         var failure = Assert.Throws<ProjectionException>(() => late.Map(book.Stream("Data")));
 
@@ -155,7 +150,6 @@ namespace Unrect.Tests.Machines
       });
 
       using var book = Workbook.Over(new FakeRowSource(sheet), new WorkbookOptions());
-      using (ProjectionEngine.UsePush())
         Assert.Equal("block 0:30", inside.Map(book.Stream("Data")));
     }
 
@@ -173,7 +167,6 @@ namespace Unrect.Tests.Machines
       var path = System.IO.Path.Combine(AppContext.BaseDirectory, "TestData", "simple-report.xlsx");
       var eager = report.Map(Eager("simple-report.xlsx", "Report"));
 
-      using (ProjectionEngine.UsePush())
         Assert.Equal(eager, report.MapWorkbook(path, "Report"));
     }
   }

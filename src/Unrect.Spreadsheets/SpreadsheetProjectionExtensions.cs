@@ -142,9 +142,9 @@ namespace Unrect.Spreadsheets
     {
       using var book = Workbook.Open(path, options ?? new WorkbookOptions());
 
-      // Under the push interpreter the sheet is a stream — one forward pass, holding only what the
-      // declaration's open machines may still read; under pull it is the windowed door.
-      return read(ProjectionEngine.Pushing ? book.Stream(sheetName) : book.Sheet(sheetName));
+      // The sheet is a stream: one forward pass, holding only what the declaration's open machines
+      // may still read.
+      return read(book.Stream(sheetName));
     }
   }
 }

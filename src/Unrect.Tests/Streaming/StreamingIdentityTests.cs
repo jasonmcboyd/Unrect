@@ -341,40 +341,6 @@ namespace Unrect.Tests.Streaming
       Assert.Equal(eager, streamed);
     }
 
-    [PullOnlyFact("the window, the pool and the sweep announcement retire with the pull interpreter")]
-    public void AndCostsNoRereadingEvenThroughAWindowFourRowsTall()
-    {
-      // One row per chunk, floored to the four-chunk minimum: a window two orders of magnitude
-      // smaller than the sheet, and 1,200 records read through it. ChunkReloads is the cost meter
-      // and it must be zero — a record projection is handed one band at a time and never reaches
-      // back, so nothing the window dropped is ever wanted again.
-      var declaration = Ledger();
-
-      using var book = Workbook.Open(
-        Path("tall-ledger.xlsx"),
-        new WorkbookOptions { WarmReaders = false, ChunkRows = 1, WindowRows = 1 });
-
-      var streamed = declaration.Map(book.Sheet("Ledger"));
-
-      var stats = book.Statistics("Ledger")!.Value;
-
-      Assert.Equal(1200, streamed.Count);
-      Assert.Equal(0, stats.ChunkReloads);
-      Assert.Equal(1201, stats.RowsMaterialised);      // every row once, and not one of them twice
-
-      // One overrun, not two, and the missing one is the point. The band is announced once per
-      // PLACEMENT now (ISweepAware), where the engine cuts the region, instead of riding down on
-      // every cell read attached to whatever subspace object happened to make it. So what is counted
-      // is what a placement DECLARED: the table's own discovered band, taller than four rows,
-      // costing nothing. The whole-sheet extent is not a declared band — it is the space the
-      // placement was resolved AGAINST, which the landmark scan reads through to find the header
-      // row — so it is announced nowhere and counted nowhere.
-      //
-      // ChunkReloads 0 and RowsMaterialised 1201 above are unchanged, which is the half that makes
-      // this a re-pin rather than a regression: the announcement that went away bought no residency.
-      Assert.Equal(1, stats.WindowOverruns);
-    }
-
     /// <summary>
     /// The same ledger read as a HEADERED table, so the composition the slot rung is built from —
     /// a header read once, then the body tiled beneath it — is the thing under the window.
@@ -452,29 +418,6 @@ namespace Unrect.Tests.Streaming
 
       Assert.Equal(0, stats.ChunkReloads);
       Assert.Equal(0, stats.WindowOverruns);
-    }
-
-    [PullOnlyFact("the window, the pool and the sweep announcement retire with the pull interpreter")]
-    public void AndAnOversizedBandWrappedThreeDeepIsStillOneOverrun()
-    {
-      // The counter reports the declaration's SHAPE rather than its spelling — the hazard being that
-      // every transparent wrapper places the same region again, so one band arrives at the store
-      // once per wrapper. Three wrappers inside the declared extent here, and one overrun: the band
-      // that does not fit is one thing for a caller to fix, whatever it is written as.
-      //
-      // The wrappers sit INSIDE the pipeline's Sized, which is what makes them wrappers over THIS
-      // band rather than over the whole sheet: a wrapper carrying no geometry of its own is handed
-      // the region its parent settled, so each of them announces 3x200 again, consecutively. Written
-      // the other way round — the geometry on the inner shape, the wrappers outside it — they would
-      // each announce the whole sheet, which is a second oversized band and correctly a second
-      // overrun; the counter is about bands, and that really is two of them.
-      //
-      // The control is the unwrapped declaration, so the number is a property of the band and not of
-      // this particular chain.
-      var read = Range(block => $"{block.Width}x{block.Height}");
-
-      Assert.Equal(1, Overruns(Sized(AreaStrategies.ExplicitArea(3, 200)).Of(read)));
-      Assert.Equal(1, Overruns(Sized(AreaStrategies.ExplicitArea(3, 200)).Of(read.Optional().Padded(0).Named("wrapped"))));
     }
 
     /// <summary>The overruns a declaration costs over the tall ledger, through a window it does not fit.</summary>

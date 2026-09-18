@@ -2,7 +2,7 @@
 
 ## Status
 
-This project is experimental, but both the substrate (`ISpace`, `Plane`, `Point`, the strategy/scan/landmark interfaces) and the projection layer (`Unrect.Projections`, one vocabulary — `ProjectionBuilders<TSpace>`) now have deliberate, review-hardened semantics pinned by `src/Unrect.Tests` (xUnit, 2,712 tests) and `src/Unrect.Analyzers.Tests` (18 tests). Run `dotnet test src/Unrect.sln` **twice**: once as is (the pull interpreter) and once with `UNRECT_PUSH=1` in the environment (the push interpreter, since the engine split's phase 4); keep both green. A test of the pull interpreter's own mechanics is marked `[PullOnlyFact(reason)]`/`[PullOnlyTheory(reason)]` and is skipped, with its reason, under push; it retires with the pull interpreter in phase 5. Gate builds with `dotnet build src/Unrect.sln -v q --no-incremental` — incremental builds silently skip analyzer diagnostics (xUnit analyzers etc.), so a plain build can report 0 warnings while warnings exist.
+This project is experimental, but both the substrate (`ISpace`, `Plane`, `Point`, the strategy/scan/landmark interfaces) and the projection layer (`Unrect.Projections`, one vocabulary — `ProjectionBuilders<TSpace>`) now have deliberate, review-hardened semantics pinned by `src/Unrect.Tests` (xUnit, 2,575 tests) and `src/Unrect.Analyzers.Tests` (18 tests). Run `dotnet test src/Unrect.sln`; keep it green. Gate builds with `dotnet build src/Unrect.sln -v q --no-incremental` — incremental builds silently skip analyzer diagnostics (xUnit analyzers etc.), so a plain build can report 0 warnings while warnings exist.
 
 ## Problem Domain
 

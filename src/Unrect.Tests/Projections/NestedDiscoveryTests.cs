@@ -66,7 +66,6 @@ namespace Unrect.Tests.Projections
       if (!eager)
         return declaration.Map(Disagreeing());
 
-      using (ProjectionEngine.ForceEager())
         return declaration.Map(Disagreeing());
     }
 

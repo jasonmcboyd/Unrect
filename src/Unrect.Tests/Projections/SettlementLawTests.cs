@@ -82,31 +82,6 @@ namespace Unrect.Tests.Projections
 
     // --- Site 1: a repeat's item settles before collection ---------------------------------------
 
-    [PullOnlyFact("a verdict settled before projecting is the pull interpreter's ordering")]
-    public void ARepeatSettlesItsItemsVerdictBeforeProjectingIt()
-    {
-      // The same declaration, read twice, and the counter is the law: the lone leaf's extent is
-      // still open while its projection runs (1), and the repeat's is closed before its item is
-      // handed anything to read (0). Nothing about the item changed — what changed is that a repeat
-      // has a decision waiting on the answer.
-      var projections = 0;
-      var item = Range(RowsWhileAny(BreaksOn(MarkerInTheThirdRow)), _ => { projections++; return 0; }).Named("item");
-
-      projections = 0;
-      Assert.Throws<ProjectionException>(() => item.Map(TwoBlocks()));
-      Assert.Equal(1, projections);
-
-      projections = 0;
-      var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalRepeat(item, separatedBy: BlankRows()).Map(TwoBlocks()));
-      Assert.Equal(0, projections);
-
-      // And settling early costs nothing in the telling: it is still the placement's failure, said
-      // in the same words, with the repeat's own segment in front of it.
-      Assert.Equal("its area strategy threw InvalidOperationException: no", Problem(failure));
-      Assert.Equal("VerticalRepeat[0] -> 'item' (Range)", failure.Path);
-    }
-
     [Fact]
     public void ARepeatAdvancesByTheSettledExtentEvenWhereTheItemReadsNothing()
     {
@@ -226,7 +201,6 @@ namespace Unrect.Tests.Projections
       if (!eager)
         return projection.MapWithDiagnostics(space);
 
-      using (ProjectionEngine.ForceEager())
         return projection.MapWithDiagnostics(space);
     }
   }

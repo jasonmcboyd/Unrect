@@ -8,7 +8,6 @@ using Unrect.Spreadsheets;
 using Xunit;
 
 using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Streaming
@@ -98,121 +97,7 @@ namespace Unrect.Tests.Streaming
 
     // --- Once per placement, and what it says ------------------------------------------------------
 
-    [PullOnlyFact("the window, the pool and the sweep announcement retire with the pull interpreter")]
-    public void ARootDeclarationAnnouncesItsOwnRegionExactlyOnce()
-    {
-      // The simplest shape there is, so the count is unambiguous: one placement, one announcement,
-      // of the region that placement resolved to. Nothing is announced per cell and nothing per read.
-      var sheet = Listening();
-
-      Right(1).Down(2).Of(Point()).Map(sheet);
-
-      Assert.Equal(new[] { "1,2+1x1" }, sheet.Announced);
-    }
-
-    [PullOnlyFact("the window, the pool and the sweep announcement retire with the pull interpreter")]
-    public void EveryChildAnnouncesItsOwnBandAndTheParentAnnouncesTheWhole()
-    {
-      // A flow's children are placements, so each announces the band it was cut — in flow order,
-      // after the flow's own. This is the shape the store's union rule is written for: a nested
-      // child's band must not shrink the locus its parent opened, which SheetStoreTests pins from
-      // the other side.
-      var sheet = Listening();
-
-      VerticalFlow(v =>
-      {
-        var rowSlot = v.Next(Row(4, cells => cells.Count));
-        var rowSlot2 = v.Next(Row(4, cells => cells.Count));
-
-        return v.Build(read => $"{read.Of(rowSlot)}{read.Of(rowSlot2)}");
-      }).Map(sheet);
-
-      Assert.Equal(new[] { "0,0+4x4", "0,0+4x1", "0,1+4x1" }, sheet.Announced);
-    }
-
-    [PullOnlyFact("the window, the pool and the sweep announcement retire with the pull interpreter")]
-    public void ATransparentWrapperAnnouncesItsOwnBandAndSoRepeatsItsChilds()
-    {
-      // The reason the store deduplicates rather than counting announcements. A transparent wrapper
-      // is still a PLACEMENT — the engine resolves it, cuts a region and announces it — and a
-      // boundary resolves its own placement and then places what it wraps, so ONE declared band
-      // arrives more than once. Pinned as the exact sequence rather than as a count, because what
-      // the store dedups is consecutive identical bands and that is only meaningful if the
-      // repetition is known to be consecutive.
-      var sheet = Listening();
-
-      Right(1).Down(2).Of(Point().Optional()).Map(sheet);
-
-      Assert.Equal(new[] { "1,2+3x2", "1,2+3x2", "1,2+1x1" }, sheet.Announced);
-    }
-
-    [PullOnlyFact("the window, the pool and the sweep announcement retire with the pull interpreter")]
-    public void AndAWrapperCarryingNoGeometryAnnouncesTheWholeExtentItWasHanded()
-    {
-      // The other arrangement, and the one that says the announcement is about the PLACEMENT rather
-      // than about the shape underneath it: put the geometry on the child and the wrapper has none
-      // of its own, so what it announces is everything it was handed. Two different bands, from a
-      // declaration that reads exactly one cell.
-      var sheet = Listening();
-
-      Right(1).Down(2).Of(Point()).Padded(0).Map(sheet);
-
-      Assert.Equal(new[] { "0,0+4x4", "1,2+1x1" }, sheet.Announced);
-    }
-
     // --- Never forcing -----------------------------------------------------------------------------
-
-    [PullOnlyFact("the window, the pool and the sweep announcement retire with the pull interpreter")]
-    public void ADiscoveredExtentIsAnnouncedAsDeclaredWithoutBeingSettled()
-    {
-      // The half that is easy to lose and impossible to notice: what is announced for a region whose
-      // bottom edge is still being discovered is the CEILING that edge sits under, not where it turns
-      // out to be. Announcing the settled height would mean reading the file to find out — the
-      // forcing this whole arrangement exists to avoid.
-      //
-      // The grid is four rows and only the first two carry a value, so the table's discovered extent
-      // settles at 2. The announcement says 4, which is what the placement declared before anything
-      // was read.
-      var sheet = new ListeningSheet(Mixed(new object?[,]
-      {
-        { "Name", "Amount" },
-        { "Acme", 10 },
-        { null, null },
-        { null, null },
-      }));
-
-      var rows = Table((TableRow<ISheetCells> row) => row["Amount"].Integer()).Map(sheet);
-
-      Assert.Equal(new[] { 10 }, rows);
-      Assert.Equal("0,0+2x4", sheet.Announced[0]);
-    }
-
-    [PullOnlyFact("the window, the pool and the sweep announcement retire with the pull interpreter")]
-    public void AndTheBoundIsNotForcedByTheAnnouncementItself()
-    {
-      // The same claim measured rather than inferred, through the counting space. The table's extent
-      // is discovered, so if Announce asked the plane how big it was, every row of the table would
-      // have been scanned by the time the first announcement was recorded.
-      //
-      // One row has been touched, and it is not the discovery: it is the table's own OFFSET rule
-      // probing where the header starts, which runs before the region is cut and so before there is
-      // anything to announce. Four rows is what forcing would read; one is what placing costs.
-      var counting = new CountingSpace(Mixed(new object?[,]
-      {
-        { "Name", "Amount" },
-        { "Acme", 10 },
-        { "Beta", 20 },
-        { null, null },
-      }));
-
-      var touchedAtFirstAnnouncement = -1;
-      var sheet = new ForcingWatch(counting, () => touchedAtFirstAnnouncement = touchedAtFirstAnnouncement < 0 ? counting.RowsTouched : touchedAtFirstAnnouncement);
-
-      Table((TableRow<ISheetCells> row) => row["Amount"].Integer()).Map(sheet);
-
-      Assert.Equal(1, touchedAtFirstAnnouncement);
-      Assert.Equal(4, counting.RowsTouched);
-    }
 
     /// <summary>
     /// A listening sheet that runs a callback at the moment it is told about a band, so a test can

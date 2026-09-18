@@ -501,22 +501,6 @@ namespace Unrect.Tests.Projections
         return v.Build(read => (Code: read.Of(textCell), Amount: read.Of(right)));
       });
 
-    [PullOnlyFact("read-ahead and backward reach are the lazy bound's")]
-    public void Repeat_InsideADiscoveredExtent_NeverReadsBehindTheFurthestRowRead()
-    {
-      // The cost claim behind placing a repeat over a bound: the item is handed a TAIL of the extent
-      // rather than a measured slice of it, so the walk advances in step with the scan and nothing
-      // reaches back. A declaration with this property is one a windowed reader can serve from one
-      // chunk, which is why it is measured rather than argued from the shape of the code.
-      var watched = new WatermarkSpace(TwoBlocks());
-
-      var blocks = Sized(RowsWhileAnyValue()).Of(VerticalRepeat(Section())).Map(watched);
-
-      Assert.Equal(new[] { "A-1", "A-2" }, blocks.Select(block => block.Code));
-      Assert.Equal(3, watched.HighWaterMark);
-      Assert.Equal(0, watched.BackwardReach);
-    }
-
     /// <summary>
     /// Three record rows, a blank row, and trailing content — the sheet a record walk has to stop
     /// part way down.
@@ -551,63 +535,6 @@ namespace Unrect.Tests.Projections
       Assert.Equal(new[] { 0, 1, 2 }, bounded.Value);
       Assert.Equal(2, bounded.Consumed.Width);
       Assert.Equal(3, bounded.Consumed.Height);
-    }
-
-    [PullOnlyFact("read-ahead and backward reach are the lazy bound's")]
-    public void Repeat_OfRecordsUnderALandmarkBound_ReadsAheadToTheLandmarkThenWalks()
-    {
-      // A landmark bound is located before the walk begins, so it reads ahead to the landmark and
-      // the walk then reads behind that high-water mark. What the bound costs is measured rather
-      // than argued; the forward-only spelling of "stop at a blank row" is the tiler's.
-      var watched = new WatermarkSpace(RecordsThenTrailingContent());
-
-      // Each record reads a cell of its row, so the watermark measures the walk itself and not only
-      // the landmark search that precedes it.
-      var records = Until(BlankRow()).Of(VerticalRepeat(Record((TableRow<ISheetCells> row) => { _ = row[0].Text(); return row.Index; }))).Map(watched);
-
-      Assert.Equal(new[] { 0, 1, 2 }, records);
-
-      // The three records and the blank row the landmark search found — the trailing content is
-      // never reached.
-      Assert.Equal(3, watched.HighWaterMark);
-
-      // And the walk then reads from the top of the block, three rows behind the furthest row the
-      // landmark search reached: the bound is located first, the records are read after.
-      Assert.Equal(3, watched.BackwardReach);
-    }
-
-    [PullOnlyFact("read-ahead and backward reach are the lazy bound's")]
-    public void AndASeparatorInsideADiscoveredExtentDoesNotAskHowTallTheTailIs()
-    {
-      // This used to be the named exception to the two facts above: a separator is an offset
-      // STRATEGY, and while a strategy could only ask a region for its whole extent, asking cost a
-      // row — the enclosing scan was forced one row past the cursor, so the separator's own next
-      // read landed one behind the furthest row already read, and the reach was 1.
-      //
-      // It is no longer an exception, and the reason is the law rather than this shape: a region
-      // answers a WIDTH without answering a height, and "skip the rows that are entirely blank"
-      // needs nothing but a width to walk with. A rule that never asks how tall the region is never
-      // settles its boundary, and a walk that never settles it never reaches back. 1 -> 0, and the
-      // repeat is now monotone from end to end — which is the property a windowed reader is priced
-      // on. A rule that DOES ask the height still costs what it always did; the pair in
-      // BoundedRegionTests is where both halves of that are stated together.
-      var watched = new WatermarkSpace(TwoBlocks());
-
-      var blocks = Sized(RowsWhileAnyValue()).Of(VerticalRepeat(Section(), separatedBy: BlankRows())).Map(watched);
-
-      Assert.Equal(new[] { "A-1", "A-2" }, blocks.Select(block => block.Code));
-      Assert.Equal(3, watched.HighWaterMark);
-      Assert.Equal(0, watched.BackwardReach);
-
-      // And the same declaration over a measured extent reaches back not at all either — which is
-      // now an agreement rather than a contrast, and is the better outcome: the discovered reading
-      // and the measured one cost the same order as well as saying the same thing.
-      var measured = new WatermarkSpace(TwoBlocks());
-
-      VerticalRepeat(Section(), separatedBy: BlankRows()).Map(measured);
-
-      Assert.Equal(0, measured.BackwardReach);
-      Assert.Equal(watched.BackwardReach, measured.BackwardReach);
     }
 
     // --- Repeat as a projection ------------------------------------------------------------------------------------

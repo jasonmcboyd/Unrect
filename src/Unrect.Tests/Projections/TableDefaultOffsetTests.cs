@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 
 using Unrect.Projections;
 using Unrect.Spreadsheets;
@@ -117,38 +116,5 @@ namespace Unrect.Tests.Projections
     // DEFAULT offset on the DEFAULT (Stop / DiscoveredBlock) table — the common case — the offset scan
     // does not force the sheet up front; the first record projects having touched only the header and
     // its own row, exactly as the outgoing SkipBlankRows did (spec §4: rows-touched is unchanged).
-
-    [PullOnlyFact("peeking one row at a time is the lazy bound's")]
-    public void TheDefaultStopTableStillPeeksOneRowAtATimeUnderTheNewOffset()
-    {
-      var values = new object?[11, 2];
-
-      values[0, 0] = "Name";
-      values[0, 1] = "Amount";
-
-      for (var row = 1; row <= 10; row++)
-      {
-        values[row, 0] = $"row {row}";
-        values[row, 1] = row * 10m;
-      }
-
-      var counter = new CountingSpace(Mixed(values));
-      var observations = new List<int>();
-
-      // No onBlank — the default Stop / DiscoveredBlock path, whose offset is now SkipToFirstNonBlankCell.
-      Table(r => { observations.Add(counter.RowsTouched); return r.Index; }).Apply(counter);
-
-      // Ten body records, each projected in step with the walk.
-      Assert.Equal(10, observations.Count);
-
-      // The first record projects having read only the header and its own row: two, not the eleven an
-      // up-front measurement (or an offset scan that read the whole extent) would have forced. This is
-      // the no-regression claim — the new offset touches the same leading rows the old one did.
-      Assert.Equal(2, observations[0]);
-
-      // Monotonic, and by the last record the whole sheet has been peeked.
-      Assert.Equal(observations.OrderBy(count => count).ToList(), observations);
-      Assert.Equal(11, counter.RowsTouched);
-    }
   }
 }

@@ -67,7 +67,6 @@ namespace Unrect.Tests.Projections
       if (!eager)
         return Assert.Throws<ProjectionException>(() => projection.MapWithDiagnostics(Sheet()));
 
-      using (ProjectionEngine.ForceEager())
         return Assert.Throws<ProjectionException>(() => projection.MapWithDiagnostics(Sheet()));
     }
 
@@ -76,7 +75,6 @@ namespace Unrect.Tests.Projections
       if (!eager)
         return projection.MapWithDiagnostics(Sheet());
 
-      using (ProjectionEngine.ForceEager())
         return projection.MapWithDiagnostics(Sheet());
     }
 
@@ -269,17 +267,6 @@ namespace Unrect.Tests.Projections
       return observations;
     }
 
-    [PullOnlyFact("the moment a deferred scan fails is the pull interpreter's")]
-    public void ARepeatsItemIsMeasuredBeforeItIsProjected()
-    {
-      // Item one spans rows 0-2 and its scan reads row 3 to learn that it stops, so four rows are
-      // behind it when its projection starts; item two adds rows 4 and 5, for six. The same item
-      // placed strictly has read nothing at the same moment — which is the whole difference, and
-      // the reason a repeat's stopping condition still arrives where it always did.
-      Assert.Equal(new[] { 4, 6 }, RowsReadWhenEachItemsProjectionStarted(underRepeat: true));
-      Assert.Equal(new[] { 0 }, RowsReadWhenEachItemsProjectionStarted(underRepeat: false));
-    }
-
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -290,7 +277,6 @@ namespace Unrect.Tests.Projections
       IReadOnlyList<int> items;
       if (eager)
       {
-        using (ProjectionEngine.ForceEager())
           items = repeat.Map(TwoBlocks());
       }
       else

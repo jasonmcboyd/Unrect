@@ -686,7 +686,6 @@ namespace Unrect.Tests.Projections
     {
       var lazily = PresenceOf(projection, space);
 
-      using (ProjectionEngine.ForceEager())
         return (expected, lazily, PresenceOf(projection, space));
     }
   }

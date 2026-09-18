@@ -113,26 +113,6 @@ namespace Unrect.Tests.Streaming
       Assert.Equal(0L, overruns);
     }
 
-    [PullOnlyFact("the window, the pool and the sweep announcement retire with the pull interpreter")]
-    public void WhereAFirstHalfThatReadsForItselfCostsTheWholeWalk()
-    {
-      // The contrast, and the control on the numbers above — kept, because it is what shows the zero
-      // above is a band that fits rather than a counter that stopped counting. Here the row rule
-      // walks the sheet, so the reading is a plain monotone pass and the counters are exactly the
-      // tall-sheet gate's: nineteen loads, fifteen evictions, every row read once, and one overrun
-      // for the 1,201-row band this placement really does open. Those numbers are inherited from the
-      // walk; the ones above are not.
-      var (read, loads, reloads, evictions, materialised, overruns) = Measure(FirstHalfReads());
-
-      Assert.Equal("3x1201", read);
-
-      Assert.Equal(19L, loads);
-      Assert.Equal(0L, reloads);
-      Assert.Equal(15L, evictions);
-      Assert.Equal(1201L, materialised);
-      Assert.Equal(1L, overruns);
-    }
-
     [Theory]
     [InlineData("first-half-reads-nothing", "3x2")]
     [InlineData("first-half-reads", "3x1201")]

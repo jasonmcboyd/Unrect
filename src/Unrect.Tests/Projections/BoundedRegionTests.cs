@@ -115,55 +115,6 @@ namespace Unrect.Tests.Projections
       }));
     }
 
-    [PullOnlyTheory("rows touched and backward reach measure the lazy bound")]
-    [MemberData(nameof(RowsTouchedByOffset))]
-    public void AnOffsetStrategySettlesTheBoundaryOnlyIfItAsksHowTallTheRegionIs(string offset, int rowsTouched)
-    {
-      // Measured from inside the child, because that is the only moment the difference exists: by
-      // the time Apply returns the engine has consumed the declared area in full either way.
-      //
-      // One row for the width-only rule — the row it actually looked at — against a hundred and one
-      // for the rule that asks the height. See the theory data above for what each number was
-      // before the width read was separated from the height read.
-      var counter = new CountingSpace(MarkedSheet());
-      var observed = -1;
-
-      InsideADiscoveredBound(offset, Range(1, 1, block =>
-      {
-        observed = counter.RowsTouched;
-
-        return 0;
-      })).Apply(counter);
-
-      Assert.Equal(rowsTouched, observed);
-
-      // And the declaration still consumed everything it declared, whichever way the offset was
-      // spelled — which is the half that must NOT have moved. Laziness changes when rows are read,
-      // never how much of the sheet a declared area takes.
-      Assert.Equal(RowsToExhaustion, counter.RowsTouched);
-    }
-
-    [PullOnlyTheory("rows touched and backward reach measure the lazy bound")]
-    [MemberData(nameof(BackwardReachByOffset))]
-    public void AndReachesBackNoFurtherThanItSettled(string offset, int backwardReach)
-    {
-      // The other half, and the one no count can make: a windowed reader is only as cheap as the
-      // walk over it is monotone, so what matters is the ORDER. A rule that settles the boundary
-      // runs the scan to row 100 and then starts its own search again from row 0 — a hundred rows
-      // behind, and a hundred rows of window it may have to re-read. A width-only rule never leaves
-      // row 0, so it never reaches back at all.
-      //
-      // The high-water mark is 100 either way: the engine consumes the declared area before Apply
-      // returns, so the sheet is read to the boundary regardless. Only the ORDER differs, which is
-      // exactly the thing this instrument exists to see and the counters cannot.
-      var watermark = new WatermarkSpace(MarkedSheet());
-
-      InsideADiscoveredBound(offset, Range(1, 1, block => 0)).Apply(watermark);
-
-      Assert.Equal(100, watermark.HighWaterMark);
-      Assert.Equal(backwardReach, watermark.BackwardReach);
-    }
-
     // --- The canonical four, through the view ----------------------------------------------------------
 
     /// <summary>

@@ -99,35 +99,6 @@ namespace Unrect.Tests.Projections
 
     // --- this[column, row]: through that row and no further ---------------------------------------
 
-    [PullOnlyTheory("rows touched measure the lazy bound; the push interpreter's cost is its buffer's")]
-    [InlineData(0, 1)]
-    [InlineData(1, 2)]
-    [InlineData(2, 3)]
-    [InlineData(9, 10)]
-    [InlineData(99, 100)]
-    public void ReadingACellAdvancesTheScanThroughThatRowAndNoFurther(int row, int rowsTouched)
-    {
-      var (observed, _) = Observe(space => { _ = space[0, row]; });
-
-      Assert.Equal(rowsTouched, observed);
-    }
-
-    [PullOnlyFact("rows touched measure the lazy bound; the push interpreter's cost is its buffer's")]
-    public void ReadingARowAlreadyBehindTheScanAdvancesItNoFurther()
-    {
-      // Forward-only means the scan has a position, not that reading has to be monotone: a
-      // projection may look back into what it has already consumed, and looking back costs nothing.
-      var (observed, _) = Observe(space =>
-      {
-        _ = space[0, 5];
-        _ = space[1, 5];
-        _ = space[0, 0];
-        _ = space[1, 2];
-      });
-
-      Assert.Equal(6, observed);
-    }
-
     [Fact]
     public void ARowBelowTheDiscoveredBoundIsAnOrdinaryOverrun()
     {
@@ -150,28 +121,6 @@ namespace Unrect.Tests.Projections
       // what makes the refusal the region's own rather than the sheet running out.
       Assert.Equal(103, TallSheet().Area.Height);
       Assert.True(TallSheet().IsBlank(0, BoundHeight));
-    }
-
-    [PullOnlyTheory("rows touched measure the lazy bound; the push interpreter's cost is its buffer's")]
-    [InlineData(0, 1)]
-    [InlineData(2, 3)]
-    [InlineData(99, 100)]
-    public void MintingAPointAndReadingItThroughCostTheRowItNames(int row, int rowsTouched)
-    {
-      // The canonical four, asked of the region rather than of the space: minting the address
-      // admits the row one at a time, and each question about the cell there costs that row and
-      // nothing else. A locator that checked itself by asking the region how tall it was would
-      // settle the whole scan for every cell anybody looked at.
-      var (observed, _) = Observe(space =>
-      {
-        var point = space[0, row];
-
-        Assert.False(point.IsBlank);
-        Assert.False(point.IsText);
-        Assert.Equal($"{row + 1}", point.AsText());
-      });
-
-      Assert.Equal(rowsTouched, observed);
     }
 
     [Fact]
@@ -207,78 +156,10 @@ namespace Unrect.Tests.Projections
 
     // --- GetSubspace: through the rows asked for ---------------------------------------------------
 
-    [PullOnlyTheory("rows touched measure the lazy bound; the push interpreter's cost is its buffer's")]
-    [InlineData(0, 0, 0)]
-    [InlineData(0, 1, 1)]
-    [InlineData(0, 3, 3)]
-    [InlineData(2, 3, 5)]
-    [InlineData(5, 0, 5)]
-    [InlineData(0, 40, 40)]
-    public void AskingForASubspaceAdvancesTheScanThroughTheRowsAskedFor(int offset, int height, int rowsTouched)
-    {
-      // An explicit request for part of the extent is not a question about the whole of it — so a
-      // nested projection placed inside a discovered bound costs its own rows and not the bound's.
-      var (observed, _) = Observe(space => space.Slice(new Offset(0, offset), new Area(2, height)));
-
-      Assert.Equal(rowsTouched, observed);
-    }
-
     // --- The block view: the same rule, one level up ----------------------------------------------
     //
     // Step 6 made CellBlock bound-aware, so these numbers are the ones a projection actually pays: a
     // reader who never asked for a height never had to spell b.Space to keep it that way.
-
-    [PullOnlyFact("rows touched measure the lazy bound; the push interpreter's cost is its buffer's")]
-    public void TheBlocksWidthIsFreeOnADiscoveredBound()
-    {
-      // Zero rows for a question about columns. This is where the width/height seam is observable —
-      // ISheetCells cannot give a free width (see AskingAPublicSpaceForItsWidthForcesTheHeightWithIt),
-      // and the view can, because it holds a region and asks it for its width.
-      var (observed, _) = ObserveBlock(block => Assert.Equal(2, block.Width));
-
-      Assert.Equal(0, observed);
-    }
-
-    [PullOnlyTheory("rows touched measure the lazy bound; the push interpreter's cost is its buffer's")]
-    [InlineData(0, 1)]
-    [InlineData(2, 3)]
-    [InlineData(99, 100)]
-    public void ReadingACellThroughTheBlockCostsWhatReadingItThroughTheSpaceCosts(int row, int rowsTouched)
-    {
-      // The validating indexer asks "is there a row there" rather than "how tall are you", so the
-      // validation is free and the read costs exactly the row it named.
-      var (throughView, _) = ObserveBlock(block => { _ = block[0, row]; });
-      var (throughSpace, _) = Observe(space => { _ = space[0, row]; });
-
-      Assert.Equal(rowsTouched, throughView);
-      Assert.Equal(throughSpace, throughView);
-    }
-
-    [PullOnlyTheory("rows touched measure the lazy bound; the push interpreter's cost is its buffer's")]
-    [InlineData(0, 1)]
-    [InlineData(2, 3)]
-    [InlineData(99, 100)]
-    public void TakingOneRowOfTheBlockReadsThroughThatRowAndNoFurther(int index, int rowsTouched)
-    {
-      // Which is what makes a block walkable row by row without ever asking how many rows there
-      // are.
-      var (observed, _) = ObserveBlock(block => block.Row(index));
-
-      Assert.Equal(rowsTouched, observed);
-    }
-
-    [PullOnlyFact("rows touched measure the lazy bound; the push interpreter's cost is its buffer's")]
-    public void WalkingTheBlockRowByRowCostsOnlyTheRowsWalked()
-    {
-      var (observed, consumed) = ObserveBlock(block =>
-      {
-        for (var index = 0; index < 3; index++)
-          Assert.Equal(index + 1, block.Row(index)[0].Integer());
-      });
-
-      Assert.Equal(3, observed);
-      Assert.Equal(BoundHeight, consumed.Height);
-    }
 
     [Fact]
     public void AnIndexPastTheDiscoveredBoundIsTheReadersBugAndNotTheFilesShape()
@@ -376,34 +257,6 @@ namespace Unrect.Tests.Projections
 
     // --- The claim the feature exists for -----------------------------------------------------------
 
-    [PullOnlyFact("rows touched measure the lazy bound; the push interpreter's cost is its buffer's")]
-    public void AProjectionThatReadsThreeRowsOfAHundredHasTouchedThree()
-    {
-      var (observed, consumed) = Observe(space =>
-      {
-        _ = space[0, 0];
-        _ = space[0, 1];
-        _ = space[0, 2];
-      });
-
-      Assert.Equal(3, observed);
-
-      // And the bound is still consumed in full: the engine forces it after projecting, because a
-      // declared area is consumed in full whether or not the projection wanted all of it. Laziness
-      // changes what the projection costs, never what the declaration consumed.
-      Assert.Equal(BoundHeight, consumed.Height);
-      Assert.Equal(2, consumed.Width);
-    }
-
-    [PullOnlyFact("rows touched measure the lazy bound; the push interpreter's cost is its buffer's")]
-    public void AProjectionThatReadsNothingHasTouchedNothing_AndTheBoundIsStillConsumedInFull()
-    {
-      var (observed, consumed) = Observe(_ => { });
-
-      Assert.Equal(0, observed);
-      Assert.Equal(BoundHeight, consumed.Height);
-    }
-
     [Fact]
     public void TheEagerPathHasReadTheWholeScanBeforeTheProjectionStarts()
     {
@@ -413,7 +266,6 @@ namespace Unrect.Tests.Projections
       var observed = -1;
 
       Size consumed;
-      using (ProjectionEngine.ForceEager())
       {
         consumed = Range(RowsWhileAnyValue(), block =>
         {
@@ -464,8 +316,7 @@ namespace Unrect.Tests.Projections
     /// one, so every number below is about a fixed-width, discovered-height table — the simplest
     /// reading, and the one the block facts above are stated in. A table's own default placement is
     /// a discovered <em>block</em>, which since the width/height interleave landed is on the same
-    /// deferred branch and costs the same here; what it costs when the width is NOT free is
-    /// <see cref="ADiscoveredWidthThatOnlySettlesLateForcesTheBoundToSettleIt"/>.
+    /// deferred branch and costs the same here.
     /// </summary>
     private static (int RowsTouchedAtReadTime, Size Consumed) ObserveTable(Action<TableView<ISheetCells>> read)
     {
@@ -483,56 +334,6 @@ namespace Unrect.Tests.Projections
       Assert.Equal(TableRowsToExhaustion, counter.RowsTouched);
 
       return (observed, applied.Consumed);
-    }
-
-    [PullOnlyTheory("rows touched measure the lazy bound; the push interpreter's cost is its buffer's")]
-    [InlineData("ColumnCount")]
-    [InlineData("Header")]
-    [InlineData("ColumnNames")]
-    public void TheTablesColumnVocabularyIsFree(string member)
-    {
-      // One row, and it is the header — which the view reads in its constructor, before the
-      // projection has been handed anything. So "free" here means "costs the header and nothing
-      // else": there is no reading of a table that does not know its own captions.
-      var (observed, _) = ObserveTable(table =>
-      {
-        switch (member)
-        {
-          case "ColumnCount":
-            Assert.Equal(2, table.ColumnCount);
-            break;
-
-          case "Header":
-            Assert.Equal("Client", table.Header[0].Text());
-            break;
-
-          case "ColumnNames":
-            Assert.Equal(new[] { "Client", "Amount" }, table.ColumnNames);
-            break;
-
-          default:
-            throw new ArgumentOutOfRangeException(nameof(member), member, "No such member.");
-        }
-      });
-
-      Assert.Equal(1, observed);
-    }
-
-    [PullOnlyTheory("rows touched measure the lazy bound; the push interpreter's cost is its buffer's")]
-    [InlineData(1, 2)]
-    [InlineData(3, 4)]
-    [InlineData(10, 11)]
-    [InlineData(TableBodyRows, TableBoundHeight)]
-    public void StreamingNRowsOfATableCostsThoseRowsAndTheHeader(int rows, int rowsTouched)
-    {
-      // §11.9's fact, spelled out: n rows cost n + 1, the one being the header, with no term for
-      // how tall the table turned out to be. The last case is the rule and not an exception to it —
-      // Take stops on the hundredth row rather than asking for a hundred-and-first, so the blank
-      // row that would settle the bound is never read. Enumerating to the end does read it, which
-      // is the one extra row StreamingPastTheLastRowEndsRatherThanOverrunning pays for below.
-      var (observed, _) = ObserveTable(table => Assert.Equal(rows, table.StreamRows().Take(rows).Count()));
-
-      Assert.Equal(rowsTouched, observed);
     }
 
     [Theory]
@@ -596,37 +397,6 @@ namespace Unrect.Tests.Projections
       return observations;
     }
 
-    [PullOnlyFact("rows touched measure the lazy bound; the push interpreter's cost is its buffer's")]
-    public void ATableRowLambdaIsInterleavedWithTheScanThatFindsItsRows()
-    {
-      // The law, and the reason StreamRows exists: the first row projects having read two rows of
-      // the sheet — its own and the header — and the last projects having read the hundred and one
-      // there are. A reading that materialised the rows first would show 102 at every step.
-      var observations = RowsReadAsEachBodyRowProjects(sized: true);
-
-      Assert.Equal(TableBodyRows, observations.Count);
-      Assert.Equal(2, observations[0]);
-      Assert.Equal(TableBoundHeight, observations[TableBodyRows - 1]);
-    }
-
-    [PullOnlyFact("rows touched measure the lazy bound; the push interpreter's cost is its buffer's")]
-    public void TheDefaultTablePlacementIsInterleavedToo_AndCostsWhatTheSizedOneCosts()
-    {
-      // The undecorated declaration, which is the one people write. TablePlacement's extent is a
-      // discovered BLOCK — rows while any value, then columns while any value — and the
-      // width/height interleave made that a per-row rule, so the numbers are the .Sized ones above
-      // to the row: the caption row settles the width, and settling it costs the row the first body
-      // row needed anyway. Before the interleave every observation here was 102, the whole scan
-      // having run before the projection saw anything.
-      var observations = RowsReadAsEachBodyRowProjects(sized: false);
-
-      Assert.Equal(TableBodyRows, observations.Count);
-      Assert.Equal(2, observations[0]);
-      Assert.Equal(TableBoundHeight, observations[TableBodyRows - 1]);
-
-      Assert.Equal(RowsReadAsEachBodyRowProjects(sized: true), observations);
-    }
-
     /// <summary>
     /// The same hundred body rows, with the second column empty until row 50 — so the width is not
     /// settled by the caption row and the walk that decides it has to go looking.
@@ -648,29 +418,6 @@ namespace Unrect.Tests.Projections
 
     /// <summary>The first row carrying anything in column 1 — the row that settles the width.</summary>
     private const int FirstWideRow = 50;
-
-    [PullOnlyFact("rows touched measure the lazy bound; the push interpreter's cost is its buffer's")]
-    public void ADiscoveredWidthThatOnlySettlesLateForcesTheBoundToSettleIt()
-    {
-      // §11.4's honest half, in miniature: where the data is sparse enough that the column answer
-      // needs the whole band, "the width decision forces the whole bound — correctly and honestly".
-      // Here it needs 51 rows rather than the whole band, and the first body row therefore projects
-      // having read all 51 instead of the 2 a dense caption row costs. Nothing is read twice — the
-      // last row still projects at 101, not at 101 + 51 — and the extent is the one the two-pass
-      // reading measured. This is the cost model the feature is judged on as much as the cheap
-      // case: laziness is declaration-shaped, and a declaration whose width hides fifty rows down
-      // pays for it up front.
-      var observations = RowsReadAsEachBodyRowProjects(sized: false, LateWideningTable());
-
-      Assert.Equal(TableBodyRows, observations.Count);
-      Assert.Equal(FirstWideRow + 1, observations[0]);
-      Assert.Equal(TableBoundHeight, observations[TableBodyRows - 1]);
-
-      var consumed = Table(row => row.Index).Apply(LateWideningTable()).Consumed;
-
-      Assert.Equal(2, consumed.Width);
-      Assert.Equal(TableBoundHeight, consumed.Height);
-    }
 
     // --- What StreamRows promises besides being cheap ---------------------------------------------
 

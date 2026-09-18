@@ -130,45 +130,6 @@ namespace Unrect.Tests.Projections
       Assert.Equal(3, measured.Width);
     }
 
-    [PullOnlyFact("the unsettled bottom edge and the exact call sequence are the lazy bound's; PushMatcherRegionTests pins the region")]
-    public void ARegionPredicateIsHandedABottomEdgeItDoesNotHaveToSettle()
-    {
-      // The half of the retype that a declaration would otherwise pay for silently. Under a
-      // discovered extent the region a predicate measures has no height yet — it has a rule for
-      // finding one — and naming that region over the file's space must not be what asks. A
-      // lowering that dropped the edge would settle the parent's extent in full before the child
-      // had measured anything, which on a real sheet is the difference between reading four rows
-      // and reading the file.
-      var counter = new CountingSpace(Ledger());
-      var bounded = new List<bool>();
-      var touchedWhileMeasuring = new List<int>();
-
-      var child = Sized(SelectArea(plane =>
-      {
-        bounded.Add(plane.Bound is not null);
-        touchedWhileMeasuring.Add(counter.RowsTouched);
-
-        return new Size(plane.Width, 2);
-      })).Of(Range(block => block.Height));
-
-      var declaration = Sized(RowsWhileAnyValue()).Of(VerticalFlow(v =>
-      {
-        var down = v.Next(Down(1).Of(child));
-
-        return v.Build(read => read.Of(down));
-      }));
-
-      Assert.Equal(2, declaration.Map(counter));
-
-      Assert.Equal(new[] { true }, bounded);
-
-      // One row read, and that is the offset being checked for room rather than the edge being
-      // settled: settling it would have read the sheet to the blank band that ends it, which is
-      // what the whole application costs by the time it returns.
-      Assert.Equal(new[] { 1 }, touchedWhileMeasuring);
-      Assert.Equal(7, counter.RowsTouched);
-    }
-
     [Fact]
     public void ARegionPredicateReadsTheSameCellsThroughTheRegionAsThroughTheSheet()
     {
@@ -191,38 +152,5 @@ namespace Unrect.Tests.Projections
     }
 
     // --- A matcher's predicate ----------------------------------------------------------------------
-
-    [PullOnlyFact("the unsettled bottom edge and the exact call sequence are the lazy bound's; PushMatcherRegionTests pins the region")]
-    public void AMatchersRegionPredicateIsHandedTheSearchedRegionRatherThanTheSheet()
-    {
-      // A matcher searches the region it was placed in, so what its predicate reads is that
-      // region's rows — numbered from the region — over the sheet's own space, at the sheet's own
-      // origin. The row number and the origin together are what make a match an address.
-      var sheet = CoordinateGrid(4, 6);
-      var origins = new List<Offset>();
-      var rows = new List<int>();
-
-      var anchored = On(RowWhere((plane, row) =>
-      {
-        origins.Add(plane.Origin);
-        rows.Add(row);
-
-        return plane[0, row].AsText() == "32";
-      })).Of(Row(strip => strip[0].AsText()));
-
-      var found = Down(2).Right(1).Of(VerticalFlow(v =>
-      {
-        var anchored2 = v.Next(anchored);
-
-        return v.Build(read => read.Of(anchored2));
-      }));
-
-      Assert.Equal("32", found.Map(sheet));
-
-      // The region is the sheet from column 1, row 2 on; the match is its second row, which is the
-      // sheet's row 3 — the same row the reading came back from.
-      Assert.All(origins, origin => Assert.Equal(new Offset(1, 2), origin));
-      Assert.Equal(new[] { 0, 1 }, rows);
-    }
   }
 }

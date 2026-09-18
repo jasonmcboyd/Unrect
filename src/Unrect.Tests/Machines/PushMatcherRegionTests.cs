@@ -12,29 +12,14 @@ using static Unrect.Tests.ProjectionTestSpaces;
 namespace Unrect.Tests.Machines
 {
   /// <summary>
-  /// The push-side twin of <c>TypedPredicateLoweringTests.AMatchersRegionPredicateIsHandedTheSearchedRegionRatherThanTheSheet</c>:
-  /// what a matcher's predicate is handed is the region searched, at the sheet's own origin, under
-  /// either interpreter. The pull interpreter's test also pins the exact sequence of calls; under
-  /// push a landmark is handed the region searched so far on each new span, so an earlier row may
-  /// be looked at again, and this twin pins what both must agree on — the region — and not that.
+  /// What a matcher's predicate is handed is the region searched, at the sheet's own origin. A
+  /// landmark is handed the region searched so far on each new span, so an earlier row may be
+  /// looked at again; this pins the region, not the sequence of calls.
   /// </summary>
   public class PushMatcherRegionTests
   {
     [Fact]
-    public void UnderPull_ThePredicateSeesTheSearchedRegion()
-    {
-      using (ProjectionEngine.UsePull())
-        AssertSearchedRegion();
-    }
-
-    [Fact]
-    public void UnderPush_ThePredicateSeesTheSearchedRegion()
-    {
-      using (ProjectionEngine.UsePush())
-        AssertSearchedRegion();
-    }
-
-    private static void AssertSearchedRegion()
+    public void ThePredicateSeesTheSearchedRegion()
     {
       var sheet = CoordinateGrid(4, 6);
       var origins = new List<Offset>();

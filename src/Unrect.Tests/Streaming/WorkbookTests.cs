@@ -413,33 +413,6 @@ namespace Unrect.Tests.Streaming
       Assert.Equal(1, book.Statistics("Ledger")!.Value.ChunkReloads);
     }
 
-    [PullOnlyFact("the window, the pool and the sweep announcement retire with the pull interpreter")]
-    public void AWalkDownASheetTallerThanTheWindowReportsOneOverrunThatCostNothing()
-    {
-      // Read this one carefully before "fixing" it.
-      //
-      // A view hands its extent down with every cell, and the root view's extent is the WHOLE
-      // SHEET — 1,201 rows against a 256-row window. That band does not fit, which is precisely
-      // what WindowOverruns counts, so a plain walk down a tall sheet reports one. Once, because
-      // the counter is deduplicated on the extent rather than counted per cell.
-      //
-      // The natural assertion here is `Equal(0, WindowOverruns)`, and it is WRONG under the adopted
-      // semantics. The counter says a band did not fit; ChunkReloads says what not fitting cost.
-      // One overrun with zero reloads is the honest reading of a monotone walk: the root extent
-      // could not be held, and because nothing ever swept it twice, holding it would have bought
-      // nothing. The pair is the diagnostic — overruns WITH reloads is the collapse worth acting
-      // on.
-      using var book = Workbook.Open(Path("tall-ledger.xlsx"), Cold(windowRows: 256, chunkRows: 64));
-      var space = book.Sheet("Ledger");
-
-      WalkEveryRow(space);
-
-      var stats = book.Statistics("Ledger")!.Value;
-
-      Assert.Equal(1, stats.WindowOverruns);
-      Assert.Equal(0, stats.ChunkReloads);
-    }
-
     [Fact]
     public void AWalkDownASheetThatFitsTheWindowReportsNoOverrunAtAll()
     {

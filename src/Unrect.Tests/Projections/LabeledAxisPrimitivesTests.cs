@@ -561,32 +561,6 @@ namespace Unrect.Tests.Projections
     // the trailing-content sheet the two now touch the same rows by the time the first record
     // projects and the same total at completion, and read the same value.
 
-    [PullOnlyFact("streaming in step counts rows touched through the lazy bound")]
-    public void GapA_TheCompositeStreamsInStepWithTheLeaf()
-    {
-      var (bespokeAtFirst, bespokeTotal) = RowsTouchedAtFirstRecord(Table(1, Instrumented));
-      var (primitivesAtFirst, primitivesTotal) = RowsTouchedAtFirstRecord(TableFromPrimitives(1, Instrumented));
-
-      Assert.Equal(bespokeAtFirst, primitivesAtFirst);
-      Assert.Equal(bespokeTotal, primitivesTotal);
-
-      SameReading(Table(1, ReadLine), TableFromPrimitives(1, ReadLine), Trailing());
-    }
-
-    [PullOnlyFact("streaming in step counts rows touched through the lazy bound")]
-    public void TheComposedRowSlotStreamsInStepWithTheRecordLeaf()
-    {
-      // The same claim about the built-in Table(headerRows:, eachRow:), which is a composition of
-      // these primitives rather than a leaf and carries the streaming obligation with it: the first
-      // record projects having read the header and its own row, and the whole reading touches the
-      // block and the blank row that ended it, never the trailing content.
-      var leaf = RowsTouchedAtFirstRecord(Table(1, Instrumented));
-      var composed = RowsTouchedAtFirstRecord(Table(1, eachRow: InstrumentedBand()));
-
-      Assert.Equal(leaf, composed);
-      Assert.Equal((2, 4), composed);
-    }
-
     [Fact]
     public void AnEachRowInsideAHeaderedTableResolvesThatTablesOwnCaptionsByName()
     {
