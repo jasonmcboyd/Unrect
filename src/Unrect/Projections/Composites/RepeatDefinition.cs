@@ -168,17 +168,13 @@ namespace Unrect.Projections
             {
               step = _separator!.Next(region, position - _attemptStart, out _);
             }
-            catch (ProjectionException)
-            {
-              throw;
-            }
             catch (OutOfBoundsException)
             {
               // No room for another separator, so there is no room for another item.
               _finished = true;
               return false;
             }
-            catch (Exception exception)
+            catch (Exception exception) when (exception is not ProjectionException)
             {
               throw _scope.Failure(EngineRules.Threw("separator", exception), region, exception, EngineRules.IsFault(exception));
             }

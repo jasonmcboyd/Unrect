@@ -64,10 +64,6 @@ namespace Unrect.Projections
       {
         step = _offset.Next(region, index, out column);
       }
-      catch (ProjectionException)
-      {
-        throw;
-      }
       catch (OutOfBoundsException exception)
       {
         if (_strict)
@@ -76,7 +72,7 @@ namespace Unrect.Projections
         Failed = refused = true;
         return OffsetStep.Skip;
       }
-      catch (Exception exception)
+      catch (Exception exception) when (exception is not ProjectionException)
       {
         throw parent.Failure(_definition, EngineRules.Threw("offset", exception), region, null, exception, EngineRules.IsFault(exception));
       }
@@ -110,10 +106,6 @@ namespace Unrect.Projections
       {
         return _size!.Take(region, taken);
       }
-      catch (ProjectionException)
-      {
-        throw;
-      }
       catch (OutOfBoundsException exception)
       {
         if (_strict)
@@ -122,7 +114,7 @@ namespace Unrect.Projections
         Failed = true;
         return false;
       }
-      catch (Exception exception)
+      catch (Exception exception) when (exception is not ProjectionException)
       {
         throw EngineRules.AreaFailure(child, _definition, region, exception);
       }
@@ -142,10 +134,6 @@ namespace Unrect.Projections
       {
         width = _size!.Across(region, taken, rowsSettled);
       }
-      catch (ProjectionException)
-      {
-        throw;
-      }
       catch (OutOfBoundsException exception)
       {
         if (_strict)
@@ -154,7 +142,7 @@ namespace Unrect.Projections
         Failed = true;
         return false;
       }
-      catch (Exception exception)
+      catch (Exception exception) when (exception is not ProjectionException)
       {
         throw EngineRules.AreaFailure(child, _definition, region, exception);
       }
@@ -194,10 +182,6 @@ namespace Unrect.Projections
       {
         return _size!.Along(region, taken);
       }
-      catch (ProjectionException)
-      {
-        throw;
-      }
       catch (OutOfBoundsException exception)
       {
         if (_strict)
@@ -206,7 +190,7 @@ namespace Unrect.Projections
         Failed = true;
         return null;
       }
-      catch (Exception exception)
+      catch (Exception exception) when (exception is not ProjectionException)
       {
         throw EngineRules.AreaFailure(child, _definition, region, exception);
       }
@@ -225,10 +209,6 @@ namespace Unrect.Projections
       {
         offset = _offset.Settle(region);
       }
-      catch (ProjectionException)
-      {
-        throw;
-      }
       catch (OutOfBoundsException exception)
       {
         if (_strict)
@@ -237,7 +217,7 @@ namespace Unrect.Projections
         Failed = true;
         return false;
       }
-      catch (Exception exception)
+      catch (Exception exception) when (exception is not ProjectionException)
       {
         throw parent.Failure(_definition, EngineRules.Threw("offset", exception), region, null, exception, EngineRules.IsFault(exception));
       }

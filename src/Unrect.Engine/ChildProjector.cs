@@ -482,11 +482,7 @@ namespace Unrect.Projections
       {
         settlement = _scope.Drive(machine, inner, along);
       }
-      catch (ProjectionException)
-      {
-        throw;
-      }
-      catch (Exception exception)
+      catch (Exception exception) when (exception is not ProjectionException)
       {
         throw Threw(exception, inner);
       }
@@ -527,11 +523,7 @@ namespace Unrect.Projections
       {
         return _inner!.Next(span);
       }
-      catch (ProjectionException)
-      {
-        throw;
-      }
-      catch (Exception exception)
+      catch (Exception exception) when (exception is not ProjectionException)
       {
         throw Threw(exception, InnerPlane(_taken + 1));
       }
@@ -543,11 +535,7 @@ namespace Unrect.Projections
       {
         return _inner!.Close();
       }
-      catch (ProjectionException)
-      {
-        throw;
-      }
-      catch (Exception exception)
+      catch (Exception exception) when (exception is not ProjectionException)
       {
         throw Threw(exception, InnerPlane(_taken));
       }

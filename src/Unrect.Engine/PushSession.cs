@@ -71,11 +71,7 @@ namespace Unrect.Projections
         {
           more = feed.Advance();
         }
-        catch (ProjectionException)
-        {
-          throw;
-        }
-        catch (Exception exception)
+        catch (Exception exception) when (exception is not ProjectionException)
         {
           var at = row < whole.Area.Height ? whole.Slice(new Offset(0, row), new Area(whole.Width, 1)) : whole;
 
