@@ -37,7 +37,7 @@ namespace Unrect.Projections
 
       var rows = new List<IReadOnlyDictionary<string, Point<TSpace>>>(table.RowCount);
 
-      foreach (var row in table.StreamRows())
+      foreach (var row in table.Rows)
       {
         var cells = new Dictionary<string, Point<TSpace>>(captions.Length, CaptionComparer.Default);
 

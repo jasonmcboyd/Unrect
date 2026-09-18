@@ -386,7 +386,7 @@ namespace Unrect.Projections
 
       return new TableViewDefinition<TSpace, IReadOnlyList<T>>(
         ValidateHeaderRows(headerRows),
-        table => (IReadOnlyList<T>)table.StreamRows().Select(project).ToList(),
+        table => (IReadOnlyList<T>)table.Rows.Select(project).ToList(),
         TablePlacement(),
         "Table");
     }
@@ -418,7 +418,7 @@ namespace Unrect.Projections
 
       return new TableViewDefinition<TSpace, IReadOnlyList<T>>(
         ValidateHeaderRows(headerRows),
-        table => (IReadOnlyList<T>)table.StreamBodyRows(onBlank).Select(project).ToList(),
+        table => (IReadOnlyList<T>)table.BodyRows(onBlank).Select(project).ToList(),
         TablePlacement(onBlank),
         "Table");
     }
@@ -452,7 +452,7 @@ namespace Unrect.Projections
       // selects ToEdgeBlock().
       return new TableViewDefinition<TSpace, IReadOnlyList<T>>(
         ValidateHeaderRows(headerRows),
-        table => (IReadOnlyList<T>)table.StreamClassifiedRows()
+        table => (IReadOnlyList<T>)table.ClassifiedRows()
           .Select(r => r.IsBlank ? blankRecord(r.Row) : project(r.Row)).ToList(),
         TablePlacement(BlankRowStrategy.Skip),
         "Table");

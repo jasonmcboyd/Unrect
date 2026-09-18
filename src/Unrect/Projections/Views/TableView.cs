@@ -64,40 +64,24 @@ namespace Unrect.Projections
     public IReadOnlyList<TableRow<TSpace>> Rows => _rows ??= BuildRows();
 
     /// <summary>
-    /// The table's body rows, header row(s) excluded, built as the enumeration advances rather than
-    /// cached: the same <see cref="TableRow{TSpace}"/> views <see cref="Rows"/> holds, so
-    /// enumerating twice builds them twice.
-    /// </summary>
-    public IEnumerable<TableRow<TSpace>> StreamRows()
-    {
-      for (var row = HeaderRows; row < Space.Area.Height; row++)
-      {
-        var band = Space.Slice(new Offset(0, row), new Area(ColumnCount, 1));
-
-        yield return new TableRow<TSpace>(row - HeaderRows, new CellStrip<TSpace>(band, Orientation.Horizontal, Scope), Scope);
-      }
-    }
-
-    /// <summary>
     /// The body rows that become records under the four preset blank-row policies
     /// (Stop/Skip/Fault/Tolerate). Under <see cref="BlankRowStrategy.Stop"/> the extent already
-    /// excludes blank rows, so this delegates verbatim to <see cref="StreamRows"/> — no blank test,
-    /// no filter, byte-identical to the default path. The other policies walk to the enclosing edge
-    /// and act on each fully-blank row: Fault throws terminally, Tolerate records an Info and omits
-    /// the record, Skip simply omits it. Project is not here — it injects records and is handled by
-    /// the rung through <see cref="StreamClassifiedRows"/>.
+    /// excludes blank rows, so this is <see cref="Rows"/> — no blank test, no filter. The other
+    /// policies walk to the enclosing edge and act on each fully-blank row: Fault throws terminally,
+    /// Tolerate records an Info and omits the record, Skip simply omits it. Project is not here — it
+    /// injects records and is handled by the rung through <see cref="ClassifiedRows"/>.
     /// </summary>
-    internal IEnumerable<TableRow<TSpace>> StreamBodyRows(BlankRowStrategy onBlank)
+    internal IEnumerable<TableRow<TSpace>> BodyRows(BlankRowStrategy onBlank)
     {
       if (onBlank.IsStop)
-      {
-        foreach (var row in StreamRows())
-          yield return row;
+        return Rows;
 
-        yield break;
-      }
+      return WalkBodyRows(onBlank);
+    }
 
-      foreach (var row in StreamRows())
+    private IEnumerable<TableRow<TSpace>> WalkBodyRows(BlankRowStrategy onBlank)
+    {
+      foreach (var row in Rows)
       {
         if (!IsBlankRow(row))
         {
@@ -120,9 +104,9 @@ namespace Unrect.Projections
     /// (<c>blankRecord</c>) rung maps: a blank row yields its blank record, a non-blank row its
     /// normal one.
     /// </summary>
-    internal IEnumerable<(TableRow<TSpace> Row, bool IsBlank)> StreamClassifiedRows()
+    internal IEnumerable<(TableRow<TSpace> Row, bool IsBlank)> ClassifiedRows()
     {
-      foreach (var row in StreamRows())
+      foreach (var row in Rows)
         yield return (row, IsBlankRow(row));
     }
 
@@ -158,8 +142,12 @@ namespace Unrect.Projections
     {
       var rows = new List<TableRow<TSpace>>(RowCount);
 
-      foreach (var row in StreamRows())
-        rows.Add(row);
+      for (var row = HeaderRows; row < Space.Area.Height; row++)
+      {
+        var band = Space.Slice(new Offset(0, row), new Area(ColumnCount, 1));
+
+        rows.Add(new TableRow<TSpace>(row - HeaderRows, new CellStrip<TSpace>(band, Orientation.Horizontal, Scope), Scope));
+      }
 
       return rows;
     }
