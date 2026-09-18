@@ -35,7 +35,7 @@ namespace Unrect.Projections
 
     public override bool IsWrapper => true;
 
-    public override Axes Axis => Body.Axis;
+    public override Axes Axis => Body.Axis.OrEither();
 
     public override IProjector<TSpace, T> Start(ProjectorScope<TSpace> scope) => new Machine(this, scope);
 

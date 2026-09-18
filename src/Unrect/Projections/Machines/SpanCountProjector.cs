@@ -30,7 +30,10 @@ namespace Unrect.Projections
       if (_closed)
         throw _scope.Context.Failure(_definition, $"{ProjectionContext.Describe(_definition)} was fed a span after it was closed", span, null, null, isFault: true);
 
-      if (_taken >= _count)
+      // Under a declared area the placement machine bounds the spans and the node reads the whole
+      // area — so a leaf forced to two rows still sees two rows and says so. A derived placement
+      // is the node's own to bound.
+      if (_definition.Placement.Area is null && _taken >= _count)
         return false;
 
       _first ??= span;
@@ -42,13 +45,15 @@ namespace Unrect.Projections
     {
       _closed = true;
 
-      var extent = _first is Plane<TSpace> first
-        ? Spans.Region(first, _taken, _scope.Driver)
-        : Spans.Empty(_scope.Anchor, _scope.Driver);
+      Plane<TSpace> extent;
 
+      if (_first is not Plane<TSpace> first)
+        extent = Spans.Empty(_scope.Anchor, _scope.Driver);
       // A whole region re-driven as one span arrives as that region, not as one row of it.
-      if (_first is Plane<TSpace> whole && _taken == 1 && !_definition.Axis.Streams(_scope.Driver))
-        extent = whole;
+      else if (_taken == 1 && !_definition.Axis.Streams(_scope.Driver))
+        extent = first;
+      else
+        extent = Spans.Region(first, _taken, _scope.Driver);
 
       var result = _definition.Project(extent, _scope.Context);
 

@@ -11,8 +11,8 @@ namespace Unrect.Strategies
       Past = past;
     }
 
-    private IColumnLandmark Landmark { get; }
-    private bool Past { get; }
+    internal IColumnLandmark Landmark { get; }
+    internal bool Past { get; }
 
     public int SelectColumns(Plane<ISpace> space)
       => Landmark.FindColumn(space) is int column

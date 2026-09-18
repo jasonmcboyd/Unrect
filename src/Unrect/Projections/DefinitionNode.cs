@@ -115,8 +115,7 @@ namespace Unrect.Projections
     public abstract ProjectionResult<TResult> Project(Plane<TSpace> extent, ProjectionContext context);
 
     /// <inheritdoc/>
-    public virtual IProjector<TSpace, TResult> Start(ProjectorScope<TSpace> scope)
-      => throw new NotSupportedException($"{Description} has no push machine yet.");
+    public abstract IProjector<TSpace, TResult> Start(ProjectorScope<TSpace> scope);
 
     /// <inheritdoc/>
     IProjectionDefinition<TSpace, TResult> IProjectionDefinition<TSpace, TResult>.With(Annotations annotations)

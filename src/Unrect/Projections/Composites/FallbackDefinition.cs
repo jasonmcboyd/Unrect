@@ -48,7 +48,7 @@ namespace Unrect.Projections
 
     public override bool IsWrapper => true;
 
-    public override Axes Axis => Fallback is null ? Inner.Axis : Inner.Axis & Fallback.Axis;
+    public override Axes Axis => (Fallback is null ? Inner.Axis : Inner.Axis & Fallback.Axis).OrEither();
 
     /// <summary>A boundary may hand back everything the inner took: what it absorbs, it did not consume.</summary>
     public override Reach Reach => Reach.Extent;
@@ -67,6 +67,7 @@ namespace Unrect.Projections
       private readonly ProjectorScope<TSpace> _scope;
       private readonly int _mark;
       private ChildProjector<TSpace, T>? _current;
+      private Settlement<T>? _settled;
       private bool _fallingBack;
       private bool _absorbed;
       private ProjectionException? _primary;
@@ -96,42 +97,43 @@ namespace Unrect.Projections
         _closed = true;
 
         if (_absorbed)
-          return new Settlement<T>(_boundary.FallbackValue, new Size(0, 0), Presence.Absorbed);
+          return Absorbed();
+
+        if (_settled is Settlement<T> settled)
+          return settled;
 
         _current ??= StartInner(_scope.Anchor);
 
-        try
+        while (true)
         {
-          var settlement = _current.Close();
-          return new Settlement<T>(settlement.Value, _current.Advance, _current.Presence);
-        }
-        catch (ProjectionException failure) when (!_fallingBack && !failure.IsFault)
-        {
-          var taken = Absorb(failure);
-
-          if (_absorbed)
-            return new Settlement<T>(_boundary.FallbackValue, new Size(0, 0), Presence.Absorbed);
-
-          foreach (var span in taken)
-            if (!Offer(span))
-              break;
-
           try
           {
-            var settlement = _current!.Close();
+            var settlement = _current.Close();
             return new Settlement<T>(settlement.Value, _current.Advance, _current.Presence);
           }
-          catch (ProjectionException fallbackFailure)
+          catch (ProjectionException failure) when (!_fallingBack && !failure.IsFault)
           {
-            throw fallbackFailure.WithNote($"it stands in for {_primary!.Subject}, which failed too: {_primary.Problem}");
+            var taken = Absorb(failure);
+
+            if (_absorbed)
+              return Absorbed();
+
+            foreach (var span in taken)
+              if (!Offer(span))
+                return _settled!.Value;
           }
-        }
-        catch (ProjectionException fallbackFailure) when (_fallingBack)
-        {
-          throw fallbackFailure.WithNote($"it stands in for {_primary!.Subject}, which failed too: {_primary.Problem}");
+          catch (ProjectionException fallbackFailure) when (_fallingBack)
+          {
+            throw StandingIn(fallbackFailure);
+          }
         }
       }
 
+      /// <summary>
+      /// Offers a span to whichever of the two is open. A refusal settles that projection at once:
+      /// a primary that closes cleanly has won, and one that fails is absorbed here — with the span
+      /// in hand still to be offered to the fallback, which the primary never had a claim on.
+      /// </summary>
       private bool Offer(Plane<TSpace> span)
       {
         if (_finished)
@@ -139,33 +141,36 @@ namespace Unrect.Projections
 
         _current ??= StartInner(Spans.Empty(span, _scope.Driver));
 
-        try
+        while (true)
         {
-          if (_current.Next(span))
-            return true;
-
-          _finished = true;
-          return false;
-        }
-        catch (ProjectionException failure) when (!_fallingBack && !failure.IsFault)
-        {
-          var taken = Absorb(failure);
-
-          if (_absorbed)
+          try
           {
+            if (_current.Next(span))
+              return true;
+
+            var settlement = _current.Close();
+            _settled = new Settlement<T>(settlement.Value, _current.Advance, _current.Presence);
             _finished = true;
             return false;
           }
+          catch (ProjectionException failure) when (!_fallingBack && !failure.IsFault)
+          {
+            var taken = Absorb(failure);
 
-          foreach (var replayed in taken)
-            if (!Offer(replayed))
+            if (_absorbed)
+            {
+              _finished = true;
               return false;
+            }
 
-          return Offer(span);
-        }
-        catch (ProjectionException fallbackFailure) when (_fallingBack)
-        {
-          throw fallbackFailure.WithNote($"it stands in for {_primary!.Subject}, which failed too: {_primary.Problem}");
+            foreach (var replayed in taken)
+              if (!Offer(replayed))
+                return false;
+          }
+          catch (ProjectionException fallbackFailure) when (_fallingBack)
+          {
+            throw StandingIn(fallbackFailure);
+          }
         }
       }
 
@@ -189,6 +194,11 @@ namespace Unrect.Projections
         _current = _scope.Start(_boundary.Children[1], _boundary.Fallback, _first is Plane<TSpace> first ? Spans.Empty(first, _scope.Driver) : _scope.Anchor);
         return taken;
       }
+
+      private Settlement<T> Absorbed() => new Settlement<T>(_boundary.FallbackValue, new Size(0, 0), Presence.Absorbed);
+
+      private ProjectionException StandingIn(ProjectionException fallbackFailure)
+        => fallbackFailure.WithNote($"it stands in for {_primary!.Subject}, which failed too: {_primary.Problem}");
 
       private ChildProjector<TSpace, T> StartInner(Plane<TSpace> at)
         => _scope.Start(_boundary.Children[0], _boundary.Inner, at, inheritSite: true);

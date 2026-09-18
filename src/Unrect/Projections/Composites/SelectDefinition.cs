@@ -29,7 +29,7 @@ namespace Unrect.Projections
 
     public override bool IsWrapper => true;
 
-    public override Axes Axis => Inner.Axis;
+    public override Axes Axis => Inner.Axis.OrEither();
 
     public override IProjector<TSpace, TResult> Start(ProjectorScope<TSpace> scope) => new Machine(this, scope);
 

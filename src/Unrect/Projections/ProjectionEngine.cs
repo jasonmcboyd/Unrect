@@ -22,6 +22,37 @@ namespace Unrect.Projections
     [ThreadStatic]
     private static bool _forcedEager;
 
+    // The other switch: the whole suite through the push interpreter instead. Off by default;
+    // UNRECT_PUSH=1 in the environment flips the default for a run, and UsePush() flips it for a
+    // scope. Consulted only where an application begins — Map, Apply, MapWithDiagnostics — so a
+    // machine that falls back to eager placement still uses this engine's placement underneath.
+    [ThreadStatic]
+    private static bool? _push;
+
+    private static readonly bool PushByDefault = Environment.GetEnvironmentVariable("UNRECT_PUSH") == "1";
+
+    /// <summary>Whether an application that begins now runs on the push interpreter.</summary>
+    internal static bool Pushing => _push ?? PushByDefault;
+
+    /// <summary>Runs every application begun in the scope on the push interpreter.</summary>
+    internal static IDisposable UsePush() => new PushScope(true);
+
+    /// <summary>Runs every application begun in the scope on the pull interpreter.</summary>
+    internal static IDisposable UsePull() => new PushScope(false);
+
+    private sealed class PushScope : IDisposable
+    {
+      private readonly bool? _previous;
+
+      public PushScope(bool push)
+      {
+        _previous = _push;
+        _push = push;
+      }
+
+      public void Dispose() => _push = _previous;
+    }
+
     /// <summary>
     /// Resolves <paramref name="projection"/>'s placement against <paramref name="availableSpace"/>
     /// and projects it. Strict: a placement that does not fit throws rather than signalling failure

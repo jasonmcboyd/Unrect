@@ -77,7 +77,9 @@ namespace Unrect.Projections
       if (space is null)
         throw new ArgumentNullException(nameof(space));
 
-      return ProjectionEngine.Apply(projection, Plane<TSpace>.Of(space), ProjectionContext.Root(space));
+      return ProjectionEngine.Pushing
+        ? PushSession<TSpace>.Apply(projection, space, ProjectionContext.Root(space))
+        : ProjectionEngine.Apply(projection, Plane<TSpace>.Of(space), ProjectionContext.Root(space));
     }
 
     /// <summary>
@@ -114,7 +116,9 @@ namespace Unrect.Projections
       var context = ProjectionContext.Root(space);
       var mark = context.Diagnostics.Mark();
       var extent = Plane<TSpace>.Of(space);
-      var applied = ProjectionEngine.Apply(projection, extent, context);
+      var applied = ProjectionEngine.Pushing
+        ? PushSession<TSpace>.Apply(projection, space, context)
+        : ProjectionEngine.Apply(projection, extent, context);
 
       // Suppressed only when the whole parse is one absorbed failure: two boundaries that each
       // absorbed something have left a gap worth mentioning, even though neither consumed anything.

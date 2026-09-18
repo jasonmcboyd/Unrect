@@ -92,7 +92,11 @@ namespace Unrect.Projections
         if (_finished)
           return false;
 
-        if (_bounded.Landmark.Find(span.Erased()) is not null)
+        // The landmark is handed the region searched so far, this span included, as it is handed
+        // the extent today; it can only match on the newest span, since nothing earlier did.
+        var searched = _first is Plane<TSpace> first ? Spans.Region(first, _offered + 1, Along) : span;
+
+        if (_bounded.Landmark.Find(searched.Erased()) is not null)
         {
           _found = true;
           _finished = true;

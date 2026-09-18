@@ -90,6 +90,22 @@ namespace Unrect.Projections
 
       _offered.Add(span);
 
+      try
+      {
+        return Take(span);
+      }
+      catch
+      {
+        // A span the machine threw on was not taken.
+        if (_offered.Count > 0 && ReferenceEquals(_offered[_offered.Count - 1].Space, span.Space) && _offered[_offered.Count - 1].Equals(span))
+          _offered.RemoveAt(_offered.Count - 1);
+
+        throw;
+      }
+    }
+
+    private bool Take(Plane<TSpace> span)
+    {
       if (_held)
         return true;
 
@@ -102,7 +118,29 @@ namespace Unrect.Projections
         else
         {
           var region = Spans.Region(_offered[0], _offered.Count, _driver).Erased();
-          var step = _offsetRule!.Next(region, _offered.Count - 1, out var column);
+          OffsetStep step;
+          int column;
+
+          try
+          {
+            step = _offsetRule!.Next(region, _offered.Count - 1, out column);
+          }
+          catch (ProjectionException)
+          {
+            throw;
+          }
+          catch (OutOfBoundsException exception)
+          {
+            if (_strict)
+              throw _parent.Failure(_definition, ProjectionEngine.Missing(exception), region, null, exception);
+
+            PlacementFailed = true;
+            return Refuse();
+          }
+          catch (Exception exception)
+          {
+            throw _parent.Failure(_definition, ProjectionEngine.Threw("offset", exception), region, null, exception, ProjectionEngine.IsFault(exception));
+          }
 
           if (step == OffsetStep.Skip)
           {
@@ -114,7 +152,7 @@ namespace Unrect.Projections
             _skipped++;
 
           _column = column;
-          Offset = new Offset(_column, _skipped);
+          Offset = _driver == Orientation.Vertical ? new Offset(_column, _skipped) : new Offset(_skipped, _column);
 
           if (_column > Spans.Across(span.Declared.Size, _driver))
           {
@@ -190,8 +228,30 @@ namespace Unrect.Projections
       }
 
       var region = InnerRegion(_taken + 1);
+      bool take;
 
-      if (!_sizeRule!.Take(region, _taken))
+      try
+      {
+        take = _sizeRule!.Take(region, _taken);
+      }
+      catch (ProjectionException)
+      {
+        throw;
+      }
+      catch (OutOfBoundsException exception)
+      {
+        if (_strict)
+          throw ProjectionEngine.AreaFailure(_child, _definition, region, exception);
+
+        PlacementFailed = true;
+        return Refuse();
+      }
+      catch (Exception exception)
+      {
+        throw ProjectionEngine.AreaFailure(_child, _definition, region, exception);
+      }
+
+      if (!take)
       {
         Refuse();
 
@@ -224,8 +284,12 @@ namespace Unrect.Projections
 
     private Plane<ISpace> InnerRegion(int rows)
       => (rows == 0 ? Spans.Empty(_offered[_innerStart], _driver) : Spans.Region(_offered[_innerStart], rows, _driver))
-        .Slice(new Offset(_column, 0))
+        .Slice(Across(_column))
         .Erased();
+
+    /// <summary>An offset of <paramref name="distance"/> across the driver's axis.</summary>
+    private Offset Across(int distance)
+      => _driver == Orientation.Vertical ? new Offset(distance, 0) : new Offset(0, distance);
 
     private void TrySettleWidth(Plane<ISpace> region, bool rowsSettled)
     {
@@ -256,7 +320,7 @@ namespace Unrect.Projections
       if (width is not int settled)
         return;
 
-      if (settled > region.Width)
+      if (settled > Spans.Across(region.Declared.Size, _driver))
       {
         var size = _sizeRule.Declared.Height > 0 ? _sizeRule.Declared : new Size(settled, _taken);
 
@@ -338,7 +402,7 @@ namespace Unrect.Projections
 
       var region = rows == 0 ? Spans.Empty(_offered[_innerStart], _driver) : Spans.Region(_offered[_innerStart], Math.Min(rows, _offered.Count - _innerStart), _driver);
 
-      return region.Slice(new Offset(_column, 0));
+      return region.Slice(Across(_column));
     }
 
     private void SettleStreaming()

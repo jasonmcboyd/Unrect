@@ -28,7 +28,7 @@ namespace Unrect.Projections
 
     public override IReadOnlyList<Child> Children { get; }
 
-    public override Axes Axis => Body.Axis;
+    public override Axes Axis => Body.Axis.OrEither();
 
     public override Reach Reach => Body.Reach;
 

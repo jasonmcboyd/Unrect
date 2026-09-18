@@ -51,12 +51,18 @@ namespace Unrect.Projections
     /// extent before the first occurrence.
     /// </para>
     /// </summary>
-    public override Axes Axis => Orientation.Of();
+    /// <summary>Along its orientation — unless its separator has no per-span form, in which case it is held and read as the pull engine reads it.</summary>
+    public override Axes Axis => SeparatorStreams ? Orientation.Of() : Axes.None;
+
+    private bool SeparatorStreams => Separator is null || PlacementRules.TryOffsetRule(Separator, Orientation, out _);
 
     /// <summary>A repeat hands back the item that failed to place, and the gap before it.</summary>
     public override Reach Reach => Reach.Extent;
 
-    public override IProjector<TSpace, IReadOnlyList<T>> Start(ProjectorScope<TSpace> scope) => new Machine(this, scope);
+    public override IProjector<TSpace, IReadOnlyList<T>> Start(ProjectorScope<TSpace> scope)
+      => SeparatorStreams
+        ? new Machine(this, scope)
+        : new SpanCountProjector<TSpace, IReadOnlyList<T>>(this, scope, 1);
 
     /// <summary>
     /// The walk, one span at a time. With no item open: after a committed occurrence the separator
@@ -90,8 +96,8 @@ namespace Unrect.Projections
         _repeat = repeat;
         _scope = scope;
 
-        if (repeat.Separator is IOffsetStrategy separator && !PlacementRules.TryOffsetRule(separator, out _separator))
-          throw new NotSupportedException($"{ProjectionContext.Describe(repeat)} has a separator the push interpreter cannot drive per span yet.");
+        if (repeat.Separator is IOffsetStrategy separator)
+          PlacementRules.TryOffsetRule(separator, repeat.Orientation, out _separator);
       }
 
       private Orientation Along => _repeat.Orientation;
@@ -142,7 +148,26 @@ namespace Unrect.Projections
             // The gap between occurrences, taken tentatively: it is the repeat's only if an
             // occurrence follows it.
             var region = Spans.Region(_first!.Value, position + 1, Along).Slice(Spans.Step(_attemptStart, Along)).Erased();
-            var step = _separator!.Next(region, position - _attemptStart, out _);
+            OffsetStep step;
+
+            try
+            {
+              step = _separator!.Next(region, position - _attemptStart, out _);
+            }
+            catch (ProjectionException)
+            {
+              throw;
+            }
+            catch (OutOfBoundsException)
+            {
+              // No room for another separator, so there is no room for another item.
+              _finished = true;
+              return false;
+            }
+            catch (Exception exception)
+            {
+              throw _scope.Context.Failure(ProjectionEngine.Threw("separator", exception), region, exception, ProjectionEngine.IsFault(exception));
+            }
 
             if (step == OffsetStep.Skip)
               return true;

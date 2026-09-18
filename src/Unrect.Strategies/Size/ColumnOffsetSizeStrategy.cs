@@ -9,7 +9,7 @@ namespace Unrect.Strategies
       ColumnSelectionStrategy = columnSelectionStrategy;
     }
 
-    private IColumnStrategy ColumnSelectionStrategy { get; }
+    internal IColumnStrategy ColumnSelectionStrategy { get; }
 
     public Size GetSize(Plane<ISpace> availableSpace)
       => new Size(ColumnSelectionStrategy.SelectColumns(availableSpace), 0);

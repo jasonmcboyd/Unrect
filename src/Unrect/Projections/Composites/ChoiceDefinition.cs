@@ -48,7 +48,7 @@ namespace Unrect.Projections
         foreach (var alternative in Alternatives)
           axis &= alternative.Axis;
 
-        return axis;
+        return axis.OrEither();
       }
     }
 
@@ -67,10 +67,11 @@ namespace Unrect.Projections
     {
       private readonly ChoiceDefinition<TSpace, T> _choice;
       private readonly ProjectorScope<TSpace> _scope;
-      private readonly int _mark;
       private readonly ProjectionException[] _failures;
       private int _index;
+      private int _mark;
       private ChildProjector<TSpace, T>? _current;
+      private Settlement<T>? _settled;
       private Plane<TSpace>? _first;
       private bool _finished;
       private bool _closed;
@@ -79,7 +80,6 @@ namespace Unrect.Projections
       {
         _choice = choice;
         _scope = scope;
-        _mark = scope.Context.Diagnostics.Mark();
         _failures = new ProjectionException[choice.Alternatives.Length];
       }
 
@@ -97,6 +97,9 @@ namespace Unrect.Projections
       {
         _closed = true;
 
+        if (_settled is Settlement<T> settled)
+          return settled;
+
         while (true)
         {
           _current ??= StartAlternative(_scope.Anchor);
@@ -112,11 +115,16 @@ namespace Unrect.Projections
 
             foreach (var span in taken)
               if (!Offer(span))
-                break;
+                return _settled!.Value;
           }
         }
       }
 
+      /// <summary>
+      /// Offers a span to the current alternative. A refusal settles it at once: closed cleanly, it
+      /// has won; failed, it is abandoned and the span in hand goes to the next alternative after
+      /// everything the loser took.
+      /// </summary>
       private bool Offer(Plane<TSpace> span)
       {
         if (_finished)
@@ -124,27 +132,30 @@ namespace Unrect.Projections
 
         _current ??= StartAlternative(Spans.Empty(span, _scope.Driver));
 
-        try
+        while (true)
         {
-          if (_current.Next(span))
-            return true;
+          try
+          {
+            if (_current.Next(span))
+              return true;
 
-          _finished = true;
-          return false;
-        }
-        catch (ProjectionException failure) when (!failure.IsFault)
-        {
-          var taken = Abandon(failure);
+            var settlement = _current.Close();
+            _settled = new Settlement<T>(settlement.Value, _current.Advance, _current.Presence);
+            _finished = true;
+            return false;
+          }
+          catch (ProjectionException failure) when (!failure.IsFault)
+          {
+            var taken = Abandon(failure);
 
-          foreach (var replayed in taken)
-            if (!Offer(replayed))
-              return false;
-
-          return Offer(span);
+            foreach (var replayed in taken)
+              if (!Offer(replayed))
+                return false;
+          }
         }
       }
 
-      /// <summary>Rolls back, records the Info, and moves to the next alternative — or throws the summary when there is none.</summary>
+      /// <summary>Rolls back to the attempt's mark, records the Info, and moves to the next alternative — or throws the summary when there is none.</summary>
       private List<Plane<TSpace>> Abandon(ProjectionException failure)
       {
         _scope.Context.Diagnostics.Rollback(_mark);
@@ -165,11 +176,15 @@ namespace Unrect.Projections
           throw _scope.Context.Failure(_choice, _choice.Summarise(_failures), extent, null, _failures[_failures.Length - 1]);
         }
 
+        _current = StartAlternative(_first is Plane<TSpace> at ? Spans.Empty(at, _scope.Driver) : _scope.Anchor);
         return taken;
       }
 
       private ChildProjector<TSpace, T> StartAlternative(Plane<TSpace> at)
-        => _scope.Start(_choice.Children[_index], _choice.Alternatives[_index], at, inheritSite: true);
+      {
+        _mark = _scope.Context.Diagnostics.Mark();
+        return _scope.Start(_choice.Children[_index], _choice.Alternatives[_index], at, inheritSite: true);
+      }
     }
 
     public override ProjectionResult<T> Project(Plane<TSpace> extent, ProjectionContext context)

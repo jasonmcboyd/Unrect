@@ -20,7 +20,7 @@ namespace Unrect.Strategies
       Predicate = predicate;
     }
 
-    private Func<Point<ISpace>, bool> Predicate { get; }
+    internal Func<Point<ISpace>, bool> Predicate { get; }
 
     public IColumnAccumulator BeginColumns(int width) => new Accumulator(Predicate, width);
 

@@ -32,6 +32,13 @@ namespace Unrect.Projections
 
     internal static bool Streams(this Axes axes, Orientation driver) => (axes & driver.Of()) != 0;
 
+    /// <summary>
+    /// A wrapper's axis from its inner's: a wrapper is driven along whatever axis its inner is, and
+    /// when the inner streams along none — a block lambda — the wrapper still streams along either,
+    /// handing the inner's own placement machine the spans to hold.
+    /// </summary>
+    internal static Axes OrEither(this Axes axes) => axes == Axes.None ? Axes.Either : axes;
+
     /// <summary>The axis a held node is re-driven along: its own, preferring the driver's when it has both.</summary>
     internal static Orientation? Along(this Axes axes, Orientation driver)
       => axes.Streams(driver) ? driver

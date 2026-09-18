@@ -32,7 +32,7 @@ namespace Unrect.Projections
         foreach (var child in Children)
           axis &= child.Definition.Axis;
 
-        return axis;
+        return axis.OrEither();
       }
     }
 

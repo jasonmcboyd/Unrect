@@ -37,7 +37,7 @@ namespace Unrect.Projections
 
     public override bool IsWrapper => true;
 
-    public override Axes Axis => Inner.Axis;
+    public override Axes Axis => Inner.Axis.OrEither();
 
     /// <summary>A pad withholds its bottom padding until it can tell it from the inner's rows, so it may hand one span back.</summary>
     public override Reach Reach => base.Reach.Join(Reach.Spans(Bottom + 1));

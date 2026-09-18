@@ -1,3 +1,5 @@
+using System;
+
 using Unrect.Core;
 using Unrect.Strategies;
 
@@ -50,16 +52,10 @@ namespace Unrect.Projections
   {
     internal static bool TryStream(Placement placement, Orientation driver, out OffsetRule? offset, out SizeRule? size, out bool derived)
     {
-      offset = null;
       size = null;
       derived = false;
 
-      // The rules below are written for spans that are rows. A horizontal driver — a held
-      // horizontal shape being re-driven — places its children eagerly for now.
-      if (driver != Orientation.Vertical)
-        return false;
-
-      if (!TryOffset(placement.Offset, out offset))
+      if (!TryOffset(placement.Offset, driver, out offset))
         return false;
 
       if (placement.Area is null)
@@ -68,20 +64,20 @@ namespace Unrect.Projections
         return true;
       }
 
-      return TrySize(placement.Area, out size);
+      return driver == Orientation.Vertical ? TrySize(placement.Area, out size) : TrySizeAcross(placement.Area, out size);
     }
 
-    /// <summary>The per-span form of <paramref name="strategy"/>, for a repeat's separator; false when it has none.</summary>
-    internal static bool TryOffsetRule(IOffsetStrategy strategy, out OffsetRule? rule) => TryOffset(strategy, out rule);
+    /// <summary>The per-span form of <paramref name="strategy"/> along <paramref name="driver"/>, for a repeat's separator; false when it has none.</summary>
+    internal static bool TryOffsetRule(IOffsetStrategy strategy, Orientation driver, out OffsetRule? rule) => TryOffset(strategy, driver, out rule);
 
-    private static bool TryOffset(IOffsetStrategy strategy, out OffsetRule? rule)
+    private static bool TryOffset(IOffsetStrategy strategy, Orientation driver, out OffsetRule? rule)
     {
       switch (strategy)
       {
         case OffsetStrategy offset:
-          return TryOffsetSize(offset.Strategy, out rule);
+          return TryOffsetSize(offset.Strategy, driver, out rule);
         case SkipToFirstNonBlankCellStrategy:
-          rule = new FirstNonBlankOffsetRule();
+          rule = new FirstNonBlankOffsetRule(driver);
           return true;
         default:
           rule = null;
@@ -89,22 +85,26 @@ namespace Unrect.Projections
       }
     }
 
-    private static bool TryOffsetSize(ISizeStrategy strategy, out OffsetRule? rule)
+    private static bool TryOffsetSize(ISizeStrategy strategy, Orientation driver, out OffsetRule? rule)
     {
       switch (strategy)
       {
         case ExplicitSizeStrategy explicitSize:
-          rule = new ExplicitOffsetRule(explicitSize.Width, explicitSize.Height);
+          rule = driver == Orientation.Vertical
+            ? new ExplicitOffsetRule(explicitSize.Width, explicitSize.Height)
+            : new ExplicitOffsetRule(explicitSize.Height, explicitSize.Width);
           return true;
-        case RowOffsetSizeStrategy rows:
+        case RowOffsetSizeStrategy rows when driver == Orientation.Vertical:
           return TryRows(rows.RowSelectionStrategy, out rule);
+        case ColumnOffsetSizeStrategy columns when driver == Orientation.Horizontal:
+          return TryColumns(columns.ColumnSelectionStrategy, out rule);
         case CompositeOffsetSizeStrategy composite:
         {
           var stages = new OffsetRule[composite.Strategies.Length];
 
           for (var index = 0; index < stages.Length; index++)
           {
-            if (!TryOffset(composite.Strategies[index], out var stage))
+            if (!TryOffset(composite.Strategies[index], driver, out var stage))
             {
               rule = null;
               return false;
@@ -113,13 +113,55 @@ namespace Unrect.Projections
             stages[index] = stage!;
           }
 
-          rule = stages.Length == 1 ? stages[0] : new ChainOffsetRule(stages);
+          rule = stages.Length == 0 ? new ExplicitOffsetRule(0, 0) : stages.Length == 1 ? stages[0] : new ChainOffsetRule(stages, driver);
           return true;
         }
         default:
           rule = null;
           return false;
       }
+    }
+
+    private static bool TryColumns(IColumnStrategy columns, out OffsetRule? rule)
+    {
+      switch (columns)
+      {
+        case ExplicitColumnCountStrategy count:
+          rule = new ExplicitOffsetRule(0, count.Count);
+          return true;
+        case LandmarkColumnStrategy landmark:
+          rule = new ColumnLandmarkOffsetRule(landmark.Landmark, landmark.Past);
+          return true;
+        case TakeWhileAllColumnStrategy all:
+          rule = new ColumnPredicateOffsetRule(all.Predicate, every: true);
+          return true;
+        case TakeWhileAnyColumnStrategy any:
+          rule = new ColumnPredicateOffsetRule(any.Predicate, every: false);
+          return true;
+        default:
+          rule = null;
+          return false;
+      }
+    }
+
+    /// <summary>The size rules a column-span driver can run: an explicit size, or the whole extent.</summary>
+    private static bool TrySizeAcross(IAreaStrategy area, out SizeRule? rule)
+    {
+      if (area is AreaStrategy plain)
+      {
+        switch (plain.Strategy)
+        {
+          case ExplicitSizeStrategy explicitSize:
+            rule = new ExplicitSizeRule(explicitSize.Height, explicitSize.Width);
+            return true;
+          case MaxSizeStrategy:
+            rule = new MaxSizeRule(Orientation.Horizontal);
+            return true;
+        }
+      }
+
+      rule = null;
+      return false;
     }
 
     private static bool TryRows(IRowStrategy rows, out OffsetRule? rule)
@@ -165,7 +207,7 @@ namespace Unrect.Projections
               rule = new ExplicitSizeRule(explicitSize.Width, explicitSize.Height);
               return true;
             case MaxSizeStrategy:
-              rule = new MaxSizeRule();
+              rule = new MaxSizeRule(Orientation.Vertical);
               return true;
             case RowAndColumnSizeStrategy rowsThenColumns when rowsThenColumns.RowFirst:
               switch (rowsThenColumns.RowSelectionStrategy)
@@ -223,6 +265,10 @@ namespace Unrect.Projections
       }
     }
 
+    /// <summary>
+    /// A row landmark, handed the region searched so far as it is handed the extent today; it can
+    /// only match on the newest span, since nothing earlier did.
+    /// </summary>
     private sealed class LandmarkOffsetRule : OffsetRule
     {
       private readonly IRowLandmark _landmark;
@@ -237,22 +283,92 @@ namespace Unrect.Projections
       public override OffsetStep Next(Plane<ISpace> region, int row, out int column)
       {
         column = 0;
-        var span = region.Slice(new Offset(0, row), new Area(region.Width, 1));
 
-        if (_landmark.FindRow(span) is null)
+        if (_landmark.FindRow(region) is null)
           return OffsetStep.Skip;
 
         return _past ? OffsetStep.StartNext : OffsetStep.StartHere;
       }
     }
 
-    private sealed class FirstNonBlankOffsetRule : OffsetRule
+    private sealed class ColumnLandmarkOffsetRule : OffsetRule
     {
+      private readonly IColumnLandmark _landmark;
+      private readonly bool _past;
+
+      public ColumnLandmarkOffsetRule(IColumnLandmark landmark, bool past)
+      {
+        _landmark = landmark;
+        _past = past;
+      }
+
       public override OffsetStep Next(Plane<ISpace> region, int row, out int column)
       {
-        for (column = 0; column < region.Width; column++)
-          if (region[column, row].HasValue)
+        column = 0;
+
+        if (_landmark.FindColumn(region) is null)
+          return OffsetStep.Skip;
+
+        return _past ? OffsetStep.StartNext : OffsetStep.StartHere;
+      }
+    }
+
+    /// <summary>Skips column spans while every (or any) cell of the column satisfies the predicate.</summary>
+    private sealed class ColumnPredicateOffsetRule : OffsetRule
+    {
+      private readonly Func<Point<ISpace>, bool> _predicate;
+      private readonly bool _every;
+
+      public ColumnPredicateOffsetRule(Func<Point<ISpace>, bool> predicate, bool every)
+      {
+        _predicate = predicate;
+        _every = every;
+      }
+
+      public override OffsetStep Next(Plane<ISpace> region, int row, out int column)
+      {
+        column = 0;
+        var height = region.Declared.Height;
+        var satisfied = _every;
+
+        for (var cell = 0; cell < height; cell++)
+        {
+          var holds = _predicate(region[row, cell]);
+
+          if (_every && !holds)
+          {
+            satisfied = false;
+            break;
+          }
+
+          if (!_every && holds)
+          {
+            satisfied = true;
+            break;
+          }
+        }
+
+        return satisfied ? OffsetStep.Skip : OffsetStep.StartHere;
+      }
+    }
+
+    private sealed class FirstNonBlankOffsetRule : OffsetRule
+    {
+      private readonly Orientation _driver;
+
+      public FirstNonBlankOffsetRule(Orientation driver) => _driver = driver;
+
+      public override OffsetStep Next(Plane<ISpace> region, int row, out int column)
+      {
+        var across = _driver == Orientation.Vertical ? region.Width : region.Declared.Height;
+
+        for (column = 0; column < across; column++)
+        {
+          var cell = _driver == Orientation.Vertical ? region[column, row] : region[row, column];
+
+          if (cell.HasValue)
             return OffsetStep.StartHere;
+        }
 
         column = 0;
         return OffsetStep.Skip;
@@ -262,17 +378,22 @@ namespace Unrect.Projections
     private sealed class ChainOffsetRule : OffsetRule
     {
       private readonly OffsetRule[] _stages;
+      private readonly Orientation _driver;
       private int _stage;
       private int _stageStart;
       private int _column;
 
-      public ChainOffsetRule(OffsetRule[] stages) => _stages = stages;
+      public ChainOffsetRule(OffsetRule[] stages, Orientation driver)
+      {
+        _stages = stages;
+        _driver = driver;
+      }
 
       public override OffsetStep Next(Plane<ISpace> region, int row, out int column)
       {
         while (true)
         {
-          var stageRegion = region.Slice(new Offset(_column, _stageStart));
+          var stageRegion = region.Slice(_driver == Orientation.Vertical ? new Offset(_column, _stageStart) : new Offset(_stageStart, _column));
           var step = _stages[_stage].Next(stageRegion, row - _stageStart, out var stageColumn);
 
           if (step == OffsetStep.Skip)
@@ -325,9 +446,14 @@ namespace Unrect.Projections
 
     private sealed class MaxSizeRule : SizeRule
     {
+      private readonly Orientation _driver;
+
+      public MaxSizeRule(Orientation driver) => _driver = driver;
+
       public override bool Take(Plane<ISpace> region, int row) => true;
 
-      public override int? Width(Plane<ISpace> region, int rows, bool rowsSettled) => region.Width;
+      public override int? Width(Plane<ISpace> region, int rows, bool rowsSettled)
+        => _driver == Orientation.Vertical ? region.Width : region.Declared.Height;
     }
 
     private sealed class ScanSizeRule : SizeRule
