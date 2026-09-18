@@ -255,6 +255,25 @@ public abstract class ProjectorScope
 The handle `Start` returns is the placement machine wrapped around the child's own; the parent feeds
 it and never distinguishes the two. `Shortfall` is how replay stays local (§0.3).
 
+### 5.1 Contract violations are faults
+
+The node set is open, so a machine can be wrong, and the engine validates the protocol at the one
+seam it already occupies: the handle between parent and child, which counts what it offered. A
+violation is a **fault** — blamed on the node, with its path, never absorbable — in the same
+vocabulary as a null reference or an index overrun. The wrapper checks:
+
+| Violation | Fault message shape |
+|---|---|
+| settled more than offered, or negative | `'transactions' (Table) settled on 7 spans but was offered 5` |
+| settled short under `Reach.None` | `… settled 2 spans short but announced no reach; a definition that may hand rows back must announce it` |
+| settled short by more than `Reach.Spans(n)` | `… settled 4 spans short but announced a reach of 2` |
+| `true` after `false` | `… took a span after refusing one; a machine that refused is finished` |
+| `Next` after `Close`, or `Close` twice | `… was fed after it was closed` / `… was closed twice` |
+
+What the wrapper does not check, because it cannot: whether the value is right, or whether the
+`Presence` is honest. A wrong one of those is a wrong result, which is the node's own truth to get
+right, not a protocol error. The checks cost a counter and a state flag per open child.
+
 ---
 
 ## 6. The traces
