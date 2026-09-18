@@ -13,8 +13,8 @@ namespace Unrect.Tests
   /// <para>
   /// Two claims need this and cannot be made any other way. A strategy that "settles early" is
   /// making a statement about cells it did NOT read, and an answer is the same either way. And a
-  /// bound that is discovered as a projection consumes it is one whose rows are touched in step with
-  /// the projection, which is a claim about <em>when</em>, not about what.
+  /// declaration that reads in step with a forward pass is one whose rows are touched as the pass
+  /// offers them, which is a claim about <em>when</em>, not about what.
   /// </para>
   /// <para>
   /// A region is arithmetic over this space, so every read arrives in this space's own coordinates

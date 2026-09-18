@@ -118,6 +118,31 @@ namespace Unrect.Tests.Machines
       Assert.All(report.Lines, line => Assert.True(line.Streams, $"{line.Name}: {line.Hold}"));
     }
 
+    [Theory]
+    [InlineData("Table(row lambda)")]
+    [InlineData("Table()")]
+    [InlineData("Table(view lambda)")]
+    [InlineData("Table(0, eachRow)")]
+    [InlineData("Table(1, eachRow)")]
+    public void EveryTableRungStreamsUnderARowDriver_SizedOrPlacedByItsOwnDefault(string rung)
+    {
+      // A table's own extent is a discovered block whose scan answers a row at a time, so every rung
+      // streams as written; .Sized changes only how the width is arrived at.
+      IProjectionDefinition declared = rung switch
+      {
+        "Table(row lambda)" => Table(row => row.Index),
+        "Table()" => Table(),
+        "Table(view lambda)" => Table(table => table.RowCount),
+        "Table(0, eachRow)" => Table(0, Text()),
+        "Table(1, eachRow)" => Table(1, Text()),
+
+        _ => throw new System.ArgumentOutOfRangeException(nameof(rung), rung, "No such rung."),
+      };
+
+      Assert.True(CostReport.Of(declared).Lines[0].Streams);
+      Assert.True(declared.Placement.Area!.Begin(Orientation.Vertical).Incremental);
+    }
+
     [Fact]
     public void AReflectedTableIsOneLineNamedAsItsPathSegmentIs()
     {
@@ -125,6 +150,7 @@ namespace Unrect.Tests.Machines
 
       // The unit is the reader's; the scaffolding inside it streams and says nothing.
       Assert.Equal("Table<Row>", report.Lines[0].Name);
+      Assert.True(report.Lines[0].Streams);
       Assert.All(report.Lines, line => Assert.True(line.Streams, $"{line.Name}: {line.Hold}"));
       Assert.DoesNotContain(report.Lines, line => line.Name.Contains("VerticalBands", System.StringComparison.Ordinal));
     }

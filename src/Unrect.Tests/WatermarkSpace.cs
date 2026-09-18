@@ -8,19 +8,18 @@ namespace Unrect.Tests
 {
   /// <summary>
   /// A space that remembers how far down the sheet the reading has got, and how far back behind that
-  /// it ever reached. A windowed reader is only as cheap as the walk over it is monotone, so this is
-  /// the instrument that says whether a declaration would survive one — with no streaming machinery
-  /// involved, and therefore nothing to argue with.
+  /// it ever reached. A forward pass holds every row from the oldest one a machine may still read,
+  /// so how far back a declaration reaches is what the pass costs — and this is the instrument that
+  /// measures it with no streaming machinery involved, and therefore nothing to argue with.
   /// <para>
   /// It is deliberately coarser than <see cref="CountingSpace"/> and answers a different question.
   /// That one counts what was read (how many cells, how many distinct rows); this one records the
-  /// <em>order</em>, which is the only thing a window cares about: a declaration that reads every row
-  /// once but reads them out of order costs a reload, and no count can tell you that.
+  /// <em>order</em>: a declaration that reads every row once but reaches back for an earlier one
+  /// holds the rows between, and no count can tell you that.
   /// </para>
   /// <para>
   /// A region is arithmetic over this space, so every read arrives in this space's own coordinates
-  /// and there is nothing to translate. Mirrored from the typed-spaces spike, whose scenario 9 first
-  /// measured this.
+  /// and there is nothing to translate.
   /// </para>
   /// </summary>
   internal sealed class WatermarkSpace : ISheetCells

@@ -14,33 +14,28 @@ using static Unrect.Tests.ProjectionTestSpaces;
 namespace Unrect.Tests.Projections
 {
   /// <summary>
-  /// The node-type placement default for the leaf <c>Table</c>. Table's default offset moved from
-  /// <see cref="OffsetStrategies.SkipBlankRows"/> (skip leading blank <em>rows</em>, column always 0)
-  /// to <see cref="OffsetStrategies.SkipToFirstNonBlankCell"/> (down to the first content row, then
-  /// across to its first non-blank cell), so a self-contained region leaf self-locates on BOTH axes.
-  /// <para>
-  /// The change is identical to the old offset whenever the content starts at column 0 (the whole
-  /// committed corpus); it diverges only when a table's first content row starts past column 0 — the
-  /// self-location the change exists to enable (pinned as the headline in
+  /// A <c>Table</c>'s default offset is <see cref="OffsetStrategies.SkipToFirstNonBlankCell"/>: down
+  /// to the first content row, then across to its first non-blank cell, so a table self-locates on
+  /// both axes. On a table whose content starts at column 0 it lands where
+  /// <see cref="OffsetStrategies.SkipBlankRows"/> would; it differs only when the first content row
+  /// starts past column 0, which is the self-location it exists for (pinned as the headline in
   /// <c>LabeledAxisPrimitivesTests.ADefaultTableNowSelfLocatesOntoAColumnIndentedRegion</c>). These
-  /// pins cover the col-0 before/after identity, the accepted ragged residual, the orthogonality with
-  /// <c>onBlank</c>, and that the default stays lazy (row-at-a-time).
-  /// </para>
+  /// pins cover the column-0 agreement, the accepted ragged residual, and the orthogonality with
+  /// <c>onBlank</c>.
   /// </summary>
   public class TableDefaultOffsetTests
   {
     private sealed record Line(string Name, decimal Amount);
 
-    // --- 1. col-0 before/after identity ------------------------------------------------------------
+    // --- 1. column-0 agreement ---------------------------------------------------------------------
 
     [Fact]
-    public void OnATopLeftAlignedTableTheNewDefaultDenotesIdenticallyToTheOldSkipBlankRowsOffset()
+    public void OnATopLeftAlignedTableTheDefaultDenotesIdenticallyToSkipBlankRows()
     {
-      // For any col-0 sheet SkipToFirstNonBlankCell and SkipBlankRows land the same origin, so the
-      // whole change is a no-op there. Stated once explicitly for the record: the bare Table (new
-      // default) and a twin whose default offset is REPLACED by the outgoing SkipBlankRows() denote
+      // For any column-0 sheet SkipToFirstNonBlankCell and SkipBlankRows land the same origin: the
+      // bare Table and a twin whose default offset is replaced by SkipBlankRows() denote
       // L3-identically (value, extent consumed and from where, advance, diagnostics, and any failure's
-      // path). Every other green test on a col-0 sheet is a further instance of this identity.
+      // path).
       var sheet = Mixed(new object?[,]
       {
         { "Name", "Amount" },
@@ -48,11 +43,11 @@ namespace Unrect.Tests.Projections
         { "Beta", 20m },
       });
 
-      var newDefault = Table(r => new Line(r["Name"].Text(), r["Amount"].Decimal()));
-      var oldOffset = OffsetBy(OffsetStrategies.SkipBlankRows())
+      var byDefault = Table(r => new Line(r["Name"].Text(), r["Amount"].Decimal()));
+      var byBlankRows = OffsetBy(OffsetStrategies.SkipBlankRows())
         .Of(Table(r => new Line(r["Name"].Text(), r["Amount"].Decimal())));
 
-      AssertL3(Observe(oldOffset, sheet), Observe(newDefault, sheet));
+      AssertL3(Observe(byBlankRows, sheet), Observe(byDefault, sheet));
     }
 
     // --- 2. the ragged residual, pinned as EXPECTED (not a bug) ------------------------------------
@@ -60,16 +55,15 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ARaggedHeaderlessTableLandsAtTheFirstRowsCornerAndLosesTheLeftPart_TheDocumentedMiss()
     {
-      // The accepted residual (spec §2.2, mirroring the strategy-level pin
+      // The accepted residual (mirroring the strategy-level pin
       // OffsetStrategyTests.SkipToFirstNonBlankCell_OnARaggedRegion_...): the offset finds the FIRST
       // content row's corner, which is the region's true corner only when it is top-left-aligned.
       // Here the first content row starts at column 1, but a lower row reaches back to column 0 — so
       // the origin lands at (1, 0), the discovered block spans column 1 only, and the lower-left 99m
       // is orphaned rather than read.
       //
-      // This is EXPECTED, not a bug, and the node-type split does not fix it. A ragged table's escape
-      // hatch is an explicit offset (e.g. Right(n)/OffsetBy) or the eager skip-blank-rows-and-columns
-      // spelling — where a headerless, non-top-left table is meant to go.
+      // This is EXPECTED, not a bug. A ragged table's escape hatch is an explicit offset (Right(n),
+      // OffsetBy) or SkipEmptyRowsAndColumns — where a headerless, non-top-left table is meant to go.
       var ragged = Mixed(new object?[,]
       {
         { null, 10m },     // r0: first content cell at column 1 (C0 = 1)
@@ -90,7 +84,7 @@ namespace Unrect.Tests.Projections
     {
       // The offset is the table's LEADING placement (the top-left corner); onBlank governs blank rows
       // INTERIOR/trailing to the body via the height rule. They act on different axes at different
-      // times (spec §3.1), so a col>0 table with an interior blank both self-locates its corner AND
+      // times, so a table past column 0 with an interior blank both self-locates its corner AND
       // skips the interior blank. Column A is entirely blank; the header and body start at column B.
       var sheet = Mixed(new object?[,]
       {
@@ -107,14 +101,5 @@ namespace Unrect.Tests.Projections
       // at — the column shift and the blank-skip are independent.
       Assert.Equal(new[] { new Line("Alpha", 100m), new Line("Gamma", 300m) }, records);
     }
-
-    // --- 4. laziness unchanged (the default stays row-at-a-time) -----------------------------------
-    //
-    // SkipToFirstNonBlankCell's own laziness is pinned at the strategy level
-    // (OffsetStrategyTests.SkipToFirstNonBlankCell_WithLeadingBlankRows_TouchesOnlyUpToTheFirstContentRow),
-    // and Skip run-to-edge is pinned in TableBlankRowStrategyTests. The new signal here: as the
-    // DEFAULT offset on the DEFAULT (Stop / DiscoveredBlock) table — the common case — the offset scan
-    // does not force the sheet up front; the first record projects having touched only the header and
-    // its own row, exactly as the outgoing SkipBlankRows did (spec §4: rows-touched is unchanged).
   }
 }

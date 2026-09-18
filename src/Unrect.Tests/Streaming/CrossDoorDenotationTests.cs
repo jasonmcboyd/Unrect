@@ -22,14 +22,12 @@ namespace Unrect.Tests.Streaming
   /// streaming door over the same file, compared at L3 — the value, the extent consumed and where
   /// from, the diagnostics in order, and the failure's problem, cell, path and subject.
   /// <para>
-  /// It is the door-shaped twin of <c>Projections/LazyDenotationTests</c>, which sweeps 44
-  /// declarations across eager and deferred extent resolution. The cross-door half of that claim was
-  /// the weaker one: <see cref="StreamingIdentityTests"/> reaches L3 for one flagship declaration,
-  /// and that declaration's diagnostic list is <em>empty</em> — so the strongest existing statement
-  /// of "the doors agree about what a parse noticed" was a comparison of two empty lists. Every case
-  /// here is chosen to have something to say, and <see cref="AssertNonVacuous"/> refuses to let the
-  /// matrix quietly stop saying it: a scenario that produces neither a diagnostic nor a failure
-  /// fails the test that names it.
+  /// <see cref="StreamingIdentityTests"/> reaches L3 for one flagship declaration whose diagnostic
+  /// list is <em>empty</em>, so on its own the strongest statement of "the doors agree about what a
+  /// parse noticed" would be a comparison of two empty lists. Every case here is chosen to have
+  /// something to say, and <see cref="AssertNonVacuous"/> refuses to let the matrix quietly stop
+  /// saying it: a scenario that produces neither a diagnostic nor a failure fails the test that
+  /// names it.
   /// </para>
   /// <para>
   /// <strong>The fixtures are written here rather than committed.</strong> What the matrix needs is

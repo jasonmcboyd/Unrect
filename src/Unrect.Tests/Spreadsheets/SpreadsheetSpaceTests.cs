@@ -133,7 +133,7 @@ namespace Unrect.Tests.Spreadsheets
     // cells, and all of them measure 0). The rule is mirrored from Workbook.Measure as
     // forward-proofing; "a width learned from the rows rather than declared" is pinned at the
     // streaming door, where a fake row source can report one — see
-    // Streaming/SheetStoreTests.ASheetThatReportsNoDimensionIsMeasuredByReadingIt.
+    // Streaming/StreamingIdentityTests.BothDoorsMeasureASheetThatWillNotSayHowBigItIsTheSameWay.
 
     [Fact]
     public void Create_OnASheetThatReportsNoExtent_MeasuresItByReadingTheRows()

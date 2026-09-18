@@ -155,7 +155,7 @@ namespace Unrect.Tests.Machines
     }
 
     [Fact]
-    public void MapWorkbookStreamsUnderPushAndReadsWhatTheEagerDoorReads()
+    public void MapWorkbookReadsWhatTheEagerDoorReads()
     {
       var report = VerticalFlow(v =>
       {

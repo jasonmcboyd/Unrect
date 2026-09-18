@@ -280,13 +280,12 @@ namespace Unrect.Tests.Projections
       Assert.Equal(new[] { new Entry("Alpha", 100m) }, Table<Entry>().Map(Gapped()));
     }
 
-    // --- D. Laziness — the run-to-edge walk stays row-at-a-time -------------------------------------
+    // --- D. The run-to-edge walk stays row-at-a-time ------------------------------------------------
     //
     // The cross-door L3 equality for a Skip run-to-edge table is pinned in
     // Streaming/CrossDoorDenotationTests ("a bounded skip table over interior blanks"). Here is the
     // other half of D: that run-to-edge does not measure the sheet up front but peeks each row as
-    // the walk advances — the CountingSpace pattern LazyForcingTests uses, which is the in-memory
-    // proxy for the streaming door's deferral (both ride the same IIncrementalAreaStrategy).
+    // the walk advances, which a counting space can see.
 
     /// <summary>
     /// A header over ten body rows with one interior blank, wrapped in a counting space. The list

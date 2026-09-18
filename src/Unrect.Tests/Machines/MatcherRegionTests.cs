@@ -16,7 +16,7 @@ namespace Unrect.Tests.Machines
   /// landmark is handed the region searched so far on each new span, so an earlier row may be
   /// looked at again; this pins the region, not the sequence of calls.
   /// </summary>
-  public class PushMatcherRegionTests
+  public class MatcherRegionTests
   {
     [Fact]
     public void ThePredicateSeesTheSearchedRegion()

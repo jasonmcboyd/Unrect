@@ -135,10 +135,6 @@ namespace Unrect.Tests.Projections
       // arithmetic: the engine slices the plane it was handed instead of cutting a subspace object,
       // so a region placed three down and two right has origin (2, 3) in the sheet and every point
       // minted inside it says so. There is no second frame left in the system to translate between.
-      //
-      // Until phase 6 this read "0,0", "1,0", "0,1", "1,1" — the subspace object's own corner —
-      // because the streaming store learned which band was open from that object's extent. The store
-      // is told directly now (ISweepAware), which is what freed placement to be arithmetic.
       var seen = new List<string>();
 
       var probe = Down(3).Right(2).Of(

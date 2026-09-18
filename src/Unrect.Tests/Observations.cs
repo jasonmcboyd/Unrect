@@ -19,13 +19,6 @@ namespace Unrect.Tests
   /// than at the level one hopes for: L1 (value and failure classification), L2 (L1 plus what was
   /// consumed and where), L3 (L2 plus the diagnostics and the failure's path and subject).
   /// <para>
-  /// Generalized by copy from the comparator at the bottom of
-  /// <c>Projections/LazyDenotationTests</c> — the tree's strongest existing differential machinery,
-  /// which compares one declaration read two ways. That suite is a finished record and is left
-  /// alone; the mild duplication between it and this file is accepted, because a law suite wants to
-  /// name a <em>level</em> and the lazy sweep wants to compare everything at once.
-  /// </para>
-  /// <para>
   /// <strong>The one rule for negative pins.</strong> A law that stops holding at some level is
   /// pinned by asserting the SPECIFIC difference — <c>Assert.Contains("Under", failure.Path)</c>,
   /// <c>Assert.NotEqual(expected.Consumed, actual.Consumed)</c> with both spelled out — never by a
