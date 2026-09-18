@@ -71,6 +71,12 @@ namespace Unrect.Projections
         return false;
       }
 
+      if (definition is DefinitionNode node && node.Holds is string reason)
+      {
+        hold = reason;
+        return false;
+      }
+
       if (definition.Axis.Streams(driver))
       {
         hold = null;

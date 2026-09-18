@@ -68,6 +68,13 @@ namespace Unrect.Projections
     /// </summary>
     internal virtual Reach Retains => Reach.None;
 
+    /// <summary>
+    /// Why this node must see its whole extent before it runs, or null when nothing about it says
+    /// so: a repeat whose separator has no per-span form. The engine holds such a node and drives
+    /// it again along its own axis once its extent is known.
+    /// </summary>
+    internal virtual string? Holds => null;
+
     /// <summary>Children are the whole truth by default; a layout overrides this to say why they are not.</summary>
     public virtual string? Opacity => null;
 

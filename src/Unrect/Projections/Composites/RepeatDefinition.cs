@@ -41,28 +41,18 @@ namespace Unrect.Projections
 
     public override IReadOnlyList<Child> Children { get; }
 
-    /// <summary>
-    /// The walk. Every attempt is handed the tail from the cursor, left unsettled, so a repeat over
-    /// an extent whose height is still being discovered streams as far as its item lets it: an item
-    /// that derives its extent takes a band at a time.
-    /// <para>
-    /// The honest limit is an item with its OWN declared area: that area's strategy is handed the
-    /// tail and asks how tall it is — <c>Record</c>'s full-width row among them — which settles the
-    /// extent before the first occurrence.
-    /// </para>
-    /// </summary>
-    /// <summary>Along its orientation — unless its separator has no per-span form, in which case it is held and read as the pull engine reads it.</summary>
-    public override Axes Axis => SeparatorStreams ? Orientation.Of() : Axes.None;
+    /// <summary>Along its orientation: a repeat walks occurrence by occurrence, each a band along it.</summary>
+    public override Axes Axis => Orientation.Of();
 
     private bool SeparatorStreams => Separator is null || PlacementRules.TryOffsetRule(Separator, Orientation, out _);
+
+    /// <summary>A separator with no per-span form is asked over the whole gap, so the repeat must have its extent first.</summary>
+    internal override string? Holds => SeparatorStreams ? null : "its separator has no per-span form";
 
     /// <summary>A repeat hands back the item that failed to place, and the gap before it.</summary>
     public override Reach Reach => Reach.Extent;
 
-    public override IProjector<TSpace, IReadOnlyList<T>> Build(ProjectorScope<TSpace> scope)
-      => SeparatorStreams
-        ? new Machine(this, scope)
-        : new SpanCountProjector<TSpace, IReadOnlyList<T>>(this, scope, 1);
+    public override IProjector<TSpace, IReadOnlyList<T>> Build(ProjectorScope<TSpace> scope) => new Machine(this, scope);
 
     /// <summary>
     /// The walk, one span at a time. With no item open: after a committed occurrence the separator
@@ -78,7 +68,8 @@ namespace Unrect.Projections
       private readonly RepeatDefinition<TSpace, T> _repeat;
       private readonly ProjectorScope<TSpace> _scope;
       private readonly List<T> _values = new List<T>();
-      private readonly OffsetRule? _separator;
+      private readonly List<Plane<TSpace>>? _gathered;
+      private OffsetRule? _separator;
       private Plane<TSpace>? _first;
       private int _offered;
       private int _along;
@@ -96,8 +87,11 @@ namespace Unrect.Projections
         _repeat = repeat;
         _scope = scope;
 
-        if (repeat.Separator is IOffsetStrategy separator)
-          PlacementRules.TryOffsetRule(separator, repeat.Orientation, out _separator);
+        // A separator with no per-span form is asked over the whole gap, which is known only once
+        // every span is in: the spans are gathered, and the walk runs at Close over the gathered
+        // extent with the separator's own answer for each gap.
+        if (repeat.Separator is IOffsetStrategy separator && !PlacementRules.TryOffsetRule(separator, repeat.Orientation, out _separator))
+          _gathered = new List<Plane<TSpace>>();
       }
 
       private Orientation Along => _repeat.Orientation;
@@ -107,7 +101,7 @@ namespace Unrect.Projections
       /// attempt that ends the run hands back. A committed occurrence is final, so its spans are not
       /// held; the walk over a thousand occurrences costs one.
       /// </summary>
-      public int? HeldFrom => _finished || _first is null ? null : _attemptStart;
+      public int? HeldFrom => _gathered is not null ? 0 : _finished || _first is null ? null : _attemptStart;
 
       public bool Next(Plane<TSpace> span)
       {
@@ -127,6 +121,12 @@ namespace Unrect.Projections
             _finished = true;
             return false;
           }
+        }
+
+        if (_gathered is not null && _separator is null)
+        {
+          _gathered.Add(span);
+          return true;
         }
 
         var position = _offered;
@@ -204,6 +204,15 @@ namespace Unrect.Projections
 
       public Settlement<IReadOnlyList<T>> Close()
       {
+        if (_gathered is not null && _first is Plane<TSpace> first)
+        {
+          _separator = new EagerSeparatorRule(_repeat.Separator!, Spans.Region(first, _gathered.Count, Along).Erased(), Along);
+
+          foreach (var span in _gathered)
+            if (!Next(span))
+              break;
+        }
+
         _closed = true;
 
         // Closing an item may replay what it did not keep into fresh attempts, which may leave
@@ -292,6 +301,49 @@ namespace Unrect.Projections
 
       private Plane<TSpace> Extent()
         => _first is Plane<TSpace> first ? Spans.Region(first, _offered, Along) : _scope.Anchor;
+    }
+
+    /// <summary>
+    /// A separator asked the way the whole-extent walk asked it: over the gap from the attempt's
+    /// start to the end of the repeat's extent, once per attempt, its answer then stepped through
+    /// span by span. No room for its answer is no room for another item.
+    /// </summary>
+    private sealed class EagerSeparatorRule : OffsetRule
+    {
+      private readonly IOffsetStrategy _strategy;
+      private readonly Plane<ISpace> _whole;
+      private readonly Orientation _along;
+      private int _start = -1;
+      private Offset _offset;
+
+      public EagerSeparatorRule(IOffsetStrategy strategy, Plane<ISpace> whole, Orientation along)
+      {
+        _strategy = strategy;
+        _whole = whole;
+        _along = along;
+      }
+
+      public override OffsetStep Next(Plane<ISpace> region, int row, out int column)
+      {
+        var start = _along == Orientation.Vertical
+          ? region.Origin.Height - _whole.Origin.Height
+          : region.Origin.Width - _whole.Origin.Width;
+
+        if (start != _start)
+        {
+          var remaining = _whole.Slice(Spans.Step(start, _along));
+          var offset = _strategy.GetOffset(remaining);
+
+          if (offset.Width > remaining.Width || offset.Height > remaining.Area.Height)
+            throw new OutOfBoundsException();
+
+          _start = start;
+          _offset = offset;
+        }
+
+        column = Spans.Across(_offset.Size, _along);
+        return row < Spans.Along(_offset.Size, _along) ? OffsetStep.Skip : OffsetStep.StartHere;
+      }
     }
 
     /// <summary>What a repeat holds is the attempt in progress; see <see cref="Machine.HeldFrom"/>.</summary>
