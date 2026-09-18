@@ -2,7 +2,7 @@
 
 The continuous-benchmark rig (modeled on Copse's): `src/Unrect.Benchmarks` runs 43
 benchmarks in seven BenchmarkDotNet families — `Values`, `Strategies`, `Engine`, `Tables`,
-`Diagnostics`, `EndToEnd`, and `Streaming` (`docs/design/streaming-spec.md` §12) — plus an
+`Diagnostics`, `EndToEnd`, and `Streaming` — plus an
 eighth leg, `Retention`, which is not a BenchmarkDotNet family at all and measures a live
 set rather than a duration (its own section below). One CI matrix leg per family,
 publishing trend lines to the gh-pages dashboard and (optionally) Bencher. This file

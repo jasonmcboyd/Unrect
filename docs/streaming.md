@@ -16,7 +16,7 @@ sheet carries no formulas, and a declaration that calls `Formula()` will not com
 one. Read formulas through the eager door instead
 (`SpreadsheetSpace.CreateWithFormulas(path, sheet)`).
 
-The interpreter underneath is the push engine (`docs/design/push-interpreter.md`): a
+The interpreter underneath is the push engine: a
 declaration builds a tree of machines, the engine feeds them one row span at a time, and
 what a machine may still read back is announced by its node, not guessed by a cache.
 
@@ -244,6 +244,5 @@ quietly.
 - **A rule that stops sees one row past its stop.** A bounded shape consumes its rows and the
   engine loads the next to offer it; `RowsRead` counts that row.
 
-Further-out deferrals (a public row-source seam, async APIs, a streaming result type) are
-tracked in `docs/design/streaming-spec.md`, the implementer's record of the windowed store
-this pass replaced, not repeated here.
+Further-out deferrals — a public row-source seam, async APIs, a streaming result type — are
+recorded in CLAUDE.md's "Where Work Left Off", not repeated here.

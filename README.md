@@ -148,8 +148,8 @@ added. The full guide, including the cap and the statistics to act on: `docs/str
 - `docs/vocabulary.md` — the full operator survey, grouped by role.
 - `docs/streaming.md` — the `Workbook` guide: when to reach for it, the lifecycle rules,
   the cap, and the statistics vocabulary.
-- `docs/design/` — the specs behind the vocabulary (layout, matching, tables, diagnostics,
-  streaming).
+- `docs/design/` — the one open design draft (the static boundary); the records of finished
+  arcs live in git history.
 - `linqpad/` — worked examples against the workbooks in `examples/`, including the report
   above (`linqpad/investor-irr.linq`).
 

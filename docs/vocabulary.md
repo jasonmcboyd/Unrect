@@ -25,8 +25,8 @@ Everything below that pair of `using static` lines is written with **zero prefix
 `Projection.`, no scope local, no type argument naming the space anywhere in the file's body. See
 "Entry — the one door in," below, for what that buys and the two laws it rests on.
 
-When this file and a design record in `docs/design/` disagree, this file describes what the tree
-does today; the design record is history.
+When this file and a design draft in `docs/design/` disagree, this file describes what the tree
+does today.
 
 ## Leaves — where cells become values
 
