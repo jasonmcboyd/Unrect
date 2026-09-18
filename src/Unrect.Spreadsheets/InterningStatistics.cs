@@ -11,8 +11,8 @@ namespace Unrect.Spreadsheets
   /// </para>
   /// <para>
   /// <b>They belong to the book, not to a sheet.</b> One table serves every sheet of a workbook,
-  /// because captions and codes repeat across sheets and a reader re-parsing rows the window dropped
-  /// must find the values the first parse canonicalised. Splitting these counters per sheet would
+  /// because captions and codes repeat across sheets and a second pass over a sheet must find the
+  /// values the first one canonicalised. Splitting these counters per sheet would
   /// invite adding up numbers that do not add up.
   /// </para>
   /// <para>
@@ -27,7 +27,7 @@ namespace Unrect.Spreadsheets
   /// What it costs is the entries themselves. Every one is held for the life of the workbook whether
   /// it ever scores a hit or not, at roughly <c>Capacity × 530</c> bytes of characters plus the
   /// table's own ~56 bytes an entry — at the default cap of 65,536, some 40 MB were every entry a
-  /// 256-character string, against a default window of about 1.5 MB on an eight-column sheet. So
+  /// 256-character string. So
   /// raise <c>WorkbookOptions.MaxInternedStrings</c> when a sheet's genuinely repeating vocabulary is
   /// larger than the cap, and <em>lower</em> it — or pass 0 — when the text does not repeat and the
   /// floor is the point.
@@ -70,9 +70,8 @@ namespace Unrect.Spreadsheets
 
     /// <summary>
     /// Cells handed an instance the table already held. Each one is a duplicate string that did not
-    /// have to be retained. Counted per fill rather than per cell: a chunk reloaded after eviction
-    /// shares its cells again and counts them again, so this can exceed a sheet's text-cell count —
-    /// read it against <c>StreamingStatistics.ChunkReloads</c>.
+    /// have to be retained. Counted per pass: a sheet read twice shares its cells twice and counts
+    /// them twice, so this can exceed a sheet's text-cell count.
     /// </summary>
     public long Hits { get; }
 
@@ -80,7 +79,7 @@ namespace Unrect.Spreadsheets
     /// What those hits are worth, in bytes — <b>estimated</b>, and named so. It is the sum over every
     /// hit of what a string of that length occupies on a 64-bit runtime (header, length, characters,
     /// rounded to the allocation granularity), which is what the duplicate <em>would</em> have cost
-    /// had it been kept, and it counts a reloaded chunk's cells again exactly as <see cref="Hits"/>
+    /// had it been kept, and it counts a second pass's cells again exactly as <see cref="Hits"/>
     /// does.
     /// It models the layout, not the heap: it does not know what the collector would have done with
     /// the bytes, and it is not a measurement of a live set. For that, measure the live set.

@@ -7,14 +7,6 @@ namespace Unrect.Projections
   /// <summary>
   /// A table's extent split into an optional header row and the body rows beneath it. Cells are
   /// reachable by index and, when a header row was declared, by column name.
-  /// <para>
-  /// Over an extent whose height is discovered while it is read, a table costs its header row up
-  /// front and then whatever the projection asks for: <see cref="StreamRows"/> reads one row per
-  /// step and never asks how many there are, while <see cref="Rows"/>, <see cref="RowCount"/> and
-  /// <see cref="Location"/> are dimension queries and settle the bound. <see cref="ColumnCount"/>
-  /// and the header itself are free — a width is settled before any row is read. That is why the
-  /// three built-in row projections are written against <see cref="StreamRows"/>.
-  /// </para>
   /// </summary>
   /// <typeparam name="TSpace">The space the table's cells belong to.</typeparam>
   public sealed class TableView<TSpace>
@@ -50,17 +42,10 @@ namespace Unrect.Projections
     /// <summary>The table's full extent, header row(s) included.</summary>
     public Plane<TSpace> Space { get; }
 
-    /// <summary>
-    /// How many columns wide the table is. Free on an extent still being discovered: a width is
-    /// settled before the first row is read.
-    /// </summary>
+    /// <summary>How many columns wide the table is.</summary>
     public int ColumnCount => Space.Width;
 
-    /// <summary>
-    /// How many body rows the table has, header row(s) excluded. A dimension query, so on an extent
-    /// still being discovered this reads the sheet through to wherever the declaration's rule
-    /// stops; <see cref="StreamRows"/> is the reading that does not need the answer.
-    /// </summary>
+    /// <summary>How many body rows the table has, header row(s) excluded.</summary>
     public int RowCount => Space.Area.Height - HeaderRows;
 
     /// <summary>Whether a header row was declared. By-name lookups (<see cref="TableRow{TSpace}.this[string]"/>) need one.</summary>
@@ -72,36 +57,20 @@ namespace Unrect.Projections
     /// <summary>Each column's header text, trimmed; the empty string for a column with no caption.</summary>
     public IReadOnlyList<string> ColumnNames => Labels.Labels;
 
-    /// <summary>
-    /// The address of the table's top-left cell, header included. It carries the extent the table
-    /// was found in, so on one still being discovered this settles the bound.
-    /// </summary>
+    /// <summary>The address of the table's top-left cell, header included, with the extent the table was found in.</summary>
     public ProjectionLocation Location => ProjectionLocation.At(Space);
 
-    /// <summary>
-    /// The table's body rows, header row(s) excluded, built once per view. Materialising them is a
-    /// dimension query, so on an extent still being discovered this settles the bound — use
-    /// <see cref="StreamRows"/> to read a tall table a row at a time.
-    /// </summary>
+    /// <summary>The table's body rows, header row(s) excluded, built once per view.</summary>
     public IReadOnlyList<TableRow<TSpace>> Rows => _rows ??= BuildRows();
 
     /// <summary>
-    /// The table's body rows, header row(s) excluded, read one at a time as the enumeration
-    /// advances: each step asks whether there is a row there and stops when there is not, so an
-    /// extent whose height is still being discovered is consumed forward-only, in step with the
-    /// reading, and is never measured up front.
-    /// <para>
-    /// This is what the built-in row readings — <c>Table&lt;T&gt;()</c>, <c>Table()</c>
-    /// and <c>Table(row =&gt; …)</c> — are written against, and what a projection of your own
-    /// should use where the sheet is tall. The rows it hands back are the same <see
-    /// cref="TableRow{TSpace}"/> views <see cref="Rows"/> holds; unlike <see cref="Rows"/> they are not
-    /// cached, so enumerating twice builds them twice — a second enumeration costs no extra rows of
-    /// the sheet, the bound having been settled by the first.
-    /// </para>
+    /// The table's body rows, header row(s) excluded, built as the enumeration advances rather than
+    /// cached: the same <see cref="TableRow{TSpace}"/> views <see cref="Rows"/> holds, so
+    /// enumerating twice builds them twice.
     /// </summary>
     public IEnumerable<TableRow<TSpace>> StreamRows()
     {
-      for (var row = HeaderRows; Space.HasRow(row); row++)
+      for (var row = HeaderRows; row < Space.Area.Height; row++)
       {
         var band = Space.Slice(new Offset(0, row), new Area(ColumnCount, 1));
 
@@ -175,11 +144,7 @@ namespace Unrect.Projections
     /// </summary>
     internal ProjectorScope<TSpace> Scope { get; }
 
-    /// <summary>
-    /// Reports a problem against the table itself — its origin, its extent. Citing the extent
-    /// settles a bound still being discovered, which costs nothing worth saving on the way to a
-    /// failure.
-    /// </summary>
+    /// <summary>Reports a problem against the table itself — its origin, its extent.</summary>
     internal ProjectionException Failure(string problem) => Scope.Failure(problem, Space);
 
     /// <summary>
@@ -188,13 +153,7 @@ namespace Unrect.Projections
     /// </summary>
     internal ProjectionException Fault(string problem) => Scope.Failure(problem, Space, null, isFault: true);
 
-    /// <summary>
-    /// Every body row in one list, sized exactly. A caller of <see cref="Rows"/> is already paying
-    /// the dimension query <see cref="RowCount"/> is, so asking it first costs nothing and the list
-    /// is allocated once at the right size instead of doubling its way there. The row rungs
-    /// deliberately do the opposite and grow their lists, because for them asking how many
-    /// rows there are is the forcing question streaming exists to avoid.
-    /// </summary>
+    /// <summary>Every body row in one list, allocated once at its size.</summary>
     private List<TableRow<TSpace>> BuildRows()
     {
       var rows = new List<TableRow<TSpace>>(RowCount);

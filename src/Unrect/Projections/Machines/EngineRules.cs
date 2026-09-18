@@ -43,11 +43,10 @@ namespace Unrect.Projections
         or InvalidCastException        // an invariant this library owes itself; never the data
         or OutOfMemoryException;       // never a statement about the data
 
-    /// <summary>Asked as "is there a row at the last one" rather than "how tall are you", so a region still being read is not forced.</summary>
+    /// <summary>Whether <paramref name="size"/> is wider or taller than <paramref name="space"/>.</summary>
     internal static bool Exceeds<TSpace>(Size size, Plane<TSpace> space)
       where TSpace : class, ISpace
-      => size.Width > space.Width
-      || (size.Height > 0 && !space.HasRow(size.Height - 1));
+      => size.Width > space.Width || size.Height > space.Area.Height;
 
     internal static string Describe(Size size) => $"{size.Width}x{size.Height}";
 

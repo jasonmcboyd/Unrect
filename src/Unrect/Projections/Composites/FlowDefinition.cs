@@ -38,8 +38,8 @@ namespace Unrect.Projections
     /// <summary>
     /// Children in declaration order, one open at a time: offer the span to the open child; when it
     /// refuses, close it into its slot, start the next, replay any shortfall into it, and re-offer.
-    /// Refuse when the last child has. The sibling note is raised here, as the state raises it
-    /// today, because the flow is what knows both facts.
+    /// Refuse when the last child has. The sibling note is raised here, because the flow is what
+    /// knows both facts.
     /// </summary>
     private sealed class Machine : IProjector<TSpace, T>
     {

@@ -16,8 +16,7 @@ namespace Unrect.Strategies
     /// </summary>
     internal static int Fold(IColumnAccumulator accumulator, Plane<ISpace> space)
     {
-      // Asked a row at a time, as the row twin is: the same answer on a measured region, and on
-      // one still being discovered it reads no further than the fold itself reaches.
+      // Asked a row at a time, as the row twin is, stopping as soon as the answer is settled.
       for (var row = 0; !accumulator.IsSettled && space.HasRow(row); row++)
         accumulator.Include(space, row);
 

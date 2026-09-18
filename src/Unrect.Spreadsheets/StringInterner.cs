@@ -22,14 +22,13 @@ namespace Unrect.Spreadsheets
   /// name.</para>
   ///
   /// <para><b>One table per workbook.</b> Captions, codes and categories repeat across the sheets of
-  /// one book, and a chase reader re-parsing rows the window has dropped must find the values the
-  /// first parse already canonicalised rather than start a second family of them. Concurrent for the
-  /// same reason: chunk fills for different sheets of one workbook run on the borrowing threads,
-  /// unserialised by any single sheet's gate.</para>
+  /// one book, and a second pass over a sheet must find the values the first one canonicalised
+  /// rather than start a second family of them. Concurrent, because two sheets of one workbook may
+  /// be read on two threads at once.</para>
   ///
   /// <para><b>The two guards, and why a long-lived table needs them.</b> A table that outlives the
-  /// window it fed can pin strings the window has long since evicted, so it must never grow without
-  /// bound and never keep what is not earning its keep:</para>
+  /// passes it fed can pin strings those passes have long since released, so it must never grow
+  /// without bound and never keep what is not earning its keep:</para>
   /// <list type="bullet">
   ///   <item><see cref="Capacity"/> — past it the table stops <em>growing</em>. Lookups still hit, so
   ///     everything already shared goes on being shared; a value first seen afterwards is handed back
@@ -122,9 +121,8 @@ namespace Unrect.Spreadsheets
     /// would repopulate the entries it just dropped and count again values already counted: the
     /// entry count is the count <em>reached</em>, so it is not reset here and cannot be without
     /// costing <see cref="InterningStatistics.DistinctValues"/> its meaning after a workbook is
-    /// disposed. Nothing in the type enforces that; the workbook's disposal order is what makes it
-    /// unreachable, because a chunk fill holds its store's gate and every store is disposed — which
-    /// waits on that gate — before this is called.
+    /// disposed. Nothing in the type enforces that; the workbook disposes every sheet it lent
+    /// before it calls this.
     /// </para>
     /// </summary>
     internal void Release() => _entries.Clear();

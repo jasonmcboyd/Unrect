@@ -10,10 +10,10 @@ namespace Unrect.Projections
   /// four questions every space answers and therefore speaks <see cref="Plane{TSpace}"/> and
   /// <see cref="Point{TSpace}"/> over <see cref="ISpace"/>.
   /// <para>
-  /// The cast is per evaluation rather than once per call: a strategy that cast when it was measured
-  /// would have to be a wrapper around the calculus's own, and a wrapper is what would drop the
-  /// incremental interfaces the engine type-tests for. A failed cast is a fault — the phantom's
-  /// static type is what confines a typed rule to a declaration closed over its space.
+  /// The cast is per evaluation rather than once per call, so the calculus receives its own rule
+  /// and no wrapper: every scan a strategy builds is the one it would build unwrapped. A failed
+  /// cast is a fault — the phantom's static type is what confines a typed rule to a declaration
+  /// closed over its space.
   /// </para>
   /// <para>
   /// <b>A null predicate is refused here</b>, and this is the only place it can be: a lowered null

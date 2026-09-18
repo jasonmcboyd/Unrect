@@ -795,11 +795,6 @@ namespace Unrect.Projections
     /// <see cref="VerticalBands{T}"/> for how a band is cut and how the tiling ends.
     /// <paramref name="onBlank"/> is a vertical blank-row policy and is rejected here; the parameter
     /// exists for call-site symmetry.
-    /// <para>
-    /// A band spans the full height, so over an extent whose height is still being discovered this
-    /// settles it before the first band — which is what a column-wise reading of a vertically
-    /// discovered region costs.
-    /// </para>
     /// </summary>
     /// <typeparam name="T">What one band reads.</typeparam>
     /// <param name="columns">How many columns one band is; at least 1.</param>

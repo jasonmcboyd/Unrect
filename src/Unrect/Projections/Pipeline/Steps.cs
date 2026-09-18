@@ -74,7 +74,7 @@ namespace Unrect.Projections
     Headings,
   }
 
-  /// <summary>One modifier the author declared, replayed by name so the semantics are today's exactly.</summary>
+  /// <summary>One modifier the author declared, replayed by name onto the projection.</summary>
   internal sealed class Step
   {
     private readonly StepKind _kind;

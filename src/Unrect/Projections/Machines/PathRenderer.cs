@@ -6,8 +6,8 @@ namespace Unrect.Projections
   /// How a declaration path renders — the one place that decides what a reader calls a definition,
   /// which wrappers a path skips, how scaffolding folds and when a quoted name earns its kind
   /// suffix. Pure over the data face: it reads <see cref="IProjectionDefinition"/> and
-  /// <see cref="UseSite"/> and holds nothing, so the pull context and the push scope render one
-  /// chain the same way.
+  /// <see cref="UseSite"/> and holds nothing, so a failure and a diagnostic render one chain the
+  /// same way.
   /// </summary>
   internal static class PathRenderer
   {

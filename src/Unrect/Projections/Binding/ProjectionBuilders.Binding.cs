@@ -35,8 +35,7 @@ namespace Unrect.Projections
         captions[column] = caption;
       }
 
-      // The captions are settled from the header above; the body is read forward-only from here.
-      var rows = new List<IReadOnlyDictionary<string, Point<TSpace>>>();
+      var rows = new List<IReadOnlyDictionary<string, Point<TSpace>>>(table.RowCount);
 
       foreach (var row in table.StreamRows())
       {
@@ -47,10 +46,6 @@ namespace Unrect.Projections
 
         rows.Add(cells);
       }
-
-      // Grown rather than pre-sized, because asking how many rows there are is the forcing question
-      // streaming exists to avoid; the slack is given back here instead.
-      rows.TrimExcess();
 
       return rows;
     }

@@ -73,8 +73,8 @@ namespace Unrect.Projections
 
     IReadOnlyList<string> ILabelSource.Labels => Labels;
 
-    // The primitive face: the source's own content-rule lookup, byte-identical with the pre-step-1
-    // TableRow<TSpace> resolution. Kept off the CaptionComparer the bind rung uses, deliberately.
+    // The primitive face: the source's own content-rule lookup, the rule TableRow<TSpace> resolves
+    // by. Kept off the CaptionComparer the bind rung uses, deliberately.
     IReadOnlyList<int> ILabelSource.IndicesOf(string label) => _source.IndicesOf(label);
 
     /// <summary>

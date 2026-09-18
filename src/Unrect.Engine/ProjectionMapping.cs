@@ -7,8 +7,7 @@ namespace Unrect.Projections
   /// <summary>
   /// Applying a definition to a space: the engine's door. <see cref="Map"/> hands back the value,
   /// <see cref="Apply"/> the value with what it consumed, <see cref="MapWithDiagnostics"/> the value
-  /// with everything the run had to say. Under the push interpreter a run is one forward pass over
-  /// the space's spans; under pull, until it retires, the same declaration is walked from the root.
+  /// with everything the run had to say. A run is one forward pass over the space's rows.
   /// </summary>
   public static class ProjectionMapping
   {

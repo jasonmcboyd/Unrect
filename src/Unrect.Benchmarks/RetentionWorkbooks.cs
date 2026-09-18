@@ -15,12 +15,12 @@ namespace Unrect.Benchmarks
   ///
   /// <para><b>Why the rig's no-workbook rule bends here, and only here.</b> Every other family measures
   /// a layer we control, so a synthetic fixture measures the same thing a file would. Retention does
-  /// not: the change it exists to judge lives IN THE ADAPTERS — at <c>SheetStore</c>'s chunk fill for
-  /// the streaming door and in <c>SpreadsheetSpace.Create</c>'s fill for the eager one. A
+  /// not: the change it exists to judge lives IN THE ADAPTERS — at <c>StreamedSheet</c>'s row fill
+  /// for the streaming door and in <c>SpreadsheetSpace.Create</c>'s fill for the eager one. A
   /// <c>GridSpace</c> built from cells this assembly made bypasses the eager adapter entirely, so
   /// those rows would read FLAT under the very change they are the floor for. A floor that cannot move
   /// is not a floor. The streaming rows need no file for the same reason in reverse: every
-  /// <c>IRowSource</c> passes through the store's fill, so a synthetic source exercises the real seam
+  /// <c>IRowSource</c> passes through the sheet's fill, so a synthetic source exercises the real seam
   /// (and is far faster).</para>
   ///
   /// <para><b>Two encodings, because how a file spells its text decides whether the eager door

@@ -37,11 +37,9 @@ namespace Unrect.Projections
     {
       var width = extent.Width;
 
-      // "Is there a row for the header" rather than "how tall are you": the same question of a
-      // measured extent, and only as far as the header reaches where the height is still being
-      // discovered. Without it, cutting the band off an empty extent throws a bare
-      // OutOfBoundsException where an absorbable failure belongs.
-      if (width == 0 || !extent.HasRow(HeaderRows - 1))
+      // Checked here so an extent with no room for the header is an absorbable failure rather than
+      // the bare OutOfBoundsException cutting the band would throw.
+      if (width == 0 || extent.Area.Height < HeaderRows)
         throw scope.Failure("a header row was declared but the table's extent is empty", extent);
 
       var headerBand = extent.Slice(new Offset(0, 0), new Area(width, HeaderRows));

@@ -37,11 +37,7 @@ namespace Unrect.Projections
     /// </summary>
     private ProjectorScope<TSpace> Scope { get; }
 
-    /// <summary>
-    /// How many cells the strip holds. A row's length is its extent's width, which is free even
-    /// where the height is still being discovered; a column's is that height, and asking settles
-    /// it.
-    /// </summary>
+    /// <summary>How many cells the strip holds: a row's width, or a column's height.</summary>
     public int Count => Orientation == Orientation.Horizontal ? Space.Width : Space.Area.Height;
 
     /// <summary>The cell at <paramref name="index"/> along the strip's own axis; an index outside it throws <see cref="ArgumentOutOfRangeException"/>.</summary>
@@ -57,10 +53,7 @@ namespace Unrect.Projections
       }
     }
 
-    /// <summary>
-    /// The address of the strip's first cell. It carries the extent it was found in, so on one
-    /// whose height is still being discovered this settles the bound.
-    /// </summary>
+    /// <summary>The address of the strip's first cell, with the extent it was found in.</summary>
     public ProjectionLocation Location => ProjectionLocation.At(Space);
 
     /// <summary>The address of one cell of the strip, for citing it in a message.</summary>

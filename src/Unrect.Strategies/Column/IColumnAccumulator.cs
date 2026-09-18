@@ -6,8 +6,8 @@ namespace Unrect.Strategies
   /// A column rule read one row at a time: the answer the rows seen so far give, whether any further
   /// row could change it, and the step that takes one more row into account.
   /// <para>
-  /// This is the row-major rewrite of §11.3 exposed rather than kept private, because the width and
-  /// height of a rows-then-columns extent are decided by one forward walk over the same rows — see
+  /// It is exposed rather than kept private because the width and height of a rows-then-columns
+  /// extent are decided by one forward walk over the same rows — see
   /// <see cref="InterleavedRowAndColumnSizeStrategy"/>, which drives an accumulator of its own
   /// alongside a row scan. It is deliberately NOT the column twin of <see cref="IRowScan"/>: a column
   /// rule cannot be discovered as a projection consumes, because a width must be settled before the

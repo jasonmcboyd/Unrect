@@ -7,7 +7,7 @@ namespace Unrect.Spreadsheets
 {
   /// <summary>
   /// A spreadsheet file as a row source. Each <see cref="Open"/> is an independent file handle and an
-  /// independent reader, which is what lets the pool hold several positions in one workbook at once.
+  /// independent reader, which is what lets a workbook hold several passes over one file at once.
   /// </summary>
   internal sealed class SpreadsheetRowSource : IRowSource
   {

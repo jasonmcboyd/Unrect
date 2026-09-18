@@ -275,7 +275,7 @@ namespace Unrect.Spreadsheets
     /// Public, and the interface with it, for one concrete reason: without
     /// <see cref="IEquatable{T}"/> every comparison through
     /// <see cref="System.Collections.Generic.EqualityComparer{T}.Default"/> boxes both cells — which
-    /// the chunk store and the retention rig feel, since they hold cells by the million.
+    /// a streamed sheet and the retention rig feel, since they hold cells by the million.
     /// </para>
     /// </summary>
     public bool Equals(Cell other)

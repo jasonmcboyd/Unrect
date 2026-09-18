@@ -8,14 +8,12 @@ namespace Unrect.Benchmarks
   /// <para><b>No workbook, deliberately.</b> CI runners get no files, and a benchmark that needed
   /// one could not run — the same rule the rest of the rig follows. The internal row-source seam
   /// exists partly for this: a source that generates rows on demand behaves like a reader from the
-  /// store's point of view, so everything above it is exercised for real.</para>
+  /// sheet's point of view, so everything above it is exercised for real.</para>
   ///
   /// <para><b>What that costs in honesty, said out loud.</b> Opening this source is free, where
   /// opening a spreadsheet costs about five CPU-bound seconds parsing the shared-string table. So
-  /// the adversarial rows measure the <em>repositioning</em> half of the pool's value and not the
-  /// open half — the half that made warming worth building. The open half is a property of
-  /// ExcelDataReader, is measured nowhere in CI on purpose, and no number here should be read as
-  /// covering it.</para>
+  /// these rows measure the pass and not the open. The open is a property of ExcelDataReader, is
+  /// measured nowhere in CI on purpose, and no number here should be read as covering it.</para>
   /// </summary>
   internal static class StreamingSpaces
   {
@@ -28,19 +26,14 @@ namespace Unrect.Benchmarks
 
     public const int Columns = 8;
 
-    /// <summary>The default window, in rows — the same default a <c>Workbook</c> would use.</summary>
-    /// <summary>
-    /// A band five children sweep together. Sized so the pair around it is a real comparison: the
-    /// "fits" half gets twice this in window and loads each chunk once; the "too small" half gets
-    /// half of it and reloads. Measured at this size, 118 loads / 0 reloads against 590 / 472.
-    /// </summary>
+    /// <summary>A band five children sweep together — the extent a forward pass has to hold whole.</summary>
     public const int BandRows = 40_000;
 
     /// <summary>Row 0 carries the captions the table binds against.</summary>
     public static string Caption(int column) => "C" + column.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
     /// <summary>
-    /// The cell at a coordinate, defined once so the eager and windowed fixtures cannot drift: the
+    /// The cell at a coordinate, defined once so the eager and streamed fixtures cannot drift: the
     /// two headline rows only mean something as a ratio, and a ratio between different data means
     /// nothing.
     /// </summary>
@@ -72,7 +65,6 @@ namespace Unrect.Benchmarks
       return SheetGrid.Of(cells);
     }
 
-    /// <summary>A pool over a fresh synthetic source.</summary>
     /// <summary>A workbook over a synthetic sheet of <paramref name="rows"/> by <paramref name="columns"/>, with no cap unless one is given.</summary>
     public static Workbook Book(int rows = Rows, int columns = Columns, int? bufferRows = null)
       => Workbook.Over(new SyntheticRowSource(rows, columns), new WorkbookOptions { BufferRows = bufferRows });

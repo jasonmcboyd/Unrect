@@ -18,7 +18,7 @@ namespace Unrect.Benchmarks
   ///
   /// <para><b>One door gets a real file and the other does not, and the asymmetry is the point.</b> The
   /// change this family judges lives in the ADAPTERS. The streaming door's adapter seam is
-  /// <c>SheetStore</c>'s chunk fill, which every <c>IRowSource</c> passes through — including
+  /// <c>StreamedSheet</c>'s row fill, which every <c>IRowSource</c> passes through — including
   /// <see cref="LedgerRowSource"/> — so a synthetic source exercises the real seam, and does it in
   /// milliseconds. The eager door's seam is inside <c>SpreadsheetSpace.Create</c>, which a
   /// <c>GridSpace</c> built here would bypass completely: those rows would read flat under the very

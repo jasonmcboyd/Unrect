@@ -3,18 +3,17 @@ using System;
 namespace Unrect.Spreadsheets
 {
   /// <summary>
-  /// Somewhere rows can be read from, forward only, more than once. The streaming store is written
+  /// Somewhere rows can be read from, forward only, more than once. The streaming door is written
   /// against this rather than against ExcelDataReader, for three reasons that are all load-bearing:
   /// <list type="number">
   ///   <item>
   ///     <b>Blankness stays at the adapter.</b> An implementation produces <see cref="Cell"/>s
-  ///     with the blankness predicate already applied, so the store never sees the predicate. That
+  ///     with the blankness predicate already applied, so the sheet never sees the predicate. That
   ///     is "blankness is decided at adaptation time", the rule the eager path already honours.
   ///   </item>
   ///   <item>
-  ///     <b>The store becomes testable.</b> Chunk maths, eviction, pool selection, warming races and
-  ///     above all an IO failure at a chosen row are impossible to arrange with a real workbook and
-  ///     trivial with a synthetic source.
+  ///     <b>The door becomes testable.</b> An IO failure at a chosen row is impossible to arrange
+  ///     with a real workbook and trivial with a synthetic source.
   ///   </item>
   ///   <item>
   ///     <b>The benchmarks can exist.</b> CI runners get no workbooks, so the streaming family has to
@@ -37,8 +36,8 @@ namespace Unrect.Spreadsheets
     /// row of sheet 0.
     /// <para>
     /// <b>Expensive.</b> On the spreadsheet adapter this is the ~5s open — CPU-bound, because it is
-    /// the shared-string table parse — and it is the cost the reader pool exists to overlap and
-    /// avoid. Treat every call as a real expense.
+    /// the shared-string table parse — which is why a workbook opens one cursor per pass and hands
+    /// its parked one to the first sheet asked for. Treat every call as a real expense.
     /// </para>
     /// </summary>
     IRowCursor Open();
@@ -46,11 +45,11 @@ namespace Unrect.Spreadsheets
 
   /// <summary>
   /// One forward-only position in a workbook: a sheet, and a row within it. Mirrors the shape of the
-  /// underlying reader so the store's load loop is the loop it would have written anyway.
+  /// underlying reader so the sheet's load loop is the loop it would have written anyway.
   /// <para>
   /// A cursor moves forward and never back — to an earlier row, or an earlier sheet, there is no
-  /// route but a new <see cref="IRowSource.Open"/>. That single constraint is the whole reason the
-  /// pool, the window and their statistics exist.
+  /// route but a new <see cref="IRowSource.Open"/>. That single constraint is why a sheet is one
+  /// pass, and why a released row cannot be read again.
   /// </para>
   /// </summary>
   internal interface IRowCursor : IDisposable

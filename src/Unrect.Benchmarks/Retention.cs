@@ -37,7 +37,7 @@ namespace Unrect.Benchmarks
   /// <para><b>What it exists to judge, and the three rows that must NOT move.</b> The subject is
   /// adapter-level value interning — repeated strings sharing one instance — and both doors reach their
   /// adapter for real: the eager rows read a genuine <c>.xlsx</c> through
-  /// <c>SpreadsheetSpace.Create</c>, and the streaming rows go through <c>SheetStore</c>'s chunk fill,
+  /// <c>SpreadsheetSpace.Create</c>, and the streaming rows go through <c>StreamedSheet</c>'s row fill,
   /// which every row source passes. A floor built on a locally-made <c>GridSpace</c> would bypass the
   /// eager adapter and read flat under the very change it exists to judge.</para>
   /// <list type="bullet">
@@ -58,7 +58,7 @@ namespace Unrect.Benchmarks
   /// forced, blocking, compacting full collection with nothing held; the scenario is built again and
   /// the reading taken after the same collection with the result — and only the result — reachable.
   /// The difference is the live set of what was held. Everything a scenario builds and does not return
-  /// (the grid under a projection, the reader and its string table, the window and its reader pool) is
+  /// (the grid under a projection, the reader and its string table, the sheet's held rows) is
   /// out of scope by the time the reading is taken, deliberately: "result held, source released" is the
   /// shape of the question a caller asks.</para>
   /// </summary>
