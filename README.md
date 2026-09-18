@@ -122,8 +122,8 @@ record CashFlow(string InvestorName, DateTime Date, string Transaction, double I
 
 `SpreadsheetSpace.Create` reads a sheet whole, which is the simple default and the right
 choice for anything that fits comfortably in memory. For a file too big for that, or the
-same declaration applied to many files in sequence, `Workbook` reads a window at a time
-instead of the whole grid:
+same declaration applied to many files in sequence, `Workbook` reads the sheet as one
+forward pass, holding only the rows the declaration's open shapes may still read:
 
 ```csharp
 var report = VerticalFlow(v => ...);              // one declaration, reused
@@ -136,18 +136,18 @@ foreach (var path in monthlyCloseOfFunds)
 ```
 
 Same projections, same results — the two paths differ only in the shape of their cost. A
-monotone read through `Workbook` costs about 35% more wall time for about 2.7× less live
-memory than `SpreadsheetSpace.Create`; a declaration that reaches backwards or sweeps a
-band wider than its window can cost more than that, which `book.Statistics("Detail")`
-will tell you. Projections are immutable and workbooks are independent, so
+table read one band per row holds a handful of rows however tall the sheet; a shape that
+reads its extent whole holds its extent, which `CostReport.Of(report)` will tell you before
+any file is opened and `book.Statistics("Detail")` will confirm after. Projections are
+immutable and workbooks are independent, so
 `Parallel.ForEach(monthlyCloseOfFunds, path => { using var book = ...; })` needs nothing
-added. The full guide, including the sizing law and the statistics to act on: `docs/streaming.md`.
+added. The full guide, including the cap and the statistics to act on: `docs/streaming.md`.
 
 ## Learn more
 
 - `docs/vocabulary.md` — the full operator survey, grouped by role.
 - `docs/streaming.md` — the `Workbook` guide: when to reach for it, the lifecycle rules,
-  the sizing law, and the statistics vocabulary.
+  the cap, and the statistics vocabulary.
 - `docs/design/` — the specs behind the vocabulary (layout, matching, tables, diagnostics,
   streaming).
 - `linqpad/` — worked examples against the workbooks in `examples/`, including the report

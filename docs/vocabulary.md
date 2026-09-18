@@ -433,6 +433,6 @@ compiles against a space that lacks it.
   how to walk it*? And could a writer execute the declaration — produce the file as well as read
   it? Declarations run backward; opaque code does not.
 - **IO faults are not tolerance.** A disk failure, or a read against a `Workbook` view after its
-  workbook is disposed, classifies as a fault (`ProjectionEngine.IsFault`) rather than a
+  workbook is disposed, classifies as a fault (`EngineRules.IsFault`) rather than a
   disagreement about the data, at every site that could otherwise absorb a foreign exception as
   "section absent."

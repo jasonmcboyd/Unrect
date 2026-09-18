@@ -1,5 +1,14 @@
 # Spec: Streaming (the `Workbook` owner, the windowed store, the reader pool, lazy extents)
 
+> **Superseded (2026-09-18, the engine split's phase 5):** the windowed store, the reader pool,
+> the lazy extents and the sweep announcement this document specifies were deleted with the
+> pull interpreter. `Workbook.Sheet` is one forward pass over the sheet's own cursor, driven by
+> the push engine (`push-interpreter.md`), holding only what the declaration's open machines
+> announce they may still read, under `WorkbookOptions.BufferRows`. This file is kept as the
+> record of the mechanism it replaced and of the measurements that motivated streaming at all;
+> `docs/streaming.md` is the live guide. The `IRowSource` seam, the IO fault discipline and the
+> string table survive as written.
+
 > **Superseded spellings (2026-09-09):** this spec was written against `Unrect.Shapes` and the
 > `TableRows*` factories. The layer is now `Unrect.Projections` (`IShape<T>` → `IProjection<T>`,
 > `Shape` → `Projection`) and the table ladder is one `Table` family (`TableRows<T>()` →

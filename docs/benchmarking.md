@@ -33,8 +33,7 @@ records the conventions that keep the numbers honest.
   runners get no workbooks. The 1M-row xlsx load measurements live outside the rig as
   scratch probes; the rig measures the layers we control. `Streaming`'s fixture keeps the
   same rule a different way: a synthetic `IRowSource` (`StreamingSpaces`) stands in for
-  ExcelDataReader, so the family measures the window and the reader pool without a real
-  file either. **`Retention` is the one deliberate exception**, and only on its eager half: the
+  ExcelDataReader, so the family measures the forward pass without a real file either. **`Retention` is the one deliberate exception**, and only on its eager half: the
   change it judges lives inside `SpreadsheetSpace.Create`, which no synthetic space passes
   through, so those rows generate a real `.xlsx` into the temp directory at setup (never
   committed, cached by shape) and read it back through the actual door. Its streaming half
@@ -181,11 +180,16 @@ number is deterministic; CI's run is what goes on the trend line.
   **re-baselined at this commit**, and now measure two different adapters rather than two
   settings of one — `Create_FromInts` is the canonical `GridSpace.Create(int[,])` door (no kind
   vocabulary at all), `Create_FromObjects` is the kinded `SheetGrid.Of(object?[,])` door (one
-  cell kind decided per value). `Streaming.PoolReach` is re-baselined the same commit. Read any
-  of the four against their own trend line from this commit forward; a comparison to a value
-  from before it is comparing two different mechanisms, not a regression or an improvement.
-  `Retention`'s rows are untouched — they measure `SpreadsheetSpace.Create`/`SheetStore`'s fill,
-  neither of which this arc's substrate change reached.
+  cell kind decided per value). Read any of the four against their own trend line from this
+  commit forward; a comparison to a value from before it is comparing two different
+  mechanisms, not a regression or an improvement.
+- **`Streaming` and `Retention`'s streaming half were rebuilt around the forward pass**
+  (2026-09-18, the engine split's phase 5): the windowed store and the reader pool are gone,
+  so `Monotone_Windowed`, `Monotone_Resident`, the `Band_Window*` pair and the adversarial
+  reach-back rows are gone with them. The family is now `Monotone_Eager` (baseline),
+  `Monotone_Streamed`, `Monotone_SecondPass` (a second pass over an open book), `Band_Eager`
+  and `Band_Streamed` (a block that holds its extent); `Retention`'s streaming rows read
+  through `Workbook.Sheet`. Every streaming row is re-baselined at that commit.
 - **The retention floor, recorded the day it was measured** (2026-09-04, local, .NET 8.0.419,
   250k x 8 fixture, before any interning work):
 
@@ -227,8 +231,6 @@ number is deterministic; CI's run is what goes on the trend line.
   both fell by 62%, which is the doors' equivalence surviving the change rather than being
   restated after it.
 - **`Streaming`'s honesty caveat, read every time the family's numbers come up:** its
-  fixture is a synthetic `IRowSource`, so an "open" there is free. The adversarial
-  benchmarks (`Adversarial_OneReader` vs `Adversarial_Pooled`) measure only the
-  *repositioning* half of the reader pool's value, never the ExcelDataReader open
-  (~5s on the 1M-row probe workbook, §1.1 of the streaming spec) that the pool exists to
-  overlap — that half is deliberately measured nowhere in CI.
+  fixture is a synthetic `IRowSource`, so an "open" there is free. The ExcelDataReader open
+  (~5s on the 1M-row probe workbook, §1.1 of the streaming spec) that a real pass pays once
+  is deliberately measured nowhere in CI.

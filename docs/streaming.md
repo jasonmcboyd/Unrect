@@ -1,12 +1,13 @@
-# Streaming: Reading a Workbook a Window at a Time
+# Streaming: Reading a Workbook as a Forward Pass
 
 `SpreadsheetSpace.Create` reads a sheet whole: one file open, one pass, the whole grid
 resident before any projection sees it. `Workbook`, in the same `Unrect.Spreadsheets`
-package, reads the same files a *window* at a time — a bounded band of rows held in memory,
-refilled from the file as a projection's reads move past it. Same projections, same results;
-the two doors differ only in the shape of their cost. This is the user-facing guide to that
-door: when to reach for it, the lifecycle rules, the sizing law, the statistics vocabulary,
-and the limits that are honestly still limits.
+package, reads the same files as a *forward pass* — one cursor walked from the top, each row
+offered to the declaration as it arrives and released as soon as nothing still open may read
+it. Same projections, same results; the two doors differ only in the shape of their cost.
+This is the user-facing guide to that door: when to reach for it, the lifecycle rules, what a
+declaration holds and the cap on it, the statistics, and the limits that are honestly still
+limits.
 
 `book.Sheet(name)` hands back an `ISheetCells` — the kinded, no-formulas face a streamed sheet
 answers — so a declaration file over it imports `SheetProjectionBuilders<ISheetCells>` beside
@@ -15,140 +16,83 @@ sheet carries no formulas, and a declaration that calls `Formula()` will not com
 one. Read formulas through the eager door instead
 (`SpreadsheetSpace.CreateWithFormulas(path, sheet)`).
 
-For the mechanics behind every claim here — the load loop, the reader pool's selection
-policy, the lock ordering — see `docs/design/streaming-spec.md`, the implementer's document.
-This file is the other one: what a caller needs to know to use `Workbook` correctly, not to
-build it.
+The interpreter underneath is the push engine (`docs/design/push-interpreter.md`): a
+declaration builds a tree of machines, the engine feeds them one row span at a time, and
+what a machine may still read back is announced by its node, not guessed by a cache.
 
 ## When to reach for it
 
 **Eager stays the default.** `SpreadsheetSpace.Create` is simpler, and for anything that
-fits comfortably in memory it is also faster and holds nothing back. Reach for `Workbook`
+fits comfortably in memory it is also the one with nothing to explain. Reach for `Workbook`
 when a file is too large to hold whole, or when one declaration runs over many files in
 sequence and the peak per iteration matters more than the total across the run.
 
 The cost model is **declaration-shaped**, not a flat tax — what a declaration does with the
-sheet determines whether streaming is cheap, free, or a bad idea:
+sheet determines what a pass has to hold:
 
-- **A monotone walk down a sheet costs moderately more than eager, for substantially less
-  live memory.** Measured: about 35% more wall time for about 2.7× less live memory than
-  `SpreadsheetSpace.Create`. What streaming removes is the materialised grid, not the
-  parser — the reader's shared-string table still holds every string a `Text` cell points
-  at, is not part of the window, and does not shrink with it. On a text-heavy sheet that
-  table can dominate either way.
-- **Warm reuse is cheaper than eager on a second pass.** `Sheet(name)` is idempotent:
-  calling it twice for the same sheet returns views over one store, so a second declaration
-  mapped over an already-open `Workbook` pays no reader open and, if the rows it wants are
-  still in the window, no re-read either. A second `SpreadsheetSpace.Create` call has no
-  such thing — it re-parses the file from nothing every time. This is the property that
-  makes holding a workbook open worth doing, and it is pinned by
-  `Unrect.Benchmarks.Streaming.Monotone_Resident`, measured against `Monotone_Eager` and
-  `Monotone_Windowed` in the same run.
-- **A band that fits the window is free.** Several children sweeping one region — a
-  `HorizontalFlow`, an `Overlay` — each load every chunk of that region exactly once,
-  whatever order they read in, when the window holds the whole region. Verified case: a
-  five-chunk band swept three times inside a six-chunk window costs 5 chunk loads and
-  reloads nothing (`SheetStoreTests.ABandThatFitsTheWindowReportsNoOverrun`).
-- **The degenerate cases are documented, not silent.** Grow that same band past the window
-  by one chunk and the same three sweeps cost 21 chunk loads, 14 of them reloads — the
-  shortfall compounds with every pass
-  (`SheetStoreTests.ABandOneChunkTallerThanTheWindowReportsOneOverrunAndPaysForItInReloads`).
-  And a backward reach with no reader parked behind it costs a full reader reopen (the
-  ~5s, CPU-bound `ExcelDataReader` open) unless the pool has a spare —
-  `ReaderPoolStatistics.Reopens` is exactly `passes − readers` for a fixed access pattern,
-  so undersizing `MaxReaders` for a declaration that keeps several passes open at once is
-  the other way to pay for this door twice. Both failure modes have a counter that says
-  so — see [The sizing law](#the-sizing-law) and the statistics table below — so "slow" is
-  always diagnosable, never mysterious.
-- **Sizing `MaxReaders` (default 3, and there is no "right" number).** Reader demand is set
-  by your *declaration's* shape, never by your file: it is the count of monotone cursors
-  the declaration holds open at once — backward reaches spanning more than the window,
-  landmark lookaheads (`.Until`), sheets read in alternation. Declarations compose, so no
-  fixed ceiling covers every one; the ceiling is a file-handle promise and a cost knob, not
-  a correctness bound. It fails gently — a shortfall is `Reopens`, counted and named, time
-  and never wrongness — and because the demand is data-independent, one glance at
-  `Reopens` after the first file of a batch settles the setting for the whole run:
-  persistently positive means raise `MaxReaders` to match. Sane values stay in the single
-  digits; the default (lead + chase + spare) covers one backward level plus one lookahead,
-  which is every declaration this corpus has produced.
-- **A row-wise leaf extent reads its rows once, not twice.** Where a **leaf** extent is
-  sized by a per-row rule — `Range(RowsWhileAnyValue(), …)`, a `Range` or a `Table` left on
-  its default placement, and `.Sized(RowsWhileAnyValue())` applied *directly to one of
-  those* — its height is discovered *as the projection consumes it* rather than measured
-  first, so the rows pass the window once. The built-in table readings
-  (`Table<T>()`, `Table()`, `Table(row => …)`) are written against that reading,
-  through `TableView.StreamRows()`, and so is a block read by `Row(i)` or
-  `block[column, row]`. A **dimension query** asks how far the extent goes and settles it
-  there and then: `TableView.Rows`, `.RowCount`, `.Location`, `CellBlock.Height`, `.Rows`,
-  `.Columns`, `.Column`, `.Location`, `.AddressOf`, and `ISpace.Area` itself. Widths are
-  free either way.
-- **A composite over a discovered bound now streams.** A `.Sized(RowsWhileAnyValue())` on a
-  `VerticalFlow`, a `HorizontalFlow`, an `Overlay`, or a bare `VerticalRepeat` — a
-  `HorizontalRepeat` excepted, since each occurrence of it spans the full height and so settles
-  the bound before the first item, exactly as `HorizontalBands` does —
-  no longer settles the bound before the first child projection runs: placing a child asks only
-  whether there is a row at its offset (`ProjectionEngine.Exceeds`) and slices a lazy tail
-  (`Plane.Slice(Offset)`, which carries an undiscovered bound forward rather than forcing it)
-  rather than reading `Area`, so the height stays undiscovered until
-  something genuinely needs it. What still forces is a CHILD's own declared area whose strategy
-  reads `ISpace.Area` to answer — a bare `VerticalRepeat(Record(record))` inside a bound still
-  settles the whole extent at the first occurrence, because `Record`'s placement declares its own
-  one-row area and the strategy behind it asks the extent how wide it is. Where the region that
-  reads the rows is sized by a fixed stride instead of a search, the tiler
-  (`VerticalBands`/`HorizontalBands`) cuts a real, measured band per iteration and never asks the
-  parent extent anything, which is how `Table`'s own body streams.
-- **A width discovered from the data costs the rows it takes to settle, and no more.** A
-  `Table` on its default placement finds its width from the sheet too, in the *same* forward
-  walk as its height: each row the height rule accepts is fed to the width rule as it is
-  taken, and the walk stops as soon as no further row could change the width. On the usual
-  sheet — a full header row, or a first body row with every column occupied — that is one
-  row, and the table then streams exactly as a fixed-width one does. Where a leading column
-  is blank for a long stretch, settling the width honestly costs the rows it takes to fill
-  it, and the extent is forced that far before the projection sees its first row. That is
-  the one case where `.Sized(RowsWhileAnyValue())` — full available width, nothing to
-  discover — still buys something.
+- **A monotone walk holds almost nothing.** A table read one band per row (`Table<T>()`,
+  `Table(headerRows, eachRow: …)`, a `VerticalRepeat` of a streaming item) is offered each row
+  and done with it: the pass holds the row in hand, the band being placed, and the attempt a
+  repeat has in progress. The tall-ledger walk in `WorkbookTests` reads 1,201 rows with a
+  peak well under sixteen.
+- **A shape that reads its extent whole holds its extent.** A `Range(…)` block, a `Column(…)`
+  strip, a `Table(view => …)` or `Table(row => …)` lambda rung reads the region it collected
+  at close, so every row of that region is held until then. That is the right cost for a
+  block a reader genuinely wants whole; it is the wrong shape for a sheet-sized region.
+- **A tolerance boundary holds until it settles.** `.Optional()`, `.Else(…)` and `Choice(…)`
+  may have to replay what their inner took to the successor, so they hold from where they
+  started. Put the boundary around the part that may be absent, not around the sheet.
+- **A repeat holds one attempt.** A committed occurrence is final, so a walk over a
+  thousand blocks retains one block, its separator and the row in hand.
+- **A shape driven across its axis is held and driven again.** A `HorizontalFlow` under a
+  row-major source holds its band until its extent is known, then runs along it. So does a
+  column landmark (`RightOf(ColumnContaining(…))`, `UntilColumn`), which can only be found
+  over the whole extent.
+
+**Ask before reading.** `CostReport.Of(definition)` is the dry run: one line per node saying
+whether the engine drives it row by row or holds it whole and why, how far back its subtree
+may hand rows back, and the axis it announces. It is a pure function of the declaration, so it
+can be printed from a test or a script with no file in hand:
+
+```csharp
+Console.WriteLine(CostReport.Of(report));
+// driver: rows
+// VerticalFlow          streams  reach none    axis vertical
+//   'title'             streams  reach none    axis either
+//   Table<Transaction>  streams  reach none    axis vertical
+```
 
 ## The `Workbook` / `Sheet` lifecycle
 
 ```csharp
-using var book = Workbook.Open(path);              // owns file handles, reader pool, chunk stores
-var result = projection.Map(book.Sheet("Data"));    // Sheet(name) vends a lent ISheetCells view
+using var book = Workbook.Open(path);              // owns every cursor it opens, and one string table
+var result = projection.Map(book.Sheet("Data"));    // Sheet(name) is one forward pass over its own cursor
 ```
 
-- **The workbook owns everything disposable**: file streams, readers, background warming
-  tasks, and every sheet's chunk store.
-- **A vended view is a value, not a handle.** `Sheet(name)` returns an `ISheetCells` with no
-  `Dispose` of its own. Cutting a region of it (`Plane<TSpace>.Slice`) is arithmetic — a
-  composed origin over the same store, at no extra memory cost — so it can be sliced, passed
-  to any projection, and held as long as the caller likes. The only thing that invalidates it
-  is the `Workbook` it came from being disposed.
+- **Each `Sheet(name)` is a fresh pass.** It opens a cursor of its own, walked to that sheet,
+  and hands back a space the engine drives from the top. Ask again to read the sheet again;
+  a second declaration over an already-open book is a second pass, with the string table
+  already warm. Resolution respects `WorkbookOptions.CaseSensitiveSheetNames` (default off,
+  as Excel itself); an unknown name throws `ArgumentException` naming the sheets seen so far.
+- **A pass is read once, forward.** As the declaration moves down the sheet, rows no open
+  machine may still read are released. A cell of a released row is a located read failure —
+  `row 7 of 'Data' has left the buffer: a streamed sheet is read once, forward, so read B7
+  inside the projection rather than after it` — which is what a `Point()` escaping its leaf
+  and read in a combiner, or the same sheet value mapped twice, will see.
+- **A cell read directly is loaded on the way to it.** Outside the engine nothing is
+  released, so a sheet can be walked forward by hand — `sheet.AsText(0, 0)`, then row 1, then
+  row 40 — and every row up to the one asked for is loaded and held. Walking backwards over
+  rows a *map* has released is the failure above.
+- **One consumer per pass.** A pass is not shared between threads. Many threads over one
+  workbook each ask for their own `Sheet(name)`; they share only the string table, which is
+  safe to share.
 - **Points have a lifetime, minting does not.** A `Point<ISheetCells>` is a space, a column
-  and a row — minting one touches nothing and costs nothing, disposed workbook or not.
-  *Reading* through one (`point.Decimal()`, `point.AsText()`, …) is what reaches the store,
-  and a read against a point whose `Workbook` has been disposed throws
-  `ObjectDisposedException` exactly as a direct cell read does — deterministically, whether or
-  not the chunk it wants happens still to be resident.
-- **`Sheet(name)` is idempotent.** Repeated calls for the same name return views over one
-  store — this is the warm-reuse property the cost model above depends on. Resolution
-  respects `WorkbookOptions.CaseSensitiveSheetNames` (default off, as the eager path); an
-  unknown name throws `ArgumentException` naming the sheets seen so far.
-- **A read after `Dispose` throws `ObjectDisposedException`, deterministically** — whether
-  or not the chunk it wants happens still to be resident. The check runs before the
-  resident-chunk fast path on purpose, so a stale read can never accidentally succeed.
-  This exception is a **fault** (see [IO errors are faults](#io-errors-are-faults)): no
-  tolerance boundary may absorb it as "section absent".
-- **Disposing while a map is running is a caller error, not corruption.** The running map
-  fails with `ObjectDisposedException`, wrapped by the engine as a `ProjectionException` naming
-  the projection and the cell it was reading.
-- **`Dispose` is idempotent and never blocks on a background warm.** A warm reader that is
-  mid-open when `Dispose` runs finishes its open and then discovers the workbook is gone,
-  disposing what it just opened rather than parking it — so returning promptly still
-  leaks no file handle.
-- **Concurrency**: maps over *different* workbooks are fully parallel; maps over
-  *different sheets* of one workbook run in parallel (lease *selection* briefly serialises
-  on the pool, the actual row streaming does not); maps over *one* sheet serialise on that
-  sheet's store — a documented v1 limitation, not a correctness one (see
-  [Honest limits](#honest-limits)).
+  and a row — minting one touches nothing. *Reading* through one is what reaches the pass.
+- **A read after `Dispose` throws `ObjectDisposedException`, deterministically**, whether
+  or not the row it wants happens still to be held. This exception is a **fault** (see
+  [IO errors are faults](#io-errors-are-faults)): no tolerance boundary may absorb it.
+- **`Dispose` closes every cursor the workbook opened** and lets go of the string table; the
+  interning counters survive it. It is idempotent.
 
 **The idiom `Workbook` exists for** — one declaration, reused across a directory of files,
 with the peak bounded per iteration instead of by the largest file in the run:
@@ -174,121 +118,47 @@ Parallel.ForEach(monthlyCloseOfFunds, path =>
 });
 ```
 
-## The sizing law
+`MapWorkbook(path, sheet)` is the one-line form of the same thing.
 
-**`WorkbookOptions.WindowRows` (8,192 rows by default) must be at least as tall as the
-tallest extent a declaration holds open at one time.** A vertical walk down a sheet has one chunk open at a time. A
-`HorizontalFlow` or `Overlay` over a band has the *whole band* open, because every child
-reads across it before any of them advances. Undersizing the window is not a gentle
-slowdown — it is collapse, and the shortfall compounds with every pass over the band (the
-five-vs-seven-chunk pair above is the miniature of it). The design probe that set this law
-measured a ten-chunk window over a seven-chunk band at 0.01s against a four-chunk window
-over a thirteen-chunk band at 29.5s — three orders of magnitude from one chunk of
-shortfall (`docs/design/streaming-spec.md` §1.3); `Streaming.Band_WindowFits` vs
-`Streaming.Band_WindowTooSmall` is that law's benchmark trend line going forward.
+## The cap
 
-**How the window knows what to keep.** Cutting a region is arithmetic now, not an object that
-carries its own extent, so the store cannot infer which band is open by looking at what was
-handed around. Instead the engine announces it: `WindowedSpace` implements `ISweepAware`, an
-optional interface any backend may implement, and `ProjectionEngine` calls
-`Sweeping(origin, area)` on the root space once per placement — once per rung, not once per
-cell — telling the store which band a projection just opened so eviction can protect it. This
-is *less* machinery than the per-cell hint a slice used to carry, not more, and it changes
-nothing about the counters below: the same sizing law, the same statistics, arrived at with one
-announcement per placement instead of one gate acquisition per resident read.
+**`WorkbookOptions.BufferRows` (null by default: no cap) is the most rows a pass may hold at
+once.** It is not a window to size to the data; it is a promise about the declaration. A pass
+that would hold more is a **fault** naming the shape that holds them:
 
-Two counters divide the diagnosis between them, both on `StreamingStatistics`:
-
-- **`WindowOverruns`** says a band **did not fit** — once per distinct extent too tall to be
-  held, regardless of how many cells it contains or how many times it is read.
-- **`ChunkReloads`** says **what not fitting cost** — how many chunk loads were of a chunk
-  the window had already thrown away.
-
-Raise `WindowRows` when both are non-zero together; that pairing is the collapse. A single
-`WindowOverruns` with `ChunkReloads` at zero is not a problem — see the next paragraph.
-
-### The counterintuitive reading: a plain walk down a tall sheet reports one overrun that costs nothing
-
-`WindowOverruns` is counted against the *band each placement announces* (`ISweepAware.Sweeping`,
-called once per placement by `ProjectionEngine` — see above), not against the access pattern
-read through it. The engine resolves a projection's own placement at every level, including
-the root, so `book.Sheet(name)`'s whole-sheet extent is itself announced once at the top of any
-`Map` call, before any narrower child placement narrows it. So a plain walk down a sheet taller
-than the window — no flow, no overlay, nothing that holds a band open on purpose — still
-reports exactly **one** `WindowOverruns`, because the root band itself (the whole sheet) does
-not fit the window. It costs nothing, because nothing about a monotone walk ever asks for a
-chunk twice:
-
-```csharp
-using var book = Workbook.Open(path, new WorkbookOptions { WindowRows = 256 });
-var space = book.Sheet("Ledger");              // 1,201 rows tall
-
-// Any projection walking the whole sheet does — Column(rows, ...), a Table left to its
-// discovered height, a plain VerticalRepeat. Its own placement is the whole sheet, resolved
-// and announced once at the top of the Map call.
-_ = Column(space.Area.Size.Height, column => column.Count).Map(space);
-
-var stats = book.Statistics("Ledger")!.Value;
-// stats.WindowOverruns == 1   (the whole-sheet band did not fit the window — expected)
-// stats.ChunkReloads   == 0   (nothing was ever read twice — it cost nothing)
+```
+Column: Column is holding 101 rows, from row 1 through row 101, more than the 100 the source
+allows: the declaration asks for more than a forward pass can keep. Raise the source's buffer
+cap, or bound the shape that holds
 ```
 
-Pinned by `WorkbookTests.AWalkDownASheetTallerThanTheWindowReportsOneOverrunThatCostNothing`
-and its control, `AWalkDownASheetThatFitsTheWindowReportsNoOverrunAtAll` (a sheet small
-enough to be held whole reports neither counter). Read `WindowOverruns` in isolation as "a
-band this large did not fit" — true and unremarkable for any sheet taller than the window —
-and read the *pair* with `ChunkReloads` as the number to act on.
+The holder named is the innermost machine still holding the oldest row — the leaf or boundary
+whose reach is the cost — never the boundary wrapping it. A cap is never a degraded read: with
+none set, a declaration that holds the sheet simply holds the sheet, which is what the peak in
+`Statistics` will say.
 
 ## The statistics vocabulary
 
 `Workbook.Statistics(sheetName)` returns `StreamingStatistics?` — null until that sheet has
-been vended, non-null after. `Workbook.ReaderStatistics` and `Workbook.InterningStatistics`
-belong to the *book*, shared across every sheet of it. All three render a one-line
-diagnostic via `ToString()`:
+been asked for, then the figures of the most recent pass over it. `Workbook.InterningStatistics`
+belongs to the *book*, shared across every sheet of it. Both render one line via `ToString()`:
 
 ```
-'Data' chunk 10r x 6 (60 rows) | loads 14 (reloads 7) | evictions 8 | overruns 1 |
-  rows read 140 skipped 100 | resident 6 chunks / 2,880B (peak 6 / 2,880B)
-
-readers 1/2 | opens 1 | reopens 0 | spare opens 1 (warm 0, waited 0ms) |
-  cheap rewinds 0 | per reader 10/0
+'Ledger': 1201 rows read, peak 12 retained
+'Undeclared': 4 rows read, peak 4 retained, 4 measured
 
 shared 1,014,999 | distinct 5,009/65,536 | saved ~32,319,976B (estimated)
 ```
 
-### `StreamingStatistics` — what reading one sheet has cost
+### `StreamingStatistics` — what one pass has cost
 
 | Member | Meaning |
 |---|---|
 | `SheetName` | The sheet these numbers describe. |
-| `ChunkRows` | Rows in one chunk — the unit the window is loaded and evicted in. |
-| `WindowChunks` | The window budget, in chunks. |
-| `WindowRows` | The window budget, in rows (`ChunkRows × WindowChunks`). |
-| `ChunkLoads` | Chunks materialised, re-materialisations included. |
-| `ChunkReloads` | Loads of a chunk this store had already thrown away — the cost half of the sizing-law pair. |
-| `Evictions` | Chunks dropped to stay inside the budget. |
-| `WindowOverruns` | How many times a band did not fit the window — the diagnosis half of the pair; see [the counterintuitive reading](#the-counterintuitive-reading-a-plain-walk-down-a-tall-sheet-reports-one-overrun-that-costs-nothing) above. |
-| `RowsMaterialised` | Rows read from the source and adapted into cells. |
-| `RowsSkipped` | Rows parsed and discarded to move a reader to a wanted chunk — owned by window sizing, invariant under `MaxReaders`. |
-| `RowsMeasured` | Rows read by the survey that sized a sheet whose reader reported no extent (a sheet with no valued cell); `0` for a sheet that reported its own. Above zero means a whole extra forward pass over the file was paid for before the window saw anything. Appears in `ToString()` only when non-zero. |
-| `ResidentChunks` | Chunks held right now. |
-| `PeakResidentChunks` | The most chunks ever held at once; never exceeds `WindowChunks`. |
-| `ResidentBytes` | Bytes of `Cell`s resident right now. |
-| `PeakResidentBytes` | The same at the peak. **Not the whole floor**: strings a `Text` cell points at are not counted here. Three things can hold one, and only the third shrinks with the window — the interning table, up to its cap; the reader's own shared-string table, for a file that spells its text that way; otherwise nothing but the chunk it sits in, which is why a string past the 256-character guard dies with its chunk (see [`InterningStatistics`](#interningstatistics--what-sharing-repeated-text-has-earned-one-workbook)). |
-
-### `ReaderPoolStatistics` — what one workbook's readers have cost
-
-| Member | Meaning |
-|---|---|
-| `MaxReaders` | The ceiling on readers held open at once (`WorkbookOptions.MaxReaders`). |
-| `ReadersOpen` | How many readers are open right now. |
-| `Opens` | File opens of every kind — the total number of expensive (multi-second) events. |
-| `Reopens` | A live reader thrown away and reopened because every reader stood ahead of a wanted row. Zero while concurrently-open passes do not exceed `MaxReaders`; above zero is the signal to raise it. |
-| `SpareOpens` | A spare slot opened for the first time, on demand or by a warmer. |
-| `WarmHits` | Spare opens a background warmer had already paid for by the time they were wanted. |
-| `WarmWaitMilliseconds` | Time a reach spent blocked on a warmer that had started but not finished. |
-| `CheapRewinds` | Backward reaches served by a reader parked behind the target — no open, no re-stream. Goes *up* when the pool is doing its job. |
-| `RowsPerReader` | Rows each reader has moved over, skipped and read alike. |
+| `RowsRead` | Rows loaded by the pass — every row the declaration was offered, or a direct read asked for. A rule that stops sees the row it stops at, so this is one more than a bounded shape consumed. |
+| `PeakRetained` | The most rows held at once — what the declaration's holds cost. A peak near the sheet's height says something holds its extent; `CostReport` says which. |
+| `Cap` | The cap the pass ran under (`WorkbookOptions.BufferRows`), or null. |
+| `RowsMeasured` | Rows read to measure a sheet whose reader reported no extent (a sheet with no valued cell); `0` for a sheet that reported its own. Above zero means a whole extra forward pass over the file was paid for before the declaration saw anything. |
 
 ### `InterningStatistics` — what sharing repeated text has earned one workbook
 
@@ -300,22 +170,21 @@ text-heavy sheet it is the largest single reduction available to either door —
 the same file costs when the *reader* has already deduped it, via shared strings) and a held
 projection from 86.1 MB to 32.3 MB. Both doors do it, at their own adapter seam, under the
 same length guard, so for any file whose distinct text fits the cap the two produce
-byte-identical live sets — the same 32.3 MB above, from either door.
+byte-identical live sets.
 
 | Member | Meaning |
 |---|---|
 | `DistinctValues` | Distinct values the table took in. Does not fall when `Dispose` drops the entries — it is the count reached, not the entries alive at the moment of asking. |
 | `Capacity` | The ceiling on it (`WorkbookOptions.MaxInternedStrings`, 65,536 by default; `0` turns sharing off). |
-| `AtCapacity` | Whether the table stopped growing. Past the cap, values already in it go on being shared and one newly met does not — degradation, never failure. Appears in `ToString()` only when true. **It does not say on its own which way to move the cap** — see [what a full table costs](#what-a-full-table-costs) below. |
-| `Hits` | Cells handed an instance the table already held. Each is a duplicate string that did not have to be retained. Counted per *fill*, not per cell: a chunk reloaded after eviction shares its cells again and counts them again, so this can exceed a sheet's text-cell count — read it against `ChunkReloads`. |
-| `EstimatedBytesSaved` | What those hits are worth, **estimated** and named so: the sum over every hit of what a string of that length occupies on a 64-bit runtime (header, length, characters, rounded to the allocation granularity), counted per fill exactly as `Hits` is. It models the layout, not the heap. To know a live set, measure a live set. |
+| `AtCapacity` | Whether the table stopped growing. Past the cap, values already in it go on being shared and one newly met does not — degradation, never failure. **It does not say on its own which way to move the cap** — see [what a full table costs](#what-a-full-table-costs) below. |
+| `Hits` | Cells handed an instance the table already held. Each is a duplicate string that did not have to be retained. |
+| `EstimatedBytesSaved` | What those hits are worth, **estimated** and named so: the sum over every hit of what a string of that length occupies on a 64-bit runtime. It models the layout, not the heap. To know a live set, measure a live set. |
 
-Two guards bound what the table itself can pin, because it lives as long as the workbook and
-therefore outlives the window it feeds. `Capacity` bounds the entries; a **256-character
-limit** bounds each one — long spreadsheet text is a memo or a free-text note, nearly always
-unique, so it would take an entry that never scores a hit while pinning the most bytes of
-anything in the table, and cost the most to hash on every cell that goes past. What actually
-repeats — captions, currency and account codes, categories, party names — is short.
+Two guards bound what the table itself can pin, because it lives as long as the workbook.
+`Capacity` bounds the entries; a **256-character limit** bounds each one — long spreadsheet
+text is a memo or a free-text note, nearly always unique, so it would take an entry that never
+scores a hit while pinning the most bytes of anything in the table. What actually repeats —
+captions, currency and account codes, categories, party names — is short.
 
 #### What a full table costs
 
@@ -326,79 +195,55 @@ So `AtCapacity` alone is not a reason to raise `MaxInternedStrings`.
 
 What it costs is the entries. Every one is held for the life of the workbook whether it ever
 scores a hit or not, at roughly `Capacity × 530` bytes of characters plus the table's own
-~56 bytes an entry — at the default cap, some 40 MB were every entry a full 256 characters,
-against a default window of about 1.5 MB on an eight-column sheet. **So the knob turns both
-ways:** raise it when a sheet's genuinely repeating vocabulary is larger than the cap, and
-lower it — or pass `0` — when the text does not repeat and the memory floor is the point.
-
-How much a wasted entry actually costs depends on the file. Where an `.xlsx` spells its text
-through the workbook's shared-string table, the reader pins those strings for its own
-lifetime anyway and an entry here adds its dictionary node rather than its characters, so the
-marginal cost is near nothing. The cost lands on files whose text is inline, and on `.xls`.
-
-One thing the retention rig cannot see, and worth saying because the before-and-after figures
-at the top of this section come from it: its readings are taken with the workbook closed,
-which releases the table. A cap full of entries that never hit is invisible to those numbers
-by construction — it is a floor to reason about from `DistinctValues` and `Hits`, not one the
-receipts will show you.
+~56 bytes an entry. **So the knob turns both ways:** raise it when a sheet's genuinely
+repeating vocabulary is larger than the cap, and lower it — or pass `0` — when the text does
+not repeat and the memory floor is the point. Where an `.xlsx` spells its text through the
+workbook's shared-string table, the reader pins those strings for its own lifetime anyway and
+an entry here adds its dictionary node rather than its characters; the cost lands on files
+whose text is inline, and on `.xls`.
 
 The eager door does the same thing without the counters and without a cap:
-`SpreadsheetSpace.Create` shares text across every sheet of one call, so a `foreach` over
-several sheets holds one reference per distinct value of every sheet materialised so far —
-whether the caller kept those grids or not — until the enumeration ends and the table goes
-with it. The single-sheet overload disposes its enumerator at the sheet it wanted, so it
-holds nothing past the grid it filled.
+`SpreadsheetSpace.Create` shares text across every sheet of one call.
 
 ## IO errors are faults
 
-A disk failure — or a read against a view whose `Workbook` has been disposed — is
+A disk failure — or a read against a sheet whose `Workbook` has been disposed — is
 classified a **fault**, never a data disagreement. Faults propagate through every tolerance
 boundary unchanged: `.Optional()`, `.Else(fallback)`, `.Else(value)`, and `Choice(...)` all
 let a fault through rather than absorbing it. This applies at every point a strategy or a
-projection reads a cell, not only inside a projection — an offset strategy scanning past
-blank rows, an area strategy sizing a region, a repeat's separator, and a projection itself
-all wrap a foreign exception through the same fault check.
+projection reads a cell, and to the pass itself: a cursor that throws while the engine is
+loading the next row is a fault naming the declaration and the row.
 
-Concretely, `IOException` (and its derivatives — `FileNotFoundException`,
-`DirectoryNotFoundException`, and the reader's own IO failures), `ObjectDisposedException`,
-and `OutOfMemoryException` are faults, alongside the pre-existing bug list
-(`NullReferenceException`, `IndexOutOfRangeException`, `ArgumentOutOfRangeException`,
-`ArgumentNullException`). A wrong-kind cell, an unparseable value, and a missing anchor
+Concretely, `IOException` (and its derivatives), `ObjectDisposedException` and
+`OutOfMemoryException` are faults, alongside the bug list (`NullReferenceException`,
+`IndexOutOfRangeException`, `ArgumentOutOfRangeException`, `ArgumentNullException`,
+`InvalidCastException`). A wrong-kind cell, an unparseable value, and a missing anchor
 (`OutOfBoundsException`) remain ordinary, absorbable failures — the fault list is a
 discrimination, not a blanket. Without this rule, a disk failure in the middle of
 `SkipBlankRows()` inside `section.Optional()` would have been reported as *"section
 absent"*, with a warning, and the parse would have continued and produced a wrong answer
-quietly — the one failure mode this feature could not ship with.
+quietly.
 
 ## Honest limits
 
 - **`.xls` is unverified.** `ExcelDataReader` nominally reads both formats, but every
-  streaming test fixture, and the identity suite that proves a window reads the same cells
-  as `SpreadsheetSpace.Create`, is `.xlsx`. Treat `.xls` through `Workbook` as unproven
-  until it has its own fixture.
+  streaming test fixture, and the identity suite that proves a pass reads the same cells as
+  `SpreadsheetSpace.Create`, is `.xlsx`. Treat `.xls` through `Workbook` as unproven until
+  it has its own fixture.
 - **A sheet whose reader reports no extent costs one pass to measure.** For the formats
   ExcelDataReader handles that means a sheet with no valued cell — rows of
   formatted-but-valueless cells, a pre-formatted export region — since the reader derives
-  its counts from a pre-scan of the cells, not from the `dimension` element. `Sheet(name)` reads
-  such a sheet once, counting rows and watching the width, and hands the real extent to the
-  window — so a declaration sees exactly the space it would have seen from a file that
-  described itself, and running off the end is the ordinary `OutOfBoundsException`. The pass
-  costs time, not memory: no row is materialised by it. Where the cost shows is
-  `Statistics(sheet)!.Value.RowsMeasured` — the rows the survey read, and `0` for every
-  sheet that reported its own dimension — plus the reader's own travel in
-  `ReaderStatistics`. It also runs holding the workbook's gate, so vending such a sheet
-  blocks other `Sheet()` and `Statistics()` calls on that workbook until it finishes. The
-  eager path measures such a sheet too — `SpreadsheetSpace.Create` reads it and builds the
-  grid from what arrived, rather than from counts the reader would not give — so the two
-  doors report the same extent for the same file and neither is the one to avoid. The cost
-  differs in the usual way: the eager measure holds the rows it counted, the streaming one
-  counts and drops them.
-- **Reads against one sheet serialise.** Different workbooks, and different sheets of one
-  workbook, read in parallel; two threads mapping the *same* sheet at once are correct —
-  no torn read, no chunk installed twice — but serialised on that sheet's store, one load
-  at a time. A concurrent-map-over-one-sheet workload that actually wants parallel chunk
-  loads would need per-chunk load coordination that does not exist yet.
+  its counts from a pre-scan of the cells, not from the `dimension` element. `Sheet(name)`
+  reads such a sheet once on a cursor of its own, counting rows and watching the width, and
+  the pass then sees exactly the space a self-describing file would have given it. The cost
+  is time, not memory, and `Statistics(sheet)!.Value.RowsMeasured` says what it was. The
+  eager door measures such a sheet too, so the two doors report the same extent.
+- **A pass cannot go back.** Reading a cell of a row the engine has released fails, by
+  design; a shape that needs the whole region is the shape to declare, and the cost report
+  will say it holds.
+- **A rule that stops sees one row past its stop.** A bounded shape consumes its rows and the
+  engine loads the next to offer it; `RowsRead` counts that row.
 
-Further-out deferrals (a public row-source seam, async APIs, a streaming result type, an
-adaptive `MaxReaders`) are tracked in `docs/design/streaming-spec.md` §13–§14, not repeated
-here.
+Further-out deferrals (a public row-source seam, async APIs, a streaming result type) are
+tracked in `docs/design/streaming-spec.md`, the implementer's record of the windowed store
+this pass replaced, not repeated here.

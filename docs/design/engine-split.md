@@ -18,7 +18,10 @@ decision inverted in phase 4: `Unrect.Engine` does ride inside the "Unrect" pack
 the engine *project* produces that package and bundles `Unrect`, `Core`, `Strategies` and the
 analyzers — the only direction without a reference cycle — and the `Unrect` project carries the restore
 identity `Unrect.Definitions`. `PathRenderer` and `PlacementRules` stayed in `Unrect`, since every
-node's machine names them.
+node's machine names them. **Phase 5 landed the same day** — see `push-interpreter.md`'s status
+for the list; the acceptance test holds (`Unrect` references nothing in `Unrect.Engine`), and the
+one demolition still open is the eager/incremental strategy duality (§5.4), which removes members
+from published Core interfaces and is the owner's call.
 
 The one sentence: `IProjection<TSpace, TResult>.Project(Plane<TSpace>, ProjectionContext)` makes every
 node both the declaration and its own pull interpreter. Replace `Project` with `Start` — *hand back

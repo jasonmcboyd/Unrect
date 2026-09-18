@@ -87,6 +87,21 @@ the text below:
   `PlacementRules.Streams`, so they cannot disagree. `Orientation` is public now that a driver is the
   subject of a public signature.
 
+**Phase 5 landed 2026-09-18** (commits `d16e39c`, `7628060`, `b62ddf2`, `7969754`, `e1120ff`): the
+demolition. Map runs the push session only; a repeat whose separator has no per-span form
+gathers and walks at close rather than falling back; `Project` left the contract and every node,
+with a collector's read becoming `Collect` and the bind rung the labelled composite with a late
+body; `ProjectionEngine`, `ProjectionResult`, `Bound`, the layout states, `ISweepAware`, `IBound`
+and the plane's lazy bottom edge are gone; `Workbook.Sheet` is one forward pass over its own
+cursor, and the window, chunk store, reader pool and their counters are gone with the 65 tests of
+them. Two more engine corrections came out of the store's demolition: a collector under a declared
+rule is driven along whichever axis the rule runs (`DefinitionNode.Collects`), and it retains every
+span it collected. What survives of the pull era, on record: `ProjectionContext` as the engine's
+internal record of position, diagnostics and labels (the views still take it); `EagerPlacement`
+resolving a held child's placement with the strategies' whole-region form; and the eager/incremental
+duality in the strategy calculus, which is the one deletion that removes members from published
+Core interfaces and waits on the owner. Suite: 2,424 tests, 18 analyzer tests.
+
 The rulings in §0 were settled with the owner in the session that produced this document; the
 decisions in §11 were accepted as recommended.
 
