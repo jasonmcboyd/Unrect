@@ -86,7 +86,7 @@ namespace Unrect.Projections
       public bool Next(Plane<TSpace> span)
       {
         if (_closed)
-          throw _scope.Context.Failure(_choice, $"{PathRenderer.Describe(_choice)} was fed a span after it was closed", span, null, null, isFault: true);
+          throw _scope.Failure(_choice, $"{PathRenderer.Describe(_choice)} was fed a span after it was closed", span, null, null, isFault: true);
 
         _first ??= span;
 
@@ -158,8 +158,8 @@ namespace Unrect.Projections
       /// <summary>Rolls back to the attempt's mark, records the Info, and moves to the next alternative — or throws the summary when there is none.</summary>
       private List<Plane<TSpace>> Abandon(ProjectionException failure)
       {
-        _scope.Context.Diagnostics.Rollback(_mark);
-        _scope.Context.Report(
+        _scope.Diagnostics.Rollback(_mark);
+        _scope.Report(
           DiagnosticSeverity.Info,
           failure,
           PathRenderer.Describe(_choice),
@@ -173,7 +173,7 @@ namespace Unrect.Projections
         if (_index == _choice.Alternatives.Length)
         {
           var extent = _first is Plane<TSpace> first ? Spans.Region(first, taken.Count, _scope.Driver) : _scope.Anchor;
-          throw _scope.Context.Failure(_choice, _choice.Summarise(_failures), extent, null, _failures[_failures.Length - 1]);
+          throw _scope.Failure(_choice, _choice.Summarise(_failures), extent, null, _failures[_failures.Length - 1]);
         }
 
         _current = StartAlternative(_first is Plane<TSpace> at ? Spans.Empty(at, _scope.Driver) : _scope.Anchor);
@@ -182,7 +182,7 @@ namespace Unrect.Projections
 
       private IChildHandle<TSpace, T> StartAlternative(Plane<TSpace> at)
       {
-        _mark = _scope.Context.Diagnostics.Mark();
+        _mark = _scope.Diagnostics.Mark();
         return _scope.Start(_choice.Children[_index], _choice.Alternatives[_index], at, inheritSite: true);
       }
     }

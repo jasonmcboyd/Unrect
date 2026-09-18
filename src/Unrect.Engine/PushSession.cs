@@ -19,7 +19,7 @@ namespace Unrect.Projections
     /// arrive, and after every row the feed is told what the open machines still hold, so it may
     /// drop the rest; any other space retains its rows and is simply cut into them.
     /// </summary>
-    internal static AppliedResult<T> Apply<T>(IProjectionDefinition<TSpace, T> definition, TSpace space, ProjectionContext context)
+    internal static AppliedResult<T> Apply<T>(IProjectionDefinition<TSpace, T> definition, TSpace space, SessionScope<TSpace> scope)
     {
       if (definition is null)
         throw new ArgumentNullException(nameof(definition));
@@ -27,7 +27,6 @@ namespace Unrect.Projections
         throw new ArgumentNullException(nameof(space));
 
       var whole = Plane<TSpace>.Of(space);
-      var scope = new SessionScope<TSpace>(context, Spans.Empty(whole, Orientation.Vertical), Orientation.Vertical, owner: null);
       var root = scope.Start(new Child(definition, default), definition, scope.Anchor);
 
       if (space is IRowFeed feed)
@@ -36,14 +35,14 @@ namespace Unrect.Projections
 
         // Row-indexed rather than driven off what the feed has loaded: a direct read inside a
         // machine may have loaded rows ahead of the offer, and every one of them is still offered.
-        for (var row = 0; Load(feed, row, definition, whole, context); row++)
+        for (var row = 0; Load(feed, row, definition, whole, scope); row++)
         {
           var span = whole.Slice(new Offset(0, row), new Area(width, 1));
 
           if (!root.Next(span))
             break;
 
-          Trim(feed, root, definition, row, span, context);
+          Trim(feed, root, definition, row, span, scope);
         }
       }
       else
@@ -62,7 +61,7 @@ namespace Unrect.Projections
     /// Has the feed load <paramref name="row"/>, or says the source is exhausted. A source that
     /// throws — the disk, a file replaced mid-read — is a fault, never a statement about the data.
     /// </summary>
-    private static bool Load<T>(IRowFeed feed, int row, IProjectionDefinition<TSpace, T> definition, Plane<TSpace> whole, ProjectionContext context)
+    private static bool Load<T>(IRowFeed feed, int row, IProjectionDefinition<TSpace, T> definition, Plane<TSpace> whole, ProjectorScope<TSpace> scope)
     {
       while (feed.Loaded <= row)
       {
@@ -80,7 +79,7 @@ namespace Unrect.Projections
         {
           var at = row < whole.Area.Height ? whole.Slice(new Offset(0, row), new Area(whole.Width, 1)) : whole;
 
-          throw context.Failure(definition, $"the source threw {exception.GetType().Name}: {exception.Message}", at, null, exception, isFault: true);
+          throw scope.Failure(definition, $"the source threw {exception.GetType().Name}: {exception.Message}", at, null, exception, isFault: true);
         }
 
         if (!more)
@@ -96,7 +95,7 @@ namespace Unrect.Projections
     /// the innermost machine holding that oldest row — an enclosing boundary holds whatever its
     /// child holds, so blaming it would name the wrapper for the leaf's reach.
     /// </summary>
-    private static void Trim(IRowFeed feed, IChildHandle<TSpace> root, IProjectionDefinition definition, int current, Plane<TSpace> span, ProjectionContext context)
+    private static void Trim(IRowFeed feed, IChildHandle<TSpace> root, IProjectionDefinition definition, int current, Plane<TSpace> span, ProjectorScope<TSpace> scope)
     {
       var hold = root.Retained(current);
       var oldest = hold?.Row ?? current;
@@ -107,7 +106,7 @@ namespace Unrect.Projections
       {
         var who = hold is Hold held ? PathRenderer.Describe(held.Holder) : "the declaration";
 
-        throw context.Failure(
+        throw scope.Failure(
           hold?.Holder ?? definition,
           $"{who} is holding {feed.Retained} rows, from row {oldest + 1} through row {current + 1}, more than the {cap} the source allows: "
           + "the declaration asks for more than a forward pass can keep. Raise the source's buffer cap, or bound the shape that holds",
@@ -119,16 +118,21 @@ namespace Unrect.Projections
     }
   }
 
+  /// <summary>The engine's scope: a position in the run plus the driver, the anchor and the handle children report to.</summary>
   internal sealed class SessionScope<TSpace> : ProjectorScope<TSpace>
     where TSpace : class, ISpace
   {
-    internal SessionScope(ProjectionContext context, Plane<TSpace> anchor, Orientation driver, IChildRegistry<TSpace>? owner)
+    internal SessionScope(TreePosition position, DiagnosticCollector diagnostics, Plane<TSpace> anchor, Orientation driver, IChildRegistry<TSpace>? owner)
+      : base(position, diagnostics)
     {
-      Context = context;
       Anchor = anchor;
       Driver = driver;
       Owner = owner;
     }
+
+    /// <summary>The scope a run over <paramref name="space"/> starts from: the root position, a fresh collector, rows as the driver.</summary>
+    internal static SessionScope<TSpace> Root(TSpace space)
+      => new SessionScope<TSpace>(TreePosition.Root, new DiagnosticCollector(), Spans.Empty(Plane<TSpace>.Of(space), Orientation.Vertical), Orientation.Vertical, null);
 
     /// <summary>The handle children started here report to; null at the root.</summary>
     internal IChildRegistry<TSpace>? Owner { get; }
@@ -136,26 +140,26 @@ namespace Unrect.Projections
     /// <summary>The axis spans arrive along here: the session's at the root, a held node's own where it is re-driven.</summary>
     internal override Orientation Driver { get; }
 
-    internal override ProjectionContext Context { get; }
-
     internal override Plane<TSpace> Anchor { get; }
 
-    internal override ProjectorScope<TSpace> At(ProjectionContext context, Plane<TSpace> anchor, Orientation driver)
-      => new SessionScope<TSpace>(context, anchor, driver, Owner);
+    private protected override ProjectorScope<TSpace> Derive(TreePosition position)
+      => new SessionScope<TSpace>(position, Diagnostics, Anchor, Driver, Owner);
 
-    internal override ProjectorScope<TSpace> Within(IChildRegistry<TSpace> owner, ProjectionContext context, Plane<TSpace> anchor, Orientation driver)
-      => new SessionScope<TSpace>(context, anchor, driver, owner);
+    internal override ProjectorScope<TSpace> At(Plane<TSpace> anchor, Orientation driver)
+      => new SessionScope<TSpace>(Position, Diagnostics, anchor, driver, Owner);
+
+    internal override ProjectorScope<TSpace> Within(IChildRegistry<TSpace> owner, Plane<TSpace> anchor, Orientation driver)
+      => new SessionScope<TSpace>(Position, Diagnostics, anchor, driver, owner);
 
     internal override IChildHandle<TSpace, T> Start<T>(Child edge, IProjectionDefinition<TSpace, T> definition, Plane<TSpace> anchor, int? occurrence = null, bool strict = true, bool inheritSite = false)
     {
-      var parent = Context;
+      ProjectorScope<TSpace> parent = this;
 
       if (occurrence is int index)
         parent = parent.WithIndex(index).WithOrdinal(index);
 
       // A transparent wrapper's inner is labelled by whatever site was waiting for the wrapper —
-      // the wrapper contributed no segment and claims no site — exactly as the pull engine hands
-      // its context on unchanged.
+      // the wrapper contributed no segment and claims no site.
       if (!inheritSite)
         parent = parent.WithUseSite(edge.Site);
 

@@ -49,7 +49,7 @@ namespace Unrect.Projections
         }
         catch (CellReadException failure)
         {
-          throw Scope.Context.Reading(failure, Extent);
+          throw Scope.Reading(failure, Extent);
         }
       }
     }

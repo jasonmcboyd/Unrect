@@ -27,17 +27,17 @@ namespace Unrect.Projections
     internal override bool Collects => true;
 
 
-    internal override Settlement<T> Collect(Plane<TSpace> extent, ProjectionContext context)
+    internal override Settlement<T> Collect(Plane<TSpace> extent, ProjectorScope<TSpace> scope)
     {
       T value;
 
       try
       {
-        value = Projection(new CellBlock<TSpace>(extent, context));
+        value = Projection(new CellBlock<TSpace>(extent, scope));
       }
       catch (CellReadException failure)
       {
-        throw context.Reading(failure, extent);
+        throw scope.Reading(failure, extent);
       }
 
       // The extent is measured after the projection has run, never before: on a bound still being

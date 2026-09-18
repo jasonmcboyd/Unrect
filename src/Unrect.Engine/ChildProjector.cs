@@ -29,8 +29,8 @@ namespace Unrect.Projections
     }
 
     private readonly SessionScope<TSpace> _scope;
-    private readonly ProjectionContext _parent;
-    private readonly ProjectionContext _child;
+    private readonly ProjectorScope<TSpace> _parent;
+    private readonly ProjectorScope<TSpace> _child;
     private readonly IProjectionDefinition<TSpace, T> _definition;
     private readonly Plane<TSpace> _anchor;
     private readonly bool _strict;
@@ -53,7 +53,7 @@ namespace Unrect.Projections
     private bool _innerRefused;
     private Settlement<T> _settlement;
 
-    internal ChildProjector(SessionScope<TSpace> scope, ProjectionContext parent, IProjectionDefinition<TSpace, T> definition, Plane<TSpace> anchor, bool strict)
+    internal ChildProjector(SessionScope<TSpace> scope, ProjectorScope<TSpace> parent, IProjectionDefinition<TSpace, T> definition, Plane<TSpace> anchor, bool strict)
     {
       _scope = scope;
       _parent = parent;
@@ -233,7 +233,7 @@ namespace Unrect.Projections
 
         _innerStart = _offered.Count - 1;
         _phase = Phase.Size;
-        _inner = _definition.Build(_scope.Within(this, _child, Spans.Empty(Cut(span, _column, null), _driver), _driver));
+        _inner = _definition.Build(_child.Within(this, Spans.Empty(Cut(span, _column, null), _driver), _driver));
       }
 
       return TakeInner(span);
@@ -505,7 +505,7 @@ namespace Unrect.Projections
       // An inner that was fed nothing closes over the empty region its rule settled on, cut to the
       // settled width: a discovered block over blank space is 0x0, not 0 rows of the anchor's width.
       if (!_derived && _taken == 0 && _inner is not null)
-        _inner = _definition.Build(_scope.Within(this, _child, Narrow(InnerPlane(0), _width!.Value), _driver));
+        _inner = _definition.Build(_child.Within(this, Narrow(InnerPlane(0), _width!.Value), _driver));
 
       var settlement = InnerClose();
       var declared = !_derived;
@@ -528,7 +528,7 @@ namespace Unrect.Projections
       Offset = offset;
 
       var along = _definition.Axis.Along(_driver);
-      var machine = _definition.Build(_scope.Within(this, scope, Spans.Empty(inner, along ?? _driver), along ?? _driver));
+      var machine = _definition.Build(scope.Within(this, Spans.Empty(inner, along ?? _driver), along ?? _driver));
       Settlement<T> settlement;
 
       try

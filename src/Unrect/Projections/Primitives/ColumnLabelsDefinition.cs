@@ -33,7 +33,7 @@ namespace Unrect.Projections
     internal override bool Collects => true;
 
 
-    internal override Settlement<LabelMap> Collect(Plane<TSpace> extent, ProjectionContext context)
+    internal override Settlement<LabelMap> Collect(Plane<TSpace> extent, ProjectorScope<TSpace> scope)
     {
       var width = extent.Width;
 
@@ -42,10 +42,10 @@ namespace Unrect.Projections
       // discovered. Without it, cutting the band off an empty extent throws a bare
       // OutOfBoundsException where an absorbable failure belongs.
       if (width == 0 || !extent.HasRow(HeaderRows - 1))
-        throw context.Failure("a header row was declared but the table's extent is empty", extent);
+        throw scope.Failure("a header row was declared but the table's extent is empty", extent);
 
       var headerBand = extent.Slice(new Offset(0, 0), new Area(width, HeaderRows));
-      var header = new CellStrip<TSpace>(headerBand, Orientation.Horizontal, context);
+      var header = new CellStrip<TSpace>(headerBand, Orientation.Horizontal, scope);
 
       return new Settlement<LabelMap>(LabelMap.FromHeader(header), new Size(width, HeaderRows));
     }

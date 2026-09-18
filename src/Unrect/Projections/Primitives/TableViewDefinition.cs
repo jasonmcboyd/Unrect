@@ -37,23 +37,23 @@ namespace Unrect.Projections
     internal override bool Collects => true;
 
 
-    internal override Settlement<T> Collect(Plane<TSpace> extent, ProjectionContext context)
+    internal override Settlement<T> Collect(Plane<TSpace> extent, ProjectorScope<TSpace> scope)
     {
       // "Is there a row for the header" rather than "how tall are you": the same question of a
       // measured extent, and one row rather than all of them where the height is still being
       // discovered. Asking it the other way would settle every table's bound before it read a cell.
       if (HeaderRows > 0 && (extent.Width == 0 || !extent.HasRow(0)))
-        throw context.Failure("a header row was declared but the table's extent is empty", extent);
+        throw scope.Failure("a header row was declared but the table's extent is empty", extent);
 
       T value;
 
       try
       {
-        value = Projection(new TableView<TSpace>(extent, HeaderRows, context));
+        value = Projection(new TableView<TSpace>(extent, HeaderRows, scope));
       }
       catch (CellReadException failure)
       {
-        throw context.Reading(failure, extent);
+        throw scope.Reading(failure, extent);
       }
 
       // The extent is measured after the projection has run, never before — a declared area is

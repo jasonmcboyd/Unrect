@@ -87,7 +87,7 @@ namespace Unrect.Projections
       public bool Next(Plane<TSpace> span)
       {
         if (_closed)
-          throw _scope.Context.Failure(_labelled, $"{PathRenderer.Describe(_labelled)} was fed a span after it was closed", span, null, null, isFault: true);
+          throw _scope.Failure(_labelled, $"{PathRenderer.Describe(_labelled)} was fed a span after it was closed", span, null, null, isFault: true);
 
         _first ??= span;
 
@@ -147,7 +147,7 @@ namespace Unrect.Projections
         // exception the placement machine around this one classifies, so nothing is caught here.
         var inner = _labelled.Body
           ?? _labelled.LateBody!(labels)
-          ?? throw _scope.Context.Failure(_labelled, "the row bind returned null; it must return the projection that reads one record", Extent(), null, null, isFault: true);
+          ?? throw _scope.Failure(_labelled, "the row bind returned null; it must return the projection that reads one record", Extent(), null, null, isFault: true);
         var edge = _labelled.Body is null ? new Child(inner, UseSite.From(null, 2)) : _labelled.Children[1];
         var body = new WithLabelsDefinition<TSpace, T>(_labelled.LabelledAxis, labels, inner, Placement.Default);
 

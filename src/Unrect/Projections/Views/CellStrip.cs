@@ -19,11 +19,11 @@ namespace Unrect.Projections
   public sealed class CellStrip<TSpace> : IReadOnlyList<Point<TSpace>>
     where TSpace : class, ISpace
   {
-    internal CellStrip(Plane<TSpace> space, Orientation orientation, ProjectionContext context)
+    internal CellStrip(Plane<TSpace> space, Orientation orientation, ProjectorScope<TSpace> scope)
     {
       Space = space;
       Orientation = orientation;
-      Context = context;
+      Scope = scope;
     }
 
     /// <summary>The strip's own extent — one cell wide or one cell tall, depending on its orientation.</summary>
@@ -32,10 +32,10 @@ namespace Unrect.Projections
     private Orientation Orientation { get; }
 
     /// <summary>
-    /// The context the strip was projected in — where it sits, and what a reading built on it blames
+    /// The scope the strip was projected in — where it sits, and what a reading built on it blames
     /// when it cannot make sense of a cell.
     /// </summary>
-    private ProjectionContext Context { get; }
+    private ProjectorScope<TSpace> Scope { get; }
 
     /// <summary>
     /// How many cells the strip holds. A row's length is its extent's width, which is free even
@@ -85,7 +85,7 @@ namespace Unrect.Projections
     /// A failure blaming the declaration that named this strip — how a reading built on one reports
     /// a cell it could not make sense of.
     /// </summary>
-    internal ProjectionException Failure(string problem) => Context.Failure(problem, Space);
+    internal ProjectionException Failure(string problem) => Scope.Failure(problem, Space);
 
     private Offset Step(int index) => Orientation == Orientation.Horizontal ? new Offset(index, 0) : new Offset(0, index);
 

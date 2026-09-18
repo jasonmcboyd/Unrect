@@ -78,7 +78,7 @@ namespace Unrect.Projections
       public bool Next(Plane<TSpace> span)
       {
         if (_closed)
-          throw _scope.Context.Failure(_pad, $"{PathRenderer.Describe(_pad)} was fed a span after it was closed", span, null, null, isFault: true);
+          throw _scope.Failure(_pad, $"{PathRenderer.Describe(_pad)} was fed a span after it was closed", span, null, null, isFault: true);
 
         if (_finished)
           return false;
@@ -175,7 +175,7 @@ namespace Unrect.Projections
       {
         var size = extent.Declared.Size;
 
-        return _scope.Context.Failure(
+        return _scope.Failure(
           _pad,
           $"a padding of {_pad.Left} left, {_pad.Top} top, {_pad.Right} right, {_pad.Bottom} bottom does not fit an extent of {size.Width}x{size.Height}",
           extent,

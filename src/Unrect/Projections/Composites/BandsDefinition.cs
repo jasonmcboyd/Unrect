@@ -88,7 +88,7 @@ namespace Unrect.Projections
       public bool Next(Plane<TSpace> span)
       {
         if (_closed)
-          throw _scope.Context.Failure(_tiler, $"{PathRenderer.Describe(_tiler)} was fed a span after it was closed", span, null, null, isFault: true);
+          throw _scope.Failure(_tiler, $"{PathRenderer.Describe(_tiler)} was fed a span after it was closed", span, null, null, isFault: true);
 
         if (_finished)
           return false;
@@ -122,7 +122,7 @@ namespace Unrect.Projections
             return false;
           }
 
-          _tiler.ReportBlank(onBlank, band, _scope.Context);
+          _tiler.ReportBlank(onBlank, band, _scope);
         }
         else
         {
@@ -177,7 +177,7 @@ namespace Unrect.Projections
     private Plane<TSpace> Band(Plane<TSpace> extent, Offset offset, int across)
       => extent.Slice(offset, new Area(Extent(Stride, across)));
 
-    internal void ReportBlank(BlankRowStrategy onBlank, Plane<TSpace> band, ProjectionContext scope)
+    internal void ReportBlank(BlankRowStrategy onBlank, Plane<TSpace> band, ProjectorScope<TSpace> scope)
     {
       var noun = Stride == 1 ? "row" : "band";
       var at = scope.Locate(band).A1;

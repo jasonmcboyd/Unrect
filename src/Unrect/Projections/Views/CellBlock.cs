@@ -28,20 +28,20 @@ namespace Unrect.Projections
     private IReadOnlyList<CellStrip<TSpace>>? _rows;
     private IReadOnlyList<CellStrip<TSpace>>? _columns;
 
-    internal CellBlock(Plane<TSpace> space, ProjectionContext context)
+    internal CellBlock(Plane<TSpace> space, ProjectorScope<TSpace> scope)
     {
       Space = space;
-      Context = context;
+      Scope = scope;
     }
 
     /// <summary>The block's own extent.</summary>
     public Plane<TSpace> Space { get; }
 
     /// <summary>
-    /// The context the block was projected in — where it sits, and the context its rows and columns
+    /// The scope the block was projected in — where it sits, and the scope its rows and columns
     /// carry so a typed read of one reports a failure against the declaration that named the block.
     /// </summary>
-    private ProjectionContext Context { get; }
+    private ProjectorScope<TSpace> Scope { get; }
 
     /// <summary>
     /// How many columns wide the block is. Free on an extent still being discovered: a width is
@@ -101,7 +101,7 @@ namespace Unrect.Projections
       if (!Space.HasRow(index))
         throw new ArgumentOutOfRangeException(nameof(index), index, $"The block is {Height} rows tall.");
 
-      return new CellStrip<TSpace>(Space.Slice(new Offset(0, index), new Area(Width, 1)), Orientation.Horizontal, Context);
+      return new CellStrip<TSpace>(Space.Slice(new Offset(0, index), new Area(Width, 1)), Orientation.Horizontal, Scope);
     }
 
     /// <summary>
@@ -114,7 +114,7 @@ namespace Unrect.Projections
       if (index < 0 || index >= Width)
         throw new ArgumentOutOfRangeException(nameof(index), index, $"The block is {Width} columns wide.");
 
-      return new CellStrip<TSpace>(Space.Slice(new Offset(index, 0), new Area(1, Height)), Orientation.Vertical, Context);
+      return new CellStrip<TSpace>(Space.Slice(new Offset(index, 0), new Area(1, Height)), Orientation.Vertical, Scope);
     }
 
     /// <summary>

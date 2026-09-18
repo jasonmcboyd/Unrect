@@ -40,7 +40,7 @@ namespace Unrect.Projections
     internal override bool Collects => true;
 
 
-    internal override Settlement<string> Collect(Plane<TSpace> extent, ProjectionContext context)
+    internal override Settlement<string> Collect(Plane<TSpace> extent, ProjectorScope<TSpace> scope)
     {
       var size = extent.Area.Size;
 
@@ -48,7 +48,7 @@ namespace Unrect.Projections
       // caption inside a declared frame. Left in because it is also the half of this leaf that a
       // writer would satisfy: the writer emits the row, the reader verifies it.
       if (size.Height != 1)
-        throw context.Failure($"a Caption must be exactly one row tall; this one is {size.Height} rows tall", extent);
+        throw scope.Failure($"a Caption must be exactly one row tall; this one is {size.Height} rows tall", extent);
 
       var cells = extent.Erased();
 
@@ -59,7 +59,7 @@ namespace Unrect.Projections
           // match is a text match, and a blank cell never matches one.
           return new Settlement<string>(extent[column, 0].AsText()!, size);
 
-      throw context.Failure($"expected a row containing '{Text}' here", extent);
+      throw scope.Failure($"expected a row containing '{Text}' here", extent);
     }
   }
 }

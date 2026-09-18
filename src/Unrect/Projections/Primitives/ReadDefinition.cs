@@ -61,12 +61,12 @@ namespace Unrect.Projections
     internal override bool Collects => true;
 
 
-    internal override Settlement<TResult> Collect(Plane<TSpace> extent, ProjectionContext context)
+    internal override Settlement<TResult> Collect(Plane<TSpace> extent, ProjectorScope<TSpace> scope)
     {
       var size = extent.Area.Size;
 
       if (size.Width != 1 || size.Height != 1)
-        throw context.Failure($"{Article(Kind)} {Kind} must be exactly one cell; this one is {size.Width}x{size.Height}", extent);
+        throw scope.Failure($"{Article(Kind)} {Kind} must be exactly one cell; this one is {size.Width}x{size.Height}", extent);
 
       var cell = extent[0, 0];
 
@@ -74,7 +74,7 @@ namespace Unrect.Projections
         return new Settlement<TResult>(default!, size);
 
       if (!Read(cell, out var value, out var problem))
-        throw context.Failure(problem!(context.Locate(extent).A1), extent);
+        throw scope.Failure(problem!(scope.Locate(extent).A1), extent);
 
       return new Settlement<TResult>(value, size);
     }

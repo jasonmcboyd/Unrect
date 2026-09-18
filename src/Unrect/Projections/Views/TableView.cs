@@ -25,7 +25,7 @@ namespace Unrect.Projections
     // work).
     private IReadOnlyList<TableRow<TSpace>>? _rows;
 
-    internal TableView(Plane<TSpace> space, int headerRows, ProjectionContext context)
+    internal TableView(Plane<TSpace> space, int headerRows, ProjectorScope<TSpace> scope)
     {
       Space = space;
       HeaderRows = headerRows;
@@ -33,7 +33,7 @@ namespace Unrect.Projections
       Header = new CellStrip<TSpace>(
         space.Slice(new Offset(0, 0), new Area(HasHeader ? ColumnCount : 0, headerRows)),
         Orientation.Horizontal,
-        context);
+        scope);
 
       Labels = LabelMap.FromHeader(Header);
 
@@ -41,7 +41,7 @@ namespace Unrect.Projections
       // header was actually declared: a headerless table pushes nothing, so a by-name lookup still
       // finds no scope and reports the headerless message. The origin PushLabels captures is this
       // table's own, the frame the header's ordinals are read in and every body row translates from.
-      Context = HasHeader ? context.PushLabels(LabelAxis.Column, Labels, space.Origin) : context;
+      Scope = HasHeader ? scope.PushLabels(LabelAxis.Column, Labels, space.Origin) : scope;
     }
 
     /// <summary>The table's own header parsed once: the labels the bind rung binds by, and their citations.</summary>
@@ -104,11 +104,11 @@ namespace Unrect.Projections
       var index = 0;
 
       foreach (var band in StreamBands(1))
-        yield return new TableRow<TSpace>(index++, new CellStrip<TSpace>(band.Space, Orientation.Horizontal, band.Context), band.Context);
+        yield return new TableRow<TSpace>(index++, new CellStrip<TSpace>(band.Space, Orientation.Horizontal, band.Scope), band.Scope);
     }
 
     /// <summary>
-    /// The body as bands of <paramref name="bandHeight"/> rows, each with the context to project it
+    /// The body as bands of <paramref name="bandHeight"/> rows, each with the scope to project it
     /// in — what a row projection is applied to, and what <see cref="StreamRows"/> wraps in a
     /// <see cref="TableRow{TSpace}"/>. Forward-only in the same way: each step asks whether the band's last
     /// row is there and stops when it is not, so an extent still being discovered is consumed in
@@ -120,13 +120,13 @@ namespace Unrect.Projections
     /// undescribed.
     /// </para>
     /// </summary>
-    internal IEnumerable<(Plane<TSpace> Space, ProjectionContext Context)> StreamBands(int bandHeight)
+    internal IEnumerable<(Plane<TSpace> Space, ProjectorScope<TSpace> Scope)> StreamBands(int bandHeight)
     {
       for (var row = HeaderRows; Space.HasRow(row + bandHeight - 1); row += bandHeight)
       {
         var offset = new Offset(0, row);
 
-        yield return (Space.Slice(offset, new Area(ColumnCount, bandHeight)), Context);
+        yield return (Space.Slice(offset, new Area(ColumnCount, bandHeight)), Scope);
       }
     }
 
@@ -161,7 +161,7 @@ namespace Unrect.Projections
           throw Fault($"the row at {row.Location.A1} is blank, which is not allowed here");
 
         if (onBlank.Diagnostic is DiagnosticSeverity severity)
-          Context.Report(severity, Failure($"the row at {row.Location.A1} is blank; it was skipped"));
+          Scope.Report(severity, Failure($"the row at {row.Location.A1} is blank; it was skipped"));
 
         // Skip and Tolerate both omit the record and keep reading.
       }
@@ -191,23 +191,23 @@ namespace Unrect.Projections
     private int HeaderRows { get; }
 
     /// <summary>
-    /// The context the table was projected in — how a projection built on this view reports a
+    /// The scope the table was projected in — how a projection built on this view reports a
     /// failure against the table itself.
     /// </summary>
-    internal ProjectionContext Context { get; }
+    internal ProjectorScope<TSpace> Scope { get; }
 
     /// <summary>
     /// Reports a problem against the table itself — its origin, its extent. Citing the extent
     /// settles a bound still being discovered, which costs nothing worth saving on the way to a
     /// failure.
     /// </summary>
-    internal ProjectionException Failure(string problem) => Context.Failure(problem, Space);
+    internal ProjectionException Failure(string problem) => Scope.Failure(problem, Space);
 
     /// <summary>
     /// The same, for something that broke rather than disagreed — a declaration that cannot mean
     /// anything, which no tolerance boundary may report as a section that was not there.
     /// </summary>
-    internal ProjectionException Fault(string problem) => Context.Failure(problem, Space, null, isFault: true);
+    internal ProjectionException Fault(string problem) => Scope.Failure(problem, Space, null, isFault: true);
 
     /// <summary>
     /// The columns carrying <paramref name="columnName"/>; empty when there is no such column.

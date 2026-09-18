@@ -87,7 +87,7 @@ namespace Unrect.Projections
       public bool Next(Plane<TSpace> span)
       {
         if (_closed)
-          throw _scope.Context.Failure(_bounded, $"{PathRenderer.Describe(_bounded)} was fed a span after it was closed", span, null, null, isFault: true);
+          throw _scope.Failure(_bounded, $"{PathRenderer.Describe(_bounded)} was fed a span after it was closed", span, null, null, isFault: true);
 
         if (_finished)
           return false;
@@ -120,10 +120,10 @@ namespace Unrect.Projections
         var extent = _first is Plane<TSpace> first ? Spans.Region(first, _offered, Along) : _scope.Anchor;
 
         if (!_found && !_bounded.OrEnd)
-          throw _scope.Context.Failure(PathRenderer.Through(_bounded), $"{_bounded.Landmark.Description} exists to end this projection", extent, null, null);
+          throw _scope.Failure(PathRenderer.Through(_bounded), $"{_bounded.Landmark.Description} exists to end this projection", extent, null, null);
 
         if (!_found)
-          _scope.Context.Report(DiagnosticSeverity.Info, _bounded, $"{_bounded.Landmark.Description} exists to end this projection, so it ran to the end of the space", extent);
+          _scope.Report(DiagnosticSeverity.Info, _bounded, $"{_bounded.Landmark.Description} exists to end this projection, so it ran to the end of the space", extent);
 
         _inner ??= _scope.Start(_bounded.Children[0], _bounded.Inner, _scope.Anchor, inheritSite: true);
 

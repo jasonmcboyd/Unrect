@@ -20,8 +20,9 @@ namespace Unrect.Projections
         ? Presence.Empty
         : presence;
 
-    internal static ProjectionException AreaFailure<TSpace>(ProjectionContext scope, IProjectionDefinition projection, Plane<TSpace> inner, Exception exception)
+    internal static ProjectionException AreaFailure<TSpace, TOther>(ProjectorScope<TSpace> scope, IProjectionDefinition projection, Plane<TOther> inner, Exception exception)
       where TSpace : class, ISpace
+      where TOther : class, ISpace
       => exception is OutOfBoundsException
         ? scope.Failure(projection, "its area ran past the space available here", inner, null, exception)
         : scope.Failure(projection, Threw("area", exception), inner, null, exception, IsFault(exception));

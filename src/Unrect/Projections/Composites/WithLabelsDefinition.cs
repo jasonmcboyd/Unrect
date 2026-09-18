@@ -62,7 +62,7 @@ namespace Unrect.Projections
       public bool Next(Plane<TSpace> span)
       {
         if (_closed)
-          throw _scope.Context.Failure(_labelled, $"{PathRenderer.Describe(_labelled)} was fed a span after it was closed", span, null, null, isFault: true);
+          throw _scope.Failure(_labelled, $"{PathRenderer.Describe(_labelled)} was fed a span after it was closed", span, null, null, isFault: true);
 
         _first ??= span;
         _offered++;
@@ -90,7 +90,7 @@ namespace Unrect.Projections
 
       private IChildHandle<TSpace, T> StartBody(Plane<TSpace> at)
       {
-        var scope = _scope.At(_scope.Context.PushLabels(_labelled.LabelledAxis, _labelled.Map, at.Origin), Spans.Empty(at, _scope.Driver), _scope.Driver);
+        var scope = _scope.PushLabels(_labelled.LabelledAxis, _labelled.Map, at.Origin).At(Spans.Empty(at, _scope.Driver), _scope.Driver);
 
         return scope.Start(_labelled.Children[0], _labelled.Body, scope.Anchor, inheritSite: true);
       }

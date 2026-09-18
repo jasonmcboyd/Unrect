@@ -106,7 +106,7 @@ namespace Unrect.Projections
       public bool Next(Plane<TSpace> span)
       {
         if (_closed)
-          throw _scope.Context.Failure(_repeat, $"{PathRenderer.Describe(_repeat)} was fed a span after it was closed", span, null, null, isFault: true);
+          throw _scope.Failure(_repeat, $"{PathRenderer.Describe(_repeat)} was fed a span after it was closed", span, null, null, isFault: true);
 
         if (_finished)
           return false;
@@ -173,7 +173,7 @@ namespace Unrect.Projections
             }
             catch (Exception exception)
             {
-              throw _scope.Context.Failure(EngineRules.Threw("separator", exception), region, exception, EngineRules.IsFault(exception));
+              throw _scope.Failure(EngineRules.Threw("separator", exception), region, exception, EngineRules.IsFault(exception));
             }
 
             if (step == OffsetStep.Skip)
@@ -222,10 +222,10 @@ namespace Unrect.Projections
         }
 
         if (_absorbed)
-          _scope.Context.Report(DiagnosticSeverity.Info, _repeat, RepeatDefinition<TSpace, T>.EndedByTolerance(_values.Count), Extent());
+          _scope.Report(DiagnosticSeverity.Info, _repeat, RepeatDefinition<TSpace, T>.EndedByTolerance(_values.Count), Extent());
 
         if (_values.Count < _repeat.AtLeast)
-          throw _scope.Context.Failure(_repeat, $"expected at least {_repeat.AtLeast} occurrences but found {_values.Count}", Extent(), null, null);
+          throw _scope.Failure(_repeat, $"expected at least {_repeat.AtLeast} occurrences but found {_values.Count}", Extent(), null, null);
 
         return new Settlement<IReadOnlyList<T>>(
           _values,
@@ -235,7 +235,7 @@ namespace Unrect.Projections
 
       private void BeginAttempt(int position)
       {
-        _mark = _scope.Context.Diagnostics.Mark();
+        _mark = _scope.Diagnostics.Mark();
         _attemptStart = position;
 
         if (_values.Count > 0 && _separator is not null)
@@ -272,7 +272,7 @@ namespace Unrect.Projections
 
         if (item.PlacementFailed)
         {
-          _scope.Context.Diagnostics.Rollback(_mark);
+          _scope.Diagnostics.Rollback(_mark);
           _finished = true;
           return false;
         }
@@ -281,7 +281,7 @@ namespace Unrect.Projections
         if (item.Consumed.Width == 0 || item.Consumed.Height == 0 || Spans.Along(item.Advance, Along) == 0)
         {
           _absorbed = item.Presence == Presence.Absorbed;
-          _scope.Context.Diagnostics.Rollback(_mark);
+          _scope.Diagnostics.Rollback(_mark);
           _finished = true;
           return false;
         }

@@ -79,13 +79,13 @@ namespace Unrect.Projections
       {
         _boundary = boundary;
         _scope = scope;
-        _mark = scope.Context.Diagnostics.Mark();
+        _mark = scope.Diagnostics.Mark();
       }
 
       public bool Next(Plane<TSpace> span)
       {
         if (_closed)
-          throw _scope.Context.Failure(_boundary, $"{PathRenderer.Describe(_boundary)} was fed a span after it was closed", span, null, null, isFault: true);
+          throw _scope.Failure(_boundary, $"{PathRenderer.Describe(_boundary)} was fed a span after it was closed", span, null, null, isFault: true);
 
         _first ??= span;
 
@@ -178,8 +178,8 @@ namespace Unrect.Projections
       private List<Plane<TSpace>> Absorb(ProjectionException failure)
       {
         _primary = failure;
-        _scope.Context.Diagnostics.Rollback(_mark);
-        _scope.Context.Report(DiagnosticSeverity.Warning, failure);
+        _scope.Diagnostics.Rollback(_mark);
+        _scope.Report(DiagnosticSeverity.Warning, failure);
 
         var taken = new List<Plane<TSpace>>(_current!.Shortfall());
 

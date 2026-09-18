@@ -23,14 +23,14 @@ namespace Unrect.Projections
     internal override bool Collects => true;
 
 
-    internal override Settlement<Point<TSpace>> Collect(Plane<TSpace> extent, ProjectionContext context)
+    internal override Settlement<Point<TSpace>> Collect(Plane<TSpace> extent, ProjectorScope<TSpace> scope)
     {
       var size = extent.Area.Size;
 
       // Reachable only when the placement was replaced — Point().Sized(…) — and left in because it
       // is also the half a writer would satisfy: one cell declared, one cell emitted.
       if (size.Width != 1 || size.Height != 1)
-        throw context.Failure($"a Point must be exactly one cell; this one is {size.Width}x{size.Height}", extent);
+        throw scope.Failure($"a Point must be exactly one cell; this one is {size.Width}x{size.Height}", extent);
 
       return new Settlement<Point<TSpace>>(extent[0, 0], size);
     }

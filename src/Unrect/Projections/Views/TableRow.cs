@@ -20,10 +20,10 @@ namespace Unrect.Projections
   public sealed class TableRow<TSpace>
     where TSpace : class, ISpace
   {
-    internal TableRow(int index, CellStrip<TSpace> cells, ProjectionContext context)
+    internal TableRow(int index, CellStrip<TSpace> cells, ProjectorScope<TSpace> scope)
     {
       Strip = cells;
-      Context = context;
+      Scope = scope;
       Index = index;
     }
 
@@ -85,10 +85,10 @@ namespace Unrect.Projections
     private CellStrip<TSpace> Strip { get; }
 
     /// <summary>
-    /// The context this row was read in — the scope a projection applied to the row descends from,
+    /// The scope this row was read in — the scope a projection applied to the row descends from,
     /// which is the table's own with its column labels pushed.
     /// </summary>
-    internal ProjectionContext Context { get; }
+    internal ProjectorScope<TSpace> Scope { get; }
 
     private int Resolve(string columnName)
     {
@@ -100,7 +100,7 @@ namespace Unrect.Projections
       // Unreachable fallback: Resolvable throws the headerless message when there is no scope, so by
       // the time control reaches here a Column scope exists. Kept as an empty list rather than the
       // owning table's columns — byte-identical, and it is what lets a TableRow have no table.
-      var labels = Context.NearestLabels(LabelAxis.Column)?.Source.Labels ?? Array.Empty<string>();
+      var labels = Scope.NearestLabels(LabelAxis.Column)?.Source.Labels ?? Array.Empty<string>();
       var available = labels.Where(name => name.Length > 0).Select(name => $"'{name}'").ToList();
 
       throw Failure(
@@ -117,7 +117,7 @@ namespace Unrect.Projections
     /// </summary>
     private IReadOnlyList<int> Resolvable(string columnName)
     {
-      var scope = Context.NearestLabels(LabelAxis.Column);
+      var scope = Scope.NearestLabels(LabelAxis.Column);
 
       if (scope is null)
         throw Failure($"column '{columnName}' cannot be resolved: the table was declared without a header row; use column indices.");

@@ -141,7 +141,7 @@ namespace Unrect.Projections
     /// are known: a cell, a strip, a block, a header, a table view. A node that is not a collector
     /// builds a machine instead and is never asked.
     /// </summary>
-    internal virtual Settlement<TResult> Collect(Plane<TSpace> extent, ProjectionContext context)
+    internal virtual Settlement<TResult> Collect(Plane<TSpace> extent, ProjectorScope<TSpace> scope)
       => throw new InvalidOperationException($"{Description} is not read whole; it builds a machine.");
 
     /// <inheritdoc/>

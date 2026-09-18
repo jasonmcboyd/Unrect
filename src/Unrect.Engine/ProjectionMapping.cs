@@ -56,7 +56,7 @@ namespace Unrect.Projections
       if (space is null)
         throw new ArgumentNullException(nameof(space));
 
-      return PushSession<TSpace>.Apply(projection, space, ProjectionContext.Root(space));
+      return PushSession<TSpace>.Apply(projection, space, SessionScope<TSpace>.Root(space));
     }
 
     /// <summary>
@@ -90,17 +90,17 @@ namespace Unrect.Projections
       if (space is null)
         throw new ArgumentNullException(nameof(space));
 
-      var context = ProjectionContext.Root(space);
-      var mark = context.Diagnostics.Mark();
+      var scope = SessionScope<TSpace>.Root(space);
+      var mark = scope.Diagnostics.Mark();
       var extent = Plane<TSpace>.Of(space);
-      var applied = PushSession<TSpace>.Apply(projection, space, context);
+      var applied = PushSession<TSpace>.Apply(projection, space, scope);
 
       // Suppressed only when the whole parse is one absorbed failure: two boundaries that each
       // absorbed something have left a gap worth mentioning, even though neither consumed anything.
-      if (!(applied.Advance.Width == 0 && applied.Advance.Height == 0 && context.Diagnostics.AbsorbedAt(mark)))
-        ProjectionExtensions.ReportUnconsumed(projection, extent, applied.Offset.Size, applied.Consumed, context);
+      if (!(applied.Advance.Width == 0 && applied.Advance.Height == 0 && scope.Diagnostics.AbsorbedAt(mark)))
+        ProjectionExtensions.ReportUnconsumed(projection, extent, applied.Offset.Size, applied.Consumed, scope);
 
-      return new MapResult<TResult>(applied.Value, context.Diagnostics.Snapshot());
+      return new MapResult<TResult>(applied.Value, scope.Diagnostics.Snapshot());
     }
   }
 }

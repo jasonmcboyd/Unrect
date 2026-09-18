@@ -96,8 +96,11 @@ and the plane's lazy bottom edge are gone; `Workbook.Sheet` is one forward pass 
 cursor, and the window, chunk store, reader pool and their counters are gone with the 65 tests of
 them. Two more engine corrections came out of the store's demolition: a collector under a declared
 rule is driven along whichever axis the rule runs (`DefinitionNode.Collects`), and it retains every
-span it collected. What survives of the pull era, on record: `ProjectionContext` as the engine's
-internal record of position, diagnostics and labels (the views still take it); `EagerPlacement`
+span it collected. Two tightenings followed the same day: retention folds up the tree (each handle answers for its
+subtree; the session asks the root; no registry), and `ProjectionContext` merged into
+`ProjectorScope` — a scope is one immutable object holding its `TreePosition`, the diagnostics, the
+labels and the engine's services, and the views take it. What survives of the pull era, on record:
+`EagerPlacement`
 resolving a held child's placement with the strategies' whole-region form; and the eager/incremental
 duality in the strategy calculus, which is the one deletion that removes members from published
 Core interfaces and waits on the owner. Suite: 2,424 tests, 18 analyzer tests.

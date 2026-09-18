@@ -64,7 +64,7 @@ namespace Unrect.Projections
       public bool Next(Plane<TSpace> span)
       {
         if (_closed)
-          throw _scope.Context.Failure(_overlay, $"{PathRenderer.Describe(_overlay)} was fed a span after it was closed", span, null, null, isFault: true);
+          throw _scope.Failure(_overlay, $"{PathRenderer.Describe(_overlay)} was fed a span after it was closed", span, null, null, isFault: true);
 
         _first ??= span;
         StartAll(Spans.Empty(span, _scope.Driver));
@@ -102,7 +102,7 @@ namespace Unrect.Projections
         }
         catch (CellReadException failure)
         {
-          throw _scope.Context.Reading(failure, Extent());
+          throw _scope.Reading(failure, Extent());
         }
 
         return new Settlement<T>(value, new Size(_width, _height), _read ? Presence.Read : Presence.Empty);

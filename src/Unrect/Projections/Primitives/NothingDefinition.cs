@@ -36,7 +36,7 @@ namespace Unrect.Projections
     internal override bool Collects => true;
 
 
-    internal override Settlement<T> Collect(Plane<TSpace> extent, ProjectionContext context)
+    internal override Settlement<T> Collect(Plane<TSpace> extent, ProjectorScope<TSpace> scope)
       => new Settlement<T>(default!, new Size(0, 0), Presence.Empty);
   }
 }

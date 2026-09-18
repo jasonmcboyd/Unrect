@@ -16,7 +16,7 @@ namespace Unrect.Projections
     /// remainder is: a projection that starts two rows down described neither those two rows nor
     /// whatever follows it.
     /// </summary>
-    internal static void ReportUnconsumed<TSpace>(IProjectionDefinition projection, Plane<TSpace> space, Size gap, Size described, ProjectionContext context)
+    internal static void ReportUnconsumed<TSpace>(IProjectionDefinition projection, Plane<TSpace> space, Size gap, Size described, ProjectorScope<TSpace> scope)
       where TSpace : class, ISpace
     {
       var size = space.Area.Size;
@@ -37,7 +37,7 @@ namespace Unrect.Projections
         : described.Width < size.Width ? new Offset(described.Width, 0)
         : new Offset(0, described.Height);
 
-      context.Report(
+      scope.Report(
         DiagnosticSeverity.Info,
         projection,
         $"the projection consumed {string.Join(" and ", counts)}; {string.Join(" and ", undescribed)} were not described",

@@ -14,7 +14,7 @@ namespace Unrect.Tests.Projections
 {
   /// <summary>
   /// Step 1 of labelled axes: a table publishes its columns as an ambient <see cref="LabelScope"/> on
-  /// the <see cref="ProjectionContext"/>, and a row resolves a caption by translating the ordinal from
+  /// the the scope, and a row resolves a caption by translating the ordinal from
   /// the frame the header was read in to the row's own frame, then bounds-checking. In the built-in
   /// table the translation is the identity (a body band shares the table's origin), so the first two
   /// pins reach for the seam directly — a scope captured at one frame, a row read at another — because
@@ -48,7 +48,7 @@ namespace Unrect.Tests.Projections
       // The reading frame: the body row (row 1) shifted one column right of the capture frame. The
       // frame is the REGION's now — a plane carries its own root origin — so the context is handed
       // down unchanged and what differs between the two frames is the strip's plane.
-      var reading = table.Context;
+      var reading = table.Scope;
       var strip = new CellStrip<ISheetCells>(Plane<ISheetCells>.Of(sheet).Slice(new Offset(1, 1), new Area(3, 1)), Orientation.Horizontal, reading);
       var row = new TableRow<ISheetCells>(0, strip, reading);
 
@@ -73,7 +73,7 @@ namespace Unrect.Tests.Projections
       var sheet = AmountAtColumnTwo();
       var table = TableOver(sheet);
 
-      var reading = table.Context;
+      var reading = table.Scope;
       var strip = new CellStrip<ISheetCells>(Plane<ISheetCells>.Of(sheet).Slice(new Offset(0, 1), new Area(2, 1)), Orientation.Horizontal, reading);
       var row = new TableRow<ISheetCells>(0, strip, reading);
 
@@ -99,7 +99,7 @@ namespace Unrect.Tests.Projections
       var table = TableOver(sheet);
 
       // The reading frame is the last two columns (C, D); "X" (column A) is to their left.
-      var reading = table.Context;
+      var reading = table.Scope;
       var strip = new CellStrip<ISheetCells>(Plane<ISheetCells>.Of(sheet).Slice(new Offset(2, 1), new Area(2, 1)), Orientation.Horizontal, reading);
       var row = new TableRow<ISheetCells>(0, strip, reading);
 
