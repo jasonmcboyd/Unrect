@@ -86,7 +86,7 @@ namespace Unrect.Projections
       public bool Next(Plane<TSpace> span)
       {
         if (_closed)
-          throw _scope.Context.Failure(_choice, $"{ProjectionContext.Describe(_choice)} was fed a span after it was closed", span, null, null, isFault: true);
+          throw _scope.Context.Failure(_choice, $"{PathRenderer.Describe(_choice)} was fed a span after it was closed", span, null, null, isFault: true);
 
         _first ??= span;
 
@@ -162,8 +162,8 @@ namespace Unrect.Projections
         _scope.Context.Report(
           DiagnosticSeverity.Info,
           failure,
-          ProjectionContext.Describe(_choice),
-          $"alternative {_index + 1} ({ProjectionContext.DescribeThrough(_choice.Alternatives[_index])}) did not match: {failure.Problem}");
+          PathRenderer.Describe(_choice),
+          $"alternative {_index + 1} ({PathRenderer.DescribeThrough(_choice.Alternatives[_index])}) did not match: {failure.Problem}");
         _failures[_index] = failure;
 
         var taken = new List<Plane<TSpace>>(_current!.Shortfall());
@@ -211,8 +211,8 @@ namespace Unrect.Projections
           context.Report(
             DiagnosticSeverity.Info,
             failure,
-            ProjectionContext.Describe(this),
-            $"alternative {index + 1} ({ProjectionContext.DescribeThrough(Alternatives[index])}) did not match: {failure.Problem}");
+            PathRenderer.Describe(this),
+            $"alternative {index + 1} ({PathRenderer.DescribeThrough(Alternatives[index])}) did not match: {failure.Problem}");
 
           failures ??= new ProjectionException[Alternatives.Length];
           failures[index] = failure;
@@ -245,7 +245,7 @@ namespace Unrect.Projections
         summary
           .Append(Environment.NewLine)
           .Append(Indent)
-          .Append($"alternative {index + 1} ({ProjectionContext.DescribeThrough(Alternatives[index])}): ")
+          .Append($"alternative {index + 1} ({PathRenderer.DescribeThrough(Alternatives[index])}): ")
           .Append(problem[0])
           .Append($" at {failures[index].Location}");
 

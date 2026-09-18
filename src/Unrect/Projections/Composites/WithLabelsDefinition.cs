@@ -62,7 +62,7 @@ namespace Unrect.Projections
       public bool Next(Plane<TSpace> span)
       {
         if (_closed)
-          throw _scope.Context.Failure(_labelled, $"{ProjectionContext.Describe(_labelled)} was fed a span after it was closed", span, null, null, isFault: true);
+          throw _scope.Context.Failure(_labelled, $"{PathRenderer.Describe(_labelled)} was fed a span after it was closed", span, null, null, isFault: true);
 
         _first ??= span;
         _offered++;

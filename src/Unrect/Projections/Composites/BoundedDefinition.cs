@@ -47,7 +47,7 @@ namespace Unrect.Projections
     /// </summary>
     public ArgumentException AlreadyEnded(Landmark landmark)
       => new ArgumentException(
-        $"{ProjectionContext.DescribeThrough(this)} already ends at a landmark, and {Spelling(landmark)} would "
+        $"{PathRenderer.DescribeThrough(this)} already ends at a landmark, and {Spelling(landmark)} would "
         + "replace that end rather than bound what is inside it — a projection has one end, and the replaced "
         + "landmark is never even sought. Bound it once: a bound written outside a wrapper nests instead of "
         + "replacing, so a Select or a Padded between the two leaves both ends in force.",
@@ -87,7 +87,7 @@ namespace Unrect.Projections
       public bool Next(Plane<TSpace> span)
       {
         if (_closed)
-          throw _scope.Context.Failure(_bounded, $"{ProjectionContext.Describe(_bounded)} was fed a span after it was closed", span, null, null, isFault: true);
+          throw _scope.Context.Failure(_bounded, $"{PathRenderer.Describe(_bounded)} was fed a span after it was closed", span, null, null, isFault: true);
 
         if (_finished)
           return false;
@@ -120,7 +120,7 @@ namespace Unrect.Projections
         var extent = _first is Plane<TSpace> first ? Spans.Region(first, _offered, Along) : _scope.Anchor;
 
         if (!_found && !_bounded.OrEnd)
-          throw _scope.Context.Failure(ProjectionContext.Through(_bounded), $"{_bounded.Landmark.Description} exists to end this projection", extent, null, null);
+          throw _scope.Context.Failure(PathRenderer.Through(_bounded), $"{_bounded.Landmark.Description} exists to end this projection", extent, null, null);
 
         if (!_found)
           _scope.Context.Report(DiagnosticSeverity.Info, _bounded, $"{_bounded.Landmark.Description} exists to end this projection, so it ran to the end of the space", extent);
@@ -145,7 +145,7 @@ namespace Unrect.Projections
       // so it is absorbable — and it is blamed on the projection being bounded, because "Until" is
       // not what the user was looking for.
       if (found is null && !OrEnd)
-        throw context.Failure(ProjectionContext.Through(this), $"{Landmark.Description} exists to end this projection", extent, null, null);
+        throw context.Failure(PathRenderer.Through(this), $"{Landmark.Description} exists to end this projection", extent, null, null);
 
       // Declared alternation rather than tolerance after a failure, so Info rather than Warning.
       if (found is null)

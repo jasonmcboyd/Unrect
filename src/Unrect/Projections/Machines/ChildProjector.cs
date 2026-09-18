@@ -61,7 +61,7 @@ namespace Unrect.Projections
       _anchor = anchor;
       _strict = strict;
       _driver = scope.Driver;
-      _child = ProjectionContext.Skipped(definition) ? parent.Blaming(definition) : parent.Descend(definition);
+      _child = PathRenderer.Skipped(definition) ? parent.Blaming(definition) : parent.Descend(definition);
       // A machine is driven when its placement streams and it can take the driver's spans: along
       // an axis it announces, or — for a collector, which announces none — under a declared rule,
       // since then the rule bounds it and it reads the region whole at close, along whichever axis
@@ -565,7 +565,7 @@ namespace Unrect.Projections
     {
       var region = _offered.Count == 0 ? _anchor : Spans.Region(_offered[0], _offered.Count, _driver);
 
-      return _child.Failure(_definition, $"{ProjectionContext.Describe(_definition)} {violation}; a machine that broke the protocol is a bug in the node, not a shape of data", region, null, null, isFault: true);
+      return _child.Failure(_definition, $"{PathRenderer.Describe(_definition)} {violation}; a machine that broke the protocol is a bug in the node, not a shape of data", region, null, null, isFault: true);
     }
   }
 }

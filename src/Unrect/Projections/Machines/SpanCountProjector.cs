@@ -28,7 +28,7 @@ namespace Unrect.Projections
     public bool Next(Plane<TSpace> span)
     {
       if (_closed)
-        throw _scope.Context.Failure(_definition, $"{ProjectionContext.Describe(_definition)} was fed a span after it was closed", span, null, null, isFault: true);
+        throw _scope.Context.Failure(_definition, $"{PathRenderer.Describe(_definition)} was fed a span after it was closed", span, null, null, isFault: true);
 
       // Under a declared area the placement machine bounds the spans and the node reads the whole
       // area — so a leaf forced to two rows still sees two rows and says so. A derived placement

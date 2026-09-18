@@ -58,7 +58,7 @@ namespace Unrect.Projections
       }
 
       inner = region.Slice(offset);
-      scope = ProjectionContext.Skipped(projection) ? context.Blaming(projection) : context.Descend(projection);
+      scope = PathRenderer.Skipped(projection) ? context.Blaming(projection) : context.Descend(projection);
 
       if (projection.Placement.Area is null)
         return true;

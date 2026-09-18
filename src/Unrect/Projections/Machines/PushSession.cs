@@ -96,7 +96,7 @@ namespace Unrect.Projections
       if (feed.Cap is int cap && feed.Retained > cap)
       {
         var definition = holder?.Definition;
-        var who = definition is null ? "the declaration" : ProjectionContext.Describe(definition);
+        var who = definition is null ? "the declaration" : PathRenderer.Describe(definition);
 
         throw context.Failure(
           definition ?? (IProjectionDefinition)_open[0].Definition,

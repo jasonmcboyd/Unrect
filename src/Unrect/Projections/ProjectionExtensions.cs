@@ -426,7 +426,7 @@ namespace Unrect.Projections
       => NotNull(projection) as ReadDefinition<TSpace, T>
         ?? throw new ArgumentException(
           "OrBlank reads a blank cell as null, so it belongs on a cell leaf — AsText, or one of a "
-          + $"backend's kinded leaves. {ProjectionContext.Describe(projection)} is not one.",
+          + $"backend's kinded leaves. {PathRenderer.Describe(projection)} is not one.",
           nameof(projection));
 
     /// <summary>One guard: the receiver defaults to its own parameter name, anything else names itself.</summary>
