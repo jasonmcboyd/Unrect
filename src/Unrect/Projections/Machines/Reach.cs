@@ -3,10 +3,9 @@ using System;
 namespace Unrect.Projections
 {
   /// <summary>
-  /// How far back the engine may need to reach for a machine before it settles: none, a fixed
-  /// number of spans, or as far as the machine's own extent runs. A definition's promise to the
-  /// parent that starts it: <see cref="None"/> means what the machine accepts it keeps, so no hold
-  /// need be opened for it. Joins upward by <see cref="Max"/>.
+  /// How far back a machine may still read among the spans it was fed: none, a fixed number of
+  /// spans, or as far as its own extent runs. What a streamed source keeps a row for, and what a
+  /// cost report shows per node.
   /// </summary>
   public readonly struct Reach : IEquatable<Reach>
   {
@@ -32,13 +31,6 @@ namespace Unrect.Projections
 
     /// <summary>The bounded count, or null for <see cref="Extent"/>.</summary>
     public int? Count => _spans < 0 ? (int?)null : _spans;
-
-    /// <summary>The further of the two: <see cref="Extent"/> if either is, else the larger count.</summary>
-    public static Reach Max(Reach first, Reach second)
-      => first.IsExtent || second.IsExtent ? Extent : new Reach(Math.Max(first._spans, second._spans));
-
-    /// <inheritdoc cref="Max"/>
-    public Reach Join(Reach other) => Max(this, other);
 
     /// <inheritdoc/>
     public bool Equals(Reach other) => _spans == other._spans;

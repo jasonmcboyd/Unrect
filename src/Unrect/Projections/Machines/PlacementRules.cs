@@ -10,6 +10,10 @@ namespace Unrect.Projections
   /// </summary>
   internal static class PlacementRules
   {
+    /// <summary>How far back <paramref name="definition"/>'s own machine may still read once placed: what its node declares, or its extent for a node this library did not write.</summary>
+    internal static Reach Retains(IProjectionDefinition definition)
+      => definition is DefinitionNode node ? node.Retains : Reach.Extent;
+
     internal static bool Streams(IProjectionDefinition definition, Orientation driver, out string? hold)
       => Streams(definition, driver, out _, out _, out _, out hold);
 

@@ -52,9 +52,6 @@ namespace Unrect.Projections
       }
     }
 
-    /// <summary>A choice replays everything a losing alternative took into the next.</summary>
-    public override Reach Reach => Reach.Extent;
-
     public override IProjector<TSpace, T> Build(ProjectorScope<TSpace> scope) => new Machine(this, scope);
 
     /// <summary>
@@ -181,6 +178,7 @@ namespace Unrect.Projections
       }
     }
 
+    /// <summary>A choice replays everything a losing alternative took into the next.</summary>
     internal override Reach Retains => Reach.Extent;
 
     private static readonly string[] LineBreaks = { "\r\n", "\n" };

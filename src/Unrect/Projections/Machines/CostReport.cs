@@ -8,8 +8,8 @@ namespace Unrect.Projections
 {
   /// <summary>
   /// What a declaration costs to run as a forward pass, before any space is read: for every node,
-  /// whether the engine drives it span by span or holds it whole, how far back its subtree may
-  /// read, and the axis it announces. A pure function of the definition tree and the driver's
+  /// whether the engine drives it span by span or holds it whole, how far back its own machine may
+  /// still read once placed, and the axis it announces. A pure function of the definition tree and the driver's
   /// orientation, so it can be printed from a test or a script with no file in hand.
   /// <para>
   /// A held node is driven again along its own axis once its extent is known, so its children are
@@ -52,7 +52,7 @@ namespace Unrect.Projections
       var reported = !PathRenderer.Skipped(definition) && (!definition.IsScaffolding || !streams);
 
       if (reported)
-        lines.Add(new CostLine(depth, PathRenderer.SegmentName(definition, site), driver, streams, hold, definition.Reach, definition.Axis));
+        lines.Add(new CostLine(depth, PathRenderer.SegmentName(definition, site), driver, streams, hold, PlacementRules.Retains(definition), definition.Axis));
 
       // A held node is re-driven along its own axis; one that announces none is handed its region
       // whole, and whatever it starts beneath that runs under the same driver.
@@ -79,7 +79,7 @@ namespace Unrect.Projections
         text.Append(name.PadRight(width))
           .Append("  ")
           .Append(line.Streams ? "streams" : "holds  ")
-          .Append("  reach ").Append(line.Reach.ToString().PadRight(8))
+          .Append("  retains ").Append(line.Retains.ToString().PadRight(8))
           .Append("  axis ").Append(Axis(line.Axis));
 
         if (line.Hold is string hold)
@@ -103,14 +103,14 @@ namespace Unrect.Projections
   /// <summary>One node of a <see cref="CostReport"/>.</summary>
   public readonly struct CostLine
   {
-    internal CostLine(int depth, string name, Orientation driver, bool streams, string? hold, Reach reach, Axes axis)
+    internal CostLine(int depth, string name, Orientation driver, bool streams, string? hold, Reach retains, Axes axis)
     {
       Depth = depth;
       Name = name;
       Driver = driver;
       Streams = streams;
       Hold = hold;
-      Reach = reach;
+      Retains = retains;
       Axis = axis;
     }
 
@@ -129,8 +129,8 @@ namespace Unrect.Projections
     /// <summary>Why the node holds, when it does; null when it streams.</summary>
     public string? Hold { get; }
 
-    /// <summary>How far back this node's subtree may hand spans back once it has taken them — the extent for a repeat or a tolerance boundary, none for a leaf.</summary>
-    public Reach Reach { get; }
+    /// <summary>How far back this node's own machine may still read once placed — its extent for a collector, a repeat or a tolerance boundary; a fixed number of spans for a pad or a tiler; none for a flow.</summary>
+    public Reach Retains { get; }
 
     /// <summary>The axis the node announces it can stream along.</summary>
     public Axes Axis { get; }

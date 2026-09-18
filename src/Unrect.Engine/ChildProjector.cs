@@ -123,7 +123,7 @@ namespace Unrect.Projections
         return Row(_offered[Math.Min(_innerStart + position, _offered.Count - 1)]);
       }
 
-      var own = _definition is DefinitionNode node ? node.Retains : Reach.Extent;
+      var own = PlacementRules.Retains(_definition);
 
       if (own.IsNone)
         return null;

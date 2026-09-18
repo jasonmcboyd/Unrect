@@ -43,20 +43,6 @@ namespace Unrect.Projections
     /// <summary>A level of the tree by default; only a wrapper overrides this to true.</summary>
     public virtual bool IsWrapper => false;
 
-    /// <summary>The children's reach joined, by default; a node with a rule of its own joins it in.</summary>
-    public virtual Reach Reach
-    {
-      get
-      {
-        var reach = Reach.None;
-
-        foreach (var child in Children)
-          reach = reach.Join(child.Definition.Reach);
-
-        return reach;
-      }
-    }
-
     /// <summary>Either axis by default — a leaf's span is one cell whichever way it arrives; a shape with an orientation overrides this.</summary>
     public virtual Axes Axis => Axes.Either;
 

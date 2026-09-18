@@ -49,9 +49,6 @@ namespace Unrect.Projections
     /// <summary>A separator with no per-span form is asked over the whole gap, so the repeat must have its extent first.</summary>
     internal override string? Holds => SeparatorStreams ? null : "its separator has no per-span form";
 
-    /// <summary>A repeat hands back the item that failed to place, and the gap before it.</summary>
-    public override Reach Reach => Reach.Extent;
-
     public override IProjector<TSpace, IReadOnlyList<T>> Build(ProjectorScope<TSpace> scope) => new Machine(this, scope);
 
     /// <summary>

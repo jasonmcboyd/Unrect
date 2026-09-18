@@ -69,12 +69,6 @@ namespace Unrect.Projections
     /// </summary>
     string? Opacity { get; }
 
-    /// <summary>
-    /// How far back the engine may need to reach for this definition's machine before it settles —
-    /// its own rule joined with its children's. The promise a parent reads before starting it.
-    /// </summary>
-    Reach Reach { get; }
-
     /// <summary>The axes this definition's machine streams along; the engine holds and re-drives it under any other driver.</summary>
     Axes Axis { get; }
   }

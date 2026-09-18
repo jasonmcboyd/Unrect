@@ -50,16 +50,16 @@ sheet determines what a pass has to hold:
   over the whole extent.
 
 **Ask before reading.** `CostReport.Of(definition)` is the dry run: one line per node saying
-whether the engine drives it row by row or holds it whole and why, how far back its subtree
-may hand rows back, and the axis it announces. It is a pure function of the declaration, so it
+whether the engine drives it row by row or holds it whole and why, how far back its own machine
+may still read once placed, and the axis it announces. It is a pure function of the declaration, so it
 can be printed from a test or a script with no file in hand:
 
 ```csharp
 Console.WriteLine(CostReport.Of(report));
 // driver: rows
-// VerticalFlow          streams  reach none    axis vertical
-//   'title'             streams  reach none    axis either
-//   Table<Transaction>  streams  reach none    axis vertical
+// VerticalFlow          streams  retains none    axis vertical
+//   'title'             streams  retains extent  axis either
+//   Table<Transaction>  streams  retains none    axis vertical
 ```
 
 ## The `Workbook` / `Sheet` lifecycle

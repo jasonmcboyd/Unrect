@@ -53,9 +53,6 @@ namespace Unrect.Projections
 
     public override Axes Axis => Orientation.Of();
 
-    /// <summary>A tiler must see a whole band before it can say the band is blank, and hands an incomplete one back.</summary>
-    public override Reach Reach => base.Reach.Join(Reach.Spans(Stride));
-
     public override IProjector<TSpace, IReadOnlyList<T>> Build(ProjectorScope<TSpace> scope) => new Machine(this, scope);
 
     /// <summary>
@@ -151,6 +148,7 @@ namespace Unrect.Projections
       }
     }
 
+    /// <summary>A tiler must see a whole band before it can say the band is blank, and hands an incomplete one back.</summary>
     internal override Reach Retains => Reach.Spans(Stride);
 
     internal void ReportBlank(BlankRowStrategy onBlank, Plane<TSpace> band, ProjectorScope<TSpace> scope)

@@ -33,8 +33,6 @@ namespace Unrect.Projections
 
     public override Axes Axis => Body.Axis.OrEither();
 
-    public override Reach Reach => Body.Reach;
-
     public override IProjector<TSpace, T> Build(ProjectorScope<TSpace> scope) => new Machine(this, scope);
 
     private sealed class Machine : ForwardingProjector<TSpace, T, T>

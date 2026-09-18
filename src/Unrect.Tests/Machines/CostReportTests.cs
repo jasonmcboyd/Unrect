@@ -102,7 +102,7 @@ namespace Unrect.Tests.Machines
     }
 
     [Fact]
-    public void ReachIsWhatASubtreeMayHandBack()
+    public void RetainsIsWhatANodesOwnMachineMayStillRead()
     {
       var report = CostReport.Of(VerticalFlow(v =>
       {
@@ -112,9 +112,9 @@ namespace Unrect.Tests.Machines
         return v.Build(read => $"{read.Of(one)}:{read.Of(many)?.Count}");
       }));
 
-      Assert.Equal(Reach.Extent, report.Lines[0].Reach);
-      Assert.Equal(Reach.None, Line(report, "'one'").Reach);
-      Assert.Equal(Reach.Extent, Line(report, "'many'").Reach);
+      Assert.Equal(Reach.None, report.Lines[0].Retains);
+      Assert.Equal(Reach.Extent, Line(report, "'one'").Retains);
+      Assert.Equal(Reach.Extent, Line(report, "'many'").Retains);
       Assert.All(report.Lines, line => Assert.True(line.Streams, $"{line.Name}: {line.Hold}"));
     }
 

@@ -50,9 +50,6 @@ namespace Unrect.Projections
 
     public override Axes Axis => (Fallback is null ? Inner.Axis : Inner.Axis & Fallback.Axis).OrEither();
 
-    /// <summary>A boundary may hand back everything the inner took: what it absorbs, it did not consume.</summary>
-    public override Reach Reach => Reach.Extent;
-
     public override IProjector<TSpace, T> Build(ProjectorScope<TSpace> scope) => new Machine(this, scope);
 
     /// <summary>
@@ -198,6 +195,7 @@ namespace Unrect.Projections
         => _scope.Start(_boundary.Children[0], _boundary.Inner, at, inheritSite: true);
     }
 
+    /// <summary>A boundary may hand back everything the inner took: what it absorbs, it did not consume.</summary>
     internal override Reach Retains => Reach.Extent;
   }
 }
