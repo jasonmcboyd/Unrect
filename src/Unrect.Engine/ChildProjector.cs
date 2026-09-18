@@ -73,7 +73,6 @@ namespace Unrect.Projections
       // Driven or held is PlacementRules' decision, shared with the cost report so the two agree.
       _held = !PlacementRules.Streams(definition, _driver, out var offset, out var size, out var derived, out _);
       _placement = new StreamingPlacement<TSpace>(offset, size, derived, definition, _driver, strict);
-      Reach = _held ? Reach.Extent : definition.Reach;
     }
 
     // --- The tree of open machines ---------------------------------------------------------------
@@ -138,9 +137,6 @@ namespace Unrect.Projections
     private int Row(Plane<TSpace> span) => _driver == Orientation.Vertical ? span.Origin.Height : span.Origin.Width;
 
     // --- What the parent reads off the handle --------------------------------------------------
-
-    /// <summary>What this child announces to the parent that started it.</summary>
-    public Reach Reach { get; }
 
     public Offset Offset { get; private set; }
 

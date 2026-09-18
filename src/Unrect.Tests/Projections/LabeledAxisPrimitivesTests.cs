@@ -51,7 +51,6 @@ namespace Unrect.Tests.Projections
     /// </summary>
     private static IProjectionDefinition<ISheetCells, IReadOnlyList<T>> PrimitiveTable<T>(int headerRows, Func<TableRow<ISheetCells>, T> record, bool marked)
       => new LabelledDefinition<ISheetCells, IReadOnlyList<T>>(
-        LabelAxis.Column,
         Mark(ColumnLabels(headerRows), marked),
         Mark(VerticalBands(1, Mark(Record(record), marked)), marked),
         TablePlacementReplica(),
@@ -557,7 +556,7 @@ namespace Unrect.Tests.Projections
     // --- 3. GAP A closed — the composition streams in step with the leaf --------------------------
     //
     // The reimplementation declares the discovered block on the flow, and the band tiler inside it
-    // walks that bound one row past the cursor, exactly as the built-in leaf's StreamBands does. Over
+    // walks that bound one row past the cursor, exactly as the built-in leaf's StreamRows does. Over
     // the trailing-content sheet the two now touch the same rows by the time the first record
     // projects and the same total at completion, and read the same value.
 
@@ -709,7 +708,7 @@ namespace Unrect.Tests.Projections
       // Same ordinals through the ILabelSource face the primitive path resolves by.
       Assert.Equal(new[] { 0 }, ((ILabelSource)fromPrimitive).IndicesOf("Investor"));
       Assert.Equal(new[] { 1 }, ((ILabelSource)fromPrimitive).IndicesOf("Amount"));
-      Assert.Equal(fromTable.IndicesOf("Amount"), ((ILabelSource)fromPrimitive).IndicesOf("Amount"));
+      Assert.Equal(((ILabelSource)fromTable.Labels).IndicesOf("Amount"), ((ILabelSource)fromPrimitive).IndicesOf("Amount"));
     }
 
     // The comparer split: the bind-rung indexer matches by CaptionComparer (whitespace ignored

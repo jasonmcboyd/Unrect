@@ -158,25 +158,6 @@ namespace Unrect.Projections
 
     internal override Reach Retains => Reach.Spans(Stride);
 
-    /// <summary>Whether a whole band is left at <paramref name="cursor"/>; a part-band is not one.</summary>
-    private bool HasBand(Plane<TSpace> extent, int cursor)
-      => Orientation == Orientation.Vertical
-        ? extent.HasRow(cursor + Stride - 1)
-        : cursor + Stride - 1 < extent.Width;
-
-    /// <summary>
-    /// The band at <paramref name="offset"/>, spanning the other axis in full.
-    /// <para>
-    /// Naming the extent is what makes this work over a bound still being discovered:
-    /// cutting a named region advances the discovery through exactly the rows named and
-    /// hands back a measured region, so whatever the band projection declares — an area of its own,
-    /// or an extent derived from what it reads — is resolved against a region that knows how tall it
-    /// is, and no strategy is ever handed an unsettled tail.
-    /// </para>
-    /// </summary>
-    private Plane<TSpace> Band(Plane<TSpace> extent, Offset offset, int across)
-      => extent.Slice(offset, new Area(Extent(Stride, across)));
-
     internal void ReportBlank(BlankRowStrategy onBlank, Plane<TSpace> band, ProjectorScope<TSpace> scope)
     {
       var noun = Stride == 1 ? "row" : "band";
@@ -201,10 +182,5 @@ namespace Unrect.Projections
 
       return true;
     }
-
-    private Offset Step(int along) => Orientation == Orientation.Vertical ? new Offset(0, along) : new Offset(along, 0);
-
-    private Size Extent(int along, int across)
-      => Orientation == Orientation.Vertical ? new Size(across, along) : new Size(along, across);
   }
 }

@@ -41,7 +41,7 @@ namespace Unrect.Projections
       // header was actually declared: a headerless table pushes nothing, so a by-name lookup still
       // finds no scope and reports the headerless message. The origin PushLabels captures is this
       // table's own, the frame the header's ordinals are read in and every body row translates from.
-      Scope = HasHeader ? scope.PushLabels(LabelAxis.Column, Labels, space.Origin) : scope;
+      Scope = HasHeader ? scope.PushLabels(Labels, space.Origin) : scope;
     }
 
     /// <summary>The table's own header parsed once: the labels the bind rung binds by, and their citations.</summary>
@@ -101,32 +101,11 @@ namespace Unrect.Projections
     /// </summary>
     public IEnumerable<TableRow<TSpace>> StreamRows()
     {
-      var index = 0;
-
-      foreach (var band in StreamBands(1))
-        yield return new TableRow<TSpace>(index++, new CellStrip<TSpace>(band.Space, Orientation.Horizontal, band.Scope), band.Scope);
-    }
-
-    /// <summary>
-    /// The body as bands of <paramref name="bandHeight"/> rows, each with the scope to project it
-    /// in — what a row projection is applied to, and what <see cref="StreamRows"/> wraps in a
-    /// <see cref="TableRow{TSpace}"/>. Forward-only in the same way: each step asks whether the band's last
-    /// row is there and stops when it is not, so an extent still being discovered is consumed in
-    /// step with the reading.
-    /// <para>
-    /// The height is a parameter because a record is not always one row tall. Everything above it
-    /// counts in bands rather than rows, so a table that ever slices taller records needs a
-    /// different argument here and nothing else; a trailing part-band is not a record and is left
-    /// undescribed.
-    /// </para>
-    /// </summary>
-    internal IEnumerable<(Plane<TSpace> Space, ProjectorScope<TSpace> Scope)> StreamBands(int bandHeight)
-    {
-      for (var row = HeaderRows; Space.HasRow(row + bandHeight - 1); row += bandHeight)
+      for (var row = HeaderRows; Space.HasRow(row); row++)
       {
-        var offset = new Offset(0, row);
+        var band = Space.Slice(new Offset(0, row), new Area(ColumnCount, 1));
 
-        yield return (Space.Slice(offset, new Area(ColumnCount, bandHeight)), Scope);
+        yield return new TableRow<TSpace>(row - HeaderRows, new CellStrip<TSpace>(band, Orientation.Horizontal, Scope), Scope);
       }
     }
 
@@ -208,12 +187,6 @@ namespace Unrect.Projections
     /// anything, which no tolerance boundary may report as a section that was not there.
     /// </summary>
     internal ProjectionException Fault(string problem) => Scope.Failure(problem, Space, null, isFault: true);
-
-    /// <summary>
-    /// The columns carrying <paramref name="columnName"/>; empty when there is no such column.
-    /// Header names are matched by the content rule, applied to the key as well as to the header.
-    /// </summary>
-    internal IReadOnlyList<int> IndicesOf(string columnName) => ((ILabelSource)Labels).IndicesOf(columnName);
 
     /// <summary>
     /// Every body row in one list, sized exactly. A caller of <see cref="Rows"/> is already paying

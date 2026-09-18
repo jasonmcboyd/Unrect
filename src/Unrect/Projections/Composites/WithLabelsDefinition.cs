@@ -16,20 +16,18 @@ namespace Unrect.Projections
   internal sealed class WithLabelsDefinition<TSpace, T> : DefinitionNode<TSpace, T>
     where TSpace : class, ISpace
   {
-    public WithLabelsDefinition(LabelAxis axis, LabelMap map, IProjectionDefinition<TSpace, T> body, Placement placement)
+    public WithLabelsDefinition(LabelMap map, IProjectionDefinition<TSpace, T> body, Placement placement)
       : base(placement)
     {
-      LabelledAxis = axis;
       Map = map ?? throw new ArgumentNullException(nameof(map));
       Body = body ?? throw new ArgumentNullException(nameof(body));
       Children = new[] { new Child(body, default) };
     }
 
-    private LabelAxis LabelledAxis { get; }
     private LabelMap Map { get; }
     private IProjectionDefinition<TSpace, T> Body { get; }
 
-    public override string Description => LabelledAxis == LabelAxis.Column ? "WithColumnLabels" : "WithRowLabels";
+    public override string Description => "WithColumnLabels";
 
     public override IReadOnlyList<Child> Children { get; }
 
@@ -49,8 +47,6 @@ namespace Unrect.Projections
       private readonly WithLabelsDefinition<TSpace, T> _labelled;
       private readonly ProjectorScope<TSpace> _scope;
       private IChildHandle<TSpace, T>? _body;
-      private Plane<TSpace>? _first;
-      private int _offered;
       private bool _closed;
 
       public Machine(WithLabelsDefinition<TSpace, T> labelled, ProjectorScope<TSpace> scope)
@@ -64,8 +60,6 @@ namespace Unrect.Projections
         if (_closed)
           throw _scope.Failure(_labelled, $"{PathRenderer.Describe(_labelled)} was fed a span after it was closed", span, null, null, isFault: true);
 
-        _first ??= span;
-        _offered++;
         _body ??= StartBody(Narrow(span));
 
         return _body.Next(Narrow(span));
@@ -90,7 +84,7 @@ namespace Unrect.Projections
 
       private IChildHandle<TSpace, T> StartBody(Plane<TSpace> at)
       {
-        var scope = _scope.PushLabels(_labelled.LabelledAxis, _labelled.Map, at.Origin).At(Spans.Empty(at, _scope.Driver), _scope.Driver);
+        var scope = _scope.PushLabels(_labelled.Map, at.Origin).At(Spans.Empty(at, _scope.Driver), _scope.Driver);
 
         return scope.Start(_labelled.Children[0], _labelled.Body, scope.Anchor, inheritSite: true);
       }

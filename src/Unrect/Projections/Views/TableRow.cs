@@ -7,8 +7,8 @@ using Unrect.Core;
 namespace Unrect.Projections
 {
   /// <summary>
-  /// One body row of a table. Captions resolve through the ambient <see cref="LabelAxis.Column"/>
-  /// scope a scope-introducer pushed, so a row owns no view and a decoupled <c>Record</c> reads by
+  /// One body row of a table. Captions resolve through the ambient column-label scope a
+  /// scope-introducer pushed, so a row owns no view and a decoupled <c>Record</c> reads by
   /// the same path a built-in table's row does.
   /// <para>
   /// A cell is a <see cref="Point{TSpace}"/> — <c>row["Amount"]</c> is a place, and what can be read
@@ -100,7 +100,7 @@ namespace Unrect.Projections
       // Unreachable fallback: Resolvable throws the headerless message when there is no scope, so by
       // the time control reaches here a Column scope exists. Kept as an empty list rather than the
       // owning table's columns — byte-identical, and it is what lets a TableRow have no table.
-      var labels = Scope.NearestLabels(LabelAxis.Column)?.Source.Labels ?? Array.Empty<string>();
+      var labels = Scope.NearestLabels()?.Source.Labels ?? Array.Empty<string>();
       var available = labels.Where(name => name.Length > 0).Select(name => $"'{name}'").ToList();
 
       throw Failure(
@@ -117,7 +117,7 @@ namespace Unrect.Projections
     /// </summary>
     private IReadOnlyList<int> Resolvable(string columnName)
     {
-      var scope = Scope.NearestLabels(LabelAxis.Column);
+      var scope = Scope.NearestLabels();
 
       if (scope is null)
         throw Failure($"column '{columnName}' cannot be resolved: the table was declared without a header row; use column indices.");

@@ -25,16 +25,15 @@ namespace Unrect.Projections
     /// free to replace.
     /// </summary>
     public Placement(IOffsetStrategy offset, IAreaStrategy? area)
-      : this(offset, area, offsetWasDeclared: false, areaWasDeclared: false)
+      : this(offset, area, offsetWasDeclared: false)
     {
     }
 
-    private Placement(IOffsetStrategy offset, IAreaStrategy? area, bool offsetWasDeclared, bool areaWasDeclared)
+    private Placement(IOffsetStrategy offset, IAreaStrategy? area, bool offsetWasDeclared)
     {
       Offset = offset ?? throw new ArgumentNullException(nameof(offset));
       Area = area;
       OffsetWasDeclared = offsetWasDeclared;
-      AreaWasDeclared = areaWasDeclared;
     }
 
     /// <summary>No offset declared, no area declared — a projection that sits where it is handed and derives its own extent.</summary>
@@ -54,14 +53,11 @@ namespace Unrect.Projections
     /// untouched, and the copy records that the offset was declared rather than defaulted.
     /// </summary>
     public Placement WithOffset(IOffsetStrategy offset)
-      => new Placement(offset, Area, offsetWasDeclared: true, areaWasDeclared: AreaWasDeclared);
+      => new Placement(offset, Area, offsetWasDeclared: true);
 
-    /// <summary>
-    /// A copy with <paramref name="area"/> in place of this placement's own — the offset is
-    /// untouched, and the copy records that the area was declared rather than defaulted.
-    /// </summary>
+    /// <summary>A copy with <paramref name="area"/> in place of this placement's own — the offset is untouched.</summary>
     public Placement WithArea(IAreaStrategy area)
-      => new Placement(Offset, NotNull(area), offsetWasDeclared: OffsetWasDeclared, areaWasDeclared: true);
+      => new Placement(Offset, NotNull(area), offsetWasDeclared: OffsetWasDeclared);
 
     /// <summary>
     /// False while the projection simply sits where it is handed. Offset modifiers compose onto an
@@ -81,12 +77,6 @@ namespace Unrect.Projections
     /// offset for a movement to compose onto.
     /// </summary>
     internal bool OffsetWasDeclared { get; }
-
-    /// <summary>
-    /// Whether a modifier put this area here, as against the projection's own definition supplying
-    /// one — the extent's half of <see cref="OffsetWasDeclared"/>.
-    /// </summary>
-    internal bool AreaWasDeclared { get; }
 
     // Only the constructor takes a null area, where it deliberately means "derive the extent".
     // Everywhere else a null would silently turn a declared extent into a derived one.

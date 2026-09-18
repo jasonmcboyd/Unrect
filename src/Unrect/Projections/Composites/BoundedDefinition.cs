@@ -139,9 +139,6 @@ namespace Unrect.Projections
     private static string Spelling(Landmark landmark)
       => landmark.Orientation == Orientation.Vertical ? "Until" : "UntilColumn";
 
-    private Area Bound(int limit, Size size)
-      => IsVertical ? new Area(size.Width, limit) : new Area(limit, size.Height);
-
     private Size Consumed(int limit, Size advance)
       => IsVertical ? new Size(advance.Width, limit) : new Size(limit, advance.Height);
   }

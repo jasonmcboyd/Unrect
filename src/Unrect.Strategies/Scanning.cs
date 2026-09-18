@@ -126,18 +126,6 @@ namespace Unrect.Strategies
       public Offset Settle(Plane<ISpace> region) => new Offset(Scans.FoldSize(_size, region, _along));
     }
 
-    /// <summary>A row scan driven by a predicate over the whole row, with no rows owed.</summary>
-    internal sealed class RowPredicate : IRowScan
-    {
-      private readonly Func<Plane<ISpace>, int, bool> _predicate;
-
-      internal RowPredicate(Func<Plane<ISpace>, int, bool> predicate) => _predicate = predicate;
-
-      public bool IncludesRow(Plane<ISpace> space, int row) => _predicate(space, row);
-
-      public int? Required => null;
-    }
-
     /// <summary>
     /// A column scan over a rule that accumulates row by row. Asked about a column of a region that
     /// reaches past it — the whole-region fold — it accumulates over every row once and answers

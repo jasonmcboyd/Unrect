@@ -134,12 +134,6 @@ namespace Unrect.Strategies
     private static int Reserve(int available, int extent)
       => extent <= available ? available - extent : throw new OutOfBoundsException();
 
-    private static IOffsetStrategy Lift(IRowStrategy strategy)
-      => new RowOffsetSizeStrategy(strategy).ToOffsetStrategy();
-
-    private static IOffsetStrategy Lift(IColumnStrategy strategy)
-      => new ColumnOffsetSizeStrategy(strategy).ToOffsetStrategy();
-
     private static T NotNull<T>(T value, string parameter) where T : class
       => value ?? throw new ArgumentNullException(parameter);
 

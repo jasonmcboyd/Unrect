@@ -36,15 +36,6 @@ namespace Unrect.Benchmarks
     /// </summary>
     public const int BandRows = 40_000;
 
-    /// <summary>
-    /// Rows read at each end on each reach-back turn. Three chunks' worth, so the two ends together
-    /// cannot fit the smallest window and each turn genuinely evicts what the last one read.
-    /// </summary>
-    public const int ReachRows = 1_000;
-
-    /// <summary>Turns of the reach-back, alternating ends.</summary>
-    public const int ReachTurns = 32;
-
     /// <summary>Row 0 carries the captions the table binds against.</summary>
     public static string Caption(int column) => "C" + column.ToString(System.Globalization.CultureInfo.InvariantCulture);
 

@@ -16,8 +16,8 @@ namespace Unrect.Projections
   internal sealed class LabelledDefinition<TSpace, T> : DefinitionNode<TSpace, T>
     where TSpace : class, ISpace
   {
-    public LabelledDefinition(LabelAxis axis, IProjectionDefinition<TSpace, LabelMap> header, IProjectionDefinition<TSpace, T> body, Placement placement, string? description = null)
-      : this(axis, header, placement, description)
+    public LabelledDefinition(IProjectionDefinition<TSpace, LabelMap> header, IProjectionDefinition<TSpace, T> body, Placement placement, string? description = null)
+      : this(header, placement, description)
     {
       Body = body ?? throw new ArgumentNullException(nameof(body));
 
@@ -29,27 +29,22 @@ namespace Unrect.Projections
     /// A body built from the header once it is read — the bind rung. The body is not a child the
     /// tree can see, and <paramref name="opacity"/> says so.
     /// </summary>
-    public LabelledDefinition(LabelAxis axis, IProjectionDefinition<TSpace, LabelMap> header, Func<LabelMap, IProjectionDefinition<TSpace, T>?> body, string opacity, Placement placement, string? description = null)
-      : this(axis, header, placement, description)
+    public LabelledDefinition(IProjectionDefinition<TSpace, LabelMap> header, Func<LabelMap, IProjectionDefinition<TSpace, T>?> body, string opacity, Placement placement, string? description = null)
+      : this(header, placement, description)
     {
       LateBody = body ?? throw new ArgumentNullException(nameof(body));
       Opacity = opacity ?? throw new ArgumentNullException(nameof(opacity));
       Children = new[] { new Child(header, UseSite.From(null, 1)) };
     }
 
-    private LabelledDefinition(LabelAxis axis, IProjectionDefinition<TSpace, LabelMap> header, Placement placement, string? description)
+    private LabelledDefinition(IProjectionDefinition<TSpace, LabelMap> header, Placement placement, string? description)
       : base(placement)
     {
-      if (axis != LabelAxis.Column)
-        throw new ArgumentOutOfRangeException(nameof(axis), axis, "Only a column header is read above its body in this release.");
-
-      LabelledAxis = axis;
       Header = header ?? throw new ArgumentNullException(nameof(header));
       Description = description ?? "UnderColumnLabels";
       Children = Array.Empty<Child>();
     }
 
-    private LabelAxis LabelledAxis { get; }
     private IProjectionDefinition<TSpace, LabelMap> Header { get; }
     private IProjectionDefinition<TSpace, T>? Body { get; }
     private Func<LabelMap, IProjectionDefinition<TSpace, T>?>? LateBody { get; }
@@ -149,7 +144,7 @@ namespace Unrect.Projections
           ?? _labelled.LateBody!(labels)
           ?? throw _scope.Failure(_labelled, "the row bind returned null; it must return the projection that reads one record", Extent(), null, null, isFault: true);
         var edge = _labelled.Body is null ? new Child(inner, UseSite.From(null, 2)) : _labelled.Children[1];
-        var body = new WithLabelsDefinition<TSpace, T>(_labelled.LabelledAxis, labels, inner, Placement.Default);
+        var body = new WithLabelsDefinition<TSpace, T>(labels, inner, Placement.Default);
 
         _body = _scope.Start(edge, body, at);
 

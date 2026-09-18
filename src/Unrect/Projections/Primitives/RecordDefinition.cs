@@ -6,8 +6,8 @@ namespace Unrect.Projections
 {
   /// <summary>
   /// The compute-legal binder as a standalone leaf: one body row read by
-  /// <c>row =&gt; …</c>, the columns resolved through whatever ambient <see cref="LabelAxis.Column"/>
-  /// scope a scope-introducer pushed. It owns no <see cref="TableView{TSpace}"/> and copies no resolution —
+  /// <c>row =&gt; …</c>, the columns resolved through whatever ambient column-label scope a
+  /// scope-introducer pushed. It owns no <see cref="TableView{TSpace}"/> and copies no resolution —
   /// a <see cref="TableRow{TSpace}"/> resolves by name through the scope's label environment, so this leaf
   /// and a built-in <c>Table</c>'s rows share the one <c>Resolvable</c> path and cannot drift.
   /// <para>
