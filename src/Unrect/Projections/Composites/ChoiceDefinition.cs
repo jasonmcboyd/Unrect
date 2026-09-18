@@ -187,6 +187,8 @@ namespace Unrect.Projections
       }
     }
 
+    internal override Reach Retains => Reach.Extent;
+
     public override ProjectionResult<T> Project(Plane<TSpace> extent, ProjectionContext context)
     {
       ProjectionException[]? failures = null;

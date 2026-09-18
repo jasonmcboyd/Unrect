@@ -17,7 +17,7 @@ namespace Unrect.Projections
   /// or settles on more than it was offered, is a fault blamed on the node.
   /// </para>
   /// </summary>
-  internal sealed class ChildProjector<TSpace, T> : IProjector<TSpace, T>, IChildHandle<TSpace>
+  internal sealed class ChildProjector<TSpace, T> : IProjector<TSpace, T>, IChildHandle<TSpace>, IRetaining
     where TSpace : class, ISpace
   {
     private enum Phase
@@ -62,10 +62,58 @@ namespace Unrect.Projections
       _strict = strict;
       _driver = scope.Driver;
       _child = ProjectionContext.Skipped(definition) ? parent.Blaming(definition) : parent.Descend(definition);
-      _held = !definition.Axis.Streams(_driver)
-        || !PlacementRules.TryStream(definition.Placement, _driver, out _offsetRule, out _sizeRule, out _derived);
+      // A machine is driven when its placement streams and it can take the driver's spans: along
+      // an axis it announces, or — for a collector, which announces none — under a declared rule,
+      // since then the rule bounds it and it reads the region whole at close, along whichever axis
+      // the rule ran. A collector left to bound itself is held, and handed the region as one span.
+      _held = !PlacementRules.TryStream(definition.Placement, _driver, out _offsetRule, out _sizeRule, out _derived)
+        || !(definition.Axis.Streams(_driver) || (!_derived && definition.Axis == Axes.None));
       Reach = _held ? Reach.Extent : definition.Reach;
+      scope.Session.Opened(this);
     }
+
+    /// <summary>The definition this machine reads, for a report about what it is holding.</summary>
+    public IProjectionDefinition Definition => _definition;
+
+    /// <summary>
+    /// The first source row this machine may still read, or null when it holds none. A held child
+    /// may read all of what it was offered when it is placed at close; a child still resolving an
+    /// offset or a width reads back to where that began; a placed child reads back only as far as
+    /// its own node's <see cref="DefinitionNode.Retains"/> says.
+    /// </summary>
+    public int? RetainFrom(int current)
+    {
+      if (_phase == Phase.Closed || _offered.Count == 0)
+        return null;
+
+      if (_held || _phase == Phase.Offset)
+        return Row(_offered[0]);
+
+      var innerStart = Row(_offered[_innerStart]);
+
+      if (!_derived && _width is null)
+        return innerStart;
+
+      if (_inner is IHolding holding)
+      {
+        if (holding.HeldFrom is not int position)
+          return null;
+
+        return Row(_offered[Math.Min(_innerStart + position, _offered.Count - 1)]);
+      }
+
+      var own = _definition is DefinitionNode node ? node.Retains : Reach.Extent;
+
+      if (own.IsNone)
+        return null;
+
+      if (own.IsExtent)
+        return innerStart;
+
+      return Math.Max(innerStart, current - own.Count!.Value + 1);
+    }
+
+    private int Row(Plane<TSpace> span) => _driver == Orientation.Vertical ? span.Origin.Height : span.Origin.Width;
 
     /// <summary>What this child announces to the parent that started it.</summary>
     public Reach Reach { get; }
@@ -193,6 +241,7 @@ namespace Unrect.Projections
       finally
       {
         _phase = Phase.Closed;
+        _scope.Session.Closed(this);
       }
 
       if (Spans.Along(Advance, _driver) > _offered.Count)
@@ -253,10 +302,14 @@ namespace Unrect.Projections
 
       if (!take)
       {
+        // The region the rule settled on, read before the refused span leaves the list: with
+        // nothing taken it is the empty region at that span, which still has a width to settle.
+        var settled = _width is null ? InnerRegion(_taken) : default;
+
         Refuse();
 
         if (_width is null)
-          TrySettleWidth(InnerRegion(_taken), rowsSettled: true);
+          TrySettleWidth(settled, rowsSettled: true);
 
         return false;
       }
@@ -322,6 +375,11 @@ namespace Unrect.Projections
 
       if (settled > Spans.Across(region.Declared.Size, _driver))
       {
+        // Too wide is reported over the rows that were there for it, so a declared 3x3 on a 2x2
+        // space says "2x2 available" rather than the one row it had seen when the width came in.
+        if (!rowsSettled)
+          return;
+
         var size = _sizeRule.Declared.Height > 0 ? _sizeRule.Declared : new Size(settled, _taken);
 
         if (_strict)
@@ -431,6 +489,11 @@ namespace Unrect.Projections
         }
       }
 
+      // An inner that was fed nothing closes over the empty region its rule settled on, cut to the
+      // settled width: a discovered block over blank space is 0x0, not 0 rows of the anchor's width.
+      if (!_derived && _taken == 0 && _inner is not null)
+        _inner = _definition.Build(_scope.At(_child, Narrow(InnerPlane(0), _width!.Value), _driver));
+
       var settlement = InnerClose();
       var declared = !_derived;
       var consumed = declared ? Spans.ToSize(_taken, _width!.Value, _driver) : settlement.Consumed;
@@ -486,6 +549,12 @@ namespace Unrect.Projections
       Offset = default;
       Settle(default!, new Size(0, 0), Presence.Empty);
     }
+
+    /// <summary>The same region, <paramref name="width"/> wide across the driver's axis.</summary>
+    private Plane<TSpace> Narrow(Plane<TSpace> region, int width)
+      => _driver == Orientation.Vertical
+        ? region.Slice(new Area(width, region.Area.Height))
+        : region.Slice(new Area(region.Width, width));
 
     private Plane<TSpace> Cut(Plane<TSpace> span, int column, int? width)
       => _driver == Orientation.Vertical

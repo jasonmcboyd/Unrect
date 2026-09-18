@@ -156,6 +156,8 @@ namespace Unrect.Projections
       }
     }
 
+    internal override Reach Retains => Reach.Spans(Stride);
+
     public override ProjectionResult<IReadOnlyList<T>> Project(Plane<TSpace> extent, ProjectionContext context)
     {
       // The across axis, measured once. A vertical tiler takes the width, which is free even on an

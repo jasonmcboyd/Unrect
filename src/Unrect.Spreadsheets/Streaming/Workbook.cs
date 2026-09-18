@@ -74,6 +74,8 @@ namespace Unrect.Spreadsheets
     private readonly StringInterner _strings;
     private readonly List<SheetEntry> _catalogue = new List<SheetEntry>();
     private readonly Dictionary<string, SheetStore> _stores;
+    private readonly IRowSource _source;
+    private readonly List<StreamedSheet> _streams = new List<StreamedSheet>();
 
     private IRowCursor? _parked;
     private bool _catalogueComplete;
@@ -86,6 +88,7 @@ namespace Unrect.Spreadsheets
     {
       Path = path;
       _options = options;
+      _source = source;
       _pool = new ReaderPool(source, options.MaxReaders, options.WarmReaders);
       // One table for the book, shared by every sheet it vends — see StringInterner for why it is
       // scoped there and not per sheet.
@@ -235,6 +238,52 @@ namespace Unrect.Spreadsheets
         return new WindowedSpace(store);
       }
     }
+
+    /// <summary>
+    /// The sheet named <paramref name="name"/> as a stream: read once, forward, by the push
+    /// interpreter, holding only the rows a declaration's open machines may still read. The one
+    /// door onto a sheet that a forward pass can promise, and what <see cref="Sheet"/> narrows to
+    /// when the pull interpreter retires. A cell of a row the stream has released is a located read
+    /// failure; the rows it may hold at once are capped by <see cref="WorkbookOptions.BufferRows"/>.
+    /// </summary>
+    /// <param name="name">The sheet's name.</param>
+    public ISheetCells Stream(string name)
+    {
+      if (name is null)
+        throw new ArgumentNullException(nameof(name));
+
+      lock (_gate)
+      {
+        ThrowIfDisposed();
+
+        var entry = WalkTo(name)
+          ?? throw new ArgumentException(
+            $"No sheet named '{name}' in '{Path}'. Sheets seen so far: {Seen()}.", nameof(name));
+
+        var surveyed = entry.RowCount <= 0;
+        var (rowCount, columnCount) = surveyed ? Measure(entry) : (entry.RowCount, entry.ColumnCount);
+
+        var cursor = _source.Open();
+
+        try
+        {
+          for (var index = 0; index < entry.Index; index++)
+            if (!cursor.NextSheet())
+              throw new InvalidOperationException($"The file no longer has a sheet at index {entry.Index}.");
+
+          var stream = new StreamedSheet(cursor, entry.Name, rowCount, columnCount, _options.BufferRows);
+          _streams.Add(stream);
+          return stream;
+        }
+        catch
+        {
+          cursor.Dispose();
+          throw;
+        }
+      }
+    }
+    /// <exception cref="ArgumentException">No sheet of that name exists.</exception>
+    /// <exception cref="ObjectDisposedException">This workbook has been disposed.</exception>
 
     /// <summary>
     /// How big <paramref name="entry"/> really is, found by reading it once and counting — for a
@@ -453,6 +502,11 @@ namespace Unrect.Spreadsheets
 
         foreach (var store in _stores.Values)
           store.Dispose();
+
+        foreach (var stream in _streams)
+          stream.Dispose();
+
+        _streams.Clear();
 
         // The table outlives the window by design, so it must not outlive the workbook: a caller
         // who holds a disposed book to total up what an import cost would otherwise still be

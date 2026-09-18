@@ -73,7 +73,7 @@ namespace Unrect.Projections
     /// took past its last committed occurrence is the repeat's, so the parent reads it back off the
     /// settlement.
     /// </summary>
-    private sealed class Machine : IProjector<TSpace, IReadOnlyList<T>>
+    private sealed class Machine : IProjector<TSpace, IReadOnlyList<T>>, IHolding
     {
       private readonly RepeatDefinition<TSpace, T> _repeat;
       private readonly ProjectorScope<TSpace> _scope;
@@ -101,6 +101,13 @@ namespace Unrect.Projections
       }
 
       private Orientation Along => _repeat.Orientation;
+
+      /// <summary>
+      /// From the attempt in progress — its separator and its item — since those are what an
+      /// attempt that ends the run hands back. A committed occurrence is final, so its spans are not
+      /// held; the walk over a thousand occurrences costs one.
+      /// </summary>
+      public int? HeldFrom => _finished || _first is null ? null : _attemptStart;
 
       public bool Next(Plane<TSpace> span)
       {
@@ -286,6 +293,9 @@ namespace Unrect.Projections
       private Plane<TSpace> Extent()
         => _first is Plane<TSpace> first ? Spans.Region(first, _offered, Along) : _scope.Anchor;
     }
+
+    /// <summary>What a repeat holds is the attempt in progress; see <see cref="Machine.HeldFrom"/>.</summary>
+    internal override Reach Retains => Reach.Extent;
 
     public override ProjectionResult<IReadOnlyList<T>> Project(Plane<TSpace> extent, ProjectionContext context)
     {

@@ -204,6 +204,8 @@ namespace Unrect.Projections
         => _scope.Start(_boundary.Children[0], _boundary.Inner, at, inheritSite: true);
     }
 
+    internal override Reach Retains => Reach.Extent;
+
     public override ProjectionResult<T> Project(Plane<TSpace> extent, ProjectionContext context)
     {
       var mark = context.Diagnostics.Mark();

@@ -60,6 +60,14 @@ namespace Unrect.Projections
     /// <summary>Either axis by default — a leaf's span is one cell whichever way it arrives; a shape with an orientation overrides this.</summary>
     public virtual Axes Axis => Axes.Either;
 
+    /// <summary>
+    /// How far back this node's own machine may still read, apart from its children's needs: none
+    /// for a composite that reads nothing itself, the spans it was fed for a leaf that reads them
+    /// at <c>Close</c>, its extent for a node that replays or reads at random. The engine keeps a
+    /// streamed source's rows from the oldest such need among the machines still open.
+    /// </summary>
+    internal virtual Reach Retains => Reach.None;
+
     /// <summary>Children are the whole truth by default; a layout overrides this to say why they are not.</summary>
     public virtual string? Opacity => null;
 

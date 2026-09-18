@@ -30,6 +30,8 @@ namespace Unrect.Projections
     public override IProjector<TSpace, LabelMap> Build(ProjectorScope<TSpace> scope)
       => new SpanCountProjector<TSpace, LabelMap>(this, scope, HeaderRows);
 
+    internal override Reach Retains => Reach.Spans(HeaderRows);
+
     public override ProjectionResult<LabelMap> Project(Plane<TSpace> extent, ProjectionContext context)
     {
       var width = extent.Width;

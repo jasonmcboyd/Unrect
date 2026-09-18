@@ -24,6 +24,8 @@ namespace Unrect.Projections
     public override IProjector<TSpace, T> Build(ProjectorScope<TSpace> scope)
       => new SpanCountProjector<TSpace, T>(this, scope, 1);
 
+    internal override Reach Retains => Reach.Extent;
+
     public override ProjectionResult<T> Project(Plane<TSpace> extent, ProjectionContext context)
     {
       T value;

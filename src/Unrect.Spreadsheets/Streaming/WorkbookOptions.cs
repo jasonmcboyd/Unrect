@@ -30,6 +30,13 @@ namespace Unrect.Spreadsheets
     public int WindowRows { get; init; } = 8192;
 
     /// <summary>
+    /// The most rows a sheet read through <see cref="Workbook.Stream"/> may hold at once, or null
+    /// for no limit. Exceeding it is a fault naming the shape that holds them — the declaration
+    /// asks for more than a forward pass can keep — never a degraded read.
+    /// </summary>
+    public int? BufferRows { get; init; }
+
+    /// <summary>
     /// Rows per chunk, or 0 to derive one from the sheet's width — as many rows as fit 64 KB, which
     /// keeps a chunk off the Large Object Heap it would otherwise fragment.
     /// <para>
@@ -120,6 +127,9 @@ namespace Unrect.Spreadsheets
     {
       if (WindowRows < 1)
         throw new ArgumentOutOfRangeException(nameof(WindowRows), WindowRows, "The window must be at least one row.");
+
+      if (BufferRows is int buffer && buffer < 1)
+        throw new ArgumentOutOfRangeException(nameof(BufferRows), buffer, "A buffer cap must be at least one row; pass null for no cap.");
 
       if (MaxReaders < 1)
         throw new ArgumentOutOfRangeException(nameof(MaxReaders), MaxReaders, "A workbook needs at least one reader.");

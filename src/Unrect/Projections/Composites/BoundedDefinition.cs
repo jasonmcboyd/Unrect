@@ -133,6 +133,8 @@ namespace Unrect.Projections
       }
     }
 
+    internal override Reach Retains => Reach.Extent;
+
     public override ProjectionResult<TResult> Project(Plane<TSpace> extent, ProjectionContext context)
     {
       var size = extent.Area.Size;
