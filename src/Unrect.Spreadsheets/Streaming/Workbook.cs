@@ -203,6 +203,12 @@ namespace Unrect.Spreadsheets
       return (rows, columns);
     }
 
+    /// <summary>
+    /// The catalogue entry for <paramref name="name"/>, walking the file's sheets forward as far as
+    /// it takes to find it — or all of them, for null — and remembering every one passed on the way.
+    /// The parked cursor does the walking while there is one; otherwise any fresh cursor will do,
+    /// since the walk only steps sheets, never rows.
+    /// </summary>
     private SheetEntry? WalkTo(string? name)
     {
       var comparison = _options.CaseSensitiveSheetNames ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
@@ -211,49 +217,37 @@ namespace Unrect.Spreadsheets
       if (known is not null || _catalogueComplete)
         return known;
 
-      if (_parked is not null)
-        return Extend(name, comparison, _parked.SheetIndex, () => Describe(_parked!), () => _parked!.NextSheet());
+      var fresh = _parked is null;
+      var cursor = _parked ?? _source.Open();
 
-      // Any cursor will do: the walk only steps sheets, never rows.
-      using var cursor = _source.Open();
-
-      return Extend(name, comparison, cursor.SheetIndex, () => Describe(cursor), cursor.NextSheet);
-    }
-
-    private SheetEntry? Extend(
-      string? name,
-      StringComparison comparison,
-      int startSheetIndex,
-      Func<SheetEntry> describe,
-      Func<bool> nextSheet)
-    {
-      var index = startSheetIndex;
-
-      while (true)
+      try
       {
-        if (index == _catalogue.Count)
+        while (true)
         {
-          var entry = describe();
-          _catalogue.Add(entry);
+          if (cursor.SheetIndex == _catalogue.Count)
+          {
+            var entry = new SheetEntry(cursor.SheetIndex, cursor.SheetName, cursor.RowCount, cursor.ColumnCount);
+            _catalogue.Add(entry);
 
-          if (name is not null && string.Equals(entry.Name, name, comparison))
-            return entry;
+            if (name is not null && string.Equals(entry.Name, name, comparison))
+              return entry;
+          }
+
+          if (!cursor.NextSheet())
+          {
+            _catalogueComplete = true;
+            RetireParked();
+
+            return null;
+          }
         }
-
-        if (!nextSheet())
-        {
-          _catalogueComplete = true;
-          RetireParked();
-
-          return null;
-        }
-
-        index++;
+      }
+      finally
+      {
+        if (fresh)
+          cursor.Dispose();
       }
     }
-
-    private static SheetEntry Describe(IRowCursor cursor) =>
-      new SheetEntry(cursor.SheetIndex, cursor.SheetName, cursor.RowCount, cursor.ColumnCount);
 
     private void RetireParked()
     {
