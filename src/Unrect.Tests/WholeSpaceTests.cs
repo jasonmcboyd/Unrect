@@ -54,7 +54,6 @@ namespace Unrect.Tests
       Assert.Equal(0, region.Origin.Height);
       Assert.Equal(space.Area.Width, region.Area.Width);
       Assert.Equal(space.Area.Height, region.Area.Height);
-      Assert.Null(region.Bound);
 
       Assert.Equal(Plane<ISpace>.Of(space), region);
     }

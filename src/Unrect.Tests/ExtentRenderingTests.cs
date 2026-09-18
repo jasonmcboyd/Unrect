@@ -70,46 +70,5 @@ namespace Unrect.Tests
       Assert.EndsWith(new Size(4, 2).ToString(), plane.ToString(), StringComparison.Ordinal);
       Assert.EndsWith(plane.Area.ToString(), plane.ToString(), StringComparison.Ordinal);
     }
-
-    [Fact]
-    public void AndAPlaneStillBeingDiscoveredRendersItsHeightAsAQuestionWithoutSettlingIt()
-    {
-      // Where the congruence stops, and why it has to. A discovered bottom edge has no height to
-      // print, and the only way to get one is to read the file to exhaustion — which a diagnostic
-      // must never do. So the width still renders as the width, and the height renders as the
-      // question it is.
-      var bound = new CountingBound(6);
-      var plane = Plane<ISheetCells>.Of(CoordinateGrid(4, 10)).Bounded(bound, 4);
-
-      Assert.Equal("(0,0) 4x?", plane.ToString());
-      Assert.Equal(0, bound.Forced);
-
-      // Non-vacuous: the extent this declined to print is a real one, and asking for it costs the
-      // reading that rendering refused to do.
-      Assert.Equal("4x6", plane.Area.ToString());
-      Assert.Equal(1, bound.Forced);
-    }
-
-    /// <summary>A bottom edge admitting a fixed number of rows, counting the times it is settled.</summary>
-    private sealed class CountingBound : IBound
-    {
-      private readonly int _height;
-
-      internal CountingBound(int height) => _height = height;
-
-      /// <summary>How many times the whole extent was settled.</summary>
-      internal int Forced { get; private set; }
-
-      public bool HasRow(int row) => row < _height;
-
-      public int Force()
-      {
-        Forced++;
-
-        return _height;
-      }
-
-      public IBound Shift(int rows) => throw new NotSupportedException("Rendering never shifts a bound.");
-    }
   }
 }

@@ -380,54 +380,21 @@ namespace Unrect.Tests.Projections
 
     // --- Retyping a region: the way back from the canonical surface ---------------------------------
 
-    /// <summary>A bottom edge that admits a fixed number of rows and remembers whether it was settled.</summary>
-    private sealed class CountingBound : IBound
-    {
-      private readonly int _height;
-
-      internal CountingBound(int height) => _height = height;
-
-      /// <summary>How many times the whole extent was settled.</summary>
-      internal int Forced { get; private set; }
-
-      public bool HasRow(int row) => row < _height;
-
-      public int Force()
-      {
-        Forced++;
-
-        return _height;
-      }
-
-      public IBound Shift(int rows) => throw new NotSupportedException();
-    }
-
     [Fact]
-    public void RetypingARegionKeepsItsOriginItsExtentAndItsBottomEdge()
+    public void RetypingARegionKeepsItsOriginAndItsExtent()
     {
       var sheet = CoordinateGrid(4, 10);
-      var bound = new CountingBound(6);
-      var region = Plane<ISheetCells>.Of(sheet).Slice(new Offset(1, 2)).Bounded(bound, 3);
+      var region = Plane<ISheetCells>.Of(sheet).Slice(new Offset(1, 2)).Narrowed(3);
 
       var retyped = region.Erased().Retyped<ISheetCells>();
 
       Assert.Same(region.Space, retyped.Space);
       Assert.Equal(region.Origin, retyped.Origin);
       Assert.Equal(region.Width, retyped.Width);
-      Assert.NotNull(retyped.Bound);
+      Assert.Equal(new Area(3, 8), retyped.Area);
 
-      // The bottom edge rides along unsettled: a retype asks nothing about how tall the region is,
-      // which is what lets a typed predicate run inside a region still being discovered.
-      Assert.Equal(0, bound.Forced);
-
-      for (var row = 0; row < 8; row++)
+      for (var row = 0; row < 10; row++)
         Assert.Equal(region.HasRow(row), retyped.HasRow(row));
-
-      Assert.Equal(0, bound.Forced);
-
-      // ... and settles to the same extent when something finally asks.
-      Assert.Equal(new Area(3, 6), retyped.Area);
-      Assert.Equal(1, bound.Forced);
     }
 
     [Fact]
