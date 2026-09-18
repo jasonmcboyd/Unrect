@@ -48,12 +48,12 @@ namespace Unrect.Projections
 
     internal ProjectorScope<TSpace> WithOrdinal(int ordinal) => Derive(Position.WithOrdinal(ordinal));
 
-    /// <summary>This scope with <paramref name="source"/> as the nearest column labels, captured at <paramref name="captureOrigin"/>.</summary>
-    internal ProjectorScope<TSpace> PushLabels(ILabelSource source, Offset captureOrigin)
-      => Derive(Position.PushLabels(source, captureOrigin));
+    /// <summary>This scope with <paramref name="source"/> as the nearest labels along <paramref name="axis"/>, captured at <paramref name="captureOrigin"/>.</summary>
+    internal ProjectorScope<TSpace> PushLabels(LabelAxis axis, ILabelSource source, Offset captureOrigin)
+      => Derive(Position.PushLabels(axis, source, captureOrigin));
 
-    /// <summary>The nearest column labels, or null when none is in scope.</summary>
-    internal LabelScope? NearestLabels() => Position.NearestLabels();
+    /// <summary>The nearest labels along <paramref name="axis"/>, or null when none is in scope.</summary>
+    internal LabelScope? NearestLabels(LabelAxis axis) => Position.NearestLabels(axis);
 
     /// <summary>This scope at <paramref name="position"/>: the engine's own type, over the same run.</summary>
     private protected abstract ProjectorScope<TSpace> Derive(TreePosition position);

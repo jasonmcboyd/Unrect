@@ -244,6 +244,7 @@ namespace Unrect.Projections
       // IO failure, a null bug — is a fault no tolerance boundary can absorb. The body it builds is
       // one band per row; the placement already stops at a blank row unless the policy says to go on.
       var composed = new LabelledDefinition<TSpace, IReadOnlyList<T>>(
+        LabelAxis.Column,
         ColumnLabels(rows).AsScaffolding(),
         labels => eachRow(labels) is { } row ? VerticalBands(1, row, onBlank.IsStop ? null : onBlank, declared).AsScaffolding() : null,
         "the row projection is built from the header's captions; it is known only once a header is read",
@@ -341,7 +342,7 @@ namespace Unrect.Projections
     /// rows it takes are the only thing it decides.
     /// </summary>
     private static IProjectionDefinition<TSpace, IReadOnlyList<T>> UnderColumnLabels<T>(IProjectionDefinition<TSpace, LabelMap> header, IProjectionDefinition<TSpace, IReadOnlyList<T>> body)
-      => new LabelledDefinition<TSpace, IReadOnlyList<T>>(header, body, Placement.Default);
+      => new LabelledDefinition<TSpace, IReadOnlyList<T>>(LabelAxis.Column, header, body, Placement.Default);
 
     /// <summary>
     /// Every body row as a dictionary keyed by the column captions, with the cells themselves for
@@ -515,6 +516,7 @@ namespace Unrect.Projections
     /// <param name="body">The projection read under the pushed labels.</param>
     public static IProjectionDefinition<TSpace, T> WithColumnLabels<T>(LabelMap map, IProjectionDefinition<TSpace, T> body)
       => new WithLabelsDefinition<TSpace, T>(
+        LabelAxis.Column,
         map ?? throw new ArgumentNullException(nameof(map)),
         body ?? throw new ArgumentNullException(nameof(body)),
         Placement.Default);

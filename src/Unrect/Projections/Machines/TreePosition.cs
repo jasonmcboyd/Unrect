@@ -72,15 +72,22 @@ namespace Unrect.Projections
     private LabelScope? Labels { get; }
 
     /// <summary>
-    /// Pushes <paramref name="source"/> as the nearest column labels, with
-    /// <paramref name="captureOrigin"/> — the origin of the region the labels are APPLIED to — as
-    /// the frame their ordinals are relative to.
+    /// Pushes <paramref name="source"/> as the nearest set of labels along <paramref name="axis"/>,
+    /// with <paramref name="captureOrigin"/> — the origin of the region the labels are APPLIED to —
+    /// as the frame their ordinals are relative to.
     /// </summary>
-    internal TreePosition PushLabels(ILabelSource source, Offset captureOrigin)
-      => new TreePosition(Parent, Projection, Index, Site, Pending, new LabelScope(source, captureOrigin, Labels), Ordinal, Blame);
+    internal TreePosition PushLabels(LabelAxis axis, ILabelSource source, Offset captureOrigin)
+      => new TreePosition(Parent, Projection, Index, Site, Pending, new LabelScope(axis, source, captureOrigin, Labels), Ordinal, Blame);
 
-    /// <summary>The nearest column labels, or null when none is in scope; an inner scope shadows an outer one.</summary>
-    internal LabelScope? NearestLabels() => Labels;
+    /// <summary>The nearest labels along <paramref name="axis"/>, or null when none is in scope; an inner scope shadows an outer one on the same axis.</summary>
+    internal LabelScope? NearestLabels(LabelAxis axis)
+    {
+      for (var scope = Labels; scope is not null; scope = scope.Outer)
+        if (scope.Axis == axis)
+          return scope;
+
+      return null;
+    }
 
     /// <summary>Enters <paramref name="projection"/>, which claims whatever use site was waiting for it.</summary>
     internal TreePosition Descend(IProjectionDefinition projection)
@@ -155,17 +162,33 @@ namespace Unrect.Projections
   }
 
   /// <summary>
-  /// One entry in the ambient label environment: a set of column labels, the origin they were
+  /// Which axis a set of labels names: a <see cref="Column"/> label answers a column, translating
+  /// along <c>Offset.Width</c>; a <see cref="Row"/> label answers a row, translating along
+  /// <c>Offset.Height</c>. Kept separate on the stack so a row-labelled and a column-labelled scope
+  /// coexist rather than shadow one another.
+  /// </summary>
+  internal enum LabelAxis
+  {
+    Column,
+    Row,
+  }
+
+  /// <summary>
+  /// One entry in the ambient label environment: a set of labels along an axis, the origin they were
   /// captured at, and the scope it shadows. Immutable — a cons-cell in the position's label stack.
   /// </summary>
   internal sealed class LabelScope
   {
-    public LabelScope(ILabelSource source, Offset captureOrigin, LabelScope? outer)
+    public LabelScope(LabelAxis axis, ILabelSource source, Offset captureOrigin, LabelScope? outer)
     {
+      Axis = axis;
       Source = source;
       CaptureOrigin = captureOrigin;
       Outer = outer;
     }
+
+    /// <summary>Which axis these labels name.</summary>
+    public LabelAxis Axis { get; }
 
     /// <summary>Where the labels' ordinals are read — the answer to <c>IndicesOf</c> is in this frame.</summary>
     public ILabelSource Source { get; }

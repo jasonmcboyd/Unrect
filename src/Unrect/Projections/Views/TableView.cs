@@ -33,7 +33,7 @@ namespace Unrect.Projections
       // header was actually declared: a headerless table pushes nothing, so a by-name lookup still
       // finds no scope and reports the headerless message. The origin PushLabels captures is this
       // table's own, the frame the header's ordinals are read in and every body row translates from.
-      Scope = HasHeader ? scope.PushLabels(Labels, space.Origin) : scope;
+      Scope = HasHeader ? scope.PushLabels(LabelAxis.Column, Labels, space.Origin) : scope;
     }
 
     /// <summary>The table's own header parsed once: the labels the bind rung binds by, and their citations.</summary>

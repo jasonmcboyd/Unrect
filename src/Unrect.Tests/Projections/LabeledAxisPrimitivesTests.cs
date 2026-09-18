@@ -51,6 +51,7 @@ namespace Unrect.Tests.Projections
     /// </summary>
     private static IProjectionDefinition<ISheetCells, IReadOnlyList<T>> PrimitiveTable<T>(int headerRows, Func<TableRow<ISheetCells>, T> record, bool marked)
       => new LabelledDefinition<ISheetCells, IReadOnlyList<T>>(
+        LabelAxis.Column,
         Mark(ColumnLabels(headerRows), marked),
         Mark(VerticalBands(1, Mark(Record(record), marked)), marked),
         TablePlacementReplica(),
