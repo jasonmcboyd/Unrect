@@ -429,21 +429,32 @@ released; a rolled-back hold discards them, and the boundary then records the on
 
 ---
 
-## 8. The streaming door
+## 8. One door: a source of spans
 
-`Workbook.Sheet(name)` today vends a random-access `ISheetCells` over a window, pool and rewinds
-(`engine-split.md` §5.3's open question). Under push the honest door is **`MapWorkbook`**: a
-declaration driven over a file, one forward pass, one buffer sized by the declaration's holds. The
-recommendation is that `Sheet` narrows to that and the eager `SpreadsheetSpace.Create` remains the
-random-access answer, rather than vending a buffer-backed space under the old name with limits a type
-cannot state.
+Random access is not something a space provides; it is something a definition asks for, and the
+mechanism is already in §2: a node that announces `Reach.Extent` has its whole extent held, and a
+held region is a plane, which is random access. `Range(b => …)` and `Table(view => …)` announce it
+for their lambdas. Announced at the root, it holds the whole sheet — which is what "load it eagerly"
+always was, seen from the other side. So there are not two doors, an eager one and a streaming one.
+There is one: **a source of spans**, and the declaration says how much of it to hold.
 
-**Points that escape.** `Point()` and `Fields()` hand back addresses, and a consumer reads them after
-`Map` returns. Under the eager door that is fine. Under the streaming door a point whose row has left
-the buffer throws a located `CellReadException` saying so, rather than the buffer pinning rows for
-the life of the result. A declaration that wants the value across the boundary reads it inside
-(`AsText()`, a kinded leaf, or `Select` on the point) — which is what the vocabulary already
-recommends.
+- **`Workbook.Sheet(name)`** narrows from vending a random-access `ISheetCells` over a window, pool
+  and rewinds (`engine-split.md` §5.3's open question) to vending a *source* for `Map`: one forward
+  pass, one buffer sized by the declaration's holds. `MapWorkbook(path, sheet)` is the
+  one-call spelling.
+- **`SpreadsheetSpace.Create`** and **`SheetGrid.Of`** stay as sources that happen to *retain*
+  everything — the former also the one that carries formulas, which a stream cannot — but they are
+  not "the random-access answer". No source is; the question is the definition's, at whatever depth
+  it asks it, up to and including the root.
+- **Points that escape** — `Point()` and `Fields()` hand back addresses a consumer reads after `Map`
+  returns — are valid exactly when the source retains. Under a retaining source, always. Under a
+  streamed source, a point whose row has left the buffer throws a located `CellReadException` saying
+  so, rather than the buffer pinning rows for the life of the result. A declaration that wants the
+  value across that line reads it inside (`AsText()`, a kinded leaf, or `Select` on the point) —
+  which is what the vocabulary already recommends.
+
+Nothing new is needed for any of this: no node, no space type, no modifier. The cost of random
+access sits on the declaration, where the dry run reads it, instead of on the door.
 
 ---
 
@@ -477,8 +488,8 @@ half renamed as the calculus.
 | 1 | `Settlement` carries `Presence` | Yes: the sibling note, the repeat's "ended by tolerance" and the unconsumed-space report all read it today; nothing replaces it more simply |
 | 2 | The strategy calculus | Single-form, per-span, oriented (§4): the incremental half survives renamed, the eager half and the duality die. This *refines* `engine-split.md` §5.4, which said delete the incremental half |
 | 3 | `Overlay` streams concurrently; a horizontal flow under row-major holds | Yes, on dependence (§3); the declared-width slicing optimisation is recorded, not built |
-| 4 | Points that escape under streaming throw after eviction | Yes (§8); the alternative pins rows for the result's lifetime, which is the window's cost model back again |
-| 5 | `Workbook.Sheet` narrows to `MapWorkbook` | Yes (§8) |
+| 4 | Points that escape a streamed source throw after eviction | Yes (§8); valid forever under a retaining source; the alternative pins rows for the result's lifetime, which is the window's cost model back again |
+| 5 | One door | `Workbook.Sheet` narrows to a source for `Map`; the eager spaces are retaining sources, not a second kind of input; random access is a definition's `Extent`, at any depth (§8, owner's framing) |
 | 6 | The buffer cap | One optional `WorkbookOptions` value, a failure naming the node when exceeded; no default cap |
 | 7 | `Reach.Extent` in place of `Unbounded` | Yes: no machine reaches past what its placement gave it |
 | 8 | `Reach` and `Axis` on the definition, not the projector | Yes: the dry run and the parent both need them before anything starts |
