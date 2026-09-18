@@ -1,10 +1,42 @@
 # The push interpreter: what each machine does with a span
 
 **Status.** Accepted by the owner, 2026-09-18, after two revisions in review (§5.1 added; §8
-reframed around one door). Phase 2 of `engine-split.md` §9, complete; it is the design phase 3 builds
-from. Written against `272032b`, the end of phase 1, on `experiment/engine-split`. Nothing here is
-built yet. The rulings in §0 were settled with the owner in the session that produced this document;
-the decisions in §11 were accepted as recommended.
+reframed around one door). **Phase 3 landed the same day** on `experiment/engine-split` (commits
+3a–3c): every one of the twenty-two shipped nodes builds its machine through `Start`, beside
+`Project`, and a root-level switch (`UNRECT_PUSH=1`, or `ProjectionEngine.UsePush()`) runs any
+application on the push interpreter. Sixty-three equivalence theories
+(`src/Unrect.Tests/Machines/PushEquivalenceTests.cs`) observe a declaration through both engines
+and compare at L3. The whole suite under push passes 2,625 of 2,695; the 70 that do not all test
+the pull engine's own mechanics — rows touched, high-water marks, deferred scans, sweep
+announcements, window overruns, read ordering — and one matcher rescan (below); phase 4 sorts
+them into "retires with pull" and "must pass". Built differently from the text below:
+
+- `Settlement<T>` carries `Size Consumed`, both dimensions, not an along-axis count (§2.3): a parent
+  across the machine's axis needs the other one, and a derived width is the node's, not the placement's.
+- `Axes` is a flags enum — `None`, `Vertical`, `Horizontal`, `Either` — rather than a nullable
+  orientation (§3); a wrapper announces its inner's axis, or `Either` when the inner announces `None`.
+- `ProjectorScope<TSpace>` is generic over the space, and in this phase wraps the pull engine's
+  `ProjectionContext` for tree position and diagnostics, so the views keep taking a context until
+  phase 5; its members are internal until the node classes go public.
+- The placement machine (`ChildProjector`) streams the placements the vocabulary itself builds —
+  explicit offsets and sizes, row landmarks, skip-while rows, the first non-blank cell, chained
+  offsets, rows-while-any, the interleaved block, rows-then-columns — and holds any other child
+  whole, placing it at `Close` with the pull engine's own placement (`EagerPlacement`) and
+  re-driving it along its own axis. Under a column-span driver only explicit offsets and sizes,
+  column predicates, column landmarks and the first non-blank cell stream.
+- The table rungs — `Table(view => …)`, `Table(row => …)`, `Table()` and the bind rung — are
+  one-span machines over their held region (§6.2, §6.5 traced them streaming); a streaming bind
+  rung is a later optimisation, not a contract change. A repeat whose separator has no per-span
+  form is held the same way.
+- Every leaf and view is one machine, `SpanCountProjector`: take the spans, then read the region
+  they cover as `Project` always has. Under a declared area it takes them all, so a leaf forced
+  wider than its kind still says so.
+- A landmark is handed the region searched so far, as it is handed the extent today, which rescans
+  earlier spans on each new one (`TypedPredicateLoweringTests` sees the predicate called once more);
+  bounded by the seek's length, and the one place a per-span form of `IRowLandmark` would pay.
+
+The rulings in §0 were settled with the owner in the session that produced this document; the
+decisions in §11 were accepted as recommended.
 
 `engine-split.md` fixed the shape: a definition builds its own machine (`Start`), the machine is
 `bool Next(span)` and `Close()`, buffering is announced upward, and `Unrect.Engine` holds only the
