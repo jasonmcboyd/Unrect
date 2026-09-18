@@ -17,7 +17,7 @@ namespace Unrect.Projections
   /// or settles on more than it was offered, is a fault blamed on the node.
   /// </para>
   /// </summary>
-  internal sealed class ChildProjector<TSpace, T> : IProjector<TSpace, T>, IChildHandle<TSpace>, IRetaining
+  internal sealed class ChildProjector<TSpace, T> : IProjector<TSpace, T>, IChildHandle<TSpace, T>, IRetaining
     where TSpace : class, ISpace
   {
     private enum Phase

@@ -51,7 +51,7 @@ jobs:
       # sidesteps the whole class, and the projects were built by the Build step above.
       - name: Pack
         run: |
-          dotnet pack src/Unrect/Unrect.csproj -c Release --no-build -o ${{ github.workspace }}/artifacts
+          dotnet pack src/Unrect.Engine/Unrect.Engine.csproj -c Release --no-build -o ${{ github.workspace }}/artifacts
           dotnet pack src/Unrect.Spreadsheets/Unrect.Spreadsheets.csproj -c Release --no-build -o ${{ github.workspace }}/artifacts
 
       # Both packages must exist at exactly the tagged version: MinVer derives the version from the

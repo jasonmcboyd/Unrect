@@ -48,8 +48,8 @@ namespace Unrect.Projections
     {
       private readonly LabelledDefinition<TSpace, T> _labelled;
       private readonly ProjectorScope<TSpace> _scope;
-      private ChildProjector<TSpace, LabelMap>? _header;
-      private ChildProjector<TSpace, T>? _body;
+      private IChildHandle<TSpace, LabelMap>? _header;
+      private IChildHandle<TSpace, T>? _body;
       private Plane<TSpace>? _first;
       private int _along;
       private int _across;
@@ -112,7 +112,7 @@ namespace Unrect.Projections
         return false;
       }
 
-      private ChildProjector<TSpace, LabelMap> StartHeader(Plane<TSpace> at)
+      private IChildHandle<TSpace, LabelMap> StartHeader(Plane<TSpace> at)
         => _scope.Start(_labelled.Children[0], _labelled.Header, at);
 
       private void CloseHeader()

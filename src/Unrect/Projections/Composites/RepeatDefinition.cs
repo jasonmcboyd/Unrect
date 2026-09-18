@@ -85,7 +85,7 @@ namespace Unrect.Projections
       private int _across;
       private int _attemptStart;
       private int _mark;
-      private ChildProjector<TSpace, T>? _item;
+      private IChildHandle<TSpace, T>? _item;
       private bool _separating;
       private bool _absorbed;
       private bool _finished;
@@ -237,7 +237,7 @@ namespace Unrect.Projections
 
       private int _itemStart;
 
-      private ChildProjector<TSpace, T> StartItem(int at)
+      private IChildHandle<TSpace, T> StartItem(int at)
       {
         _itemStart = at;
 

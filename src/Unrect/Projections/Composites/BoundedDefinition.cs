@@ -68,7 +68,7 @@ namespace Unrect.Projections
     {
       private readonly BoundedDefinition<TSpace, TResult> _bounded;
       private readonly ProjectorScope<TSpace> _scope;
-      private ChildProjector<TSpace, TResult>? _inner;
+      private IChildHandle<TSpace, TResult>? _inner;
       private Plane<TSpace>? _first;
       private int _offered;
       private bool _found;

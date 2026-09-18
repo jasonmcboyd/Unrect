@@ -66,7 +66,7 @@ namespace Unrect.Projections
       private readonly FallbackDefinition<TSpace, T> _boundary;
       private readonly ProjectorScope<TSpace> _scope;
       private readonly int _mark;
-      private ChildProjector<TSpace, T>? _current;
+      private IChildHandle<TSpace, T>? _current;
       private Settlement<T>? _settled;
       private bool _fallingBack;
       private bool _absorbed;
@@ -200,7 +200,7 @@ namespace Unrect.Projections
       private ProjectionException StandingIn(ProjectionException fallbackFailure)
         => fallbackFailure.WithNote($"it stands in for {_primary!.Subject}, which failed too: {_primary.Problem}");
 
-      private ChildProjector<TSpace, T> StartInner(Plane<TSpace> at)
+      private IChildHandle<TSpace, T> StartInner(Plane<TSpace> at)
         => _scope.Start(_boundary.Children[0], _boundary.Inner, at, inheritSite: true);
     }
 

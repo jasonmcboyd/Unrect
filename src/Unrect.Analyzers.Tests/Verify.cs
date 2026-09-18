@@ -40,6 +40,7 @@ namespace Unrect.Analyzers.Tests
     {
       MetadataReference.CreateFromFile(typeof(Core.ISpace).Assembly.Location),
       MetadataReference.CreateFromFile(typeof(Projections.ProjectionEngine).Assembly.Location),
+      MetadataReference.CreateFromFile(typeof(Projections.ProjectionMapping).Assembly.Location),
       MetadataReference.CreateFromFile(typeof(Strategies.SizeStrategies).Assembly.Location),
       MetadataReference.CreateFromFile(typeof(Spreadsheets.SpreadsheetProjections).Assembly.Location),
     };

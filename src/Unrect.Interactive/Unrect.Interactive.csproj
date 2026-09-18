@@ -11,14 +11,15 @@
     <PackageTags>excel;spreadsheet;xlsx;linqpad;notebook;scripting;exploration;scaffolding;unrect</PackageTags>
   </PropertyGroup>
 
-  <!-- The Unrect and Unrect.Spreadsheets PROJECTS, so the package depends on both at the same MinVer
-       version. Core is referenced separately and privately for the same reason Unrect.Spreadsheets
-       does it: Unrect bundles Core with PrivateAssets="all", which by design stops its types flowing
-       transitively, so we compile against Core here while advertising only the dependencies a
-       consumer installs. -->
+  <!-- The Unrect.Engine (the "Unrect" package) and Unrect.Spreadsheets PROJECTS, so the package
+       depends on both at the same MinVer version. Unrect and Core are referenced separately and
+       privately for the same reason Unrect.Spreadsheets does it: the engine bundles them with
+       PrivateAssets="all", which by design stops their types flowing transitively, so we compile
+       against them here while advertising only the dependencies a consumer installs. -->
   <ItemGroup>
-    <ProjectReference Include="..\Unrect\Unrect.csproj" />
+    <ProjectReference Include="..\Unrect.Engine\Unrect.Engine.csproj" />
     <ProjectReference Include="..\Unrect.Spreadsheets\Unrect.Spreadsheets.csproj" />
+    <ProjectReference Include="..\Unrect\Unrect.csproj" PrivateAssets="all" />
     <ProjectReference Include="..\Unrect.Core\Unrect.Core.csproj" PrivateAssets="all" />
   </ItemGroup>
 

@@ -25,12 +25,14 @@
     <InternalsVisibleTo Include="Unrect.Benchmarks" />
   </ItemGroup>
 
-  <!-- The Unrect PROJECT, not Core: this is what makes the package depend on "Unrect" at the same
-       MinVer version. Core is referenced separately and privately because Unrect bundles it with
-       PrivateAssets="all", which by design stops its types flowing transitively — so we compile
-       against Core here while advertising only the one dependency a consumer installs. -->
+  <!-- The Unrect.Engine PROJECT, which produces the "Unrect" package: this is what makes this
+       package depend on "Unrect" at the same MinVer version. Unrect and Core are referenced
+       separately and privately because the engine bundles them with PrivateAssets="all", which by
+       design stops their types flowing transitively — so we compile against them here while
+       advertising only the one dependency a consumer installs. -->
   <ItemGroup>
-    <ProjectReference Include="..\Unrect\Unrect.csproj" />
+    <ProjectReference Include="..\Unrect.Engine\Unrect.Engine.csproj" />
+    <ProjectReference Include="..\Unrect\Unrect.csproj" PrivateAssets="all" />
     <ProjectReference Include="..\Unrect.Core\Unrect.Core.csproj" PrivateAssets="all" />
   </ItemGroup>
 

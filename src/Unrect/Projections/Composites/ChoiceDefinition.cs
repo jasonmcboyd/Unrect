@@ -70,7 +70,7 @@ namespace Unrect.Projections
       private readonly ProjectionException[] _failures;
       private int _index;
       private int _mark;
-      private ChildProjector<TSpace, T>? _current;
+      private IChildHandle<TSpace, T>? _current;
       private Settlement<T>? _settled;
       private Plane<TSpace>? _first;
       private bool _finished;
@@ -180,7 +180,7 @@ namespace Unrect.Projections
         return taken;
       }
 
-      private ChildProjector<TSpace, T> StartAlternative(Plane<TSpace> at)
+      private IChildHandle<TSpace, T> StartAlternative(Plane<TSpace> at)
       {
         _mark = _scope.Context.Diagnostics.Mark();
         return _scope.Start(_choice.Children[_index], _choice.Alternatives[_index], at, inheritSite: true);

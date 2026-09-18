@@ -23,6 +23,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unrect.Analyzers.CodeFixes"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unrect.Analyzers.Tests", "Unrect.Analyzers.Tests\Unrect.Analyzers.Tests.csproj", "{F46E9671-50B8-4479-A866-B19CE9B50105}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unrect.Engine", "Unrect.Engine\Unrect.Engine.csproj", "{102A0F29-655B-4C40-B4F5-3FBC784312E2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -69,6 +71,10 @@ Global
 		{F7B5402A-96E6-4196-8951-6FD27C73CCCB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F7B5402A-96E6-4196-8951-6FD27C73CCCB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F7B5402A-96E6-4196-8951-6FD27C73CCCB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{102A0F29-655B-4C40-B4F5-3FBC784312E2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{102A0F29-655B-4C40-B4F5-3FBC784312E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{102A0F29-655B-4C40-B4F5-3FBC784312E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{102A0F29-655B-4C40-B4F5-3FBC784312E2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

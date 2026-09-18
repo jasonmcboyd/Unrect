@@ -51,6 +51,7 @@
          Unrect.Strategies makes for the same kind of reason. The suite gets the same reach, so a
          contract law can be stated over a bounded region without going through the engine. -->
     <InternalsVisibleTo Include="Unrect" />
+    <InternalsVisibleTo Include="Unrect.Engine" />
     <InternalsVisibleTo Include="Unrect.Spreadsheets" />
     <InternalsVisibleTo Include="Unrect.Tests" />
   </ItemGroup>

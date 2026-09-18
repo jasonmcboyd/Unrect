@@ -25,7 +25,7 @@ namespace Unrect.Projections
 
     protected ProjectorScope<TSpace> Scope { get; }
 
-    protected ChildProjector<TSpace, TInner> Child { get; }
+    protected IChildHandle<TSpace, TInner> Child { get; }
 
     /// <summary>The region this wrapper was offered, for a failure to be located at.</summary>
     protected Plane<TSpace> Extent

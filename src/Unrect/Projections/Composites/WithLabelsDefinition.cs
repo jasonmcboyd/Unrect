@@ -48,7 +48,7 @@ namespace Unrect.Projections
     {
       private readonly WithLabelsDefinition<TSpace, T> _labelled;
       private readonly ProjectorScope<TSpace> _scope;
-      private ChildProjector<TSpace, T>? _body;
+      private IChildHandle<TSpace, T>? _body;
       private Plane<TSpace>? _first;
       private int _offered;
       private bool _closed;
@@ -88,7 +88,7 @@ namespace Unrect.Projections
         return span.Width > width ? span.Narrowed(width) : span;
       }
 
-      private ChildProjector<TSpace, T> StartBody(Plane<TSpace> at)
+      private IChildHandle<TSpace, T> StartBody(Plane<TSpace> at)
       {
         var scope = _scope.At(_scope.Context.PushLabels(_labelled.LabelledAxis, _labelled.Map, at.Origin), Spans.Empty(at, _scope.Driver), _scope.Driver);
 

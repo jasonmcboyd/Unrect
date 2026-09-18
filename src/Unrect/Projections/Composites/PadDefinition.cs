@@ -58,7 +58,7 @@ namespace Unrect.Projections
       private Plane<TSpace>? _first;
       private int _offered;
       private int _skipped;
-      private ChildProjector<TSpace, TResult>? _inner;
+      private IChildHandle<TSpace, TResult>? _inner;
       private bool _innerRefused;
       private int _padded;
       private bool _finished;
@@ -168,7 +168,7 @@ namespace Unrect.Projections
         return _inner.Next(inset);
       }
 
-      private ChildProjector<TSpace, TResult> StartInner(Plane<TSpace> at)
+      private IChildHandle<TSpace, TResult> StartInner(Plane<TSpace> at)
         => _scope.Start(_pad.Children[0], _pad.Inner, Spans.Empty(at, _scope.Driver), inheritSite: true);
 
       private ProjectionException DoesNotFit(Plane<TSpace> extent)

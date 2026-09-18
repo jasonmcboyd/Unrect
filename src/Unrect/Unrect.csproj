@@ -4,96 +4,33 @@
     <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
   </PropertyGroup>
 
+  <!-- Not packable on its own: the "Unrect" package is produced by Unrect.Engine, which bundles this
+       assembly, Core and Strategies (see Unrect.Engine.csproj). The doc ratchet in
+       Directory.Build.targets names this project explicitly for the same reason. The PackageId is
+       restore's identity for a project, packable or not, and it must not collide with the package
+       the engine produces; nothing is ever published under this name. -->
   <PropertyGroup>
-    <IsPackable>true</IsPackable>
-    <PackageId>Unrect</PackageId>
-    <Description>Declarative 2D spatial decomposition for spreadsheet-shaped data. Describe the shape of a sheet once — a header, a table, repeating blocks, a section under a caption — and Unrect decomposes the grid along that description and projects each part into typed objects. No cursors, no row loops, no index arithmetic: the projection is a value you can reuse across workbooks, and a failure names the declaration that failed and the cell it failed on. Includes the in-memory adapter for tests and scripts.</Description>
-    <PackageTags>excel;spreadsheet;xlsx;parsing;declarative;etl;data-extraction;table;csv;projection</PackageTags>
+    <PackageId>Unrect.Definitions</PackageId>
   </PropertyGroup>
-
   <ItemGroup>
     <!-- So the tests can reach IOpaqueComposite, which marks a composite whose children exist only
          while it runs; asserting that through reflection was the alternative. -->
     <InternalsVisibleTo Include="Unrect.Tests" />
 
     <!-- So a backend can be a first-class part of this vocabulary rather than a consumer of it:
-         ProjectionBase's private-protected constructor (a backend's leaves are real primitives, not
+         DefinitionNode's private-protected constructor (a backend's leaves are real primitives, not
          Select wrappers), the Tolerating seam OrBlank dispatches through, and the pipeline stage
          internals its terminals close. -->
     <InternalsVisibleTo Include="Unrect.Spreadsheets" />
+
+    <!-- The engine: it implements ProjectorScope, drives the machines a definition builds, and —
+         until the pull interpreter retires — routes a map to whichever interpreter is on. -->
+    <InternalsVisibleTo Include="Unrect.Engine" />
   </ItemGroup>
 
-  <!-- One package, three assemblies. A consumer installs "Unrect" and has the whole vocabulary;
-       splitting Core and Strategies into their own packages would publish three version numbers
-       that must always match. PrivateAssets stops them appearing as dependencies, and the target
-       below puts their build output in the package instead. -->
   <ItemGroup>
-    <ProjectReference Include="..\Unrect.Core\Unrect.Core.csproj" PrivateAssets="all" />
-    <ProjectReference Include="..\Unrect.Strategies\Unrect.Strategies.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\Unrect.Core\Unrect.Core.csproj" />
+    <ProjectReference Include="..\Unrect.Strategies\Unrect.Strategies.csproj" />
   </ItemGroup>
-
-  <!-- The scope-hygiene analyzer and its code fixes, in the same package for the same reason: a
-       consumer installs "Unrect" and gets the vocabulary AND the three things the compiler cannot
-       say about a demand. They are referenced only so that building this project builds them —
-       ReferenceOutputAssembly is false because nothing here calls them, and the target below is what
-       puts them in the package. Two assemblies rather than one because a compiler extension must not
-       share an assembly with a reference to Microsoft.CodeAnalysis.Workspaces (RS1038); a host loads
-       the analyzers always and the fixes only where it has a Workspaces to offer. -->
-  <ItemGroup>
-    <ProjectReference
-      Include="..\Unrect.Analyzers\Unrect.Analyzers.csproj"
-      PrivateAssets="all"
-      ReferenceOutputAssembly="false" />
-    <ProjectReference
-      Include="..\Unrect.Analyzers.CodeFixes\Unrect.Analyzers.CodeFixes.csproj"
-      PrivateAssets="all"
-      ReferenceOutputAssembly="false" />
-  </ItemGroup>
-
-  <!-- Asking each analyzer project where its output landed, rather than composing a bin path here:
-       one answer per project, correct under every configuration, and it does not build them again
-       (the reference above already did, and a no-build pack must not). -->
-  <Target Name="BundleAnalyzers" BeforeTargets="_GetPackageFiles">
-    <MSBuild
-      Projects="@(ProjectReference->WithMetadataValue('ReferenceOutputAssembly', 'false'))"
-      Targets="GetTargetPath"
-      Properties="Configuration=$(Configuration)">
-      <Output TaskParameter="TargetOutputs" ItemName="_AnalyzerAssembly" />
-    </MSBuild>
-
-    <ItemGroup>
-      <None Include="@(_AnalyzerAssembly)" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
-    </ItemGroup>
-  </Target>
-
-  <!-- Symbols ship IN the package rather than in a symbol package. A .snupkg carries one assembly's
-       pdb and there is no supported hook for adding a bundled project's, so a symbol package here
-       would debug a third of what the package contains. Putting all three pdbs in lib/ instead is
-       one property, works with SourceLink's embedded commit, and needs nothing of the consumer. -->
-  <PropertyGroup>
-    <IncludeSymbols>false</IncludeSymbols>
-    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
-    <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);BundleReferencedProjects</TargetsForTfmSpecificBuildOutput>
-  </PropertyGroup>
-
-  <!-- The referenced assemblies, their XML docs and their symbols. Only the .dll carries the
-       ProjectReference metadata, so the doc and symbol paths are derived from it rather than
-       filtered for — they sit beside it by construction. -->
-  <Target Name="BundleReferencedProjects" DependsOnTargets="ResolveReferences">
-    <ItemGroup>
-      <_BundledAssembly
-        Include="@(ReferenceCopyLocalPaths)"
-        Condition="'%(ReferenceCopyLocalPaths.ReferenceSourceTarget)' == 'ProjectReference'
-                   And '%(Extension)' == '.dll'" />
-
-      <BuildOutputInPackage Include="@(_BundledAssembly)" />
-      <BuildOutputInPackage
-        Include="@(_BundledAssembly->'%(RootDir)%(Directory)%(Filename).xml')"
-        Condition="Exists('%(RootDir)%(Directory)%(Filename).xml')" />
-      <BuildOutputInPackage
-        Include="@(_BundledAssembly->'%(RootDir)%(Directory)%(Filename).pdb')"
-        Condition="Exists('%(RootDir)%(Directory)%(Filename).pdb')" />
-    </ItemGroup>
-  </Target>
 
 </Project>

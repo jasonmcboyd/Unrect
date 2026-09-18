@@ -36,7 +36,7 @@ namespace Unrect.Projections
     /// <paramref name="strict"/> false makes a placement failure a refusal the parent reads off the
     /// handle rather than a thrown failure — a repeat's stopping condition.
     /// </summary>
-    internal abstract ChildProjector<TSpace, T> Start<T>(Child edge, IProjectionDefinition<TSpace, T> definition, Plane<TSpace> anchor, int? occurrence = null, bool strict = true, bool inheritSite = false);
+    internal abstract IChildHandle<TSpace, T> Start<T>(Child edge, IProjectionDefinition<TSpace, T> definition, Plane<TSpace> anchor, int? occurrence = null, bool strict = true, bool inheritSite = false);
 
     /// <summary>Drives <paramref name="machine"/> over <paramref name="region"/> along <paramref name="along"/> (or as one span when null) and closes it.</summary>
     internal abstract Settlement<T> Drive<T>(IProjector<TSpace, T> machine, Plane<TSpace> region, Orientation? along);
