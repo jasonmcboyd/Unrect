@@ -7,11 +7,18 @@ namespace Unrect.Projections
 {
   /// <summary>
   /// The handle the engine wraps around every child it starts: keeps the spans the child was
-  /// offered, feeds the child's own machine the spans of its inner region as its placement
-  /// resolves them (<see cref="StreamingPlacement{TSpace}"/>), and settles on what the child kept.
-  /// A child whose axis is not the driver's, or whose placement cannot be driven per span, is
-  /// <em>held</em>: it takes every span offered, and at <c>Close</c> is placed over the region they
-  /// cover (<see cref="EagerPlacement"/>) and driven along its own axis.
+  /// offered, resolves the child's placement over them span by span
+  /// (<see cref="StreamingPlacement{TSpace}"/>), feeds the child's own machine the spans of its
+  /// inner region, and settles on what the child kept.
+  /// <para>
+  /// There is one placement and one way to run it; what differs is when the machine is fed. A
+  /// <em>driven</em> child is fed as the spans arrive. A <em>held</em> child — one whose axis is not
+  /// the driver's, or whose placement settles only at the end, or that bounds itself — takes every
+  /// span offered and at <c>Close</c> replays them through the same placement, then drives its
+  /// machine along its own axis over the region that came out. Either way the close settles
+  /// whatever the placement left open: an offset that never started, a width or a length that
+  /// waited for the end.
+  /// </para>
   /// <para>
   /// This is also where the protocol is validated: a machine that takes a span after refusing one,
   /// or settles on more than it was offered, is a fault blamed on the node. And it is where the
@@ -37,18 +44,18 @@ namespace Unrect.Projections
     private readonly Plane<TSpace> _anchor;
     private readonly bool _strict;
     private readonly Orientation _driver;
+    private readonly bool _held;
+    private readonly StreamingPlacement<TSpace> _placement;
     private readonly List<Plane<TSpace>> _offered = new List<Plane<TSpace>>();
     private readonly List<Plane<TSpace>> _pending = new List<Plane<TSpace>>();
     private readonly List<IChildHandle<TSpace>> _children = new List<IChildHandle<TSpace>>();
-
-    /// <summary>The per-span placement, or null for a held child.</summary>
-    private readonly StreamingPlacement<TSpace>? _placement;
 
     private Phase _phase;
     private int _column;
     private bool _startNext;
     private int _innerStart;
     private int _taken;
+    private int _fed;
     private IProjector<TSpace, T>? _inner;
     private bool _innerRefused;
     private Settlement<T> _settlement;
@@ -64,13 +71,10 @@ namespace Unrect.Projections
       _child = PathRenderer.Skipped(definition) ? parent.Blaming(definition) : parent.Descend(definition);
 
       // Driven or held is PlacementRules' decision, shared with the cost report so the two agree.
-      if (PlacementRules.Streams(definition, _driver, out var offset, out var size, out var derived, out _))
-        _placement = new StreamingPlacement<TSpace>(offset, size, derived, definition, _driver, strict);
-
-      Reach = _placement is null ? Reach.Extent : definition.Reach;
+      _held = !PlacementRules.Streams(definition, _driver, out var offset, out var size, out var derived, out _);
+      _placement = new StreamingPlacement<TSpace>(offset, size, derived, definition, _driver, strict);
+      Reach = _held ? Reach.Extent : definition.Reach;
     }
-
-    private bool Held => _placement is null;
 
     // --- The tree of open machines ---------------------------------------------------------------
 
@@ -104,12 +108,12 @@ namespace Unrect.Projections
       if (_phase == Phase.Closed || _offered.Count == 0)
         return null;
 
-      if (Held || _phase == Phase.Offset)
+      if (_held || _phase == Phase.Offset)
         return Row(_offered[0]);
 
       var innerStart = Row(_offered[_innerStart]);
 
-      if (!_placement!.Derived && _placement.Width is null)
+      if (!_placement.Derived && _placement.Width is null)
         return innerStart;
 
       if (_inner is IHolding holding)
@@ -175,9 +179,12 @@ namespace Unrect.Projections
 
       _offered.Add(span);
 
+      if (_held)
+        return true;
+
       try
       {
-        return Take(span);
+        return Take(span, _offered.Count - 1, live: true);
       }
       catch
       {
@@ -189,11 +196,13 @@ namespace Unrect.Projections
       }
     }
 
-    private bool Take(Plane<TSpace> span)
+    /// <summary>
+    /// One span through the placement: the offset phase until it starts, then the size phase, which
+    /// feeds the inner what it takes. <paramref name="live"/> says the span was just offered — a
+    /// refusal then hands it straight back — where a replayed span refused is simply not kept.
+    /// </summary>
+    private bool Take(Plane<TSpace> span, int index, bool live)
     {
-      if (Held)
-        return true;
-
       if (_phase == Phase.Offset)
       {
         if (_startNext)
@@ -202,13 +211,13 @@ namespace Unrect.Projections
         }
         else
         {
-          var region = Spans.Region(_offered[0], _offered.Count, _driver).Erased();
-          var step = _placement!.Advance(region, _offered.Count - 1, Spans.Across(span.Area.Size, _driver), _parent, out var refused);
+          var region = Spans.Region(_offered[0], index + 1, _driver).Erased();
+          var step = _placement.Advance(region, index, Spans.Across(span.Area.Size, _driver), _parent, out var refused);
 
           if (refused)
           {
             PlacementFailed = true;
-            return Refuse();
+            return Refuse(live);
           }
 
           if (step == OffsetStep.Skip)
@@ -224,48 +233,63 @@ namespace Unrect.Projections
           }
         }
 
-        _innerStart = _offered.Count - 1;
-        _phase = Phase.Size;
-        _inner = _definition.Build(_child.Within(this, Spans.Empty(Cut(span, _column, null), _driver), _driver));
+        Start(index, Cut(span, _column, null));
       }
 
-      return TakeInner(span);
+      return TakeInner(span, live);
     }
 
-    private bool TakeInner(Plane<TSpace> span)
+    /// <summary>The offset is known: the inner starts at <paramref name="index"/>, over <paramref name="at"/>'s corner.</summary>
+    private void Start(int index, Plane<TSpace> at)
+    {
+      _innerStart = index;
+      _phase = Phase.Size;
+
+      // A held child is driven along its own axis at close; its machine is built then.
+      if (!_held)
+        _inner = _definition.Build(_child.Within(this, Spans.Empty(at, _driver), _driver));
+    }
+
+    private bool TakeInner(Plane<TSpace> span, bool live)
     {
       var available = Cut(span, _column, null);
-      var placement = _placement!;
 
-      if (placement.Derived)
+      if (_placement.Derived)
       {
+        if (_held)
+        {
+          _taken++;
+          return true;
+        }
+
         if (!InnerNext(available))
         {
           _innerRefused = true;
-          return Refuse();
+          return Refuse(live);
         }
 
         _taken++;
+        _fed++;
         return true;
       }
 
-      var take = placement.Take(InnerRegion(_taken + 1), _taken, _child);
+      var take = _placement.Take(InnerRegion(_taken + 1), _taken, _child);
 
-      if (placement.Failed)
+      if (_placement.Failed)
       {
         PlacementFailed = true;
-        return Refuse();
+        return Refuse(live);
       }
 
       if (!take)
       {
         // The region the rule settled on, read before the refused span leaves the list: with
         // nothing taken it is the empty region at that span, which still has a width to settle.
-        var settled = placement.Width is null ? InnerRegion(_taken) : default;
+        var settled = _placement.Width is null ? InnerRegion(_taken) : default;
 
-        Refuse();
+        Refuse(live);
 
-        if (placement.Width is null)
+        if (_placement.Width is null)
           SettleWidth(settled, rowsSettled: true);
 
         return false;
@@ -273,7 +297,7 @@ namespace Unrect.Projections
 
       _taken++;
 
-      if (placement.Width is int width)
+      if (_placement.Width is int width && !_held)
       {
         FeedInner(Cut(available, 0, width));
         return true;
@@ -287,11 +311,9 @@ namespace Unrect.Projections
     /// <summary>Asks the placement for its width, and once it has one feeds the inner every span that waited for it.</summary>
     private void SettleWidth(Plane<ISpace> region, bool rowsSettled)
     {
-      var placement = _placement!;
-
-      if (!placement.TrySettleWidth(region, _taken, rowsSettled, _child))
+      if (!_placement.TrySettleWidth(region, _taken, rowsSettled, _child))
       {
-        if (placement.Failed)
+        if (_placement.Failed)
         {
           PlacementFailed = true;
           _phase = Phase.Finished;
@@ -300,16 +322,33 @@ namespace Unrect.Projections
         return;
       }
 
-      foreach (var pending in _pending)
-        FeedInner(Cut(pending, 0, placement.Width!.Value));
-
-      _pending.Clear();
+      if (!_held)
+        FeedPending(_pending.Count);
     }
 
-    /// <summary>The span in hand was not taken: it is not among those offered, and nothing after it is.</summary>
-    private bool Refuse()
+    /// <summary>Feeds the inner the first <paramref name="count"/> spans that waited for the width, cut to it.</summary>
+    private void FeedPending(int count)
     {
-      _offered.RemoveAt(_offered.Count - 1);
+      var width = _placement.Width!.Value;
+
+      for (var index = 0; index < count; index++)
+      {
+        FeedInner(Cut(_pending[index], 0, width));
+        _fed++;
+      }
+
+      _pending.RemoveRange(0, count);
+    }
+
+    /// <summary>
+    /// The span in hand was not taken. A live one is not among those offered — the parent gets it
+    /// straight back — and nothing after it is; a replayed one stays, unkept, for the shortfall.
+    /// </summary>
+    private bool Refuse(bool live)
+    {
+      if (live)
+        _offered.RemoveAt(_offered.Count - 1);
+
       _phase = Phase.Finished;
       return false;
     }
@@ -321,10 +360,7 @@ namespace Unrect.Projections
 
       try
       {
-        if (Held || _phase == Phase.Offset)
-          ResolveEagerly();
-        else
-          SettleStreaming();
+        Settle();
       }
       finally
       {
@@ -340,14 +376,66 @@ namespace Unrect.Projections
 
     public object? CloseBoxed() => Close().Value;
 
-    private void SettleStreaming()
+    /// <summary>
+    /// The close: a held child replays its spans through the placement first; then whatever the
+    /// placement left open is settled — an offset that never started over the whole region, a
+    /// width or a length that waited for the end — and the machine is fed what was kept, or built
+    /// and driven over it along its own axis.
+    /// </summary>
+    private void Settle()
     {
-      var placement = _placement!;
+      if (_held)
+        for (var index = 0; index < _offered.Count && _phase != Phase.Finished; index++)
+          Take(_offered[index], index, live: false);
 
-      if (!placement.Derived)
+      if (_phase == Phase.Offset && !PlacementFailed)
       {
-        if (placement.Width is null && !PlacementFailed)
+        var region = _offered.Count == 0 ? Spans.Empty(_anchor, _driver) : Spans.Region(_offered[0], _offered.Count, _driver);
+
+        if (!_placement.SettleOffset(region.Erased(), _parent))
+        {
+          PlacementFailed = true;
+        }
+        else
+        {
+          Offset = _placement.Offset;
+          _column = Spans.Across(Offset.Size, _driver);
+
+          var start = Spans.Along(Offset.Size, _driver);
+          Start(start, Spans.EmptyAt(_offered.Count == 0 ? _anchor : _offered[0], start, _driver));
+
+          for (var index = start; index < _offered.Count && _phase != Phase.Finished; index++)
+            Take(_offered[index], index, live: false);
+        }
+      }
+
+      if (PlacementFailed)
+      {
+        SettleNothing();
+        return;
+      }
+
+      var kept = _taken;
+
+      if (!_placement.Derived)
+      {
+        if (_placement.Width is null)
           SettleWidth(InnerRegion(_taken), rowsSettled: true);
+
+        if (!PlacementFailed && !_placement.Complete(_taken))
+        {
+          var region = InnerRegion(_taken);
+
+          if (_strict)
+            throw _child.Failure(_definition, $"an extent of {EngineRules.Describe(_placement.Declared)} does not fit here", region, _placement.Declared, null);
+
+          PlacementFailed = true;
+        }
+
+        if (!PlacementFailed && _placement.Along(InnerRegion(_taken), _taken, _child) is int along)
+          kept = along;
+        else
+          PlacementFailed = true;
 
         if (PlacementFailed)
         {
@@ -355,50 +443,43 @@ namespace Unrect.Projections
           return;
         }
 
-        if (!placement.Complete(_taken))
-        {
-          var region = InnerRegion(_taken);
-
-          if (_strict)
-            throw _child.Failure(_definition, $"an extent of {EngineRules.Describe(placement.Declared)} does not fit here", region, placement.Declared, null);
-
-          PlacementFailed = true;
-          SettleNothing();
-          return;
-        }
+        if (kept < _fed)
+          throw Fault($"kept {kept} spans after its machine was fed {_fed}");
       }
 
-      // An inner that was fed nothing closes over the empty region its rule settled on, cut to the
-      // settled width: a discovered block over blank space is 0x0, not 0 rows of the anchor's width.
-      if (!placement.Derived && _taken == 0 && _inner is not null)
-        _inner = _definition.Build(_child.Within(this, Narrow(InnerPlane(0), placement.Width!.Value), _driver));
+      if (_held)
+        DriveHeld(kept);
+      else
+        CloseDriven(kept);
+    }
+
+    /// <summary>A driven child: the spans still waiting are fed as far as the placement kept, and the machine closed.</summary>
+    private void CloseDriven(int kept)
+    {
+      if (!_placement.Derived)
+      {
+        // An inner that was fed nothing closes over the empty region its rule settled on, cut to
+        // the settled width: a discovered block over blank space is 0x0, not 0 rows of the anchor's width.
+        if (kept == 0 && _fed == 0 && _inner is not null)
+          _inner = _definition.Build(_child.Within(this, Narrow(InnerPlane(0), _placement.Width!.Value), _driver));
+
+        FeedPending(Math.Min(kept - _fed, _pending.Count));
+      }
 
       var settlement = InnerClose();
-      var declared = !placement.Derived;
-      var consumed = declared ? Spans.ToSize(_taken, placement.Width!.Value, _driver) : settlement.Consumed;
+      var declared = !_placement.Derived;
+      var consumed = declared ? Spans.ToSize(kept, _placement.Width!.Value, _driver) : settlement.Consumed;
 
       Settle(settlement.Value, consumed, EngineRules.Settled(settlement.Presence, declared, consumed));
     }
 
-    /// <summary>
-    /// The held path: the child is placed over everything it was offered, with the strategies'
-    /// whole-region form, and its machine driven along its own axis over the region that came out.
-    /// </summary>
-    private void ResolveEagerly()
+    /// <summary>A held child: its machine built over the region the placement settled on, and driven along its own axis.</summary>
+    private void DriveHeld(int kept)
     {
-      var region = _offered.Count == 0 ? Spans.Empty(_anchor, _driver) : Spans.Region(_offered[0], _offered.Count, _driver);
-
-      if (!EagerPlacement.TryPlace(_definition, region, _driver, _parent, _strict, out var offset, out var inner, out var scope, out var declared))
-      {
-        PlacementFailed = true;
-        SettleNothing();
-        return;
-      }
-
-      Offset = offset;
-
+      var declared = !_placement.Derived;
+      var inner = declared ? Narrow(InnerPlane(kept), _placement.Width!.Value) : InnerPlane(kept);
       var along = _definition.Axis.Along(_driver);
-      var machine = _definition.Build(scope.Within(this, Spans.Empty(inner, along ?? _driver), along ?? _driver));
+      var machine = _definition.Build(_child.Within(this, Spans.Empty(inner, along ?? _driver), along ?? _driver));
       Settlement<T> settlement;
 
       try
@@ -496,20 +577,26 @@ namespace Unrect.Projections
 
     /// <summary>The inner region <paramref name="rows"/> spans tall, from where the inner started, erased for a rule.</summary>
     private Plane<ISpace> InnerRegion(int rows)
-      => (rows == 0 ? Spans.Empty(_offered[_innerStart], _driver) : Spans.Region(_offered[_innerStart], rows, _driver))
+      => (rows == 0 ? Spans.Empty(InnerOrigin(), _driver) : Spans.Region(_offered[_innerStart], rows, _driver))
         .Slice(Across(_column))
         .Erased();
 
-    /// <summary>The same region as a plane over the space, clamped to what was offered, for a message.</summary>
+    /// <summary>The same region as a plane over the space, clamped to what was offered, for a message or a machine.</summary>
     private Plane<TSpace> InnerPlane(int rows)
     {
       if (_innerStart >= _offered.Count)
-        return _anchor;
+        return Spans.Empty(InnerOrigin(), _driver).Slice(Across(Math.Min(_column, Spans.Across(InnerOrigin().Area.Size, _driver))));
 
       var region = rows == 0 ? Spans.Empty(_offered[_innerStart], _driver) : Spans.Region(_offered[_innerStart], Math.Min(rows, _offered.Count - _innerStart), _driver);
 
       return region.Slice(Across(_column));
     }
+
+    /// <summary>The span the inner starts on, or the empty span past the last offered when the offset skipped everything.</summary>
+    private Plane<TSpace> InnerOrigin()
+      => _innerStart < _offered.Count
+        ? _offered[_innerStart]
+        : _offered.Count == 0 ? _anchor : Spans.EmptyAt(_offered[0], _offered.Count, _driver);
 
     /// <summary>An offset of <paramref name="distance"/> across the driver's axis.</summary>
     private Offset Across(int distance)

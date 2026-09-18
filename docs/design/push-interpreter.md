@@ -105,8 +105,9 @@ row or column rule), handing back an `IOffsetScan`/`ISizeScan`/`IRowScan`/`IColu
 whether it streams, and one that does not takes every span and settles at the end, which is what the
 engine holds a child for. The whole-region answers are the folds in `Scans`, kept as extension
 methods so the strategy suites keep their spelling; `PlacementRules` no longer recognises a strategy
-by its type, `EagerPlacement` folds a held child's scans, and the three incremental interfaces, the
-area scan and the rule classes are gone. What survives of the pull era: nothing that runs. Suite:
+by its type, and the three incremental interfaces, the area scan and the rule classes are gone. Then
+`EagerPlacement` too: a held child replays its buffered spans through the one `StreamingPlacement`
+at close and drives its machine along its own axis, so §4's placement machine is the only one. What survives of the pull era: nothing that runs. Suite:
 2,340 tests, 18 analyzer tests.
 
 The rulings in §0 were settled with the owner in the session that produced this document; the

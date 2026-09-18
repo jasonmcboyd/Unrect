@@ -182,5 +182,78 @@ namespace Unrect.Projections
 
     /// <summary>Whether <paramref name="taken"/> spans satisfy the size rule — an explicit height wants all of them.</summary>
     internal bool Complete(int taken) => _size!.Complete(taken);
+
+    /// <summary>
+    /// How many of the <paramref name="taken"/> spans the size keeps, asked once no more are coming:
+    /// every one for a scan that decided as it went, and the settled length for one that decides
+    /// here. A scan owed more than it was shown is a refusal, or a failure when strict.
+    /// </summary>
+    internal int? Along(Plane<ISpace> region, int taken, ProjectorScope<TSpace> child)
+    {
+      try
+      {
+        return _size!.Along(region, taken);
+      }
+      catch (ProjectionException)
+      {
+        throw;
+      }
+      catch (OutOfBoundsException exception)
+      {
+        if (_strict)
+          throw EngineRules.AreaFailure(child, _definition, region, exception);
+
+        Failed = true;
+        return null;
+      }
+      catch (Exception exception)
+      {
+        throw EngineRules.AreaFailure(child, _definition, region, exception);
+      }
+    }
+
+    /// <summary>
+    /// Where the offset settles once every span was shown and it never started: the scan's answer
+    /// over the whole <paramref name="region"/>, which must fit inside it. A place the region does
+    /// not have is a missing anchor, or a refusal when the child was started non-strictly.
+    /// </summary>
+    internal bool SettleOffset(Plane<ISpace> region, ProjectorScope<TSpace> parent)
+    {
+      Offset offset;
+
+      try
+      {
+        offset = _offset.Settle(region);
+      }
+      catch (ProjectionException)
+      {
+        throw;
+      }
+      catch (OutOfBoundsException exception)
+      {
+        if (_strict)
+          throw parent.Failure(_definition, EngineRules.Missing(exception), region, null, exception);
+
+        Failed = true;
+        return false;
+      }
+      catch (Exception exception)
+      {
+        throw parent.Failure(_definition, EngineRules.Threw("offset", exception), region, null, exception, EngineRules.IsFault(exception));
+      }
+
+      Offset = offset;
+
+      if (EngineRules.Exceeds(offset.Size, region))
+      {
+        if (_strict)
+          throw parent.Failure(_definition, $"an offset of {EngineRules.Describe(offset.Size)} does not fit the available space", region, offset.Size, null);
+
+        Failed = true;
+        return false;
+      }
+
+      return true;
+    }
   }
 }
