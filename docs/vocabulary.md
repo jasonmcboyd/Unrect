@@ -235,8 +235,8 @@ phantom (`Sized`, `OffsetBy`, `Row`, `Column`, `Range`, the repeats' `separatedB
 `Below`, `RightOf`, `Until`) is overloaded on both, so the demanding argument is the one the
 compiler picks and the demand is inferred with nothing annotated. `Strategy` (or `Landmark` for a
 matcher) unwraps back to what the calculus takes, and unwrapping is what the lift does, once, at
-construction — the object the engine receives is the calculus's own, so nothing is wrapped and no
-incremental scan is lost.
+construction — the object the engine receives is the calculus's own, so the scan it builds is the
+one the rule would build unwrapped.
 
 The vocabulary's own factories build them: `RowsWhileAny(p => p.Kind() == CellKind.Number)` over
 `ProjectionBuilders<ISheetCells>` lowers the predicate and hands back an `IAreaStrategy<ISheetCells>`.
@@ -286,8 +286,8 @@ All three are usable as method groups — `spaces.Select(report.Map)`.
 **Where the `space` comes from.** `SpreadsheetSpace.Create(path, sheet)` / `CreateWithFormulas(...)`
 (`Unrect.Spreadsheets`) read a whole sheet eagerly into a `SpreadsheetGridSpace : ISpreadsheetSpace`
 — the simple default. `Workbook.Open(path)` (same namespace) is the streaming door: `book.Sheet(name)`
-vends a lent `ISheetCells` view over a windowed store instead of the whole grid — a value, not a
-handle, good to slice and pass around until the workbook that vended it is disposed. `Formula()`
+is one forward pass over the sheet's own cursor — read it inside the projection, once, before the
+workbook that lent it is disposed. `Formula()`
 composes into a file scoped to `ISheetCells`, but a *declaration* that calls it demands
 `IFormulaSpace`, so it will not compile against the streaming door — read formulas through the
 eager door instead. `projection.MapWorkbook(path, sheet)` / `MapWorkbookWithDiagnostics` are sugar

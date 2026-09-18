@@ -76,11 +76,11 @@ JSON reads a custom metric (the gh-pages action reads `Mean`; the workflow's own
   machine.
 - **Hold via the return value and `GC.KeepAlive`, and release everything else.** A scenario
   builds whatever it needs internally and returns *only* the object whose retention is the
-  question. The grid under `Eager_ResultHeld` and the reader pool under
+  question. The grid under `Eager_ResultHeld` and the sheet under
   `Streaming_ResultHeld` are gone by the time the reading is taken, deliberately: "result
   held, source released" is the shape of the question a caller asks.
 - **Both doors reach their real adapter.** The change this family judges lives in the
-  adapters — `SheetStore`'s chunk fill for streaming, `SpreadsheetSpace.Create`'s fill for
+  adapters — `StreamedSheet`'s row fill for streaming, `SpreadsheetSpace.Create`'s fill for
   eager — so the fixtures have to arrive through them. Streaming does: every `IRowSource`
   passes the store's fill, so a synthetic source exercises the real seam in milliseconds.
   Eager does not, and cannot be faked: a locally-built `GridSpace` bypasses the eager adapter
@@ -118,7 +118,7 @@ JSON reads a custom metric (the gh-pages action reads `Mean`; the workflow's own
   floor; the other three rows are the controls that say whether a movement was the mechanism.
 - **What it does not measure, said out loud**: the reader's own shared-string table, which the
   eager door drops when `Create` returns and the streaming door never builds. On a real
-  text-heavy sheet *held open* that table is itself a large retained object which no window
+  text-heavy sheet *held open* that table is itself a large retained object which no cap
   bounds. These are the grid's and the projection's retention, not the process's. The
   generated workbooks are also the rig's one deliberate exception to "no files" — they are
   written to the temp directory at setup, cached by shape, and never committed.
