@@ -47,7 +47,6 @@ namespace Unrect.Projections
       private readonly WithLabelsDefinition<TSpace, T> _labelled;
       private readonly ProjectorScope<TSpace> _scope;
       private IChildHandle<TSpace, T>? _body;
-      private bool _closed;
 
       public Machine(WithLabelsDefinition<TSpace, T> labelled, ProjectorScope<TSpace> scope)
       {
@@ -57,9 +56,6 @@ namespace Unrect.Projections
 
       public bool Next(Plane<TSpace> span)
       {
-        if (_closed)
-          throw _scope.Failure(_labelled, $"{PathRenderer.Describe(_labelled)} was fed a span after it was closed", span, null, null, isFault: true);
-
         _body ??= StartBody(Narrow(span));
 
         return _body.Next(Narrow(span));
@@ -67,7 +63,6 @@ namespace Unrect.Projections
 
       public Settlement<T> Close()
       {
-        _closed = true;
         _body ??= StartBody(_scope.Anchor);
 
         var settlement = _body.Close();

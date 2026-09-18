@@ -51,7 +51,6 @@ namespace Unrect.Projections
       private int _width;
       private int _height;
       private bool _read;
-      private bool _closed;
 
       public Machine(OverlayDefinition<TSpace, T> overlay, ProjectorScope<TSpace> scope)
       {
@@ -63,9 +62,6 @@ namespace Unrect.Projections
 
       public bool Next(Plane<TSpace> span)
       {
-        if (_closed)
-          throw _scope.Failure(_overlay, $"{PathRenderer.Describe(_overlay)} was fed a span after it was closed", span, null, null, isFault: true);
-
         _first ??= span;
         StartAll(Spans.Empty(span, _scope.Driver));
 
@@ -87,7 +83,6 @@ namespace Unrect.Projections
 
       public Settlement<T> Close()
       {
-        _closed = true;
         StartAll(_scope.Anchor);
 
         for (var index = 0; index < _open.Length; index++)

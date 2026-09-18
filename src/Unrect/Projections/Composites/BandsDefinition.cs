@@ -75,7 +75,6 @@ namespace Unrect.Projections
       private int _cursor;
       private int _across;
       private bool _finished;
-      private bool _closed;
 
       public Machine(BandsDefinition<TSpace, T> tiler, ProjectorScope<TSpace> scope)
       {
@@ -87,9 +86,6 @@ namespace Unrect.Projections
 
       public bool Next(Plane<TSpace> span)
       {
-        if (_closed)
-          throw _scope.Failure(_tiler, $"{PathRenderer.Describe(_tiler)} was fed a span after it was closed", span, null, null, isFault: true);
-
         if (_finished)
           return false;
 
@@ -144,7 +140,6 @@ namespace Unrect.Projections
 
       public Settlement<IReadOnlyList<T>> Close()
       {
-        _closed = true;
         _values.TrimExcess();
 
         // The cursor is bands VISITED times the stride: a band the policy omitted was still cut out

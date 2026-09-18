@@ -74,7 +74,6 @@ namespace Unrect.Projections
       private Settlement<T>? _settled;
       private Plane<TSpace>? _first;
       private bool _finished;
-      private bool _closed;
 
       public Machine(ChoiceDefinition<TSpace, T> choice, ProjectorScope<TSpace> scope)
       {
@@ -85,9 +84,6 @@ namespace Unrect.Projections
 
       public bool Next(Plane<TSpace> span)
       {
-        if (_closed)
-          throw _scope.Failure(_choice, $"{PathRenderer.Describe(_choice)} was fed a span after it was closed", span, null, null, isFault: true);
-
         _first ??= span;
 
         return Offer(span);
@@ -95,8 +91,6 @@ namespace Unrect.Projections
 
       public Settlement<T> Close()
       {
-        _closed = true;
-
         if (_settled is Settlement<T> settled)
           return settled;
 

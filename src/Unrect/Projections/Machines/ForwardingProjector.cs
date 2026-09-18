@@ -12,7 +12,6 @@ namespace Unrect.Projections
   {
     private Plane<TSpace>? _first;
     private int _offered;
-    private bool _closed;
 
     protected ForwardingProjector(IProjectionDefinition owner, ProjectorScope<TSpace> scope, Child edge, IProjectionDefinition<TSpace, TInner> inner)
     {
@@ -33,9 +32,6 @@ namespace Unrect.Projections
 
     public bool Next(Plane<TSpace> span)
     {
-      if (_closed)
-        throw Scope.Failure(Owner, $"{PathRenderer.Describe(Owner)} was fed a span after it was closed", span, null, null, isFault: true);
-
       _first ??= span;
       _offered++;
 
@@ -44,8 +40,6 @@ namespace Unrect.Projections
 
     public Settlement<TResult> Close()
     {
-      _closed = true;
-
       var settlement = Child.Close();
 
       return new Settlement<TResult>(Finish(settlement.Value), Child.Advance, Child.Presence);

@@ -73,7 +73,6 @@ namespace Unrect.Projections
       private ProjectionException? _primary;
       private Plane<TSpace>? _first;
       private bool _finished;
-      private bool _closed;
 
       public Machine(FallbackDefinition<TSpace, T> boundary, ProjectorScope<TSpace> scope)
       {
@@ -84,9 +83,6 @@ namespace Unrect.Projections
 
       public bool Next(Plane<TSpace> span)
       {
-        if (_closed)
-          throw _scope.Failure(_boundary, $"{PathRenderer.Describe(_boundary)} was fed a span after it was closed", span, null, null, isFault: true);
-
         _first ??= span;
 
         return Offer(span);
@@ -94,8 +90,6 @@ namespace Unrect.Projections
 
       public Settlement<T> Close()
       {
-        _closed = true;
-
         if (_absorbed)
           return Absorbed();
 

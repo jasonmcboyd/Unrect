@@ -74,7 +74,6 @@ namespace Unrect.Projections
       private bool _found;
       private bool _innerRefused;
       private bool _finished;
-      private bool _closed;
 
       public Machine(BoundedDefinition<TSpace, TResult> bounded, ProjectorScope<TSpace> scope)
       {
@@ -86,9 +85,6 @@ namespace Unrect.Projections
 
       public bool Next(Plane<TSpace> span)
       {
-        if (_closed)
-          throw _scope.Failure(_bounded, $"{PathRenderer.Describe(_bounded)} was fed a span after it was closed", span, null, null, isFault: true);
-
         if (_finished)
           return false;
 
@@ -115,8 +111,6 @@ namespace Unrect.Projections
 
       public Settlement<TResult> Close()
       {
-        _closed = true;
-
         var extent = _first is Plane<TSpace> first ? Spans.Region(first, _offered, Along) : _scope.Anchor;
 
         if (!_found && !_bounded.OrEnd)

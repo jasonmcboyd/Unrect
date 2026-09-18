@@ -57,7 +57,6 @@ namespace Unrect.Projections
       private int _previous;
       private bool _read;
       private bool _finished;
-      private bool _closed;
 
       public Machine(FlowDefinition<TSpace, T> flow, ProjectorScope<TSpace> scope)
       {
@@ -69,9 +68,6 @@ namespace Unrect.Projections
 
       public bool Next(Plane<TSpace> span)
       {
-        if (_closed)
-          throw _scope.Failure(_flow, $"{PathRenderer.Describe(_flow)} was fed a span after it was closed", span, null, null, isFault: true);
-
         _first ??= span;
 
         return Offer(span);
@@ -79,8 +75,6 @@ namespace Unrect.Projections
 
       public Settlement<T> Close()
       {
-        _closed = true;
-
         // The open child is closed; what it hands back may open the next, which is closed in turn;
         // every child never reached is closed on nothing and answers for itself.
         while (_current is not null || _index < _values.Length)

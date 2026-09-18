@@ -80,7 +80,6 @@ namespace Unrect.Projections
       private bool _separating;
       private bool _absorbed;
       private bool _finished;
-      private bool _closed;
 
       public Machine(RepeatDefinition<TSpace, T> repeat, ProjectorScope<TSpace> scope)
       {
@@ -112,9 +111,6 @@ namespace Unrect.Projections
 
       public bool Next(Plane<TSpace> span)
       {
-        if (_closed)
-          throw _scope.Failure(_repeat, $"{PathRenderer.Describe(_repeat)} was fed a span after it was closed", span, null, null, isFault: true);
-
         if (_finished)
           return false;
 
@@ -215,8 +211,6 @@ namespace Unrect.Projections
             if (!Next(span))
               break;
         }
-
-        _closed = true;
 
         // Closing an item may replay what it did not keep into fresh attempts, which may leave
         // another item open; each replay moves strictly forward, so this ends.
