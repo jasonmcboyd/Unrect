@@ -303,20 +303,18 @@ namespace Unrect.Tests.Projections
       Assert.Equal(3, applied.Consumed.Height);
     }
 
-    // --- 6. Presence --------------------------------------------------------------------------------
+    // --- 6. No whole band ---------------------------------------------------------------------------
 
     [Fact]
-    public void AnExtentWithNoWholeBandInItIsEmptyRatherThanAFailure()
+    public void AnExtentWithNoWholeBandInItIsAnEmptyListRatherThanAFailure()
     {
       var sheet = CoordinateGrid(width: 2, height: 3);
 
-      Assert.Equal(Presence.Empty, VerticalBands(5, BandExtent()).Apply(sheet).Presence);
-      Assert.Equal(Presence.Read, VerticalBands(3, BandExtent()).Apply(sheet).Presence);
+      Assert.Empty(VerticalBands(5, BandExtent()).Map(sheet));
+      Assert.Single(VerticalBands(3, BandExtent()).Map(sheet));
 
-      // A tiler stopped at its first band by policy read nothing, and says so the same way.
-      Assert.Equal(
-        Presence.Empty,
-        VerticalBands(1, FirstCell(), onBlank: BlankRowStrategy.Stop).Apply(Grid(new int[2, 2])).Presence);
+      // A tiler stopped at its first band by policy read nothing, and hands back the same empty list.
+      Assert.Empty(VerticalBands(1, FirstCell(), onBlank: BlankRowStrategy.Stop).Map(Grid(new int[2, 2])));
     }
 
     // --- 7. Construction refusals -------------------------------------------------------------------

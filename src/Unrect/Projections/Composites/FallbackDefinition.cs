@@ -56,7 +56,7 @@ namespace Unrect.Projections
     /// Forwards to the inner. When the inner fails with a failure rather than a fault, the
     /// diagnostics recorded since the boundary started roll back, the one Warning that replaces them
     /// is recorded, and either the fallback is started and fed everything the inner took, or the
-    /// boundary settles on nothing with <see cref="Presence.Absorbed"/>.
+    /// boundary settles on nothing and says it absorbed.
     /// </summary>
     private sealed class Machine : IProjector<TSpace, T>
     {
@@ -100,7 +100,7 @@ namespace Unrect.Projections
           try
           {
             var settlement = _current.Close();
-            return new Settlement<T>(settlement.Value, _current.Advance, _current.Presence);
+            return new Settlement<T>(settlement.Value, _current.Advance, _current.Absorbed);
           }
           catch (ProjectionException failure) when (!_fallingBack && !failure.IsFault)
           {
@@ -140,7 +140,7 @@ namespace Unrect.Projections
               return true;
 
             var settlement = _current.Close();
-            _settled = new Settlement<T>(settlement.Value, _current.Advance, _current.Presence);
+            _settled = new Settlement<T>(settlement.Value, _current.Advance, _current.Absorbed);
             _finished = true;
             return false;
           }
@@ -186,7 +186,7 @@ namespace Unrect.Projections
         return taken;
       }
 
-      private Settlement<T> Absorbed() => new Settlement<T>(_boundary.FallbackValue, new Size(0, 0), Presence.Absorbed);
+      private Settlement<T> Absorbed() => new Settlement<T>(_boundary.FallbackValue, new Size(0, 0), absorbed: true);
 
       private ProjectionException StandingIn(ProjectionException fallbackFailure)
         => fallbackFailure.WithNote($"it stands in for {_primary!.Subject}, which failed too: {_primary.Problem}");

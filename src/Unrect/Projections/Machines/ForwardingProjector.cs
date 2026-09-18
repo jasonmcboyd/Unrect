@@ -42,7 +42,7 @@ namespace Unrect.Projections
     {
       var settlement = Child.Close();
 
-      return new Settlement<TResult>(Finish(settlement.Value), Child.Advance, Child.Presence);
+      return new Settlement<TResult>(Finish(settlement.Value), Child.Advance, Child.Absorbed);
     }
 
     /// <summary>The wrapper's own value from the child's; the identity for a wrapper that adds nothing.</summary>

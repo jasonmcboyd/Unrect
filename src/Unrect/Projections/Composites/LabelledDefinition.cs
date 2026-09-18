@@ -74,7 +74,6 @@ namespace Unrect.Projections
       private Plane<TSpace>? _first;
       private int _along;
       private int _across;
-      private bool _read;
       private bool _finished;
 
       public Machine(LabelledDefinition<TSpace, T> labelled, ProjectorScope<TSpace> scope)
@@ -100,7 +99,7 @@ namespace Unrect.Projections
 
         CloseBody();
 
-        return new Settlement<T>(_body!.Consumed.Width == 0 && _body.Consumed.Height == 0 && _header!.Consumed.Height == 0 ? default! : _value!, Spans.ToSize(_along, _across, Orientation.Vertical), _read ? Presence.Read : Presence.Empty);
+        return new Settlement<T>(_body!.Consumed.Width == 0 && _body.Consumed.Height == 0 && _header!.Consumed.Height == 0 ? default! : _value!, Spans.ToSize(_along, _across, Orientation.Vertical));
       }
 
       private T? _value;
@@ -133,7 +132,7 @@ namespace Unrect.Projections
       private void CloseHeader()
       {
         var labels = _header!.Close().Value;
-        Took(_header.Advance, _header.Presence);
+        Took(_header.Advance);
 
         var at = _first is Plane<TSpace> first ? Spans.EmptyAt(first, _along, Orientation.Vertical) : _scope.Anchor;
 
@@ -156,17 +155,16 @@ namespace Unrect.Projections
       {
         var settlement = _body!.Close();
         _value = settlement.Value;
-        Took(_body.Advance, _body.Presence);
+        Took(_body.Advance);
       }
 
       private Plane<TSpace> Extent()
         => _first is Plane<TSpace> first ? Spans.Region(first, _along, Orientation.Vertical) : _scope.Anchor;
 
-      private void Took(Size advance, Presence presence)
+      private void Took(Size advance)
       {
         _along += advance.Height;
         _across = Math.Max(_across, advance.Width);
-        _read |= presence == Presence.Read;
       }
     }
   }

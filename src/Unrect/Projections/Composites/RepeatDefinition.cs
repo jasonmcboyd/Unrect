@@ -221,10 +221,7 @@ namespace Unrect.Projections
         if (_values.Count < _repeat.AtLeast)
           throw _scope.Failure(_repeat, $"expected at least {_repeat.AtLeast} occurrences but found {_values.Count}", Extent(), null, null);
 
-        return new Settlement<IReadOnlyList<T>>(
-          _values,
-          Spans.ToSize(_along, _across, Along),
-          _values.Count == 0 ? Presence.Empty : Presence.Read);
+        return new Settlement<IReadOnlyList<T>>(_values, Spans.ToSize(_along, _across, Along));
       }
 
       private void BeginAttempt(int position)
@@ -274,7 +271,7 @@ namespace Unrect.Projections
         // An item that occupies nothing, or advances nowhere, would repeat forever.
         if (item.Consumed.Width == 0 || item.Consumed.Height == 0 || Spans.Along(item.Advance, Along) == 0)
         {
-          _absorbed = item.Presence == Presence.Absorbed;
+          _absorbed = item.Absorbed;
           _scope.Diagnostics.Rollback(_mark);
           _finished = true;
           return false;

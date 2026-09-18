@@ -54,7 +54,7 @@ namespace Unrect.Projections
 
       var settlement = root.Close();
 
-      return new AppliedResult<T>(settlement.Value, root.Offset, settlement.Consumed, settlement.Presence);
+      return new AppliedResult<T>(settlement.Value, root.Offset, settlement.Consumed);
     }
 
     /// <summary>

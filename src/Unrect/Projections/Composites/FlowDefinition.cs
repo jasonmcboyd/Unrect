@@ -55,7 +55,6 @@ namespace Unrect.Projections
       private int _along_;
       private int _across;
       private int _previous;
-      private bool _read;
       private bool _finished;
 
       public Machine(FlowDefinition<TSpace, T> flow, ProjectorScope<TSpace> scope)
@@ -94,7 +93,7 @@ namespace Unrect.Projections
           throw _scope.Reading(failure, Extent());
         }
 
-        return new Settlement<T>(value, Spans.ToSize(_along_, _across, _along), _read ? Presence.Read : Presence.Empty);
+        return new Settlement<T>(value, Spans.ToSize(_along_, _across, _along));
       }
 
       private bool Offer(Plane<TSpace> span)
@@ -147,7 +146,6 @@ namespace Unrect.Projections
         _previous = Spans.Along(closed.Advance, _along);
         _along_ += _previous;
         _across = Math.Max(_across, Spans.Across(closed.Advance, _along));
-        _read |= closed.Presence == Presence.Read;
         _index++;
 
         if (_index == _values.Length)

@@ -123,7 +123,7 @@ namespace Unrect.Projections
 
         var settlement = _inner.Close();
 
-        return new Settlement<TResult>(settlement.Value, _bounded.Consumed(_offered, _inner.Advance), _inner.Presence);
+        return new Settlement<TResult>(settlement.Value, _bounded.Consumed(_offered, _inner.Advance), _inner.Absorbed);
       }
     }
 

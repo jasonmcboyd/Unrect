@@ -20,7 +20,7 @@ namespace Unrect.Projections
     /// <summary>What the child itself consumed, offset excluded — a repeat's productivity guard reads this.</summary>
     Size Consumed { get; }
 
-    Presence Presence { get; }
+    bool Absorbed { get; }
 
     bool PlacementFailed { get; }
 

@@ -3,8 +3,8 @@ using Unrect.Core;
 namespace Unrect.Projections
 {
   /// <summary>
-  /// The unit: a projection that always accepts, reads nothing, consumes nothing, and says so with
-  /// <see cref="Presence.Empty"/>. It is what a flow can be composed with without changing — the
+  /// The unit: a projection that always accepts, reads nothing and consumes nothing. It is what a
+  /// flow can be composed with without changing — the
   /// identity element the layout algebra was missing while a zero-consuming child was
   /// indistinguishable from a repetition running out.
   /// <para>
@@ -37,6 +37,6 @@ namespace Unrect.Projections
 
 
     internal override Settlement<T> Collect(Plane<TSpace> extent, ProjectorScope<TSpace> scope)
-      => new Settlement<T>(default!, new Size(0, 0), Presence.Empty);
+      => new Settlement<T>(default!, new Size(0, 0));
   }
 }

@@ -8,18 +8,11 @@ namespace Unrect.Projections
 {
   /// <summary>
   /// The rulings every machine and the placement machine apply alike: what counts as a fault, how
-  /// a strategy's own exception is worded, when a declared area that read nothing is empty, and how
-  /// a size renders in a message. One place, so a leaf and a composite cannot describe the same
+  /// a strategy's own exception is worded, and how a size renders in a message. One place, so a leaf and a composite cannot describe the same
   /// event two ways.
   /// </summary>
   internal static class EngineRules
   {
-    /// <summary>A declared area consumed in full that read nothing is empty; anything else keeps what it said.</summary>
-    internal static Presence Settled(Presence presence, bool hasDeclaredArea, Size consumed)
-      => presence == Presence.Read && hasDeclaredArea && (consumed.Width == 0 || consumed.Height == 0)
-        ? Presence.Empty
-        : presence;
-
     internal static ProjectionException AreaFailure<TSpace, TOther>(ProjectorScope<TSpace> scope, IProjectionDefinition projection, Plane<TOther> inner, Exception exception)
       where TSpace : class, ISpace
       where TOther : class, ISpace

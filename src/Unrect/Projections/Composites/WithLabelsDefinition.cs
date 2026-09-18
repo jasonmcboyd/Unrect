@@ -69,7 +69,7 @@ namespace Unrect.Projections
 
         var settlement = _body.Close();
 
-        return new Settlement<T>(settlement.Value, _body.Advance, _body.Presence);
+        return new Settlement<T>(settlement.Value, _body.Advance, _body.Absorbed);
       }
 
       private Plane<TSpace> Narrow(Plane<TSpace> span)

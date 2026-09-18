@@ -141,10 +141,7 @@ namespace Unrect.Projections
 
         // The cursor is bands VISITED times the stride: a band the policy omitted was still cut out
         // of the extent; an incomplete band at the end was not.
-        return new Settlement<IReadOnlyList<T>>(
-          _values,
-          Spans.ToSize(_cursor, _across, Along),
-          _values.Count == 0 ? Presence.Empty : Presence.Read);
+        return new Settlement<IReadOnlyList<T>>(_values, Spans.ToSize(_cursor, _across, Along));
       }
     }
 

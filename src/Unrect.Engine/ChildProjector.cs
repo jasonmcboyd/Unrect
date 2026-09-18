@@ -146,7 +146,7 @@ namespace Unrect.Projections
     /// <summary>What the child itself consumed, offset excluded — a repeat's productivity guard reads this.</summary>
     public Size Consumed { get; private set; }
 
-    public Presence Presence { get; private set; }
+    public bool Absorbed { get; private set; }
 
     /// <summary>
     /// Set when the placement failed and the child was started non-strictly: the parent reads the
@@ -466,7 +466,7 @@ namespace Unrect.Projections
       var declared = !_placement.Derived;
       var consumed = declared ? Spans.ToSize(kept, _placement.Width!.Value, _driver) : settlement.Consumed;
 
-      Settle(settlement.Value, consumed, EngineRules.Settled(settlement.Presence, declared, consumed));
+      Settle(settlement.Value, consumed, settlement.Absorbed);
     }
 
     /// <summary>A held child: its machine built over the region the placement settled on, and driven along its own axis.</summary>
@@ -489,21 +489,21 @@ namespace Unrect.Projections
 
       var consumed = declared ? inner.Area.Size : settlement.Consumed;
 
-      Settle(settlement.Value, consumed, EngineRules.Settled(settlement.Presence, declared, consumed));
+      Settle(settlement.Value, consumed, settlement.Absorbed);
     }
 
-    private void Settle(T value, Size consumed, Presence presence)
+    private void Settle(T value, Size consumed, bool absorbed)
     {
       Consumed = consumed;
-      Presence = presence;
+      Absorbed = absorbed;
       Advance = Offset.Size + consumed;
-      _settlement = new Settlement<T>(value, consumed, presence);
+      _settlement = new Settlement<T>(value, consumed, absorbed);
     }
 
     private void SettleNothing()
     {
       Offset = default;
-      Settle(default!, new Size(0, 0), Presence.Empty);
+      Settle(default!, new Size(0, 0), absorbed: false);
     }
 
     // --- The inner machine, and what it threw ---------------------------------------------------

@@ -140,7 +140,7 @@ namespace Unrect.Projections
         var settlement = inner.Close();
         var advance = new Size(inner.Advance.Width + _pad.Left + _pad.Right, inner.Advance.Height + _pad.Top + _pad.Bottom);
 
-        return new Settlement<TResult>(settlement.Value, advance, inner.Presence);
+        return new Settlement<TResult>(settlement.Value, advance, inner.Absorbed);
       }
 
       private bool Feed(Plane<TSpace> span)

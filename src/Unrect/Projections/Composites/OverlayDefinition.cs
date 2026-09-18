@@ -50,7 +50,6 @@ namespace Unrect.Projections
       private bool _started;
       private int _width;
       private int _height;
-      private bool _read;
 
       public Machine(OverlayDefinition<TSpace, T> overlay, ProjectorScope<TSpace> scope)
       {
@@ -100,7 +99,7 @@ namespace Unrect.Projections
           throw _scope.Reading(failure, Extent());
         }
 
-        return new Settlement<T>(value, new Size(_width, _height), _read ? Presence.Read : Presence.Empty);
+        return new Settlement<T>(value, new Size(_width, _height));
       }
 
       private void StartAll(Plane<TSpace> anchor)
@@ -121,7 +120,6 @@ namespace Unrect.Projections
         _values[index] = child.CloseBoxed();
         _width = Math.Max(_width, child.Advance.Width);
         _height = Math.Max(_height, child.Advance.Height);
-        _read |= child.Presence == Presence.Read;
       }
 
       private Plane<TSpace> Extent()

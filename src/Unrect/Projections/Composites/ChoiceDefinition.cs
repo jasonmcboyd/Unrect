@@ -98,7 +98,7 @@ namespace Unrect.Projections
           try
           {
             var settlement = _current.Close();
-            return new Settlement<T>(settlement.Value, _current.Advance, _current.Presence);
+            return new Settlement<T>(settlement.Value, _current.Advance, _current.Absorbed);
           }
           catch (ProjectionException failure) when (!failure.IsFault)
           {
@@ -131,7 +131,7 @@ namespace Unrect.Projections
               return true;
 
             var settlement = _current.Close();
-            _settled = new Settlement<T>(settlement.Value, _current.Advance, _current.Presence);
+            _settled = new Settlement<T>(settlement.Value, _current.Advance, _current.Absorbed);
             _finished = true;
             return false;
           }

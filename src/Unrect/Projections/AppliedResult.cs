@@ -10,17 +10,10 @@ namespace Unrect.Projections
   {
     /// <summary>Creates a result carrying where the projection landed and what it produced.</summary>
     public AppliedResult(T value, Offset offset, Size consumed)
-      : this(value, offset, consumed, Presence.Read)
-    {
-    }
-
-    /// <summary>The same, with what the projection's presence says about a zero extent.</summary>
-    internal AppliedResult(T value, Offset offset, Size consumed, Presence presence)
     {
       Value = value;
       Offset = offset;
       Consumed = consumed;
-      Presence = presence;
     }
 
     /// <summary>The projected value.</summary>
@@ -34,8 +27,5 @@ namespace Unrect.Projections
 
     /// <summary>What a caller must step past this projection: <see cref="Offset"/> plus <see cref="Consumed"/>.</summary>
     public Size Advance => Offset.Size + Consumed;
-
-    /// <inheritdoc cref="Projections.Presence"/>
-    internal Presence Presence { get; }
   }
 }
