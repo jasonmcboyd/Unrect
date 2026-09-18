@@ -152,7 +152,8 @@ tested. Automated tests must never depend on the scrubbed file's presence.
 
 ## Example Usage
 
-The linqpad scripts below read the tree's own vocabulary, and are being migrated onto it: a
+The linqpad scripts below are written in the tree's own vocabulary and reference the built
+`Unrect.Engine.dll` beside the others, since `Map`/`Apply`/`MapWithDiagnostics` live there: a
 declaration file imports `using static Unrect.Projections.ProjectionBuilders<TSpace>;` plus a
 backend's own closed vocabulary (`SheetProjectionBuilders<TSpace>` or
 `SpreadsheetProjectionBuilders<TSpace>`) once, a cell read is `point.Decimal()`/`.Text()`/…
