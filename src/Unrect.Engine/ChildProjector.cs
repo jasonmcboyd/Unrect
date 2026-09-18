@@ -17,7 +17,7 @@ namespace Unrect.Projections
   /// or settles on more than it was offered, is a fault blamed on the node.
   /// </para>
   /// </summary>
-  internal sealed class ChildProjector<TSpace, T> : IProjector<TSpace, T>, IChildHandle<TSpace, T>, IRetaining
+  internal sealed class ChildProjector<TSpace, T> : IProjector<TSpace, T>, IChildHandle<TSpace, T>, IChildRegistry<TSpace>
     where TSpace : class, ISpace
   {
     private enum Phase
@@ -65,19 +65,36 @@ namespace Unrect.Projections
       // Driven or held is PlacementRules' decision, shared with the cost report so the two agree.
       _held = !PlacementRules.Streams(definition, _driver, out _offsetRule, out _sizeRule, out _derived, out _);
       Reach = _held ? Reach.Extent : definition.Reach;
-      scope.Session.Opened(this);
     }
 
-    /// <summary>The definition this machine reads, for a report about what it is holding.</summary>
-    public IProjectionDefinition Definition => _definition;
+    private readonly List<IChildHandle<TSpace>> _children = new List<IChildHandle<TSpace>>();
+
+    public void Opened(IChildHandle<TSpace> child) => _children.Add(child);
+
+    public void Closed(IChildHandle<TSpace> child) => _children.Remove(child);
 
     /// <summary>
-    /// The first source row this machine may still read, or null when it holds none. A held child
-    /// may read all of what it was offered when it is placed at close; a child still resolving an
-    /// offset or a width reads back to where that began; a placed child reads back only as far as
-    /// its own node's <see cref="DefinitionNode.Retains"/> says.
+    /// The oldest row this subtree may still read, and the innermost machine that needs it: this
+    /// machine's own hold, then every open child's answer, the deeper taking a tie.
     /// </summary>
-    public int? RetainFrom(int current)
+    public Hold? Retained(int current)
+    {
+      Hold? oldest = RetainFrom(current) is int own ? new Hold(own, _definition) : (Hold?)null;
+
+      foreach (var child in _children)
+        if (child.Retained(current) is Hold held && (oldest is null || held.Row <= oldest.Value.Row))
+          oldest = held;
+
+      return oldest;
+    }
+
+    /// <summary>
+    /// The first source row this machine itself may still read, or null when it holds none. A held
+    /// child may read all of what it was offered when it is placed at close; a child still
+    /// resolving an offset or a width reads back to where that began; a placed child reads back
+    /// only as far as its own node's <see cref="DefinitionNode.Retains"/> says.
+    /// </summary>
+    private int? RetainFrom(int current)
     {
       if (_phase == Phase.Closed || _offered.Count == 0)
         return null;
@@ -216,7 +233,7 @@ namespace Unrect.Projections
 
         _innerStart = _offered.Count - 1;
         _phase = Phase.Size;
-        _inner = _definition.Build(_scope.At(_child, Spans.Empty(Cut(span, _column, null), _driver), _driver));
+        _inner = _definition.Build(_scope.Within(this, _child, Spans.Empty(Cut(span, _column, null), _driver), _driver));
       }
 
       return TakeInner(span);
@@ -237,7 +254,7 @@ namespace Unrect.Projections
       finally
       {
         _phase = Phase.Closed;
-        _scope.Session.Closed(this);
+        _scope.Owner?.Closed(this);
       }
 
       if (Spans.Along(Advance, _driver) > _offered.Count)
@@ -488,7 +505,7 @@ namespace Unrect.Projections
       // An inner that was fed nothing closes over the empty region its rule settled on, cut to the
       // settled width: a discovered block over blank space is 0x0, not 0 rows of the anchor's width.
       if (!_derived && _taken == 0 && _inner is not null)
-        _inner = _definition.Build(_scope.At(_child, Narrow(InnerPlane(0), _width!.Value), _driver));
+        _inner = _definition.Build(_scope.Within(this, _child, Narrow(InnerPlane(0), _width!.Value), _driver));
 
       var settlement = InnerClose();
       var declared = !_derived;
@@ -511,7 +528,7 @@ namespace Unrect.Projections
       Offset = offset;
 
       var along = _definition.Axis.Along(_driver);
-      var machine = _definition.Build(_scope.At(scope, Spans.Empty(inner, along ?? _driver), along ?? _driver));
+      var machine = _definition.Build(_scope.Within(this, scope, Spans.Empty(inner, along ?? _driver), along ?? _driver));
       Settlement<T> settlement;
 
       try

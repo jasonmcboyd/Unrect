@@ -26,6 +26,41 @@ namespace Unrect.Projections
 
     /// <summary>The spans offered to the child that it did not keep, oldest first — for the parent to feed to the successor.</summary>
     IEnumerable<Plane<TSpace>> Shortfall();
+
+    /// <summary>
+    /// The oldest source row this child, or anything open beneath it, may still read, and the
+    /// innermost machine holding it — or null when nothing under this handle holds a row. Asked
+    /// of the root after each row; every handle answers for its subtree.
+    /// </summary>
+    Hold? Retained(int current);
+  }
+
+  /// <summary>A row held, and the machine holding it — what a subtree answers when asked how far back it may still read.</summary>
+  internal readonly struct Hold
+  {
+    internal Hold(int row, IProjectionDefinition holder)
+    {
+      Row = row;
+      Holder = holder;
+    }
+
+    /// <summary>The oldest row still needed.</summary>
+    internal int Row { get; }
+
+    /// <summary>The innermost machine that needs it.</summary>
+    internal IProjectionDefinition Holder { get; }
+  }
+
+  /// <summary>
+  /// What a handle is to the children started under it: they report to it when they open and
+  /// close, so it can answer for its subtree. The engine's placement machine is the one implementer.
+  /// </summary>
+  internal interface IChildRegistry<TSpace>
+    where TSpace : class, ISpace
+  {
+    void Opened(IChildHandle<TSpace> child);
+
+    void Closed(IChildHandle<TSpace> child);
   }
 
   /// <summary>

@@ -25,8 +25,15 @@ namespace Unrect.Projections
     /// <summary>Where a machine started under this scope would begin — used only when it is never offered a span.</summary>
     internal abstract Plane<TSpace> Anchor { get; }
 
-    /// <summary>This scope at <paramref name="context"/> and <paramref name="anchor"/>, driving along <paramref name="driver"/>.</summary>
+    /// <summary>This scope at <paramref name="context"/> and <paramref name="anchor"/>, driving along <paramref name="driver"/>, under the same handle.</summary>
     internal abstract ProjectorScope<TSpace> At(ProjectionContext context, Plane<TSpace> anchor, Orientation driver);
+
+    /// <summary>
+    /// The scope a handle hands the machine it wraps: children started through it report to
+    /// <paramref name="owner"/>, which is how the tree of open machines is kept by the engine
+    /// alone, with nothing asked of a node.
+    /// </summary>
+    internal abstract ProjectorScope<TSpace> Within(IChildRegistry<TSpace> owner, ProjectionContext context, Plane<TSpace> anchor, Orientation driver);
 
     /// <summary>
     /// Starts <paramref name="definition"/> as a child at <paramref name="edge"/>, behind the
