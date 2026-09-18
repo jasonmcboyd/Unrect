@@ -43,6 +43,50 @@ CLAUDE.md's gate runs the suite both ways. Steps still open: the buffer manager 
 source (§2.4, §8), `PathRenderer` and the scope's own diagnostics (§7), `Unrect.Engine`, the dry-run
 cost report (§3).
 
+**Phase 4, steps 2–5 landed 2026-09-18** (commits `278f393`, `427c3b7`, `916640a`, `dfccfe0`); phase 4
+is complete and both runs are green (pull 2,712; push 2,639 passed, 44 skipped). Built differently from
+the text below:
+
+- **The buffer manager asks, it is not told** (§2.2, §2.4). No hold is opened when a child starts.
+  Instead every placement machine registers with the session while open, and after each row the
+  session asks each one the oldest row it may still read — `IRetaining.RetainFrom` — and releases
+  everything before the minimum. What a machine holds is its node's `Retains` (internal on
+  `DefinitionNode`: one span for a cell, the header rows for column labels, the stride for bands, the
+  extent for a block, a choice or a fallback), or, for a repeat, the attempt in progress through
+  `IHolding.HeldFrom`: a committed occurrence is final, so a walk over a thousand occurrences retains
+  one. A machine still resolving an offset or a width, or held whole, retains from where it began.
+  The cap is `WorkbookOptions.BufferRows`; exceeding it is a fault naming the *innermost* holder of the
+  oldest row, since an enclosing boundary holds whatever its child holds.
+- **The source contract is `IRowFeed`** in `Unrect`: `Advance`/`Loaded`/`Retained`/`Cap`/`Release`. A
+  space that implements it is driven one loaded row at a time; any other space is a retaining source
+  and is driven over its whole extent as before. `StreamedSheet` (`Workbook.Stream(name)`) is the
+  workbook's feed — a fresh cursor per call, rows in a deque, a cell of a released row a located
+  `CellReadException` that says to read it inside the projection, a cell of a disposed book an
+  `ObjectDisposedException`. `MapWorkbook` streams under push and keeps the windowed `Sheet` under pull;
+  `Workbook.Sheet` itself is untouched until phase 5.
+- **A collector streams under a declared rule.** `Range(…)` and `Table(view => …)` announce no axis,
+  but under a size rule the engine can run per span (the discovered block, rows-while-any, an explicit
+  size) they need not bound themselves, so they are driven by the rule and read the region whole at
+  close — the fold the pull placement ran, one row at a time. Only a collector left to bound itself, or
+  one under a rule with no per-span form, is held. A width that does not fit is reported once the rows
+  have settled, so a declared 3x3 over a 2x2 space still says "2x2 available".
+- **`PathRenderer` lives in `Unrect`, not the engine** (§7): every node's machine names it, so it is
+  declaration-side by the same test as `Spans` and `PlacementRules` (a repeat steps its own separator
+  rule). It is a static class over the data face; `ProjectionContext` keeps only the chain walk.
+- **`Unrect.Engine` holds** `PushSession`/`SessionScope` (the driver, the feed loop, the buffer
+  manager), `ChildProjector` (the placement machine), `EagerPlacement` (the held-child fallback) and
+  `ProjectionMapping` (`Map`/`Apply`/`MapWithDiagnostics`, namespace `Unrect.Projections`). A node's
+  machine holds an `IChildHandle<TSpace, T>`, the typed handle `ProjectorScope.Start` returns, never the
+  engine's class. Packaging follows the graph: the engine project produces the "Unrect" package and
+  bundles `Unrect`, `Core`, `Strategies` and the analyzers (the reverse of engine-split §10 decision 11,
+  which would have been a reference cycle); the `Unrect` project carries the restore identity
+  `Unrect.Definitions` so the two never collide, and the doc ratchet names it explicitly.
+- **The cost report is `CostReport.Of(definition, driver)`** in `Unrect`, over the data face: a line
+  per node — path-segment name, streams or holds and why, `Reach`, `Axis` — with a held node's children
+  reported under the axis it is re-driven along. It and `ChildProjector` ask one function,
+  `PlacementRules.Streams`, so they cannot disagree. `Orientation` is public now that a driver is the
+  subject of a public signature.
+
 The rulings in §0 were settled with the owner in the session that produced this document; the
 decisions in §11 were accepted as recommended.
 

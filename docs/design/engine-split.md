@@ -12,7 +12,13 @@ preparation for the push interpreter and comes *before* that design session; the
 trace belongs to that document, not this one. One name in this record was corrected in phase 3's
 review: the definition's method that hands back its machine is **`Build`**, not `Start` — a
 definition builds its projector when asked, and starting it is the engine's act. Read `Start` below
-as `Build` wherever it names that method.
+as `Build` wherever it names that method. **Phases 2, 3 and 4 landed 2026-09-18** (design record
+`push-interpreter.md`, whose status lists what was built differently); phase 5 is next. One §10
+decision inverted in phase 4: `Unrect.Engine` does ride inside the "Unrect" package (decision 11), but
+the engine *project* produces that package and bundles `Unrect`, `Core`, `Strategies` and the
+analyzers — the only direction without a reference cycle — and the `Unrect` project carries the restore
+identity `Unrect.Definitions`. `PathRenderer` and `PlacementRules` stayed in `Unrect`, since every
+node's machine names them.
 
 The one sentence: `IProjection<TSpace, TResult>.Project(Plane<TSpace>, ProjectionContext)` makes every
 node both the declaration and its own pull interpreter. Replace `Project` with `Start` — *hand back
