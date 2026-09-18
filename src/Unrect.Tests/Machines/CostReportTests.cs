@@ -152,7 +152,7 @@ namespace Unrect.Tests.Machines
       Assert.Equal("Table<Row>", report.Lines[0].Name);
       Assert.True(report.Lines[0].Streams);
       Assert.All(report.Lines, line => Assert.True(line.Streams, $"{line.Name}: {line.Hold}"));
-      Assert.DoesNotContain(report.Lines, line => line.Name.Contains("VerticalBands", System.StringComparison.Ordinal));
+      Assert.DoesNotContain(report.Lines, line => line.Name.Contains("VerticalBands"));
     }
 
     [Fact]
