@@ -2,7 +2,7 @@
 
 **Status.** Accepted by the owner, 2026-09-18, after two revisions in review (§5.1 added; §8
 reframed around one door). **Phase 3 landed the same day** on `experiment/engine-split` (commits
-3a–3c): every one of the twenty-two shipped nodes builds its machine through `Start`, beside
+3a–3c): every one of the twenty-two shipped nodes builds its machine through `Build`, beside
 `Project`, and a root-level switch (`UNRECT_PUSH=1`, or `ProjectionEngine.UsePush()`) runs any
 application on the push interpreter. Sixty-three equivalence theories
 (`src/Unrect.Tests/Machines/PushEquivalenceTests.cs`) observe a declaration through both engines
@@ -38,12 +38,12 @@ them into "retires with pull" and "must pass". Built differently from the text b
 The rulings in §0 were settled with the owner in the session that produced this document; the
 decisions in §11 were accepted as recommended.
 
-`engine-split.md` fixed the shape: a definition builds its own machine (`Start`), the machine is
+`engine-split.md` fixed the shape: a definition builds its own machine (`Build`), the machine is
 `bool Next(span)` and `Close()`, buffering is announced upward, and `Unrect.Engine` holds only the
 driver. This document fixes the behaviour: what every shipped node's machine does with a span, when
-it answers false, what it does at `Close`, and what it announces. Vocabulary as before: **builders**
-make **definitions**; the engine **starts** **projectors**; a driven projector yields **the
-projection**. A **span** is what the driver offers: a `Plane<TSpace>` one row tall under a row-major
+it answers false, what it does at `Close`, and what it announces. Vocabulary, one verb corrected in review: **builders** make **definitions**; a definition
+**builds** its **projector** when the engine asks (`Build`), and the engine **drives** it; a driven
+projector yields **the projection**. A **span** is what the driver offers: a `Plane<TSpace>` one row tall under a row-major
 driver, one column wide under a column-major one.
 
 ---
@@ -259,7 +259,7 @@ public interface IProjectionDefinition<TSpace, TResult> : IProjectionDefinition
 {
   Reach Reach { get; }                 // computed at construction from the children; joins upward
   Orientation? Axis { get; }           // the axis this node streams along, or null for none
-  IProjector<TSpace, TResult> Start(ProjectorScope scope);
+  IProjector<TSpace, TResult> Build(ProjectorScope scope);
   IProjectionDefinition<TSpace, TResult> With(Annotations annotations);
 }
 ```

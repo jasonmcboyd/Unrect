@@ -123,6 +123,6 @@ namespace Unrect.Projections
     /// per application, so a definition stays a reusable value applied to many spaces at once — all
     /// per-run state lives in the projector, none in the definition.
     /// </summary>
-    IProjector<TSpace, TResult> Start(ProjectorScope<TSpace> scope);
+    IProjector<TSpace, TResult> Build(ProjectorScope<TSpace> scope);
   }
 }

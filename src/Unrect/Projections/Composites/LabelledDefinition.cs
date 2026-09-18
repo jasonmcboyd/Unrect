@@ -41,7 +41,7 @@ namespace Unrect.Projections
 
     public override Axes Axis => Axes.Vertical;
 
-    public override IProjector<TSpace, T> Start(ProjectorScope<TSpace> scope) => new Machine(this, scope);
+    public override IProjector<TSpace, T> Build(ProjectorScope<TSpace> scope) => new Machine(this, scope);
 
     /// <summary>The header until it refuses, then the body under the labels it produced: a flow of two, with the second child built from the first's value.</summary>
     private sealed class Machine : IProjector<TSpace, T>

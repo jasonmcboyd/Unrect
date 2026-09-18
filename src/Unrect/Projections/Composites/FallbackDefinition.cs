@@ -53,7 +53,7 @@ namespace Unrect.Projections
     /// <summary>A boundary may hand back everything the inner took: what it absorbs, it did not consume.</summary>
     public override Reach Reach => Reach.Extent;
 
-    public override IProjector<TSpace, T> Start(ProjectorScope<TSpace> scope) => new Machine(this, scope);
+    public override IProjector<TSpace, T> Build(ProjectorScope<TSpace> scope) => new Machine(this, scope);
 
     /// <summary>
     /// Forwards to the inner. When the inner fails with a failure rather than a fault, the

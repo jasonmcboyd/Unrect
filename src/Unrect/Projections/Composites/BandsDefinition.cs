@@ -56,7 +56,7 @@ namespace Unrect.Projections
     /// <summary>A tiler must see a whole band before it can say the band is blank, and hands an incomplete one back.</summary>
     public override Reach Reach => base.Reach.Join(Reach.Spans(Stride));
 
-    public override IProjector<TSpace, IReadOnlyList<T>> Start(ProjectorScope<TSpace> scope) => new Machine(this, scope);
+    public override IProjector<TSpace, IReadOnlyList<T>> Build(ProjectorScope<TSpace> scope) => new Machine(this, scope);
 
     /// <summary>
     /// Gathers <c>Stride</c> spans into a band; a complete band is either the blank policy's or its

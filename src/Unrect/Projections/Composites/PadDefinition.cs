@@ -42,7 +42,7 @@ namespace Unrect.Projections
     /// <summary>A pad withholds its bottom padding until it can tell it from the inner's rows, so it may hand one span back.</summary>
     public override Reach Reach => base.Reach.Join(Reach.Spans(Bottom + 1));
 
-    public override IProjector<TSpace, TResult> Start(ProjectorScope<TSpace> scope) => new Machine(this, scope);
+    public override IProjector<TSpace, TResult> Build(ProjectorScope<TSpace> scope) => new Machine(this, scope);
 
     /// <summary>
     /// Skip <c>Top</c> spans; inset every span by <c>Left</c> and <c>Right</c>; forward to the inner,

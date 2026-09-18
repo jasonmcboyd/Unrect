@@ -37,7 +37,7 @@ namespace Unrect.Projections
 
     public override Axes Axis => Body.Axis.OrEither();
 
-    public override IProjector<TSpace, T> Start(ProjectorScope<TSpace> scope) => new Machine(this, scope);
+    public override IProjector<TSpace, T> Build(ProjectorScope<TSpace> scope) => new Machine(this, scope);
 
     /// <summary>
     /// Narrows every span to the labelled width, pushes the labels for the body's subtree with the

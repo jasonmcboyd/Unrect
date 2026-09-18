@@ -59,7 +59,7 @@ namespace Unrect.Projections
     /// <summary>A repeat hands back the item that failed to place, and the gap before it.</summary>
     public override Reach Reach => Reach.Extent;
 
-    public override IProjector<TSpace, IReadOnlyList<T>> Start(ProjectorScope<TSpace> scope)
+    public override IProjector<TSpace, IReadOnlyList<T>> Build(ProjectorScope<TSpace> scope)
       => SeparatorStreams
         ? new Machine(this, scope)
         : new SpanCountProjector<TSpace, IReadOnlyList<T>>(this, scope, 1);

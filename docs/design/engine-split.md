@@ -9,7 +9,10 @@ generic); the node classes stay internal for now; `ProjectionContext.Pending` su
 engine takes a use site per `Apply`. The document was written against `0f34f15` and records the
 owner's decisions of 2026-09-16/17 and the three rulings that followed the first cut. It is
 preparation for the push interpreter and comes *before* that design session; the per-kind machine
-trace belongs to that document, not this one.
+trace belongs to that document, not this one. One name in this record was corrected in phase 3's
+review: the definition's method that hands back its machine is **`Build`**, not `Start` — a
+definition builds its projector when asked, and starting it is the engine's act. Read `Start` below
+as `Build` wherever it names that method.
 
 The one sentence: `IProjection<TSpace, TResult>.Project(Plane<TSpace>, ProjectionContext)` makes every
 node both the declaration and its own pull interpreter. Replace `Project` with `Start` — *hand back
@@ -104,7 +107,7 @@ public interface IProjectionDefinition<TSpace, TResult> : IProjectionDefinition
   /// per application, so a definition stays a reusable value applied to many spaces at once — all
   /// per-run state lives in the projector, none in the definition.
   /// </summary>
-  IProjector<TSpace, TResult> Start(ProjectorScope scope);
+  IProjector<TSpace, TResult> Build(ProjectorScope scope);
 
   /// <summary>This node with different annotations — what <c>.Named</c> and its siblings build.</summary>
   IProjectionDefinition<TSpace, TResult> With(Annotations annotations);
@@ -691,7 +694,7 @@ replaces `Consumed`/`Presence` in a world where consumption is the answer to `Ne
 fixes the shape; that one fixes the behaviour.
 
 **Phase 3 — the contract and the machines, beside `Project`.** Add `IProjector`, `ProjectorScope`,
-`Reach` and `Start` to `Unrect`. Implement `Start` kind by kind, keeping `Project` on every node until
+`Reach` and `Build` to `Unrect`. Implement `Build` kind by kind, keeping `Project` on every node until
 the last kind has a machine. The tree runs on the pull engine the whole time; the machines are dead
 code under test until phase 4.
 

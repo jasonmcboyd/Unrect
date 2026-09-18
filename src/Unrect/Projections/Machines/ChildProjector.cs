@@ -172,7 +172,7 @@ namespace Unrect.Projections
 
         _innerStart = _offered.Count - 1;
         _phase = Phase.Size;
-        _inner = _definition.Start(_scope.At(_child, Spans.Empty(Cut(span, _column, null), _driver), _driver));
+        _inner = _definition.Build(_scope.At(_child, Spans.Empty(Cut(span, _column, null), _driver), _driver));
       }
 
       return TakeInner(span);
@@ -452,7 +452,7 @@ namespace Unrect.Projections
       Offset = offset;
 
       var along = _definition.Axis.Along(_driver);
-      var machine = _definition.Start(_scope.At(scope, Spans.Empty(inner, along ?? _driver), along ?? _driver));
+      var machine = _definition.Build(_scope.At(scope, Spans.Empty(inner, along ?? _driver), along ?? _driver));
       Settlement<T> settlement;
 
       try

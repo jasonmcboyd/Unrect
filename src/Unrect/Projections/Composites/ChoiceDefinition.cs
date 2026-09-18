@@ -55,7 +55,7 @@ namespace Unrect.Projections
     /// <summary>A choice replays everything a losing alternative took into the next.</summary>
     public override Reach Reach => Reach.Extent;
 
-    public override IProjector<TSpace, T> Start(ProjectorScope<TSpace> scope) => new Machine(this, scope);
+    public override IProjector<TSpace, T> Build(ProjectorScope<TSpace> scope) => new Machine(this, scope);
 
     /// <summary>
     /// Alternatives in declaration order, one at a time. An alternative that fails with a failure

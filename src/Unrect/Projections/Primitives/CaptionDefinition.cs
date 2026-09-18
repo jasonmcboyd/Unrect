@@ -34,7 +34,7 @@ namespace Unrect.Projections
 
     public override Axes Axis => Axes.Vertical;
 
-    public override IProjector<TSpace, string> Start(ProjectorScope<TSpace> scope)
+    public override IProjector<TSpace, string> Build(ProjectorScope<TSpace> scope)
       => new SpanCountProjector<TSpace, string>(this, scope, 1);
 
     public override ProjectionResult<string> Project(Plane<TSpace> extent, ProjectionContext context)

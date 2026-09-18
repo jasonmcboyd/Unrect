@@ -36,7 +36,7 @@ namespace Unrect.Projections
 
     public override Axes Axis => Orientation.Of();
 
-    public override IProjector<TSpace, T> Start(ProjectorScope<TSpace> scope) => new Machine(this, scope);
+    public override IProjector<TSpace, T> Build(ProjectorScope<TSpace> scope) => new Machine(this, scope);
 
     /// <summary>
     /// Children in declaration order, one open at a time: offer the span to the open child; when it

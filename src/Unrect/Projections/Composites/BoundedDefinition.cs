@@ -56,7 +56,7 @@ namespace Unrect.Projections
     /// <summary>A bound is driven along its landmark's axis: a row landmark is looked for on each row span, a column landmark on each column span.</summary>
     public override Axes Axis => Landmark.Orientation.Of();
 
-    public override IProjector<TSpace, TResult> Start(ProjectorScope<TSpace> scope) => new Machine(this, scope);
+    public override IProjector<TSpace, TResult> Build(ProjectorScope<TSpace> scope) => new Machine(this, scope);
 
     /// <summary>
     /// A span matching the landmark is refused and ends the bound; every other span is the bound's,

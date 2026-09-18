@@ -31,7 +31,7 @@ namespace Unrect.Projections
     /// <summary>A view lambda reads its table at random, so it streams along no axis: held, then handed the region as one span.</summary>
     public override Axes Axis => Axes.None;
 
-    public override IProjector<TSpace, T> Start(ProjectorScope<TSpace> scope)
+    public override IProjector<TSpace, T> Build(ProjectorScope<TSpace> scope)
       => new SpanCountProjector<TSpace, T>(this, scope, 1);
 
     public override ProjectionResult<T> Project(Plane<TSpace> extent, ProjectionContext context)

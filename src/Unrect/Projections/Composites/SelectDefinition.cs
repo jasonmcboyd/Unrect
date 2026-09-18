@@ -31,7 +31,7 @@ namespace Unrect.Projections
 
     public override Axes Axis => Inner.Axis.OrEither();
 
-    public override IProjector<TSpace, TResult> Start(ProjectorScope<TSpace> scope) => new Machine(this, scope);
+    public override IProjector<TSpace, TResult> Build(ProjectorScope<TSpace> scope) => new Machine(this, scope);
 
     private sealed class Machine : ForwardingProjector<TSpace, TSource, TResult>
     {

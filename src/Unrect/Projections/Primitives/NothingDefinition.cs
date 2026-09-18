@@ -30,7 +30,7 @@ namespace Unrect.Projections
 
     public override string Description => "Nothing";
 
-    public override IProjector<TSpace, T> Start(ProjectorScope<TSpace> scope)
+    public override IProjector<TSpace, T> Build(ProjectorScope<TSpace> scope)
       => new SpanCountProjector<TSpace, T>(this, scope, 0);
 
     public override ProjectionResult<T> Project(Plane<TSpace> extent, ProjectionContext context)
