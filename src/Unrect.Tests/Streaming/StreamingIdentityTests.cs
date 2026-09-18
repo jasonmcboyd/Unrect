@@ -341,7 +341,7 @@ namespace Unrect.Tests.Streaming
       Assert.Equal(eager, streamed);
     }
 
-    [Fact]
+    [PullOnlyFact("the window, the pool and the sweep announcement retire with the pull interpreter")]
     public void AndCostsNoRereadingEvenThroughAWindowFourRowsTall()
     {
       // One row per chunk, floored to the four-chunk minimum: a window two orders of magnitude
@@ -454,7 +454,7 @@ namespace Unrect.Tests.Streaming
       Assert.Equal(0, stats.WindowOverruns);
     }
 
-    [Fact]
+    [PullOnlyFact("the window, the pool and the sweep announcement retire with the pull interpreter")]
     public void AndAnOversizedBandWrappedThreeDeepIsStillOneOverrun()
     {
       // The counter reports the declaration's SHAPE rather than its spelling — the hazard being that

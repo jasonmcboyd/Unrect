@@ -98,7 +98,7 @@ namespace Unrect.Tests.Streaming
 
     // --- Once per placement, and what it says ------------------------------------------------------
 
-    [Fact]
+    [PullOnlyFact("the window, the pool and the sweep announcement retire with the pull interpreter")]
     public void ARootDeclarationAnnouncesItsOwnRegionExactlyOnce()
     {
       // The simplest shape there is, so the count is unambiguous: one placement, one announcement,
@@ -110,7 +110,7 @@ namespace Unrect.Tests.Streaming
       Assert.Equal(new[] { "1,2+1x1" }, sheet.Announced);
     }
 
-    [Fact]
+    [PullOnlyFact("the window, the pool and the sweep announcement retire with the pull interpreter")]
     public void EveryChildAnnouncesItsOwnBandAndTheParentAnnouncesTheWhole()
     {
       // A flow's children are placements, so each announces the band it was cut — in flow order,
@@ -130,7 +130,7 @@ namespace Unrect.Tests.Streaming
       Assert.Equal(new[] { "0,0+4x4", "0,0+4x1", "0,1+4x1" }, sheet.Announced);
     }
 
-    [Fact]
+    [PullOnlyFact("the window, the pool and the sweep announcement retire with the pull interpreter")]
     public void ATransparentWrapperAnnouncesItsOwnBandAndSoRepeatsItsChilds()
     {
       // The reason the store deduplicates rather than counting announcements. A transparent wrapper
@@ -146,7 +146,7 @@ namespace Unrect.Tests.Streaming
       Assert.Equal(new[] { "1,2+3x2", "1,2+3x2", "1,2+1x1" }, sheet.Announced);
     }
 
-    [Fact]
+    [PullOnlyFact("the window, the pool and the sweep announcement retire with the pull interpreter")]
     public void AndAWrapperCarryingNoGeometryAnnouncesTheWholeExtentItWasHanded()
     {
       // The other arrangement, and the one that says the announcement is about the PLACEMENT rather
@@ -162,7 +162,7 @@ namespace Unrect.Tests.Streaming
 
     // --- Never forcing -----------------------------------------------------------------------------
 
-    [Fact]
+    [PullOnlyFact("the window, the pool and the sweep announcement retire with the pull interpreter")]
     public void ADiscoveredExtentIsAnnouncedAsDeclaredWithoutBeingSettled()
     {
       // The half that is easy to lose and impossible to notice: what is announced for a region whose
@@ -187,7 +187,7 @@ namespace Unrect.Tests.Streaming
       Assert.Equal("0,0+2x4", sheet.Announced[0]);
     }
 
-    [Fact]
+    [PullOnlyFact("the window, the pool and the sweep announcement retire with the pull interpreter")]
     public void AndTheBoundIsNotForcedByTheAnnouncementItself()
     {
       // The same claim measured rather than inferred, through the counting space. The table's extent

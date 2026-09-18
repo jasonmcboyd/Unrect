@@ -437,7 +437,7 @@ namespace Unrect.Tests.Projections
       return observed;
     }
 
-    [Theory]
+    [PullOnlyTheory("the eager/incremental identity is the pull interpreter's; push reads one way")]
     [InlineData("Range(strategy)")]
     [InlineData("Sized")]
     [InlineData("inside a flow")]
@@ -503,7 +503,7 @@ namespace Unrect.Tests.Projections
       Assert.IsAssignableFrom<IIncrementalAreaStrategy>(sized.Placement.Area);
     }
 
-    [Theory]
+    [PullOnlyTheory("the eager/incremental identity is the pull interpreter's; push reads one way")]
     [InlineData(false, 1)]
     [InlineData(true, 4)]
     public void TheRowProjectionSlotGivesTheTableCensusSomewhereToStand(bool eager, int rowsRead)
@@ -567,7 +567,7 @@ namespace Unrect.Tests.Projections
         RowsReadBeforeTheProjectionRuns(declare, Sheet(), eager: false));
     }
 
-    [Theory]
+    [PullOnlyTheory("the eager/incremental identity is the pull interpreter's; push reads one way")]
     [InlineData("VerticalFlow")]
     [InlineData("HorizontalFlow")]
     [InlineData("Overlay")]
@@ -623,7 +623,7 @@ namespace Unrect.Tests.Projections
       { 0, 0, 0 },
     });
 
-    [Theory]
+    [PullOnlyTheory("the eager/incremental identity is the pull interpreter's; push reads one way")]
     [InlineData("dense first row", 1)]
     [InlineData("hole in the first row", 2)]
     public void ADefaultPlacementDiscoversItsWidthFromTheRowsItsHeightWouldHaveReadAnyway(string sheet, int rowsRead)
@@ -648,7 +648,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal(4, RowsReadBeforeTheProjectionRuns(project => Range(project), space, eager: true));
     }
 
-    [Fact]
+    [PullOnlyFact("the eager/incremental identity is the pull interpreter's; push reads one way")]
     public void TheRowThatSettlesADiscoveredWidthIsTheFirstRowOfTheExtent()
     {
       // Which is the whole argument for the interleave being free in the dense case: the row the
@@ -674,7 +674,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal(2, afterSecond);
     }
 
-    [Fact]
+    [PullOnlyFact("the eager/incremental identity is the pull interpreter's; push reads one way")]
     public void ForcingEagerRestoresRatherThanClearing()
     {
       // The switch composes with itself, which matters because a differential case may itself

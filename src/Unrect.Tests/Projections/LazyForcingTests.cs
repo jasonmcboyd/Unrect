@@ -99,7 +99,7 @@ namespace Unrect.Tests.Projections
 
     // --- this[column, row]: through that row and no further ---------------------------------------
 
-    [Theory]
+    [PullOnlyTheory("rows touched measure the lazy bound; the push interpreter's cost is its buffer's")]
     [InlineData(0, 1)]
     [InlineData(1, 2)]
     [InlineData(2, 3)]
@@ -112,7 +112,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal(rowsTouched, observed);
     }
 
-    [Fact]
+    [PullOnlyFact("rows touched measure the lazy bound; the push interpreter's cost is its buffer's")]
     public void ReadingARowAlreadyBehindTheScanAdvancesItNoFurther()
     {
       // Forward-only means the scan has a position, not that reading has to be monotone: a
@@ -152,7 +152,7 @@ namespace Unrect.Tests.Projections
       Assert.True(TallSheet().IsBlank(0, BoundHeight));
     }
 
-    [Theory]
+    [PullOnlyTheory("rows touched measure the lazy bound; the push interpreter's cost is its buffer's")]
     [InlineData(0, 1)]
     [InlineData(2, 3)]
     [InlineData(99, 100)]
@@ -207,7 +207,7 @@ namespace Unrect.Tests.Projections
 
     // --- GetSubspace: through the rows asked for ---------------------------------------------------
 
-    [Theory]
+    [PullOnlyTheory("rows touched measure the lazy bound; the push interpreter's cost is its buffer's")]
     [InlineData(0, 0, 0)]
     [InlineData(0, 1, 1)]
     [InlineData(0, 3, 3)]
@@ -228,7 +228,7 @@ namespace Unrect.Tests.Projections
     // Step 6 made CellBlock bound-aware, so these numbers are the ones a projection actually pays: a
     // reader who never asked for a height never had to spell b.Space to keep it that way.
 
-    [Fact]
+    [PullOnlyFact("rows touched measure the lazy bound; the push interpreter's cost is its buffer's")]
     public void TheBlocksWidthIsFreeOnADiscoveredBound()
     {
       // Zero rows for a question about columns. This is where the width/height seam is observable —
@@ -239,7 +239,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal(0, observed);
     }
 
-    [Theory]
+    [PullOnlyTheory("rows touched measure the lazy bound; the push interpreter's cost is its buffer's")]
     [InlineData(0, 1)]
     [InlineData(2, 3)]
     [InlineData(99, 100)]
@@ -254,7 +254,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal(throughSpace, throughView);
     }
 
-    [Theory]
+    [PullOnlyTheory("rows touched measure the lazy bound; the push interpreter's cost is its buffer's")]
     [InlineData(0, 1)]
     [InlineData(2, 3)]
     [InlineData(99, 100)]
@@ -267,7 +267,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal(rowsTouched, observed);
     }
 
-    [Fact]
+    [PullOnlyFact("rows touched measure the lazy bound; the push interpreter's cost is its buffer's")]
     public void WalkingTheBlockRowByRowCostsOnlyTheRowsWalked()
     {
       var (observed, consumed) = ObserveBlock(block =>
@@ -376,7 +376,7 @@ namespace Unrect.Tests.Projections
 
     // --- The claim the feature exists for -----------------------------------------------------------
 
-    [Fact]
+    [PullOnlyFact("rows touched measure the lazy bound; the push interpreter's cost is its buffer's")]
     public void AProjectionThatReadsThreeRowsOfAHundredHasTouchedThree()
     {
       var (observed, consumed) = Observe(space =>
@@ -395,7 +395,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal(2, consumed.Width);
     }
 
-    [Fact]
+    [PullOnlyFact("rows touched measure the lazy bound; the push interpreter's cost is its buffer's")]
     public void AProjectionThatReadsNothingHasTouchedNothing_AndTheBoundIsStillConsumedInFull()
     {
       var (observed, consumed) = Observe(_ => { });
@@ -485,7 +485,7 @@ namespace Unrect.Tests.Projections
       return (observed, applied.Consumed);
     }
 
-    [Theory]
+    [PullOnlyTheory("rows touched measure the lazy bound; the push interpreter's cost is its buffer's")]
     [InlineData("ColumnCount")]
     [InlineData("Header")]
     [InlineData("ColumnNames")]
@@ -518,7 +518,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal(1, observed);
     }
 
-    [Theory]
+    [PullOnlyTheory("rows touched measure the lazy bound; the push interpreter's cost is its buffer's")]
     [InlineData(1, 2)]
     [InlineData(3, 4)]
     [InlineData(10, 11)]
@@ -596,7 +596,7 @@ namespace Unrect.Tests.Projections
       return observations;
     }
 
-    [Fact]
+    [PullOnlyFact("rows touched measure the lazy bound; the push interpreter's cost is its buffer's")]
     public void ATableRowLambdaIsInterleavedWithTheScanThatFindsItsRows()
     {
       // The law, and the reason StreamRows exists: the first row projects having read two rows of
@@ -609,7 +609,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal(TableBoundHeight, observations[TableBodyRows - 1]);
     }
 
-    [Fact]
+    [PullOnlyFact("rows touched measure the lazy bound; the push interpreter's cost is its buffer's")]
     public void TheDefaultTablePlacementIsInterleavedToo_AndCostsWhatTheSizedOneCosts()
     {
       // The undecorated declaration, which is the one people write. TablePlacement's extent is a
@@ -649,7 +649,7 @@ namespace Unrect.Tests.Projections
     /// <summary>The first row carrying anything in column 1 — the row that settles the width.</summary>
     private const int FirstWideRow = 50;
 
-    [Fact]
+    [PullOnlyFact("rows touched measure the lazy bound; the push interpreter's cost is its buffer's")]
     public void ADiscoveredWidthThatOnlySettlesLateForcesTheBoundToSettleIt()
     {
       // §11.4's honest half, in miniature: where the data is sparse enough that the column answer

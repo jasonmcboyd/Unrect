@@ -413,7 +413,7 @@ namespace Unrect.Tests.Streaming
       Assert.Equal(1, book.Statistics("Ledger")!.Value.ChunkReloads);
     }
 
-    [Fact]
+    [PullOnlyFact("the window, the pool and the sweep announcement retire with the pull interpreter")]
     public void AWalkDownASheetTallerThanTheWindowReportsOneOverrunThatCostNothing()
     {
       // Read this one carefully before "fixing" it.

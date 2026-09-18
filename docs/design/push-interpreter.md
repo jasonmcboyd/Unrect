@@ -35,6 +35,14 @@ them into "retires with pull" and "must pass". Built differently from the text b
   earlier spans on each new one (`TypedPredicateLoweringTests` sees the predicate called once more);
   bounded by the seek's length, and the one place a per-span form of `IRowLandmark` would pay.
 
+**Phase 4, step 1 landed 2026-09-18:** the harness proper. `[PullOnlyFact]`/`[PullOnlyTheory]` skip a
+test of the pull interpreter's own mechanics under `UNRECT_PUSH=1`, with the reason in the skip
+message; all 44 methods that failed under push were of that kind and are marked; `PushMatcherRegionTests`
+is the one push-side twin so far. Both runs are green (pull 2,697; push 2,624 passed, 44 skipped), and
+CLAUDE.md's gate runs the suite both ways. Steps still open: the buffer manager and a non-retaining
+source (§2.4, §8), `PathRenderer` and the scope's own diagnostics (§7), `Unrect.Engine`, the dry-run
+cost report (§3).
+
 The rulings in §0 were settled with the owner in the session that produced this document; the
 decisions in §11 were accepted as recommended.
 

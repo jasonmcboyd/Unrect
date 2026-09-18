@@ -130,7 +130,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal(3, measured.Width);
     }
 
-    [Fact]
+    [PullOnlyFact("the unsettled bottom edge and the exact call sequence are the lazy bound's; PushMatcherRegionTests pins the region")]
     public void ARegionPredicateIsHandedABottomEdgeItDoesNotHaveToSettle()
     {
       // The half of the retype that a declaration would otherwise pay for silently. Under a
@@ -192,7 +192,7 @@ namespace Unrect.Tests.Projections
 
     // --- A matcher's predicate ----------------------------------------------------------------------
 
-    [Fact]
+    [PullOnlyFact("the unsettled bottom edge and the exact call sequence are the lazy bound's; PushMatcherRegionTests pins the region")]
     public void AMatchersRegionPredicateIsHandedTheSearchedRegionRatherThanTheSheet()
     {
       // A matcher searches the region it was placed in, so what its predicate reads is that

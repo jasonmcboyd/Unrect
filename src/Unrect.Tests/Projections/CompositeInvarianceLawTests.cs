@@ -218,7 +218,7 @@ namespace Unrect.Tests.Projections
 
     // --- L0 is an independent axis -----------------------------------------------------------------------
 
-    [Fact]
+    [PullOnlyFact("the high-water mark measures the lazy bound")]
     public void AnOverlayDeclaredOutOfOrderKeepsTheDenotationAndLosesTheWord()
     {
       // The sharpest statement of what composite invariance is not. This overlay declares the lower

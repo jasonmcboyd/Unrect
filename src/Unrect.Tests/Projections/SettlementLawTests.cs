@@ -82,7 +82,7 @@ namespace Unrect.Tests.Projections
 
     // --- Site 1: a repeat's item settles before collection ---------------------------------------
 
-    [Fact]
+    [PullOnlyFact("a verdict settled before projecting is the pull interpreter's ordering")]
     public void ARepeatSettlesItsItemsVerdictBeforeProjectingIt()
     {
       // The same declaration, read twice, and the counter is the law: the lone leaf's extent is

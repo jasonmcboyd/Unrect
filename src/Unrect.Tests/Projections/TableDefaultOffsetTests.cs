@@ -118,7 +118,7 @@ namespace Unrect.Tests.Projections
     // does not force the sheet up front; the first record projects having touched only the header and
     // its own row, exactly as the outgoing SkipBlankRows did (spec §4: rows-touched is unchanged).
 
-    [Fact]
+    [PullOnlyFact("peeking one row at a time is the lazy bound's")]
     public void TheDefaultStopTableStillPeeksOneRowAtATimeUnderTheNewOffset()
     {
       var values = new object?[11, 2];

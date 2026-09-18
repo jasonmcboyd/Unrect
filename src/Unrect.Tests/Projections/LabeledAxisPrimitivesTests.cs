@@ -561,7 +561,7 @@ namespace Unrect.Tests.Projections
     // the trailing-content sheet the two now touch the same rows by the time the first record
     // projects and the same total at completion, and read the same value.
 
-    [Fact]
+    [PullOnlyFact("streaming in step counts rows touched through the lazy bound")]
     public void GapA_TheCompositeStreamsInStepWithTheLeaf()
     {
       var (bespokeAtFirst, bespokeTotal) = RowsTouchedAtFirstRecord(Table(1, Instrumented));
@@ -573,7 +573,7 @@ namespace Unrect.Tests.Projections
       SameReading(Table(1, ReadLine), TableFromPrimitives(1, ReadLine), Trailing());
     }
 
-    [Fact]
+    [PullOnlyFact("streaming in step counts rows touched through the lazy bound")]
     public void TheComposedRowSlotStreamsInStepWithTheRecordLeaf()
     {
       // The same claim about the built-in Table(headerRows:, eachRow:), which is a composition of

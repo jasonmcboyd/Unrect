@@ -115,7 +115,7 @@ namespace Unrect.Tests.Projections
       }));
     }
 
-    [Theory]
+    [PullOnlyTheory("rows touched and backward reach measure the lazy bound")]
     [MemberData(nameof(RowsTouchedByOffset))]
     public void AnOffsetStrategySettlesTheBoundaryOnlyIfItAsksHowTallTheRegionIs(string offset, int rowsTouched)
     {
@@ -143,7 +143,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal(RowsToExhaustion, counter.RowsTouched);
     }
 
-    [Theory]
+    [PullOnlyTheory("rows touched and backward reach measure the lazy bound")]
     [MemberData(nameof(BackwardReachByOffset))]
     public void AndReachesBackNoFurtherThanItSettled(string offset, int backwardReach)
     {

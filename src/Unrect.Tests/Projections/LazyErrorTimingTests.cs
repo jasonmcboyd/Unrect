@@ -269,7 +269,7 @@ namespace Unrect.Tests.Projections
       return observations;
     }
 
-    [Fact]
+    [PullOnlyFact("the moment a deferred scan fails is the pull interpreter's")]
     public void ARepeatsItemIsMeasuredBeforeItIsProjected()
     {
       // Item one spans rows 0-2 and its scan reads row 3 to learn that it stops, so four rows are

@@ -113,7 +113,7 @@ namespace Unrect.Tests.Streaming
       Assert.Equal(0L, overruns);
     }
 
-    [Fact]
+    [PullOnlyFact("the window, the pool and the sweep announcement retire with the pull interpreter")]
     public void WhereAFirstHalfThatReadsForItselfCostsTheWholeWalk()
     {
       // The contrast, and the control on the numbers above — kept, because it is what shows the zero

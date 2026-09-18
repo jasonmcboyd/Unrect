@@ -501,7 +501,7 @@ namespace Unrect.Tests.Projections
         return v.Build(read => (Code: read.Of(textCell), Amount: read.Of(right)));
       });
 
-    [Fact]
+    [PullOnlyFact("read-ahead and backward reach are the lazy bound's")]
     public void Repeat_InsideADiscoveredExtent_NeverReadsBehindTheFurthestRowRead()
     {
       // The cost claim behind placing a repeat over a bound: the item is handed a TAIL of the extent
@@ -553,7 +553,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal(3, bounded.Consumed.Height);
     }
 
-    [Fact]
+    [PullOnlyFact("read-ahead and backward reach are the lazy bound's")]
     public void Repeat_OfRecordsUnderALandmarkBound_ReadsAheadToTheLandmarkThenWalks()
     {
       // A landmark bound is located before the walk begins, so it reads ahead to the landmark and
@@ -576,7 +576,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal(3, watched.BackwardReach);
     }
 
-    [Fact]
+    [PullOnlyFact("read-ahead and backward reach are the lazy bound's")]
     public void AndASeparatorInsideADiscoveredExtentDoesNotAskHowTallTheTailIs()
     {
       // This used to be the named exception to the two facts above: a separator is an offset
