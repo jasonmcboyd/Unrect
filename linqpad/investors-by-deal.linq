@@ -7,14 +7,14 @@
   <Namespace>Unrect.Core</Namespace>
   <Namespace>Unrect.Spreadsheets</Namespace>
   <Namespace>Unrect.Projections</Namespace>
-  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Spreadsheets.ISheetCells&gt;</Namespace>
-  <Namespace>static Unrect.Spreadsheets.SheetProjectionBuilders&lt;Unrect.Spreadsheets.ISheetCells&gt;</Namespace>
+  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;</Namespace>
+  <Namespace>static Unrect.Spreadsheets.SpreadsheetProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;</Namespace>
 </Query>
 
 // The space is named once, in the query's namespace imports: the canonical vocabulary as
-// `using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>`, and the
+// `using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>`, and the
 // sheet's own readings — Text() and the Table<T> rungs used below — as
-// `using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>`.
+// `using static Unrect.Spreadsheets.SpreadsheetProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>`.
 var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\examples\investors-by-deal.xlsx");
 
 // One deal block: a deal-code cell over a table. Block extents are derived from what the
@@ -34,7 +34,7 @@ var deal = VerticalFlow(v => new
 // The report: that block, repeated, blank-row separated.
 var deals = VerticalRepeat(deal);
 
-deals.Map(SpreadsheetSpace.Create(path, "Investors")).Dump();
+deals.Map(SpreadsheetSpace.CreateWithFormulas(path, "Investors")).Dump();
 
 record DealTransaction(string AccountKey, string FundCode, string Name,
 					   string TransactionType, decimal Amount, DateTime TransferDate);

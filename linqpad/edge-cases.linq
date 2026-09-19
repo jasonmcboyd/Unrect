@@ -5,8 +5,8 @@
   <Reference Relative="..\src\Unrect.Interactive\bin\Debug\netstandard2.1\Unrect.Interactive.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Interactive\bin\Debug\netstandard2.1\Unrect.Interactive.dll</Reference>
   <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll</Reference>
   <Reference Relative="..\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll</Reference>
-  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Spreadsheets.ISheetCells&gt;</Namespace>
-  <Namespace>static Unrect.Spreadsheets.SheetProjectionBuilders&lt;Unrect.Spreadsheets.ISheetCells&gt;</Namespace>
+  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;</Namespace>
+  <Namespace>static Unrect.Spreadsheets.SpreadsheetProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;</Namespace>
   <Namespace>Unrect.Core</Namespace>
   <Namespace>Unrect.Interactive</Namespace>
   <Namespace>Unrect.Projections</Namespace>
@@ -14,8 +14,8 @@
 </Query>
 
 // The space is named once, in the query's namespace imports: the canonical vocabulary as
-// `using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>`, and the
-// sheet's own readings as `using static Unrect.Spreadsheets.SheetProjectionBuilders<...>`. That
+// `using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>`, and the
+// sheet's own readings as `using static Unrect.Spreadsheets.SpreadsheetProjectionBuilders<...>`. That
 // split IS this script's subject: every space answers the canonical questions — how big it is,
 // whether a cell is blank, whether a cell's text is its own value, and what a cell says — while a
 // kind is a claim only a sheet makes about its own cells, which is why the readings that assert one
@@ -25,8 +25,8 @@ var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\exam
 // The corner-case fixture (distilled from the real K-1 workbook):
 //   row 1: one of each ordinary kind      row 2: five error cells
 //   row 3: whitespace / empty / absent    row 4: the remaining two errors
-var defaultSpace = SpreadsheetSpace.Create(path, "Edges");
-var strictSpace = SpreadsheetSpace.Create(path, "Edges", isBlank: _ => false);
+var defaultSpace = SpreadsheetSpace.CreateWithFormulas(path, "Edges");
+var strictSpace = SpreadsheetSpace.CreateWithFormulas(path, "Edges", isBlank: _ => false);
 
 // A space has no indexer: the locator does the addressing. A plane is the 2-D one, and asking it for
 // a cell mints a point — an address, not a value, which is what every read below is written at.
@@ -59,7 +59,7 @@ new
 // 3. Blankness belongs to the adapter: the same whitespace row under both rules. IsText separates
 // a cell whose text is its own value from one that merely renders — the distinction the canonical
 // surface is built on.
-string Say(Point<ISheetCells> p) => $"{p.Describe()}, says {p.AsText() ?? "null"}, IsBlank={p.IsBlank}, IsText={p.IsText}";
+string Say(Point<ISpreadsheetSpace> p) => $"{p.Describe()}, says {p.AsText() ?? "null"}, IsBlank={p.IsBlank}, IsText={p.IsText}";
 new
 {
 	TwoSpaces_Default = Say(defaultSpace.At(0, 2)),
@@ -86,7 +86,7 @@ new
 // 5. Typed leaves speak the document's vocabulary: kinds for a kind mismatch, conversions for a
 // number that will not fit. Note that the error cell is reported as the Error it is, never as
 // "blank" — and that the sentence changes entirely when the number is genuinely there.
-string Message<T>(IProjectionDefinition<ISheetCells, T> projection)
+string Message<T>(IProjectionDefinition<ISpreadsheetSpace, T> projection)
 {
 	try { projection.Map(defaultSpace); return "no failure"; }
 	catch (ProjectionException failure) { return failure.Message.Split('\n')[0].TrimEnd('\r'); }

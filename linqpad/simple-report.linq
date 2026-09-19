@@ -4,21 +4,24 @@
   <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Engine.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Engine.dll</Reference>
   <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll</Reference>
   <Reference Relative="..\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll</Reference>
-  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Spreadsheets.ISheetCells&gt;</Namespace>
-  <Namespace>static Unrect.Spreadsheets.SheetProjectionBuilders&lt;Unrect.Spreadsheets.ISheetCells&gt;</Namespace>
+  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;</Namespace>
+  <Namespace>static Unrect.Spreadsheets.SpreadsheetProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;</Namespace>
   <Namespace>Unrect.Core</Namespace>
   <Namespace>Unrect.Projections</Namespace>
   <Namespace>Unrect.Spreadsheets</Namespace>
 </Query>
 
 // The space this file is written over is named ONCE — in two imports that say the same name:
-// `using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>` is the
-// vocabulary every space has, and `using static Unrect.Spreadsheets.SheetProjectionBuilders<...>`
+// `using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>` is the
+// vocabulary every space has, and `using static Unrect.Spreadsheets.SpreadsheetProjectionBuilders<...>`
 // adds the readings only a sheet can promise: Text(), Date(), Decimal(), and the Table<T> rungs
 // that assert a kind per member. Everything below is spelled with no prefix and no type argument.
-// A file that read formulas would name ISpreadsheetSpace in both lines and take its second from
-// SpreadsheetProjectionBuilders instead — never both sheet classes at once — and nothing else in
-// it would change.
+//
+// ISpreadsheetSpace is the FULL space — values, formulas, and what a cell looks like — and it is
+// the one to start a script in: `row["Amount"].Font()` and `Formula()` compile only over it, and
+// the space is fixed by these two imports, not by how the workbook is opened below. (The narrower
+// pair, ISheetCells with SheetProjectionBuilders, reads values alone — cheaper, and the only one
+// an .xls or a streamed Workbook can answer. Never both sheet classes in one file.)
 var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\examples\simple-report.xlsx");
 
 // The report definition: the region and the reading of it, fused into one value independent of
@@ -50,6 +53,6 @@ var report = VerticalFlow(v => new
 	Transactions = v.Next(transactions),
 });
 
-report.Map(SpreadsheetSpace.Create(path, "Report")).Dump();
+report.Map(SpreadsheetSpace.CreateWithFormulas(path, "Report")).Dump();
 
 record Transaction(string Client, DateTime Date, string Type, decimal Amount);

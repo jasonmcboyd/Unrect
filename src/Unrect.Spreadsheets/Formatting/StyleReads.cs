@@ -10,6 +10,14 @@ namespace Unrect.Spreadsheets
   /// to a sheet nobody looked at and quietly be told "black" — the file names
   /// <see cref="ISpreadsheetSpace"/> as its space, and the space is opened as one.
   /// </para>
+  /// <para>
+  /// <b>If <c>.Font()</c> will not compile</b> — "ISheetCells cannot be used as type parameter
+  /// TSpace", often reported on the call AROUND it, as an overload that was not found — the file's
+  /// <c>using static</c> lines name <see cref="ISheetCells"/>. A declaration's space is fixed by
+  /// those imports, not by how the workbook is opened: name <see cref="ISpreadsheetSpace"/> in both,
+  /// taking the second from <see cref="SpreadsheetProjectionBuilders{TSpace}"/>, and open the sheet
+  /// with <see cref="SpreadsheetSpace.CreateWithFormulas(string, string, bool, System.Func{Cell, bool})"/>.
+  /// </para>
   /// </summary>
   public static class StyleReads
   {

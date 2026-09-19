@@ -100,6 +100,12 @@ namespace Unrect.Spreadsheets
     /// row is the one a lambda table hands out, so cells are read by caption or by position and the
     /// reading may be anything the file's space can answer; a read that fails is located like any
     /// other, under the member's name.
+    /// <para>
+    /// A reading that does not compile reports itself here, as a <c>Column</c> overload that was not
+    /// found. The usual cause is a read the file's space cannot answer — <c>.Font()</c> in a file
+    /// whose <c>using static</c> lines name <see cref="ISheetCells"/> rather than
+    /// <see cref="ISpreadsheetSpace"/>.
+    /// </para>
     /// </summary>
     public TableBinding<TSpace, T> Column<TMember>(Expression<Func<T, TMember>> member, Func<TableRow<TSpace>, TMember> read)
     {

@@ -5,16 +5,16 @@
   <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Engine.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Engine.dll</Reference>
   <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll</Reference>
   <Reference Relative="..\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll</Reference>
-  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Spreadsheets.ISheetCells&gt;</Namespace>
-  <Namespace>static Unrect.Spreadsheets.SheetProjectionBuilders&lt;Unrect.Spreadsheets.ISheetCells&gt;</Namespace>
+  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;</Namespace>
+  <Namespace>static Unrect.Spreadsheets.SpreadsheetProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;</Namespace>
   <Namespace>Unrect.Core</Namespace>
   <Namespace>Unrect.Projections</Namespace>
   <Namespace>Unrect.Spreadsheets</Namespace>
 </Query>
 
 // The space is named once, in the query's namespace imports: the canonical vocabulary as
-// `using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>`, and the
-// sheet's own readings as `using static Unrect.Spreadsheets.SheetProjectionBuilders<...>`. The cell
+// `using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>`, and the
+// sheet's own readings as `using static Unrect.Spreadsheets.SpreadsheetProjectionBuilders<...>`. The cell
 // reads below — .Text(), .Date(), .Decimal() on a point — come with the same package
 // (Unrect.Spreadsheets), and for the same reason: a kind is a sheet's claim about its own cells.
 var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\examples\investor-summary.xlsx");
@@ -68,7 +68,7 @@ var report = VerticalFlow(v => new
 	Details = v.Next(details),
 });
 
-var result = report.Map(SpreadsheetSpace.Create(path, "Summary"));
+var result = report.Map(SpreadsheetSpace.CreateWithFormulas(path, "Summary"));
 
 // Cross-region correlations are post-parse validation, not decomposition.
 (result.Summary.Count == result.Details.Count).Dump("summary rows == detail blocks");

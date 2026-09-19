@@ -4,7 +4,7 @@
   <Reference Relative="..\src\Unrect\bin\Debug\netstandard2.1\Unrect.Engine.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect\bin\Debug\netstandard2.1\Unrect.Engine.dll</Reference>
   <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll</Reference>
   <Reference Relative="..\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll</Reference>
-  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Spreadsheets.ISheetCells&gt;</Namespace>
+  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;</Namespace>
   <Namespace>Unrect.Core</Namespace>
   <Namespace>Unrect.Projections</Namespace>
   <Namespace>Unrect.Spreadsheets</Namespace>
@@ -13,7 +13,7 @@
 // NOTE: examples/scrubbed-k1.xlsx is a LOCAL-ONLY fixture (gitignored, never committed).
 //
 // ONE root projection, ZERO hard-coded coordinates. The space is named once, in the query's
-// namespace imports: `using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>` —
+// namespace imports: `using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>` —
 // this file declares nothing that asserts a kind, so it takes only the canonical vocabulary; the
 // kinded READS below (.Text(), .Double(), .DecimalOrBlank()) are extensions on a point over a sheet,
 // and come with the `Unrect.Spreadsheets` namespace import rather than with a second builder class.
@@ -31,13 +31,13 @@
 //     the block finds itself by its own first label;
 //   - one `section` projection, declared once and placed twice under two different headings.
 var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\examples\scrubbed-k1.xlsx");
-var space = SpreadsheetSpace.Create(path, "Sheet1");
+var space = SpreadsheetSpace.CreateWithFormulas(path, "Sheet1");
 
 // A cell comes back as a place, and the reading is written at it: an ATAX code is either the words
 // in a text cell or a whole number, and the cell's own kind says which.
-string Code(Point<ISheetCells> cell) => cell.IsText ? cell.Text() : cell.IntegerOrBlank()?.ToString() ?? "";
+string Code(Point<ISpreadsheetSpace> cell) => cell.IsText ? cell.Text() : cell.IntegerOrBlank()?.ToString() ?? "";
 
-int Find(Point<ISheetCells>[] row, string caption) => Array.FindIndex(row,
+int Find(Point<ISpreadsheetSpace>[] row, string caption) => Array.FindIndex(row,
 	cell => cell.IsText && string.Equals(cell.Text().Trim(), caption, StringComparison.OrdinalIgnoreCase));
 
 // A full-width single row anchored by a content seek. AllColumns() is the declared spelling of
@@ -45,7 +45,7 @@ int Find(Point<ISheetCells>[] row, string caption) => Array.FindIndex(row,
 // caption band has gaps. The helper does NOT name what it returns: a name baked in here would call
 // every row the same thing at every use site, and the use site is the only place that knows which
 // row this is.
-IProjectionDefinition<ISheetCells, Point<ISheetCells>[]> FullRow(string anchor) =>
+IProjectionDefinition<ISpreadsheetSpace, Point<ISpreadsheetSpace>[]> FullRow(string anchor) =>
 	On(RowContaining(anchor))
 		.Row(AllColumns(), r => r.ToArray());
 
@@ -116,7 +116,7 @@ var report = VerticalFlow(v => new
 	var head = r.Head;
 
 	// Every coded row across both sections, pivot-neutral.
-	var allRows = r.K1Rows.Concat(r.PortfolioRows ?? Array.Empty<Point<ISheetCells>[]>())
+	var allRows = r.K1Rows.Concat(r.PortfolioRows ?? Array.Empty<Point<ISpreadsheetSpace>[]>())
 		.Where(row => row[head.AtaxColumn].HasValue)
 		.ToArray();
 
