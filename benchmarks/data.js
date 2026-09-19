@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789796483472,
+  "lastUpdate": 1789796483735,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -9842,6 +9842,65 @@ window.BENCHMARK_DATA = {
           {
             "name": "Unrect.Benchmarks.Tables.Bound_ProjectionConstruction",
             "value": 13570,
+            "unit": "bytes"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "717d1ea3b61c226c608194aae5ff909fd4603455",
+          "message": "Packaging: Unrect.Interactive ships as its own package\n\nThe project was already packable — id, description, tags, and a\ndependency on exactly Unrect and Unrect.Spreadsheets at the same MinVer\nversion — but the release workflow packed and asserted two packages, and\nthe README and build props named two. Now three.\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>",
+          "timestamp": "2026-09-19T01:12:25Z",
+          "tree_id": "f01ec5a705245aededd07d5455e7b03ad4f8880d",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/717d1ea3b61c226c608194aae5ff909fd4603455"
+        },
+        "date": 1789796483649,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Tables.Lambda_10k",
+            "value": 2709882,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Lambda_100k",
+            "value": 25495247,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Bound_10k",
+            "value": 96301282,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Bound_100k",
+            "value": 956077408,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Dictionary_10k",
+            "value": 5749014,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Dictionary_100k",
+            "value": 55894328,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Bound_ProjectionConstruction",
+            "value": 14074,
             "unit": "bytes"
           }
         ]
