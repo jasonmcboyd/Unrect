@@ -80,6 +80,9 @@ namespace Unrect.Projections
     /// </summary>
     internal ProjectionException Failure(string problem) => Scope.Failure(problem, Space);
 
+    /// <summary>A diagnostic about this strip, located as its failure would be and not thrown.</summary>
+    internal void Note(DiagnosticSeverity severity, string problem) => Scope.Report(severity, Failure(problem));
+
     private Offset Step(int index) => Orientation == Orientation.Horizontal ? new Offset(index, 0) : new Offset(0, index);
 
     private void Validate(int index)

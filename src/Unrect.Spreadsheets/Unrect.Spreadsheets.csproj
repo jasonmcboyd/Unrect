@@ -23,6 +23,10 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Unrect.Tests" />
     <InternalsVisibleTo Include="Unrect.Benchmarks" />
+    <!-- The forgiving table is reached through Unrect.Interactive ALONE, which is the point of the
+         grant: a shipped declaration does not reference that package, so SpreadsheetProjections.LooseTable
+         cannot be switched on from production code without a reference a reviewer can see. -->
+    <InternalsVisibleTo Include="Unrect.Interactive" />
   </ItemGroup>
 
   <!-- The Unrect.Engine PROJECT, which produces the "Unrect" package: this is what makes this

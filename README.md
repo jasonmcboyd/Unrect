@@ -35,7 +35,11 @@ declaration as C# source to dump, paste and edit — `LabelsIn.Column` reads a c
 a column, the same way. Both are also leaves (`using static Unrect.Interactive.ScaffoldBuilders<ISheetCells>;`
 then `v.Next(ScaffoldRecord("Transaction"))`), so a half-written declaration can guess the types
 of the tables it has already found; paste the type and swap the leaf for `Table<Transaction>()`.
-Nothing in a shipping declaration needs it.
+While a type is still being written, `LooseTable<T>()` (from
+`Unrect.Interactive.ExploratoryBuilders<TSpace>`) is `Table<T>()` with its one strictness relaxed: a
+member no column binds is left at its default with a warning, and the columns no member reads are
+listed — drop the package reference when the script ships, and each one is a rename back to
+`Table<T>()`. Nothing in a shipping declaration needs it.
 
 `GridSpace` ships in the `Unrect` package for exactly that case:
 `GridSpace.Create(values, isBlank: ...)` turns a plain 2D array into a space, deciding

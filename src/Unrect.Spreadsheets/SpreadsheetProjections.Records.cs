@@ -122,10 +122,31 @@ namespace Unrect.Spreadsheets
         ?? throw new ArgumentException("The binding lambda returned null.", nameof(bind)),
         typeof(TSpace));
 
-    private static IProjectionDefinition<TSpace, IReadOnlyList<T>> Bound<TSpace, T>(RowBinding<T> plan, BlankRowStrategy onBlank)
+    /// <summary>
+    /// The exploratory table <c>Unrect.Interactive</c> offers: the same projection as
+    /// <see cref="Table{TSpace, T}(Func{TableBinding{TSpace, T}, TableBinding{TSpace, T}}, BlankRowStrategy)"/>
+    /// with its one strictness switched. A member no column binds is left at its default and said
+    /// so in a Warning, and the columns no member reads are listed in an Info — the two things a
+    /// type still being written wants to be told. Everything else fails as it always does.
+    /// <para>
+    /// Internal, and reached only through that package on purpose: a shipped declaration does not
+    /// reference it, so a forgiving table cannot reach production without a package reference a
+    /// reviewer can see.
+    /// </para>
+    /// </summary>
+    internal static IProjectionDefinition<TSpace, IReadOnlyList<T>> LooseTable<TSpace, T>(
+      Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>>? bind,
+      BlankRowStrategy onBlank)
+      where TSpace : class, ISheetCells
+      => Bound<TSpace, T>(
+        bind is null ? RowBinding<T>.Create<TSpace>(null, typeof(TSpace)) : Planned<TSpace, T>(bind),
+        onBlank,
+        loose: true);
+
+    private static IProjectionDefinition<TSpace, IReadOnlyList<T>> Bound<TSpace, T>(RowBinding<T> plan, BlankRowStrategy onBlank, bool loose = false)
       where TSpace : class, ISheetCells
       => ProjectionBuilders<TSpace>
-        .Table(headerRows: 1, eachRow: labels => RecordRow<TSpace, T>(plan, labels), onBlank, declared: null)
+        .Table(headerRows: 1, eachRow: labels => RecordRow<TSpace, T>(plan, labels, loose), onBlank, declared: null)
         .AsUnit($"Table<{typeof(T).Name}>");
 
     /// <summary>
@@ -138,14 +159,17 @@ namespace Unrect.Spreadsheets
     /// says so in one sentence rather than three files later.
     /// </para>
     /// </summary>
-    private static IProjectionDefinition<TSpace, T> RecordRow<TSpace, T>(RowBinding<T> plan, LabelMap labels)
+    private static IProjectionDefinition<TSpace, T> RecordRow<TSpace, T>(RowBinding<T> plan, LabelMap labels, bool loose = false)
       where TSpace : class, ISheetCells
     {
-      var columns = Columns<T>(plan, labels);
+      var columns = Columns<T>(plan, labels, loose);
       var members = new IProjectionDefinition<TSpace, object?>[plan.Members.Count];
 
       for (var member = 0; member < members.Length; member++)
-        members[member] = plan.Members[member].Reading is Func<object, object?> reading
+        members[member] = columns[member] == Unbound
+          // A loose table's member that found no column: its default, read from nowhere.
+          ? Defaulted<TSpace>(plan.Members[member])
+          : plan.Members[member].Reading is Func<object, object?> reading
           // The member's own reading of the row: the whole band, under the table's captions.
           ? ProjectionBuilders<TSpace>.Record(row => reading(row)).AsUnit($"member '{plan.Members[member].Name}'")
           : ProjectionBuilders<TSpace>
@@ -177,7 +201,26 @@ namespace Unrect.Spreadsheets
     /// example names an UNBOUND member: advice pointing at a member which already found its column
     /// would send a reader to fix the one thing that is not broken.
     /// </summary>
-    private static int[] Columns<T>(RowBinding<T> plan, LabelMap labels)
+    private const int Unbound = -1;
+    private const int FromRow = -2;
+
+    /// <summary>What a member no column binds is left holding: null where it can hold one, its type's default where it cannot.</summary>
+    private static object? Default(MemberPlan member)
+      => member.BlankTolerant || !member.Type.IsValueType ? null : Activator.CreateInstance(member.Type);
+
+    /// <summary>
+    /// The member as a projection that reads nothing. Its own method so that the value is computed
+    /// here, once, rather than captured with a loop variable that has moved on by the time it runs.
+    /// </summary>
+    private static IProjectionDefinition<TSpace, object?> Defaulted<TSpace>(MemberPlan member)
+      where TSpace : class, ISheetCells
+    {
+      var value = Default(member);
+
+      return ProjectionBuilders<TSpace>.Record(_ => value).AsUnit($"member '{member.Name}'");
+    }
+
+    private static int[] Columns<T>(RowBinding<T> plan, LabelMap labels, bool loose = false)
     {
       var columns = new int[plan.Members.Count];
       var unbound = new List<string>();
@@ -186,7 +229,10 @@ namespace Unrect.Spreadsheets
       {
         // Filled from the row: it reads no column of its own.
         if (plan.Members[member].Reading is not null)
+        {
+          columns[member] = FromRow;
           continue;
+        }
 
         // Bound by position: the caption is not consulted, so neither a missing one nor a
         // duplicated one is this member's problem. The table has to be that wide.
@@ -206,11 +252,20 @@ namespace Unrect.Spreadsheets
         // A member with no column joins the aggregate below; one with two is a table nobody can read
         // by name, and it says so at once, naming the member rather than the caption.
         if (matches.Count == 0)
+        {
           unbound.Add(plan.Members[member].Name);
+          columns[member] = Unbound;
+        }
         else if (matches.Count > 1)
           throw Ambiguous<T>(labels, plan.Members[member], matches);
         else
           columns[member] = matches[0];
+      }
+
+      if (loose)
+      {
+        Tell<T>(plan, labels, columns, unbound);
+        return columns;
       }
 
       if (unbound.Count == 0)
@@ -220,6 +275,30 @@ namespace Unrect.Spreadsheets
         $"no column binds {Join(unbound.Select(name => $"{typeof(T).Name}.{name}").ToList())}; the table's captions are "
         + $"{string.Join(", ", labels.Labels.Select(caption => $"'{caption}'"))}. "
         + $"Bind one with Column(t => t.{unbound[0]}, \"…\") or drop it with Ignore(t => t.{unbound[0]})");
+    }
+
+    /// <summary>
+    /// What a loose table says where a strict one would have refused or stayed silent: the members
+    /// that found no column, and the columns no member reads by name.
+    /// </summary>
+    private static void Tell<T>(RowBinding<T> plan, LabelMap labels, int[] columns, List<string> unbound)
+    {
+      if (unbound.Count > 0)
+        labels.Note(
+          DiagnosticSeverity.Warning,
+          $"no column binds {Join(unbound.Select(name => $"{typeof(T).Name}.{name}").ToList())}, left at "
+          + $"{(unbound.Count == 1 ? "its default" : "their defaults")}; the table's captions are "
+          + string.Join(", ", labels.Labels.Where(caption => caption.Length > 0).Select(caption => $"'{caption}'")));
+
+      var unread = Enumerable.Range(0, labels.Labels.Count)
+        .Where(column => labels.Labels[column].Length > 0 && !columns.Contains(column))
+        .Select(column => $"'{labels.Labels[column]}'")
+        .ToList();
+
+      if (unread.Count > 0)
+        labels.Note(
+          DiagnosticSeverity.Info,
+          $"no member of {typeof(T).Name} reads the column{(unread.Count == 1 ? string.Empty : "s")} {string.Join(", ", unread)}");
     }
 
     /// <summary>

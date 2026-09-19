@@ -164,6 +164,12 @@ namespace Unrect.Projections
       return matches;
     }
 
+    /// <summary>
+    /// Says <paramref name="problem"/> about the table as a diagnostic rather than a failure. A map
+    /// of literals has no header to say it about, and says nothing.
+    /// </summary>
+    internal void Note(DiagnosticSeverity severity, string problem) => _header?.Note(severity, problem);
+
     private ProjectionException Ambiguous(string caption, IReadOnlyList<int> matches)
       => Header.Failure(
         $"the caption '{caption}' matches the columns at "
@@ -229,6 +235,8 @@ namespace Unrect.Projections
 
     public ProjectionException Failure(string problem) => _header.Failure(problem);
 
+    public void Note(DiagnosticSeverity severity, string problem) => _header.Note(severity, problem);
+
     public ProjectionLocation AddressOf(int column) => _header.AddressOf(column);
 
     private Dictionary<string, List<int>> BuildColumnsByName()
@@ -261,6 +269,9 @@ namespace Unrect.Projections
   {
     /// <summary>A failure blaming the table itself — its origin, its extent.</summary>
     ProjectionException Failure(string problem);
+
+    /// <summary>The same sentence as a diagnostic: said about the table, and not thrown.</summary>
+    void Note(DiagnosticSeverity severity, string problem);
 
     /// <summary>The address of the header cell at <paramref name="column"/>.</summary>
     ProjectionLocation AddressOf(int column);
