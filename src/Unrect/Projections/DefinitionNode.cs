@@ -64,6 +64,14 @@ namespace Unrect.Projections
     /// <summary>Whether this node is a <see cref="CollectorNode{TSpace, TResult}"/>: one that reads its region whole once the spans it was fed are known.</summary>
     internal virtual bool Collects => false;
 
+    /// <summary>
+    /// The axis this node's children step over blank spans along when they declare no offset of
+    /// their own, given the axis the run reads its source in; null where a child starts exactly
+    /// where it is put. A flow and a repeat answer their own axis, an overlay the run's — and the
+    /// machine of each passes the same answer when it starts a child.
+    /// </summary>
+    internal virtual Orientation? LeadsChildren(Orientation session) => null;
+
     /// <summary>Children are the whole truth by default; a layout overrides this to say why they are not.</summary>
     public virtual string? Opacity => null;
 

@@ -274,7 +274,7 @@ namespace Unrect.Projections
     where TSpace : class, ISpace
   {
     /// <summary>Starts the child under the push engine, behind its placement machine, at <paramref name="edge"/>.</summary>
-    public abstract IChildHandle<TSpace> Start(ProjectorScope<TSpace> scope, Child edge, Plane<TSpace> anchor);
+    public abstract IChildHandle<TSpace> Start(ProjectorScope<TSpace> scope, Child edge, Plane<TSpace> anchor, Orientation? leadingBlanks = null);
   }
 
   internal sealed class LayoutRunner<TSpace, T> : LayoutRunner<TSpace>
@@ -284,7 +284,7 @@ namespace Unrect.Projections
 
     private IProjectionDefinition<TSpace, T> Projection { get; }
 
-    public override IChildHandle<TSpace> Start(ProjectorScope<TSpace> scope, Child edge, Plane<TSpace> anchor)
-      => scope.Start(edge, Projection, anchor);
+    public override IChildHandle<TSpace> Start(ProjectorScope<TSpace> scope, Child edge, Plane<TSpace> anchor, Orientation? leadingBlanks = null)
+      => scope.Start(edge, Projection, anchor, leadingBlanks: leadingBlanks);
   }
 }

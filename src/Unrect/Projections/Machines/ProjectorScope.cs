@@ -129,6 +129,9 @@ namespace Unrect.Projections
     /// <summary>The axis the driver offers spans along.</summary>
     internal abstract Orientation Driver { get; }
 
+    /// <summary>The axis the run reads its source along; a re-driven node does not change it.</summary>
+    internal abstract Orientation Session { get; }
+
     /// <summary>Where a machine started under this scope would begin — used only when it is never offered a span.</summary>
     internal abstract Plane<TSpace> Anchor { get; }
 
@@ -150,7 +153,7 @@ namespace Unrect.Projections
     /// <paramref name="strict"/> false makes a placement failure a refusal the parent reads off the
     /// handle rather than a thrown failure — a repeat's stopping condition.
     /// </summary>
-    internal abstract IChildHandle<TSpace, T> Start<T>(Child edge, IProjectionDefinition<TSpace, T> definition, Plane<TSpace> anchor, int? occurrence = null, bool strict = true, bool inheritSite = false);
+    internal abstract IChildHandle<TSpace, T> Start<T>(Child edge, IProjectionDefinition<TSpace, T> definition, Plane<TSpace> anchor, int? occurrence = null, bool strict = true, bool inheritSite = false, Orientation? leadingBlanks = null);
 
     /// <summary>Drives <paramref name="machine"/> over <paramref name="region"/> along <paramref name="along"/> (or as one span when null) and closes it.</summary>
     internal abstract Settlement<T> Drive<T>(IProjector<TSpace, T> machine, Plane<TSpace> region, Orientation? along);

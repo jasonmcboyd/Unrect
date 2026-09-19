@@ -33,6 +33,8 @@ namespace Unrect.Projections
 
     public override Axes Axis => Orientation.Of();
 
+    internal override Orientation? LeadsChildren(Orientation session) => Orientation;
+
     public override IProjector<TSpace, T> Build(ProjectorScope<TSpace> scope) => new Machine(this, scope);
 
     /// <summary>
@@ -127,7 +129,7 @@ namespace Unrect.Projections
           ? Spans.EmptyAt(first, _length, _along)
           : _scope.Anchor;
 
-        return _flow.Layout.Runners[index].Start(_scope, _flow.Layout.Children[index], anchor);
+        return _flow.Layout.Runners[index].Start(_scope, _flow.Layout.Children[index], anchor, leadingBlanks: _along);
       }
 
       private void CloseCurrent()

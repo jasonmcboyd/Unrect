@@ -20,6 +20,8 @@ namespace Unrect.Projections
     public override string Description => "Overlay";
 
     /// <summary>An overlay streams along whatever axis every child streams along: its children run concurrently on the same spans.</summary>
+    internal override Orientation? LeadsChildren(Orientation session) => session;
+
     public override Axes Axis
     {
       get
@@ -114,7 +116,7 @@ namespace Unrect.Projections
         _started = true;
 
         for (var index = 0; index < _open.Length; index++)
-          _open[index] = _overlay.Layout.Runners[index].Start(_scope, _overlay.Layout.Children[index], anchor);
+          _open[index] = _overlay.Layout.Runners[index].Start(_scope, _overlay.Layout.Children[index], anchor, leadingBlanks: _scope.Session);
       }
 
       private void CloseChild(int index)

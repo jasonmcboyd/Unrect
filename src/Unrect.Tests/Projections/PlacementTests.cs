@@ -165,12 +165,14 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void OffsetOnTheFirstChild_PositionsThatChildOnly()
     {
-      var space = Grid(new[,] { { 0 }, { 1 }, { 2 }, { 0 } });
+      // A distance over a row that holds something. A blank row would not show the difference: it is
+      // a gap, and a flow with no offset of its own steps over a gap whoever else declares what.
+      var space = Grid(new[,] { { 7 }, { 1 }, { 2 }, { 0 } });
 
-      var first = AfterBlankRows().Of(IntCell());
+      var first = Down(1).Of(IntCell());
       var applied = VerticalFlow(v => $"{v.Next(first)}|{v.Next(IntCell())}").Apply(space);
 
-      // Same values, but the flow itself starts at the origin and therefore consumes the blank row.
+      // The flow itself starts at the origin and therefore consumes the row its child stepped over.
       Assert.Equal("1|2", applied.Value);
       Assert.Equal(0, applied.Offset.Size.Height);
       Assert.Equal(3, applied.Consumed.Height);
@@ -288,10 +290,9 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void TheReplaceLaw_OnTheColumnAxis_TheThreeCanonicalScenarios()
     {
-      // Spec §7's three canonical scenarios, on the column axis so replace and compose land on
-      // different columns. Content is indented one column (the leftmost column is entirely blank),
-      // so a bare Right(1) that REPLACES the self-locate reads a different column set than one that
-      // COMPOSES onto it.
+      // The three canonical scenarios on the column axis. Content is indented one column (the
+      // leftmost column is entirely blank). A table starts at the left edge of what it is handed and
+      // nothing moves it across by default, so where its columns begin is what each spelling says.
       var space = Mixed(new object?[,]
       {
         { null, "Investor", "Amount" },
@@ -299,19 +300,19 @@ namespace Unrect.Tests.Projections
         { null, "Beta", 20 },
       });
 
-      // (1) Table() with no pipeline offset: SkipToFirstNonBlankCell self-locates onto the first
-      // content cell (column 1), so the discovered block reads both content columns.
-      Assert.Equal(new[] { "Investor", "Amount" }, Table(t => t.ColumnNames).Map(space));
+      // (1) Table() with nothing declared: the column the header leaves blank on the way to its
+      // first caption is a column of the table that has no label. It is in the set, under no name,
+      // and nothing binds to it by one.
+      Assert.Equal(new[] { "", "Investor", "Amount" }, Table(t => t.ColumnNames).Map(space));
 
-      // (2) Right(1).Of(Table()) REPLACES the default: the table's left edge is at column 1, NOT
-      // self-locate + 1. It reads the same two columns as the default. Were Right(1) to compose onto
-      // the self-locate (the old semantics), the origin would be column 2 and the read would be the
-      // single column ["Amount"].
+      // (2) Right(1).Of(Table()) says where the table starts: its left edge is column 1, and the
+      // columns are the two that carry captions.
       Assert.Equal(new[] { "Investor", "Amount" }, Right(1).Of(Table(t => t.ColumnNames)).Map(space));
 
-      // (3) SkipToFirstNonBlankCell().Right(1).Of(Table()) COMPOSES: the explicit skip replaces the
-      // default and marks the offset declared, then Right(1) composes onto it — self-locate to
-      // column 1, then one column right to column 2 — reading the single column ["Amount"].
+      // (3) SkipToFirstNonBlankCell().Right(1).Of(Table()) COMPOSES: the explicit skip is a declared
+      // offset, and Right(1) composes onto it — to the first content cell at column 1, then one
+      // column right to column 2 — reading the single column ["Amount"]. The same skip alone is how
+      // a declaration asks for a table that begins at its first caption.
       Assert.Equal(
         new[] { "Amount" },
         SkipToFirstNonBlankCell().Right(1).Of(Table(t => t.ColumnNames)).Map(space));

@@ -16,17 +16,22 @@ namespace Unrect.Spreadsheets
   public sealed class TableBinding<T>
   {
     internal TableBinding()
-      : this(new Dictionary<string, string>(StringComparer.Ordinal), new List<string>())
+      : this(new Dictionary<string, string>(StringComparer.Ordinal), new Dictionary<string, int>(StringComparer.Ordinal), new List<string>())
     {
     }
 
-    private TableBinding(IReadOnlyDictionary<string, string> captions, IReadOnlyCollection<string> ignored)
+    private TableBinding(
+      IReadOnlyDictionary<string, string> captions,
+      IReadOnlyDictionary<string, int> positions,
+      IReadOnlyCollection<string> ignored)
     {
       Captions = captions;
+      Positions = positions;
       Ignored = ignored;
     }
 
     internal IReadOnlyDictionary<string, string> Captions { get; }
+    internal IReadOnlyDictionary<string, int> Positions { get; }
     internal IReadOnlyCollection<string> Ignored { get; }
 
     /// <summary>
@@ -43,14 +48,38 @@ namespace Unrect.Spreadsheets
       if (string.IsNullOrWhiteSpace(caption))
         throw new ArgumentException("A column caption cannot be empty or whitespace.", nameof(caption));
 
-      if (Captions.ContainsKey(name))
+      if (Captions.ContainsKey(name) || Positions.ContainsKey(name))
         throw new ArgumentException($"{typeof(T).Name}.{name} is bound twice.", nameof(member));
 
       var captions = Captions.ToDictionary(bound => bound.Key, bound => bound.Value, StringComparer.Ordinal);
 
       captions.Add(name, caption);
 
-      return new TableBinding<T>(captions, Ignored);
+      return new TableBinding<T>(captions, Positions, Ignored);
+    }
+
+    /// <summary>
+    /// Binds one member to a column by position — <c>Column(t =&gt; t.Amount, 3)</c> — for the column
+    /// a caption cannot reach: one whose header cell is blank, or one of two that carry the same
+    /// caption. The position is counted from the table's left edge, as <c>row[3]</c> counts it, and
+    /// whatever caption that column has is not consulted. A position the table turns out not to
+    /// have is a failure when the table is read, citing its header.
+    /// </summary>
+    public TableBinding<T> Column<TMember>(Expression<Func<T, TMember>> member, int index)
+    {
+      var name = MemberName(member, nameof(member), nameof(Column));
+
+      if (index < 0)
+        throw new ArgumentOutOfRangeException(nameof(index), index, "A column position cannot be negative.");
+
+      if (Captions.ContainsKey(name) || Positions.ContainsKey(name))
+        throw new ArgumentException($"{typeof(T).Name}.{name} is bound twice.", nameof(member));
+
+      var positions = Positions.ToDictionary(bound => bound.Key, bound => bound.Value, StringComparer.Ordinal);
+
+      positions.Add(name, index);
+
+      return new TableBinding<T>(Captions, positions, Ignored);
     }
 
     /// <summary>
@@ -69,7 +98,7 @@ namespace Unrect.Spreadsheets
       if (!ignored.Contains(name, StringComparer.Ordinal))
         ignored.Add(name);
 
-      return new TableBinding<T>(Captions, ignored);
+      return new TableBinding<T>(Captions, Positions, ignored);
     }
 
     /// <summary>

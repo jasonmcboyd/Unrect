@@ -44,6 +44,8 @@ namespace Unrect.Projections
     /// <summary>Along its orientation: a repeat walks occurrence by occurrence, each a band along it.</summary>
     public override Axes Axis => Orientation.Of();
 
+    internal override Orientation? LeadsChildren(Orientation session) => Orientation;
+
     private bool SeparatorStreams => Separator is null || Separator.Begin(Orientation).Incremental;
 
     /// <summary>A separator with no per-span form is asked over the whole gap, so the repeat must have its extent first.</summary>
@@ -245,7 +247,8 @@ namespace Unrect.Projections
           _repeat.Item,
           _first is Plane<TSpace> first ? Spans.EmptyAt(first, at, Along) : _scope.Anchor,
           occurrence: _values.Count,
-          strict: false);
+          strict: false,
+          leadingBlanks: Along);
       }
 
       /// <summary>

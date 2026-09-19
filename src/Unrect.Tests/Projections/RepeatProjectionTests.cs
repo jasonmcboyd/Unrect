@@ -85,17 +85,17 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void Repeat_LeavesATrailingBlankBandForWhateverFollowsIt()
     {
-      // The consequence of not swallowing the band: a sibling after the repeat still sees it. The
-      // explicit 1x2 extent is the assertion — it only fits because both blank rows are still
-      // there.
-      var space = Grid(new[,] { { 1 }, { 0 }, { 2 }, { 0 }, { 0 } });
+      // The consequence of not swallowing the band: it is still there for the sibling after the
+      // repeat, which steps over it like any other gap and reads what follows. The sibling declares
+      // a distance so that the band has to be there to be counted: two rows down from where the
+      // repeat stopped is the row after the band.
+      var space = Mixed(new object?[,] { { 1 }, { null }, { 2 }, { null }, { null }, { "end" } });
 
-      var items = VerticalRepeat(Range(1, 1, b => b[0, 0].Integer()), separatedBy: BlankRows());
-      var band = Range(1, 2, b => b.Height);
+      var items = Until(RowContaining("end")).Of(VerticalRepeat(Range(1, 1, b => b[0, 0].Integer())));
 
-      var read = VerticalFlow(v => $"{string.Join(",", v.Next(items))}|{v.Next(band)}").Map(space);
+      var read = VerticalFlow(v => $"{string.Join(",", v.Next(items))}|{v.Next(Text())}").Map(space);
 
-      Assert.Equal("1,2|2", read);
+      Assert.Equal("1,2|end", read);
     }
 
     [Fact]
@@ -189,9 +189,10 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void Repeat_WhenAProjectionInsideTheItemThrows_Propagates()
     {
-      // A leaf has no notion of "value bearing", so a trailing blank is a read failure rather than
-      // a stopping condition — and the repeat surfaces it.
-      var space = Grid(new[,] { { 1 }, { 2 }, { 0 } });
+      // A leaf has no notion of "value bearing", so a cell of the wrong kind is a read failure
+      // rather than a stopping condition — and the repeat surfaces it. (A trailing BLANK row is a
+      // gap: the next attempt steps over it, finds nothing, and the run ends.)
+      var space = Mixed(new object?[,] { { 1 }, { 2 }, { "x" } });
 
       var failure = Assert.Throws<ProjectionException>(() => VerticalRepeat(IntCell()).Map(space));
 
@@ -216,11 +217,11 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void Repeat_WithoutASeparator_TreatsATrailingBlankBandAsFormatDrift()
+    public void Repeat_WithoutASeparator_EndsAtATrailingBlankBandAsItDoesWithOne()
     {
-      // A separator is what tells a repeat that a blank band ends the run. Without one the item is
-      // applied to the band and fails loudly — separatedBy is load-bearing for termination, not
-      // just for skipping gaps.
+      // An item steps over the blank rows in front of it like any other projection, so the next
+      // attempt over a trailing band finds nothing but blanks — which is no next item, not an item
+      // that failed. A blank separator says nothing the default does not.
       var space = Mixed(new object?[,]
       {
         { "A-1", null },
@@ -237,15 +238,7 @@ namespace Unrect.Tests.Projections
         return code;
       });
 
-      var failure = Assert.Throws<ProjectionException>(() => VerticalRepeat(item).Map(space));
-
-      // The item's first child is a Text leaf and the band is blank, so what the repeat surfaces is
-      // that read, said plainly. Until phase 6 this was "the projection threw
-      // InvalidOperationException: ..." — the generic wrapper, because the leaf threw one.
-      Assert.Contains("expected Text at A4, found Blank", failure.Message);
-      Assert.Contains("VerticalRepeat[1]", failure.Path);
-
-      // Declared with the separator, the same projection over the same space stops cleanly.
+      Assert.Equal(new[] { "A-1" }, VerticalRepeat(item).Map(space));
       Assert.Equal(new[] { "A-1" }, VerticalRepeat(item, separatedBy: BlankRows()).Map(space));
     }
 
@@ -504,11 +497,11 @@ namespace Unrect.Tests.Projections
     public void Repeat_OfRecords_IsEndedByALandmarkAndNotByABlankRow()
     {
       // A record's one-row band has no content rule of its own, so nothing about a blank row stops a
-      // repeat: the bare walk reads every row of the sheet, blank one included, and carries on into
-      // the trailing content. Ending the walk is a declared bound's job.
+      // repeat: the bare walk steps over the blank row as the gap it is and carries on into the
+      // trailing content. Ending the walk is a declared bound's job.
       var sheet = RecordsThenTrailingContent();
 
-      Assert.Equal(new[] { 0, 1, 2, 3, 4 }, VerticalRepeat(Record((TableRow<ISheetCells> row) => row.Index)).Map(sheet));
+      Assert.Equal(new[] { 0, 1, 2, 3 }, VerticalRepeat(Record((TableRow<ISheetCells> row) => row.Index)).Map(sheet));
 
       // The same walk under .Until: the bound ends just before the blank row, and is consumed in
       // full, so the trailing content is left where the next sibling would find it.

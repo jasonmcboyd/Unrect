@@ -14,14 +14,11 @@ using static Unrect.Tests.ProjectionTestSpaces;
 namespace Unrect.Tests.Projections
 {
   /// <summary>
-  /// A <c>Table</c>'s default offset is <see cref="OffsetStrategies.SkipToFirstNonBlankCell"/>: down
-  /// to the first content row, then across to its first non-blank cell, so a table self-locates on
-  /// both axes. On a table whose content starts at column 0 it lands where
-  /// <see cref="OffsetStrategies.SkipBlankRows"/> would; it differs only when the first content row
-  /// starts past column 0, which is the self-location it exists for (pinned as the headline in
-  /// <c>LabeledAxisPrimitivesTests.ADefaultTableNowSelfLocatesOntoAColumnIndentedRegion</c>). These
-  /// pins cover the column-0 agreement, the accepted ragged residual, and the orthogonality with
-  /// <c>onBlank</c>.
+  /// A <c>Table</c> declares no offset of its own: like anything else it starts past the blank
+  /// spans in front of it, at the left edge of what it is handed. Columns its header leaves blank on
+  /// the way to the first caption are columns of the table with no label. These pins cover the
+  /// agreement with <see cref="OffsetStrategies.SkipBlankRows"/>, the ragged table that keeps its
+  /// left part, and the orthogonality with <c>onBlank</c>.
   /// </summary>
   public class TableDefaultOffsetTests
   {
@@ -53,28 +50,43 @@ namespace Unrect.Tests.Projections
     // --- 2. the ragged residual, pinned as EXPECTED (not a bug) ------------------------------------
 
     [Fact]
-    public void ARaggedHeaderlessTableLandsAtTheFirstRowsCornerAndLosesTheLeftPart_TheDocumentedMiss()
+    public void ARaggedHeaderlessTableKeepsItsLeftPart()
     {
-      // The accepted residual (mirroring the strategy-level pin
-      // OffsetStrategyTests.SkipToFirstNonBlankCell_OnARaggedRegion_...): the offset finds the FIRST
-      // content row's corner, which is the region's true corner only when it is top-left-aligned.
-      // Here the first content row starts at column 1, but a lower row reaches back to column 0 — so
-      // the origin lands at (1, 0), the discovered block spans column 1 only, and the lower-left 99m
-      // is orphaned rather than read.
-      //
-      // This is EXPECTED, not a bug. A ragged table's escape hatch is an explicit offset (Right(n),
-      // OffsetBy) or SkipEmptyRowsAndColumns — where a headerless, non-top-left table is meant to go.
+      // Once a documented miss: the table used to step across to its first row's first non-blank
+      // cell, so a lower row that reached back to column 0 lost what it had there, silently. A table
+      // starts at the left edge of what it is handed, so the column is part of it — blank in the
+      // first row, 99 in the second — and nothing is dropped.
       var ragged = Mixed(new object?[,]
       {
-        { null, 10m },     // r0: first content cell at column 1 (C0 = 1)
-        { 99m, 20m },      // r1: reaches back to column 0, LEFT of the first row's corner
+        { null, 10m },     // r0: first content cell at column 1
+        { 99m, 20m },      // r1: reaches back to column 0
       });
 
-      IReadOnlyList<decimal> read = Table(0, r => r[0].Decimal()).Map(ragged);
+      IReadOnlyList<(decimal? Left, decimal Right)> read = Table(0, r => (r[0].DecimalOrBlank(), r[1].Decimal())).Map(ragged);
 
-      // Column 1 read for both rows; the 99m in column 0 is lost. A non-ragged read would have
-      // included it — the miss is silent by design, which is why it is pinned here.
-      Assert.Equal(new[] { 10m, 20m }, read);
+      Assert.Equal(new (decimal?, decimal)[] { (null, 10m), (99m, 20m) }, read);
+
+      // A declaration that wants the old landing says so, and gets it — with the old miss.
+      Assert.Equal(
+        new[] { 10m, 20m },
+        SkipToFirstNonBlankCell().Of(Table(0, r => r[0].Decimal())).Map(ragged));
+    }
+
+    [Fact]
+    public void AValueFurtherDownALeadingColumnDoesNotMoveWhereTheTableBegins()
+    {
+      // The lead — the columns a header leaves blank before its first caption — is settled by the
+      // first row alone. A stray label in column A three rows down is a cell of an unlabeled column,
+      // not a reason for the table to become one column wide.
+      var sheet = Mixed(new object?[,]
+      {
+        { null, "Name", "Amount" },
+        { null, "Acme", 10m },
+        { "Total", null, 10m },
+      });
+
+      Assert.Equal(new[] { "", "Name", "Amount" }, Table(t => t.ColumnNames).Map(sheet));
+      Assert.Equal(new[] { 10m, 10m }, Table(r => r["Amount"].Decimal()).Map(sheet));
     }
 
     // --- 3. orthogonality with onBlank -------------------------------------------------------------

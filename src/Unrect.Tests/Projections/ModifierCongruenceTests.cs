@@ -568,11 +568,13 @@ namespace Unrect.Tests.Projections
       // boundary is shared by the primary and the stand-in, while one written inside belongs to the
       // primary alone. Both spellings read the same primary cell and disagree about where the
       // fallback then looks — which is the quietest of the order hazards, because both succeed.
-      var space = BlankLead();
+      // The primary fails on a kind, not on a blank: a blank first row would be a gap, which the
+      // boundary steps over before either spelling is reached.
+      var space = Rows();
       var fallback = Down(1).Of(Text()).Named("fb");
 
-      Assert.Equal("b0", Right(1).Of(Text()).Else(fallback).Map(space));
-      Assert.Equal("b1", Right(1).Of(Text().Else(fallback)).Map(space));
+      Assert.Equal("b0", Right(1).Of(Decimal()).Select(d => d.ToString()).Else(fallback).Map(space));
+      Assert.Equal("b1", Right(1).Of(Decimal().Select(d => d.ToString()).Else(fallback)).Map(space));
     }
 
     [Fact]

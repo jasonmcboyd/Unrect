@@ -355,9 +355,10 @@ namespace Unrect.Projections
     /// to <c>Table&lt;T&gt;()</c> once the columns are known.
     /// </para>
     /// <para>
-    /// It promises one entry per column, so it is strict about the things that would break that
-    /// promise: a column with no caption, and two captions that collide under the comparer, are
-    /// both loud failures naming the cells involved.
+    /// It promises one entry per column that holds anything, so it is strict about the things that
+    /// would break that promise: a column with values and no caption, and two captions that collide
+    /// under the comparer, are both loud failures naming the cells involved. A column with no
+    /// caption and nothing in it — the blank lead of an indented table — has no entry.
     /// </para>
     /// </summary>
     public static IProjectionDefinition<TSpace, IReadOnlyList<IReadOnlyDictionary<string, Point<TSpace>>>> Table()
@@ -648,12 +649,11 @@ namespace Unrect.Projections
     /// the normal case that needs no marking.
     /// </para>
     /// <para>
-    /// <paramref name="separatedBy"/> is the offset <em>between</em> items and is never applied
-    /// before the first — a leading gap belongs to the repeat itself
-    /// (<c>VerticalRepeat(...).AfterBlankRows()</c>). It is also load-bearing for termination: when
-    /// content follows the last item, the separator is what carries the cursor over the gap so the
-    /// repetition can recognise that the next item is not there. Without it, an item whose own
-    /// placement still fits will be applied to that content and fail loudly.
+    /// Every occurrence steps over the blank rows in front of it, as anything that does not say
+    /// where it starts does, so blocks with gaps between them need nothing said about the gaps, and a
+    /// run ends at a trailing blank band: the next attempt finds nothing there to be.
+    /// <paramref name="separatedBy"/> is for a separator that is CONTENT — a rule of dashes, a
+    /// repeated page heading: the offset <em>between</em> items, never applied before the first.
     /// </para>
     /// <para>
     /// <paramref name="atLeast"/> turns "found nothing" into a good error instead of a silently
@@ -665,7 +665,7 @@ namespace Unrect.Projections
     /// <c>orEnd</c> lets a run that reaches the sheet's edge without meeting one end there rather
     /// than fail for want of the landmark. A landmark is located before the walk begins, so such a
     /// bound reads ahead to it and the walk then reads behind that point. A blank band between
-    /// occurrences is a separator (<c>separatedBy: BlankRows()</c>), never a terminator; where the
+    /// occurrences is a gap, never a terminator; where the
     /// occurrences really are one row each and a blank row is a policy question — or where the
     /// reading must stay forward-only —
     /// <see cref="VerticalBands{T}(int, IProjectionDefinition{TSpace, T}, BlankRowStrategy?, string)"/> is the
@@ -905,20 +905,25 @@ namespace Unrect.Projections
     private static Placement TablePlacement() => TablePlacement(BlankRowStrategy.Stop);
 
     /// <summary>
-    /// The table body's placement: the offset skips to the first non-blank cell; the area is
-    /// <see cref="DiscoveredBlock"/> for <c>Stop</c>, otherwise the run-to-edge <see cref="ToEdgeBlock"/>.
+    /// The table body's placement. It declares no offset, so a table starts where anything else
+    /// does — past the blank spans in front of it, at the left edge of what it was handed. The area
+    /// is <see cref="DiscoveredBlock"/> for <c>Stop</c>, otherwise the run-to-edge <see cref="ToEdgeBlock"/>.
     /// </summary>
     private static Placement TablePlacement(BlankRowStrategy onBlank)
-      => new Placement(OffsetStrategies.SkipToFirstNonBlankCell(), onBlank.IsStop ? DiscoveredBlock() : ToEdgeBlock());
+      => Placement.Of(onBlank.IsStop ? DiscoveredBlock() : ToEdgeBlock());
 
-    private static IAreaStrategy DiscoveredBlock() => RowStrategies.TakeRowsWhileAnyValue().TakeColumnsWhileAnyValue();
+    // Columns the header leaves blank on the way to its first caption are columns with no label:
+    // part of the table, bound to nothing.
+    private static IAreaStrategy DiscoveredBlock()
+      => AreaStrategies.RowsThenColumns(RowStrategies.TakeRowsWhileAnyValue(), ColumnStrategies.TakeTableColumns());
 
     /// <summary>
     /// The same width rule as <see cref="DiscoveredBlock"/>, but the height runs to the enclosing
     /// edge instead of stopping at the first blank row — the extent a non-self-bounding
     /// <see cref="BlankRowStrategy"/> needs so the walker can see and act on interior blank rows.
     /// </summary>
-    private static IAreaStrategy ToEdgeBlock() => RowStrategies.AllRows().TakeColumnsWhileAnyValue();
+    private static IAreaStrategy ToEdgeBlock()
+      => AreaStrategies.RowsThenColumns(RowStrategies.AllRows(), ColumnStrategies.TakeTableColumns());
 
     private static int ValidateHeaderRows(int headerRows)
       => headerRows == 0 || headerRows == 1

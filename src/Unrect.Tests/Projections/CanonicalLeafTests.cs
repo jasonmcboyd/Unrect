@@ -33,6 +33,13 @@ namespace Unrect.Tests.Projections
     /// <summary>One cell, holding whatever is asked for.</summary>
     private static ISheetCells One(object? value) => Mixed(new object?[,] { { value } });
 
+    /// <summary>
+    /// A blank cell with a neighbour. The neighbour is the point: a row that is blank all the way
+    /// across is a gap, which every placement steps over, so a blank that is a VALUE is a blank
+    /// cell in a row that has something else in it.
+    /// </summary>
+    private static ISheetCells BlankCell() => Mixed(new object?[,] { { null, "." } });
+
     // --- Point: the address, and exactly one cell of it --------------------------------------------
 
     [Fact]
@@ -62,7 +69,7 @@ namespace Unrect.Tests.Projections
       // The total-est leaf there is: a blank cell and an error cell both have addresses, so both are
       // projected without a word. This is what makes Point() the escape hatch for a column of no one
       // kind — there is no reading to disagree with the data.
-      Assert.True(Point().Map(One(null)).IsBlank);
+      Assert.True(Point().Map(BlankCell()).IsBlank);
       Assert.False(Point().Map(One(Cell.OfError(CellError.DivisionByZero))).IsBlank);
     }
 
@@ -105,7 +112,7 @@ namespace Unrect.Tests.Projections
       // Quietly — the declaration said the cell may be absent, so its absence is the answer rather
       // than something to report. That is the whole difference from Optional, which absorbs a
       // failure and raises a Warning about it.
-      var read = AsText().OrBlank().MapWithDiagnostics(One(null));
+      var read = AsText().OrBlank().MapWithDiagnostics(BlankCell());
 
       Assert.Null(read.Value);
       Assert.DoesNotContain(read.Diagnostics, d => d.Severity == DiagnosticSeverity.Warning);
@@ -146,7 +153,7 @@ namespace Unrect.Tests.Projections
     {
       // A blank cell is a statement about the data, not a broken declaration, so a tolerance
       // boundary may take it — which is the property a fault would remove.
-      var read = AsText().Optional().MapWithDiagnostics(One(null));
+      var read = AsText().Optional().MapWithDiagnostics(BlankCell());
 
       Assert.Null(read.Value);
       Assert.Contains(read.Diagnostics, d => d.Severity == DiagnosticSeverity.Warning);

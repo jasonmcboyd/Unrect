@@ -174,7 +174,7 @@ namespace Unrect.Tests.Projections
 
       Assert.Equal(DiagnosticSeverity.Info, only.Severity);
       Assert.Equal(
-        "the projection consumed 0 of 2 rows and 0 of 2 columns; rows 1+ and columns 1+ were not described",
+        "the projection consumed 0 of 2 rows and 0 of 2 columns; rows 1-2 and columns 1+ were not described",
         only.Message);
     }
 

@@ -42,25 +42,34 @@ namespace Unrect.Projections
         throw new ArgumentNullException(nameof(definition));
 
       var lines = new List<CostLine>();
-      Visit(definition, default, 0, driver, lines);
+      Visit(definition, default, 0, driver, driver, driver, driver, lines);
       return new CostReport(driver, lines);
     }
 
-    private static void Visit(IProjectionDefinition definition, UseSite site, int depth, Orientation driver, List<CostLine> lines)
+    private static void Visit(IProjectionDefinition definition, UseSite site, int depth, Orientation driver, Orientation session, Orientation? lead, Orientation? shown, List<CostLine> lines)
     {
-      var streams = PlacementRules.Streams(definition, driver, out var hold);
+      var streams = PlacementRules.Streams(definition, driver, out _, out _, out _, out var hold, lead);
+      var starts = PlacementRules.DeclaresOffset(definition) ? Start.Declared
+        : shown is null ? Start.WhereItIsPut
+        : shown == Orientation.Vertical ? Start.AfterBlankRows
+        : Start.AfterBlankColumns;
       var reported = !PathRenderer.Skipped(definition) && (!definition.IsScaffolding || !streams);
 
       if (reported)
-        lines.Add(new CostLine(depth, PathRenderer.SegmentName(definition, site), driver, streams, hold, PlacementRules.Retains(definition), definition.Axis));
+        lines.Add(new CostLine(depth, PathRenderer.SegmentName(definition, site), driver, streams, hold, PlacementRules.Retains(definition), definition.Axis, starts));
 
       // A held node is re-driven along its own axis; one that announces none is handed its region
       // whole, and whatever it starts beneath that runs under the same driver.
       var below = streams ? driver : definition.Axis.Along(driver) ?? driver;
       var next = reported ? depth + 1 : depth;
 
+      // A wrapper's inner starts where the wrapper was put — which is where the wrapper's own
+      // default took it, so that is what the inner's line says. Anything else leads its children
+      // as its machine does.
+      var leads = definition.IsWrapper ? null : (definition as DefinitionNode)?.LeadsChildren(session);
+
       foreach (var child in definition.Children)
-        Visit(child.Definition, child.Site, next, below, lines);
+        Visit(child.Definition, child.Site, next, below, session, leads, definition.IsWrapper ? shown : leads, lines);
     }
 
     /// <summary>The lines rendered one per row, indented by depth, with the driver as a heading.</summary>
@@ -80,7 +89,8 @@ namespace Unrect.Projections
           .Append("  ")
           .Append(line.Streams ? "streams" : "holds  ")
           .Append("  retains ").Append(line.Retains.ToString().PadRight(8))
-          .Append("  axis ").Append(Axis(line.Axis));
+          .Append("  axis ").Append(Axis(line.Axis).PadRight(10))
+          .Append("  starts ").Append(Starts(line.Starts));
 
         if (line.Hold is string hold)
           text.Append("  (").Append(hold).Append(')');
@@ -90,6 +100,12 @@ namespace Unrect.Projections
 
       return text.ToString();
     }
+
+    private static string Starts(Start start)
+      => start == Start.Declared ? "as declared"
+       : start == Start.AfterBlankRows ? "after blank rows"
+       : start == Start.AfterBlankColumns ? "after blank columns"
+       : "where it is put";
 
     private static string Spans(Orientation driver) => driver == Orientation.Vertical ? "rows" : "columns";
 
@@ -103,8 +119,9 @@ namespace Unrect.Projections
   /// <summary>One node of a <see cref="CostReport"/>.</summary>
   public readonly struct CostLine
   {
-    internal CostLine(int depth, string name, Orientation driver, bool streams, string? hold, Reach retains, Axes axis)
+    internal CostLine(int depth, string name, Orientation driver, bool streams, string? hold, Reach retains, Axes axis, Start starts)
     {
+      Starts = starts;
       Depth = depth;
       Name = name;
       Driver = driver;
@@ -134,5 +151,24 @@ namespace Unrect.Projections
 
     /// <summary>The axis the node announces it can stream along.</summary>
     public Axes Axis { get; }
+
+    /// <summary>Where the node starts within what it is handed: as it declared, or by the default.</summary>
+    public Start Starts { get; }
+  }
+
+  /// <summary>Where a node starts within the region it is handed.</summary>
+  public enum Start
+  {
+    /// <summary>Exactly where it is put: a wrapper's inner, a band of a tiler, a table's row.</summary>
+    WhereItIsPut,
+
+    /// <summary>Where its own anchor, distance or offset says.</summary>
+    Declared,
+
+    /// <summary>Past the blank rows in front of it — the default down a vertical container, and at the root of a run read by rows.</summary>
+    AfterBlankRows,
+
+    /// <summary>Past the blank columns in front of it — the default across a horizontal container.</summary>
+    AfterBlankColumns,
   }
 }

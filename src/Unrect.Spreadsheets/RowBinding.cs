@@ -42,9 +42,10 @@ namespace Unrect.Spreadsheets
     public static RowBinding<T> Create(TableBinding<T>? binding, Type space)
     {
       var captions = binding?.Captions ?? new Dictionary<string, string>(StringComparer.Ordinal);
+      var positions = binding?.Positions ?? new Dictionary<string, int>(StringComparer.Ordinal);
       var ignored = new HashSet<string>(binding?.Ignored ?? Array.Empty<string>(), StringComparer.Ordinal);
 
-      foreach (var name in captions.Keys)
+      foreach (var name in captions.Keys.Concat(positions.Keys))
         if (ignored.Contains(name))
           throw new ArgumentException($"{typeof(T).Name}.{name} is both bound and ignored.", nameof(binding));
 
@@ -63,13 +64,14 @@ namespace Unrect.Spreadsheets
           + "Give it one constructor, or a parameterless constructor and settable properties.");
 
       return parameterless is null
-        ? FromConstructor(constructors[0], captions, ignored, space)
-        : FromProperties(parameterless, captions, ignored, space);
+        ? FromConstructor(constructors[0], captions, positions, ignored, space)
+        : FromProperties(parameterless, captions, positions, ignored, space);
     }
 
     private static RowBinding<T> FromConstructor(
       ConstructorInfo constructor,
       IReadOnlyDictionary<string, string> captions,
+      IReadOnlyDictionary<string, int> positions,
       ISet<string> ignored,
       Type space)
     {
@@ -86,10 +88,13 @@ namespace Unrect.Spreadsheets
         => captions.FirstOrDefault(c => CaptionComparer.Default.Equals(c.Key, parameter.Name!)).Value
            ?? parameter.Name!;
 
+      int? Position(ParameterInfo parameter)
+        => positions.Where(p => CaptionComparer.Default.Equals(p.Key, parameter.Name!)).Select(p => (int?)p.Value).FirstOrDefault();
+
       bool Ignored(ParameterInfo parameter)
         => ignored.Any(name => CaptionComparer.Default.Equals(name, parameter.Name!));
 
-      Verify(captions.Keys, ignored, parameters.Select(p => p.Name!), viaConstructor: true);
+      Verify(captions.Keys.Concat(positions.Keys), ignored, parameters.Select(p => p.Name!), viaConstructor: true);
 
       var members = new List<MemberPlan>();
       var values = Expression.Parameter(typeof(object?[]), "values");
@@ -112,7 +117,7 @@ namespace Unrect.Spreadsheets
         // Named for the PROPERTY, not the parameter: a hand-written constructor takes camelCase
         // parameters, and guidance reading Column(t => t.date, "…") would not compile.
         members.Add(Plan(PropertyName(parameter.Name!), Declared(parameter), parameter.ParameterType,
-          () => NullableAnnotations.IsAnnotatedNullable(parameter), space));
+          () => NullableAnnotations.IsAnnotatedNullable(parameter), space).At(Position(parameter)));
 
         arguments.Add(Expression.Convert(
           Expression.ArrayIndex(values, Expression.Constant(index)), parameter.ParameterType));
@@ -128,6 +133,7 @@ namespace Unrect.Spreadsheets
     private static RowBinding<T> FromProperties(
       ConstructorInfo parameterless,
       IReadOnlyDictionary<string, string> captions,
+      IReadOnlyDictionary<string, int> positions,
       ISet<string> ignored,
       Type space)
     {
@@ -140,7 +146,7 @@ namespace Unrect.Spreadsheets
       if (settable.Length == 0)
         throw new ArgumentException($"{typeof(T).Name} has no properties to bind.");
 
-      Verify(captions.Keys, ignored, settable.Select(p => p.Name), viaConstructor: false);
+      Verify(captions.Keys.Concat(positions.Keys), ignored, settable.Select(p => p.Name), viaConstructor: false);
 
       var members = new List<MemberPlan>();
       var values = Expression.Parameter(typeof(object?[]), "values");
@@ -154,7 +160,8 @@ namespace Unrect.Spreadsheets
         var index = members.Count;
 
         members.Add(Plan(property.Name, captions.TryGetValue(property.Name, out var caption) ? caption : property.Name,
-          property.PropertyType, () => NullableAnnotations.IsAnnotatedNullable(property), space));
+          property.PropertyType, () => NullableAnnotations.IsAnnotatedNullable(property), space)
+          .At(positions.TryGetValue(property.Name, out var position) ? position : (int?)null));
 
         // Expression.Bind accepts an init-only property: the modreq is a compile-time signal, and
         // the setter is an ordinary setter in metadata.

@@ -130,7 +130,7 @@ namespace Unrect.Projections
       where TSpace : class, ISpace
     {
       var whole = Plane<TSpace>.Of(space);
-      var root = scope.Start(new Child(definition, default), definition, scope.Anchor);
+      var root = scope.Start(new Child(definition, default), definition, scope.Anchor, leadingBlanks: scope.Session);
 
       if (space is IRowFeed feed)
       {
