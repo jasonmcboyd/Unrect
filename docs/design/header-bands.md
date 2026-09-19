@@ -18,10 +18,26 @@ and CLAUDE.md carries what stands. Nothing here is built except where it says so
   is the distinct REGIONS it passes through, top to bottom. "Date" merged down two rows is one
   region, so its column's path is `["Date"]`; "From" merged across two columns is one region at
   the top of two columns.
-- **Without recorded merges the regions are reconstructed from blanks:** a label claims the blank
-  header cells beneath it; if it has none beneath it, it claims the blank cells to its right, up
-  to the next label in its row and never past the end of the region above it. The caption row
-  never claims sideways (a blank caption is a column with no label).
+- **Fill-right is the convention, stated as one.** From the cells alone "From, blank" over "Id,
+  Code" is the same whether From was merged over both or sits over Id only; no rule can deduce
+  which. So, as every reader of multi-row headers does: a label claims the blank header cells
+  beneath it; if it has none beneath it, it claims the blank cells to its right, up to the next
+  label in its row, never past the end of the region above it, and **never over a column with
+  nothing beneath it** (a spacer column ends a band). The caption row never claims sideways (a
+  blank caption is a column with no label). A wrong guess never reads a different cell: the path
+  `["From", "Code"]` names the same physical column either way, and a bare `"Code"` that is
+  duplicated fails with the candidates listed.
+- **Recorded merges override the convention** where a file records any in its header: then the
+  merges are trusted outright and nothing is filled, so an unmerged "From" covers Id alone. No
+  merges in the header at all means the file cannot say, and the convention applies. (Merges are a
+  backend capability, later; `ISpace` stays flat — the owner, 2026-09-19: merged points as
+  first-class citizens of the space "would be a nightmare with all of the different projections".)
+- **A limit to document, not to guess at:** a spacer column blank all the way DOWN ends the table
+  itself (its width rule is "columns while any value", which is what lets two tables sit side by
+  side), so the bands to its right are outside the table. From the cells a spacer inside one table
+  and a gap between two are the same thing; the declaration says which by declaring its width
+  (`Sized(RowsWhileAnyValue()).Of(Table(2, …))`). A by-name miss should say so when there is more
+  header to the right of where the table ended.
 - **A label is whatever a non-blank header cell SAYS** — not only a text cell. A header cell is a
   label by position, not by kind: period columns (`2023 | 2024 | 2025`, period-end dates) are
   captions, and a band row of years is a band row. The `IsText` guard in today's header parse
@@ -94,7 +110,7 @@ text; the binder matches ignoring whitespace too.
 ## Where the regions come from
 
 The fold — words in, forest out — is a pure function over an n-row block of header words. It is
-generic: it asks only whether a cell is text and what it says, which every `ISpace` answers.
+generic: it asks only whether a cell is blank and what it says, which every `ISpace` answers.
 
 **Proved by spike** (`spike/header-as-projection`): the header can be declared in today's
 vocabulary with no engine change. The shortest form reads one column at a time, by position, and
@@ -133,9 +149,28 @@ from it and hands `LabelMap` the same regions. Core learns nothing about merging
 disagree only where the reconstruction was a guess — a wide band whose first caption is blank —
 and there the recorded merge is right.
 
+## Replacing the mapping — three levels, smallest first
+
+All three hand `LabelMap` the same data, so nothing downstream can tell which produced a map.
+
+1. **Say what each header row is.** `Table(Header(Band, Caption), …)` is what `headerRows: 2`
+   means; `Header(Band, Skip, Caption)` steps over a units row; `Header(Caption, Skip)` has the
+   units under the captions; `MergedBand` trusts merges only. A closed set of roles, and nearly
+   free: the fold already goes a row at a time.
+2. **State the layout.** `Labels(("Date", 0), Band("From", ("Id", 1), ("Code", 2)))` — today's
+   `LabelMap.Of`, with a way to write a band — for the fixed extract whose header is not parsed.
+3. **Project it.** Any projection yielding each labelled column's PATH and the POINT its label
+   sits on: `HorizontalRepeat(Column(3, c => Label(c[2], c[0].AsText(), c[2].AsText()))).ToLabelMap()`,
+   then `Table(header, r => …)`. The point supplies the column; neighbouring columns sharing a
+   path prefix are one region, and the same band text appearing again further right is a second
+   one. The spike produced exactly this shape.
+
+First version: the standard header with level 1's roles, and level 3's seam. Level 2 last.
+
 ## Open
 
-1. (a) or (b), above.
+1. ~~(a) or (b), above.~~ Working default (owner, 2026-09-19: "go with your table solutions"):
+   (a), with the public seam.
 2. `Table<T>`: flat members bind only to unique captions and never across a band; a band binds to
    a nested member; `.Column(member, "From", "Id")` is the flat escape hatch, checked against
    `headerRows` where it is written. (The owner's lean.) Should `headerRows` be INFERRED from the
