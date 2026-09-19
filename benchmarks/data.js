@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789847937652,
+  "lastUpdate": 1789847937909,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -5126,6 +5126,90 @@ window.BENCHMARK_DATA = {
             "value": 1662558.2010323661,
             "unit": "ns",
             "range": "± 1760.614574005392"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "4818c36f9e9b0c2b75a4093dbbce6981329fd14b",
+          "message": "Merge feature/scaffold-shapes: ScaffoldRecord and ScaffoldClass, on a sheet and as leaves\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>",
+          "timestamp": "2026-09-19T15:35:04Z",
+          "tree_id": "d48076b68bb0a93dc6ab6797b10f0ead882156a7",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/4818c36f9e9b0c2b75a4093dbbce6981329fd14b"
+        },
+        "date": 1789847937854,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Values.Create_FromInts",
+            "value": 15.459708855549495,
+            "unit": "ns",
+            "range": "± 0.23806473272145343"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Create_FromObjects",
+            "value": 29657870.16964286,
+            "unit": "ns",
+            "range": "± 79484.48922404004"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.IsBlank_Million",
+            "value": 1981279.198939732,
+            "unit": "ns",
+            "range": "± 9917.843591583744"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.IsText_Million",
+            "value": 1815582.4256310095,
+            "unit": "ns",
+            "range": "± 9281.587557624354"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.AsText_Million_Text",
+            "value": 4959688.823660715,
+            "unit": "ns",
+            "range": "± 6303.3872527032045"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Decimal_Million",
+            "value": 18010942.645089287,
+            "unit": "ns",
+            "range": "± 71611.5235267695"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Point_Mint_Million",
+            "value": 935190.5194561298,
+            "unit": "ns",
+            "range": "± 939.5446140233543"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Predicate_Million",
+            "value": 3426148.6239583334,
+            "unit": "ns",
+            "range": "± 27006.71593440725"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.TypedPredicate_Million",
+            "value": 36764913.58095238,
+            "unit": "ns",
+            "range": "± 63242.538167242914"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Slice_Million",
+            "value": 1662251.6079101562,
+            "unit": "ns",
+            "range": "± 1439.3676152550609"
           }
         ]
       }
