@@ -905,20 +905,25 @@ namespace Unrect.Projections
     private static Placement TablePlacement() => TablePlacement(BlankRowStrategy.Stop);
 
     /// <summary>
-    /// The table body's placement: the offset skips to the first non-blank cell; the area is
-    /// <see cref="DiscoveredBlock"/> for <c>Stop</c>, otherwise the run-to-edge <see cref="ToEdgeBlock"/>.
+    /// The table body's placement. It declares no offset, so a table starts where anything else
+    /// does — past the blank spans in front of it, at the left edge of what it was handed. The area
+    /// is <see cref="DiscoveredBlock"/> for <c>Stop</c>, otherwise the run-to-edge <see cref="ToEdgeBlock"/>.
     /// </summary>
     private static Placement TablePlacement(BlankRowStrategy onBlank)
-      => new Placement(OffsetStrategies.SkipToFirstNonBlankCell(), onBlank.IsStop ? DiscoveredBlock() : ToEdgeBlock());
+      => Placement.Of(onBlank.IsStop ? DiscoveredBlock() : ToEdgeBlock());
 
-    private static IAreaStrategy DiscoveredBlock() => RowStrategies.TakeRowsWhileAnyValue().TakeColumnsWhileAnyValue();
+    // Columns the header leaves blank on the way to its first caption are columns with no label:
+    // part of the table, bound to nothing.
+    private static IAreaStrategy DiscoveredBlock()
+      => AreaStrategies.RowsThenColumns(RowStrategies.TakeRowsWhileAnyValue(), ColumnStrategies.TakeTableColumns());
 
     /// <summary>
     /// The same width rule as <see cref="DiscoveredBlock"/>, but the height runs to the enclosing
     /// edge instead of stopping at the first blank row — the extent a non-self-bounding
     /// <see cref="BlankRowStrategy"/> needs so the walker can see and act on interior blank rows.
     /// </summary>
-    private static IAreaStrategy ToEdgeBlock() => RowStrategies.AllRows().TakeColumnsWhileAnyValue();
+    private static IAreaStrategy ToEdgeBlock()
+      => AreaStrategies.RowsThenColumns(RowStrategies.AllRows(), ColumnStrategies.TakeTableColumns());
 
     private static int ValidateHeaderRows(int headerRows)
       => headerRows == 0 || headerRows == 1

@@ -167,15 +167,14 @@ namespace Unrect.Tests.Projections
         OffsetColumn());
 
     [Fact]
-    public void ADefaultTableNowSelfLocatesOntoAColumnIndentedRegion()
+    public void ADefaultTableReadsAColumnIndentedRegionByName()
     {
-      // Table's
-      // default offset is SkipToFirstNonBlankCell, so a table whose content starts past column 0 reads
-      // with Table(...) ALONE — no explicit Right(1)/offset. Before the change the default
-      // SkipBlankRows landed the origin at column 0, DiscoveredBlock's TakeColumnsWhileAnyValue took a
-      // 0-wide leading block (column A is entirely blank), and the by-name read of "Investor"/"Amount"
-      // failed for want of columns. Contrast AColumnOffsetTableReadsIdentically above, which still
-      // spells the Right(1) override: on this sheet that spelling is now redundant, not required.
+      // A table whose content starts past column 0 reads with Table(...) ALONE — no explicit
+      // Right(1). It starts at the left edge of what it is handed, and the blank column in front of
+      // its first caption is a column with no label: part of the table, in nobody's way, since a
+      // by-name read of "Investor"/"Amount" resolves the captions wherever they sit. Contrast
+      // AColumnOffsetTableReadsIdentically above, which spells the Right(1): that is how a
+      // declaration reading by INDEX says where position 0 is.
       IReadOnlyList<Line> lines = Table(1, ReadLine).Map(OffsetColumn());
 
       Assert.Equal(new[] { new Line(0, "Acme", 10m), new Line(1, "Beta", 20m) }, lines);

@@ -60,6 +60,13 @@ namespace Unrect.Strategies
     public static IColumnStrategy TakeColumnsWhileAnyValue()
       => TakeColumnsWhileAny(v => v.HasValue);
 
+    /// <summary>
+    /// A table's columns: any leading columns the first row leaves blank — columns with no caption,
+    /// which nothing binds to — and then the columns that carry a value.
+    /// </summary>
+    internal static IColumnStrategy TakeTableColumns()
+      => new TakeWhileAnyColumnStrategy(v => v.HasValue, afterLead: true);
+
     /// <summary>Combines <paramref name="strategy"/>'s rows with columns selected by <see cref="TakeColumnsWhile(Func{Plane{ISpace}, int, bool})"/>, rows measured first.</summary>
     public static IAreaStrategy TakeColumnsWhile(
       this IRowStrategy strategy,
