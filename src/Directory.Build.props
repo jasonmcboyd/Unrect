@@ -22,8 +22,9 @@
     <BuildProjectReferences Condition="'$(NoBuild)' == 'true'">false</BuildProjectReferences>
   </PropertyGroup>
 
-  <!-- Packaging. Nothing ships unless it opts in: Unrect and Unrect.Spreadsheets set IsPackable, and
-       Unrect bundles the assemblies a consumer would otherwise have to reference one by one. -->
+  <!-- Packaging. Nothing ships unless it opts in: Unrect, Unrect.Spreadsheets and Unrect.Interactive
+       set IsPackable, and Unrect bundles the assemblies a consumer would otherwise have to reference
+       one by one. -->
   <PropertyGroup>
     <IsPackable>false</IsPackable>
     <Authors>Jason Boyd</Authors>

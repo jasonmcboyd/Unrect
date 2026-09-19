@@ -42,11 +42,11 @@ void Main()
 			})),
 			Summary = v.Next(Table<InvestorSummary>()),
 			Details = v.Next(
-			AfterBlankRows()
-			.VerticalRepeat(
-				VerticalFlow(block => new InvestorTransactions(block.Next(Text()), block.Next(Table<Transaction>()))),
-				separatedBy: BlankRows(),
-				atLeast: 1)),
+				AfterBlankRows()
+				.VerticalRepeat(
+					VerticalFlow(block => new InvestorTransactions(block.Next(Text()), block.Next(Table<Transaction>()))),
+					separatedBy: BlankRows(),
+					atLeast: 1)),
 		});
 	
 	var result = report.Map(SpreadsheetSpace.Create(path, "Summary"));

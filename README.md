@@ -14,6 +14,7 @@ loop that walks the grid deciding what comes next.
 ```
 dotnet add package Unrect
 dotnet add package Unrect.Spreadsheets
+dotnet add package Unrect.Interactive   # optional: LINQPad and notebook sugar
 ```
 
 `Unrect` is the engine — the projection vocabulary, the layout composites, the strategies
@@ -22,6 +23,10 @@ that decide boundaries — and works directly over any 2D grid you can adapt to 
 add it when your data lives in a workbook rather than an array you built yourself.
 The same package also has a streaming door, `Workbook`, for files too large to read
 whole — see [Large files](#large-files) below.
+`Unrect.Interactive` is for the first five minutes with an unfamiliar file, in LINQPad or a
+notebook: `sheet.At("B4")` reaches a cell by hand, and `sheet.Scaffold("Transaction")` reads
+a header row and a few samples and hands back the record declaration and the `Table<T>()`
+that binds it, as C# source to paste. Nothing in a shipping declaration needs it.
 
 `GridSpace` ships in the `Unrect` package for exactly that case:
 `GridSpace.Create(values, isBlank: ...)` turns a plain 2D array into a space, deciding
