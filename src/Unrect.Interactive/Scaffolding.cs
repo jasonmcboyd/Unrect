@@ -97,8 +97,10 @@ namespace Unrect.Interactive
     /// <exception cref="InvalidOperationException">No labels were found and <paramref name="at"/> was not given.</exception>
     public static string ScaffoldRecord<TSpace>(this TSpace sheet, string typeName, LabelsIn labels = LabelsIn.Row, int? at = null, int samples = 5)
       where TSpace : class, ISheetCells
+      => Record(Read(Region.Of(sheet), typeName, labels, at, samples), typeName, labels);
+
+    internal static string Record(List<Member> members, string typeName, LabelsIn labels)
     {
-      var members = Read(sheet, typeName, labels, at, samples);
       var source = new StringBuilder();
 
       foreach (var note in Notes(members, typeName, labels))
@@ -144,8 +146,10 @@ namespace Unrect.Interactive
     /// <exception cref="InvalidOperationException">No labels were found and <paramref name="at"/> was not given.</exception>
     public static string ScaffoldClass<TSpace>(this TSpace sheet, string typeName, LabelsIn labels = LabelsIn.Row, int? at = null, int samples = 5)
       where TSpace : class, ISheetCells
+      => Class(Read(Region.Of(sheet), typeName, labels, at, samples), typeName, labels);
+
+    internal static string Class(List<Member> members, string typeName, LabelsIn labels)
     {
-      var members = Read(sheet, typeName, labels, at, samples);
       var notes = members.ToDictionary(member => member.Name, _ => new List<string>());
 
       foreach (var (member, note) in MemberNotes(members, typeName, labels))
@@ -170,7 +174,7 @@ namespace Unrect.Interactive
     // --- Reading the sheet ---------------------------------------------------------------------------
 
     /// <summary>One member of the scaffolded type: the label it came from, what it is called, and what its samples argued for.</summary>
-    private sealed class Member
+    internal sealed class Member
     {
       public Member(string label, string name, string type)
       {
@@ -189,16 +193,9 @@ namespace Unrect.Interactive
       public bool Binds => CaptionComparer.Default.Equals(Name, Label);
     }
 
-    private static List<Member> Read(ISheetCells sheet, string typeName, LabelsIn labels, int? at, int samples)
+    internal static List<Member> Read(Region region, string typeName, LabelsIn labels, int? at, int samples)
     {
-      if (sheet is null)
-        throw new ArgumentNullException(nameof(sheet));
-
-      if (typeName is null)
-        throw new ArgumentNullException(nameof(typeName));
-
-      if (typeName.Trim().Length == 0)
-        throw new ArgumentException("A scaffolded type needs a name.", nameof(typeName));
+      Name(typeName);
 
       if (at is int given && given < 0)
         throw new ArgumentOutOfRangeException(nameof(at));
@@ -206,7 +203,7 @@ namespace Unrect.Interactive
       if (samples < 0)
         throw new ArgumentOutOfRangeException(nameof(samples));
 
-      var grid = new Axes(sheet, labels);
+      var grid = new Axes(region, labels);
 
       // Checked here rather than left to the first cell read: a sheet with no cells along the label
       // line reads none at all, and would otherwise scaffold an empty type from a line that does not
@@ -231,6 +228,48 @@ namespace Unrect.Interactive
       return members;
     }
 
+    /// <summary>Refuses a type name nothing could be declared under.</summary>
+    internal static void Name(string typeName)
+    {
+      if (typeName is null)
+        throw new ArgumentNullException(nameof(typeName));
+
+      if (typeName.Trim().Length == 0)
+        throw new ArgumentException("A scaffolded type needs a name.", nameof(typeName));
+    }
+
+    /// <summary>The cells a scaffold reads: a whole sheet, or the region a declaration handed it.</summary>
+    internal readonly struct Region
+    {
+      public Region(ISheetCells sheet, int column, int row, int width, int height)
+      {
+        Sheet = sheet;
+        Column = column;
+        Row = row;
+        Width = width;
+        Height = height;
+      }
+
+      public ISheetCells Sheet { get; }
+
+      public int Column { get; }
+
+      public int Row { get; }
+
+      public int Width { get; }
+
+      public int Height { get; }
+
+      public static Region Of(ISheetCells sheet)
+        => sheet is null
+          ? throw new ArgumentNullException(nameof(sheet))
+          : new Region(sheet, 0, 0, sheet.Area.Width, sheet.Area.Height);
+
+      public static Region Of<TSpace>(Plane<TSpace> plane)
+        where TSpace : class, ISheetCells
+        => new Region(plane.Space, plane.Origin.Width, plane.Origin.Height, plane.Width, plane.Area.Height);
+    }
+
     /// <summary>
     /// The sheet read along the label axis: a <em>line</em> is a row when the labels run along one
     /// and a column when they run down one, and a <em>position</em> is how far along that line.
@@ -238,24 +277,26 @@ namespace Unrect.Interactive
     /// </summary>
     private readonly struct Axes
     {
+      private readonly Region _region;
       private readonly ISheetCells _sheet;
       private readonly bool _rows;
 
-      public Axes(ISheetCells sheet, LabelsIn labels)
+      public Axes(Region region, LabelsIn labels)
       {
-        _sheet = sheet;
+        _region = region;
+        _sheet = region.Sheet;
         _rows = labels == LabelsIn.Row;
       }
 
-      public int Lines => _rows ? _sheet.Area.Height : _sheet.Area.Width;
+      public int Lines => _rows ? _region.Height : _region.Width;
 
-      public int Length => _rows ? _sheet.Area.Width : _sheet.Area.Height;
+      public int Length => _rows ? _region.Width : _region.Height;
 
       public string LineNoun => _rows ? "row" : "column";
 
-      private int Column(int line, int position) => _rows ? position : line;
+      private int Column(int line, int position) => _region.Column + (_rows ? position : line);
 
-      private int Row(int line, int position) => _rows ? line : position;
+      private int Row(int line, int position) => _region.Row + (_rows ? line : position);
 
       public bool IsBlank(int line, int position) => _sheet.IsBlank(Column(line, position), Row(line, position));
 

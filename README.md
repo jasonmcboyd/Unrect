@@ -27,7 +27,10 @@ whole — see [Large files](#large-files) below.
 notebook: `sheet.At("B4")` reaches a cell by hand, and `sheet.ScaffoldRecord("Transaction")`
 (or `ScaffoldClass`) finds the caption row, reads a few samples under it and hands back a type
 declaration as C# source to dump, paste and edit — `LabelsIn.Column` reads a card, labels down
-a column, the same way. Nothing in a shipping declaration needs it.
+a column, the same way. Both are also leaves (`using static Unrect.Interactive.ScaffoldBuilders<ISheetCells>;`
+then `v.Next(ScaffoldRecord("Transaction"))`), so a half-written declaration can guess the types
+of the tables it has already found; paste the type and swap the leaf for `Table<Transaction>()`.
+Nothing in a shipping declaration needs it.
 
 `GridSpace` ships in the `Unrect` package for exactly that case:
 `GridSpace.Create(values, isBlank: ...)` turns a plain 2D array into a space, deciding
