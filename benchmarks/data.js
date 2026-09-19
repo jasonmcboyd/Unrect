@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789796485992,
+  "lastUpdate": 1789796486616,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -14934,6 +14934,72 @@ window.BENCHMARK_DATA = {
             "name": "Unrect.Benchmarks.Retention.Eager_SpaceHeld_Shared",
             "value": 58223048,
             "range": "± 536 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · CONTROL/TARGET — the same values shared-string encoded, which the reader already dedups"
+          },
+          {
+            "name": "Unrect.Benchmarks.Retention.Eager_ResultHeld",
+            "value": 32319784,
+            "range": "± 0 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · Table over the eager grid; result held, grid released"
+          },
+          {
+            "name": "Unrect.Benchmarks.Retention.Streaming_ResultHeld",
+            "value": 32319784,
+            "range": "± 0 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · Table through a window; result held, workbook closed"
+          },
+          {
+            "name": "Unrect.Benchmarks.Retention.Streaming_ResultHeld_Unique",
+            "value": 86096872,
+            "range": "± 0 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · CONTROL — the same projection, every text distinct"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "717d1ea3b61c226c608194aae5ff909fd4603455",
+          "message": "Packaging: Unrect.Interactive ships as its own package\n\nThe project was already packable — id, description, tags, and a\ndependency on exactly Unrect and Unrect.Spreadsheets at the same MinVer\nversion — but the release workflow packed and asserted two packages, and\nthe README and build props named two. Now three.\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>",
+          "timestamp": "2026-09-19T01:12:25Z",
+          "tree_id": "f01ec5a705245aededd07d5455e7b03ad4f8880d",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/717d1ea3b61c226c608194aae5ff909fd4603455"
+        },
+        "date": 1789796486568,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Retention.Eager_SpaceHeld",
+            "value": 58223048,
+            "range": "± 0 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · SpreadsheetSpace.Create over a real .xlsx (inline strings); grid held"
+          },
+          {
+            "name": "Unrect.Benchmarks.Retention.Eager_SpaceHeld_Unique",
+            "value": 112000136,
+            "range": "± 0 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · CONTROL — the same file and reader, every text distinct"
+          },
+          {
+            "name": "Unrect.Benchmarks.Retention.Eager_SpaceHeld_Shared",
+            "value": 58223048,
+            "range": "± 0 bytes",
             "unit": "bytes",
             "extra": "median of 3 · CONTROL/TARGET — the same values shared-string encoded, which the reader already dedups"
           },
