@@ -24,9 +24,10 @@ add it when your data lives in a workbook rather than an array you built yoursel
 The same package also has a streaming door, `Workbook`, for files too large to read
 whole — see [Large files](#large-files) below.
 `Unrect.Interactive` is for the first five minutes with an unfamiliar file, in LINQPad or a
-notebook: `sheet.At("B4")` reaches a cell by hand, and `sheet.Scaffold("Transaction")` reads
-a header row and a few samples and hands back the record declaration and the `Table<T>()`
-that binds it, as C# source to paste. Nothing in a shipping declaration needs it.
+notebook: `sheet.At("B4")` reaches a cell by hand, and `sheet.ScaffoldRecord("Transaction")`
+(or `ScaffoldClass`) finds the caption row, reads a few samples under it and hands back a type
+declaration as C# source to dump, paste and edit — `LabelsIn.Column` reads a card, labels down
+a column, the same way. Nothing in a shipping declaration needs it.
 
 `GridSpace` ships in the `Unrect` package for exactly that case:
 `GridSpace.Create(values, isBlank: ...)` turns a plain 2D array into a space, deciding
