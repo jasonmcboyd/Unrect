@@ -32,22 +32,22 @@ void Main()
 	// blocks are the repeat's separator.
 	var report =
 		VerticalFlow(v => new
+		{
+			ReportHeader = v.Next(
+			Column(c => new
 			{
-				ReportHeader = v.Next(
-				Column(c => new
-				{
-					Title      = c[0].Text(),
-					ReportDate = c[1].Date(),
-					ReportId   = c[2].Text(),
-				})),
-				Summary = v.Next(Table<InvestorSummary>()),
-				Details = v.Next(
-				AfterBlankRows()
-				.VerticalRepeat(
-					VerticalFlow(block => new InvestorTransactions(block.Next(Text()), block.Next(Table<Transaction>()))),
-					separatedBy: BlankRows(),
-					atLeast: 1)),
-			});
+				Title      = c[0].Text(),
+				ReportDate = c[1].Date(),
+				ReportId   = c[2].Text(),
+			})),
+			Summary = v.Next(Table<InvestorSummary>()),
+			Details = v.Next(
+			AfterBlankRows()
+			.VerticalRepeat(
+				VerticalFlow(block => new InvestorTransactions(block.Next(Text()), block.Next(Table<Transaction>()))),
+				separatedBy: BlankRows(),
+				atLeast: 1)),
+		});
 	
 	var result = report.Map(SpreadsheetSpace.Create(path, "Summary"));
 	

@@ -26,10 +26,10 @@ var dealCode = Text();
 var transactions = Table<DealTransaction>();
 
 var deal = VerticalFlow(v => new
-	{
-		DealCode = v.Next(dealCode),
-		Transactions = v.Next(transactions),
-	});
+{
+	DealCode = v.Next(dealCode),
+	Transactions = v.Next(transactions),
+});
 
 // The report: that block, repeated, blank-row separated.
 var deals = VerticalRepeat(deal, separatedBy: BlankRows());

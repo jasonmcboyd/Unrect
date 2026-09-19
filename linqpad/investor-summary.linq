@@ -33,10 +33,10 @@ var detailTransactions = Table(r => new
 });
 
 var investorDetail = VerticalFlow(v => new
-	{
-		Investor = v.Next(investorName),
-		Transactions = v.Next(detailTransactions),
-	});
+{
+	Investor = v.Next(investorName),
+	Transactions = v.Next(detailTransactions),
+});
 
 var reportHeader = Column(c => new
 {
@@ -62,11 +62,11 @@ var details = AfterBlankRows().VerticalRepeat(investorDetail, separatedBy: Blank
 // table's own default offset; the gap before the details section is that AfterBlankRows entry;
 // the gaps between detail blocks are the repeat's separator.
 var report = VerticalFlow(v => new
-	{
-		ReportHeader = v.Next(reportHeader),
-		Summary = v.Next(summary),
-		Details = v.Next(details),
-	});
+{
+	ReportHeader = v.Next(reportHeader),
+	Summary = v.Next(summary),
+	Details = v.Next(details),
+});
 
 var result = report.Map(SpreadsheetSpace.Create(path, "Summary"));
 

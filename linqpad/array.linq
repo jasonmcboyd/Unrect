@@ -41,9 +41,9 @@ var firstRow = Row(r => r.Select(p => p.Value()).ToArray());
 var rest = Range(b => b.Rows.Select(r => r.Select(p => p.Value()).ToArray()).ToArray());
 
 var block = VerticalFlow(v => new
-	{
-		FirstRow = v.Next(firstRow),
-		Rest = v.Next(rest),
-	});
+{
+	FirstRow = v.Next(firstRow),
+	Rest = v.Next(rest),
+});
 
 VerticalRepeat(block, separatedBy: BlankRows()).Map(space).Dump();

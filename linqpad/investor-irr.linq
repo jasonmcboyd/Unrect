@@ -31,12 +31,12 @@ var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\exam
 // and fails from inside an item. Until bounds it by content, and — because the bound is
 // consumed in full — the next child's own seek finds that row at distance zero.
 var reportHeader = VerticalFlow(v => new
-	{
-		Title = v.Next(Text()),
-		Fund = v.Next(Text()),
-		ReportDate = v.Next(Date()),
-		ReportId = v.Next(Text()),
-	});
+{
+	Title = v.Next(Text()),
+	Fund = v.Next(Text()),
+	ReportDate = v.Next(Date()),
+	ReportId = v.Next(Text()),
+});
 
 // Five of six captions bind with nothing said: the comparer ignores case and whitespace, so
 // "Contribution ITD" fills ContributionItd. Only Investors needs a caption, and only because the
@@ -66,12 +66,12 @@ var byTransferDate = Until(RowContaining(Inception))
 var byInception = Heading(Inception).Of(irrDetails);
 
 var report = VerticalFlow(v => new
-	{
-		ReportHeader = v.Next(reportHeader),
-		Summary = v.Next(summary),
-		ByTransferDate = v.Next(byTransferDate),
-		ByInception = v.Next(byInception),
-	});
+{
+	ReportHeader = v.Next(reportHeader),
+	Summary = v.Next(summary),
+	ByTransferDate = v.Next(byTransferDate),
+	ByInception = v.Next(byInception),
+});
 
 var mapped = report.MapWithDiagnostics(SpreadsheetSpace.Create(path, "IRR"));
 var result = mapped.Value;

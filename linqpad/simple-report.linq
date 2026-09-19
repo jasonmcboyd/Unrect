@@ -29,12 +29,12 @@ var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\exam
 // typed leaves the 4 dissolves into the child count and every field states its kind. It consumes
 // 1x4 either way, so nothing below it moves.
 var reportHeader = VerticalFlow(v => new
-	{
-		Title = v.Next(Text()),
-		SubTitle = v.Next(Text()),
-		ReportDate = v.Next(Date()),
-		ReportId = v.Next(Text()),
-	});
+{
+	Title = v.Next(Text()),
+	SubTitle = v.Next(Text()),
+	ReportDate = v.Next(Date()),
+	ReportId = v.Next(Text()),
+});
 
 // Captions bind to members by name, ignoring case and whitespace: Client and Amount need nothing
 // said. Date and Type need a caption only because this type chose shorter names than the sheet —
@@ -45,10 +45,10 @@ var transactions = Table<Transaction>(bind => bind
 
 // One lambda declares the children in flow order, once, at declaration; Build combines what they read.
 var report = VerticalFlow(v => new
-	{
-		ReportHeader = v.Next(reportHeader),
-		Transactions = v.Next(transactions),
-	});
+{
+	ReportHeader = v.Next(reportHeader),
+	Transactions = v.Next(transactions),
+});
 
 report.Map(SpreadsheetSpace.Create(path, "Report")).Dump();
 
