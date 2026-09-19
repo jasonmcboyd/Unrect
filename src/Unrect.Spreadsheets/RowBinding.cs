@@ -39,13 +39,23 @@ namespace Unrect.Spreadsheets
     /// by. A point is invariant in its space, so a plan checked against one space and read through
     /// another would refuse the member it had just accepted.
     /// </param>
-    public static RowBinding<T> Create(TableBinding<T>? binding, Type space)
+    public static RowBinding<T> Create<TSpace>(TableBinding<TSpace, T>? binding, Type space)
+      where TSpace : class, ISheetCells
     {
+      var readings = new Dictionary<string, Func<object, object?>>(StringComparer.Ordinal);
+
+      foreach (var reading in binding?.Readings ?? new Dictionary<string, Func<TableRow<TSpace>, object?>>())
+      {
+        var read = reading.Value;
+
+        readings.Add(reading.Key, row => read((TableRow<TSpace>)row));
+      }
+
       var captions = binding?.Captions ?? new Dictionary<string, string>(StringComparer.Ordinal);
       var positions = binding?.Positions ?? new Dictionary<string, int>(StringComparer.Ordinal);
       var ignored = new HashSet<string>(binding?.Ignored ?? Array.Empty<string>(), StringComparer.Ordinal);
 
-      foreach (var name in captions.Keys.Concat(positions.Keys))
+      foreach (var name in captions.Keys.Concat(positions.Keys).Concat(readings.Keys))
         if (ignored.Contains(name))
           throw new ArgumentException($"{typeof(T).Name}.{name} is both bound and ignored.", nameof(binding));
 
@@ -64,14 +74,15 @@ namespace Unrect.Spreadsheets
           + "Give it one constructor, or a parameterless constructor and settable properties.");
 
       return parameterless is null
-        ? FromConstructor(constructors[0], captions, positions, ignored, space)
-        : FromProperties(parameterless, captions, positions, ignored, space);
+        ? FromConstructor(constructors[0], captions, positions, readings, ignored, space)
+        : FromProperties(parameterless, captions, positions, readings, ignored, space);
     }
 
     private static RowBinding<T> FromConstructor(
       ConstructorInfo constructor,
       IReadOnlyDictionary<string, string> captions,
       IReadOnlyDictionary<string, int> positions,
+      IReadOnlyDictionary<string, Func<object, object?>> readings,
       ISet<string> ignored,
       Type space)
     {
@@ -91,10 +102,13 @@ namespace Unrect.Spreadsheets
       int? Position(ParameterInfo parameter)
         => positions.Where(p => CaptionComparer.Default.Equals(p.Key, parameter.Name!)).Select(p => (int?)p.Value).FirstOrDefault();
 
+      Func<object, object?>? Reading(ParameterInfo parameter)
+        => readings.Where(r => CaptionComparer.Default.Equals(r.Key, parameter.Name!)).Select(r => r.Value).FirstOrDefault();
+
       bool Ignored(ParameterInfo parameter)
         => ignored.Any(name => CaptionComparer.Default.Equals(name, parameter.Name!));
 
-      Verify(captions.Keys.Concat(positions.Keys), ignored, parameters.Select(p => p.Name!), viaConstructor: true);
+      Verify(captions.Keys.Concat(positions.Keys).Concat(readings.Keys), ignored, parameters.Select(p => p.Name!), viaConstructor: true);
 
       var members = new List<MemberPlan>();
       var values = Expression.Parameter(typeof(object?[]), "values");
@@ -116,8 +130,10 @@ namespace Unrect.Spreadsheets
 
         // Named for the PROPERTY, not the parameter: a hand-written constructor takes camelCase
         // parameters, and guidance reading Column(t => t.date, "…") would not compile.
-        members.Add(Plan(PropertyName(parameter.Name!), Declared(parameter), parameter.ParameterType,
-          () => NullableAnnotations.IsAnnotatedNullable(parameter), space).At(Position(parameter)));
+        members.Add(Reading(parameter) is Func<object, object?> reading
+          ? new MemberPlan(PropertyName(parameter.Name!), Declared(parameter), parameter.ParameterType, blankTolerant: false, reading: reading)
+          : Plan(PropertyName(parameter.Name!), Declared(parameter), parameter.ParameterType,
+            () => NullableAnnotations.IsAnnotatedNullable(parameter), space).At(Position(parameter)));
 
         arguments.Add(Expression.Convert(
           Expression.ArrayIndex(values, Expression.Constant(index)), parameter.ParameterType));
@@ -134,6 +150,7 @@ namespace Unrect.Spreadsheets
       ConstructorInfo parameterless,
       IReadOnlyDictionary<string, string> captions,
       IReadOnlyDictionary<string, int> positions,
+      IReadOnlyDictionary<string, Func<object, object?>> readings,
       ISet<string> ignored,
       Type space)
     {
@@ -146,7 +163,7 @@ namespace Unrect.Spreadsheets
       if (settable.Length == 0)
         throw new ArgumentException($"{typeof(T).Name} has no properties to bind.");
 
-      Verify(captions.Keys.Concat(positions.Keys), ignored, settable.Select(p => p.Name), viaConstructor: false);
+      Verify(captions.Keys.Concat(positions.Keys).Concat(readings.Keys), ignored, settable.Select(p => p.Name), viaConstructor: false);
 
       var members = new List<MemberPlan>();
       var values = Expression.Parameter(typeof(object?[]), "values");
@@ -159,9 +176,11 @@ namespace Unrect.Spreadsheets
 
         var index = members.Count;
 
-        members.Add(Plan(property.Name, captions.TryGetValue(property.Name, out var caption) ? caption : property.Name,
-          property.PropertyType, () => NullableAnnotations.IsAnnotatedNullable(property), space)
-          .At(positions.TryGetValue(property.Name, out var position) ? position : (int?)null));
+        members.Add(readings.TryGetValue(property.Name, out var reading)
+          ? new MemberPlan(property.Name, property.Name, property.PropertyType, blankTolerant: false, reading: reading)
+          : Plan(property.Name, captions.TryGetValue(property.Name, out var caption) ? caption : property.Name,
+            property.PropertyType, () => NullableAnnotations.IsAnnotatedNullable(property), space)
+            .At(positions.TryGetValue(property.Name, out var position) ? position : (int?)null));
 
         // Expression.Bind accepts an init-only property: the modreq is a compile-time signal, and
         // the setter is an ordinary setter in metadata.

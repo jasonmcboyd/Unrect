@@ -87,17 +87,17 @@ namespace Unrect.Spreadsheets
     public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(BlankRowStrategy onBlank)
       => SpreadsheetProjections.Table<TSpace, T>(onBlank);
 
-    /// <inheritdoc cref="SpreadsheetProjections.Table{TSpace, T}(Func{TableBinding{T}, TableBinding{T}})"/>
+    /// <inheritdoc cref="SpreadsheetProjections.Table{TSpace, T}(Func{TableBinding{TSpace, T}, TableBinding{TSpace, T}})"/>
     /// <typeparam name="T">What one record reads.</typeparam>
     /// <param name="bind">The per-member declarations applied to what reflection would have written.</param>
-    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(Func<TableBinding<T>, TableBinding<T>> bind)
+    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>> bind)
       => SpreadsheetProjections.Table<TSpace, T>(bind);
 
-    /// <inheritdoc cref="SpreadsheetProjections.Table{TSpace, T}(Func{TableBinding{T}, TableBinding{T}}, BlankRowStrategy)"/>
+    /// <inheritdoc cref="SpreadsheetProjections.Table{TSpace, T}(Func{TableBinding{TSpace, T}, TableBinding{TSpace, T}}, BlankRowStrategy)"/>
     /// <typeparam name="T">What one record reads.</typeparam>
     /// <param name="bind">The per-member declarations applied to what reflection would have written.</param>
     /// <param name="onBlank">How a fully-blank body row is treated.</param>
-    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(Func<TableBinding<T>, TableBinding<T>> bind, BlankRowStrategy onBlank)
+    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>> bind, BlankRowStrategy onBlank)
       => SpreadsheetProjections.Table<TSpace, T>(bind, onBlank);
 
     /// <inheritdoc cref="SpreadsheetProjections.Record{TSpace, T}(LabelMap)"/>

@@ -25,7 +25,9 @@ The same package also has a streaming door, `Workbook`, for files too large to r
 whole — see [Large files](#large-files) below.
 A sheet opened with `SpreadsheetSpace.CreateWithFormulas` also answers for its formulas and for
 what its cells look like — `row["Account"].Font().Color == CellColor.Red` turns "the rows someone
-coloured red" into a property you filter on (`.xlsx` only).
+coloured red" into a property you filter on (`.xlsx` only), and
+`Table<T>(bind => bind.Column(t => t.IsDeprecated, row => …))` puts it on a bound record without
+spelling out the other members.
 `Unrect.Interactive` is for the first five minutes with an unfamiliar file, in LINQPad or a
 notebook: `sheet.At("B4")` reaches a cell by hand, and `sheet.ScaffoldRecord("Transaction")`
 (or `ScaffoldClass`) finds the caption row, reads a few samples under it and hands back a type
