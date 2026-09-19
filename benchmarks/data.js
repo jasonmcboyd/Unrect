@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789847939124,
+  "lastUpdate": 1789847939370,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -10375,6 +10375,65 @@ window.BENCHMARK_DATA = {
           {
             "name": "Unrect.Benchmarks.Tables.Dictionary_100k",
             "value": 55894328,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Bound_ProjectionConstruction",
+            "value": 14074,
+            "unit": "bytes"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "4818c36f9e9b0c2b75a4093dbbce6981329fd14b",
+          "message": "Merge feature/scaffold-shapes: ScaffoldRecord and ScaffoldClass, on a sheet and as leaves\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>",
+          "timestamp": "2026-09-19T15:35:04Z",
+          "tree_id": "d48076b68bb0a93dc6ab6797b10f0ead882156a7",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/4818c36f9e9b0c2b75a4093dbbce6981329fd14b"
+        },
+        "date": 1789847939315,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Tables.Lambda_10k",
+            "value": 2709882,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Lambda_100k",
+            "value": 25495197,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Bound_10k",
+            "value": 96301313,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Bound_100k",
+            "value": 956077408,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Dictionary_10k",
+            "value": 5749014,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Dictionary_100k",
+            "value": 55894235,
             "unit": "bytes"
           },
           {
