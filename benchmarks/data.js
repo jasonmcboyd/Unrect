@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789796482381,
+  "lastUpdate": 1789796482597,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -5580,6 +5580,42 @@ window.BENCHMARK_DATA = {
             "value": 89782155.28888889,
             "unit": "ns",
             "range": "± 539252.2341567563"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "717d1ea3b61c226c608194aae5ff909fd4603455",
+          "message": "Packaging: Unrect.Interactive ships as its own package\n\nThe project was already packable — id, description, tags, and a\ndependency on exactly Unrect and Unrect.Spreadsheets at the same MinVer\nversion — but the release workflow packed and asserted two packages, and\nthe README and build props named two. Now three.\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>",
+          "timestamp": "2026-09-19T01:12:25Z",
+          "tree_id": "f01ec5a705245aededd07d5455e7b03ad4f8880d",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/717d1ea3b61c226c608194aae5ff909fd4603455"
+        },
+        "date": 1789796482548,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.EndToEnd.Document_400Investors",
+            "value": 116212048.5,
+            "unit": "ns",
+            "range": "± 137268.33082089172"
+          },
+          {
+            "name": "Unrect.Benchmarks.EndToEnd.Document_4000Investors",
+            "value": 9239102954.8,
+            "unit": "ns",
+            "range": "± 24398811.47840713"
           }
         ]
       }
