@@ -211,7 +211,7 @@ namespace Unrect.Spreadsheets
     /// it. Found by following the package's own relationships rather than by assuming
     /// <c>xl/workbook.xml</c>: the layout is a convention of one writer, not a rule of the format.
     /// </summary>
-    private static List<KeyValuePair<string, string>> ReadSheetMap(ZipArchive archive)
+    internal static List<KeyValuePair<string, string>> ReadSheetMap(ZipArchive archive)
     {
       var workbookPart = WorkbookPart(archive)
         ?? throw new InvalidDataException("The file declares no workbook part; it is not a readable xlsx.");
@@ -253,7 +253,7 @@ namespace Unrect.Spreadsheets
       return sheets;
     }
 
-    private static string? WorkbookPart(ZipArchive archive)
+    internal static string? WorkbookPart(ZipArchive archive)
     {
       foreach (var relationship in ReadRelationships(archive, "_rels/.rels"))
         if (relationship.Type.EndsWith(OfficeDocument, StringComparison.Ordinal))
@@ -262,7 +262,7 @@ namespace Unrect.Spreadsheets
       return null;
     }
 
-    private static IEnumerable<Relationship> ReadRelationships(ZipArchive archive, string part)
+    internal static IEnumerable<Relationship> ReadRelationships(ZipArchive archive, string part)
     {
       var entry = archive.GetEntry(part);
 
@@ -287,7 +287,7 @@ namespace Unrect.Spreadsheets
     }
 
     /// <summary>A relationship target as a part name: absolute as written, relative to its source's folder.</summary>
-    private static string Resolve(string folder, string target)
+    internal static string Resolve(string folder, string target)
     {
       if (target.StartsWith("/", StringComparison.Ordinal))
         return target.Substring(1);
@@ -305,21 +305,21 @@ namespace Unrect.Spreadsheets
       return resolved;
     }
 
-    private static string FolderOf(string part)
+    internal static string FolderOf(string part)
     {
       var slash = part.LastIndexOf('/');
 
       return slash < 0 ? string.Empty : part.Substring(0, slash + 1);
     }
 
-    private static string NameOf(string part) => part.Substring(FolderOf(part).Length);
+    internal static string NameOf(string part) => part.Substring(FolderOf(part).Length);
 
-    private static int Index(string? reference, int previous)
+    internal static int Index(string? reference, int previous)
       => int.TryParse(reference, out var number) && number > 0 ? number - 1 : previous + 1;
 
     // XmlResolver and DtdProcessing: a workbook is untrusted input, and neither an external entity
     // nor a DTD has any business in an xlsx part.
-    private static XmlReaderSettings Settings()
+    internal static XmlReaderSettings Settings()
       => new XmlReaderSettings
       {
         IgnoreComments = true,
@@ -329,7 +329,7 @@ namespace Unrect.Spreadsheets
         XmlResolver = null,
       };
 
-    private readonly struct Relationship
+    internal readonly struct Relationship
     {
       internal Relationship(string id, string type, string target)
       {
