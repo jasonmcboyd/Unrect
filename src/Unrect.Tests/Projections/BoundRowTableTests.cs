@@ -333,19 +333,17 @@ namespace Unrect.Tests.Projections
       var failure = Assert.Throws<ArgumentOutOfRangeException>(() => Table(headerRows: 0, eachRow: AllocationRow));
 
       Assert.Equal("headerRows", failure.ParamName);
-      Assert.Contains("needs a header row to read them from; headerRows must be 1", failure.Message, StringComparison.Ordinal);
+      Assert.Contains("needs a header row to read them from; headerRows must be at least 1", failure.Message, StringComparison.Ordinal);
     }
 
-    [Theory]
-    [InlineData(2)]
-    [InlineData(-1)]
-    public void AndSoIsAMultiRowHeader(int headerRows)
+    [Fact]
+    public void AndSoIsANegativeOne()
     {
       // Past zero the bind rung defers to the same validation every other rung uses, so there is one
-      // multi-row-header message in the family rather than two.
-      var failure = Assert.Throws<ArgumentOutOfRangeException>(() => Table(headerRows, AllocationRow));
+      // message in the family rather than two.
+      var failure = Assert.Throws<ArgumentOutOfRangeException>(() => Table(-1, AllocationRow));
 
-      Assert.Contains("multi-row headers are not supported in this release", failure.Message, StringComparison.Ordinal);
+      Assert.Contains("cannot have a negative number of header rows", failure.Message, StringComparison.Ordinal);
     }
 
     [Fact]

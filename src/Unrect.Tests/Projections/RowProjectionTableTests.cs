@@ -362,14 +362,12 @@ namespace Unrect.Tests.Projections
       Assert.Throws<ArgumentNullException>(() => Table(0, (IProjectionDefinition<ISheetCells, int>)null!));
     }
 
-    [Theory]
-    [InlineData(2)]
-    [InlineData(-1)]
-    public void AndSoIsAMultiRowHeader(int headerRows)
+    [Fact]
+    public void AndSoIsANegativeHeaderCount()
     {
-      var failure = Assert.Throws<ArgumentOutOfRangeException>(() => Table(headerRows, Row(cells => cells.Count)));
+      var failure = Assert.Throws<ArgumentOutOfRangeException>(() => Table(-1, Row(cells => cells.Count)));
 
-      Assert.Contains("multi-row headers are not supported in this release", failure.Message);
+      Assert.Contains("cannot have a negative number of header rows", failure.Message);
     }
 
     // --- The demand flows through the slot -----------------------------------------------------------------

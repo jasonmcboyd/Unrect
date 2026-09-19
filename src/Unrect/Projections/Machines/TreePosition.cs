@@ -159,6 +159,13 @@ namespace Unrect.Projections
 
     /// <summary>The ordinals carrying <paramref name="label"/>, in the captured frame; empty when none does.</summary>
     IReadOnlyList<int> IndicesOf(string label);
+
+    /// <summary>
+    /// Each column's own caption, without the bands over it — the same as <see cref="Labels"/>
+    /// wherever a header has no band rows. A caption that is unique among these names its column
+    /// without its band having to be said.
+    /// </summary>
+    IReadOnlyList<string> Captions { get; }
   }
 
   /// <summary>

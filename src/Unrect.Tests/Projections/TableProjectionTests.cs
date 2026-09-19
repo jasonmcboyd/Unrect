@@ -189,23 +189,15 @@ namespace Unrect.Tests.Projections
       Assert.Contains("a header row was declared but the table's extent is empty", failure.Message);
     }
 
-    [Theory]
-    [InlineData(2)]
-    [InlineData(3)]
-    [InlineData(-1)]
-    public void Table_WithMoreThanOneHeaderRow_IsRejectedAtConstruction(int headerRows)
+    [Fact]
+    public void Table_WithANegativeHeaderCount_IsRejectedAtConstruction()
     {
-      var failure = Assert.Throws<ArgumentOutOfRangeException>(() => Table(headerRows, t => t.RowCount));
+      // Any count from zero up is a header: none, the captions, or the captions under rows of
+      // bands (HeaderBandTests). Fewer than none is not a header anyone could mean.
+      var failure = Assert.Throws<ArgumentOutOfRangeException>(() => Table(-1, t => t.RowCount));
 
-      Assert.Contains("multi-row headers are not supported in this release", failure.Message);
-    }
-
-    [Theory]
-    [InlineData(2)]
-    [InlineData(-1)]
-    public void TheRowLambda_WithMoreThanOneHeaderRow_IsRejectedAtConstruction(int headerRows)
-    {
-      Assert.Throws<ArgumentOutOfRangeException>(() => Table(headerRows, r => r[0]));
+      Assert.Contains("cannot have a negative number of header rows", failure.Message);
+      Assert.Throws<ArgumentOutOfRangeException>(() => Table(-1, r => r[0]));
     }
 
     // --- Tier 1: by index ------------------------------------------------------------------------------------
