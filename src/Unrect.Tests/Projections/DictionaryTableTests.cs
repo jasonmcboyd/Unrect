@@ -148,8 +148,25 @@ namespace Unrect.Tests.Projections
       var failure = Assert.Throws<ProjectionException>(() => Table().Map(space));
 
       Assert.Contains(
-        "the column at B1 has no caption; every column needs one to be read by name",
+        "the column at B1 has no caption and holds values; every column needs a caption to be read by name",
         failure.Message);
+    }
+
+    [Fact]
+    public void AColumnWithNoCaptionAndNothingInIt_HasNoEntry()
+    {
+      // The blank lead of an indented table: part of the table's extent, with no caption to be
+      // read by and nothing to lose by not reading it. Sight-reading an unfamiliar sheet should not
+      // fail on the margin it was laid out with.
+      var space = Mixed(new object?[,]
+      {
+        { null, "Name", "Amount" },
+        { null, "Acme", 1m },
+      });
+
+      var row = Assert.Single(Table().Map(space));
+
+      Assert.Equal(new[] { "Name", "Amount" }, row.Keys);
     }
 
     [Fact]

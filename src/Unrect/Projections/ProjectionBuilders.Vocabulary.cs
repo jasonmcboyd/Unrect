@@ -355,9 +355,10 @@ namespace Unrect.Projections
     /// to <c>Table&lt;T&gt;()</c> once the columns are known.
     /// </para>
     /// <para>
-    /// It promises one entry per column, so it is strict about the things that would break that
-    /// promise: a column with no caption, and two captions that collide under the comparer, are
-    /// both loud failures naming the cells involved.
+    /// It promises one entry per column that holds anything, so it is strict about the things that
+    /// would break that promise: a column with values and no caption, and two captions that collide
+    /// under the comparer, are both loud failures naming the cells involved. A column with no
+    /// caption and nothing in it — the blank lead of an indented table — has no entry.
     /// </para>
     /// </summary>
     public static IProjectionDefinition<TSpace, IReadOnlyList<IReadOnlyDictionary<string, Point<TSpace>>>> Table()
@@ -648,12 +649,11 @@ namespace Unrect.Projections
     /// the normal case that needs no marking.
     /// </para>
     /// <para>
-    /// <paramref name="separatedBy"/> is the offset <em>between</em> items and is never applied
-    /// before the first — a leading gap belongs to the repeat itself
-    /// (<c>VerticalRepeat(...).AfterBlankRows()</c>). It is also load-bearing for termination: when
-    /// content follows the last item, the separator is what carries the cursor over the gap so the
-    /// repetition can recognise that the next item is not there. Without it, an item whose own
-    /// placement still fits will be applied to that content and fail loudly.
+    /// Every occurrence steps over the blank rows in front of it, as anything that does not say
+    /// where it starts does, so blocks with gaps between them need nothing said about the gaps, and a
+    /// run ends at a trailing blank band: the next attempt finds nothing there to be.
+    /// <paramref name="separatedBy"/> is for a separator that is CONTENT — a rule of dashes, a
+    /// repeated page heading: the offset <em>between</em> items, never applied before the first.
     /// </para>
     /// <para>
     /// <paramref name="atLeast"/> turns "found nothing" into a good error instead of a silently
@@ -665,7 +665,7 @@ namespace Unrect.Projections
     /// <c>orEnd</c> lets a run that reaches the sheet's edge without meeting one end there rather
     /// than fail for want of the landmark. A landmark is located before the walk begins, so such a
     /// bound reads ahead to it and the walk then reads behind that point. A blank band between
-    /// occurrences is a separator (<c>separatedBy: BlankRows()</c>), never a terminator; where the
+    /// occurrences is a gap, never a terminator; where the
     /// occurrences really are one row each and a blank row is a policy question — or where the
     /// reading must stay forward-only —
     /// <see cref="VerticalBands{T}(int, IProjectionDefinition{TSpace, T}, BlankRowStrategy?, string)"/> is the

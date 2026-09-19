@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 using Unrect.Core;
 using Unrect.Strategies;
@@ -15,18 +16,26 @@ namespace Unrect.Projections
   {
     private static IReadOnlyList<IReadOnlyDictionary<string, Point<TSpace>>> DictionaryRows(TableView<TSpace> table)
     {
-      var captions = new string[table.ColumnCount];
+      var captions = new string?[table.ColumnCount];
 
       for (var column = 0; column < table.ColumnCount; column++)
       {
         var caption = table.ColumnNames[column];
 
         if (caption.Length == 0)
+        {
+          // A column with no caption and nothing in it is not a column anyone could miss — the
+          // blank lead of an indented table is the usual one — so it simply has no entry. One that
+          // holds a value would be dropped silently, which is the thing this rung refuses to do.
+          if (table.Rows.All(row => row[column].IsBlank))
+            continue;
+
           throw table.Failure(
-            $"the column at {table.Header.AddressOf(column).A1} has no caption; every column needs one to be read by name");
+            $"the column at {table.Header.AddressOf(column).A1} has no caption and holds values; every column needs a caption to be read by name");
+        }
 
         for (var earlier = 0; earlier < column; earlier++)
-          if (CaptionComparer.Default.Equals(captions[earlier], caption))
+          if (captions[earlier] is string other && CaptionComparer.Default.Equals(other, caption))
             throw table.Failure(
               $"the columns at {table.Header.AddressOf(earlier).A1} ('{captions[earlier]}') and "
               + $"{table.Header.AddressOf(column).A1} ('{caption}') carry the same caption; "
@@ -42,7 +51,8 @@ namespace Unrect.Projections
         var cells = new Dictionary<string, Point<TSpace>>(captions.Length, CaptionComparer.Default);
 
         for (var column = 0; column < captions.Length; column++)
-          cells[captions[column]] = row[column];
+          if (captions[column] is string caption)
+            cells[caption] = row[column];
 
         rows.Add(cells);
       }
