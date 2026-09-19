@@ -49,18 +49,11 @@ Cash Flows using inception date
 using Unrect.Spreadsheets;
 using static Unrect.Projections.Projection;
 
-var header = VerticalFlow(v =>
+var header = VerticalFlow(v => new
 {
-    var title = v.Next(Text());
-    var fund = v.Next(Text());
-    var reportDate = v.Next(Date());
-
-    return v.Build(read => new
-    {
-        Title = read.Of(title),
-        Fund = read.Of(fund),
-        ReportDate = read.Of(reportDate),
-    });
+    Title = v.Next(Text()),
+    Fund = v.Next(Text()),
+    ReportDate = v.Next(Date()),
 });
 
 // Captions bind to record properties by name (case- and whitespace-insensitive).
@@ -79,20 +72,12 @@ var byTransferDate = series
 
 var byInception = series.Under(Caption(Inception));
 
-var report = VerticalFlow(v =>
+var report = VerticalFlow(v => new
 {
-    var head = v.Next(header);
-    var summaryRows = v.Next(summary);
-    var transferDates = v.Next(byTransferDate);
-    var inceptions = v.Next(byInception);
-
-    return v.Build(read => new
-    {
-        Header = read.Of(head),
-        Summary = read.Of(summaryRows),
-        ByTransferDate = read.Of(transferDates),
-        ByInception = read.Of(inceptions),
-    });
+    Header = v.Next(header),
+    Summary = v.Next(summary),
+    ByTransferDate = v.Next(byTransferDate),
+    ByInception = v.Next(byInception),
 });
 
 var result = report.Map(SpreadsheetSpace.Create("irr-report.xlsx", "IRR"));
