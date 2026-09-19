@@ -53,7 +53,7 @@ namespace Unrect.Spreadsheets
     /// <param name="labels">This file's captions — what a table's bind rung hands its record.</param>
     public static IProjectionDefinition<TSpace, T> Record<TSpace, T>(LabelMap labels)
       where TSpace : class, ISheetCells
-      => RecordRow<TSpace, T>(RowBinding<T>.Create(null, typeof(TSpace)), labels);
+      => RecordRow<TSpace, T>(RowBinding<T>.Create<TSpace>(null, typeof(TSpace)), labels);
 
     /// <summary>
     /// Every body row as a <typeparamref name="T"/> — <see cref="Record{TSpace, T}"/> applied to
@@ -68,7 +68,7 @@ namespace Unrect.Spreadsheets
     /// <typeparam name="T">What one record reads.</typeparam>
     public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<TSpace, T>()
       where TSpace : class, ISheetCells
-      => Bound<TSpace, T>(RowBinding<T>.Create(null, typeof(TSpace)), BlankRowStrategy.Stop);
+      => Bound<TSpace, T>(RowBinding<T>.Create<TSpace>(null, typeof(TSpace)), BlankRowStrategy.Stop);
 
     /// <summary>
     /// <see cref="Table{TSpace, T}()"/> with a blank-row strategy: <paramref name="onBlank"/> says
@@ -82,7 +82,7 @@ namespace Unrect.Spreadsheets
     /// <param name="onBlank">How a fully-blank body row is treated.</param>
     public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<TSpace, T>(BlankRowStrategy onBlank)
       where TSpace : class, ISheetCells
-      => Bound<TSpace, T>(RowBinding<T>.Create(null, typeof(TSpace)), onBlank);
+      => Bound<TSpace, T>(RowBinding<T>.Create<TSpace>(null, typeof(TSpace)), onBlank);
 
     /// <summary>
     /// <see cref="Table{TSpace, T}()"/> with per-member declarations: <c>Column</c> for a caption
@@ -96,12 +96,12 @@ namespace Unrect.Spreadsheets
     /// <typeparam name="TSpace">The sheet the table is declared over.</typeparam>
     /// <typeparam name="T">What one record reads.</typeparam>
     /// <param name="bind">The per-member declarations applied to what reflection would have written.</param>
-    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<TSpace, T>(Func<TableBinding<T>, TableBinding<T>> bind)
+    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<TSpace, T>(Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>> bind)
       where TSpace : class, ISheetCells
       => Bound<TSpace, T>(Planned<TSpace, T>(bind), BlankRowStrategy.Stop);
 
     /// <summary>
-    /// <see cref="Table{TSpace, T}(Func{TableBinding{T}, TableBinding{T}})"/> with a blank-row
+    /// <see cref="Table{TSpace, T}(Func{TableBinding{TSpace, T}, TableBinding{TSpace, T}})"/> with a blank-row
     /// strategy: <paramref name="onBlank"/> says how a fully-blank body row is treated — <c>Stop</c>
     /// (the default, self-bounding), <c>Skip</c>, <c>Fault</c>, or <c>Tolerate</c>. Every
     /// non-<c>Stop</c> policy is not self-bounding, so the table runs to the enclosing edge (declare
@@ -111,14 +111,14 @@ namespace Unrect.Spreadsheets
     /// <typeparam name="T">What one record reads.</typeparam>
     /// <param name="bind">The per-member declarations applied to what reflection would have written.</param>
     /// <param name="onBlank">How a fully-blank body row is treated.</param>
-    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<TSpace, T>(Func<TableBinding<T>, TableBinding<T>> bind, BlankRowStrategy onBlank)
+    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<TSpace, T>(Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>> bind, BlankRowStrategy onBlank)
       where TSpace : class, ISheetCells
       => Bound<TSpace, T>(Planned<TSpace, T>(bind), onBlank);
 
-    private static RowBinding<T> Planned<TSpace, T>(Func<TableBinding<T>, TableBinding<T>> bind)
+    private static RowBinding<T> Planned<TSpace, T>(Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>> bind)
       where TSpace : class, ISheetCells
       => RowBinding<T>.Create(
-        (bind ?? throw new ArgumentNullException(nameof(bind)))(new TableBinding<T>())
+        (bind ?? throw new ArgumentNullException(nameof(bind)))(new TableBinding<TSpace, T>())
         ?? throw new ArgumentException("The binding lambda returned null.", nameof(bind)),
         typeof(TSpace));
 
@@ -145,7 +145,10 @@ namespace Unrect.Spreadsheets
       var members = new IProjectionDefinition<TSpace, object?>[plan.Members.Count];
 
       for (var member = 0; member < members.Length; member++)
-        members[member] = ProjectionBuilders<TSpace>
+        members[member] = plan.Members[member].Reading is Func<object, object?> reading
+          // The member's own reading of the row: the whole band, under the table's captions.
+          ? ProjectionBuilders<TSpace>.Record(row => reading(row)).AsUnit($"member '{plan.Members[member].Name}'")
+          : ProjectionBuilders<TSpace>
           .Right(columns[member])
           .Of(KindedLeaves.For<TSpace>(plan.Members[member]))
           .AsUnit(ColumnName(plan.Members[member], labels, columns[member]));
@@ -181,6 +184,10 @@ namespace Unrect.Spreadsheets
 
       for (var member = 0; member < plan.Members.Count; member++)
       {
+        // Filled from the row: it reads no column of its own.
+        if (plan.Members[member].Reading is not null)
+          continue;
+
         // Bound by position: the caption is not consulted, so neither a missing one nor a
         // duplicated one is this member's problem. The table has to be that wide.
         if (plan.Members[member].Position is int position)

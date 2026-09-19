@@ -5,8 +5,9 @@ namespace Unrect.Spreadsheets
   /// <summary>How one member of <c>T</c> is filled from a row: which caption, which reading.</summary>
   internal sealed class MemberPlan
   {
-    public MemberPlan(string name, string caption, Type type, bool blankTolerant, int? position = null)
+    public MemberPlan(string name, string caption, Type type, bool blankTolerant, int? position = null, Func<object, object?>? reading = null)
     {
+      Reading = reading;
       Name = name;
       Caption = caption;
       Type = type;
@@ -15,7 +16,7 @@ namespace Unrect.Spreadsheets
     }
 
     /// <summary>The same member, read from the column at <paramref name="position"/> whatever its caption says.</summary>
-    public MemberPlan At(int? position) => new MemberPlan(Name, Caption, Type, BlankTolerant, position);
+    public MemberPlan At(int? position) => new MemberPlan(Name, Caption, Type, BlankTolerant, position, Reading);
 
     /// <summary>The member's own name, for messages.</summary>
     public string Name { get; }
@@ -28,6 +29,12 @@ namespace Unrect.Spreadsheets
     /// where it binds by <see cref="Caption"/>.
     /// </summary>
     public int? Position { get; }
+
+    /// <summary>
+    /// The member's own reading of the row — handed the row as the space-typed view the binding
+    /// declared it over — or null where it reads one column.
+    /// </summary>
+    public Func<object, object?>? Reading { get; }
 
     /// <summary>The member's own CLR type, stripped of nullability — which leaf reads this column.</summary>
     public Type Type { get; }

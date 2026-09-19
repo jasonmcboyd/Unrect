@@ -638,7 +638,7 @@ namespace Unrect.Tests.Projections
     {
       // The lambda hands out a builder, and a builder that mutated in place would make the order of
       // the calls matter in ways nobody wrote down.
-      TableBinding<Wide>? captured = null;
+      TableBinding<ISheetCells, Wide>? captured = null;
 
       var projection = Table<Wide>(bind =>
       {
