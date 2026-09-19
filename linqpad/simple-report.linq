@@ -1,14 +1,14 @@
 <Query Kind="Statements">
   <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Core.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Core.dll</Reference>
+  <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.dll</Reference>
+  <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Engine.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Engine.dll</Reference>
   <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll</Reference>
-  <Reference Relative="..\src\Unrect\bin\Debug\netstandard2.1\Unrect.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect\bin\Debug\netstandard2.1\Unrect.dll</Reference>
-  <Reference Relative="..\src\Unrect\bin\Debug\netstandard2.1\Unrect.Engine.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect\bin\Debug\netstandard2.1\Unrect.Engine.dll</Reference>
   <Reference Relative="..\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll</Reference>
-  <Namespace>Unrect.Core</Namespace>
-  <Namespace>Unrect.Spreadsheets</Namespace>
-  <Namespace>Unrect.Projections</Namespace>
   <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Spreadsheets.ISheetCells&gt;</Namespace>
   <Namespace>static Unrect.Spreadsheets.SheetProjectionBuilders&lt;Unrect.Spreadsheets.ISheetCells&gt;</Namespace>
+  <Namespace>Unrect.Core</Namespace>
+  <Namespace>Unrect.Projections</Namespace>
+  <Namespace>Unrect.Spreadsheets</Namespace>
 </Query>
 
 // The space this file is written over is named ONCE — in two imports that say the same name:
@@ -28,21 +28,13 @@ var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\exam
 // The header was Column(4, c => ...): a hard-coded height and four accessor calls. As a flow of
 // typed leaves the 4 dissolves into the child count and every field states its kind. It consumes
 // 1x4 either way, so nothing below it moves.
-var reportHeader = VerticalFlow(v =>
-{
-	var title = v.Next(Text());
-	var subTitle = v.Next(Text());
-	var reportDate = v.Next(Date());
-	var reportId = v.Next(Text());
-
-	return v.Build(read => new
+var reportHeader = VerticalFlow(v => new
 	{
-		Title = read.Of(title),
-		SubTitle = read.Of(subTitle),
-		ReportDate = read.Of(reportDate),
-		ReportId = read.Of(reportId),
+		Title = v.Next(Text()),
+		SubTitle = v.Next(Text()),
+		ReportDate = v.Next(Date()),
+		ReportId = v.Next(Text()),
 	});
-});
 
 // Captions bind to members by name, ignoring case and whitespace: Client and Amount need nothing
 // said. Date and Type need a caption only because this type chose shorter names than the sheet —
@@ -52,17 +44,11 @@ var transactions = Table<Transaction>(bind => bind
 	.Column(t => t.Type, "Transaction Type"));
 
 // One lambda declares the children in flow order, once, at declaration; Build combines what they read.
-var report = VerticalFlow(v =>
-{
-	var header = v.Next(reportHeader);
-	var rows = v.Next(transactions);
-
-	return v.Build(read => new
+var report = VerticalFlow(v => new
 	{
-		ReportHeader = read.Of(header),
-		Transactions = read.Of(rows),
+		ReportHeader = v.Next(reportHeader),
+		Transactions = v.Next(transactions),
 	});
-});
 
 report.Map(SpreadsheetSpace.Create(path, "Report")).Dump();
 

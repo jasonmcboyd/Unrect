@@ -1,15 +1,15 @@
 <Query Kind="Statements">
-  <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Core.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Core.dll</Reference>
-  <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll</Reference>
-  <Reference Relative="..\src\Unrect\bin\Debug\netstandard2.1\Unrect.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect\bin\Debug\netstandard2.1\Unrect.dll</Reference>
-  <Reference Relative="..\src\Unrect\bin\Debug\netstandard2.1\Unrect.Engine.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect\bin\Debug\netstandard2.1\Unrect.Engine.dll</Reference>
-  <Reference Relative="..\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll</Reference>
   <Reference Relative="..\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Core.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Core.dll</Reference>
-  <Namespace>Unrect.Core</Namespace>
-  <Namespace>Unrect.Spreadsheets</Namespace>
-  <Namespace>Unrect.Projections</Namespace>
+  <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Core.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Core.dll</Reference>
+  <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.dll</Reference>
+  <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Engine.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Engine.dll</Reference>
+  <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll</Reference>
+  <Reference Relative="..\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll</Reference>
   <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Spreadsheets.ISheetCells&gt;</Namespace>
   <Namespace>static Unrect.Spreadsheets.SheetProjectionBuilders&lt;Unrect.Spreadsheets.ISheetCells&gt;</Namespace>
+  <Namespace>Unrect.Core</Namespace>
+  <Namespace>Unrect.Projections</Namespace>
+  <Namespace>Unrect.Spreadsheets</Namespace>
 </Query>
 
 // The space is named once, in the query's namespace imports: the canonical vocabulary as
@@ -32,17 +32,11 @@ var detailTransactions = Table(r => new
 	Amount = r["Amount"].Decimal(),
 });
 
-var investorDetail = VerticalFlow(v =>
-{
-	var investor = v.Next(investorName);
-	var transactions = v.Next(detailTransactions);
-
-	return v.Build(read => new
+var investorDetail = VerticalFlow(v => new
 	{
-		Investor = read.Of(investor),
-		Transactions = read.Of(transactions),
+		Investor = v.Next(investorName),
+		Transactions = v.Next(detailTransactions),
 	});
-});
 
 var reportHeader = Column(c => new
 {
@@ -67,19 +61,12 @@ var details = AfterBlankRows().VerticalRepeat(investorDetail, separatedBy: Blank
 // The report. Column(c => ...) discovers the header height; the gap before the summary is the
 // table's own default offset; the gap before the details section is that AfterBlankRows entry;
 // the gaps between detail blocks are the repeat's separator.
-var report = VerticalFlow(v =>
-{
-	var header = v.Next(reportHeader);
-	var summaryRows = v.Next(summary);
-	var detailBlocks = v.Next(details);
-
-	return v.Build(read => new
+var report = VerticalFlow(v => new
 	{
-		ReportHeader = read.Of(header),
-		Summary = read.Of(summaryRows),
-		Details = read.Of(detailBlocks),
+		ReportHeader = v.Next(reportHeader),
+		Summary = v.Next(summary),
+		Details = v.Next(details),
 	});
-});
 
 var result = report.Map(SpreadsheetSpace.Create(path, "Summary"));
 

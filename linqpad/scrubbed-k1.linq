@@ -22,8 +22,9 @@
 //   - rows anchor by content matchers, written as the pipeline's entry: On(RowContaining(...));
 //   - the header is an Overlay — independent blocks sharing rows, placement rather than flow —
 //     bounded with Sized so every seek inside it is unambiguous;
-//   - each layout lambda DIGESTS ITSELF: the header resolves its own columns from content and
-//     hands back what the rest of the declaration needs, so no raw cells travel any further;
+//   - the header layout resolves its own columns from content — counting, finding and formatting
+//     what its children read is fine in a layout — and the report's pivot, which reaches into the
+//     header's result, sits in a Select after the layout, so no raw cells travel any further;
 //   - a section announces itself with Heading, which finds the row, asserts the text and consumes
 //     it — the row belongs to the section instead of being swallowed by an anchor's offset;
 //   - the entity card is a Fields block: labels declared once, extent from the child count, and
@@ -72,20 +73,12 @@ var ownershipRow = Down(4).Of(FullRow("Fund Short Name"));
 // the shape it places: Sized is the entry for an extent with no movement to its left.
 var header = Sized(RowsWhileAnyValue()).Of(Overlay(o =>
 {
-	// Four children, declared once; everything below Build runs per application, over what they read.
-	var entityCard = o.Next(entity);
-	var captionCells = o.Next(captionRow);
-	var fundNameCells = o.Next(fundNameRow);
-	var ownershipCells = o.Next(ownershipRow);
-
-	return o.Build(read =>
-	{
 	// Fields hands back each label's cell as a place; AsText is the total reading, so the card
 	// leaves here as what it says rather than as five addresses for someone else to read.
-	var entityFields = read.Of(entityCard).ToDictionary(f => f.Key, f => f.Value.AsText() ?? "");
-	var captions = read.Of(captionCells);
-	var fundNames = read.Of(fundNameCells);
-	var ownership = read.Of(ownershipCells);
+	var entityFields = o.Next(entity).ToDictionary(f => f.Key, f => f.Value.AsText() ?? "");
+	var captions = o.Next(captionRow);
+	var fundNames = o.Next(fundNameRow);
+	var ownership = o.Next(ownershipRow);
 
 	var label = Find(fundNames, "Fund Short Name");
 
@@ -98,7 +91,6 @@ var header = Sized(RowsWhileAnyValue()).Of(Overlay(o =>
 		.ToArray();
 
 	return new { Entity = entityFields, AtaxColumn = Find(captions, "ATAX"), Columns = columns };
-	});
 }));
 
 // One section projection: rows while any value, wherever it is anchored.
@@ -111,21 +103,21 @@ var k1Lines = Heading("K-1 Lines 1-21").Of(section);
 // exactly where and why the section failed.
 var portfolio = Heading("Portfolio Income").Of(section).Optional();
 
-var report = VerticalFlow(v =>
+var report = VerticalFlow(v => new
 {
-	var headerBlock = v.Next(header);
-	var k1Section = v.Next(k1Lines);
-	var portfolioSection = v.Next(portfolio);
-
-	return v.Build(read =>
-	{
-	var head = read.Of(headerBlock);
-	var k1Rows = read.Of(k1Section);
-	var portfolioRows = read.Of(portfolioSection);
+	Head = v.Next(header),
+	K1Rows = v.Next(k1Lines),
+	PortfolioRows = v.Next(portfolio),
+})
+// The pivot reaches into the header's result, which nothing has built when the layout is declared,
+// so it is computation after the layout rather than assembly inside it.
+.Select(r =>
+{
+	var head = r.Head;
 
 	// Every coded row across both sections, pivot-neutral.
-	var allRows = k1Rows.Concat(portfolioRows ?? Array.Empty<Point<ISheetCells>[]>())
-		.Where(r => r[head.AtaxColumn].HasValue)
+	var allRows = r.K1Rows.Concat(r.PortfolioRows ?? Array.Empty<Point<ISheetCells>[]>())
+		.Where(row => row[head.AtaxColumn].HasValue)
 		.ToArray();
 
 	// Fund-centric pivot, legacy-import-style: each fund carries only its non-empty, non-zero
@@ -135,11 +127,11 @@ var report = VerticalFlow(v =>
 		FundCode = f.Code,
 		Percent = f.Percent,
 		LineItems = allRows
-			.Select(r => new
+			.Select(row => new
 			{
-				Atax = Code(r[head.AtaxColumn]),
-				Label = r[head.AtaxColumn + 1].TextOrBlank() ?? "",
-				Amount = r[f.Column].DecimalOrBlank(),
+				Atax = Code(row[head.AtaxColumn]),
+				Label = row[head.AtaxColumn + 1].TextOrBlank() ?? "",
+				Amount = row[f.Column].DecimalOrBlank(),
 			})
 			.Where(i => i.Amount is decimal a && a != 0m)
 			.ToArray(),
@@ -156,7 +148,6 @@ var report = VerticalFlow(v =>
 				.Where(i => i.Atax == fi.Atax)
 				.Sum(i => i.Amount ?? 0m) == fi.Amount),
 	};
-	});
 });
 
 var mapped = report.MapWithDiagnostics(space);

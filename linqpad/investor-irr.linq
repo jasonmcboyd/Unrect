@@ -1,10 +1,10 @@
 <Query Kind="Statements">
-  <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Core.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Core.dll</Reference>
-  <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll</Reference>
-  <Reference Relative="..\src\Unrect\bin\Debug\netstandard2.1\Unrect.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect\bin\Debug\netstandard2.1\Unrect.dll</Reference>
-  <Reference Relative="..\src\Unrect\bin\Debug\netstandard2.1\Unrect.Engine.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect\bin\Debug\netstandard2.1\Unrect.Engine.dll</Reference>
-  <Reference Relative="..\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll</Reference>
   <Reference Relative="..\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Core.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Core.dll</Reference>
+  <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Core.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Core.dll</Reference>
+  <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.dll</Reference>
+  <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Engine.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Engine.dll</Reference>
+  <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll</Reference>
+  <Reference Relative="..\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll</Reference>
   <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Spreadsheets.ISheetCells&gt;</Namespace>
   <Namespace>static Unrect.Spreadsheets.SheetProjectionBuilders&lt;Unrect.Spreadsheets.ISheetCells&gt;</Namespace>
   <Namespace>Unrect.Core</Namespace>
@@ -30,21 +30,13 @@ var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\exam
 // Without a way to say where the first series ENDS, its repeat runs into the second heading
 // and fails from inside an item. Until bounds it by content, and — because the bound is
 // consumed in full — the next child's own seek finds that row at distance zero.
-var reportHeader = VerticalFlow(v =>
-{
-	var title = v.Next(Text());
-	var fund = v.Next(Text());
-	var reportDate = v.Next(Date());
-	var reportId = v.Next(Text());
-
-	return v.Build(read => new
+var reportHeader = VerticalFlow(v => new
 	{
-		Title = read.Of(title),
-		Fund = read.Of(fund),
-		ReportDate = read.Of(reportDate),
-		ReportId = read.Of(reportId),
+		Title = v.Next(Text()),
+		Fund = v.Next(Text()),
+		ReportDate = v.Next(Date()),
+		ReportId = v.Next(Text()),
 	});
-});
 
 // Five of six captions bind with nothing said: the comparer ignores case and whitespace, so
 // "Contribution ITD" fills ContributionItd. Only Investors needs a caption, and only because the
@@ -73,21 +65,13 @@ var byTransferDate = Until(RowContaining(Inception))
 
 var byInception = Heading(Inception).Of(irrDetails);
 
-var report = VerticalFlow(v =>
-{
-	var header = v.Next(reportHeader);
-	var summaryRows = v.Next(summary);
-	var transferDateSeries = v.Next(byTransferDate);
-	var inceptionSeries = v.Next(byInception);
-
-	return v.Build(read => new
+var report = VerticalFlow(v => new
 	{
-		ReportHeader = read.Of(header),
-		Summary = read.Of(summaryRows),
-		ByTransferDate = read.Of(transferDateSeries),
-		ByInception = read.Of(inceptionSeries),
+		ReportHeader = v.Next(reportHeader),
+		Summary = v.Next(summary),
+		ByTransferDate = v.Next(byTransferDate),
+		ByInception = v.Next(byInception),
 	});
-});
 
 var mapped = report.MapWithDiagnostics(SpreadsheetSpace.Create(path, "IRR"));
 var result = mapped.Value;

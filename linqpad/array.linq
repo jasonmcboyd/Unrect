@@ -1,12 +1,12 @@
 <Query Kind="Statements">
   <Reference Relative="..\src\Unrect\bin\Debug\netstandard2.1\Unrect.Core.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect\bin\Debug\netstandard2.1\Unrect.Core.dll</Reference>
   <Reference Relative="..\src\Unrect\bin\Debug\netstandard2.1\Unrect.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect\bin\Debug\netstandard2.1\Unrect.dll</Reference>
-  <Reference Relative="..\src\Unrect\bin\Debug\netstandard2.1\Unrect.Engine.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect\bin\Debug\netstandard2.1\Unrect.Engine.dll</Reference>
+  <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Engine.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Engine.dll</Reference>
   <Reference Relative="..\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll</Reference>
+  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Core.IValueCells&lt;int&gt;&gt;</Namespace>
   <Namespace>Unrect</Namespace>
   <Namespace>Unrect.Core</Namespace>
   <Namespace>Unrect.Projections</Namespace>
-  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Core.IValueCells&lt;int&gt;&gt;</Namespace>
 </Query>
 
 // Projections over an in-memory array. The adapter decides blankness where data enters
@@ -40,16 +40,10 @@ var firstRow = Row(r => r.Select(p => p.Value()).ToArray());
 
 var rest = Range(b => b.Rows.Select(r => r.Select(p => p.Value()).ToArray()).ToArray());
 
-var block = VerticalFlow(v =>
-{
-	var first = v.Next(firstRow);
-	var remainder = v.Next(rest);
-
-	return v.Build(read => new
+var block = VerticalFlow(v => new
 	{
-		FirstRow = read.Of(first),
-		Rest = read.Of(remainder),
+		FirstRow = v.Next(firstRow),
+		Rest = v.Next(rest),
 	});
-});
 
 VerticalRepeat(block, separatedBy: BlankRows()).Map(space).Dump();
