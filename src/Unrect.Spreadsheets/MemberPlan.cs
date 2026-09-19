@@ -5,19 +5,29 @@ namespace Unrect.Spreadsheets
   /// <summary>How one member of <c>T</c> is filled from a row: which caption, which reading.</summary>
   internal sealed class MemberPlan
   {
-    public MemberPlan(string name, string caption, Type type, bool blankTolerant)
+    public MemberPlan(string name, string caption, Type type, bool blankTolerant, int? position = null)
     {
       Name = name;
       Caption = caption;
       Type = type;
       BlankTolerant = blankTolerant;
+      Position = position;
     }
+
+    /// <summary>The same member, read from the column at <paramref name="position"/> whatever its caption says.</summary>
+    public MemberPlan At(int? position) => new MemberPlan(Name, Caption, Type, BlankTolerant, position);
 
     /// <summary>The member's own name, for messages.</summary>
     public string Name { get; }
 
     /// <summary>The caption to look for — inferred from the name, or declared by an override.</summary>
     public string Caption { get; }
+
+    /// <summary>
+    /// The column this member was bound to by position, counted from the table's left edge; null
+    /// where it binds by <see cref="Caption"/>.
+    /// </summary>
+    public int? Position { get; }
 
     /// <summary>The member's own CLR type, stripped of nullability — which leaf reads this column.</summary>
     public Type Type { get; }

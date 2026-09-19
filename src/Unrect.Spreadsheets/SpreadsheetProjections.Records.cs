@@ -148,7 +148,7 @@ namespace Unrect.Spreadsheets
         members[member] = ProjectionBuilders<TSpace>
           .Right(columns[member])
           .Of(KindedLeaves.For<TSpace>(plan.Members[member]))
-          .AsUnit($"column '{plan.Members[member].Caption}'");
+          .AsUnit(ColumnName(plan.Members[member], labels, columns[member]));
 
       // Scaffolding: the overlay is how this rung is assembled, not something the declaration wrote,
       // so it contributes no segment of its own and a path reads Table<Txn>[2] -> column 'Amount' —
@@ -181,6 +181,19 @@ namespace Unrect.Spreadsheets
 
       for (var member = 0; member < plan.Members.Count; member++)
       {
+        // Bound by position: the caption is not consulted, so neither a missing one nor a
+        // duplicated one is this member's problem. The table has to be that wide.
+        if (plan.Members[member].Position is int position)
+        {
+          if (position >= labels.Labels.Count)
+            throw labels.Failure(
+              $"{typeof(T).Name}.{plan.Members[member].Name} is bound to column {position}, and the table has "
+              + $"{labels.Labels.Count} column{(labels.Labels.Count == 1 ? string.Empty : "s")} (0 to {labels.Labels.Count - 1})");
+
+          columns[member] = position;
+          continue;
+        }
+
         var matches = labels.Bound(plan.Members[member].Caption);
 
         // A member with no column joins the aggregate below; one with two is a table nobody can read
@@ -203,6 +216,15 @@ namespace Unrect.Spreadsheets
     }
 
     /// <summary>
+    /// A bound column's path segment: the caption the member binds by, or — bound by position — the
+    /// caption that column carries, and its position where it carries none.
+    /// </summary>
+    private static string ColumnName(MemberPlan member, LabelMap labels, int column)
+      => member.Position is null ? $"column '{member.Caption}'"
+        : labels.Labels[column].Length > 0 ? $"column '{labels.Labels[column]}'"
+        : $"column {column}";
+
+    /// <summary>
     /// A member whose caption two columns carry: both are named, with their own spellings, because
     /// the fix is in the file or in a <c>Column(…)</c> declaration and the reader needs to see which.
     /// </summary>
@@ -211,7 +233,8 @@ namespace Unrect.Spreadsheets
         $"{typeof(T).Name}.{member.Name} matches the columns at "
         + $"{labels.AddressOf(matches[0]).A1} ('{labels.Labels[matches[0]]}') and "
         + $"{labels.AddressOf(matches[1]).A1} ('{labels.Labels[matches[1]]}'); "
-        + "captions are matched ignoring case and whitespace");
+        + "captions are matched ignoring case and whitespace. "
+        + $"Bind it by position with Column(t => t.{member.Name}, {matches[0]})");
 
     private static string Join(IReadOnlyList<string> names)
       => names.Count == 1
