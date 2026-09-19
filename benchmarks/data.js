@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789613140220,
+  "lastUpdate": 1789796481571,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -1076,6 +1076,66 @@ window.BENCHMARK_DATA = {
             "value": 5180270.985514323,
             "unit": "ns",
             "range": "± 203751.55354333832"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "717d1ea3b61c226c608194aae5ff909fd4603455",
+          "message": "Packaging: Unrect.Interactive ships as its own package\n\nThe project was already packable — id, description, tags, and a\ndependency on exactly Unrect and Unrect.Spreadsheets at the same MinVer\nversion — but the release workflow packed and asserted two packages, and\nthe README and build props named two. Now three.\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>",
+          "timestamp": "2026-09-19T01:12:25Z",
+          "tree_id": "f01ec5a705245aededd07d5455e7b03ad4f8880d",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/717d1ea3b61c226c608194aae5ff909fd4603455"
+        },
+        "date": 1789796480040,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Engine.VerticalFlow_ManyChildren",
+            "value": 5082059.899553572,
+            "unit": "ns",
+            "range": "± 54861.81651206726"
+          },
+          {
+            "name": "Unrect.Benchmarks.Engine.Flow_Nested",
+            "value": 2743867653.733333,
+            "unit": "ns",
+            "range": "± 21511444.996773534"
+          },
+          {
+            "name": "Unrect.Benchmarks.Engine.Overlay_AnchoredChildren",
+            "value": 1889762786.0714285,
+            "unit": "ns",
+            "range": "± 6661978.390090641"
+          },
+          {
+            "name": "Unrect.Benchmarks.Engine.Repeat_SeparatedBlocks",
+            "value": 3801076.8098958335,
+            "unit": "ns",
+            "range": "± 57607.77653049564"
+          },
+          {
+            "name": "Unrect.Benchmarks.Engine.Under_CaptionedSection",
+            "value": 210081813.7142857,
+            "unit": "ns",
+            "range": "± 419769.5548210949"
+          },
+          {
+            "name": "Unrect.Benchmarks.Engine.Range_ReadAllCells",
+            "value": 19461809.260416668,
+            "unit": "ns",
+            "range": "± 39607.34693938164"
           }
         ]
       }
