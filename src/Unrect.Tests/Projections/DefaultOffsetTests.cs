@@ -95,19 +95,21 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void WhichIsWhyAFlowIsForSectionsAndNotForTheCellsOfARow()
+    public void AFlowIsAPatternAndAStripIsAnIndex()
     {
-      // The cost, stated rather than hidden. Inside one row a blank cell IS a blank column, so a
-      // flow of leaves over a sparse row steps over the missing value and reads its neighbour. A
-      // row's cells are read by position — a strip, a record, an overlay — where a blank is a blank.
+      // Two ways to address the same row, and they mean different things. A flow divides a region
+      // into blocks with gaps of any size between them, and a block one cell wide is still a block:
+      // the blank between two cells is no more significant than the blank between two tables. A
+      // strip addresses by position, where a blank at position 1 is what is AT position 1. Which one
+      // a declaration wants is whether the blank is a gap or a value.
       var row = SheetGrid.Of(new object?[,] { { "Acme", null, "NY", "x" } });
 
       Assert.Equal(
         "Acme|NY|x",
         HorizontalFlow(h => $"{h.Next(Text())}|{h.Next(Text().OrBlank())}|{h.Next(Text())}").Map(row));
 
-      // The strip says how long it is: a discovered one ends at the first blank cell, which is the
-      // same gap read the other way.
+      // The strip says how long it is: a discovered one ends at the first blank cell — the same gap,
+      // read as the end of a block.
       Assert.Equal(
         "Acme||NY",
         Row(4, c => $"{c[0].Text()}|{c[1].TextOrBlank()}|{c[2].Text()}").Map(row));
