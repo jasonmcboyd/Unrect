@@ -31,7 +31,7 @@ namespace Unrect.Tests.Projections
     {
       var intCell = v.Next(IntCell());
 
-      return v.Build(read => read.Of(intCell));
+      return intCell;
     });
 
     private static ISheetCells[] Workbooks() => new[]
@@ -113,7 +113,7 @@ namespace Unrect.Tests.Projections
         {
           var textCell = v.Next(TextCell());
 
-          return v.Build(read => read.Of(textCell));
+          return textCell;
         }).Map(Grid(new[,] { { 1 } })));
 
       Assert.Equal("VerticalFlow -> Text#1", failure.Path);
@@ -128,7 +128,7 @@ namespace Unrect.Tests.Projections
         {
           var textCell = v.Next(TextCell());
 
-          return v.Build(read => read.Of(textCell));
+          return textCell;
         }).Named("report").Map(Grid(new[,] { { 1 } })));
 
       Assert.Equal("'report' -> Text#1", failure.Path);

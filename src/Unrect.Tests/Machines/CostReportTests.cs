@@ -21,13 +21,7 @@ namespace Unrect.Tests.Machines
     [Fact]
     public void AFlowOfLeavesOverATableStreamsEndToEnd()
     {
-      var report = CostReport.Of(VerticalFlow(v =>
-      {
-        var title = v.Next(Text().Named("title"));
-        var rows = v.Next(AfterBlankRows().Of(Table()));
-
-        return v.Build(read => $"{read.Of(title)}:{read.Of(rows).Count}");
-      }));
+      var report = CostReport.Of(VerticalFlow(v => $"{v.Next(Text().Named("title"))}:{v.Next(AfterBlankRows().Of(Table())).Count}"));
 
       Assert.All(report.Lines, line => Assert.True(line.Streams, $"{line.Name}: {line.Hold}"));
       Assert.Equal(Orientation.Vertical, report.Driver);
@@ -58,13 +52,7 @@ namespace Unrect.Tests.Machines
     [Fact]
     public void AHorizontalFlowUnderARowDriverHoldsAndItsChildrenRunAlongColumns()
     {
-      var report = CostReport.Of(HorizontalFlow(h =>
-      {
-        var a = h.Next(Text().Named("a"));
-        var b = h.Next(Text().Named("b"));
-
-        return h.Build(read => read.Of(a) + read.Of(b));
-      }));
+      var report = CostReport.Of(HorizontalFlow(h => h.Next(Text().Named("a")) + h.Next(Text().Named("b"))));
 
       var flow = report.Lines[0];
       Assert.False(flow.Streams);
@@ -93,7 +81,7 @@ namespace Unrect.Tests.Machines
       {
         var a = v.Next(Text());
 
-        return v.Build(read => read.Of(a));
+        return a;
       });
 
       Assert.True(CostReport.Of(flow, Orientation.Vertical).Lines[0].Streams);
@@ -109,7 +97,7 @@ namespace Unrect.Tests.Machines
         var one = v.Next(Text().Named("one"));
         var many = v.Next(VerticalRepeat(Text(), separatedBy: BlankRows()).Optional().Named("many"));
 
-        return v.Build(read => $"{read.Of(one)}:{read.Of(many)?.Count}");
+        return $"{one}:{many?.Count}";
       }));
 
       Assert.Equal(Reach.None, report.Lines[0].Retains);
@@ -158,17 +146,11 @@ namespace Unrect.Tests.Machines
     [Fact]
     public void TheTextFormNamesTheDriverAndEveryHold()
     {
-      var text = CostReport.Of(VerticalFlow(v =>
+      var text = CostReport.Of(VerticalFlow(v => $"{v.Next(Text().Named("title"))}:{v.Next(HorizontalFlow(h =>
       {
-        var title = v.Next(Text().Named("title"));
-        var wide = v.Next(HorizontalFlow(h =>
-        {
-          var a = h.Next(Text());
-          return h.Build(read => read.Of(a));
-        }).Named("wide"));
-
-        return v.Build(read => $"{read.Of(title)}:{read.Of(wide)}");
-      })).ToString();
+        var a = h.Next(Text());
+        return a;
+      }).Named("wide"))}")).ToString();
 
       Assert.StartsWith("driver: rows\n", text, System.StringComparison.Ordinal);
       Assert.Contains("VerticalFlow", text);

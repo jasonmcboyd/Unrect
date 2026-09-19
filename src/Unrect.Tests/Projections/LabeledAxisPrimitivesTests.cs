@@ -370,14 +370,7 @@ namespace Unrect.Tests.Projections
 
     /// <summary>A layout of exactly one child, declared with no use-site text — as a factory declares the parts it assembles.</summary>
     private static Layout<ISheetCells, T> SingleChild<T>(IProjectionDefinition<ISheetCells, T> child)
-      => LayoutBuilder<ISheetCells>.Declare<T>(
-        flow =>
-        {
-          var only = flow.Next(child, declared: null);
-          return flow.Build(read => read.Of(only));
-        },
-        "a flow",
-        nameof(child));
+      => Layout<ISheetCells, T>.Declare(flow => flow.Next(child, declared: null), "a flow", nameof(child));
 
     [Fact]
     public void NestedUnitsBothFoldAndNeitherLeaksScaffolding()
@@ -468,7 +461,7 @@ namespace Unrect.Tests.Projections
         {
           var block2 = v.Next(block);
 
-          return v.Build(read => read.Of(block2));
+          return block2;
         }).Map(sheet));
 
       Assert.Contains("Table[0]", failure.Path);

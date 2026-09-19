@@ -94,10 +94,10 @@ namespace Unrect.Tests.Projections
           {
             var right = middle.Next(Right(2).Of(inner));
 
-            return middle.Build(read => read.Of(right));
+            return right;
           })));
 
-        return outer.Build(read => read.Of(down));
+        return down;
       });
 
       declaration.Map(sheet);

@@ -50,57 +50,21 @@ namespace Unrect.Tests.Projections
       // Two single cells side by side: the flow's second band is the second column, and the overlay
       // says so with .Right(1).
       "adjacent cells" => (
-        HorizontalFlow(h =>
-        {
-          var intCell = h.Next(IntCell());
-          var intCell2 = h.Next(IntCell());
-
-          return h.Build(read => $"{read.Of(intCell)}/{read.Of(intCell2)}");
-        }),
-        Overlay(o =>
-        {
-          var intCell = o.Next(IntCell());
-          var right = o.Next(Right(1).Of(IntCell()));
-
-          return o.Build(read => $"{read.Of(intCell)}/{read.Of(right)}");
-        })),
+        HorizontalFlow(h => $"{h.Next(IntCell())}/{h.Next(IntCell())}"),
+        Overlay(o => $"{o.Next(IntCell())}/{o.Next(Right(1).Of(IntCell()))}")),
 
       // A gap between them, which the two spellings express differently — the flow's child steps one
       // column into its own band, the overlay's steps two from the origin — and must absorb
       // identically.
       "a gap between them" => (
-        HorizontalFlow(h =>
-        {
-          var intCell = h.Next(IntCell());
-          var right = h.Next(Right(1).Of(IntCell()));
-
-          return h.Build(read => $"{read.Of(intCell)}/{read.Of(right)}");
-        }),
-        Overlay(o =>
-        {
-          var intCell = o.Next(IntCell());
-          var right = o.Next(Right(2).Of(IntCell()));
-
-          return o.Build(read => $"{read.Of(intCell)}/{read.Of(right)}");
-        })),
+        HorizontalFlow(h => $"{h.Next(IntCell())}/{h.Next(Right(1).Of(IntCell()))}"),
+        Overlay(o => $"{o.Next(IntCell())}/{o.Next(Right(2).Of(IntCell()))}")),
 
       // Children of different heights, so the consumed extent is not simply the first child's: the
       // flow takes the tallest across its axis, the overlay the furthest reach down.
       "children of different heights" => (
-        HorizontalFlow(h =>
-        {
-          var columnSlot = h.Next(Column(2, s => s[0].Integer()));
-          var intCell = h.Next(IntCell());
-
-          return h.Build(read => $"{read.Of(columnSlot)}/{read.Of(intCell)}");
-        }),
-        Overlay(o =>
-        {
-          var columnSlot = o.Next(Column(2, s => s[0].Integer()));
-          var right = o.Next(Right(1).Of(IntCell()));
-
-          return o.Build(read => $"{read.Of(columnSlot)}/{read.Of(right)}");
-        })),
+        HorizontalFlow(h => $"{h.Next(Column(2, s => s[0].Integer()))}/{h.Next(IntCell())}"),
+        Overlay(o => $"{o.Next(Column(2, s => s[0].Integer()))}/{o.Next(Right(1).Of(IntCell()))}")),
 
       _ => throw new ArgumentOutOfRangeException(nameof(spelling), spelling, "No such spelling."),
     };
@@ -192,22 +156,10 @@ namespace Unrect.Tests.Projections
       // The same difference where it matters most. The problem, the cell and the child's own label
       // are identical; only the enclosing segment says which composite was written.
       var inFlow = Assert.Throws<ProjectionException>(() =>
-        HorizontalFlow(h =>
-        {
-          var intCell = h.Next(IntCell());
-          var textSlot = h.Next(Text());
-
-          return h.Build(read => $"{read.Of(intCell)}/{read.Of(textSlot)}");
-        }).Map(CoordinateGrid()));
+        HorizontalFlow(h => $"{h.Next(IntCell())}/{h.Next(Text())}").Map(CoordinateGrid()));
 
       var inOverlay = Assert.Throws<ProjectionException>(() =>
-        Overlay(o =>
-        {
-          var intCell = o.Next(IntCell());
-          var right = o.Next(Right(1).Of(Text()));
-
-          return o.Build(read => $"{read.Of(intCell)}/{read.Of(right)}");
-        }).Map(CoordinateGrid()));
+        Overlay(o => $"{o.Next(IntCell())}/{o.Next(Right(1).Of(Text()))}").Map(CoordinateGrid()));
 
       Assert.Equal("HorizontalFlow -> Text#2", inFlow.Path);
       Assert.Equal("Overlay -> Text#2", inOverlay.Path);

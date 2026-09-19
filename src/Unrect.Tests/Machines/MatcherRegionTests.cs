@@ -37,7 +37,7 @@ namespace Unrect.Tests.Machines
       {
         var anchored2 = v.Next(anchored);
 
-        return v.Build(read => read.Of(anchored2));
+        return anchored2;
       }));
 
       Assert.Equal("32", found.Map(sheet));

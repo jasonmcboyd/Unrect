@@ -68,13 +68,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ABreakInsideAFlowChildCarriesTheChildsPath()
     {
-      var projection = VerticalFlow(v =>
-      {
-        var caption = v.Next(Range(1, 1, b => b[0, 0].Integer()));
-        var body = v.Next(Range(RowsWhileAny(BreaksOn(LateMarker)), _ => 0).Named("body"));
-
-        return v.Build(read => read.Of(caption) + read.Of(body));
-      });
+      var projection = VerticalFlow(v => v.Next(Range(1, 1, b => b[0, 0].Integer())) + v.Next(Range(RowsWhileAny(BreaksOn(LateMarker)), _ => 0).Named("body")));
 
       // The last segment carries the kind alongside the name because the failure is the leaf's own.
       Assert.Equal("VerticalFlow -> 'body' (Range)", Failure(projection).Path);

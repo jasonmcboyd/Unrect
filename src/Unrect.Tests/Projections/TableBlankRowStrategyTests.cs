@@ -142,19 +142,7 @@ namespace Unrect.Tests.Projections
     {
       // With a boundary, the run ends at the landmark; the interior blank is still skipped, and the
       // bound is consumed in full so a following sibling lands ON the landmark.
-      var report = VerticalFlow(v =>
-      {
-        var lines = v.Next(Until(RowContaining("Total")).Of(Lines(BlankRowStrategy.Skip)));
-        var total = v.Next(HorizontalFlow(h =>
-        {
-          var textSlot = h.Next(Text());
-          var decimalSlot = h.Next(Decimal());
-
-          return h.Build(read2 => new Line(read2.Of(textSlot), read2.Of(decimalSlot)));
-        }));
-
-        return v.Build(read2 => (Lines: read2.Of(lines), Total: read2.Of(total)));
-      });
+      var report = VerticalFlow(v => (Lines: v.Next(Until(RowContaining("Total")).Of(Lines(BlankRowStrategy.Skip))), Total: v.Next(HorizontalFlow(h => new Line(h.Next(Text()), h.Next(Decimal()))))));
 
       var read = report.Map(GappedWithTotal());
 

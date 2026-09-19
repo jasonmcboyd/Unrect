@@ -28,61 +28,31 @@ namespace Unrect.Benchmarks
 
     private static readonly IProjectionDefinition<ISheetCells, int> ManyChildren = VerticalFlow(v =>
     {
-      // The N children are a loop, not N call sites: the layout lambda runs once, at declaration,
-      // so this is still a declaration -- it says "N of these, stacked" without naming a row number.
-      var lines = new Slot<int>[FlowChildren];
+      // The N children are a loop, not N call sites: the layout lambda declares its children by
+      // calling Next, so this is still a declaration -- "N of these, stacked" without naming a row.
+      var total = 0;
 
       for (int i = 0; i < FlowChildren; i++)
-        lines[i] = v.Next(Line);
+        total += v.Next(Line);
 
-      return v.Build(read =>
-      {
-        var total = 0;
-
-        for (int i = 0; i < FlowChildren; i++)
-          total += read.Of(lines[i]);
-
-        return total;
-      });
+      return total;
     });
 
-    private static readonly IProjectionDefinition<ISheetCells, int> Pair = HorizontalFlow(h =>
-    {
-      var present = h.Next(Point().Select(p => p.HasValue ? 1 : 0));
-      var one = h.Next(Point().Select(_ => 1));
-
-      return h.Build(read => read.Of(present) + read.Of(one));
-    });
+    private static readonly IProjectionDefinition<ISheetCells, int> Pair = HorizontalFlow(h => h.Next(Point().Select(p => p.HasValue ? 1 : 0)) + h.Next(Point().Select(_ => 1)));
 
     private static readonly IProjectionDefinition<ISheetCells, int> Nested = VerticalFlow(v =>
     {
-      var pairs = new Slot<int>[NestedRows];
+      var total = 0;
 
       for (int i = 0; i < NestedRows; i++)
-        pairs[i] = v.Next(Pair);
+        total += v.Next(Pair);
 
-      return v.Build(read =>
-      {
-        var total = 0;
-
-        for (int i = 0; i < NestedRows; i++)
-          total += read.Of(pairs[i]);
-
-        return total;
-      });
+      return total;
     });
 
     // Four independent readings of the same band. An overlay's children each start from the band's
     // own origin, so this measures placement without the flow's advance.
-    private static readonly IProjectionDefinition<ISheetCells, int> Anchored = Overlay(o =>
-    {
-      var anchored = o.Next(On(RowContaining(CanonicalSpaces.Landmark)).Row(r => r.Count));
-      var column = o.Next(Column(CanonicalSpaces.BlockRows, c => c.Count));
-      var range = o.Next(Range(2, 2, b => b.Width));
-      var point = o.Next(Point().Select(p => p.HasValue ? 1 : 0));
-
-      return o.Build(read => read.Of(anchored) + read.Of(column) + read.Of(range) + read.Of(point));
-    });
+    private static readonly IProjectionDefinition<ISheetCells, int> Anchored = Overlay(o => o.Next(On(RowContaining(CanonicalSpaces.Landmark)).Row(r => r.Count)) + o.Next(Column(CanonicalSpaces.BlockRows, c => c.Count)) + o.Next(Range(2, 2, b => b.Width)) + o.Next(Point().Select(p => p.HasValue ? 1 : 0)));
 
     private static readonly IProjectionDefinition<ISheetCells, IReadOnlyList<int>> Blocks =
       VerticalRepeat(Range(RowsWhileAnyValue(), b => b.Height), separatedBy: BlankRows());

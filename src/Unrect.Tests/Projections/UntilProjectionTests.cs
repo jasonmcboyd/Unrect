@@ -47,13 +47,7 @@ namespace Unrect.Tests.Projections
       var section = Until(RowContaining("Total")).Of(Lines());
       var caption = On(RowContaining("Total")).Of(TextCell());
 
-      var read = VerticalFlow(v =>
-      {
-        var section2 = v.Next(section);
-        var caption2 = v.Next(caption);
-
-        return v.Build(read2 => $"[{string.Join(",", read2.Of(section2))}]+{read2.Of(caption2)}");
-      }).Map(Sections());
+      var read = VerticalFlow(v => $"[{string.Join(",", v.Next(section))}]+{v.Next(caption)}").Map(Sections());
 
       Assert.Equal("[A,B]+Total", read);
     }
@@ -284,12 +278,7 @@ namespace Unrect.Tests.Projections
       var space = Mixed(new object?[,] { { "a", "b", "Total", "d" } });
 
       var cells = UntilColumn(ColumnContaining("Total")).Of(HorizontalRepeat(TextCell()));
-      var applied = HorizontalFlow(h =>
-      {
-        var cells2 = h.Next(cells);
-
-        return h.Build(read => string.Join(",", read.Of(cells2)));
-      }).Apply(space);
+      var applied = HorizontalFlow(h => string.Join(",", h.Next(cells))).Apply(space);
 
       Assert.Equal("a,b", applied.Value);
       Assert.Equal(2, applied.Consumed.Width);
@@ -433,16 +422,10 @@ namespace Unrect.Tests.Projections
 
       var series = VerticalRepeat(TextCell(), separatedBy: BlankRows());
 
-      var report = VerticalFlow(v =>
+      var report = VerticalFlow(v => new
       {
-        var below = v.Next(Below(RowContaining("By transfer date")).Until(RowContaining(Inception)).Of(series));
-        var below2 = v.Next(Below(RowContaining(Inception)).Of(series));
-
-        return v.Build(read => new
-        {
-          ByTransferDate = read.Of(below),
-          ByInception = read.Of(below2),
-        });
+        ByTransferDate = v.Next(Below(RowContaining("By transfer date")).Until(RowContaining(Inception)).Of(series)),
+        ByInception = v.Next(Below(RowContaining(Inception)).Of(series)),
       });
 
       var result = report.MapWithDiagnostics(space);

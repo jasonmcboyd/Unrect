@@ -155,22 +155,16 @@ namespace Unrect.Spreadsheets
       // the table with the record's row index on it, then the column.
       return ProjectionBuilders<TSpace>.Overlay(cursor =>
       {
-        var slots = new Slot<object?>[members.Length];
+        var values = new object?[members.Length];
 
         // declared: null, and it is mandatory. Left to the compiler, the naming ladder would label
         // every member with this loop's own variable, an identifier the user never wrote.
         for (var member = 0; member < members.Length; member++)
-          slots[member] = cursor.Next(members[member], declared: null);
+          values[member] = cursor.Next(members[member], declared: null);
 
-        return cursor.Build(read =>
-        {
-          var values = new object?[members.Length];
-
-          for (var member = 0; member < members.Length; member++)
-            values[member] = read.Of(slots[member]);
-
-          return plan.Materialize(values);
-        });
+        // The record is the user's type, which may refuse a null it would never otherwise see, so
+        // it is not built on the declaration pass, where every value is one.
+        return cursor.Recording ? default! : plan.Materialize(values);
       })
       .AsScaffolding();
     }

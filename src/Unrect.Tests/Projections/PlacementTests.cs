@@ -106,7 +106,7 @@ namespace Unrect.Tests.Projections
       {
         var block2 = v.Next(block);
 
-        return v.Build(read => read.Of(block2));
+        return block2;
       })), CoordinateGrid());
     }
 
@@ -132,13 +132,7 @@ namespace Unrect.Tests.Projections
       // A one-row offset inside a flow must move the child one row, not two. Applying it twice —
       // once to derive the available space and again to slice the extent — was the original trap.
       var second = Down(1).Of(IntCell());
-      var result = VerticalFlow(v =>
-      {
-        var intCell = v.Next(IntCell());
-        var second2 = v.Next(second);
-
-        return v.Build(read => $"{read.Of(intCell)}|{read.Of(second2)}");
-      }).Map(CoordinateGrid(width: 1));
+      var result = VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(second)}").Map(CoordinateGrid(width: 1));
 
       Assert.Equal("1|21", result);
     }
@@ -147,20 +141,8 @@ namespace Unrect.Tests.Projections
     public void NestedProjection_HasItsOffsetAppliedOnceAtEveryDepth()
     {
       var lower = Down(1).Of(IntCell());
-      var inner = Down(1).Of(VerticalFlow(w =>
-      {
-        var intCell = w.Next(IntCell());
-        var lower2 = w.Next(lower);
-
-        return w.Build(read => $"{read.Of(intCell)}|{read.Of(lower2)}");
-      }));
-      var projection = VerticalFlow(v =>
-      {
-        var intCell = v.Next(IntCell());
-        var inner2 = v.Next(inner);
-
-        return v.Build(read => $"{read.Of(intCell)}/{read.Of(inner2)}");
-      });
+      var inner = Down(1).Of(VerticalFlow(w => $"{w.Next(IntCell())}|{w.Next(lower)}"));
+      var projection = VerticalFlow(v => $"{v.Next(IntCell())}/{v.Next(inner)}");
 
       // Outer child 1 sits at row 1; the inner flow's first cell at row 2 and its second at row 4.
       Assert.Equal("1/21|41", projection.Map(CoordinateGrid(width: 1, height: 5)));
@@ -173,13 +155,7 @@ namespace Unrect.Tests.Projections
     {
       var space = Grid(new[,] { { 0 }, { 1 }, { 2 }, { 0 } });
 
-      var applied = AfterBlankRows().Of(VerticalFlow(v =>
-      {
-        var intCell = v.Next(IntCell());
-        var intCell2 = v.Next(IntCell());
-
-        return v.Build(read => $"{read.Of(intCell)}|{read.Of(intCell2)}");
-      })).Apply(space);
+      var applied = AfterBlankRows().Of(VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(IntCell())}")).Apply(space);
 
       Assert.Equal("1|2", applied.Value);
       Assert.Equal(1, applied.Offset.Size.Height);
@@ -192,13 +168,7 @@ namespace Unrect.Tests.Projections
       var space = Grid(new[,] { { 0 }, { 1 }, { 2 }, { 0 } });
 
       var first = AfterBlankRows().Of(IntCell());
-      var applied = VerticalFlow(v =>
-      {
-        var first2 = v.Next(first);
-        var intCell = v.Next(IntCell());
-
-        return v.Build(read => $"{read.Of(first2)}|{read.Of(intCell)}");
-      }).Apply(space);
+      var applied = VerticalFlow(v => $"{v.Next(first)}|{v.Next(IntCell())}").Apply(space);
 
       // Same values, but the flow itself starts at the origin and therefore consumes the blank row.
       Assert.Equal("1|2", applied.Value);
@@ -212,20 +182,8 @@ namespace Unrect.Tests.Projections
       var space = Grid(new[,] { { 0 }, { 1 }, { 2 }, { 0 } });
 
       var first = AfterBlankRows().Of(IntCell());
-      var onFlow = AfterBlankRows().Of(VerticalFlow(v =>
-      {
-        var intCell = v.Next(IntCell());
-        var intCell2 = v.Next(IntCell());
-
-        return v.Build(read => $"{read.Of(intCell)}|{read.Of(intCell2)}");
-      })).Apply(space);
-      var onChild = VerticalFlow(v =>
-      {
-        var first2 = v.Next(first);
-        var intCell = v.Next(IntCell());
-
-        return v.Build(read => $"{read.Of(first2)}|{read.Of(intCell)}");
-      }).Apply(space);
+      var onFlow = AfterBlankRows().Of(VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(IntCell())}")).Apply(space);
+      var onChild = VerticalFlow(v => $"{v.Next(first)}|{v.Next(IntCell())}").Apply(space);
 
       Assert.Equal(onFlow.Value, onChild.Value);
       Assert.Equal(onFlow.Advance.Height, onChild.Advance.Height);
@@ -666,13 +624,7 @@ namespace Unrect.Tests.Projections
     {
       // A null Area is what lets a flow size itself from its children — and therefore what lets a
       // Repeat item be declared without any placement at all.
-      Assert.Null(VerticalFlow(v =>
-      {
-        var intCell = v.Next(IntCell());
-        var intCell2 = v.Next(IntCell());
-
-        return v.Build(read => $"{read.Of(intCell)}{read.Of(intCell2)}");
-      }).Placement.Area);
+      Assert.Null(VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(IntCell())}").Placement.Area);
       Assert.Null(VerticalRepeat(IntCell()).Placement.Area);
       Assert.NotNull(IntCell().Placement.Area);
     }

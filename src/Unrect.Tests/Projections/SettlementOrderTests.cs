@@ -97,7 +97,7 @@ namespace Unrect.Tests.Projections
           return point.Integer();
         })).Named("next"));
 
-        return v.Build(read => read.Of(afterBlankRows));
+        return afterBlankRows;
       });
 
       Assert.Equal(9, flow.Map(counter));
@@ -123,7 +123,7 @@ namespace Unrect.Tests.Projections
           return point.Integer();
         }).Named("next"));
 
-        return v.Build(read => read.Of(pointSlot));
+        return pointSlot;
       });
 
       var failure = Assert.Throws<ProjectionException>(() => flow.Map(TwoBlocks()));

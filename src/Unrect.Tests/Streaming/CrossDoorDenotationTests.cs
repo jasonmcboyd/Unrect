@@ -276,13 +276,7 @@ namespace Unrect.Tests.Streaming
 
     /// <summary>A deal block: its name, and how many holdings are under it.</summary>
     private static IProjectionDefinition<ISheetCells, string> DealBlock() =>
-      VerticalFlow(v =>
-      {
-        var textSlot = v.Next(Text());
-        var table = v.Next(Table<Holding>());
-
-        return v.Build(read => $"{read.Of(textSlot)}[{read.Of(table).Count}]");
-      });
+      VerticalFlow(v => $"{v.Next(Text())}[{v.Next(Table<Holding>()).Count}]");
 
     /// <summary>The tall ledger, anchored on its caption and bounded by its terminator.</summary>
     private static IProjectionDefinition<ISheetCells, IReadOnlyList<Ledger>> TallLedger() =>
@@ -296,25 +290,13 @@ namespace Unrect.Tests.Streaming
       // has something to say about where the declaration stops.
       "one row of a report" => Scenario.Of(Row(cells => cells.Count), "report"),
       "a flow of two leaves" => Scenario.Of(
-        VerticalFlow(v =>
-        {
-          var textSlot = v.Next(Text());
-          var pointSlot = v.Next(Point().Select(point => point.IsBlank ? "-" : "x"));
-
-          return v.Build(read => $"{read.Of(textSlot)}|{read.Of(pointSlot)}");
-        }),
+        VerticalFlow(v => $"{v.Next(Text())}|{v.Next(Point().Select(point => point.IsBlank ? "-" : "x"))}"),
         "report"),
 
       // An overlay whose second child places itself three rows down and one across: an extent far
       // taller than a row, which is the shape the window sizing law is written about.
       "an overlay reaching down and across" => Scenario.Of(
-        Overlay(o =>
-        {
-          var textSlot = o.Next(Text());
-          var down = o.Next(Down(3).Right(1).Of(Decimal()));
-
-          return o.Build(read => $"{read.Of(textSlot)}|{read.Of(down)}");
-        }),
+        Overlay(o => $"{o.Next(Text())}|{o.Next(Down(3).Right(1).Of(Decimal()))}"),
         "report"),
 
       // The table ladder, the four rungs a declaration is normally written at (the view lambda is the
@@ -326,22 +308,10 @@ namespace Unrect.Tests.Streaming
       "the bind rung" => Scenario.Of(
         Heading("Quarterly Report").Of(Table(
           headerRows: 1,
-          eachRow: captions => Overlay(o =>
-          {
-            var right = o.Next(Right(captions["Client"]).Of(Text()));
-            var right2 = o.Next(Right(captions["Amount"]).Of(Decimal()));
-
-            return o.Build(read => $"{read.Of(right)}={read.Of(right2)}");
-          }))),
+          eachRow: captions => Overlay(o => $"{o.Next(Right(captions["Client"]).Of(Text()))}={o.Next(Right(captions["Amount"]).Of(Decimal()))}"))),
         "report"),
       "the record-projection rung" => Scenario.Of(
-        Heading("Quarterly Report").Of(Table(headerRows: 1, eachRow: HorizontalFlow(h =>
-        {
-          var textSlot = h.Next(Text());
-          var decimalSlot = h.Next(Decimal());
-
-          return h.Build(read => $"{read.Of(textSlot)}/{read.Of(decimalSlot)}");
-        }))),
+        Heading("Quarterly Report").Of(Table(headerRows: 1, eachRow: HorizontalFlow(h => $"{h.Next(Text())}/{h.Next(Decimal())}"))),
         "report"),
       // .Under before .Select on purpose: Select's wrapper is a projection with a placement of its
       // own, so anchoring the wrapper would leave the table inside it placed by its own default.
@@ -392,13 +362,7 @@ namespace Unrect.Tests.Streaming
       // of the sheet.
       "a caption that is not there" => Scenario.Of(Caption("Annual Report"), "report"),
       "a kind mismatch inside a table record" => Scenario.Of(
-        Heading("Quarterly Report").Of(Table(headerRows: 1, eachRow: HorizontalFlow(h =>
-        {
-          var textSlot = h.Next(Text());
-          var textSlot2 = h.Next(Text());
-
-          return h.Build(read => $"{read.Of(textSlot)}/{read.Of(textSlot2)}");
-        }))),
+        Heading("Quarterly Report").Of(Table(headerRows: 1, eachRow: HorizontalFlow(h => $"{h.Next(Text())}/{h.Next(Text())}"))),
         "report"),
       "a binder that asks for the wrong kind" => Scenario.Of(
         Heading("Quarterly Report").Of(Table<Mistyped>()),

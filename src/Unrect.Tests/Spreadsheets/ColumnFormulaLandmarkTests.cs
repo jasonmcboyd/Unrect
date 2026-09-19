@@ -167,7 +167,7 @@ namespace Unrect.Tests.Spreadsheets
         {
           var spreadsheetProjections = h.Next(SpreadsheetProjections.Text<ISheetCells>());
 
-          return h.Build(read => read.Of(spreadsheetProjections));
+          return spreadsheetProjections;
         }))
         .Optional();
 

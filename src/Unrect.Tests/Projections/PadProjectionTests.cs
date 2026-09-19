@@ -92,13 +92,7 @@ namespace Unrect.Tests.Projections
       var block = IntCell().Padded(1);
       var next = IntCell();
 
-      var read = VerticalFlow(v =>
-      {
-        var block2 = v.Next(block);
-        var next2 = v.Next(next);
-
-        return v.Build(read2 => $"{read2.Of(block2)}|{read2.Of(next2)}");
-      }).Map(CoordinateGrid(height: 5));
+      var read = VerticalFlow(v => $"{v.Next(block)}|{v.Next(next)}").Map(CoordinateGrid(height: 5));
 
       Assert.Equal("12|31", read);
     }

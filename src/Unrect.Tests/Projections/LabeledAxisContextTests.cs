@@ -161,7 +161,7 @@ namespace Unrect.Tests.Projections
       {
         var table = v.Next(Table((TableRow<ISheetCells> row) => new Line(row["Investor"].Text(), row["Amount"].Decimal())));
 
-        return v.Build(read => read.Of(table));
+        return table;
       }).Map(sheet);
 
       Assert.Equal(new[] { new Line("Acme", 10m), new Line("Beta", 20m) }, lines);

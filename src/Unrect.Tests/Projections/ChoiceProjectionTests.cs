@@ -28,13 +28,13 @@ namespace Unrect.Tests.Projections
     private static IProjectionDefinition<ISheetCells, int> TextFirst(string name = "vendor A layout")
       => VerticalFlow(v => { v.Next(TextCell()); var intCell = v.Next(IntCell());
 
-      return v.Build(read => read.Of(intCell)); }).Named(name);
+      return intCell; }).Named(name);
 
     /// <summary>Reads the pair as number-then-number: a layout this file is not in.</summary>
     private static IProjectionDefinition<ISheetCells, int> NumberFirst(string name = "vendor B layout")
       => VerticalFlow(v => { v.Next(IntCell()); var intCell = v.Next(IntCell());
 
-      return v.Build(read => read.Of(intCell)); }).Named(name);
+      return intCell; }).Named(name);
 
     // --- The degeneracy, named ----------------------------------------------------------------------
     //
@@ -173,7 +173,7 @@ namespace Unrect.Tests.Projections
       var alternatives = Choice(
         VerticalFlow(v => { v.Next(IntCell()); var intCell = v.Next(IntCell());
 
-        return v.Build(read => read.Of(intCell)); }),
+        return intCell; }),
         TextFirst());
 
       var info = Assert.Single(alternatives.MapWithDiagnostics(Pair()).Diagnostics);
@@ -356,7 +356,7 @@ namespace Unrect.Tests.Projections
       {
         v.Next(TextCell().Optional());
         v.Next(TextCell());
-        return v.Build(read => 0);
+        return 0;
       }).Named("losing");
 
       var result = Choice(losing, TextFirst()).MapWithDiagnostics(Pair());
@@ -376,7 +376,7 @@ namespace Unrect.Tests.Projections
         v.Next(TextCell().Optional());
         var intCell = v.Next(IntCell());
 
-        return v.Build(read => read.Of(intCell));
+        return intCell;
       }).Named("winning");
 
       var result = Choice(NumberFirst(), winning).MapWithDiagnostics(Pair());

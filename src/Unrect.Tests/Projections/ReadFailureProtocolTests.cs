@@ -102,20 +102,6 @@ namespace Unrect.Tests.Projections
       // ...and the view-lambda rung, which reads the whole table at once.
       "Table(view)" => (Table((TableView<ISheetCells> table) => (object?)table.Rows[0]["Amount"].Decimal()), "Table", Sheet()),
 
-      // LayoutDefinition — a read in the BODY of a layout rather than in one of its children, which
-      // is the site a reader forgets exists.
-      "Layout" => (
-        Overlay(o =>
-        {
-          // The read is in the BODY, between Next calls — not inside a child — so the layout's own
-          // catch is the only thing that can translate it.
-          var block = o.Next(Range(2, 2, b => b));
-
-          return o.Build(read => (object?)read.Of(block)[1, 1].Decimal());
-        }),
-        "Overlay",
-        Sheet()),
-
       // Fields' consumer: the card yields points, and reading one is the consumer's own business.
       // Its sheet is a labelled CARD — two columns by one row per field — rather than a table, and
       // the Select is named for the reason the Select case above is.
@@ -129,7 +115,7 @@ namespace Unrect.Tests.Projections
 
     public static TheoryData<string> Sites => new TheoryData<string>
     {
-      "Select", "Row", "Column", "Range", "Record", "Table(row)", "Table(view)", "Layout", "Fields",
+      "Select", "Row", "Column", "Range", "Record", "Table(row)", "Table(view)", "Fields",
     };
 
     [Theory]
@@ -203,7 +189,7 @@ namespace Unrect.Tests.Projections
         {
           var right = o.Next(Right(1).Down(1).Of(Point().Select(p => p.Decimal())));
 
-          return o.Build(read => read.Of(right));
+          return right;
         }).Map(Sheet()));
 
       Assert.Equal(Sentence, Problem(failure));

@@ -179,7 +179,7 @@ namespace Unrect.Projections
       where TSpace : class, ISpace
       => new FlowDefinition<TSpace, T>(
         Orientation.Vertical,
-        LayoutBuilder<TSpace>.Declare<T>(
+        Layout<TSpace, T>.Declare(
           cursor =>
           {
             // declared: null at both sites, and it is mandatory. Left to the compiler, the naming
@@ -189,9 +189,7 @@ namespace Unrect.Projections
             foreach (var caption in captions)
               cursor.Next((IProjectionDefinition<TSpace, string>)caption, declared: null);
 
-            var section = cursor.Next(projection, declared: null);
-
-            return cursor.Build(read => read.Of(section));
+            return cursor.Next(projection, declared: null);
           },
           "a flow",
           nameof(projection)),

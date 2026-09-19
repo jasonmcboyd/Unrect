@@ -132,7 +132,7 @@ namespace Unrect.Tests.Projections
         {
           var section2 = v.Next(section);
 
-          return v.Build(read => read.Of(section2));
+          return section2;
         }).Map(Sheet()));
 
       Assert.Equal("VerticalFlow -> 'section' -> Caption(\"Nope\")#1", failure.Path);

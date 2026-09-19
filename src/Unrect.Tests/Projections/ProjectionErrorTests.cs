@@ -230,7 +230,7 @@ namespace Unrect.Tests.Projections
       {
         var first = v.Next(IntCell());
         v.Next(VerticalRepeat(TextCell()).Named("items"));
-        return v.Build(read => read.Of(first));
+        return first;
       });
 
       var failure = Assert.Throws<ProjectionException>(() => projection.Map(space));
@@ -248,13 +248,7 @@ namespace Unrect.Tests.Projections
       var space = Mixed(new object?[,] { { "Investor" }, { "Acme" } });
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v =>
-        {
-          var table = v.Next(Table(r => r["Amount"].Integer()));
-          var intCell = v.Next(IntCell());
-
-          return v.Build(read => $"{string.Join(",", read.Of(table))}|{read.Of(intCell)}");
-        }).Map(space));
+        VerticalFlow(v => $"{string.Join(",", v.Next(Table(r => r["Amount"].Integer())))}|{v.Next(IntCell())}").Map(space));
 
       Assert.Null(failure.InnerException);
       Assert.Equal(1, Occurrences(failure.Message, "  in "));
@@ -285,13 +279,7 @@ namespace Unrect.Tests.Projections
     public void TheKindSuffixOnlyDecoratesNamedSegments()
     {
       var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v =>
-        {
-          var intCell = v.Next(IntCell());
-          var textCell = v.Next(TextCell());
-
-          return v.Build(read => $"{read.Of(intCell)}{read.Of(textCell)}");
-        }).Named("header").Map(Square()));
+        VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(TextCell())}").Named("header").Map(Square()));
 
       // The named flow is a plain segment; the failing segment carries the kind only when it
       // rendered as a quoted name, and an ordinal is not one.
@@ -307,15 +295,9 @@ namespace Unrect.Tests.Projections
         VerticalFlow(v =>
         {
           v.Next(IntCell());
-          var verticalFlow = v.Next(VerticalFlow(w =>
-          {
-            var intCell = w.Next(IntCell());
-            var textCell = w.Next(TextCell());
+          var verticalFlow = v.Next(VerticalFlow(w => $"{w.Next(IntCell())}{w.Next(TextCell())}").Named("inner"));
 
-            return w.Build(read => $"{read.Of(intCell)}{read.Of(textCell)}");
-          }).Named("inner"));
-
-          return v.Build(read2 => read2.Of(verticalFlow));
+          return verticalFlow;
         }).Map(space));
 
       Assert.Contains(" -> ", failure.Path);
@@ -347,22 +329,10 @@ namespace Unrect.Tests.Projections
     public void AnUnnamedSelectContributesNoPathSegment()
     {
       var withoutSelect = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v =>
-        {
-          var intCell = v.Next(IntCell());
-          var textCell = v.Next(TextCell());
-
-          return v.Build(read => $"{read.Of(intCell)}{read.Of(textCell)}");
-        }).Map(Square()));
+        VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(TextCell())}").Map(Square()));
 
       var withSelect = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v =>
-        {
-          var intCell = v.Next(IntCell());
-          var textCell = v.Next(TextCell());
-
-          return v.Build(read => $"{read.Of(intCell)}{read.Of(textCell)}");
-        }).Select(x => x).Map(Square()));
+        VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(TextCell())}").Select(x => x).Map(Square()));
 
       Assert.Equal("VerticalFlow -> Text#2", withoutSelect.Path);
       Assert.Equal(withoutSelect.Path, withSelect.Path);
@@ -383,10 +353,10 @@ namespace Unrect.Tests.Projections
           {
             var intCell = h.Next(IntCell());
 
-            return h.Build(read => read.Of(intCell));
+            return intCell;
           }).Select<ISheetCells, int, int>(ThrowingSelector));
 
-return v.Build(read => read.Of(horizontalFlow));
+return horizontalFlow;
         }).Map(Square()));
 
       Assert.Equal("Select#2", failure.Subject);
@@ -398,13 +368,7 @@ return v.Build(read => read.Of(horizontalFlow));
     public void ANamedSelectContributesAPathSegment()
     {
       var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v =>
-        {
-          var intCell = v.Next(IntCell());
-          var textCell = v.Next(TextCell());
-
-          return v.Build(read => $"{read.Of(intCell)}{read.Of(textCell)}");
-        }).Select(x => x).Named("report").Map(Square()));
+        VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(TextCell())}").Select(x => x).Named("report").Map(Square()));
 
       Assert.Equal("'report' -> VerticalFlow -> Text#2", failure.Path);
     }
@@ -421,7 +385,7 @@ return v.Build(read => read.Of(horizontalFlow));
           v.Next(Range(2, 2, b => b.Width));
           var right = v.Next(Right(1).Of(IntCell()));
 
-          return v.Build(read => read.Of(right));
+          return right;
         }).Select(x => x).Map(space));
 
       Assert.Equal("B3", failure.Location.A1);
@@ -435,13 +399,7 @@ return v.Build(read => read.Of(horizontalFlow));
       var space = Grid(new[,] { { 1, 1 }, { 1, 1 }, { 1, 0 } });
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v =>
-        {
-          var rangeSlot = v.Next(Range(2, 2, b => b.Width));
-          var right = v.Next(Right(1).Of(IntCell()));
-
-          return v.Build(read => $"{read.Of(rangeSlot)}{read.Of(right)}");
-        }).Map(space));
+        VerticalFlow(v => $"{v.Next(Range(2, 2, b => b.Width))}{v.Next(Right(1).Of(IntCell()))}").Map(space));
 
       Assert.Equal(3, failure.Location.Row);
       Assert.Equal(2, failure.Location.Column);
@@ -523,14 +481,7 @@ return v.Build(read => read.Of(horizontalFlow));
       Assert.Throws<ProjectionException>(() => Down(9).Of(IntCell()).Map(space));
       Assert.Throws<ProjectionException>(() => Row(ColumnStrategies.TakeColumns(9), s => s.Count).Map(space));
       Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v =>
-        {
-          var intCell = v.Next(IntCell());
-          var intCell2 = v.Next(IntCell());
-          var intCell3 = v.Next(IntCell());
-
-          return v.Build(read => $"{read.Of(intCell)}{read.Of(intCell2)}{read.Of(intCell3)}");
-        }).Map(Grid(new[,] { { 1 } })));
+        VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(IntCell())}{v.Next(IntCell())}").Map(Grid(new[,] { { 1 } })));
     }
 
     [Fact]

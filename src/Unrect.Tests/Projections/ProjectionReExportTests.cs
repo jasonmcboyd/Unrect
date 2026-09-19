@@ -461,16 +461,10 @@ namespace Unrect.Tests.Projections
         { "Acme", new DateTime(2026, 3, 4), 10m },
       });
 
-      var report = VerticalFlow(v =>
+      var report = VerticalFlow(v => new
       {
-        var fields = v.Next(Fields(Field("EIN")));
-        var table = v.Next(Table<Line>(bind => bind.Column(t => t.When, "Transaction Date")));
-
-        return v.Build(read => new
-        {
-          Entity = read.Of(fields),
-          Lines = read.Of(table),
-        });
+        Entity = v.Next(Fields(Field("EIN"))),
+        Lines = v.Next(Table<Line>(bind => bind.Column(t => t.When, "Transaction Date"))),
       }).Map(card);
 
       Assert.Equal("12-3456789", report.Entity["EIN"].Text());

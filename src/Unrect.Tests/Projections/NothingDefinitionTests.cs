@@ -39,7 +39,7 @@ namespace Unrect.Tests.Projections
       // list: "described nothing" is not a kind of nothing, it is an error in the declaration, and
       // it is refused where the declaration is written — before there is a space, a presence, or a
       // tolerance boundary to absorb it.
-      var failure = Assert.Throws<InvalidOperationException>(() => VerticalFlow<int>(v => v.Build(_ => 0)));
+      var failure = Assert.Throws<InvalidOperationException>(() => VerticalFlow<int>(v =>  0));
 
       Assert.Equal("a flow must declare at least one projection; this one called Next zero times", failure.Message);
     }
@@ -78,7 +78,7 @@ namespace Unrect.Tests.Projections
       {
         var x2 = v.Next(x);
 
-        return v.Build(read => read.Of(x2));
+        return x2;
       });
       var withUnit = VerticalFlow(v =>
       {
@@ -86,7 +86,7 @@ namespace Unrect.Tests.Projections
 
         var x2 = v.Next(x);
 
-        return v.Build(read => read.Of(x2));
+        return x2;
       });
 
       AssertL3(Observe(plain, Numbers()), Observe(withUnit, Numbers()));
@@ -101,7 +101,7 @@ namespace Unrect.Tests.Projections
         {
           var tolerated2 = v.Next(tolerated);
 
-          return v.Build(read => read.Of(tolerated2));
+          return tolerated2;
         }), Numbers()),
         Observe(
           VerticalFlow(v =>
@@ -110,7 +110,7 @@ namespace Unrect.Tests.Projections
 
             var tolerated2 = v.Next(tolerated);
 
-            return v.Build(read => read.Of(tolerated2));
+            return tolerated2;
           }),
           Numbers()));
     }
@@ -126,7 +126,7 @@ namespace Unrect.Tests.Projections
       {
         var x2 = v.Next(x);
 
-        return v.Build(read2 => read2.Of(x2));
+        return x2;
       });
       var withUnit = VerticalFlow(v =>
       {
@@ -134,7 +134,7 @@ namespace Unrect.Tests.Projections
 
         v.Next(Unit());
 
-        return v.Build(read => read.Of(value));
+        return value;
       });
 
       AssertL3(Observe(plain, Numbers()), Observe(withUnit, Numbers()));
@@ -150,7 +150,7 @@ namespace Unrect.Tests.Projections
       {
         var textCell = v.Next(TextCell());
 
-        return v.Build(read => read.Of(textCell));
+        return textCell;
       });
       var withUnit = VerticalFlow(v =>
       {
@@ -158,7 +158,7 @@ namespace Unrect.Tests.Projections
 
         var textCell = v.Next(TextCell());
 
-        return v.Build(read => read.Of(textCell));
+        return textCell;
       });
 
       var one = Assert.Throws<ProjectionException>(() => plain.Map(Numbers()));
@@ -180,7 +180,7 @@ namespace Unrect.Tests.Projections
       {
         var x2 = v.Next(x);
 
-        return v.Build(read => read.Of(x2));
+        return x2;
       });
       var withUnit = VerticalFlow(v =>
       {
@@ -188,7 +188,7 @@ namespace Unrect.Tests.Projections
 
         var x2 = v.Next(x);
 
-        return v.Build(read => read.Of(x2));
+        return x2;
       });
 
       var one = Assert.Throws<ProjectionException>(() => plain.Map(Numbers()));

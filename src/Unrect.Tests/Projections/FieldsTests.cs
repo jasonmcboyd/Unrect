@@ -301,7 +301,7 @@ namespace Unrect.Tests.Projections
         {
           var entity2 = v.Next(entity);
 
-          return v.Build(read => read.Of(entity2));
+          return entity2;
         }).Map(Card()));
 
       Assert.Equal("VerticalFlow -> 'entity' -> Field(\"Vintage\")#4", failure.Path);

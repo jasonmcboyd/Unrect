@@ -67,7 +67,7 @@ namespace Unrect.Tests.Projections
 
         var body = v.Next(section);
 
-        return v.Build(read => read.Of(body));
+        return body;
       });
 
     // --- L2: the equation itself -------------------------------------------------------------------

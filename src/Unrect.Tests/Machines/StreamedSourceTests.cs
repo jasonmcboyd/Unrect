@@ -115,17 +115,12 @@ namespace Unrect.Tests.Machines
     [Fact]
     public void APointReadAfterItsRowLeftTheBufferSaysSo()
     {
-      // The address escapes its leaf and is read in the combiner, after a repeat has walked far
-      // past its row: a forward pass cannot go back, and the failure says where the read belongs.
+      // The address escapes its leaf and is read in a Select after the flow, once a repeat has walked
+      // far past its row: a forward pass cannot go back, and the failure says where the read belongs.
       var sheet = Blocks(blocks: 30, blockRows: 3);
 
-      var late = VerticalFlow(v =>
-      {
-        var first = v.Next(Point());
-        var rest = v.Next(Down(0).Of(BlockTotals()));
-
-        return v.Build(read => $"{read.Of(first).AsText()}:{read.Of(rest).Count}");
-      });
+      var late = VerticalFlow(v => (First: v.Next(Point()), Totals: v.Next(Down(0).Of(BlockTotals()))))
+        .Select(r => $"{r.First.AsText()}:{r.Totals.Count}");
 
       using var book = Workbook.Over(new FakeRowSource(sheet), new WorkbookOptions());
       {
@@ -142,13 +137,7 @@ namespace Unrect.Tests.Machines
     {
       var sheet = Blocks(blocks: 30, blockRows: 3);
 
-      var inside = VerticalFlow(v =>
-      {
-        var first = v.Next(Text());
-        var rest = v.Next(BlockTotals());
-
-        return v.Build(read => $"{read.Of(first)}:{read.Of(rest).Count}");
-      });
+      var inside = VerticalFlow(v => $"{v.Next(Text())}:{v.Next(BlockTotals()).Count}");
 
       using var book = Workbook.Over(new FakeRowSource(sheet), new WorkbookOptions());
         Assert.Equal("block 0:30", inside.Map(book.Sheet("Data")));
@@ -157,13 +146,7 @@ namespace Unrect.Tests.Machines
     [Fact]
     public void MapWorkbookReadsWhatTheEagerDoorReads()
     {
-      var report = VerticalFlow(v =>
-      {
-        var title = v.Next(Text());
-        var rows = v.Next(AfterBlankRows().Of(Table()));
-
-        return v.Build(read => $"{read.Of(title)}:{read.Of(rows).Count}");
-      });
+      var report = VerticalFlow(v => $"{v.Next(Text())}:{v.Next(AfterBlankRows().Of(Table())).Count}");
 
       var path = System.IO.Path.Combine(AppContext.BaseDirectory, "TestData", "simple-report.xlsx");
       var eager = report.Map(Eager("simple-report.xlsx", "Report"));

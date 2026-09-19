@@ -95,15 +95,9 @@ namespace Unrect.Tests.Projections
       var title = Text();
       var rows = Table<Allocation>();
 
-      return VerticalFlow(v =>
-      {
-        var title2 = v.Next(title);
-        var rows2 = v.Next(rows);
-
-        return v.Build(read => new Report(
-          Title: read.Of(title2),
-          Rows: read.Of(rows2)));
-      });
+      return VerticalFlow(v => new Report(
+        Title: v.Next(title),
+        Rows: v.Next(rows)));
     }
 
     [Fact]
@@ -152,33 +146,19 @@ namespace Unrect.Tests.Projections
     /// </summary>
     private static IProjectionDefinition<ISheetCells, BuyingPowerAllocation> BuyingPowerParserThroughThePipeline()
     {
-      var allocation = Overlay(o =>
-      {
-        var right = o.Next(Right(1).Text());
-        var right2 = o.Next(Right(6).Of(Decimal().OrBlank()));
-        var right3 = o.Next(Right(9).Of(Decimal().OrBlank()));
-
-        return o.Build(read => new BuyingPowerRow(
-          FundCode: read.Of(right),
-          Primary: read.Of(right2),
-          Fep: read.Of(right3)));
-      });
+      var allocation = Overlay(o => new BuyingPowerRow(
+        FundCode: o.Next(Right(1).Text()),
+        Primary: o.Next(Right(6).Of(Decimal().OrBlank())),
+        Fep: o.Next(Right(9).Of(Decimal().OrBlank()))));
 
       var allocations = Below(RowContaining("ACCOUNT"))
         .Sized(RowsWhileAnyValue())
         .Table(headerRows: 0, eachRow: allocation);
 
-      return VerticalFlow(v =>
-      {
-        var textSlot = v.Next(Text());
-        var allocations2 = v.Next(allocations);
-        var on = v.Next(On(RowContaining("TOTAL")).Right(6).Decimal());
-
-        return v.Build(read => new BuyingPowerAllocation(
-          Title: read.Of(textSlot),
-          Allocations: read.Of(allocations2),
-          Total: read.Of(on)));
-      });
+      return VerticalFlow(v => new BuyingPowerAllocation(
+        Title: v.Next(Text()),
+        Allocations: v.Next(allocations),
+        Total: v.Next(On(RowContaining("TOTAL")).Right(6).Decimal())));
     }
 
     [Fact]
@@ -253,34 +233,18 @@ namespace Unrect.Tests.Projections
 
       const string Inception = "Cash Flows using inception date";
 
-      return VerticalFlow(v =>
-      {
-        var verticalFlow = v.Next(VerticalFlow(h =>
-          {
-            var textSlot = h.Next(Text());
-            var textSlot2 = h.Next(Text());
-            var dateSlot = h.Next(Date());
-            var textSlot3 = h.Next(Text());
-
-            return h.Build(read => new IrrHeader(
-              Title: read.Of(textSlot),
-              Fund: read.Of(textSlot2),
-              AsOf: read.Of(dateSlot),
-              Id: read.Of(textSlot3)));
-          }).Named("report header"));
-        var table = v.Next(Table<InvestorSummary>().Named("summary"));
-        var until = v.Next(Until(RowContaining(Inception))
-            .Heading("IRR Details")
-            .Heading("Cash Flows Using Transfer Date")
-            .Of(series));
-        var heading = v.Next(Heading(Inception).Of(series));
-
-        return v.Build(read => new IrrReport(
-          Header: read.Of(verticalFlow),
-          Summary: read.Of(table),
-          ByTransferDate: read.Of(until),
-          ByInception: read.Of(heading)));
-      });
+      return VerticalFlow(v => new IrrReport(
+        Header: v.Next(VerticalFlow(h => new IrrHeader(
+          Title: h.Next(Text()),
+          Fund: h.Next(Text()),
+          AsOf: h.Next(Date()),
+          Id: h.Next(Text()))).Named("report header")),
+        Summary: v.Next(Table<InvestorSummary>().Named("summary")),
+        ByTransferDate: v.Next(Until(RowContaining(Inception))
+          .Heading("IRR Details")
+          .Heading("Cash Flows Using Transfer Date")
+          .Of(series)),
+        ByInception: v.Next(Heading(Inception).Of(series))));
     }
 
     [Fact]

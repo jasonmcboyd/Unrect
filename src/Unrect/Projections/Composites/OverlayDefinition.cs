@@ -92,11 +92,15 @@ namespace Unrect.Projections
 
         try
         {
-          value = _overlay.Layout.Combine(new Reading(_overlay.Layout.Builder, _values));
+          value = _overlay.Layout.Combine(_values);
         }
         catch (CellReadException failure)
         {
           throw _scope.Reading(failure, Extent());
+        }
+        catch (LayoutShapeException shape)
+        {
+          throw _scope.Failure(_overlay, shape.Message, Extent(), null, shape, isFault: true);
         }
 
         return new Settlement<T>(value, new Size(_width, _height));

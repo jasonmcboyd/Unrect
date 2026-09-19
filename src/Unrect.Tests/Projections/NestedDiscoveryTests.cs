@@ -77,7 +77,7 @@ namespace Unrect.Tests.Projections
         {
           var rangeSlot = v.Next(Range(WholeExtent(), block => block.Rows.Count));
 
-          return v.Build(read => read.Of(rangeSlot));
+          return rangeSlot;
         }));
 
       Assert.Equal(NumericRows, Read(rows));
@@ -95,7 +95,7 @@ namespace Unrect.Tests.Projections
         {
           var rangeSlot = v.Next(Range(RowsWhileAnyValue(), block => block.Rows.Count));
 
-          return v.Build(read => read.Of(rangeSlot));
+          return rangeSlot;
         }));
 
       Assert.Equal(NumericRows, Read(rows));
@@ -112,7 +112,7 @@ namespace Unrect.Tests.Projections
         {
           var rangeSlot = v.Next(Range(RowsWhileAnyValue(), block => block.Rows.Count));
 
-          return v.Build(read => read.Of(rangeSlot));
+          return rangeSlot;
         }));
 
       Assert.Equal(NumericRows, Read(rows));

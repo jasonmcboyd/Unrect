@@ -86,11 +86,15 @@ namespace Unrect.Projections
 
         try
         {
-          value = _flow.Layout.Combine(new Reading(_flow.Layout.Builder, _values));
+          value = _flow.Layout.Combine(_values);
         }
         catch (CellReadException failure)
         {
           throw _scope.Reading(failure, Extent());
+        }
+        catch (LayoutShapeException shape)
+        {
+          throw _scope.Failure(_flow, shape.Message, Extent(), null, shape, isFault: true);
         }
 
         return new Settlement<T>(value, Spans.ToSize(_length, _across, _along));

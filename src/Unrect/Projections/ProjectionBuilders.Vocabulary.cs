@@ -610,25 +610,17 @@ namespace Unrect.Projections
 
       return new FlowDefinition<TSpace, IReadOnlyDictionary<string, Point<TSpace>>>(
         Orientation.Vertical,
-        LayoutBuilder<TSpace>.Declare<IReadOnlyDictionary<string, Point<TSpace>>>(
+        Layout<TSpace, IReadOnlyDictionary<string, Point<TSpace>>>.Declare(
           cursor =>
           {
-            var slots = new Slot<Point<TSpace>>[declared.Length];
+            var values = new Dictionary<string, Point<TSpace>>(declared.Length, CaptionComparer.Default);
 
             // declared: null — without it the naming ladder would label every child with this
             // helper's own loop variable, an identifier the user never wrote.
             for (var index = 0; index < declared.Length; index++)
-              slots[index] = cursor.Next(pairs[index], declared: null);
+              values[declared[index].Label] = cursor.Next(pairs[index], declared: null);
 
-            return cursor.Build<IReadOnlyDictionary<string, Point<TSpace>>>(read =>
-            {
-              var values = new Dictionary<string, Point<TSpace>>(declared.Length, CaptionComparer.Default);
-
-              for (var index = 0; index < declared.Length; index++)
-                values[declared[index].Label] = read.Of(slots[index]);
-
-              return values;
-            });
+            return values;
           },
           "a flow",
           nameof(fields)),
@@ -887,9 +879,6 @@ namespace Unrect.Projections
       => stride >= 1
         ? stride
         : throw new ArgumentOutOfRangeException(parameter, stride, "A band is at least one row or column across.");
-
-    /// <summary>Validates a layout lambda where the caller's parameter name is what the user typed.</summary>
-    private static Layout<TSpace, T> NotNull<T>(Layout<TSpace, T> build, string parameter) => build ?? throw new ArgumentNullException(parameter);
 
     /// <summary>
     /// A caption that could never match anything is a declaration error, not a per-file one: a

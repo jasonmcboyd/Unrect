@@ -59,7 +59,7 @@ namespace Unrect.Tests.Projections
       {
         var bandExtent = o.Next(BandExtent());
 
-        return o.Build(read => read.Of(bandExtent));
+        return bandExtent;
       })).Map(sheet);
 
       Assert.Equal(new[] { "3x1", "3x1", "3x1" }, seen);

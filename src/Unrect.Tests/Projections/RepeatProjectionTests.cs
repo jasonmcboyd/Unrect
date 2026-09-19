@@ -93,13 +93,7 @@ namespace Unrect.Tests.Projections
       var items = VerticalRepeat(Range(1, 1, b => b[0, 0].Integer()), separatedBy: BlankRows());
       var band = Range(1, 2, b => b.Height);
 
-      var read = VerticalFlow(v =>
-      {
-        var items2 = v.Next(items);
-        var band2 = v.Next(band);
-
-        return v.Build(read2 => $"{string.Join(",", read2.Of(items2))}|{read2.Of(band2)}");
-      }).Map(space);
+      var read = VerticalFlow(v => $"{string.Join(",", v.Next(items))}|{v.Next(band)}").Map(space);
 
       Assert.Equal("1,2|2", read);
     }
@@ -185,13 +179,7 @@ namespace Unrect.Tests.Projections
     {
       // The item's own placement resolves fine on the last row; it is the item's second child that
       // runs out of space. Intra-block format drift must be loud, not a silent truncation.
-      var item = VerticalFlow(v =>
-      {
-        var intCell = v.Next(IntCell());
-        var intCell2 = v.Next(IntCell());
-
-        return v.Build(read => $"{read.Of(intCell)}|{read.Of(intCell2)}");
-      });
+      var item = VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(IntCell())}");
 
       var failure = Assert.Throws<ProjectionException>(() => VerticalRepeat(item).Map(Ladder(3)));
 
@@ -246,7 +234,7 @@ namespace Unrect.Tests.Projections
       {
         var code = v.Next(TextCell().Named("code"));
         v.Next(Table(r => r["Amount"].Integer()).Named("rows"));
-        return v.Build(read => read.Of(code));
+        return code;
       });
 
       var failure = Assert.Throws<ProjectionException>(() => VerticalRepeat(item).Map(space));
@@ -285,7 +273,7 @@ namespace Unrect.Tests.Projections
         v.Next(TextCell().Named("label"));
         var right = v.Next(Right(1).Of(IntCell()).Named("amount"));
 
-        return v.Build(read => read.Of(right));
+        return right;
       }));
 
       var amounts = VerticalRepeat(section).Map(space);
@@ -313,7 +301,7 @@ namespace Unrect.Tests.Projections
         v.Next(TextCell().Named("label"));
         var right = v.Next(Right(1).Of(IntCell()).Named("amount"));
 
-        return v.Build(read => read.Of(right));
+        return right;
       }));
 
       Assert.Equal(new[] { 1, 2 }, VerticalRepeat(section).Map(space));
@@ -493,13 +481,7 @@ namespace Unrect.Tests.Projections
 
     /// <summary>A code cell over a value one row down and one column across — two rows per block.</summary>
     private static IProjectionDefinition<ISheetCells, (string Code, int Amount)> Section()
-      => VerticalFlow(v =>
-      {
-        var textCell = v.Next(TextCell());
-        var right = v.Next(Right(1).Of(IntCell()));
-
-        return v.Build(read => (Code: read.Of(textCell), Amount: read.Of(right)));
-      });
+      => VerticalFlow(v => (Code: v.Next(TextCell()), Amount: v.Next(Right(1).Of(IntCell()))));
 
     /// <summary>
     /// Three record rows, a blank row, and trailing content — the sheet a record walk has to stop
@@ -555,13 +537,7 @@ namespace Unrect.Tests.Projections
     {
       var space = Grid(new[,] { { 9 }, { 1 }, { 2 }, { 3 } });
 
-      var projection = VerticalFlow(v =>
-      {
-        var intCell = v.Next(IntCell().Named("total"));
-        var verticalRepeat = v.Next(VerticalRepeat(IntCell()).Named("items"));
-
-        return v.Build(read => $"{read.Of(intCell)}|{string.Join(",", read.Of(verticalRepeat))}");
-      });
+      var projection = VerticalFlow(v => $"{v.Next(IntCell().Named("total"))}|{string.Join(",", v.Next(VerticalRepeat(IntCell()).Named("items")))}");
 
       Assert.Equal("9|1,2,3", projection.Map(space));
     }
@@ -583,15 +559,9 @@ namespace Unrect.Tests.Projections
         { "Gamma", 30 },
       });
 
-      var block = VerticalFlow(v =>
-      {
-        var textCell = v.Next(TextCell().Named("code"));
-        var table = v.Next(Table(r => r["Amount"].Integer()).Named("amounts"));
-
-        return v.Build(read => (
-          Code: read.Of(textCell),
-          Amounts: read.Of(table)));
-      })
+      var block = VerticalFlow(v => (
+        Code: v.Next(TextCell().Named("code")),
+        Amounts: v.Next(Table(r => r["Amount"].Integer()).Named("amounts"))))
         .Named("block");
 
       var blocks = VerticalRepeat(block, separatedBy: BlankRows()).Map(space);

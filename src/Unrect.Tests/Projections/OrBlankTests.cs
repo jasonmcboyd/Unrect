@@ -202,7 +202,7 @@ namespace Unrect.Tests.Projections
         {
           var decimalSlot = v.Next(Decimal().OrBlank());
 
-          return v.Build(read => read.Of(decimalSlot));
+          return decimalSlot;
         }).Map(One("n/a")));
 
       Assert.Equal("VerticalFlow -> Decimal?#1", failure.Path);
@@ -221,7 +221,7 @@ namespace Unrect.Tests.Projections
         {
           var primary2 = v.Next(primary);
 
-          return v.Build(read => read.Of(primary2));
+          return primary2;
         }).Map(One("n/a")));
 
       Assert.Equal("VerticalFlow -> 'primary' (Decimal?)", failure.Path);

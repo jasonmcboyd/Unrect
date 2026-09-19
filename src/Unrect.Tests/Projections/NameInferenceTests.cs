@@ -45,13 +45,7 @@ namespace Unrect.Tests.Projections
     {
       var transactions = Text();
 
-      var failure = Failure(VerticalFlow(v =>
-      {
-        var number = v.Next(Number());
-        var transactions2 = v.Next(transactions.Named("summary"));
-
-        return v.Build(read => $"{read.Of(number)}{read.Of(transactions2)}");
-      }));
+      var failure = Failure(VerticalFlow(v => $"{v.Next(Number())}{v.Next(transactions.Named("summary"))}"));
 
       Assert.Equal("'summary'", failure.Subject);
       Assert.Equal("VerticalFlow -> 'summary' (Text)", failure.Path);
@@ -64,13 +58,7 @@ namespace Unrect.Tests.Projections
       // is to lead a reader back to the line that produced it.
       var transactions = Text();
 
-      var failure = Failure(VerticalFlow(v =>
-      {
-        var number = v.Next(Number());
-        var transactions2 = v.Next(transactions);
-
-        return v.Build(read => $"{read.Of(number)}{read.Of(transactions2)}");
-      }));
+      var failure = Failure(VerticalFlow(v => $"{v.Next(Number())}{v.Next(transactions)}"));
 
       Assert.Equal("'transactions'", failure.Subject);
       Assert.Equal("VerticalFlow -> 'transactions' (Text)", failure.Path);
@@ -83,13 +71,7 @@ namespace Unrect.Tests.Projections
       // things.
       var transactions = Text();
 
-      Failure(VerticalFlow(v =>
-      {
-        var number = v.Next(Number());
-        var transactions2 = v.Next(transactions);
-
-        return v.Build(read => $"{read.Of(number)}{read.Of(transactions2)}");
-      }));
+      Failure(VerticalFlow(v => $"{v.Next(Number())}{v.Next(transactions)}"));
 
       Assert.Null(transactions.Name);
     }
@@ -99,13 +81,7 @@ namespace Unrect.Tests.Projections
     {
       // An inline factory call has no identifier to borrow, so the child is named by what it is and
       // where it sits — 1-based, because it is a position in a declaration a human wrote.
-      var failure = Failure(VerticalFlow(v =>
-      {
-        var number = v.Next(Number());
-        var textCell = v.Next(TextCell());
-
-        return v.Build(read => $"{read.Of(number)}{read.Of(textCell)}");
-      }));
+      var failure = Failure(VerticalFlow(v => $"{v.Next(Number())}{v.Next(TextCell())}"));
 
       Assert.Equal("Text#2", failure.Subject);
       Assert.Equal("VerticalFlow -> Text#2", failure.Path);
@@ -121,13 +97,13 @@ namespace Unrect.Tests.Projections
       {
         var projections2 = v.Next(projections.Total);
 
-        return v.Build(read => read.Of(projections2));
+        return projections2;
       })).Subject);
       Assert.Equal("Text#1", Failure(VerticalFlow(v =>
       {
         var pick = v.Next(Pick());
 
-        return v.Build(read => read.Of(pick));
+        return pick;
       })).Subject);
     }
 
@@ -141,19 +117,19 @@ namespace Unrect.Tests.Projections
       {
         var labelled2 = v.Next(labelled);
 
-        return v.Build(read => read.Of(labelled2));
+        return labelled2;
       })).Subject);
       Assert.Equal("'identified'", Failure(VerticalFlow(v =>
       {
         var identified2 = v.Next(identified);
 
-        return v.Build(read => read.Of(identified2));
+        return identified2;
       })).Subject);
       Assert.Equal("Text#1", Failure(VerticalFlow(v =>
       {
         var textCell = v.Next(TextCell());
 
-        return v.Build(read => read.Of(textCell));
+        return textCell;
       })).Subject);
     }
 
@@ -166,14 +142,7 @@ namespace Unrect.Tests.Projections
       // unrelated line gained a name.
       var second = Number();
 
-      var failure = Failure(VerticalFlow(v =>
-      {
-        var number = v.Next(Number());
-        var second2 = v.Next(second);
-        var textCell = v.Next(TextCell());
-
-        return v.Build(read => $"{read.Of(number)}{read.Of(second2)}{read.Of(textCell)}");
-      }));
+      var failure = Failure(VerticalFlow(v => $"{v.Next(Number())}{v.Next(second)}{v.Next(TextCell())}"));
 
       Assert.Equal("Text#3", failure.Subject);
     }
@@ -193,13 +162,13 @@ namespace Unrect.Tests.Projections
       {
         var gross2 = v.Next(gross);
 
-        return v.Build(read => read.Of(gross2));
+        return gross2;
       })).Subject);
       Assert.Equal("'net'", Failure(VerticalFlow(v =>
       {
         var net2 = v.Next(net);
 
-        return v.Build(read => read.Of(net2));
+        return net2;
       })).Subject);
     }
 
@@ -217,25 +186,25 @@ namespace Unrect.Tests.Projections
       {
         var selected2 = v.Next(selected);
 
-        return v.Build(read => read.Of(selected2));
+        return selected2;
       })).Path);
       Assert.Equal("VerticalFlow -> 'padded' (Text)", Failure(VerticalFlow(v =>
       {
         var padded2 = v.Next(padded);
 
-        return v.Build(read => read.Of(padded2));
+        return padded2;
       })).Path);
       Assert.Equal("VerticalFlow -> 'bounded' (Text)", Failure(VerticalFlow(v =>
       {
         var bounded2 = v.Next(bounded);
 
-        return v.Build(read => read.Of(bounded2));
+        return bounded2;
       })).Path);
       Assert.Equal("'selected'", Failure(VerticalFlow(v =>
       {
         var selected2 = v.Next(selected);
 
-        return v.Build(read => read.Of(selected2));
+        return selected2;
       })).Subject);
     }
 
@@ -247,22 +216,10 @@ namespace Unrect.Tests.Projections
       var transactions = Text();
 
       var identified = Assert.Throws<ProjectionException>(() =>
-        Overlay(o =>
-        {
-          var number = o.Next(Number());
-          var transactions2 = o.Next(transactions);
-
-          return o.Build(read => $"{read.Of(number)}{read.Of(transactions2)}");
-        }).Map(Ladder()));
+        Overlay(o => $"{o.Next(Number())}{o.Next(transactions)}").Map(Ladder()));
 
       var ordinal = Assert.Throws<ProjectionException>(() =>
-        Overlay(o =>
-        {
-          var number = o.Next(Number());
-          var textCell = o.Next(TextCell());
-
-          return o.Build(read => $"{read.Of(number)}{read.Of(textCell)}");
-        }).Map(Ladder()));
+        Overlay(o => $"{o.Next(Number())}{o.Next(TextCell())}").Map(Ladder()));
 
       Assert.Equal("Overlay -> 'transactions' (Text)", identified.Path);
       Assert.Equal("Overlay -> Text#2", ordinal.Path);
@@ -278,12 +235,7 @@ namespace Unrect.Tests.Projections
       // hashes.
       var items = VerticalRepeat(Text());
 
-      var failure = Failure(VerticalFlow(v =>
-      {
-        var items2 = v.Next(items);
-
-        return v.Build(read => $"{string.Join(",", read.Of(items2))}");
-      }));
+      var failure = Failure(VerticalFlow(v => $"{string.Join(",", v.Next(items))}"));
 
       Assert.Equal("VerticalFlow -> 'items'[0] -> Text", failure.Path);
     }
@@ -353,12 +305,7 @@ namespace Unrect.Tests.Projections
       var details = VerticalRepeat(detail, separatedBy: BlankRows());
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v =>
-        {
-          var details2 = v.Next(details);
-
-          return v.Build(read => string.Join(",", read.Of(details2)));
-        }).Map(space));
+        VerticalFlow(v => string.Join(",", v.Next(details))).Map(space));
 
       Assert.Equal("VerticalFlow -> 'details'[2] -> 'detail' (Text)", failure.Path);
     }
@@ -369,22 +316,11 @@ namespace Unrect.Tests.Projections
       // The label belongs to the item's segment and stops there; what is inside the item is named
       // by its own ladder, at its own use sites.
       var inner = Text();
-      var detailFlow = VerticalFlow(w =>
-      {
-        var intCell = w.Next(IntCell());
-        var inner2 = w.Next(inner);
-
-        return w.Build(read => $"{read.Of(intCell)}{read.Of(inner2)}");
-      });
+      var detailFlow = VerticalFlow(w => $"{w.Next(IntCell())}{w.Next(inner)}");
       var blocks = VerticalRepeat(detailFlow);
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v =>
-        {
-          var blocks2 = v.Next(blocks);
-
-          return v.Build(read => string.Join(",", read.Of(blocks2)));
-        }).Map(Ladder()));
+        VerticalFlow(v => string.Join(",", v.Next(blocks))).Map(Ladder()));
 
       Assert.Equal("VerticalFlow -> 'blocks'[0] -> 'detailFlow' -> 'inner' (Text)", failure.Path);
       Assert.Equal("'inner'", failure.Subject);
@@ -469,13 +405,13 @@ namespace Unrect.Tests.Projections
       {
         var captions2 = v.Next(captions);
 
-        return v.Build(read => read.Of(captions2));
+        return captions2;
       })).Subject);
       Assert.Equal("'full row'", Failure(VerticalFlow(v =>
       {
         var totals2 = v.Next(totals);
 
-        return v.Build(read => read.Of(totals2));
+        return totals2;
       })).Subject);
     }
 
@@ -489,13 +425,13 @@ namespace Unrect.Tests.Projections
       {
         var captions2 = v.Next(captions);
 
-        return v.Build(read => read.Of(captions2));
+        return captions2;
       })).Subject);
       Assert.Equal("'totals'", Failure(VerticalFlow(v =>
       {
         var totals2 = v.Next(totals);
 
-        return v.Build(read => read.Of(totals2));
+        return totals2;
       })).Subject);
     }
 
@@ -515,12 +451,7 @@ namespace Unrect.Tests.Projections
       var transactions = Down(5).Of(Table(1, Decimal()));
 
       var failure = Assert.Throws<ProjectionException>(
-        () => VerticalFlow(v =>
-        {
-          var transactions2 = v.Next(transactions);
-
-          return v.Build(read => string.Join(",", read.Of(transactions2)));
-        }).Map(sheet));
+        () => VerticalFlow(v => string.Join(",", v.Next(transactions))).Map(sheet));
 
       Assert.Equal("VerticalFlow -> 'transactions' (Table)", failure.Path);
       Assert.Equal("'transactions'", failure.Subject);
@@ -535,12 +466,7 @@ namespace Unrect.Tests.Projections
       var transactions = Table(1, Decimal());
 
       var failure = Assert.Throws<ProjectionException>(
-        () => VerticalFlow(v =>
-        {
-          var transactions2 = v.Next(transactions);
-
-          return v.Build(read => string.Join(",", read.Of(transactions2)));
-        }).Map(sheet));
+        () => VerticalFlow(v => string.Join(",", v.Next(transactions))).Map(sheet));
 
       Assert.Equal("VerticalFlow -> 'transactions'[0] -> Decimal", failure.Path);
       Assert.Equal("VerticalFlow -> 'transactions' -> UnderColumnLabels -> VerticalBands#2[0] -> Decimal", failure.FullPath);
@@ -559,13 +485,7 @@ namespace Unrect.Tests.Projections
       });
 
       var failure = Assert.Throws<ProjectionException>(
-        () => VerticalFlow(v =>
-        {
-          var textSlot = v.Next(Text());
-          var table = v.Next(Table(1, Decimal()));
-
-          return v.Build(read => $"{read.Of(textSlot)}|{string.Join(",", read.Of(table))}");
-        }).Map(sheet));
+        () => VerticalFlow(v => $"{v.Next(Text())}|{string.Join(",", v.Next(Table(1, Decimal())))}").Map(sheet));
 
       Assert.Equal("VerticalFlow -> Table#2[0] -> Decimal", failure.Path);
     }

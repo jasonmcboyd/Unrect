@@ -30,22 +30,14 @@ namespace Unrect.Analyzers.Tests
         class Report
         {
           IProjectionDefinition<IFormulaSpace, string?> Header()
-            => VerticalFlow(v =>
-            {
-              var formula = v.Next({|CS1503:SpreadsheetProjections.Formula<IFormulaSpace>()|});
-              return v.Build(read => read.Of(formula));
-            });
+            => VerticalFlow(v => v.Next({|CS1503:SpreadsheetProjections.Formula<IFormulaSpace>()|}));
         }
         """,
         """
         class Report
         {
           IProjectionDefinition<IFormulaSpace, string?> Header()
-            => ProjectionBuilders<IFormulaSpace>.VerticalFlow(v =>
-            {
-              var formula = v.Next(SpreadsheetProjections.Formula<IFormulaSpace>());
-              return v.Build(read => read.Of(formula));
-            });
+            => ProjectionBuilders<IFormulaSpace>.VerticalFlow(v => v.Next(SpreadsheetProjections.Formula<IFormulaSpace>()));
         }
         """);
 
