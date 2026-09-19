@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789796483735,
+  "lastUpdate": 1789796484137,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -10976,6 +10976,80 @@ window.BENCHMARK_DATA = {
           {
             "name": "Unrect.Benchmarks.Values.TypedPredicate_Million",
             "value": 46,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Slice_Million",
+            "value": 1,
+            "unit": "bytes"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "717d1ea3b61c226c608194aae5ff909fd4603455",
+          "message": "Packaging: Unrect.Interactive ships as its own package\n\nThe project was already packable — id, description, tags, and a\ndependency on exactly Unrect and Unrect.Spreadsheets at the same MinVer\nversion — but the release workflow packed and asserted two packages, and\nthe README and build props named two. Now three.\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>",
+          "timestamp": "2026-09-19T01:12:25Z",
+          "tree_id": "f01ec5a705245aededd07d5455e7b03ad4f8880d",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/717d1ea3b61c226c608194aae5ff909fd4603455"
+        },
+        "date": 1789796484057,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Values.Create_FromInts",
+            "value": 56,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Create_FromObjects",
+            "value": 30400222,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.IsBlank_Million",
+            "value": 3,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.IsText_Million",
+            "value": 3,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.AsText_Million_Text",
+            "value": 6,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Decimal_Million",
+            "value": 40000023,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Point_Mint_Million",
+            "value": 1,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Predicate_Million",
+            "value": 3,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.TypedPredicate_Million",
+            "value": 53,
             "unit": "bytes"
           },
           {
