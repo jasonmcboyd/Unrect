@@ -112,7 +112,7 @@ namespace Unrect.Tests.Projections
           Transactions: v.Next(Table<DealTransaction>().Named("transactions"))))
           .Named("deal block");
 
-      return VerticalRepeat(deal, separatedBy: BlankRows());
+      return VerticalRepeat(deal);
     }
 
     [Fact]
@@ -181,7 +181,7 @@ namespace Unrect.Tests.Projections
           r["Distributions"].Decimal(),
           r["Net"].Decimal()))
           .Named("summary")),
-        Details: v.Next(AfterBlankRows().Of(VerticalRepeat(detail, separatedBy: BlankRows(), atLeast: 1))
+        Details: v.Next(VerticalRepeat(detail, atLeast: 1)
           .Named("investor details"))));
     }
 
@@ -285,7 +285,7 @@ namespace Unrect.Tests.Projections
       var investorBlock = Table(r => r["Investor Name"].Text()).Named("investor block");
 
       // Declared once, placed twice: the same series of blocks read from two different anchors.
-      var series = VerticalRepeat(investorBlock, separatedBy: BlankRows());
+      var series = VerticalRepeat(investorBlock);
 
       const string Inception = "Cash Flows using inception date";
 

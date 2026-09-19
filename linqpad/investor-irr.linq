@@ -51,7 +51,7 @@ var investorBlock = Table<CashFlow>();
 const string Inception = "Cash Flows using inception date";
 
 // Declared once; the two placements below differ only in what announces them and where they stop.
-var irrDetails = VerticalRepeat(investorBlock, separatedBy: BlankRows());
+var irrDetails = VerticalRepeat(investorBlock);
 
 // Heading is what a section announces itself by: it finds the row, asserts the text and consumes
 // it at full width — structure, not a value, so nothing is built here only to be discarded, and a

@@ -72,7 +72,7 @@ var investorBlock = Table<CashFlow>();
 
 // Declared once, placed twice — .Until bounds the first series so it stops at the
 // second caption instead of trying to parse it as another investor block.
-var series = VerticalRepeat(investorBlock, separatedBy: BlankRows());
+var series = VerticalRepeat(investorBlock);
 const string Inception = "Cash Flows using inception date";
 
 var byTransferDate = series

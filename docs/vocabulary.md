@@ -61,11 +61,11 @@ kinded space can answer that.
 |---|---|---|---|---|
 | bind | `Table(headerRows: 1, eachRow: captions => ...)` | `Unrect` | `IReadOnlyList<T>` | The header is read, and the captions it carries (a `LabelMap`) are handed to a lambda that returns the projection for one record — `Overlay(o => new Row(o.Next(Decimal().Right(captions["Amount"]))))`. The bind runs ONCE PER application of the table (after the header, before any row) and builds a description; the description is applied per row by the engine. A missing or duplicated caption is a loud failure naming the header cells |
 | row-slot | `Table(headerRows:, eachRow: someProjection)` | `Unrect` | `IReadOnlyList<T>` | Every body row is handed to a PROJECTION as its own one-row extent. Composed from `VerticalBands` under a discovered header (`ColumnLabels`/`WithColumnLabels`), wrapped as one `UnitDefinition` so a failure inside a record reads `Table[3] -> 'eachRow' -> …`, byte-identical to a hand-written leaf's path |
-| dictionary | `Table()` | `Unrect` | rows of `IReadOnlyDictionary<string, Point<TSpace>>` | Exploratory: keys discovered from the file's header, looked up under the binding comparer; a column with no caption and two captions that collide are both loud failures |
+| dictionary | `Table()` | `Unrect` | rows of `IReadOnlyDictionary<string, Point<TSpace>>` | Exploratory: keys discovered from the file's header, looked up under the binding comparer; a column that holds values under no caption and two captions that collide are both loud failures, while a captionless column with nothing in it (the blank lead of an indented table) simply has no entry |
 | lambda / row | `Table(r => ...)` / `Table(headerRows, r => ...)` | `Unrect` | `IReadOnlyList<T>` (`T` per row) | Full control: hand-written per-row reading over `TableRow<TSpace>` — `r["Caption"]` / `r[i]`, both yielding a `Point<TSpace>` |
 | lambda / view | `Table(t => ...)` / `Table(headerRows, t => ...)` | `Unrect` | `T` for the whole table | Full control over `TableView<TSpace>`, for a table that does not decompose row-by-row |
 | reflective | `Table<T>()` | `Unrect.Spreadsheets` | `IReadOnlyList<T>` | Captions bound to properties by `CaptionComparer` (case- and whitespace-insensitive), kinds inferred from property types (the closed set the kinded leaves cover, plus `Point<TSpace>` for an unassertive escape hatch), `Nullable<>`/`string?` meaning per-column blank tolerance. **Composed**, not implemented: reflection (`RowBinding`/`MemberPlan`) writes the record projection the *bind* rung above already knows how to apply, wrapped in `.AsUnit("Table<T>")` so its failure path is a hand-written bind's path with the member's own column named — `Table<Money>[0] -> column 'Amount'` |
-| reflective, adjusted | `Table<T>(bind => ...)` | `Unrect.Spreadsheets` | `IReadOnlyList<T>` | The same, adjusted: `bind.Column(t => t.X, "caption")` for a caption the comparer would not find, `bind.Ignore(t => t.X)` for a member this table does not carry |
+| reflective, adjusted | `Table<T>(bind => ...)` | `Unrect.Spreadsheets` | `IReadOnlyList<T>` | The same, adjusted: `bind.Column(t => t.X, "caption")` for a caption the comparer would not find, `bind.Column(t => t.X, 3)` for a column a caption cannot reach (a blank header cell, or one of two captions that say the same thing — the position counts from the table's left edge, as `r[3]` does), `bind.Ignore(t => t.X)` for a member this table does not carry |
 
 Every rung takes an optional `BlankRowStrategy onBlank` (`Stop`/`Skip`/`Fault`/`Tolerate`) for a
 fully-blank body row; `Stop` is the default and is self-bounding, the other three run the table to
@@ -97,7 +97,7 @@ Two notes the ladder earns:
 |---|---|
 | `VerticalFlow(v => ...)` / `HorizontalFlow(v => ...)` | Stacked bands, one per child: each child's band spans the flow's full width, so no sibling ever shares it. `v.Next(projection)` declares the next child and hands back what it read, and the lambda returns the result assembled from them; any arity. The lambda runs once at declaration, with each child reading as the empty value of its type, to learn the children — so `Children` is complete without a space — and once per application, with the values. It may assemble, count, join and format; a cell read belongs in the leaf and reaching into an object nothing built belongs in a `Select`, and a shape that depends on a value is a fault when it runs |
 | `Overlay(o => ...)` | One shared band; each child finds its own place by its own placement; no advance between children; consumed = bounding box |
-| `VerticalRepeat(item, separatedBy:, atLeast:)` / `HorizontalRepeat(...)` | N items with separators. A blank band is a separator, never a terminator — bound the repeat with `.Until` to end it at content |
+| `VerticalRepeat(item, separatedBy:, atLeast:)` / `HorizontalRepeat(...)` | N items, each stepping over the gap in front of it like any other projection, so blank bands between blocks need nothing said and a trailing one ends the run. A blank band is a gap, never a terminator — bound the repeat with `.Until` to end it at content. `separatedBy:` is for a separator that is content (a rule of dashes, a repeated heading) |
 | `VerticalBands(rows, each, onBlank:)` / `HorizontalBands(columns, ...)` | The extent cut into bands of a fixed stride, each projected by `each`. Nothing is searched for; the tiling ends when a whole band is no longer left. The contrast with a repeat: a repeat repeats a *pattern*, a tiler repeats a *fixed-dimension space* |
 | `Choice(a, b, ...)` | The first alternative that fits; an Info per near-miss; a losing branch's diagnostics roll back |
 
@@ -117,13 +117,24 @@ Same words, same semantics, same silence-is-adjacency law — the pipeline is a 
 second calculus; `Below(mark).Of(x)` and `x.Below(mark)` replay the identical `Steps` onto the same
 terminal.
 
+**The default.** A projection that does not say where it starts steps over the blank spans in
+front of it: a child of a flow or a repeat along its container's axis (blank rows down a vertical
+one, blank columns across a horizontal one), the root and an overlay's children along the axis the
+run reads its source in. Nothing moves across by default, and a projection that declares any of the
+words below is taken at its word — a `Down(1)` counts from exactly where the container put it.
+`CostReport` says which of the two every node does. The consequence worth knowing: **a flow is a
+pattern and a strip is an index.** A flow divides a region into blocks with gaps of any size
+between them, and a block one cell wide is still a block — so a flow of leaves over a sparse row
+steps over the missing value. Where a blank IS the value at a position, address by position:
+`Row(n, c => c[1])`, `Record`, an overlay with `Right(n)`, a table.
+
 | Operator | Kind of reason | Meaning |
 |---|---|---|
 | `.On(rowLandmark)` / `.On(columnLandmark)` | a relation | The projection starts AT the match and OWNS that row/column. One word for both axes |
 | `.Below(rowLandmark)` | a relation | Starts on the row directly below the match |
 | `.RightOf(columnLandmark)` | a relation | The column twin of `.Below` |
 | `.AfterBlankRows()` / `.AfterBlankColumns()` | filler | Step over the blank band in front. Tolerant by nature |
-| `.SkipToFirstNonBlankCell()` | filler | Down to the first content row, then across it to its first non-blank cell — the lazy top-left corner heuristic |
+| `.SkipToFirstNonBlankCell()` | filler | Down to the first content row, then across it to its first non-blank cell — the lazy top-left corner heuristic, and how a declaration asks for a table that begins at its first caption rather than at the left edge of what it was handed |
 | `.Down(n)` / `.Right(n)` | a distance | Fixed movement, honestly named as one |
 | `.OffsetBy(offsetStrategy)` | delegated | *My start is where that resolves to* — the one marked crossing from the cell-model surface into the interval-model strategy calculus |
 | `.Sized(area)` | — | Not placement; the extent's own replace |

@@ -56,7 +56,7 @@ var summary = Table(r => new
 // Position first: the blank gap in front of the section is declared where the reader meets it,
 // ahead of the section itself. The same declaration as the postfix .AfterBlankRows() it replaces
 // — the pipeline is a spelling, not a semantics.
-var details = AfterBlankRows().VerticalRepeat(investorDetail, separatedBy: BlankRows(), atLeast: 1);
+var details = VerticalRepeat(investorDetail, atLeast: 1);
 
 // The report. Column(c => ...) discovers the header height; the gap before the summary is the
 // table's own default offset; the gap before the details section is that AfterBlankRows entry;
