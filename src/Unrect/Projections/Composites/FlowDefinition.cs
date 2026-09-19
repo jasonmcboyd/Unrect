@@ -127,7 +127,7 @@ namespace Unrect.Projections
           ? Spans.EmptyAt(first, _length, _along)
           : _scope.Anchor;
 
-        return _flow.Layout.Runners[index].Start(_scope, _flow.Layout.Children[index], anchor);
+        return _flow.Layout.Runners[index].Start(_scope, _flow.Layout.Children[index], anchor, leadingBlanks: _along);
       }
 
       private void CloseCurrent()

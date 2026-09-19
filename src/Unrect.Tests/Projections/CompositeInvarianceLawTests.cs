@@ -83,10 +83,10 @@ namespace Unrect.Tests.Projections
     }
 
     [Theory]
-    [InlineData("adjacent cells")]
-    [InlineData("a gap between them")]
-    [InlineData("children of different heights")]
-    public void TheyReadExactlyTheSameCells(string spelling)
+    [InlineData("adjacent cells", 1)]
+    [InlineData("a gap between them", 0)]
+    [InlineData("children of different heights", 1)]
+    public void TheyReadExactlyTheSameCells(string spelling, int placesTheFlowLeftToTheDefault)
     {
       // The committed stand-in for word-level evidence: two spellings that agree on the answer could
       // still have got there by reading different amounts of the sheet, and a differential value pin
@@ -99,9 +99,12 @@ namespace Unrect.Tests.Projections
       flow.Apply(byFlow);
       overlay.Apply(byOverlay);
 
-      // Not vacuous: something was read, and both read the same amount of it.
+      // Not vacuous: something was read. The cells are the same ones; what differs is how often. A
+      // child that says where it starts is taken at its word, and one that does not looks at the
+      // cell in front of it to see that it is not a gap — so the flow reads once more for every
+      // child it left to the default where the overlay had to declare a .Right to say the same thing.
       Assert.NotEqual(0, byFlow.CellReads);
-      Assert.Equal(byFlow.CellReads, byOverlay.CellReads);
+      Assert.Equal(byOverlay.CellReads + placesTheFlowLeftToTheDefault, byFlow.CellReads);
       Assert.Equal(byFlow.RowsTouched, byOverlay.RowsTouched);
     }
 

@@ -165,12 +165,14 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void OffsetOnTheFirstChild_PositionsThatChildOnly()
     {
-      var space = Grid(new[,] { { 0 }, { 1 }, { 2 }, { 0 } });
+      // A distance over a row that holds something. A blank row would not show the difference: it is
+      // a gap, and a flow with no offset of its own steps over a gap whoever else declares what.
+      var space = Grid(new[,] { { 7 }, { 1 }, { 2 }, { 0 } });
 
-      var first = AfterBlankRows().Of(IntCell());
+      var first = Down(1).Of(IntCell());
       var applied = VerticalFlow(v => $"{v.Next(first)}|{v.Next(IntCell())}").Apply(space);
 
-      // Same values, but the flow itself starts at the origin and therefore consumes the blank row.
+      // The flow itself starts at the origin and therefore consumes the row its child stepped over.
       Assert.Equal("1|2", applied.Value);
       Assert.Equal(0, applied.Offset.Size.Height);
       Assert.Equal(3, applied.Consumed.Height);

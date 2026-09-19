@@ -146,10 +146,9 @@ namespace Unrect.Tests.Projections
       var typed = VerticalRepeat(block, blankRows);
       var named = VerticalRepeat(block, separatedBy: blankRows, atLeast: 1);
 
-      // Without a separator each occurrence starts where the last stopped, so the blank band is a
-      // block of its own height 0 — the repeat ends there. With one, the band is stepped over and
-      // the two blocks are read as one series.
-      Assert.Equal(new[] { 3 }, bare.Map(Sheet()));
+      // Every occurrence steps over the blank rows in front of it, so the band between the two
+      // blocks is crossed with or without a separator that says so.
+      Assert.Equal(new[] { 3, 2 }, bare.Map(Sheet()));
       Assert.Equal(new[] { 3, 2 }, erased.Map(Sheet()));
       Assert.Equal(erased.Map(Sheet()), typed.Map(Sheet()));
       Assert.Equal(erased.Map(Sheet()), named.Map(Sheet()));

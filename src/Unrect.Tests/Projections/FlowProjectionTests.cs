@@ -121,8 +121,10 @@ namespace Unrect.Tests.Projections
     {
       // The first child sits one row down, and that row is part of what the flow took: a following
       // sibling of the flow must clear the gap the flow's own child opened.
+      // The row stepped over holds a value: a blank one would be a gap, which the flow steps over
+      // itself before its child's distance is counted.
       var applied = VerticalFlow(v => $"{v.Next(Down(1).Of(IntCell()))}|{v.Next(IntCell())}")
-        .Apply(Grid(new[,] { { 0 }, { 1 }, { 2 } }));
+        .Apply(Grid(new[,] { { 9 }, { 1 }, { 2 } }));
 
       Assert.Equal("1|2", applied.Value);
       Assert.Equal(3, applied.Consumed.Height);

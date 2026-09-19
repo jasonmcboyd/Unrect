@@ -318,7 +318,9 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ARepeatsIndexCountsTheItemsAlreadyCollected()
     {
-      var space = Grid(new[,] { { 1 }, { 2 }, { 0 } });
+      // The third cell is the wrong kind rather than blank: a trailing blank row is a gap, and a
+      // repeat that finds only gaps has run out of items rather than met one that fails.
+      var space = Mixed(new object?[,] { { 1 }, { 2 }, { "x" } });
 
       var failure = Assert.Throws<ProjectionException>(() => VerticalRepeat(IntCell()).Map(space));
 

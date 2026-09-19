@@ -245,7 +245,8 @@ namespace Unrect.Projections
           _repeat.Item,
           _first is Plane<TSpace> first ? Spans.EmptyAt(first, at, Along) : _scope.Anchor,
           occurrence: _values.Count,
-          strict: false);
+          strict: false,
+          leadingBlanks: Along);
       }
 
       /// <summary>

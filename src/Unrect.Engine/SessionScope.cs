@@ -6,17 +6,18 @@ namespace Unrect.Projections
   internal sealed class SessionScope<TSpace> : ProjectorScope<TSpace>
     where TSpace : class, ISpace
   {
-    internal SessionScope(TreePosition position, DiagnosticCollector diagnostics, Plane<TSpace> anchor, Orientation driver, IChildRegistry<TSpace>? owner)
+    internal SessionScope(TreePosition position, DiagnosticCollector diagnostics, Plane<TSpace> anchor, Orientation driver, Orientation session, IChildRegistry<TSpace>? owner)
       : base(position, diagnostics)
     {
       Anchor = anchor;
       Driver = driver;
+      Session = session;
       Owner = owner;
     }
 
     /// <summary>The scope a run over <paramref name="space"/> starts from: the root position, a fresh collector, rows as the driver.</summary>
     internal static SessionScope<TSpace> Root(TSpace space)
-      => new SessionScope<TSpace>(TreePosition.Root, new DiagnosticCollector(), Spans.Empty(Plane<TSpace>.Of(space), Orientation.Vertical), Orientation.Vertical, null);
+      => new SessionScope<TSpace>(TreePosition.Root, new DiagnosticCollector(), Spans.Empty(Plane<TSpace>.Of(space), Orientation.Vertical), Orientation.Vertical, Orientation.Vertical, null);
 
     /// <summary>The handle children started here report to; null at the root.</summary>
     internal IChildRegistry<TSpace>? Owner { get; }
@@ -24,18 +25,24 @@ namespace Unrect.Projections
     /// <summary>The axis spans arrive along here: the session's at the root, a held node's own where it is re-driven.</summary>
     internal override Orientation Driver { get; }
 
+    /// <summary>
+    /// The axis the run reads its source along, which a re-driven node does not change: the axis a
+    /// child's default offset steps over blank spans on.
+    /// </summary>
+    internal override Orientation Session { get; }
+
     internal override Plane<TSpace> Anchor { get; }
 
     private protected override ProjectorScope<TSpace> Derive(TreePosition position)
-      => new SessionScope<TSpace>(position, Diagnostics, Anchor, Driver, Owner);
+      => new SessionScope<TSpace>(position, Diagnostics, Anchor, Driver, Session, Owner);
 
     internal override ProjectorScope<TSpace> At(Plane<TSpace> anchor, Orientation driver)
-      => new SessionScope<TSpace>(Position, Diagnostics, anchor, driver, Owner);
+      => new SessionScope<TSpace>(Position, Diagnostics, anchor, driver, Session, Owner);
 
     internal override ProjectorScope<TSpace> Within(IChildRegistry<TSpace> owner, Plane<TSpace> anchor, Orientation driver)
-      => new SessionScope<TSpace>(Position, Diagnostics, anchor, driver, owner);
+      => new SessionScope<TSpace>(Position, Diagnostics, anchor, driver, Session, owner);
 
-    internal override IChildHandle<TSpace, T> Start<T>(Child edge, IProjectionDefinition<TSpace, T> definition, Plane<TSpace> anchor, int? occurrence = null, bool strict = true, bool inheritSite = false)
+    internal override IChildHandle<TSpace, T> Start<T>(Child edge, IProjectionDefinition<TSpace, T> definition, Plane<TSpace> anchor, int? occurrence = null, bool strict = true, bool inheritSite = false, Orientation? leadingBlanks = null)
     {
       ProjectorScope<TSpace> parent = this;
 
@@ -47,7 +54,7 @@ namespace Unrect.Projections
       if (!inheritSite)
         parent = parent.WithUseSite(edge.Site);
 
-      var child = new ChildProjector<TSpace, T>(this, parent, definition, anchor, strict);
+      var child = new ChildProjector<TSpace, T>(this, parent, definition, anchor, strict, leadingBlanks);
       Owner?.Opened(child);
       return child;
     }

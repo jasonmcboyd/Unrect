@@ -79,7 +79,9 @@ namespace Unrect.Tests.Projections
     [InlineData(null, "found Blank")]
     public void AKindFailureNamesTheKindThatWasThere(object? value, string found)
     {
-      var failure = Assert.Throws<ProjectionException>(() => Decimal().Map(One(value)));
+      // Beside a neighbour, so the blank is a cell with nothing in it rather than a blank row, which
+      // is a gap the placement steps over.
+      var failure = Assert.Throws<ProjectionException>(() => Decimal().Map(Mixed(new object?[,] { { value, "." } })));
 
       Assert.Equal($"expected Number at A1, {found}", Problem(failure));
       Assert.Equal("Decimal", failure.Subject);

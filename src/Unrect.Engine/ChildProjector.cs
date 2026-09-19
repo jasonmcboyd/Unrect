@@ -52,6 +52,7 @@ namespace Unrect.Projections
 
     private Phase _phase;
     private int _column;
+    private readonly bool _skipsByDefault;
     private bool _startNext;
     private int _innerStart;
     private int _taken;
@@ -60,7 +61,7 @@ namespace Unrect.Projections
     private bool _innerRefused;
     private Settlement<T> _settlement;
 
-    internal ChildProjector(SessionScope<TSpace> scope, ProjectorScope<TSpace> parent, IProjectionDefinition<TSpace, T> definition, Plane<TSpace> anchor, bool strict)
+    internal ChildProjector(SessionScope<TSpace> scope, ProjectorScope<TSpace> parent, IProjectionDefinition<TSpace, T> definition, Plane<TSpace> anchor, bool strict, Orientation? leadingBlanks = null)
     {
       _scope = scope;
       _parent = parent;
@@ -71,8 +72,9 @@ namespace Unrect.Projections
       _child = PathRenderer.Skipped(definition) ? parent.Blaming(definition) : parent.Descend(definition);
 
       // Driven or held is PlacementRules' decision, shared with the cost report so the two agree.
-      _held = !PlacementRules.Streams(definition, _driver, out var offset, out var size, out var derived, out _);
+      _held = !PlacementRules.Streams(definition, _driver, out var offset, out var size, out var derived, out _, leadingBlanks);
       _placement = new StreamingPlacement<TSpace>(offset, size, derived, definition, _driver, strict);
+      _skipsByDefault = leadingBlanks is not null && !PlacementRules.DeclaresOffset(definition);
     }
 
     // --- The tree of open machines ---------------------------------------------------------------
@@ -383,6 +385,11 @@ namespace Unrect.Projections
       if (_held)
         for (var index = 0; index < _offered.Count && _phase != Phase.Finished; index++)
           Take(_offered[index], index, live: false);
+
+      // A tolerant child — a repeat's next item — that stepped over blank spans all the way to the
+      // end found nothing to be: there is no next item, which is not the same as an item that fails.
+      if (_phase == Phase.Offset && !PlacementFailed && !_strict && _skipsByDefault && _offered.Count > 0)
+        PlacementFailed = true;
 
       if (_phase == Phase.Offset && !PlacementFailed)
       {

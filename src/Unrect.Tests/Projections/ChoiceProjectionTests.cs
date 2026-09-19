@@ -76,7 +76,9 @@ namespace Unrect.Tests.Projections
         AsText().Select(text => $"text:{text}"),
         Point().Select(_ => "absent"));
 
-      Assert.Equal("absent", readEither.Map(Mixed(new object?[,] { { null } })));
+      // A blank cell beside a value: a row blank all the way across is a gap the placement steps
+      // over, not a cell that says nothing.
+      Assert.Equal("absent", readEither.Map(Mixed(new object?[,] { { null, "." } })));
     }
 
     [Fact]

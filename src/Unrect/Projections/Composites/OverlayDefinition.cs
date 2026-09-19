@@ -114,7 +114,7 @@ namespace Unrect.Projections
         _started = true;
 
         for (var index = 0; index < _open.Length; index++)
-          _open[index] = _overlay.Layout.Runners[index].Start(_scope, _overlay.Layout.Children[index], anchor);
+          _open[index] = _overlay.Layout.Runners[index].Start(_scope, _overlay.Layout.Children[index], anchor, leadingBlanks: _scope.Session);
       }
 
       private void CloseChild(int index)

@@ -1,4 +1,5 @@
 using Unrect.Core;
+using Unrect.Strategies;
 
 namespace Unrect.Projections
 {
@@ -14,15 +15,35 @@ namespace Unrect.Projections
     internal static Reach Retains(IProjectionDefinition definition)
       => definition is DefinitionNode node ? node.Retains : Reach.Extent;
 
+    /// <summary>
+    /// Whether <paramref name="definition"/> says where it starts, itself or through the wrappers
+    /// around its one inner node. One that does not takes the default: past the blank spans in front.
+    /// </summary>
+    internal static bool DeclaresOffset(IProjectionDefinition definition)
+    {
+      for (var node = definition; ; node = node.Children[0].Definition)
+      {
+        if (node.Placement.HasDeclaredOffset)
+          return true;
+
+        if (!node.IsWrapper || node.Children.Count != 1)
+          return false;
+      }
+    }
+
     internal static bool Streams(IProjectionDefinition definition, Orientation driver, out string? hold)
       => Streams(definition, driver, out _, out _, out _, out hold);
 
     /// <summary>The same decision, handing back the scans a driven placement runs on.</summary>
-    internal static bool Streams(IProjectionDefinition definition, Orientation driver, out IOffsetScan offset, out ISizeScan? size, out bool derived, out string? hold)
+    internal static bool Streams(IProjectionDefinition definition, Orientation driver, out IOffsetScan offset, out ISizeScan? size, out bool derived, out string? hold, Orientation? leadingBlanks = null)
     {
       var spans = driver == Orientation.Vertical ? "row" : "column";
 
-      offset = definition.Placement.Offset.Begin(driver);
+      // A child that declares no offset anywhere down its wrapper chain steps over the blank spans
+      // in front of it, along the axis the run reads its source and never across it.
+      offset = leadingBlanks is Orientation session && !DeclaresOffset(definition)
+        ? (session == Orientation.Vertical ? OffsetStrategies.SkipBlankRows() : OffsetStrategies.SkipBlankColumns()).Begin(driver)
+        : definition.Placement.Offset.Begin(driver);
       size = definition.Placement.Area?.Begin(driver);
       derived = size is null;
 

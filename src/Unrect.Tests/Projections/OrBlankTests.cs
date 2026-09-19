@@ -28,6 +28,13 @@ namespace Unrect.Tests.Projections
     private static ISheetCells One(object? value) => Mixed(new object?[,] { { value } });
 
     /// <summary>
+    /// A blank cell with a neighbour. The neighbour is the point: a row that is blank all the way
+    /// across is a gap, which every placement steps over, so a blank that is a VALUE is a blank
+    /// cell in a row that has something else in it.
+    /// </summary>
+    private static ISheetCells BlankCell() => Mixed(new object?[,] { { null, "." } });
+
+    /// <summary>
     /// One row eight columns wide with something in column 0 and <paramref name="atSix"/> in column
     /// 6 — the sparse shape the modifier was designed for, small enough to say one thing.
     /// </summary>
@@ -46,8 +53,8 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ABlankCellReadsAsNull()
     {
-      Assert.Null(Decimal().OrBlank().Map(One(null)));
-      Assert.Null(Text().OrBlank().Map(One(null)));
+      Assert.Null(Decimal().OrBlank().Map(BlankCell()));
+      Assert.Null(Text().OrBlank().Map(BlankCell()));
     }
 
     [Fact]
@@ -55,10 +62,12 @@ namespace Unrect.Tests.Projections
     {
       // The pin the modifier exists for. Nothing is absorbed here, so there is nothing to report:
       // the declaration said the cell may be absent and the cell is absent.
-      var read = Decimal().OrBlank().MapWithDiagnostics(One(null));
+      var read = Decimal().OrBlank().MapWithDiagnostics(BlankCell());
 
+      // The neighbour that keeps the row from being a gap is not described, and the run says so;
+      // that Info is about the sheet. About the cell there is nothing.
       Assert.Null(read.Value);
-      Assert.Empty(read.Diagnostics);
+      Assert.DoesNotContain(read.Diagnostics, d => d.Severity != DiagnosticSeverity.Info);
     }
 
     [Fact]
@@ -67,7 +76,7 @@ namespace Unrect.Tests.Projections
       // The other half, over the same cell, so the two spellings can be read side by side. Optional
       // turns a kind failure — a blank IS a kind failure to Decimal — into a default plus a Warning,
       // which is right for a section that may be missing and wrong for a field that may be empty.
-      var read = Decimal().Optional().MapWithDiagnostics(One(null));
+      var read = Decimal().Optional().MapWithDiagnostics(BlankCell());
 
       var warning = Assert.Single(read.Diagnostics, d => d.Severity == DiagnosticSeverity.Warning);
 
@@ -118,7 +127,7 @@ namespace Unrect.Tests.Projections
         "expected Number at A1, found Text",
         Problem(Assert.Throws<ProjectionException>(() => Decimal().OrBlank().Map(One("   ")))));
 
-      Assert.Null(Decimal().OrBlank().Map(One("")));
+      Assert.Null(Decimal().OrBlank().Map(Mixed(new object?[,] { { "", "." } })));
     }
 
     [Fact]
@@ -230,7 +239,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ItStillConsumesExactlyOneCell()
     {
-      var applied = Decimal().OrBlank().Apply(One(null));
+      var applied = Decimal().OrBlank().Apply(BlankCell());
 
       Assert.Equal(1, applied.Consumed.Width);
       Assert.Equal(1, applied.Consumed.Height);
