@@ -176,11 +176,12 @@ namespace Unrect.Interactive
     /// <summary>One member of the scaffolded type: the label it came from, what it is called, and what its samples argued for.</summary>
     internal sealed class Member
     {
-      public Member(string label, string name, string type)
+      public Member(string label, string name, string type, int position)
       {
         Label = label;
         Name = name;
         Type = type;
+        Position = position;
       }
 
       public string Label { get; }
@@ -188,6 +189,9 @@ namespace Unrect.Interactive
       public string Name { get; }
 
       public string Type { get; }
+
+      /// <summary>How far along the label line this member's label sits, counted from the region's edge.</summary>
+      public int Position { get; }
 
       /// <summary>Whether the binder would find this member's label from its name alone.</summary>
       public bool Binds => CaptionComparer.Default.Equals(Name, Label);
@@ -222,7 +226,7 @@ namespace Unrect.Interactive
 
         var name = Distinct(Identifier(label, members.Count), taken);
 
-        members.Add(new Member(label.Trim(), name, Type(grid, labelLine, position, samples)));
+        members.Add(new Member(label.Trim(), name, Type(grid, labelLine, position, samples), position));
       }
 
       return members;
@@ -458,9 +462,9 @@ namespace Unrect.Interactive
 
     /// <summary>
     /// What a human has to know before this type will bind, one note per member it concerns. Two
-    /// labels that are one caption to the comparer cannot be told apart by any binding, so both of
-    /// their members carry that note and neither carries an override that could not work; a label
-    /// that merely lost characters on the way to a name gets the override that names it.
+    /// labels that are one caption to the comparer cannot be told apart by name, so each of their
+    /// members carries the override that binds it by position; a label that merely lost characters
+    /// on the way to a name gets the override that names it.
     /// </summary>
     private static IEnumerable<(string Member, string Note)> MemberNotes(List<Member> members, string typeName, LabelsIn labels)
     {
@@ -472,10 +476,13 @@ namespace Unrect.Interactive
 
         if (twins.Count > 1)
         {
+          var labelled = string.Join(" and ", twins.Select(twin => Literal(twin.Label)));
+
           yield return (
             member.Name,
-            string.Join(" and ", twins.Select(twin => Literal(twin.Label)))
-            + " are one caption to the binder, which cannot tell their cells apart: read them by position, or rename one in the file");
+            labels == LabelsIn.Row
+              ? $"{labelled} are one caption to the binder: .Column({parameter} => {parameter}.{member.Name}, {member.Position})"
+              : $"{labelled} are one label, which nothing can tell apart by name");
 
           continue;
         }

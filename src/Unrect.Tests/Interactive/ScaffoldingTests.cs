@@ -102,8 +102,8 @@ namespace Unrect.Tests.Interactive
       // column being dropped, reordered, or named after the wrong caption.
       Assert.Equal(
         Lines(
-          "// \"Amount\" and \"amount\" are one caption to the binder, which cannot tell their cells apart: "
-            + "read them by position, or rename one in the file",
+          "// \"Amount\" and \"amount\" are one caption to the binder: .Column(r => r.Amount, 0)",
+          "// \"Amount\" and \"amount\" are one caption to the binder: .Column(r => r.Amount2, 1)",
           "// \"2024 Total\" does not bind to _2024Total by name: .Column(r => r._2024Total, \"2024 Total\")",
           "// \"Net (USD)\" does not bind to NetUSD by name: .Column(r => r.NetUSD, \"Net (USD)\")",
           "// \"###\" does not bind to Column5 by name: .Column(r => r.Column5, \"###\")",
