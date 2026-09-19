@@ -93,5 +93,21 @@ namespace Unrect.Tests
 
       return _formulas[row, column];
     }
+
+    /// <summary>A formula fixture written as a literal has no formatting: every cell is set the default way.</summary>
+    public CellFont FontAt(int column, int row)
+    {
+      _ = FormulaAt(column, row);
+
+      return default;
+    }
+
+    /// <inheritdoc cref="FontAt"/>
+    public CellFill FillAt(int column, int row)
+    {
+      _ = FormulaAt(column, row);
+
+      return default;
+    }
   }
 }

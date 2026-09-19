@@ -114,6 +114,28 @@ namespace Unrect.Spreadsheets
       return styles;
     }
 
+    /// <summary>Every style's font, by the style's index — what a space keeps once this reader is closed.</summary>
+    internal CellFont[] Fonts()
+    {
+      var fonts = new CellFont[_styles.Count];
+
+      for (var style = 0; style < fonts.Length; style++)
+        fonts[style] = FontOf(style);
+
+      return fonts;
+    }
+
+    /// <summary>Every style's fill, by the style's index.</summary>
+    internal CellFill[] Fills()
+    {
+      var fills = new CellFill[_styles.Count];
+
+      for (var style = 0; style < fills.Length; style++)
+        fills[style] = FillOf(style);
+
+      return fills;
+    }
+
     /// <summary>The font of style <paramref name="style"/>; the default font for one the workbook does not define.</summary>
     internal CellFont FontOf(int style)
       => style >= 0 && style < _styles.Count && _styles[style].Font is var font && font >= 0 && font < _fonts.Count

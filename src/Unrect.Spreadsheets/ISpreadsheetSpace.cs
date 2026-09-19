@@ -25,7 +25,7 @@ namespace Unrect.Spreadsheets
   /// absence rule, not an oversight.
   /// </para>
   /// </summary>
-  public interface ISpreadsheetSpace : ISheetCells, IFormulaSpace
+  public interface ISpreadsheetSpace : ISheetCells, IFormulaSpace, IStyleSpace
   {
   }
 }

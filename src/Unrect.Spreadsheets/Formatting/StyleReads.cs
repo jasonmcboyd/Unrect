@@ -1,0 +1,28 @@
+using Unrect.Core;
+
+namespace Unrect.Spreadsheets
+{
+  /// <summary>
+  /// What a cell looks like, asked of a point: <c>row["Amount"].Font().Color == CellColor.Red</c>.
+  /// <para>
+  /// The demand is in the type. These compile only over a space that read its formatting
+  /// (<see cref="IStyleSpace"/>), so a declaration that asks what a cell looks like cannot be applied
+  /// to a sheet nobody looked at and quietly be told "black" — the file names
+  /// <see cref="ISpreadsheetSpace"/> as its space, and the space is opened as one.
+  /// </para>
+  /// </summary>
+  public static class StyleReads
+  {
+    /// <summary>How the cell's text is set: its colour, and whether it is bold, italic or struck through.</summary>
+    /// <exception cref="OutOfBoundsException">The point is outside its space.</exception>
+    public static CellFont Font<TSpace>(this Point<TSpace> point)
+      where TSpace : class, IStyleSpace
+      => point.Space.FontAt(point.Column, point.Row);
+
+    /// <summary>How the cell is filled; an automatic colour where it has no fill.</summary>
+    /// <exception cref="OutOfBoundsException">The point is outside its space.</exception>
+    public static CellFill Fill<TSpace>(this Point<TSpace> point)
+      where TSpace : class, IStyleSpace
+      => point.Space.FillAt(point.Column, point.Row);
+  }
+}
