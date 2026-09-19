@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789847940104,
+  "lastUpdate": 1789847940349,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -15109,6 +15109,55 @@ window.BENCHMARK_DATA = {
           {
             "name": "Unrect.Benchmarks.Streaming.Band_Streamed",
             "value": 28557811,
+            "unit": "bytes"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "4818c36f9e9b0c2b75a4093dbbce6981329fd14b",
+          "message": "Merge feature/scaffold-shapes: ScaffoldRecord and ScaffoldClass, on a sheet and as leaves\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>",
+          "timestamp": "2026-09-19T15:35:04Z",
+          "tree_id": "d48076b68bb0a93dc6ab6797b10f0ead882156a7",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/4818c36f9e9b0c2b75a4093dbbce6981329fd14b"
+        },
+        "date": 1789847940295,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Streaming.Monotone_Eager",
+            "value": 2972530312,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Monotone_Streamed",
+            "value": 3178724928,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Monotone_SecondPass",
+            "value": 6347476136,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Band_Eager",
+            "value": 3147663,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Band_Streamed",
+            "value": 28557378,
             "unit": "bytes"
           }
         ]
