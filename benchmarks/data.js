@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789847938875,
+  "lastUpdate": 1789847939124,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -9167,6 +9167,65 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/jasonmcboyd/Unrect/commit/717d1ea3b61c226c608194aae5ff909fd4603455"
         },
         "date": 1789796483424,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Strategies.RowsWhileAnyValue_FullHeight",
+            "value": 6293191,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.RowsWhileAnyValue_Sparse",
+            "value": 6293191,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_HitAt10Percent",
+            "value": 788880,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_HitAt90Percent",
+            "value": 6293976,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_MissWholeGrid",
+            "value": 25173496,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Until_BoundResolution",
+            "value": 12586440,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.BlankRows_Skip",
+            "value": 3147534,
+            "unit": "bytes"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "4818c36f9e9b0c2b75a4093dbbce6981329fd14b",
+          "message": "Merge feature/scaffold-shapes: ScaffoldRecord and ScaffoldClass, on a sheet and as leaves\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>",
+          "timestamp": "2026-09-19T15:35:04Z",
+          "tree_id": "d48076b68bb0a93dc6ab6797b10f0ead882156a7",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/4818c36f9e9b0c2b75a4093dbbce6981329fd14b"
+        },
+        "date": 1789847939070,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
