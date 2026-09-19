@@ -20,6 +20,8 @@ namespace Unrect.Projections
     public override string Description => "Overlay";
 
     /// <summary>An overlay streams along whatever axis every child streams along: its children run concurrently on the same spans.</summary>
+    internal override Orientation? LeadsChildren(Orientation session) => session;
+
     public override Axes Axis
     {
       get

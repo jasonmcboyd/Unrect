@@ -33,6 +33,8 @@ namespace Unrect.Projections
 
     public override Axes Axis => Orientation.Of();
 
+    internal override Orientation? LeadsChildren(Orientation session) => Orientation;
+
     public override IProjector<TSpace, T> Build(ProjectorScope<TSpace> scope) => new Machine(this, scope);
 
     /// <summary>

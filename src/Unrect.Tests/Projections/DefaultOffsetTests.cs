@@ -140,6 +140,35 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
+    public void TheDryRunSaysWhereEveryNodeStarts()
+    {
+      // The rule is a default, and a default nobody can see is a surprise: the cost report says,
+      // per node, whether it starts as it declared or by the default, and along which axis.
+      var report = VerticalFlow(v => new
+      {
+        Title = v.Next(Text()),
+        Pair = v.Next(HorizontalFlow(h => $"{h.Next(Text())}{h.Next(Right(1).Of(Text()))}")),
+        Rows = v.Next(Table<Transaction>().Select(rows => rows.Count)),
+      });
+
+      var starts = CostReport.Of(report).Lines.Select(line => $"{new string(' ', line.Depth)}{line.Name}: {line.Starts}").ToList();
+
+      Assert.Equal(
+        new[]
+        {
+          "VerticalFlow: AfterBlankRows",
+          " Text#1: AfterBlankRows",
+          " HorizontalFlow#2: AfterBlankRows",
+          "  Text#1: AfterBlankColumns",
+          "  Text#2: Declared",
+          " Table<Transaction>: AfterBlankRows",
+        },
+        starts.Take(6));
+
+      Assert.Contains("starts after blank rows", CostReport.Of(report).ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void NothingMovesAcross()
     {
       // A block indented under a block that is not: the flow starts at the left edge of what it was
