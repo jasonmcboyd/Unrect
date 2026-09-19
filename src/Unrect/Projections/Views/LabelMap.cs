@@ -71,8 +71,11 @@ namespace Unrect.Projections
     /// </summary>
     public IReadOnlyList<string> Labels => _source.Labels;
 
-    /// <summary>Each column's own caption, without the bands over it.</summary>
-    IReadOnlyList<string> ILabelSource.Captions => _source.Captions;
+    /// <summary>
+    /// Each column's path through the header: its bands, outermost first, then its own label. One
+    /// step long for a column under no band, and empty for a column with no label at all.
+    /// </summary>
+    public IReadOnlyList<IReadOnlyList<string>> Paths => _source.Paths;
 
     IReadOnlyList<string> ILabelSource.Labels => Labels;
 
@@ -160,13 +163,19 @@ namespace Unrect.Projections
 
       var matches = new List<int>();
 
-      // By its whole name, or by its own caption under whatever bands sit over it: a caption that is
-      // unique names its column without its band, and one that is not comes back as every column
-      // that carries it, which is the ambiguity the callers refuse.
-      var captions = _source.Captions;
+      // A column under no band first, then a label anywhere: the rule a row read follows, under the
+      // comparer a binding uses.
+      var paths = _source.Paths;
 
       for (var column = 0; column < Labels.Count; column++)
-        if (CaptionComparer.Default.Equals(Labels[column], caption) || CaptionComparer.Default.Equals(captions[column], caption))
+        if (paths[column].Count == 1 && CaptionComparer.Default.Equals(Labels[column], caption))
+          matches.Add(column);
+
+      if (matches.Count > 0)
+        return matches;
+
+      for (var column = 0; column < Labels.Count; column++)
+        if (paths[column].Count > 0 && CaptionComparer.Default.Equals(Labels[column], caption))
           matches.Add(column);
 
       return matches;
@@ -198,7 +207,8 @@ namespace Unrect.Projections
 
     public IReadOnlyList<string> Labels => _entries.Select(entry => entry.Label).ToList();
 
-    public IReadOnlyList<string> Captions => Labels;
+    public IReadOnlyList<IReadOnlyList<string>> Paths
+      => _entries.Select(entry => (IReadOnlyList<string>)new[] { entry.Label }).ToList();
 
     public IReadOnlyList<int> IndicesOf(string label)
       => _entries.Where(entry => CellMatching.TextComparer.Equals(entry.Label, label)).Select(entry => entry.Index).ToList();
@@ -222,10 +232,9 @@ namespace Unrect.Projections
     private Dictionary<string, List<int>>? _columnsByName;
 
     /// <param name="header">
-    /// The header band, one row tall or several. Its LAST row holds the captions; every row above
-    /// it is a row of bands, each band reaching rightward over the columns after it until the next
-    /// band says otherwise — which is how a merged cell reads (a value in its first cell, blanks
-    /// beside it) and how an export that never merged anything reads too.
+    /// The header band, one row tall or several. Its LAST row holds the captions and every row
+    /// above it is a row of bands; what comes out is each column's PATH — the distinct regions it
+    /// passes through from the top of the header to the bottom.
     /// </param>
     internal HeaderLabels(CellStrip<TSpace> header)
     {
@@ -234,40 +243,25 @@ namespace Unrect.Projections
       // The captions are what failures cite: a column is where its caption is.
       _header = rows > 1 ? header.Line(rows - 1) : header;
 
-      // A caption is a cell that says a word of its own. Anything else — a number, a date, a blank —
-      // is a column with no caption, which is the empty string, and the rungs that promise one entry
-      // per column are the ones that refuse it.
-      Captions = Words(_header);
+      var words = new List<string>[rows];
 
-      var labels = Captions.ToList();
+      for (var row = 0; row < rows; row++)
+        words[row] = Words(rows > 1 ? header.Line(row) : header);
 
-      // Outermost band first, so a column reads as its header does from the top: "From Id".
-      for (var row = rows - 2; row >= 0; row--)
-      {
-        var band = string.Empty;
-        var words = Words(header.Line(row));
-
-        for (var column = 0; column < labels.Count; column++)
-        {
-          if (words[column].Length > 0)
-            band = words[column];
-
-          // A band names the columns that HAVE a caption. One with none stays a column with no
-          // label, whatever is written over it.
-          if (band.Length > 0 && Captions[column].Length > 0)
-            labels[column] = band + " " + labels[column];
-        }
-      }
-
-      Labels = labels;
+      Paths = HeaderRegions.Fold(words);
+      Labels = Paths.Select(path => path.Count == 0 ? string.Empty : path[path.Count - 1]).ToList();
     }
 
+    /// <summary>Each column's own label — the last step of its path — and the empty string for a column with none.</summary>
     public IReadOnlyList<string> Labels { get; }
 
-    public IReadOnlyList<string> Captions { get; }
+    /// <summary>Each column's path: its bands, outermost first, then its caption. Empty for a column with no label.</summary>
+    public IReadOnlyList<IReadOnlyList<string>> Paths { get; }
 
+    // A label is whatever a header cell SAYS. It is a label by position, not by kind: a row of
+    // years or of period-end dates is a row of captions.
     private static List<string> Words(CellStrip<TSpace> row)
-      => row.Select(cell => cell.IsText ? cell.AsText()!.Trim() : string.Empty).ToList();
+      => row.Select(cell => cell.IsBlank ? string.Empty : (cell.AsText() ?? string.Empty).Trim()).ToList();
 
     public IReadOnlyList<int> IndicesOf(string label)
     {
@@ -287,30 +281,35 @@ namespace Unrect.Projections
 
     private Dictionary<string, List<int>> BuildColumnsByName()
     {
-      var columns = new Dictionary<string, List<int>>(CellMatching.TextComparer);
+      // A name is a one-step path, and it means the column whose WHOLE path it is — one under no
+      // band — before it means a label that happens to be unique somewhere under one. Where it is
+      // neither, it is every column that carries it, which is the ambiguity a by-name read refuses.
+      var exact = new Dictionary<string, List<int>>(CellMatching.TextComparer);
+      var anywhere = new Dictionary<string, List<int>>(CellMatching.TextComparer);
 
-      void Add(string name, int index)
+      void Add(Dictionary<string, List<int>> columns, string name, int index)
       {
-        if (name.Length == 0)
-          return;
-
         if (!columns.TryGetValue(name, out var indices))
           columns[name] = indices = new List<int>();
 
-        if (!indices.Contains(index))
-          indices.Add(index);
+        indices.Add(index);
       }
 
-      // Under its whole name, and under its own caption: a caption that is unique finds its column
-      // without its band, and one that is not finds every column that carries it — the ambiguity
-      // a by-name read refuses.
-      for (var index = 0; index < Labels.Count; index++)
+      for (var index = 0; index < Paths.Count; index++)
       {
-        Add(Labels[index], index);
-        Add(Captions[index], index);
+        if (Paths[index].Count == 0)
+          continue;
+
+        Add(anywhere, Labels[index], index);
+
+        if (Paths[index].Count == 1)
+          Add(exact, Labels[index], index);
       }
 
-      return columns;
+      foreach (var entry in exact)
+        anywhere[entry.Key] = entry.Value;
+
+      return anywhere;
     }
   }
 

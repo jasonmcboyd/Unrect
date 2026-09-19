@@ -153,8 +153,9 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void ColumnNames_TrimsTextAndBlanksOutEverythingElse()
+    public void ColumnNames_AreWhatTheHeaderCellsSayTrimmedAndEmptyForABlank()
     {
+      // A header cell is a label by position, whatever its kind: the 7 is a column called "7".
       var space = Mixed(new object?[,]
       {
         { "  Amount  ", null, 7 },
@@ -163,7 +164,7 @@ namespace Unrect.Tests.Projections
 
       var names = Table(t => t.ColumnNames).Map(space);
 
-      Assert.Equal(new[] { "Amount", "", "" }, names);
+      Assert.Equal(new[] { "Amount", "", "7" }, names);
     }
 
     [Fact]
@@ -464,10 +465,10 @@ namespace Unrect.Tests.Projections
     public void Table_CanBeRepositioned()
     {
       // Down(1) replaces the default skip-blank-rows offset, so the table starts a row lower and
-      // the first data row becomes its header — non-text header cells naming themselves "".
+      // the first data row becomes its header — each cell naming its column by what it says.
       var names = Down(1).Of(Table(t => t.ColumnNames)).Map(SimpleTable());
 
-      Assert.Equal(new[] { "Acme", "" }, names);
+      Assert.Equal(new[] { "Acme", "10" }, names);
     }
 
     // --- Table -------------------------------------------------------------------------------------------------

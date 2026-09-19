@@ -57,6 +57,12 @@ namespace Unrect.Projections
     /// <summary>Each column's header text, trimmed; the empty string for a column with no caption.</summary>
     public IReadOnlyList<string> ColumnNames => Labels.Labels;
 
+    /// <summary>
+    /// Each column's path through the header: its bands, outermost first, then its own label — one
+    /// step for a column under no band, none for a column with no label.
+    /// </summary>
+    public IReadOnlyList<IReadOnlyList<string>> ColumnPaths => Labels.Paths;
+
     /// <summary>The address of the table's top-left cell, header included, with the extent the table was found in.</summary>
     public ProjectionLocation Location => ProjectionLocation.At(Space);
 

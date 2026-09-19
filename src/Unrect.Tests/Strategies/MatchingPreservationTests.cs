@@ -413,17 +413,18 @@ namespace Unrect.Tests.Strategies
 
     // --- The header parse behind a label map ----------------------------------------------------------
     //
-    // The same rule one layer up: LabelMap reads a header cell through TryGetString, so a column
-    // whose header is a number, a date, a boolean or an error carries the EMPTY label — it is
-    // unnamed, not named "42". Two observations of the one parse: the labels themselves, and what a
-    // Table<T> bind says when it goes looking for a caption that is not there.
+    // The OPPOSITE rule one layer up, and deliberately. A matcher looks for a needle anywhere in a
+    // region, so it must not mistake an amount for a label; a header cell is a label by POSITION —
+    // the declaration said "this row is the header" — so whatever it says is what its column is
+    // called. A row of years or of period-end dates is a row of captions. Two observations of the
+    // one parse: the labels themselves, and what a Table<T> bind says about them.
 
     [Theory]
-    [InlineData(ANumber)]
-    [InlineData(ATemporal)]
-    [InlineData(ABoolean)]
-    [InlineData(AnError)]
-    public void AHeadersNonTextCellYieldsAnEmptyLabel(string kind)
+    [InlineData(ANumber, "42")]
+    [InlineData(ATemporal, "2026-03-04")]
+    [InlineData(ABoolean, "TRUE")]
+    [InlineData(AnError, "#DIV/0!")]
+    public void AHeaderCellIsALabelWhateverItsKind(string kind, string says)
     {
       var sheet = Mixed(new object?[,]
       {
@@ -433,15 +434,14 @@ namespace Unrect.Tests.Strategies
 
       LabelMap map = ColumnLabels(1).Map(sheet);
 
-      Assert.Equal(new[] { "Client", string.Empty }, map.Labels);
+      Assert.Equal(new[] { "Client", says }, map.Labels);
     }
 
     [Fact]
-    public void ATableBindSeesAnEmptyCaptionWhereTheHeaderCellIsNumeric()
+    public void ATableBindSeesWhatANumericHeaderCellSays()
     {
-      // The label map's rendering of an unlabelled column, read back off the failure the bind
-      // raises: the captions the table carries are 'Client' and '' — the second column is nameless,
-      // so nothing binds Amount to it.
+      // Read back off the failure the bind raises: the captions the table carries are 'Client' and
+      // '42' — the second column is called what its header says, which is not "Amount".
       var sheet = Mixed(new object?[,]
       {
         { "Client", 42 },
@@ -451,7 +451,7 @@ namespace Unrect.Tests.Strategies
       var failure = Assert.Throws<ProjectionException>(() => Table<Money>().Map(sheet));
 
       Assert.Equal(
-        "no column binds Money.Amount; the table's captions are 'Client', ''. "
+        "no column binds Money.Amount; the table's captions are 'Client', '42'. "
         + "Bind one with Column(t => t.Amount, \"…\") or drop it with Ignore(t => t.Amount)",
         Problem(failure));
     }

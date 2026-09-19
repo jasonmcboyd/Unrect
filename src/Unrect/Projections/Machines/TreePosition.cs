@@ -161,11 +161,10 @@ namespace Unrect.Projections
     IReadOnlyList<int> IndicesOf(string label);
 
     /// <summary>
-    /// Each column's own caption, without the bands over it — the same as <see cref="Labels"/>
-    /// wherever a header has no band rows. A caption that is unique among these names its column
-    /// without its band having to be said.
+    /// Each column's path through its header — its bands, outermost first, then its own label.
+    /// One step long where there are no bands, and empty for a column with no label.
     /// </summary>
-    IReadOnlyList<string> Captions { get; }
+    IReadOnlyList<IReadOnlyList<string>> Paths { get; }
   }
 
   /// <summary>
