@@ -45,6 +45,17 @@ namespace Unrect.Projections
     /// </summary>
     public Point<TSpace> this[string columnName] => Strip[Resolve(columnName)];
 
+    /// <summary>
+    /// The cell a PATH through the header names — <c>row["From", "Id"]</c> — where each step is a
+    /// name, the nth of a name <c>("Id", 1)</c>, or a position <c>1</c> within what the path has
+    /// reached, all counted from zero. See <see cref="LabelStep"/>.
+    /// <para>
+    /// A path that names nothing, names several things, stops at a band, or steps outside one fails
+    /// here, on the first row and every row, with what the header does hold — whatever the data is.
+    /// </para>
+    /// </summary>
+    public Point<TSpace> this[params LabelStep[] path] => Strip[Resolve(path)];
+
     /// <summary>The address of the row's first cell.</summary>
     public ProjectionLocation Location => Strip.Location;
 
@@ -141,7 +152,36 @@ namespace Unrect.Projections
     }
 
     private ProjectionException Ambiguous(string columnName, IReadOnlyList<int> indices)
-      => Failure($"column '{columnName}' appears at indices {Join(indices)}; use the index.");
+    {
+      // Under bands the columns have paths, which say which is which better than a number does.
+      var paths = Scope.NearestLabels(LabelAxis.Column)?.Source.Paths;
+      var banded = paths is not null && indices.Any(index => paths[index].Count > 1);
+
+      return Failure(
+        $"column '{columnName}' appears at indices {Join(indices)}; use the index"
+        + (banded ? $", or its path: {string.Join(" or ", indices.Select(index => LabelPaths.Written(paths![index])))}." : "."));
+    }
+
+    private int Resolve(LabelStep[] path)
+    {
+      var scope = Scope.NearestLabels(LabelAxis.Column)
+        ?? throw Failure("a path cannot be resolved: the table was declared without a header row; use column indices.");
+
+      var answer = LabelPaths.Resolve(scope.Source, path, Unrect.Strategies.CellMatching.TextComparer);
+
+      if (answer.Problem is string problem)
+        throw Failure(problem);
+
+      if (answer.IsBand)
+        throw Failure($"{string.Join(", ", path.Select(step => step.ToString()))} is a band over {answer.Columns.Count} columns, not a column; say which, by name or by position");
+
+      // The same one subtraction a name makes: from the frame the header was read in to this row's.
+      var local = answer.Columns[0] + scope.CaptureOrigin.Width - Strip.Space.Origin.Width;
+
+      return local >= 0 && local < Count
+        ? local
+        : throw Failure($"the column at {string.Join(", ", path.Select(step => step.ToString()))} is not in this region");
+    }
 
     private ProjectionException Failure(string problem) => Strip.Failure(problem);
 

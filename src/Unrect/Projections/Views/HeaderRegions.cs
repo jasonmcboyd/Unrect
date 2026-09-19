@@ -30,13 +30,19 @@ namespace Unrect.Projections
   /// </summary>
   internal static class HeaderRegions
   {
-    /// <summary>Each column's path, outermost band first; empty for a column with no label.</summary>
+    /// <summary>
+    /// Each column's path, outermost band first and empty for a column with no label — and, beside
+    /// every step of it, the column that step's region BEGAN at, which is what tells two regions
+    /// that say the same thing apart.
+    /// </summary>
     /// <param name="rows">The header's rows of words, top to bottom, all the same length. The last is the captions.</param>
-    internal static IReadOnlyList<IReadOnlyList<string>> Fold(IReadOnlyList<IReadOnlyList<string>> rows)
+    /// <param name="starts">For each column, the first column of the region at each step of its path.</param>
+    internal static IReadOnlyList<IReadOnlyList<string>> Fold(IReadOnlyList<IReadOnlyList<string>> rows, out IReadOnlyList<IReadOnlyList<int>> starts)
     {
       var width = rows.Count == 0 ? 0 : rows[0].Count;
       var captions = rows.Count - 1;
       var paths = new List<string>[width];
+      var began = new List<int>[width];
 
       // Where each column's region in the row above began — a band may not reach past the end of
       // the region over it. -1 where the column is under none.
@@ -46,6 +52,7 @@ namespace Unrect.Projections
       for (var column = 0; column < width; column++)
       {
         paths[column] = new List<string>();
+        began[column] = new List<int>();
         above[column] = -1;
       }
 
@@ -82,6 +89,7 @@ namespace Unrect.Projections
             // A tall region: the label over nothing but blanks. It is this column's own name, the
             // column is finished, and it claims nothing to its right.
             paths[column].Add(word);
+            began[column].Add(column);
             closed[column] = true;
             band = string.Empty;
             continue;
@@ -102,6 +110,7 @@ namespace Unrect.Projections
           if (band.Length > 0)
           {
             paths[column].Add(band);
+            began[column].Add(start);
             current[column] = start;
           }
         }
@@ -119,10 +128,18 @@ namespace Unrect.Projections
         // A band names the columns that HAVE a caption. One with none is a column with no label,
         // whatever is written over it, and is reached by position.
         if (caption.Length == 0)
+        {
           paths[column].Clear();
+          began[column].Clear();
+        }
         else
+        {
           paths[column].Add(caption);
+          began[column].Add(column);
+        }
       }
+
+      starts = Array.ConvertAll(began, begun => (IReadOnlyList<int>)begun);
 
       return Array.ConvertAll(paths, path => (IReadOnlyList<string>)path);
     }

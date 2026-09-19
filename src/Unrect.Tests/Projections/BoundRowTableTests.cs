@@ -315,8 +315,8 @@ namespace Unrect.Tests.Projections
       // construction — the declaration is wrong, not the file. Both doors answer the same way.
       var captions = CaptionsOf(Allocations());
 
-      Assert.Throws<ArgumentNullException>(() => captions[null!]);
-      Assert.Throws<ArgumentNullException>(() => captions.Has(null!));
+      Assert.Throws<ArgumentNullException>(() => captions[(string)null!]);
+      Assert.Throws<ArgumentNullException>(() => captions.Has((string)null!));
 
       Assert.Throws<ArgumentException>(() => captions["   "]);
       Assert.Throws<ArgumentException>(() => captions.Has(string.Empty));
