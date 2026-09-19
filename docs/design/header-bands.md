@@ -22,6 +22,10 @@ and CLAUDE.md carries what stands. Nothing here is built except where it says so
   header cells beneath it; if it has none beneath it, it claims the blank cells to its right, up
   to the next label in its row and never past the end of the region above it. The caption row
   never claims sideways (a blank caption is a column with no label).
+- **A label is whatever a non-blank header cell SAYS** — not only a text cell. A header cell is a
+  label by position, not by kind: period columns (`2023 | 2024 | 2025`, period-end dates) are
+  captions, and a band row of years is a band row. The `IsText` guard in today's header parse
+  goes. (Whether `ISpace` keeps `IsText` at all is a separate open question, in CLAUDE.md.)
 - **Resolution.** A one-segment path is an exact path first (a column under no band), then a
   caption that is unique anywhere. A longer path is exact. A position must fall inside what the
   path has reached.
