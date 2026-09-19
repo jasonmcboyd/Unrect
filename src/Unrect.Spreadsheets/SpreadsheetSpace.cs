@@ -181,6 +181,9 @@ namespace Unrect.Spreadsheets
       // A second handle on the same file, and only when formulas were asked for: the value reader
       // consumes its stream forwards, and the formulas live in a different part of the zip.
       using var formulas = withFormulas ? XlsxFormulas.Open(path) : null;
+      // A third, for what the cells look like: a spreadsheet space answers for its formatting as it
+      // does for its formulas, and both come from parts of the package the value reader passes over.
+      using var formatting = withFormulas ? XlsxFormatting.Open(path) : null;
 
       var sheetIndex = -1;
       do
@@ -199,11 +202,14 @@ namespace Unrect.Spreadsheets
 
         var values = SheetGrid.Of(cells);
 
-        yield return formulas is null
+        yield return formulas is null || formatting is null
           ? values
           : new SpreadsheetGridSpace(
             values,
-            formulas.ReadSheet(reader.Name, sheetIndex, cells.GetLength(1), cells.GetLength(0)));
+            formulas.ReadSheet(reader.Name, sheetIndex, cells.GetLength(1), cells.GetLength(0)),
+            formatting.ReadSheet(reader.Name, sheetIndex, cells.GetLength(1), cells.GetLength(0)),
+            formatting.Fonts(),
+            formatting.Fills());
 
       } while (reader.NextResult());
     }
