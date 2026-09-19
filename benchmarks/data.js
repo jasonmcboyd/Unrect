@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789847939370,
+  "lastUpdate": 1789847939615,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -11563,6 +11563,80 @@ window.BENCHMARK_DATA = {
           {
             "name": "Unrect.Benchmarks.Values.IsText_Million",
             "value": 3,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.AsText_Million_Text",
+            "value": 6,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Decimal_Million",
+            "value": 40000023,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Point_Mint_Million",
+            "value": 1,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Predicate_Million",
+            "value": 3,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.TypedPredicate_Million",
+            "value": 53,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Slice_Million",
+            "value": 1,
+            "unit": "bytes"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "4818c36f9e9b0c2b75a4093dbbce6981329fd14b",
+          "message": "Merge feature/scaffold-shapes: ScaffoldRecord and ScaffoldClass, on a sheet and as leaves\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>",
+          "timestamp": "2026-09-19T15:35:04Z",
+          "tree_id": "d48076b68bb0a93dc6ab6797b10f0ead882156a7",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/4818c36f9e9b0c2b75a4093dbbce6981329fd14b"
+        },
+        "date": 1789847939562,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Values.Create_FromInts",
+            "value": 56,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Create_FromObjects",
+            "value": 30400222,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.IsBlank_Million",
+            "value": 3,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.IsText_Million",
+            "value": 1,
             "unit": "bytes"
           },
           {
