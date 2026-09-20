@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789863952071,
+  "lastUpdate": 1789863952351,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -3958,6 +3958,72 @@ window.BENCHMARK_DATA = {
             "value": 350595.16692708334,
             "unit": "ns",
             "range": "± 1899.2006371697973"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "bd027f2136cee944da88c1eae17a06b14a05579d",
+          "message": "Merge feature/bind-from-row: Table<T> fills a member from the row - Column(member, row => ...)\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>",
+          "timestamp": "2026-09-19T19:49:16Z",
+          "tree_id": "88c877501aeddcefb436f136842b9904cda55a09",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/bd027f2136cee944da88c1eae17a06b14a05579d"
+        },
+        "date": 1789863952290,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Tables.Lambda_10k",
+            "value": 3173699.2640625,
+            "unit": "ns",
+            "range": "± 32143.999191787785"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Lambda_100k",
+            "value": 41293191.81656805,
+            "unit": "ns",
+            "range": "± 587326.1684272866"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Bound_10k",
+            "value": 73134183.28571428,
+            "unit": "ns",
+            "range": "± 1342030.69276093"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Bound_100k",
+            "value": 718037377.5,
+            "unit": "ns",
+            "range": "± 8486307.664708892"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Dictionary_10k",
+            "value": 6319139.38125,
+            "unit": "ns",
+            "range": "± 43655.321397177664"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Dictionary_100k",
+            "value": 95268406.76923077,
+            "unit": "ns",
+            "range": "± 543093.9533777939"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Bound_ProjectionConstruction",
+            "value": 348257.25435965403,
+            "unit": "ns",
+            "range": "± 1349.9552199622142"
           }
         ]
       }
