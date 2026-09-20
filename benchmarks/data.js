@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789863955135,
+  "lastUpdate": 1789863955425,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -15907,6 +15907,55 @@ window.BENCHMARK_DATA = {
           {
             "name": "Unrect.Benchmarks.Streaming.Band_Streamed",
             "value": 28557378,
+            "unit": "bytes"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "bd027f2136cee944da88c1eae17a06b14a05579d",
+          "message": "Merge feature/bind-from-row: Table<T> fills a member from the row - Column(member, row => ...)\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>",
+          "timestamp": "2026-09-19T19:49:16Z",
+          "tree_id": "88c877501aeddcefb436f136842b9904cda55a09",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/bd027f2136cee944da88c1eae17a06b14a05579d"
+        },
+        "date": 1789863955366,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Streaming.Monotone_Eager",
+            "value": 2972530616,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Monotone_Streamed",
+            "value": 3178725264,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Monotone_SecondPass",
+            "value": 6347476808,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Band_Eager",
+            "value": 3147518,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Band_Streamed",
+            "value": 28557523,
             "unit": "bytes"
           }
         ]
