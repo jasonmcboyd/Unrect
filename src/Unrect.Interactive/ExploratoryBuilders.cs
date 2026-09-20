@@ -56,5 +56,16 @@ namespace Unrect.Interactive
     /// <param name="onBlank">How a fully-blank body row is treated.</param>
     public static IProjectionDefinition<TSpace, IReadOnlyList<T>> LooseTable<T>(Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>> bind, BlankRowStrategy onBlank)
       => SpreadsheetProjections.LooseTable<TSpace, T>(bind ?? throw new ArgumentNullException(nameof(bind)), onBlank);
+
+    /// <summary><c>Table&lt;T&gt;(headerRows, …)</c> — a header of captions under rows of bands — forgiving a member no column binds.</summary>
+    /// <typeparam name="T">What one record reads.</typeparam>
+    /// <param name="headerRows">How many rows the header is.</param>
+    /// <param name="bind">The per-member declarations, or null for none.</param>
+    /// <param name="onBlank">How a fully-blank body row is treated; <c>Stop</c> where omitted.</param>
+    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> LooseTable<T>(
+      int headerRows,
+      Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>>? bind = null,
+      BlankRowStrategy? onBlank = null)
+      => SpreadsheetProjections.LooseTable<TSpace, T>(bind, onBlank ?? BlankRowStrategy.Stop, headerRows);
   }
 }

@@ -159,6 +159,21 @@ namespace Unrect.Projections
 
     /// <summary>The ordinals carrying <paramref name="label"/>, in the captured frame; empty when none does.</summary>
     IReadOnlyList<int> IndicesOf(string label);
+
+    /// <summary>
+    /// Each column's path through its header — its bands, outermost first, then its own label.
+    /// One step long where there are no bands, and empty for a column with no label.
+    /// </summary>
+    IReadOnlyList<IReadOnlyList<string>> Paths { get; }
+
+    /// <summary>
+    /// Beside every step of <see cref="Paths"/>, the column that step's region began at: two bands
+    /// that say the same thing begin at different columns, and are different regions.
+    /// </summary>
+    IReadOnlyList<IReadOnlyList<int>> Starts { get; }
+
+    /// <summary>How many rows of header these labels were read from; 1 for labels nobody read from a header.</summary>
+    int Depth { get; }
   }
 
   /// <summary>

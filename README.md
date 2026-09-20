@@ -23,6 +23,10 @@ that decide boundaries — and works directly over any 2D grid you can adapt to 
 add it when your data lives in a workbook rather than an array you built yourself.
 The same package also has a streaming door, `Workbook`, for files too large to read
 whole — see [Large files](#large-files) below.
+A header may be several rows tall — a merged "From" and "To" over `Id | Code | Id | Code`:
+`Table(2, r => r["From", "Id"].Integer())` addresses a column by its path, and
+`Table<Transfer>(2)` binds a flat `record Transfer(int FromId, string FromCode, int ToId, string ToCode)`
+with nothing declared.
 A sheet opened with `SpreadsheetSpace.CreateWithFormulas` also answers for its formulas and for
 what its cells look like — `row["Account"].Font().Color == CellColor.Red` turns "the rows someone
 coloured red" into a property you filter on (`.xlsx` only), and

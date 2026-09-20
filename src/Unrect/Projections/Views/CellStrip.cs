@@ -78,6 +78,13 @@ namespace Unrect.Projections
     /// A failure blaming the declaration that named this strip — how a reading built on one reports
     /// a cell it could not make sense of.
     /// </summary>
+    /// <summary>
+    /// Row <paramref name="index"/> of the band this strip was cut from, as a strip of its own: a
+    /// header several rows tall is handed over as one band, and read a row at a time.
+    /// </summary>
+    internal CellStrip<TSpace> Line(int index)
+      => new CellStrip<TSpace>(Space.Slice(new Offset(0, index), new Area(Space.Width, 1)), Orientation, Scope);
+
     internal ProjectionException Failure(string problem) => Scope.Failure(problem, Space);
 
     /// <summary>A diagnostic about this strip, located as its failure would be and not thrown.</summary>

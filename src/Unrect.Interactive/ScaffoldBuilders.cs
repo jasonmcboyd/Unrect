@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 using Unrect.Core;
 using Unrect.Projections;
@@ -46,8 +47,9 @@ namespace Unrect.Interactive
     /// <param name="typeName">The type's name.</param>
     /// <param name="labels">Whether the labels run along the region's first row or down its first column.</param>
     /// <param name="samples">How many cells beside each label to type the member from.</param>
-    public static IProjectionDefinition<TSpace, string> ScaffoldRecord(string typeName, LabelsIn labels = LabelsIn.Row, int samples = 5)
-      => Leaf(typeName, labels, samples, Scaffolding.Record, nameof(ScaffoldRecord));
+    /// <param name="headerRows">How many rows the header is: the captions, under any rows of bands. Along a row only.</param>
+    public static IProjectionDefinition<TSpace, string> ScaffoldRecord(string typeName, LabelsIn labels = LabelsIn.Row, int samples = 5, int headerRows = 1)
+      => Leaf(typeName, labels, samples, Scaffolding.Record, nameof(ScaffoldRecord), headerRows);
 
     /// <summary>
     /// The same guess as <see cref="ScaffoldRecord"/>, written as a class with init-only properties.
@@ -55,29 +57,41 @@ namespace Unrect.Interactive
     /// <param name="typeName">The type's name.</param>
     /// <param name="labels">Whether the labels run along the region's first row or down its first column.</param>
     /// <param name="samples">How many cells beside each label to type the member from.</param>
-    public static IProjectionDefinition<TSpace, string> ScaffoldClass(string typeName, LabelsIn labels = LabelsIn.Row, int samples = 5)
-      => Leaf(typeName, labels, samples, Scaffolding.Class, nameof(ScaffoldClass));
+    /// <param name="headerRows">How many rows the header is: the captions, under any rows of bands. Along a row only.</param>
+    public static IProjectionDefinition<TSpace, string> ScaffoldClass(string typeName, LabelsIn labels = LabelsIn.Row, int samples = 5, int headerRows = 1)
+      => Leaf(typeName, labels, samples, Scaffolding.Class, nameof(ScaffoldClass), headerRows);
 
     private static IProjectionDefinition<TSpace, string> Leaf(
       string typeName,
       LabelsIn labels,
       int samples,
-      Func<List<Scaffolding.Member>, string, LabelsIn, string> write,
-      string noun)
+      Func<List<Scaffolding.Member>, string, LabelsIn, int, string> write,
+      string noun,
+      int headerRows)
     {
       Scaffolding.Name(typeName);
 
       if (samples < 0)
         throw new ArgumentOutOfRangeException(nameof(samples));
 
-      string Source(Plane<TSpace> region)
-        => write(Scaffolding.Read(Scaffolding.Region.Of(region), typeName, labels, at: 0, samples), typeName, labels);
+      if (headerRows < 1)
+        throw new ArgumentOutOfRangeException(nameof(headerRows));
+
+      if (headerRows > 1 && labels != LabelsIn.Row)
+        throw new ArgumentException("Rows of bands over the captions are read along a row; a header down a column has one line of labels.", nameof(headerRows));
+
+      string Source(Plane<TSpace> region, IReadOnlyList<IReadOnlyList<string>>? paths = null)
+        => write(Scaffolding.Read(Scaffolding.Region.Of(region), typeName, labels, at: 0, samples, headerRows, Shifted(paths, region)), typeName, labels, headerRows);
+
+      // The view's paths count from the table's left edge; the scaffolder's from the sheet's.
+      static IReadOnlyList<IReadOnlyList<string>>? Shifted(IReadOnlyList<IReadOnlyList<string>>? paths, Plane<TSpace> region)
+        => paths is null ? null : Enumerable.Repeat((IReadOnlyList<string>)Array.Empty<string>(), region.Origin.Width).Concat(paths).ToList();
 
       // The labels are the first line of whatever region the declaration hands over, so there is no
       // search and no `at`: along a row that region is the table's own; down a column it is the
       // card's — the full width, for as many rows as carry a value.
       var leaf = labels == LabelsIn.Row
-        ? ProjectionBuilders<TSpace>.Table((TableView<TSpace> view) => Source(view.Space))
+        ? ProjectionBuilders<TSpace>.Table(headerRows, (TableView<TSpace> view) => Source(view.Space, view.ColumnPaths))
         : ProjectionBuilders<TSpace>.AfterBlankRows().Range(ProjectionBuilders<TSpace>.RowsWhileAnyValue(), block => Source(block.Space));
 
       return leaf.AsUnit($"{noun}(\"{typeName}\")");

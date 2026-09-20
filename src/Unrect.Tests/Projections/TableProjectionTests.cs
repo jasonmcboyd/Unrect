@@ -153,8 +153,9 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void ColumnNames_TrimsTextAndBlanksOutEverythingElse()
+    public void ColumnNames_AreWhatTheHeaderCellsSayTrimmedAndEmptyForABlank()
     {
+      // A header cell is a label by position, whatever its kind: the 7 is a column called "7".
       var space = Mixed(new object?[,]
       {
         { "  Amount  ", null, 7 },
@@ -163,7 +164,7 @@ namespace Unrect.Tests.Projections
 
       var names = Table(t => t.ColumnNames).Map(space);
 
-      Assert.Equal(new[] { "Amount", "", "" }, names);
+      Assert.Equal(new[] { "Amount", "", "7" }, names);
     }
 
     [Fact]
@@ -189,23 +190,15 @@ namespace Unrect.Tests.Projections
       Assert.Contains("a header row was declared but the table's extent is empty", failure.Message);
     }
 
-    [Theory]
-    [InlineData(2)]
-    [InlineData(3)]
-    [InlineData(-1)]
-    public void Table_WithMoreThanOneHeaderRow_IsRejectedAtConstruction(int headerRows)
+    [Fact]
+    public void Table_WithANegativeHeaderCount_IsRejectedAtConstruction()
     {
-      var failure = Assert.Throws<ArgumentOutOfRangeException>(() => Table(headerRows, t => t.RowCount));
+      // Any count from zero up is a header: none, the captions, or the captions under rows of
+      // bands (HeaderBandTests). Fewer than none is not a header anyone could mean.
+      var failure = Assert.Throws<ArgumentOutOfRangeException>(() => Table(-1, t => t.RowCount));
 
-      Assert.Contains("multi-row headers are not supported in this release", failure.Message);
-    }
-
-    [Theory]
-    [InlineData(2)]
-    [InlineData(-1)]
-    public void TheRowLambda_WithMoreThanOneHeaderRow_IsRejectedAtConstruction(int headerRows)
-    {
-      Assert.Throws<ArgumentOutOfRangeException>(() => Table(headerRows, r => r[0]));
+      Assert.Contains("cannot have a negative number of header rows", failure.Message);
+      Assert.Throws<ArgumentOutOfRangeException>(() => Table(-1, r => r[0]));
     }
 
     // --- Tier 1: by index ------------------------------------------------------------------------------------
@@ -472,10 +465,10 @@ namespace Unrect.Tests.Projections
     public void Table_CanBeRepositioned()
     {
       // Down(1) replaces the default skip-blank-rows offset, so the table starts a row lower and
-      // the first data row becomes its header — non-text header cells naming themselves "".
+      // the first data row becomes its header — each cell naming its column by what it says.
       var names = Down(1).Of(Table(t => t.ColumnNames)).Map(SimpleTable());
 
-      Assert.Equal(new[] { "Acme", "" }, names);
+      Assert.Equal(new[] { "Acme", "10" }, names);
     }
 
     // --- Table -------------------------------------------------------------------------------------------------

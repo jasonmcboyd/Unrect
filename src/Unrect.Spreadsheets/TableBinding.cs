@@ -23,6 +23,7 @@ namespace Unrect.Spreadsheets
         new Dictionary<string, string>(StringComparer.Ordinal),
         new Dictionary<string, int>(StringComparer.Ordinal),
         new Dictionary<string, Func<TableRow<TSpace>, object?>>(StringComparer.Ordinal),
+        new Dictionary<string, LabelStep[]>(StringComparer.Ordinal),
         new List<string>())
     {
     }
@@ -31,8 +32,10 @@ namespace Unrect.Spreadsheets
       IReadOnlyDictionary<string, string> captions,
       IReadOnlyDictionary<string, int> positions,
       IReadOnlyDictionary<string, Func<TableRow<TSpace>, object?>> readings,
+      IReadOnlyDictionary<string, LabelStep[]> paths,
       IReadOnlyCollection<string> ignored)
     {
+      Paths = paths;
       Captions = captions;
       Positions = positions;
       Readings = readings;
@@ -42,6 +45,7 @@ namespace Unrect.Spreadsheets
     internal IReadOnlyDictionary<string, string> Captions { get; }
     internal IReadOnlyDictionary<string, int> Positions { get; }
     internal IReadOnlyDictionary<string, Func<TableRow<TSpace>, object?>> Readings { get; }
+    internal IReadOnlyDictionary<string, LabelStep[]> Paths { get; }
     internal IReadOnlyCollection<string> Ignored { get; }
 
     /// <summary>
@@ -65,7 +69,7 @@ namespace Unrect.Spreadsheets
 
       captions.Add(name, caption);
 
-      return new TableBinding<TSpace, T>(captions, Positions, Readings, Ignored);
+      return new TableBinding<TSpace, T>(captions, Positions, Readings, Paths, Ignored);
     }
 
     /// <summary>
@@ -89,7 +93,7 @@ namespace Unrect.Spreadsheets
 
       positions.Add(name, index);
 
-      return new TableBinding<TSpace, T>(Captions, positions, Readings, Ignored);
+      return new TableBinding<TSpace, T>(Captions, positions, Readings, Paths, Ignored);
     }
 
     /// <summary>
@@ -121,11 +125,44 @@ namespace Unrect.Spreadsheets
 
       readings.Add(name, row => read(row));
 
-      return new TableBinding<TSpace, T>(Captions, Positions, readings, Ignored);
+      return new TableBinding<TSpace, T>(Captions, Positions, readings, Paths, Ignored);
+    }
+
+    /// <summary>
+    /// Binds one member to a column by its PATH through a banded header —
+    /// <c>Column(t =&gt; t.FromId, "From", "Id")</c> — each step a name, the nth of a name
+    /// <c>("Id", 1)</c> or a position <c>1</c>, all counted from zero; see <see cref="LabelStep"/>.
+    /// A flat member never binds across a band by itself: two columns captioned <c>Id</c> are told
+    /// apart by what is over them, and this is how a declaration says which.
+    /// <para>
+    /// A path longer than the header is deep is refused where the table is declared — a table with
+    /// one header row has no bands for a two-step path to go through — and one the header turns
+    /// out not to hold is a failure when the table is read, citing the header and saying what is
+    /// there.
+    /// </para>
+    /// </summary>
+    public TableBinding<TSpace, T> Column<TMember>(Expression<Func<T, TMember>> member, params LabelStep[] path)
+    {
+      var name = MemberName(member, nameof(member), nameof(Column));
+
+      if (path is null)
+        throw new ArgumentNullException(nameof(path));
+
+      if (path.Length == 0)
+        throw new ArgumentException("A path needs at least one step.", nameof(path));
+
+      if (IsBound(name))
+        throw new ArgumentException($"{typeof(T).Name}.{name} is bound twice.", nameof(member));
+
+      var paths = Paths.ToDictionary(bound => bound.Key, bound => bound.Value, StringComparer.Ordinal);
+
+      paths.Add(name, (LabelStep[])path.Clone());
+
+      return new TableBinding<TSpace, T>(Captions, Positions, Readings, paths, Ignored);
     }
 
     private bool IsBound(string name)
-      => Captions.ContainsKey(name) || Positions.ContainsKey(name) || Readings.ContainsKey(name);
+      => Captions.ContainsKey(name) || Positions.ContainsKey(name) || Readings.ContainsKey(name) || Paths.ContainsKey(name);
 
     /// <summary>
     /// Declares that one member is not read from the table. The opt-out is per member and by name,
@@ -143,7 +180,7 @@ namespace Unrect.Spreadsheets
       if (!ignored.Contains(name, StringComparer.Ordinal))
         ignored.Add(name);
 
-      return new TableBinding<TSpace, T>(Captions, Positions, Readings, ignored);
+      return new TableBinding<TSpace, T>(Captions, Positions, Readings, Paths, ignored);
     }
 
     /// <summary>

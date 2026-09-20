@@ -331,7 +331,7 @@ namespace Unrect.Projections
 
       IProjectionDefinition<TSpace, IReadOnlyList<T>> composed = ValidateHeaderRows(headerRows) == 0
         ? body
-        : UnderColumnLabels(ColumnLabels(1).AsScaffolding(), body).AsScaffolding();
+        : UnderColumnLabels(ColumnLabels(headerRows).AsScaffolding(), body).AsScaffolding();
 
       return new UnitDefinition<TSpace, IReadOnlyList<T>>(composed, new[] { new Child(eachRow, UseSite.From(declared, null)) }, "Table", TablePlacement());
     }
@@ -497,8 +497,8 @@ namespace Unrect.Projections
     /// <param name="headerRows">How many rows to read as the header. Only 1 is supported in this release.</param>
     public static IProjectionDefinition<TSpace, LabelMap> ColumnLabels(int headerRows = 1)
     {
-      if (headerRows != 1)
-        throw new ArgumentOutOfRangeException(nameof(headerRows), headerRows, "ColumnLabels reads exactly one header row in this release.");
+      if (headerRows < 1)
+        throw new ArgumentOutOfRangeException(nameof(headerRows), headerRows, "ColumnLabels reads a header, which is at least one row: the captions, under any rows of bands.");
 
       return new ColumnLabelsDefinition<TSpace>(headerRows, Placement.Default);
     }
@@ -926,9 +926,9 @@ namespace Unrect.Projections
       => AreaStrategies.RowsThenColumns(RowStrategies.AllRows(), ColumnStrategies.TakeTableColumns());
 
     private static int ValidateHeaderRows(int headerRows)
-      => headerRows == 0 || headerRows == 1
+      => headerRows >= 0
         ? headerRows
-        : throw new ArgumentOutOfRangeException(nameof(headerRows), headerRows, "A table has either 0 or 1 header rows; multi-row headers are not supported in this release.");
+        : throw new ArgumentOutOfRangeException(nameof(headerRows), headerRows, "A table cannot have a negative number of header rows.");
 
     /// <summary>
     /// A bind is handed the captions, so there have to be some. A table declared with no header row
@@ -937,7 +937,7 @@ namespace Unrect.Projections
     /// </summary>
     private static int ValidateBindHeaderRows(int headerRows)
       => headerRows == 0
-        ? throw new ArgumentOutOfRangeException(nameof(headerRows), headerRows, "A table whose rows are declared from its captions needs a header row to read them from; headerRows must be 1.")
+        ? throw new ArgumentOutOfRangeException(nameof(headerRows), headerRows, "A table whose rows are declared from its captions needs a header row to read them from; headerRows must be at least 1.")
         : ValidateHeaderRows(headerRows);
   }
 }

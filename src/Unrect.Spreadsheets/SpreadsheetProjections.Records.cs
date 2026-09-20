@@ -115,12 +115,47 @@ namespace Unrect.Spreadsheets
       where TSpace : class, ISheetCells
       => Bound<TSpace, T>(Planned<TSpace, T>(bind), onBlank);
 
-    private static RowBinding<T> Planned<TSpace, T>(Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>> bind)
+    /// <summary>
+    /// A table whose header is <paramref name="headerRows"/> rows tall: the captions, under
+    /// <paramref name="headerRows"/> − 1 rows of bands. Members bind to a caption that is unique as
+    /// they always have; a column under a band that shares its caption with another is bound by its
+    /// path — <c>bind.Column(t =&gt; t.FromId, "From", "Id")</c> — because a flat member never
+    /// binds across a band by itself.
+    /// </summary>
+    /// <typeparam name="TSpace">The sheet the table is declared over.</typeparam>
+    /// <typeparam name="T">What one record reads.</typeparam>
+    /// <param name="headerRows">How many rows the header is; at least 1, since members bind by what it says.</param>
+    /// <param name="bind">The per-member declarations, or null for none.</param>
+    /// <param name="onBlank">How a fully-blank body row is treated; <c>Stop</c> where omitted.</param>
+    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<TSpace, T>(
+      int headerRows,
+      Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>>? bind = null,
+      BlankRowStrategy? onBlank = null)
       where TSpace : class, ISheetCells
-      => RowBinding<T>.Create(
-        (bind ?? throw new ArgumentNullException(nameof(bind)))(new TableBinding<TSpace, T>())
-        ?? throw new ArgumentException("The binding lambda returned null.", nameof(bind)),
-        typeof(TSpace));
+      => Bound<TSpace, T>(
+        bind is null ? RowBinding<T>.Create<TSpace>(null, typeof(TSpace)) : Planned<TSpace, T>(bind, headerRows),
+        onBlank ?? BlankRowStrategy.Stop,
+        loose: false,
+        headerRows);
+
+    private static RowBinding<T> Planned<TSpace, T>(Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>> bind, int headerRows = 1)
+      where TSpace : class, ISheetCells
+    {
+      var binding = (bind ?? throw new ArgumentNullException(nameof(bind)))(new TableBinding<TSpace, T>())
+        ?? throw new ArgumentException("The binding lambda returned null.", nameof(bind));
+
+      // A path goes through one band per step before its last, and a header has one row of bands
+      // per row above its captions — so this can be refused here, before any file is opened.
+      foreach (var bound in binding.Paths)
+        if (bound.Value.Length > headerRows)
+          throw new ArgumentException(
+            $"{typeof(T).Name}.{bound.Key} is bound to a path of {bound.Value.Length} steps, and the table declares "
+            + $"{headerRows} header row{(headerRows == 1 ? string.Empty : "s")}, which is a header {(headerRows == 1 ? "with no bands" : $"{headerRows} deep")}; "
+            + $"declare headerRows: {bound.Value.Length}, or shorten the path.",
+            nameof(bind));
+
+      return RowBinding<T>.Create(binding, typeof(TSpace));
+    }
 
     /// <summary>
     /// The exploratory table <c>Unrect.Interactive</c> offers: the same projection as
@@ -136,17 +171,19 @@ namespace Unrect.Spreadsheets
     /// </summary>
     internal static IProjectionDefinition<TSpace, IReadOnlyList<T>> LooseTable<TSpace, T>(
       Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>>? bind,
-      BlankRowStrategy onBlank)
+      BlankRowStrategy onBlank,
+      int headerRows = 1)
       where TSpace : class, ISheetCells
       => Bound<TSpace, T>(
-        bind is null ? RowBinding<T>.Create<TSpace>(null, typeof(TSpace)) : Planned<TSpace, T>(bind),
+        bind is null ? RowBinding<T>.Create<TSpace>(null, typeof(TSpace)) : Planned<TSpace, T>(bind, headerRows),
         onBlank,
-        loose: true);
+        loose: true,
+        headerRows);
 
-    private static IProjectionDefinition<TSpace, IReadOnlyList<T>> Bound<TSpace, T>(RowBinding<T> plan, BlankRowStrategy onBlank, bool loose = false)
+    private static IProjectionDefinition<TSpace, IReadOnlyList<T>> Bound<TSpace, T>(RowBinding<T> plan, BlankRowStrategy onBlank, bool loose = false, int headerRows = 1)
       where TSpace : class, ISheetCells
       => ProjectionBuilders<TSpace>
-        .Table(headerRows: 1, eachRow: labels => RecordRow<TSpace, T>(plan, labels, loose), onBlank, declared: null)
+        .Table(headerRows: headerRows, eachRow: labels => RecordRow<TSpace, T>(plan, labels, loose), onBlank, declared: null)
         .AsUnit($"Table<{typeof(T).Name}>");
 
     /// <summary>
@@ -234,6 +271,13 @@ namespace Unrect.Spreadsheets
           continue;
         }
 
+        // Bound by its path through a banded header: the header answers, or says what it holds.
+        if (plan.Members[member].Path is LabelStep[] path)
+        {
+          columns[member] = labels.Column(path, $"{typeof(T).Name}.{plan.Members[member].Name}");
+          continue;
+        }
+
         // Bound by position: the caption is not consulted, so neither a missing one nor a
         // duplicated one is this member's problem. The table has to be that wide.
         if (plan.Members[member].Position is int position)
@@ -247,7 +291,13 @@ namespace Unrect.Spreadsheets
           continue;
         }
 
-        var matches = labels.Bound(plan.Members[member].Caption);
+        // One name, one column. A member answers to a caption, and to the column whose whole path
+        // run together is its name — FromId for the column at From, Id. Where both kinds answer,
+        // that is two columns, and it is refused like any other two.
+        var matches = labels.Bound(plan.Members[member].Caption)
+          .Union(labels.BoundByPath(plan.Members[member].Caption))
+          .OrderBy(column => column)
+          .ToList();
 
         // A member with no column joins the aggregate below; one with two is a table nobody can read
         // by name, and it says so at once, naming the member rather than the caption.
@@ -272,8 +322,7 @@ namespace Unrect.Spreadsheets
         return columns;
 
       throw labels.Failure(
-        $"no column binds {Join(unbound.Select(name => $"{typeof(T).Name}.{name}").ToList())}; the table's captions are "
-        + $"{string.Join(", ", labels.Labels.Select(caption => $"'{caption}'"))}. "
+        $"no column binds {Join(unbound.Select(name => $"{typeof(T).Name}.{name}").ToList())}; {Columns(labels)}. "
         + $"Bind one with Column(t => t.{unbound[0]}, \"…\") or drop it with Ignore(t => t.{unbound[0]})");
     }
 
@@ -287,12 +336,11 @@ namespace Unrect.Spreadsheets
         labels.Note(
           DiagnosticSeverity.Warning,
           $"no column binds {Join(unbound.Select(name => $"{typeof(T).Name}.{name}").ToList())}, left at "
-          + $"{(unbound.Count == 1 ? "its default" : "their defaults")}; the table's captions are "
-          + string.Join(", ", labels.Labels.Where(caption => caption.Length > 0).Select(caption => $"'{caption}'")));
+          + $"{(unbound.Count == 1 ? "its default" : "their defaults")}; {Columns(labels)}");
 
       var unread = Enumerable.Range(0, labels.Labels.Count)
         .Where(column => labels.Labels[column].Length > 0 && !columns.Contains(column))
-        .Select(column => $"'{labels.Labels[column]}'")
+        .Select(column => Said(labels, column))
         .ToList();
 
       if (unread.Count > 0)
@@ -306,7 +354,8 @@ namespace Unrect.Spreadsheets
     /// caption that column carries, and its position where it carries none.
     /// </summary>
     private static string ColumnName(MemberPlan member, LabelMap labels, int column)
-      => member.Position is null ? $"column '{member.Caption}'"
+      => member.Path is LabelStep[] path ? $"column {string.Join(", ", path.Select(step => step.ToString()))}"
+        : member.Position is null ? $"column '{member.Caption}'"
         : labels.Labels[column].Length > 0 ? $"column '{labels.Labels[column]}'"
         : $"column {column}";
 
@@ -317,10 +366,28 @@ namespace Unrect.Spreadsheets
     private static ProjectionException Ambiguous<T>(LabelMap labels, MemberPlan member, IReadOnlyList<int> matches)
       => labels.Failure(
         $"{typeof(T).Name}.{member.Name} matches the columns at "
-        + $"{labels.AddressOf(matches[0]).A1} ('{labels.Labels[matches[0]]}') and "
-        + $"{labels.AddressOf(matches[1]).A1} ('{labels.Labels[matches[1]]}'); "
+        + $"{labels.AddressOf(matches[0]).A1} ({Said(labels, matches[0])}) and "
+        + $"{labels.AddressOf(matches[1]).A1} ({Said(labels, matches[1])}); "
         + "captions are matched ignoring case and whitespace. "
-        + $"Bind it by position with Column(t => t.{member.Name}, {matches[0]})");
+        + (labels.Paths[matches[0]].Count > 1
+          ? $"Bind it by its path with Column(t => t.{member.Name}, {string.Join(", ", labels.Paths[matches[0]].Select(step => $"\"{step}\""))})"
+          : $"Bind it by position with Column(t => t.{member.Name}, {matches[0]})"));
+
+    /// <summary>
+    /// What a table holds, for the failure that has to say so: its captions, or — under bands — its
+    /// columns' paths, which are what a flat member's name is matched against run together.
+    /// </summary>
+    private static string Columns(LabelMap labels)
+      => labels.Depth > 1 && labels.Paths.Any(path => path.Count > 1)
+        ? "the table's columns are " + string.Join(", ", Enumerable.Range(0, labels.Labels.Count).Where(column => labels.Labels[column].Length > 0).Select(column => Said(labels, column)))
+          + " — a member binds to a caption, or to a whole path run together (FromId for [\"From\", \"Id\"])"
+        : "the table's captions are " + string.Join(", ", labels.Labels.Select(caption => $"'{caption}'"));
+
+    /// <summary>How a column is cited: its caption, or its whole path where it sits under a band.</summary>
+    private static string Said(LabelMap labels, int column)
+      => labels.Paths[column].Count > 1
+        ? "[" + string.Join(", ", labels.Paths[column].Select(step => $"\"{step}\"")) + "]"
+        : $"'{labels.Labels[column]}'";
 
     private static string Join(IReadOnlyList<string> names)
       => names.Count == 1
