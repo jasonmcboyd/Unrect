@@ -198,7 +198,7 @@ namespace Unrect.Tests.Spreadsheets
       var read = LooseTable<Wider>(2, bind => bind.Column(t => t.ToId, "To", "Id")).MapWithDiagnostics(Workbook());
 
       Assert.Equal(new Wider(1, 2, null), Assert.Single(read.Value));
-      Assert.Contains(read.Diagnostics, d => d.Severity == DiagnosticSeverity.Warning && d.Message.Contains("no column binds Wider.Rate", StringComparison.Ordinal));
+      Assert.Contains(read.Diagnostics, d => d.Severity == DiagnosticSeverity.Warning && d.Message.IndexOf("no column binds Wider.Rate", StringComparison.Ordinal) >= 0);
     }
 
     [Fact]
