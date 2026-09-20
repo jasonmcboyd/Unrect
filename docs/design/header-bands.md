@@ -177,6 +177,30 @@ parsed inside the collectors that already read it — option (a).
 
 ## Speculative — deliberately not built
 
+**One long design session, not four partial ones** (owner, 2026-09-20). Self-labelling projections,
+record blocks, nested tables and the literal band map are one question: what a label IS, and how a
+declaration says where its labels are.
+
+- **Self-labelling projections as label maps** — the owner's spelling of the seam, and the best
+  one so far: `ColumnLabels` takes the header's SHAPE as a projection, and `ColumnLabels(2)` is
+  sugar for the standard one.
+
+  ```csharp
+  var header = ColumnLabels(
+      Sized(TakeRows(2)).Of(
+          HorizontalRepeat(Sized(MergedExtent()).Of(Range(b => Label(b))))));
+
+  Table(header, r => r["From", "Id"].Integer());
+  ```
+
+  The inner projection yields labelled REGIONS — what a label says and the rectangle it covers,
+  which is simply the extent it was placed on — and the map is built from geometry alone: a
+  column's path is the regions covering it, top to bottom. Nobody computes a path. Recorded merges
+  arrive as a size rule in the spreadsheet vocabulary and the generic layer only ever receives
+  rectangles with text in them, which is the answer to "LabelMap is generic and merges are not".
+  Today: `ColumnLabels(n)` is public and callable by itself, `WithColumnLabels` takes a map VALUE,
+  and what provides a header PROJECTION to a body is internal.
+
 The owner, 2026-09-20: what ships out of alpha has to be lived with, so nothing here is promised.
 
 - **Nested types** (`Transfer(Party From, Party To)`). Rarer than the flat shape at the owner's
@@ -189,7 +213,10 @@ The owner, 2026-09-20: what ships out of alpha has to be lived with, so nothing 
   `LabelMap.Under` — the label half — exists, is tested, and is internal.
 - **The public custom-header seam** and its three levels (above). Waits for a real header the
   standard reading gets wrong; the first one will say what the roles need to be.
-- **Recorded merges** as a backend capability overriding the convention.
+- **Recorded merges.** Never automatic as things stand: the header is parsed in the generic layer,
+  and `ISpace` stays flat. An explicit, spreadsheet-side header a declaration opts into (above);
+  the only route to automatic is an optional generic "spanning cells" capability the core parse
+  type-tests — the owner's call.
 - **`UNR004`**: a literal path deeper than a literal `headerRows`, in the editor.
 - The exploratory `Table()` (a dictionary per row) over a banded header: today its keys are the
   captions alone, so duplicates under different bands are refused as duplicates. Refuse outright
