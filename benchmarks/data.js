@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789888951014,
+  "lastUpdate": 1789888951289,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -5678,6 +5678,90 @@ window.BENCHMARK_DATA = {
             "value": 1661346.6010742188,
             "unit": "ns",
             "range": "± 1001.6245352576912"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "96b946d5920955eb81be3eab46697a3e4639e2e4",
+          "message": "Merge feature/header-bands: headers of several rows, columns addressed by path, flat binding over bands\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01UNe2iWN7QtdKfZXqYPymGt",
+          "timestamp": "2026-09-20T03:17:51Z",
+          "tree_id": "33ccb96a2f1d1cb7795dde522c6c586ee8ce479a",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/96b946d5920955eb81be3eab46697a3e4639e2e4"
+        },
+        "date": 1789888951229,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Values.Create_FromInts",
+            "value": 12.404605298240979,
+            "unit": "ns",
+            "range": "± 0.15742087753128614"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Create_FromObjects",
+            "value": 24073568.323660713,
+            "unit": "ns",
+            "range": "± 33135.52507901845"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.IsBlank_Million",
+            "value": 1503189.7027064732,
+            "unit": "ns",
+            "range": "± 933.1093261550741"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.IsText_Million",
+            "value": 1489666.683984375,
+            "unit": "ns",
+            "range": "± 1241.507380497275"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.AsText_Million_Text",
+            "value": 3722262.294921875,
+            "unit": "ns",
+            "range": "± 2822.199007669658"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Decimal_Million",
+            "value": 15211737.127604166,
+            "unit": "ns",
+            "range": "± 4948.681623380626"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Point_Mint_Million",
+            "value": 696125.2970252404,
+            "unit": "ns",
+            "range": "± 230.1608188497128"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Predicate_Million",
+            "value": 2584977.3909040177,
+            "unit": "ns",
+            "range": "± 3253.6008634788536"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.TypedPredicate_Million",
+            "value": 32973277.070833333,
+            "unit": "ns",
+            "range": "± 63214.214218829424"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Slice_Million",
+            "value": 1425187.000279018,
+            "unit": "ns",
+            "range": "± 1752.092970665323"
           }
         ]
       }
