@@ -291,12 +291,13 @@ namespace Unrect.Spreadsheets
           continue;
         }
 
-        var matches = labels.Bound(plan.Members[member].Caption);
-
-        // No caption answers to it: the column whose whole path, run together, does — FromId for
-        // the column at From, Id.
-        if (matches.Count == 0)
-          matches = labels.BoundByPath(plan.Members[member].Caption);
+        // One name, one column. A member answers to a caption, and to the column whose whole path
+        // run together is its name — FromId for the column at From, Id. Where both kinds answer,
+        // that is two columns, and it is refused like any other two.
+        var matches = labels.Bound(plan.Members[member].Caption)
+          .Union(labels.BoundByPath(plan.Members[member].Caption))
+          .OrderBy(column => column)
+          .ToList();
 
         // A member with no column joins the aggregate below; one with two is a table nobody can read
         // by name, and it says so at once, naming the member rather than the caption.
@@ -321,8 +322,7 @@ namespace Unrect.Spreadsheets
         return columns;
 
       throw labels.Failure(
-        $"no column binds {Join(unbound.Select(name => $"{typeof(T).Name}.{name}").ToList())}; the table's captions are "
-        + $"{string.Join(", ", labels.Labels.Select(caption => $"'{caption}'"))}. "
+        $"no column binds {Join(unbound.Select(name => $"{typeof(T).Name}.{name}").ToList())}; {Columns(labels)}. "
         + $"Bind one with Column(t => t.{unbound[0]}, \"…\") or drop it with Ignore(t => t.{unbound[0]})");
     }
 
@@ -336,12 +336,11 @@ namespace Unrect.Spreadsheets
         labels.Note(
           DiagnosticSeverity.Warning,
           $"no column binds {Join(unbound.Select(name => $"{typeof(T).Name}.{name}").ToList())}, left at "
-          + $"{(unbound.Count == 1 ? "its default" : "their defaults")}; the table's captions are "
-          + string.Join(", ", labels.Labels.Where(caption => caption.Length > 0).Select(caption => $"'{caption}'")));
+          + $"{(unbound.Count == 1 ? "its default" : "their defaults")}; {Columns(labels)}");
 
       var unread = Enumerable.Range(0, labels.Labels.Count)
         .Where(column => labels.Labels[column].Length > 0 && !columns.Contains(column))
-        .Select(column => $"'{labels.Labels[column]}'")
+        .Select(column => Said(labels, column))
         .ToList();
 
       if (unread.Count > 0)
@@ -373,6 +372,16 @@ namespace Unrect.Spreadsheets
         + (labels.Paths[matches[0]].Count > 1
           ? $"Bind it by its path with Column(t => t.{member.Name}, {string.Join(", ", labels.Paths[matches[0]].Select(step => $"\"{step}\""))})"
           : $"Bind it by position with Column(t => t.{member.Name}, {matches[0]})"));
+
+    /// <summary>
+    /// What a table holds, for the failure that has to say so: its captions, or — under bands — its
+    /// columns' paths, which are what a flat member's name is matched against run together.
+    /// </summary>
+    private static string Columns(LabelMap labels)
+      => labels.Depth > 1 && labels.Paths.Any(path => path.Count > 1)
+        ? "the table's columns are " + string.Join(", ", Enumerable.Range(0, labels.Labels.Count).Where(column => labels.Labels[column].Length > 0).Select(column => Said(labels, column)))
+          + " — a member binds to a caption, or to a whole path run together (FromId for [\"From\", \"Id\"])"
+        : "the table's captions are " + string.Join(", ", labels.Labels.Select(caption => $"'{caption}'"));
 
     /// <summary>How a column is cited: its caption, or its whole path where it sits under a band.</summary>
     private static string Said(LabelMap labels, int column)

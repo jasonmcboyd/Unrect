@@ -71,6 +71,42 @@ namespace Unrect.Tests.Spreadsheets
       Assert.Contains("no column binds Net.Q1Net", Assert.Throws<ProjectionException>(() => Table<Net>(3).Map(sheet)).Message, StringComparison.Ordinal);
     }
 
+    public sealed record Mixed(int FromId);
+
+    [Fact]
+    public void OneNameOneColumn()
+    {
+      // A caption that literally says "From Id" AND a column at From, Id: both answer to FromId,
+      // which is two columns, refused like any other two — the day a report grows the second one
+      // is the day to hear about it.
+      var sheet = SheetGrid.Of(new object?[,]
+      {
+        { null, "From", null },
+        { "From Id", "Id", "Code" },
+        { 9m, 1m, "FEP" },
+      });
+
+      var failure = Assert.Throws<ProjectionException>(() => Table<Mixed>(2).Map(sheet));
+
+      Assert.Contains("Mixed.FromId matches the columns at A2 ('From Id') and B2 ([\"From\", \"Id\"])", failure.Message, StringComparison.Ordinal);
+    }
+
+    public sealed record Missing(int FromId, decimal FromRate);
+
+    [Fact]
+    public void AMemberThatFindsNothingIsToldTheColumnsAsTheyAre()
+    {
+      // Under bands the captions alone would read 'Id', 'Code', 'Id', 'Code' and explain nothing:
+      // the columns are said by their paths, with how a flat name is matched against them.
+      var failure = Assert.Throws<ProjectionException>(() => Table<Missing>(2).Map(Workbook()));
+
+      Assert.Contains(
+        "no column binds Missing.FromRate; the table's columns are [\"From\", \"Id\"], [\"From\", \"Code\"], [\"To\", \"Id\"], [\"To\", \"Code\"] "
+        + "— a member binds to a caption, or to a whole path run together (FromId for [\"From\", \"Id\"])",
+        failure.Message,
+        StringComparison.Ordinal);
+    }
+
     public sealed record City(decimal NewYorkCityTotal);
 
     [Fact]

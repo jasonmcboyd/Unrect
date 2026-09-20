@@ -128,10 +128,13 @@ namespace Unrect.Projections
 
     /// <summary>
     /// A band as a map of its own: <c>labels.Under("From")</c> is the labels beneath From, by the
-    /// names they have there, their columns where they have always been. What binds a record to a
-    /// table binds the same record to a band of one.
+    /// names they have there, their columns where they have always been.
+    /// <para>
+    /// Internal on purpose. It is the label half of record blocks and nested types, which are
+    /// speculative: tested and ready, promised to nobody until a shape for them has been chosen.
+    /// </para>
     /// </summary>
-    public LabelMap Under(params LabelStep[] band)
+    internal LabelMap Under(params LabelStep[] band)
     {
       var answer = LabelPaths.Resolve(_source, band, CaptionComparer.Default);
 
