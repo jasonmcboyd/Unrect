@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789931368017,
+  "lastUpdate": 1789931368310,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -6828,6 +6828,42 @@ window.BENCHMARK_DATA = {
             "value": 12276220090.846153,
             "unit": "ns",
             "range": "± 11804635.15069315"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "191ad7e666be18cd9916eb0132108e83e54bd6db",
+          "message": "Open questions: IsText is the wrong shape - what it is for, the better shape, and the larger question of facets, recorded and not implemented\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01UNe2iWN7QtdKfZXqYPymGt",
+          "timestamp": "2026-09-20T04:23:54Z",
+          "tree_id": "5e6c0e37d52a9f501293d06ad42b1a125ed81250",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/191ad7e666be18cd9916eb0132108e83e54bd6db"
+        },
+        "date": 1789931368250,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.EndToEnd.Document_400Investors",
+            "value": 154532086.26666668,
+            "unit": "ns",
+            "range": "± 2495632.4700189037"
+          },
+          {
+            "name": "Unrect.Benchmarks.EndToEnd.Document_4000Investors",
+            "value": 11879440145.846153,
+            "unit": "ns",
+            "range": "± 12815763.767206723"
           }
         ]
       }
