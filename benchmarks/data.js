@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789863952351,
+  "lastUpdate": 1789863952632,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -5402,6 +5402,90 @@ window.BENCHMARK_DATA = {
             "value": 1662251.6079101562,
             "unit": "ns",
             "range": "± 1439.3676152550609"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "bd027f2136cee944da88c1eae17a06b14a05579d",
+          "message": "Merge feature/bind-from-row: Table<T> fills a member from the row - Column(member, row => ...)\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>",
+          "timestamp": "2026-09-19T19:49:16Z",
+          "tree_id": "88c877501aeddcefb436f136842b9904cda55a09",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/bd027f2136cee944da88c1eae17a06b14a05579d"
+        },
+        "date": 1789863952572,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Values.Create_FromInts",
+            "value": 14.924247757593792,
+            "unit": "ns",
+            "range": "± 0.2196414036910694"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Create_FromObjects",
+            "value": 29608000.73660714,
+            "unit": "ns",
+            "range": "± 99512.20323034341"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.IsBlank_Million",
+            "value": 1992197.7896205357,
+            "unit": "ns",
+            "range": "± 11679.755662844338"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.IsText_Million",
+            "value": 1976887.4349888393,
+            "unit": "ns",
+            "range": "± 6981.830216438225"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.AsText_Million_Text",
+            "value": 5450607.505580357,
+            "unit": "ns",
+            "range": "± 10060.569962258385"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Decimal_Million",
+            "value": 18166002.714285713,
+            "unit": "ns",
+            "range": "± 158728.78775940326"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Point_Mint_Million",
+            "value": 795204.0483022836,
+            "unit": "ns",
+            "range": "± 940.4229538699584"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Predicate_Million",
+            "value": 3317318.6065848214,
+            "unit": "ns",
+            "range": "± 7995.076850676191"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.TypedPredicate_Million",
+            "value": 36821749.933673464,
+            "unit": "ns",
+            "range": "± 55123.301930548994"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Slice_Million",
+            "value": 1661346.6010742188,
+            "unit": "ns",
+            "range": "± 1001.6245352576912"
           }
         ]
       }
