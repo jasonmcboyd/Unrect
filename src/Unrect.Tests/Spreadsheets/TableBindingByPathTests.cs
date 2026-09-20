@@ -26,6 +26,8 @@ namespace Unrect.Tests.Spreadsheets
 
     public sealed record Dated(DateTime Date, int FromId, string? Notes);
 
+    public sealed record Wider(int FromId, int ToId, decimal? Rate);
+
     [Fact]
     public void AFlatTypeBindsABandedTableByPath()
     {
@@ -39,14 +41,57 @@ namespace Unrect.Tests.Spreadsheets
     }
 
     [Fact]
-    public void AFlatMemberNeverBindsAcrossABandByItself()
+    public void AFlatMemberBindsToTheColumnWhoseWholePathItsNameRunsTogether()
     {
-      // FromId does not find ["From", "Id"] because the letters line up: that is the joined string
-      // by another door, with its false collisions. The refusal names the members; the fix is the
-      // path.
-      var failure = Assert.Throws<ProjectionException>(() => Table<Transfer>(2).Map(Workbook()));
+      // The shape these reports are usually read into: FromId for the column at From, Id. It is a
+      // way of MATCHING a member to a path — case and spaces ignored, as for any caption — and
+      // never a way of naming a column: a row still reads row["From", "Id"], not row["FromId"].
+      Assert.Equal(new Transfer(1, "FEP", 2, "FCP"), Assert.Single(Table<Transfer>(2).Map(Workbook())));
 
-      Assert.Contains("no column binds Transfer.FromId, Transfer.FromCode, Transfer.ToId or Transfer.ToCode", failure.Message, StringComparison.Ordinal);
+      var failure = Assert.Throws<ProjectionException>(() =>
+        ProjectionBuilders<ISheetCells>.Table(2, r => r["FromId"].Integer()).Map(Workbook()));
+
+      Assert.Contains("there is no column named 'FromId'", failure.Message, StringComparison.Ordinal);
+    }
+
+    public sealed record Net(decimal Q1Net);
+
+    [Fact]
+    public void TheWholePathAndNothingShorter()
+    {
+      // Q1Net does not reach under Actual: a name that skipped a band could mean either Q1.
+      var sheet = SheetGrid.Of(new object?[,]
+      {
+        { "Actual", "Budget" },
+        { "Q1", "Q1" },
+        { "Net", "Net" },
+        { 1m, 2m },
+      });
+
+      Assert.Contains("no column binds Net.Q1Net", Assert.Throws<ProjectionException>(() => Table<Net>(3).Map(sheet)).Message, StringComparison.Ordinal);
+    }
+
+    public sealed record City(decimal NewYorkCityTotal);
+
+    [Fact]
+    public void TwoPathsThatRunTogetherAlikeAreRefusedWithThePathThatSaysWhich()
+    {
+      var sheet = SheetGrid.Of(new object?[,]
+      {
+        { "New York", "New York City" },
+        { "City Total", "Total" },
+        { 1m, 2m },
+      });
+
+      var failure = Assert.Throws<ProjectionException>(() => Table<City>(2).Map(sheet));
+
+      Assert.Contains(
+        "City.NewYorkCityTotal matches the columns at A2 ([\"New York\", \"City Total\"]) and B2 ([\"New York City\", \"Total\"])",
+        failure.Message,
+        StringComparison.Ordinal);
+      Assert.Contains("Bind it by its path with Column(t => t.NewYorkCityTotal, \"New York\", \"City Total\")", failure.Message, StringComparison.Ordinal);
+
+      Assert.Equal(2m, Assert.Single(Table<City>(2, bind => bind.Column(c => c.NewYorkCityTotal, "New York City", "Total")).Map(sheet)).NewYorkCityTotal);
     }
 
     [Fact]
@@ -114,10 +159,10 @@ namespace Unrect.Tests.Spreadsheets
     [Fact]
     public void TheLooseTableTakesTheSameHeader()
     {
-      var read = LooseTable<Transfer>(2, bind => bind.Column(t => t.ToId, "To", "Id")).MapWithDiagnostics(Workbook());
+      var read = LooseTable<Wider>(2, bind => bind.Column(t => t.ToId, "To", "Id")).MapWithDiagnostics(Workbook());
 
-      Assert.Equal(new Transfer(0, null!, 2, null!), Assert.Single(read.Value));
-      Assert.Contains(read.Diagnostics, d => d.Severity == DiagnosticSeverity.Warning && d.Message.Contains("no column binds Transfer.FromId, Transfer.FromCode or Transfer.ToCode", StringComparison.Ordinal));
+      Assert.Equal(new Wider(1, 2, null), Assert.Single(read.Value));
+      Assert.Contains(read.Diagnostics, d => d.Severity == DiagnosticSeverity.Warning && d.Message.Contains("no column binds Wider.Rate", StringComparison.Ordinal));
     }
 
     [Fact]

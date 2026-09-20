@@ -145,6 +145,26 @@ namespace Unrect.Projections
     }
 
     /// <summary>
+    /// The columns whose WHOLE path, its steps run together, is <paramref name="name"/> under
+    /// <see cref="CaptionComparer"/> — how a flat member called <c>FromId</c> finds the column at
+    /// <c>From, Id</c>. It is a way of MATCHING a member to a path, never a way of naming a column:
+    /// nothing is parsed back out of the name, and two paths that run together alike come back
+    /// together, for the binder to refuse. Only columns under a band are candidates; a column under
+    /// none is found by its caption.
+    /// </summary>
+    internal IReadOnlyList<int> BoundByPath(string name)
+    {
+      var matches = new List<int>();
+      var paths = _source.Paths;
+
+      for (var column = 0; column < paths.Count; column++)
+        if (paths[column].Count > 1 && CaptionComparer.Default.Equals(string.Concat(paths[column]), name))
+          matches.Add(column);
+
+      return matches;
+    }
+
+    /// <summary>
     /// The column <paramref name="path"/> names, for a binder resolving it on a member's behalf: the
     /// same answer as the indexer, with <paramref name="subject"/> said first in any failure, so a
     /// reader is told which member of their type the header disagreed with.

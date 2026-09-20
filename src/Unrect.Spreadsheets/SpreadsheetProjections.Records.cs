@@ -293,6 +293,11 @@ namespace Unrect.Spreadsheets
 
         var matches = labels.Bound(plan.Members[member].Caption);
 
+        // No caption answers to it: the column whose whole path, run together, does — FromId for
+        // the column at From, Id.
+        if (matches.Count == 0)
+          matches = labels.BoundByPath(plan.Members[member].Caption);
+
         // A member with no column joins the aggregate below; one with two is a table nobody can read
         // by name, and it says so at once, naming the member rather than the caption.
         if (matches.Count == 0)
@@ -362,10 +367,18 @@ namespace Unrect.Spreadsheets
     private static ProjectionException Ambiguous<T>(LabelMap labels, MemberPlan member, IReadOnlyList<int> matches)
       => labels.Failure(
         $"{typeof(T).Name}.{member.Name} matches the columns at "
-        + $"{labels.AddressOf(matches[0]).A1} ('{labels.Labels[matches[0]]}') and "
-        + $"{labels.AddressOf(matches[1]).A1} ('{labels.Labels[matches[1]]}'); "
+        + $"{labels.AddressOf(matches[0]).A1} ({Said(labels, matches[0])}) and "
+        + $"{labels.AddressOf(matches[1]).A1} ({Said(labels, matches[1])}); "
         + "captions are matched ignoring case and whitespace. "
-        + $"Bind it by position with Column(t => t.{member.Name}, {matches[0]})");
+        + (labels.Paths[matches[0]].Count > 1
+          ? $"Bind it by its path with Column(t => t.{member.Name}, {string.Join(", ", labels.Paths[matches[0]].Select(step => $"\"{step}\""))})"
+          : $"Bind it by position with Column(t => t.{member.Name}, {matches[0]})"));
+
+    /// <summary>How a column is cited: its caption, or its whole path where it sits under a band.</summary>
+    private static string Said(LabelMap labels, int column)
+      => labels.Paths[column].Count > 1
+        ? "[" + string.Join(", ", labels.Paths[column].Select(step => $"\"{step}\"")) + "]"
+        : $"'{labels.Labels[column]}'";
 
     private static string Join(IReadOnlyList<string> names)
       => names.Count == 1
