@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789888953489,
+  "lastUpdate": 1789888953757,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -14664,6 +14664,55 @@ window.BENCHMARK_DATA = {
           {
             "name": "Unrect.Benchmarks.Diagnostics.ProjectionException_Render",
             "value": 20279485,
+            "unit": "bytes"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "96b946d5920955eb81be3eab46697a3e4639e2e4",
+          "message": "Merge feature/header-bands: headers of several rows, columns addressed by path, flat binding over bands\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01UNe2iWN7QtdKfZXqYPymGt",
+          "timestamp": "2026-09-20T03:17:51Z",
+          "tree_id": "33ccb96a2f1d1cb7795dde522c6c586ee8ce479a",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/96b946d5920955eb81be3eab46697a3e4639e2e4"
+        },
+        "date": 1789888953697,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Diagnostics.Map_Plain",
+            "value": 38303163,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Diagnostics.Map_WithDiagnostics",
+            "value": 38304394,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Diagnostics.Choice_FirstAlternativeLoses",
+            "value": 1634904,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Diagnostics.Optional_AbsorbsFailure",
+            "value": 1976328,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Diagnostics.ProjectionException_Render",
+            "value": 21772848,
             "unit": "bytes"
           }
         ]
