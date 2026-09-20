@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789888952381,
+  "lastUpdate": 1789888952666,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -10125,6 +10125,65 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/jasonmcboyd/Unrect/commit/bd027f2136cee944da88c1eae17a06b14a05579d"
         },
         "date": 1789863953960,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Strategies.RowsWhileAnyValue_FullHeight",
+            "value": 6293263,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.RowsWhileAnyValue_Sparse",
+            "value": 6293263,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_HitAt10Percent",
+            "value": 788880,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_HitAt90Percent",
+            "value": 6293976,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Seek_MissWholeGrid",
+            "value": 25173496,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.Until_BoundResolution",
+            "value": 12586512,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Strategies.BlankRows_Skip",
+            "value": 3147534,
+            "unit": "bytes"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "96b946d5920955eb81be3eab46697a3e4639e2e4",
+          "message": "Merge feature/header-bands: headers of several rows, columns addressed by path, flat binding over bands\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01UNe2iWN7QtdKfZXqYPymGt",
+          "timestamp": "2026-09-20T03:17:51Z",
+          "tree_id": "33ccb96a2f1d1cb7795dde522c6c586ee8ce479a",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/96b946d5920955eb81be3eab46697a3e4639e2e4"
+        },
+        "date": 1789888952605,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
