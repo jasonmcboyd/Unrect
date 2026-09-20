@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789888950682,
+  "lastUpdate": 1789888951014,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -4150,6 +4150,72 @@ window.BENCHMARK_DATA = {
             "value": 348257.25435965403,
             "unit": "ns",
             "range": "± 1349.9552199622142"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "96b946d5920955eb81be3eab46697a3e4639e2e4",
+          "message": "Merge feature/header-bands: headers of several rows, columns addressed by path, flat binding over bands\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01UNe2iWN7QtdKfZXqYPymGt",
+          "timestamp": "2026-09-20T03:17:51Z",
+          "tree_id": "33ccb96a2f1d1cb7795dde522c6c586ee8ce479a",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/96b946d5920955eb81be3eab46697a3e4639e2e4"
+        },
+        "date": 1789888950953,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Tables.Lambda_10k",
+            "value": 3167384.4693509615,
+            "unit": "ns",
+            "range": "± 9192.355717572436"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Lambda_100k",
+            "value": 43151996.92307692,
+            "unit": "ns",
+            "range": "± 180736.2299442164"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Bound_10k",
+            "value": 73375276.04081632,
+            "unit": "ns",
+            "range": "± 413810.3392921326"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Bound_100k",
+            "value": 719905653.6666666,
+            "unit": "ns",
+            "range": "± 2550511.6906590015"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Dictionary_10k",
+            "value": 6261548.133333334,
+            "unit": "ns",
+            "range": "± 29638.66681944068"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Dictionary_100k",
+            "value": 95629718.75641026,
+            "unit": "ns",
+            "range": "± 716162.9661894713"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Bound_ProjectionConstruction",
+            "value": 349297.9844726563,
+            "unit": "ns",
+            "range": "± 2392.412681982134"
           }
         ]
       }
