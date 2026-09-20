@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789931367731,
+  "lastUpdate": 1789931368017,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -5954,6 +5954,90 @@ window.BENCHMARK_DATA = {
             "value": 1425187.000279018,
             "unit": "ns",
             "range": "± 1752.092970665323"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "191ad7e666be18cd9916eb0132108e83e54bd6db",
+          "message": "Open questions: IsText is the wrong shape - what it is for, the better shape, and the larger question of facets, recorded and not implemented\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01UNe2iWN7QtdKfZXqYPymGt",
+          "timestamp": "2026-09-20T04:23:54Z",
+          "tree_id": "5e6c0e37d52a9f501293d06ad42b1a125ed81250",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/191ad7e666be18cd9916eb0132108e83e54bd6db"
+        },
+        "date": 1789931367948,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Values.Create_FromInts",
+            "value": 15.700141364336014,
+            "unit": "ns",
+            "range": "± 0.1160888109889222"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Create_FromObjects",
+            "value": 29459164.71153846,
+            "unit": "ns",
+            "range": "± 62294.87592092241"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.IsBlank_Million",
+            "value": 1824861.92890625,
+            "unit": "ns",
+            "range": "± 5772.471176339919"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.IsText_Million",
+            "value": 1836527.480189732,
+            "unit": "ns",
+            "range": "± 7137.018741290231"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.AsText_Million_Text",
+            "value": 5002892.635416667,
+            "unit": "ns",
+            "range": "± 14261.845444598945"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Decimal_Million",
+            "value": 18136718.195833333,
+            "unit": "ns",
+            "range": "± 107781.82139270582"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Point_Mint_Million",
+            "value": 795705.9063197544,
+            "unit": "ns",
+            "range": "± 1933.0937263667943"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Predicate_Million",
+            "value": 3327354.7848772323,
+            "unit": "ns",
+            "range": "± 7217.409647896141"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.TypedPredicate_Million",
+            "value": 36855075.614285715,
+            "unit": "ns",
+            "range": "± 90738.85427017602"
+          },
+          {
+            "name": "Unrect.Benchmarks.Values.Slice_Million",
+            "value": 1661619.8068359375,
+            "unit": "ns",
+            "range": "± 2347.6710575422626"
           }
         ]
       }
