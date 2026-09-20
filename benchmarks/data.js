@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789888954025,
+  "lastUpdate": 1789888954293,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -17533,6 +17533,72 @@ window.BENCHMARK_DATA = {
             "name": "Unrect.Benchmarks.Retention.Eager_ResultHeld",
             "value": 32319784,
             "range": "± 0 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · Table over the eager grid; result held, grid released"
+          },
+          {
+            "name": "Unrect.Benchmarks.Retention.Streaming_ResultHeld",
+            "value": 32319784,
+            "range": "± 0 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · Table through a window; result held, workbook closed"
+          },
+          {
+            "name": "Unrect.Benchmarks.Retention.Streaming_ResultHeld_Unique",
+            "value": 86096872,
+            "range": "± 0 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · CONTROL — the same projection, every text distinct"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "96b946d5920955eb81be3eab46697a3e4639e2e4",
+          "message": "Merge feature/header-bands: headers of several rows, columns addressed by path, flat binding over bands\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01UNe2iWN7QtdKfZXqYPymGt",
+          "timestamp": "2026-09-20T03:17:51Z",
+          "tree_id": "33ccb96a2f1d1cb7795dde522c6c586ee8ce479a",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/96b946d5920955eb81be3eab46697a3e4639e2e4"
+        },
+        "date": 1789888954229,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Retention.Eager_SpaceHeld",
+            "value": 58223048,
+            "range": "± 0 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · SpreadsheetSpace.Create over a real .xlsx (inline strings); grid held"
+          },
+          {
+            "name": "Unrect.Benchmarks.Retention.Eager_SpaceHeld_Unique",
+            "value": 112000136,
+            "range": "± 0 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · CONTROL — the same file and reader, every text distinct"
+          },
+          {
+            "name": "Unrect.Benchmarks.Retention.Eager_SpaceHeld_Shared",
+            "value": 58223048,
+            "range": "± 0 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · CONTROL/TARGET — the same values shared-string encoded, which the reader already dedups"
+          },
+          {
+            "name": "Unrect.Benchmarks.Retention.Eager_ResultHeld",
+            "value": 32319248,
+            "range": "± 536 bytes",
             "unit": "bytes",
             "extra": "median of 3 · Table over the eager grid; result held, grid released"
           },
