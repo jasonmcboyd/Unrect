@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789888954293,
+  "lastUpdate": 1789931367162,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -1316,6 +1316,66 @@ window.BENCHMARK_DATA = {
             "value": 19899664.910714287,
             "unit": "ns",
             "range": "± 57501.47989654001"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "191ad7e666be18cd9916eb0132108e83e54bd6db",
+          "message": "Open questions: IsText is the wrong shape - what it is for, the better shape, and the larger question of facets, recorded and not implemented\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01UNe2iWN7QtdKfZXqYPymGt",
+          "timestamp": "2026-09-20T04:23:54Z",
+          "tree_id": "5e6c0e37d52a9f501293d06ad42b1a125ed81250",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/191ad7e666be18cd9916eb0132108e83e54bd6db"
+        },
+        "date": 1789931366275,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Engine.VerticalFlow_ManyChildren",
+            "value": 4590605.879340278,
+            "unit": "ns",
+            "range": "± 209232.3547392277"
+          },
+          {
+            "name": "Unrect.Benchmarks.Engine.Flow_Nested",
+            "value": 2591153872.4666667,
+            "unit": "ns",
+            "range": "± 36059001.652071916"
+          },
+          {
+            "name": "Unrect.Benchmarks.Engine.Overlay_AnchoredChildren",
+            "value": 1489108122.6666667,
+            "unit": "ns",
+            "range": "± 22264106.470164757"
+          },
+          {
+            "name": "Unrect.Benchmarks.Engine.Repeat_SeparatedBlocks",
+            "value": 3355244.7918526786,
+            "unit": "ns",
+            "range": "± 53742.84281983721"
+          },
+          {
+            "name": "Unrect.Benchmarks.Engine.Under_CaptionedSection",
+            "value": 165488582.70967743,
+            "unit": "ns",
+            "range": "± 5045975.581268618"
+          },
+          {
+            "name": "Unrect.Benchmarks.Engine.Range_ReadAllCells",
+            "value": 18660318.5472973,
+            "unit": "ns",
+            "range": "± 619522.7510613274"
           }
         ]
       }
