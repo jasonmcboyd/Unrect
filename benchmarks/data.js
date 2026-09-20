@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789888951828,
+  "lastUpdate": 1789888952112,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -15407,6 +15407,60 @@ window.BENCHMARK_DATA = {
             "value": 64144715.34615385,
             "unit": "ns",
             "range": "± 541614.265609542"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "96b946d5920955eb81be3eab46697a3e4639e2e4",
+          "message": "Merge feature/header-bands: headers of several rows, columns addressed by path, flat binding over bands\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01UNe2iWN7QtdKfZXqYPymGt",
+          "timestamp": "2026-09-20T03:17:51Z",
+          "tree_id": "33ccb96a2f1d1cb7795dde522c6c586ee8ce479a",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/96b946d5920955eb81be3eab46697a3e4639e2e4"
+        },
+        "date": 1789888952048,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Streaming.Monotone_Eager",
+            "value": 1260586946.642857,
+            "unit": "ns",
+            "range": "± 14696977.886648165"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Monotone_Streamed",
+            "value": 1485401883.0714285,
+            "unit": "ns",
+            "range": "± 14055348.589717047"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Monotone_SecondPass",
+            "value": 2897566708.928571,
+            "unit": "ns",
+            "range": "± 13979794.303066658"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Band_Eager",
+            "value": 4989601.866629465,
+            "unit": "ns",
+            "range": "± 47047.19900624588"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Band_Streamed",
+            "value": 44766546.04999999,
+            "unit": "ns",
+            "range": "± 824917.7972452802"
           }
         ]
       }
