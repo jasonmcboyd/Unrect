@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789863953180,
+  "lastUpdate": 1789863953454,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -14658,6 +14658,60 @@ window.BENCHMARK_DATA = {
             "value": 61372118.787037045,
             "unit": "ns",
             "range": "± 800663.331979662"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "bd027f2136cee944da88c1eae17a06b14a05579d",
+          "message": "Merge feature/bind-from-row: Table<T> fills a member from the row - Column(member, row => ...)\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>",
+          "timestamp": "2026-09-19T19:49:16Z",
+          "tree_id": "88c877501aeddcefb436f136842b9904cda55a09",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/bd027f2136cee944da88c1eae17a06b14a05579d"
+        },
+        "date": 1789863953396,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Streaming.Monotone_Eager",
+            "value": 2233092883.076923,
+            "unit": "ns",
+            "range": "± 8858173.210820694"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Monotone_Streamed",
+            "value": 2736775561.733333,
+            "unit": "ns",
+            "range": "± 29969590.3467561"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Monotone_SecondPass",
+            "value": 5266282446.466666,
+            "unit": "ns",
+            "range": "± 23347528.906260584"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Band_Eager",
+            "value": 7755677.802083333,
+            "unit": "ns",
+            "range": "± 20252.10801191638"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Band_Streamed",
+            "value": 64144715.34615385,
+            "unit": "ns",
+            "range": "± 541614.265609542"
           }
         ]
       }
