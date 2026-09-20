@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789931370319,
+  "lastUpdate": 1789931370609,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -15359,6 +15359,55 @@ window.BENCHMARK_DATA = {
           {
             "name": "Unrect.Benchmarks.Diagnostics.ProjectionException_Render",
             "value": 21772848,
+            "unit": "bytes"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "191ad7e666be18cd9916eb0132108e83e54bd6db",
+          "message": "Open questions: IsText is the wrong shape - what it is for, the better shape, and the larger question of facets, recorded and not implemented\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01UNe2iWN7QtdKfZXqYPymGt",
+          "timestamp": "2026-09-20T04:23:54Z",
+          "tree_id": "5e6c0e37d52a9f501293d06ad42b1a125ed81250",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/191ad7e666be18cd9916eb0132108e83e54bd6db"
+        },
+        "date": 1789931370540,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Diagnostics.Map_Plain",
+            "value": 38303112,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Diagnostics.Map_WithDiagnostics",
+            "value": 38304296,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Diagnostics.Choice_FirstAlternativeLoses",
+            "value": 1635272,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Diagnostics.Optional_AbsorbsFailure",
+            "value": 1976696,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Diagnostics.ProjectionException_Render",
+            "value": 21772909,
             "unit": "bytes"
           }
         ]
