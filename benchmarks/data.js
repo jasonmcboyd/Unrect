@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789888952666,
+  "lastUpdate": 1789888952941,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -11456,6 +11456,65 @@ window.BENCHMARK_DATA = {
           {
             "name": "Unrect.Benchmarks.Tables.Bound_ProjectionConstruction",
             "value": 17692,
+            "unit": "bytes"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "96b946d5920955eb81be3eab46697a3e4639e2e4",
+          "message": "Merge feature/header-bands: headers of several rows, columns addressed by path, flat binding over bands\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01UNe2iWN7QtdKfZXqYPymGt",
+          "timestamp": "2026-09-20T03:17:51Z",
+          "tree_id": "33ccb96a2f1d1cb7795dde522c6c586ee8ce479a",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/96b946d5920955eb81be3eab46697a3e4639e2e4"
+        },
+        "date": 1789888952879,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Tables.Lambda_10k",
+            "value": 2712459,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Lambda_100k",
+            "value": 25498416,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Bound_10k",
+            "value": 96306993,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Bound_100k",
+            "value": 956083088,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Dictionary_10k",
+            "value": 5750687,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Dictionary_100k",
+            "value": 55896488,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Tables.Bound_ProjectionConstruction",
+            "value": 19754,
             "unit": "bytes"
           }
         ]
