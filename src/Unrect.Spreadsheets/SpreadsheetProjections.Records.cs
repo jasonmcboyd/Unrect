@@ -115,12 +115,47 @@ namespace Unrect.Spreadsheets
       where TSpace : class, ISheetCells
       => Bound<TSpace, T>(Planned<TSpace, T>(bind), onBlank);
 
-    private static RowBinding<T> Planned<TSpace, T>(Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>> bind)
+    /// <summary>
+    /// A table whose header is <paramref name="headerRows"/> rows tall: the captions, under
+    /// <paramref name="headerRows"/> − 1 rows of bands. Members bind to a caption that is unique as
+    /// they always have; a column under a band that shares its caption with another is bound by its
+    /// path — <c>bind.Column(t =&gt; t.FromId, "From", "Id")</c> — because a flat member never
+    /// binds across a band by itself.
+    /// </summary>
+    /// <typeparam name="TSpace">The sheet the table is declared over.</typeparam>
+    /// <typeparam name="T">What one record reads.</typeparam>
+    /// <param name="headerRows">How many rows the header is; at least 1, since members bind by what it says.</param>
+    /// <param name="bind">The per-member declarations, or null for none.</param>
+    /// <param name="onBlank">How a fully-blank body row is treated; <c>Stop</c> where omitted.</param>
+    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<TSpace, T>(
+      int headerRows,
+      Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>>? bind = null,
+      BlankRowStrategy? onBlank = null)
       where TSpace : class, ISheetCells
-      => RowBinding<T>.Create(
-        (bind ?? throw new ArgumentNullException(nameof(bind)))(new TableBinding<TSpace, T>())
-        ?? throw new ArgumentException("The binding lambda returned null.", nameof(bind)),
-        typeof(TSpace));
+      => Bound<TSpace, T>(
+        bind is null ? RowBinding<T>.Create<TSpace>(null, typeof(TSpace)) : Planned<TSpace, T>(bind, headerRows),
+        onBlank ?? BlankRowStrategy.Stop,
+        loose: false,
+        headerRows);
+
+    private static RowBinding<T> Planned<TSpace, T>(Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>> bind, int headerRows = 1)
+      where TSpace : class, ISheetCells
+    {
+      var binding = (bind ?? throw new ArgumentNullException(nameof(bind)))(new TableBinding<TSpace, T>())
+        ?? throw new ArgumentException("The binding lambda returned null.", nameof(bind));
+
+      // A path goes through one band per step before its last, and a header has one row of bands
+      // per row above its captions — so this can be refused here, before any file is opened.
+      foreach (var bound in binding.Paths)
+        if (bound.Value.Length > headerRows)
+          throw new ArgumentException(
+            $"{typeof(T).Name}.{bound.Key} is bound to a path of {bound.Value.Length} steps, and the table declares "
+            + $"{headerRows} header row{(headerRows == 1 ? string.Empty : "s")}, which is a header {(headerRows == 1 ? "with no bands" : $"{headerRows} deep")}; "
+            + $"declare headerRows: {bound.Value.Length}, or shorten the path.",
+            nameof(bind));
+
+      return RowBinding<T>.Create(binding, typeof(TSpace));
+    }
 
     /// <summary>
     /// The exploratory table <c>Unrect.Interactive</c> offers: the same projection as
@@ -136,17 +171,19 @@ namespace Unrect.Spreadsheets
     /// </summary>
     internal static IProjectionDefinition<TSpace, IReadOnlyList<T>> LooseTable<TSpace, T>(
       Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>>? bind,
-      BlankRowStrategy onBlank)
+      BlankRowStrategy onBlank,
+      int headerRows = 1)
       where TSpace : class, ISheetCells
       => Bound<TSpace, T>(
-        bind is null ? RowBinding<T>.Create<TSpace>(null, typeof(TSpace)) : Planned<TSpace, T>(bind),
+        bind is null ? RowBinding<T>.Create<TSpace>(null, typeof(TSpace)) : Planned<TSpace, T>(bind, headerRows),
         onBlank,
-        loose: true);
+        loose: true,
+        headerRows);
 
-    private static IProjectionDefinition<TSpace, IReadOnlyList<T>> Bound<TSpace, T>(RowBinding<T> plan, BlankRowStrategy onBlank, bool loose = false)
+    private static IProjectionDefinition<TSpace, IReadOnlyList<T>> Bound<TSpace, T>(RowBinding<T> plan, BlankRowStrategy onBlank, bool loose = false, int headerRows = 1)
       where TSpace : class, ISheetCells
       => ProjectionBuilders<TSpace>
-        .Table(headerRows: 1, eachRow: labels => RecordRow<TSpace, T>(plan, labels, loose), onBlank, declared: null)
+        .Table(headerRows: headerRows, eachRow: labels => RecordRow<TSpace, T>(plan, labels, loose), onBlank, declared: null)
         .AsUnit($"Table<{typeof(T).Name}>");
 
     /// <summary>
@@ -234,6 +271,13 @@ namespace Unrect.Spreadsheets
           continue;
         }
 
+        // Bound by its path through a banded header: the header answers, or says what it holds.
+        if (plan.Members[member].Path is LabelStep[] path)
+        {
+          columns[member] = labels.Column(path, $"{typeof(T).Name}.{plan.Members[member].Name}");
+          continue;
+        }
+
         // Bound by position: the caption is not consulted, so neither a missing one nor a
         // duplicated one is this member's problem. The table has to be that wide.
         if (plan.Members[member].Position is int position)
@@ -306,7 +350,8 @@ namespace Unrect.Spreadsheets
     /// caption that column carries, and its position where it carries none.
     /// </summary>
     private static string ColumnName(MemberPlan member, LabelMap labels, int column)
-      => member.Position is null ? $"column '{member.Caption}'"
+      => member.Path is LabelStep[] path ? $"column {string.Join(", ", path.Select(step => step.ToString()))}"
+        : member.Position is null ? $"column '{member.Caption}'"
         : labels.Labels[column].Length > 0 ? $"column '{labels.Labels[column]}'"
         : $"column {column}";
 

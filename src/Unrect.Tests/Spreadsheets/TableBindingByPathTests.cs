@@ -1,0 +1,131 @@
+using System;
+using System.IO;
+
+using Unrect.Projections;
+using Unrect.Spreadsheets;
+
+using Xunit;
+
+using static Unrect.Interactive.ExploratoryBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+
+namespace Unrect.Tests.Spreadsheets
+{
+  /// <summary>
+  /// <c>Table&lt;T&gt;(headerRows: 2, …)</c> over a banded header. A member binds to a caption that
+  /// is unique as it always has; a flat member never binds across a band by itself, so a column
+  /// that shares its caption with another is bound by its path, and a path the declared header
+  /// could not hold is refused where it is written.
+  /// </summary>
+  public class TableBindingByPathTests
+  {
+    private static ISheetCells Workbook()
+      => SpreadsheetSpace.Create(Path.Combine(AppContext.BaseDirectory, "TestData", "multi-header-table.xlsx"), "Sheet1");
+
+    public sealed record Transfer(int FromId, string FromCode, int ToId, string ToCode);
+
+    public sealed record Dated(DateTime Date, int FromId, string? Notes);
+
+    [Fact]
+    public void AFlatTypeBindsABandedTableByPath()
+    {
+      var transfers = Table<Transfer>(2, bind => bind
+        .Column(t => t.FromId, "From", "Id")
+        .Column(t => t.FromCode, "From", "Code")
+        .Column(t => t.ToId, "To", "Id")
+        .Column(t => t.ToCode, "To", 1));
+
+      Assert.Equal(new Transfer(1, "FEP", 2, "FCP"), Assert.Single(transfers.Map(Workbook())));
+    }
+
+    [Fact]
+    public void AFlatMemberNeverBindsAcrossABandByItself()
+    {
+      // FromId does not find ["From", "Id"] because the letters line up: that is the joined string
+      // by another door, with its false collisions. The refusal names the members; the fix is the
+      // path.
+      var failure = Assert.Throws<ProjectionException>(() => Table<Transfer>(2).Map(Workbook()));
+
+      Assert.Contains("no column binds Transfer.FromId, Transfer.FromCode, Transfer.ToId or Transfer.ToCode", failure.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ACaptionThatIsUniqueStillBindsWithNothingDeclared()
+    {
+      var sheet = SheetGrid.Of(new object?[,]
+      {
+        { "Date", "From", null, "To", null, null },
+        { null, "Id", "Code", "Id", "Code", "Notes" },
+        { new DateTime(2026, 1, 5), 1m, "FEP", 2m, "FCP", "ok" },
+      });
+
+      // Date is a label over nothing but blanks — its own column's name; Notes is unique, whatever
+      // band the convention put it under. Only the Id needs its path.
+      var rows = Table<Dated>(2, bind => bind.Column(d => d.FromId, "From", "Id")).Map(sheet);
+
+      Assert.Equal(new Dated(new DateTime(2026, 1, 5), 1, "ok"), Assert.Single(rows));
+    }
+
+    [Fact]
+    public void APathTheDeclaredHeaderCouldNotHoldIsRefusedWhereItIsWritten()
+    {
+      // One header row has no bands for a two-step path to go through: wrong whatever file it
+      // meets, so it is refused before one is opened — with and without headerRows said.
+      var bare = Assert.Throws<ArgumentException>(() => Table<Transfer>(bind => bind.Column(t => t.FromId, "From", "Id")));
+      var said = Assert.Throws<ArgumentException>(() => Table<Transfer>(1, bind => bind.Column(t => t.FromId, "From", "Id")));
+
+      Assert.Contains(
+        "Transfer.FromId is bound to a path of 2 steps, and the table declares 1 header row, which is a header with no bands; declare headerRows: 2, or shorten the path.",
+        bare.Message,
+        StringComparison.Ordinal);
+      Assert.Equal(bare.Message, said.Message);
+    }
+
+    [Fact]
+    public void APathTheFileDoesNotHoldNamesTheMemberAndWhatIsThere()
+    {
+      var failure = Assert.Throws<ProjectionException>(() =>
+        Table<Transfer>(2, bind => bind
+          .Column(t => t.FromId, "Via", "Id")
+          .Column(t => t.FromCode, "From", "Code")
+          .Column(t => t.ToId, "To", "Id")
+          .Column(t => t.ToCode, "To", "Code")).Map(Workbook()));
+
+      Assert.Contains(
+        "Transfer.FromId is bound to [\"Via\", \"Id\"]: there is no \"Via\" under the header; under it are \"From\", \"To\"",
+        failure.Message,
+        StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AFailureInAColumnBoundByPathNamesThePath()
+    {
+      var failure = Assert.Throws<ProjectionException>(() =>
+        Table<Transfer>(2, bind => bind
+          .Column(t => t.FromId, "From", "Code")
+          .Column(t => t.FromCode, "From", "Code")
+          .Column(t => t.ToId, "To", "Id")
+          .Column(t => t.ToCode, "To", "Code")).Map(Workbook()));
+
+      Assert.Equal("Table<Transfer>[0] -> column \"From\", \"Code\"", failure.Path);
+      Assert.Contains("expected Number at C4, found Text", failure.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TheLooseTableTakesTheSameHeader()
+    {
+      var read = LooseTable<Transfer>(2, bind => bind.Column(t => t.ToId, "To", "Id")).MapWithDiagnostics(Workbook());
+
+      Assert.Equal(new Transfer(0, null!, 2, null!), Assert.Single(read.Value));
+      Assert.Contains(read.Diagnostics, d => d.Severity == DiagnosticSeverity.Warning && d.Message.Contains("no column binds Transfer.FromId, Transfer.FromCode or Transfer.ToCode", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void ABindingIsRefusedWhereItIsWritten()
+    {
+      Assert.Contains("bound twice", Assert.Throws<ArgumentException>(() =>
+        Table<Transfer>(2, bind => bind.Column(t => t.ToId, "To", "Id").Column(t => t.ToId, 3))).Message, StringComparison.Ordinal);
+      Assert.Equal("headerRows", Assert.Throws<ArgumentOutOfRangeException>(() => Table<Transfer>(0)).ParamName);
+    }
+  }
+}

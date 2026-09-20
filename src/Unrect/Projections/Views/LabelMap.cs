@@ -144,6 +144,23 @@ namespace Unrect.Projections
       return new LabelMap(new BandLabels(_source, answer.Columns, answer.Depth), _header);
     }
 
+    /// <summary>
+    /// The column <paramref name="path"/> names, for a binder resolving it on a member's behalf: the
+    /// same answer as the indexer, with <paramref name="subject"/> said first in any failure, so a
+    /// reader is told which member of their type the header disagreed with.
+    /// </summary>
+    internal int Column(IReadOnlyList<LabelStep> path, string subject)
+    {
+      var answer = LabelPaths.Resolve(_source, path, CaptionComparer.Default);
+
+      if (answer.Problem is string problem)
+        throw Header.Failure($"{subject} is bound to {Written(path)}: {problem}");
+
+      return answer.IsBand
+        ? throw Header.Failure($"{subject} is bound to {Written(path)}, which is a band over {answer.Columns.Count} columns, not a column; say which, by name or by position")
+        : answer.Columns[0];
+    }
+
     private static string Written(IReadOnlyList<LabelStep> path) => "[" + string.Join(", ", path.Select(step => step.ToString())) + "]";
 
     IReadOnlyList<string> ILabelSource.Labels => Labels;

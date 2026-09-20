@@ -83,6 +83,13 @@ namespace Unrect.Spreadsheets
     public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>> bind, BlankRowStrategy onBlank)
       => SpreadsheetProjections.Table<TSpace, T>(bind, onBlank);
 
+    /// <inheritdoc cref="SpreadsheetProjections.Table{TSpace, T}(int, Func{TableBinding{TSpace, T}, TableBinding{TSpace, T}}, BlankRowStrategy?)"/>
+    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(
+      int headerRows,
+      Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>>? bind = null,
+      BlankRowStrategy? onBlank = null)
+      => SpreadsheetProjections.Table<TSpace, T>(headerRows, bind, onBlank);
+
     /// <inheritdoc cref="SpreadsheetProjections.Record{TSpace, T}(LabelMap)"/>
     /// <typeparam name="T">What one record reads.</typeparam>
     /// <param name="labels">This file's captions — what a table's bind rung hands its record.</param>
