@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789847940591,
+  "lastUpdate": 1789863951800,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -1196,6 +1196,66 @@ window.BENCHMARK_DATA = {
             "value": 22707968.10267857,
             "unit": "ns",
             "range": "± 59814.84900374497"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "bd027f2136cee944da88c1eae17a06b14a05579d",
+          "message": "Merge feature/bind-from-row: Table<T> fills a member from the row - Column(member, row => ...)\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>",
+          "timestamp": "2026-09-19T19:49:16Z",
+          "tree_id": "88c877501aeddcefb436f136842b9904cda55a09",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/bd027f2136cee944da88c1eae17a06b14a05579d"
+        },
+        "date": 1789863950779,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Engine.VerticalFlow_ManyChildren",
+            "value": 6461626.988541666,
+            "unit": "ns",
+            "range": "± 17482.091646599503"
+          },
+          {
+            "name": "Unrect.Benchmarks.Engine.Flow_Nested",
+            "value": 3262270869.8,
+            "unit": "ns",
+            "range": "± 24904537.441815373"
+          },
+          {
+            "name": "Unrect.Benchmarks.Engine.Overlay_AnchoredChildren",
+            "value": 2316092620.3333335,
+            "unit": "ns",
+            "range": "± 1885276.296097648"
+          },
+          {
+            "name": "Unrect.Benchmarks.Engine.Repeat_SeparatedBlocks",
+            "value": 4896206.452083333,
+            "unit": "ns",
+            "range": "± 47646.98227922682"
+          },
+          {
+            "name": "Unrect.Benchmarks.Engine.Under_CaptionedSection",
+            "value": 267522327.1,
+            "unit": "ns",
+            "range": "± 368422.02113280166"
+          },
+          {
+            "name": "Unrect.Benchmarks.Engine.Range_ReadAllCells",
+            "value": 22512244.183333334,
+            "unit": "ns",
+            "range": "± 72990.21382853741"
           }
         ]
       }
