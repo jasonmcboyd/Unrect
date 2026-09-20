@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789863952632,
+  "lastUpdate": 1789863952918,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -6204,6 +6204,42 @@ window.BENCHMARK_DATA = {
             "value": 9365126489.833334,
             "unit": "ns",
             "range": "± 4762654.579264571"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "bd027f2136cee944da88c1eae17a06b14a05579d",
+          "message": "Merge feature/bind-from-row: Table<T> fills a member from the row - Column(member, row => ...)\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>",
+          "timestamp": "2026-09-19T19:49:16Z",
+          "tree_id": "88c877501aeddcefb436f136842b9904cda55a09",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/bd027f2136cee944da88c1eae17a06b14a05579d"
+        },
+        "date": 1789863952856,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.EndToEnd.Document_400Investors",
+            "value": 117070061.0923077,
+            "unit": "ns",
+            "range": "± 377127.5198632739"
+          },
+          {
+            "name": "Unrect.Benchmarks.EndToEnd.Document_4000Investors",
+            "value": 9523220806.692308,
+            "unit": "ns",
+            "range": "± 4243863.842889527"
           }
         ]
       }
