@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789863955425,
+  "lastUpdate": 1789863955708,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -16655,6 +16655,72 @@ window.BENCHMARK_DATA = {
             "name": "Unrect.Benchmarks.Retention.Eager_SpaceHeld_Unique",
             "value": 112000136,
             "range": "± 0 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · CONTROL — the same file and reader, every text distinct"
+          },
+          {
+            "name": "Unrect.Benchmarks.Retention.Eager_SpaceHeld_Shared",
+            "value": 58223048,
+            "range": "± 0 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · CONTROL/TARGET — the same values shared-string encoded, which the reader already dedups"
+          },
+          {
+            "name": "Unrect.Benchmarks.Retention.Eager_ResultHeld",
+            "value": 32319784,
+            "range": "± 0 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · Table over the eager grid; result held, grid released"
+          },
+          {
+            "name": "Unrect.Benchmarks.Retention.Streaming_ResultHeld",
+            "value": 32319784,
+            "range": "± 0 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · Table through a window; result held, workbook closed"
+          },
+          {
+            "name": "Unrect.Benchmarks.Retention.Streaming_ResultHeld_Unique",
+            "value": 86096872,
+            "range": "± 0 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · CONTROL — the same projection, every text distinct"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "bd027f2136cee944da88c1eae17a06b14a05579d",
+          "message": "Merge feature/bind-from-row: Table<T> fills a member from the row - Column(member, row => ...)\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>",
+          "timestamp": "2026-09-19T19:49:16Z",
+          "tree_id": "88c877501aeddcefb436f136842b9904cda55a09",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/bd027f2136cee944da88c1eae17a06b14a05579d"
+        },
+        "date": 1789863955648,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Retention.Eager_SpaceHeld",
+            "value": 58223048,
+            "range": "± 0 bytes",
+            "unit": "bytes",
+            "extra": "median of 3 · SpreadsheetSpace.Create over a real .xlsx (inline strings); grid held"
+          },
+          {
+            "name": "Unrect.Benchmarks.Retention.Eager_SpaceHeld_Unique",
+            "value": 112000136,
+            "range": "± 536 bytes",
             "unit": "bytes",
             "extra": "median of 3 · CONTROL — the same file and reader, every text distinct"
           },
