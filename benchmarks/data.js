@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789863954860,
+  "lastUpdate": 1789863955135,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -13969,6 +13969,55 @@ window.BENCHMARK_DATA = {
           {
             "name": "Unrect.Benchmarks.Diagnostics.ProjectionException_Render",
             "value": 20195597,
+            "unit": "bytes"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "bd027f2136cee944da88c1eae17a06b14a05579d",
+          "message": "Merge feature/bind-from-row: Table<T> fills a member from the row - Column(member, row => ...)\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>",
+          "timestamp": "2026-09-19T19:49:16Z",
+          "tree_id": "88c877501aeddcefb436f136842b9904cda55a09",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/bd027f2136cee944da88c1eae17a06b14a05579d"
+        },
+        "date": 1789863955075,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Diagnostics.Map_Plain",
+            "value": 35321786,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Diagnostics.Map_WithDiagnostics",
+            "value": 35322872,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Diagnostics.Choice_FirstAlternativeLoses",
+            "value": 1635272,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Diagnostics.Optional_AbsorbsFailure",
+            "value": 1976696,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Diagnostics.ProjectionException_Render",
+            "value": 20279485,
             "unit": "bytes"
           }
         ]
