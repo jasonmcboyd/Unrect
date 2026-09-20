@@ -167,27 +167,30 @@ All three hand `LabelMap` the same data, so nothing downstream can tell which pr
 
 First version: the standard header with level 1's roles, and level 3's seam. Level 2 last.
 
-## Open
+## Built (2026-09-20)
 
-1. ~~(a) or (b), above.~~ Working default (owner, 2026-09-19: "go with your table solutions"):
-   (a), with the public seam.
-2. `Table<T>`: flat members bind only to unique captions and never across a band; a band binds to
-   a nested member; `.Column(member, "From", "Id")` is the flat escape hatch, checked against
-   `headerRows` where it is written. (The owner's lean.) Should `headerRows` be INFERRED from the
-   type's nesting for `Table<T>`, so there is no number to mismatch?
-3. The exploratory `Table()` (a dictionary per row) over a banded header: refuse and point at
-   `Table(n, r => …)`, or nest the dictionaries by band?
-4. A literal map with paths: `LabelMap.Of(…)` needs a spelling for a band. Low priority.
-5. Merge capability in the first version, or the reconstruction alone first?
+The region fold and paths; the `params` indexers, `Has`, `Paths`, `Depth`; `Table<T>(headerRows,
+bind, onBlank)` with FLAT binding as the rule (a member answers to a caption, or to the banded
+column whose whole path run together is its name; one name, one column); `.Column(member, path)`
+with the depth check where it is written; the scaffolder's `headerRows`. The standard header is
+parsed inside the collectors that already read it — option (a).
 
-## Order of work
+## Speculative — deliberately not built
 
-1. `LabelRegion`, the fold, `Resolve`; rework the committed step (`8fa3927`, joined names) onto
-   it. `r["From Id"]` stops resolving; a test pins that.
-2. `LabelStep` and the `params` indexers on `LabelMap` and `TableRow`; `Has`, `Under`, `Paths`,
-   `Depth`; the failures that name the alternatives.
-3. The binder: `.Column(member, path)` with the depth check; `headerRows:` on `Table<T>` and
-   `LooseTable<T>`.
-4. Nested types through `Under`.
-5. The public header seam; then the merge capability and the backend's header.
-6. `UNR004`. Docs, a LINQPad example, the scaffolder.
+The owner, 2026-09-20: what ships out of alpha has to be lived with, so nothing here is promised.
+
+- **Nested types** (`Transfer(Party From, Party To)`). Rarer than the flat shape at the owner's
+  work. If it comes it is its OWN operation — `NestedTable<T>` beside a `Table<T>` that stays
+  flat — so the complexity stays confined to the thing that asked for it.
+- **Record blocks** — the owner's older idea: a label names a SUBSPACE rather than a cell, as wide
+  as the label, every block the same height; a band over its columns is one case of it.
+  `r.Block("Address")` (the plane), `r.Under("From")["Id"]` (the block as a labelled row, one
+  reader serving every band), `captions.Place("From", party)` (a projection over a label's span).
+  `LabelMap.Under` — the label half — exists, is tested, and is internal.
+- **The public custom-header seam** and its three levels (above). Waits for a real header the
+  standard reading gets wrong; the first one will say what the roles need to be.
+- **Recorded merges** as a backend capability overriding the convention.
+- **`UNR004`**: a literal path deeper than a literal `headerRows`, in the editor.
+- The exploratory `Table()` (a dictionary per row) over a banded header: today its keys are the
+  captions alone, so duplicates under different bands are refused as duplicates. Refuse outright
+  and point at `Table(n, r => …)`, or key by path? Unruled.
