@@ -90,18 +90,27 @@ namespace Unrect.Interactive
     /// <param name="labels">Whether the labels run along a row or down a column.</param>
     /// <param name="at">The 0-based row, or column, the labels are on; found when omitted.</param>
     /// <param name="samples">How many cells beside each label to type the member from.</param>
+    /// <param name="headerRows">
+    /// How many rows the header is: the captions, under any rows of bands. With bands a member is
+    /// named as <c>Table&lt;T&gt;(headerRows)</c> will match it — its band and caption run
+    /// together, <c>FromId</c> for the column at From, Id — and typed from the cells under the
+    /// whole header. Along a row only.
+    /// </param>
     /// <exception cref="ArgumentNullException"><paramref name="sheet"/> or <paramref name="typeName"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="typeName"/> is blank.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="at"/> or <paramref name="samples"/> is negative.</exception>
     /// <exception cref="OutOfBoundsException"><paramref name="at"/> is past the end of the sheet.</exception>
     /// <exception cref="InvalidOperationException">No labels were found and <paramref name="at"/> was not given.</exception>
-    public static string ScaffoldRecord<TSpace>(this TSpace sheet, string typeName, LabelsIn labels = LabelsIn.Row, int? at = null, int samples = 5)
+    public static string ScaffoldRecord<TSpace>(this TSpace sheet, string typeName, LabelsIn labels = LabelsIn.Row, int? at = null, int samples = 5, int headerRows = 1)
       where TSpace : class, ISheetCells
-      => Record(Read(Region.Of(sheet), typeName, labels, at, samples), typeName, labels);
+      => Record(Read(Region.Of(sheet), typeName, labels, at, samples, headerRows), typeName, labels, headerRows);
 
-    internal static string Record(List<Member> members, string typeName, LabelsIn labels)
+    internal static string Record(List<Member> members, string typeName, LabelsIn labels, int headerRows = 1)
     {
       var source = new StringBuilder();
+
+      if (headerRows > 1)
+        source.Append($"// binds with Table<{typeName}>({headerRows}): a member answers to a caption, or to its band and caption run together").Append(Environment.NewLine);
 
       foreach (var note in Notes(members, typeName, labels))
         source.Append("// ").Append(note).Append(Environment.NewLine);
@@ -139,23 +148,34 @@ namespace Unrect.Interactive
     /// <param name="labels">Whether the labels run along a row or down a column.</param>
     /// <param name="at">The 0-based row, or column, the labels are on; found when omitted.</param>
     /// <param name="samples">How many cells beside each label to type the member from.</param>
+    /// <param name="headerRows">
+    /// How many rows the header is: the captions, under any rows of bands. With bands a member is
+    /// named as <c>Table&lt;T&gt;(headerRows)</c> will match it — its band and caption run
+    /// together, <c>FromId</c> for the column at From, Id — and typed from the cells under the
+    /// whole header. Along a row only.
+    /// </param>
     /// <exception cref="ArgumentNullException"><paramref name="sheet"/> or <paramref name="typeName"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="typeName"/> is blank.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="at"/> or <paramref name="samples"/> is negative.</exception>
     /// <exception cref="OutOfBoundsException"><paramref name="at"/> is past the end of the sheet.</exception>
     /// <exception cref="InvalidOperationException">No labels were found and <paramref name="at"/> was not given.</exception>
-    public static string ScaffoldClass<TSpace>(this TSpace sheet, string typeName, LabelsIn labels = LabelsIn.Row, int? at = null, int samples = 5)
+    public static string ScaffoldClass<TSpace>(this TSpace sheet, string typeName, LabelsIn labels = LabelsIn.Row, int? at = null, int samples = 5, int headerRows = 1)
       where TSpace : class, ISheetCells
-      => Class(Read(Region.Of(sheet), typeName, labels, at, samples), typeName, labels);
+      => Class(Read(Region.Of(sheet), typeName, labels, at, samples, headerRows), typeName, labels, headerRows);
 
-    internal static string Class(List<Member> members, string typeName, LabelsIn labels)
+    internal static string Class(List<Member> members, string typeName, LabelsIn labels, int headerRows = 1)
     {
       var notes = members.ToDictionary(member => member.Name, _ => new List<string>());
 
       foreach (var (member, note) in MemberNotes(members, typeName, labels))
         notes[member].Add(note);
 
-      var source = new StringBuilder($"public sealed class {typeName}").Append(Environment.NewLine).Append('{');
+      var source = new StringBuilder();
+
+      if (headerRows > 1)
+        source.Append($"// binds with Table<{typeName}>({headerRows}): a member answers to a caption, or to its band and caption run together").Append(Environment.NewLine);
+
+      source.Append($"public sealed class {typeName}").Append(Environment.NewLine).Append('{');
 
       foreach (var member in members)
       {
@@ -176,8 +196,9 @@ namespace Unrect.Interactive
     /// <summary>One member of the scaffolded type: the label it came from, what it is called, and what its samples argued for.</summary>
     internal sealed class Member
     {
-      public Member(string label, string name, string type, int position)
+      public Member(string label, string name, string type, int position, IReadOnlyList<string>? path = null)
       {
+        Path = path ?? new[] { label };
         Label = label;
         Name = name;
         Type = type;
@@ -193,13 +214,25 @@ namespace Unrect.Interactive
       /// <summary>How far along the label line this member's label sits, counted from the region's edge.</summary>
       public int Position { get; }
 
-      /// <summary>Whether the binder would find this member's label from its name alone.</summary>
-      public bool Binds => CaptionComparer.Default.Equals(Name, Label);
+      /// <summary>The label's path through a banded header: its bands, then the label. One step where there are none.</summary>
+      public IReadOnlyList<string> Path { get; }
+
+      /// <summary>The path run together, which is what a flat member's name is matched against under bands.</summary>
+      public string RunTogether => string.Concat(Path);
+
+      /// <summary>Whether the binder would find this member's column from its name alone.</summary>
+      public bool Binds => CaptionComparer.Default.Equals(Name, Label) || (Path.Count > 1 && CaptionComparer.Default.Equals(Name, RunTogether));
     }
 
-    internal static List<Member> Read(Region region, string typeName, LabelsIn labels, int? at, int samples)
+    internal static List<Member> Read(Region region, string typeName, LabelsIn labels, int? at, int samples, int headerRows = 1, IReadOnlyList<IReadOnlyList<string>>? paths = null)
     {
       Name(typeName);
+
+      if (headerRows < 1)
+        throw new ArgumentOutOfRangeException(nameof(headerRows), headerRows, "A scaffold reads its names from a header, which is at least one row.");
+
+      if (headerRows > 1 && labels != LabelsIn.Row)
+        throw new ArgumentException("Rows of bands over the captions are read along a row; a header down a column has one line of labels.", nameof(headerRows));
 
       if (at is int given && given < 0)
         throw new ArgumentOutOfRangeException(nameof(at));
@@ -218,6 +251,35 @@ namespace Unrect.Interactive
       var labelLine = at ?? FindLabels(grid);
       var taken = new HashSet<string>(CaptionComparer.Default);
       var members = new List<Member>();
+
+      if (headerRows > 1)
+      {
+        if (labelLine + headerRows > grid.Lines)
+          throw new OutOfBoundsException();
+
+        // The header parse is the table's own, so what is scaffolded is what will bind: the paths a
+        // Table<T>(headerRows) would see, read from the same rows.
+        paths ??= ProjectionBuilders<ISheetCells>
+          .Down(region.Row + labelLine)
+          .Of(ProjectionBuilders<ISheetCells>.ColumnLabels(headerRows))
+          .Map(region.Sheet)
+          .Paths;
+
+        for (var position = 0; position < grid.Length && region.Column + position < paths.Count; position++)
+        {
+          var path = paths[region.Column + position];
+
+          if (path.Count == 0)
+            continue;
+
+          // Named as it will be matched: the band and the caption run together.
+          var name = Distinct(string.Concat(path.Select((step, index) => Identifier(step, members.Count).TrimStart(index == 0 ? '\0' : '_'))), taken);
+
+          members.Add(new Member(path[path.Count - 1], name, Type(grid, labelLine + headerRows - 1, position, samples), position, path));
+        }
+
+        return members;
+      }
 
       for (var position = 0; position < grid.Length; position++)
       {
@@ -472,7 +534,7 @@ namespace Unrect.Interactive
 
       foreach (var member in members)
       {
-        var twins = members.Where(other => CaptionComparer.Default.Equals(other.Label, member.Label)).ToList();
+        var twins = members.Where(other => CaptionComparer.Default.Equals(other.RunTogether, member.RunTogether)).ToList();
 
         if (twins.Count > 1)
         {
@@ -493,7 +555,7 @@ namespace Unrect.Interactive
         yield return (
           member.Name,
           labels == LabelsIn.Row
-            ? $"{Literal(member.Label)} does not bind to {member.Name} by name: .Column({parameter} => {parameter}.{member.Name}, {Literal(member.Label)})"
+            ? $"{Literal(member.Label)} does not bind to {member.Name} by name: .Column({parameter} => {parameter}.{member.Name}, {string.Join(", ", member.Path.Select(Literal))})"
             : $"{Literal(member.Label)} does not match {member.Name} by name");
       }
     }
