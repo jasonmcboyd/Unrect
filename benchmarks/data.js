@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789888953757,
+  "lastUpdate": 1789888954025,
   "repoUrl": "https://github.com/jasonmcboyd/Unrect",
   "entries": {
     "Engine Benchmarks": [
@@ -16705,6 +16705,55 @@ window.BENCHMARK_DATA = {
           {
             "name": "Unrect.Benchmarks.Streaming.Band_Streamed",
             "value": 28557523,
+            "unit": "bytes"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "committer": {
+            "email": "jason.boyd.ce@gmail.com",
+            "name": "Jason Boyd",
+            "username": "jasonmcboyd"
+          },
+          "distinct": true,
+          "id": "96b946d5920955eb81be3eab46697a3e4639e2e4",
+          "message": "Merge feature/header-bands: headers of several rows, columns addressed by path, flat binding over bands\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01UNe2iWN7QtdKfZXqYPymGt",
+          "timestamp": "2026-09-20T03:17:51Z",
+          "tree_id": "33ccb96a2f1d1cb7795dde522c6c586ee8ce479a",
+          "url": "https://github.com/jasonmcboyd/Unrect/commit/96b946d5920955eb81be3eab46697a3e4639e2e4"
+        },
+        "date": 1789888953965,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Unrect.Benchmarks.Streaming.Monotone_Eager",
+            "value": 2972537744,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Monotone_Streamed",
+            "value": 3178732400,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Monotone_SecondPass",
+            "value": 6347491072,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Band_Eager",
+            "value": 3147687,
+            "unit": "bytes"
+          },
+          {
+            "name": "Unrect.Benchmarks.Streaming.Band_Streamed",
+            "value": 28557495,
             "unit": "bytes"
           }
         ]
