@@ -461,7 +461,7 @@ namespace Unrect.Tests.Projections
     private static IProjectionDefinition<ISpreadsheetSpace, SourcedAllocation> SourcedRow(LabelMap captions)
       => ProjectionBuilders<ISpreadsheetSpace>.Overlay(o => new SourcedAllocation(
         Account: o.Next(ProjectionBuilders<ISpreadsheetSpace>.Right(captions["Account"])
-          .Of(SpreadsheetProjections.Text<ISpreadsheetSpace>())),
+          .Of(ProjectionBuilders<ISpreadsheetSpace>.Text())),
         Formula: o.Next(ProjectionBuilders<ISpreadsheetSpace>.Right(captions["Total"])
           .Of(SpreadsheetProjections.Formula<ISpreadsheetSpace>()))));
 

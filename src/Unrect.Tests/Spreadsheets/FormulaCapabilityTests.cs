@@ -175,7 +175,7 @@ return (
       // A cast this library owes itself, failing: that says the reader is wrong, never that a
       // section is missing, so it arrives as a fault and NO tolerance boundary absorbs it.
       var plain = ProjectionBuilders<ISheetCells>.On(SpreadsheetProjections.RowWithFormula().Landmark)
-        .Of(SpreadsheetProjections.Text<ISheetCells>());
+        .Of(ProjectionBuilders<ISheetCells>.Text());
 
       ISheetCells sheet = SheetGrid.Of(new object?[,] { { "a" } });
 

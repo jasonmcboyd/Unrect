@@ -121,7 +121,7 @@ namespace Unrect.Tests
     /// <c>v.Next(TextCell())</c> is named exactly as the inline lambda it replaced was: by kind and
     /// ordinal.
     /// </summary>
-    public static IProjectionDefinition<ISheetCells, string> TextCell() => SpreadsheetProjections.Text<ISheetCells>();
+    public static IProjectionDefinition<ISheetCells, string> TextCell() => ProjectionBuilders<ISheetCells>.Text();
 
     /// <summary>
     /// The problem text of a failure, without the subject the message template puts in front of it.

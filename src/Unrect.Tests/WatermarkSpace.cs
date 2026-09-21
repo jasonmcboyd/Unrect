@@ -1,7 +1,6 @@
 using System;
 
 using Unrect.Core;
-using Unrect.Projections;
 using Unrect.Spreadsheets;
 
 namespace Unrect.Tests
@@ -42,14 +41,11 @@ namespace Unrect.Tests
     public bool IsBlank(int column, int row) => _inner.IsBlank(column, Read(row));
 
     /// <inheritdoc/>
-    public bool IsText(int column, int row) => _inner.IsText(column, Read(row));
-
-    /// <inheritdoc/>
     public string? AsText(int column, int row) => _inner.AsText(column, Read(row));
 
     /// <inheritdoc/>
-    public bool TextAt(int column, int row, out string value, out CellProblem? problem)
-      => _inner.TextAt(column, Read(row), out value, out problem);
+    public bool TryGetTextAt(int column, int row, out string value, out CellProblem? problem)
+      => _inner.TryGetTextAt(column, Read(row), out value, out problem);
 
     /// <inheritdoc/>
     public bool DecimalAt(int column, int row, out decimal value, out CellProblem? problem)

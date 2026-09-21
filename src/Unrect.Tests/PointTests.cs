@@ -184,7 +184,12 @@ namespace Unrect.Tests
 
       public bool IsBlank(int column, int row) => true;
 
-      public bool IsText(int column, int row) => false;
+      public bool TryGetTextAt(int column, int row, out string value, out CellProblem? problem)
+      {
+        value = null!;
+        problem = null;
+        return false;
+      }
 
       public string? AsText(int column, int row) => null;
     }

@@ -37,12 +37,6 @@ namespace Unrect.Spreadsheets
     // any file whose space is a sheet. A file that names its space once imports the closed twins on
     // SpreadsheetProjectionBuilders instead.
 
-    /// <summary>One cell holding text.</summary>
-    /// <typeparam name="TSpace">The sheet the leaf is declared over.</typeparam>
-    public static IProjectionDefinition<TSpace, string> Text<TSpace>()
-      where TSpace : class, ISheetCells
-      => Kinded<TSpace, string>("Text", (Point<TSpace> cell, out string v, out CellProblem? p) => cell.Space.TextAt(cell.Column, cell.Row, out v, out p));
-
     /// <summary>
     /// One cell holding a number, read as a <see cref="decimal"/> — the accessor that keeps a
     /// spreadsheet's exact decimal where the file carried one.

@@ -71,11 +71,20 @@ namespace Unrect
     public bool IsBlank(int column, int row) => _isBlank(ValueAt(column, row));
 
     /// <inheritdoc/>
-    public bool IsText(int column, int row)
+    public bool TryGetTextAt(int column, int row, out string value, out CellProblem? problem)
     {
-      var value = ValueAt(column, row);
+      var held = ValueAt(column, row);
 
-      return !_isBlank(value) && _isText(value);
+      problem = null;
+
+      if (_isBlank(held) || !_isText(held))
+      {
+        value = null!;
+        return false;
+      }
+
+      value = _asText(held);
+      return true;
     }
 
     /// <inheritdoc/>

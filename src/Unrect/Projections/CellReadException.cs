@@ -5,38 +5,6 @@ using Unrect.Core;
 namespace Unrect.Projections
 {
   /// <summary>
-  /// A sentence about a cell, with the cell's address left as a hole to be filled in. A backend that
-  /// reads a cell knows what went wrong and where the cell is in its own space; only the projection
-  /// layer knows what to call that place, so the address arrives last.
-  /// <para>
-  /// It is two pieces of text and nothing else, because a refused read is not always a failure: a
-  /// predicate that asks a million cells whether they hold a number refuses most of them, and a
-  /// reason that cost an allocation to state would be paid for a million times and read never. A
-  /// backend keeps the pieces it says often and hands the same ones back.
-  /// </para>
-  /// </summary>
-  public readonly struct CellProblem
-  {
-    private readonly string? _before;
-    private readonly string? _after;
-
-    /// <summary>
-    /// The sentence <paramref name="before"/>, the cell's address, <paramref name="after"/>.
-    /// </summary>
-    /// <param name="before">Everything the sentence says before the address.</param>
-    /// <param name="after">Everything it says after.</param>
-    public CellProblem(string before, string after)
-    {
-      _before = before;
-      _after = after;
-    }
-
-    /// <summary>The whole sentence, ready to be read by someone holding a spreadsheet.</summary>
-    /// <param name="at">The cell's address, as the projection layer renders it.</param>
-    public string Render(string at) => _before + at + _after;
-  }
-
-  /// <summary>
   /// A read of one cell that disagreed with what the declaration asked for — the wrong kind, a
   /// number that will not fit. Thrown by whatever read the cell, caught by the projection that
   /// called it, and rethrown as a <see cref="ProjectionException"/> carrying the declaration path

@@ -233,7 +233,7 @@ namespace Unrect.Tests.Projections
     /// <summary>A hoisted demanding helper: its space says what it requires, and it says so once.</summary>
     private static IProjectionDefinition<ISpreadsheetSpace, SourcedAllocation> SourcedRow()
       => ProjectionBuilders<ISpreadsheetSpace>.Overlay(o => new SourcedAllocation(
-        Account: o.Next(SpreadsheetProjections.Text<ISpreadsheetSpace>()),
+        Account: o.Next(ProjectionBuilders<ISpreadsheetSpace>.Text()),
         Formula: o.Next(ProjectionBuilders<ISpreadsheetSpace>.Right(2)
           .Of(SpreadsheetProjections.Formula<ISpreadsheetSpace>()))));
 

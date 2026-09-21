@@ -42,9 +42,6 @@ namespace Unrect.Spreadsheets
   public static class SheetProjectionBuilders<TSpace>
     where TSpace : class, ISheetCells
   {
-    /// <inheritdoc cref="SpreadsheetProjections.Text{TSpace}()"/>
-    public static IProjectionDefinition<TSpace, string> Text() => SpreadsheetProjections.Text<TSpace>();
-
     /// <inheritdoc cref="SpreadsheetProjections.Decimal{TSpace}()"/>
     public static IProjectionDefinition<TSpace, decimal> Decimal() => SpreadsheetProjections.Decimal<TSpace>();
 

@@ -60,7 +60,7 @@ namespace Unrect.Spreadsheets
 
       if (type == typeof(string))
         return SpreadsheetProjections.Kinded<TSpace, object?>(
-          "Text", (Point<TSpace> cell, out object? v, out CellProblem? p) => Box(cell.Space.TextAt(cell.Column, cell.Row, out var value, out p), value, out v));
+          "Text", (Point<TSpace> cell, out object? v, out CellProblem? p) => Box(cell.Space.TryGetTextAt(cell.Column, cell.Row, out var value, out p), value, out v));
 
       if (type == typeof(decimal))
         return SpreadsheetProjections.Kinded<TSpace, object?>(

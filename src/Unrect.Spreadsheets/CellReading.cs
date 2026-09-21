@@ -1,7 +1,7 @@
 using System;
 using System.Globalization;
 
-using Unrect.Projections;
+using Unrect.Core;
 
 namespace Unrect.Spreadsheets
 {

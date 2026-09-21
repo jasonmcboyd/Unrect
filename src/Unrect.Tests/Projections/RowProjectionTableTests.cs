@@ -408,7 +408,7 @@ namespace Unrect.Tests.Projections
       IProjectionDefinition<ISpreadsheetSpace, IReadOnlyList<SourcedRow>> table = ProjectionBuilders<ISpreadsheetSpace>.Table(
         headerRows: 1,
         eachRow: ProjectionBuilders<ISpreadsheetSpace>.Overlay(o => new SourcedRow(
-          Account: o.Next(SpreadsheetProjections.Text<ISpreadsheetSpace>()),
+          Account: o.Next(ProjectionBuilders<ISpreadsheetSpace>.Text()),
           Formula: o.Next(ProjectionBuilders<ISpreadsheetSpace>.Right(2)
             .Of(SpreadsheetProjections.Formula<ISpreadsheetSpace>())))));
 

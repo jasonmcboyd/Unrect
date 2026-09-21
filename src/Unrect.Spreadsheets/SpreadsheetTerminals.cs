@@ -16,13 +16,6 @@ namespace Unrect.Spreadsheets
   /// </summary>
   public static class SpreadsheetTerminals
   {
-    /// <inheritdoc cref="SpreadsheetProjections.Text{TSpace}()"/>
-    /// <typeparam name="TSpace">The sheet the pipeline is declared over.</typeparam>
-    /// <param name="stage">The pipeline this leaf closes.</param>
-    public static IProjectionDefinition<TSpace, string> Text<TSpace>(this PlacementStage<TSpace> stage)
-      where TSpace : class, ISheetCells
-      => Placed(stage).Of(SpreadsheetProjections.Text<TSpace>());
-
     /// <inheritdoc cref="SpreadsheetProjections.Decimal{TSpace}()"/>
     /// <typeparam name="TSpace">The sheet the pipeline is declared over.</typeparam>
     /// <param name="stage">The pipeline this leaf closes.</param>

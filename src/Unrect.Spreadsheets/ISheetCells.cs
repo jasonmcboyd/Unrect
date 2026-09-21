@@ -1,7 +1,6 @@
 using System;
 
 using Unrect.Core;
-using Unrect.Projections;
 
 namespace Unrect.Spreadsheets
 {
@@ -25,42 +24,33 @@ namespace Unrect.Spreadsheets
   /// </summary>
   public interface ISheetCells : ISpace
   {
-    /// <summary>The cell's text, if it holds text.</summary>
-    /// <param name="column">The 0-based column.</param>
-    /// <param name="row">The 0-based row.</param>
-    /// <param name="value">What the cell holds, when the read succeeded.</param>
-    /// <param name="problem">Why it did not, when it did not.</param>
-    /// <returns>Whether the cell could be read as text.</returns>
-    /// <exception cref="OutOfBoundsException">The coordinate lies outside <see cref="ISpace.Area"/>.</exception>
-    bool TextAt(int column, int row, out string value, out CellProblem? problem);
-
     /// <summary>
     /// The cell's number as a <see cref="decimal"/> — the accessor that keeps a spreadsheet's exact
     /// decimal where the file carried one.
     /// </summary>
-    /// <inheritdoc cref="TextAt"/>
+    /// <inheritdoc cref="ISpace.TryGetTextAt"/>
     bool DecimalAt(int column, int row, out decimal value, out CellProblem? problem);
 
     /// <summary>
     /// The cell's number as a whole 32-bit one. A number that is really there but is fractional or
     /// out of range fails as a conversion, not as a kind — the cell is a number either way.
     /// </summary>
-    /// <inheritdoc cref="TextAt"/>
+    /// <inheritdoc cref="ISpace.TryGetTextAt"/>
     bool IntegerAt(int column, int row, out int value, out CellProblem? problem);
 
     /// <summary>The cell's number as a <see cref="double"/>.</summary>
-    /// <inheritdoc cref="TextAt"/>
+    /// <inheritdoc cref="ISpace.TryGetTextAt"/>
     bool DoubleAt(int column, int row, out double value, out CellProblem? problem);
 
     /// <summary>
     /// The cell's date or time, verbatim. The time of day is kept: truncating is the caller's, not
     /// the sheet's.
     /// </summary>
-    /// <inheritdoc cref="TextAt"/>
+    /// <inheritdoc cref="ISpace.TryGetTextAt"/>
     bool DateTimeAt(int column, int row, out DateTime value, out CellProblem? problem);
 
     /// <summary>The cell's boolean.</summary>
-    /// <inheritdoc cref="TextAt"/>
+    /// <inheritdoc cref="ISpace.TryGetTextAt"/>
     bool BooleanAt(int column, int row, out bool value, out CellProblem? problem);
 
     /// <summary>

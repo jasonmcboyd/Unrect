@@ -366,11 +366,11 @@ namespace Unrect.Interactive
 
       public bool IsBlank(int line, int position) => _sheet.IsBlank(Column(line, position), Row(line, position));
 
-      public bool IsText(int line, int position) => _sheet.IsText(Column(line, position), Row(line, position));
+      public bool IsText(int line, int position) => _sheet.TryGetTextAt(Column(line, position), Row(line, position), out _, out _);
 
       public bool IsError(int line, int position) => _sheet.IsErrorAt(Column(line, position), Row(line, position));
 
-      public bool Text(int line, int position, out string text) => _sheet.TextAt(Column(line, position), Row(line, position), out text, out _);
+      public bool Text(int line, int position, out string text) => _sheet.TryGetTextAt(Column(line, position), Row(line, position), out text, out _);
 
       /// <summary>The type one cell reads as, narrowest first — a whole number is an <c>int</c> until another sample says otherwise.</summary>
       public string Reads(int line, int position)

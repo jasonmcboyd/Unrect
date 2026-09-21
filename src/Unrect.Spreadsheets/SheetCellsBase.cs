@@ -1,7 +1,6 @@
 using System;
 
 using Unrect.Core;
-using Unrect.Projections;
 
 namespace Unrect.Spreadsheets
 {
@@ -41,13 +40,12 @@ namespace Unrect.Spreadsheets
     public bool IsBlank(int column, int row) => CellAt(column, row).IsBlank;
 
     /// <inheritdoc/>
-    public bool IsText(int column, int row) => CellAt(column, row).IsText;
 
     /// <inheritdoc/>
     public string? AsText(int column, int row) => CellAt(column, row).AsText();
 
     /// <inheritdoc/>
-    public bool TextAt(int column, int row, out string value, out CellProblem? problem)
+    public bool TryGetTextAt(int column, int row, out string value, out CellProblem? problem)
       => CellReading.Text(CellAt(column, row), out value, out problem);
 
     /// <inheritdoc/>

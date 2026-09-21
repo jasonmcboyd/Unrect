@@ -139,7 +139,7 @@ namespace Unrect.Tests.Spreadsheets
     {
       // Reached the only way it can be: through Landmark, the plain lift, where the typed layer has
       // handed the demand off and the mismatch survives to run time.
-      var cannotLook = PlainLift().Of(SpreadsheetProjections.Text<ISheetCells>());
+      var cannotLook = PlainLift().Of(ProjectionBuilders<ISheetCells>.Text());
 
       var failure = Assert.Throws<ProjectionException>(() => cannotLook.Map(Plain()));
 
@@ -152,7 +152,7 @@ namespace Unrect.Tests.Spreadsheets
       Assert.Throws<ProjectionException>(() => cannotLook.Optional().Map(Plain()));
       Assert.Throws<ProjectionException>(() => cannotLook.Else("fallback").Map(Plain()));
       Assert.Throws<ProjectionException>(
-        () => ProjectionBuilders<ISheetCells>.Choice(cannotLook, SpreadsheetProjections.Text<ISheetCells>()).Map(Plain()));
+        () => ProjectionBuilders<ISheetCells>.Choice(cannotLook, ProjectionBuilders<ISheetCells>.Text()).Map(Plain()));
     }
 
     [Fact]
@@ -165,7 +165,7 @@ namespace Unrect.Tests.Spreadsheets
         .UntilColumn(SpreadsheetProjections.ColumnWithFormula().Landmark)
         .Of(ProjectionBuilders<ISheetCells>.HorizontalFlow(h =>
         {
-          var spreadsheetProjections = h.Next(SpreadsheetProjections.Text<ISheetCells>());
+          var spreadsheetProjections = h.Next(ProjectionBuilders<ISheetCells>.Text());
 
           return spreadsheetProjections;
         }))

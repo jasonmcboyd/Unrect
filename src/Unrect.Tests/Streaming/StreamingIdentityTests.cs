@@ -396,7 +396,7 @@ namespace Unrect.Tests.Streaming
 
       return string.Join(
         " | ",
-        Of<string>((c, r) => (space.TextAt(c, r, out var v, out var p), v, p)),
+        Of<string>((c, r) => (space.TryGetTextAt(c, r, out var v, out var p), v, p)),
         Of<decimal>((c, r) => (space.DecimalAt(c, r, out var v, out var p), v, p)),
         Of<int>((c, r) => (space.IntegerAt(c, r, out var v, out var p), v, p)),
         Of<double>((c, r) => (space.DoubleAt(c, r, out var v, out var p), v, p)),
