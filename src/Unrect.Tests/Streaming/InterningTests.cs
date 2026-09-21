@@ -135,7 +135,7 @@ namespace Unrect.Tests.Streaming
         Assert.Equal(value, table.Share(value));
       }
 
-      Assert.Equal(12.34m, table.Share(Cell.Of(12.34m)).GetDecimal());
+      Assert.Equal("12.34", table.Share(Cell.Of(12.34m)).AsText());
 
       var statistics = table.Snapshot();
 

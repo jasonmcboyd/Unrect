@@ -79,13 +79,13 @@ namespace Unrect.Spreadsheets
     /// <summary>A <see cref="CellKind.Text"/> cell, or <see cref="Blank"/> when <paramref name="value"/> is null.</summary>
     public static Cell Of(string? value) => value is null ? Blank : new Cell(value);
 
-    /// <summary>A <see cref="CellKind.Number"/> cell that remembers it arrived as an exact integer (see <see cref="GetDecimal"/>).</summary>
+    /// <summary>A <see cref="CellKind.Number"/> cell that remembers it arrived as an exact integer, and says so: <see cref="AsText"/> renders it without a double's noise.</summary>
     public static Cell Of(int value) => new Cell(value, value);
 
-    /// <summary>A <see cref="CellKind.Number"/> cell that remembers it arrived as an exact integer (see <see cref="GetDecimal"/>).</summary>
+    /// <summary>A <see cref="CellKind.Number"/> cell that remembers it arrived as an exact integer, and says so: <see cref="AsText"/> renders it without a double's noise.</summary>
     public static Cell Of(long value) => new Cell(value, value);
 
-    /// <summary>A <see cref="CellKind.Number"/> cell with no exact decimal behind it — <see cref="GetDecimal"/> falls back to converting the double.</summary>
+    /// <summary>A <see cref="CellKind.Number"/> cell with no exact decimal behind it.</summary>
     public static Cell Of(double value) => new Cell(value, null);
 
     /// <summary>A <see cref="CellKind.Number"/> cell that remembers its exact decimal alongside the double it also stores.</summary>
@@ -151,49 +151,6 @@ namespace Unrect.Spreadsheets
 
     /// <summary>The cell's number as a <see cref="double"/>; throws when <see cref="Kind"/> is not <see cref="CellKind.Number"/> (see <see cref="TryGetDouble"/>).</summary>
     internal double GetDouble() => TryGetDouble() ?? throw WrongKind(CellKind.Number);
-
-    /// <summary>
-    /// The cell's number as a <see cref="decimal"/>: the exact value it was constructed with
-    /// (<see cref="Of(decimal)"/>/<see cref="Of(int)"/>/<see cref="Of(long)"/>), or the double
-    /// converted when that fits and no exact value was kept; null when it does not fit, or when
-    /// <see cref="Kind"/> is not <see cref="CellKind.Number"/>.
-    /// </summary>
-    internal decimal? TryGetDecimal()
-    {
-      if (Kind != CellKind.Number)
-        return null;
-
-      return ExactNumber ?? (IsRepresentableAsDecimal(Number) ? (decimal)Number : (decimal?)null);
-    }
-
-    /// <summary>The cell's number as a <see cref="decimal"/>; throws when it does not fit or <see cref="Kind"/> is not <see cref="CellKind.Number"/> (see <see cref="TryGetDecimal"/>).</summary>
-    internal decimal GetDecimal() =>
-      TryGetDecimal()
-      ?? throw new InvalidOperationException(
-        Kind == CellKind.Number
-        ? $"Cell value {Number} is not representable as a {nameof(Decimal)}."
-        : WrongKindMessage(CellKind.Number));
-
-    /// <summary>The cell's number as an <see cref="int"/>, when it is a whole number in range; null otherwise, including when <see cref="Kind"/> is not <see cref="CellKind.Number"/>.</summary>
-    internal int? TryGetInt()
-    {
-      if (Kind != CellKind.Number)
-        return null;
-
-      var number = Number;
-
-      return number >= int.MinValue && number <= int.MaxValue && Math.Floor(number) == number
-        ? (int)number
-        : (int?)null;
-    }
-
-    /// <summary>The cell's number as an <see cref="int"/>; throws when it is not a whole number in range or <see cref="Kind"/> is not <see cref="CellKind.Number"/> (see <see cref="TryGetInt"/>).</summary>
-    internal int GetInt() =>
-      TryGetInt()
-      ?? throw new InvalidOperationException(
-        Kind == CellKind.Number
-        ? $"Cell value {Number} is not an integer within the range of {nameof(Int32)}."
-        : WrongKindMessage(CellKind.Number));
 
     /// <summary>The cell's date and time, or null when <see cref="Kind"/> is not <see cref="CellKind.Temporal"/>.</summary>
     internal DateTime? TryGetDateTime() => Kind == CellKind.Temporal ? Temporal : (DateTime?)null;
@@ -267,10 +224,9 @@ namespace Unrect.Spreadsheets
     /// <summary>
     /// Two cell values are equal when they share a kind and an equal payload. Numbers compare on
     /// their double representation, so <c>Of(1m)</c> equals <c>Of(1.0)</c> even though
-    /// <see cref="GetDecimal"/> may report a different precision for each. Number comparison uses
+    /// <see cref="AsText"/> may render a different precision for each. Number comparison uses
     /// <see cref="double.Equals(double)"/>, so NaN equals NaN — equality is reflexive and
-    /// hash-consistent, deviating from IEEE <c>==</c> on purpose. Equality is for matching
-    /// cells; <see cref="GetDecimal"/> is for extracting values.
+    /// hash-consistent, deviating from IEEE <c>==</c> on purpose.
     /// <para>
     /// Public, and the interface with it, for one concrete reason: without
     /// <see cref="IEquatable{T}"/> every comparison through
@@ -349,11 +305,6 @@ namespace Unrect.Spreadsheets
         CellError.External => "#EXTERNAL!",
         _ => error.ToString()
       };
-
-    // Doubles at or beyond decimal's bounds (and NaN / infinity) have no decimal representation.
-    // The bounds are compared strictly because decimal.MaxValue rounds up when widened to double.
-    private static bool IsRepresentableAsDecimal(double value)
-      => value > (double)decimal.MinValue && value < (double)decimal.MaxValue;
 
     private InvalidOperationException WrongKind(CellKind expected) => new InvalidOperationException(WrongKindMessage(expected));
 

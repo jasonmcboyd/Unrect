@@ -121,21 +121,6 @@ namespace Unrect.Tests
     }
 
     [Fact]
-    public void TryGetDecimal_OnNonNumber_ReturnsNull()
-    {
-      Assert.Null(Cell.Of("1").TryGetDecimal());
-      Assert.Null(Cell.Blank.TryGetDecimal());
-    }
-
-    [Fact]
-    public void TryGetInt_OnNonNumber_ReturnsNull()
-    {
-      Assert.Null(Cell.Of("1").TryGetInt());
-      Assert.Null(Cell.Blank.TryGetInt());
-      Assert.Null(Cell.Of(true).TryGetInt());
-    }
-
-    [Fact]
     public void TryGetDateTime_OnNonTemporal_ReturnsNull()
     {
       Assert.Null(Cell.Of(45000).TryGetDateTime());
@@ -164,20 +149,6 @@ namespace Unrect.Tests
     {
       Assert.Throws<InvalidOperationException>(() => Cell.Of("1").GetDouble());
       Assert.Throws<InvalidOperationException>(() => Cell.Blank.GetDouble());
-    }
-
-    [Fact]
-    public void GetDecimal_OnNonNumber_Throws()
-    {
-      Assert.Throws<InvalidOperationException>(() => Cell.Of("1").GetDecimal());
-      Assert.Throws<InvalidOperationException>(() => Cell.Blank.GetDecimal());
-    }
-
-    [Fact]
-    public void GetInt_OnNonNumber_Throws()
-    {
-      Assert.Throws<InvalidOperationException>(() => Cell.Of("1").GetInt());
-      Assert.Throws<InvalidOperationException>(() => Cell.Blank.GetInt());
     }
 
     [Fact]
@@ -255,8 +226,7 @@ namespace Unrect.Tests
     [Fact]
     public void Of_Int_RetainsAnExactDecimal()
     {
-      Assert.Equal(5m, Cell.Of(5).GetDecimal());
-      Assert.Equal(5, Cell.Of(5).GetInt());
+      Assert.Equal("5", Cell.Of(5).AsText());
       Assert.Equal(5.0, Cell.Of(5).GetDouble());
     }
 
@@ -265,14 +235,15 @@ namespace Unrect.Tests
     {
       const long value = 9_007_199_254_740_993L; // 2^53 + 1: not representable exactly as a double
 
-      Assert.Equal(9_007_199_254_740_993m, Cell.Of(value).GetDecimal());
+      Assert.Equal("9007199254740993", Cell.Of(value).AsText());
     }
 
     [Fact]
     public void Of_Decimal_RoundTripsExactly()
     {
-      // 0.1 has no exact binary representation; going through the double would lose it.
-      Assert.Equal(0.1m, Cell.Of(0.1m).GetDecimal());
+      // 0.1 has no exact binary representation, and the scale a decimal arrived with is kept.
+      Assert.Equal("0.1", Cell.Of(0.1m).AsText());
+      Assert.Equal("1.50", Cell.Of(1.50m).AsText());
     }
 
     [Fact]
@@ -280,40 +251,10 @@ namespace Unrect.Tests
     {
       const decimal value = 1234567890123456789.01234m;
 
-      Assert.Equal(value, Cell.Of(value).GetDecimal());
-    }
-
-    [Fact]
-    public void GetDecimal_OnDoubleSourcedNumber_ConvertsFromTheDouble()
-    {
-      // No exact decimal was supplied, so the double is converted on demand.
-      Assert.Equal(99999.99m, Cell.Of(99999.99).GetDecimal());
-      Assert.Equal(-82750.25m, Cell.Of(-82750.25).GetDecimal());
+      Assert.Equal("1234567890123456789.01234", Cell.Of(value).AsText());
     }
 
     // --- Numbers with no decimal representation -------------------------------------------------
-
-    [Theory]
-    [InlineData(double.NaN)]
-    [InlineData(double.PositiveInfinity)]
-    [InlineData(double.NegativeInfinity)]
-    [InlineData(1e300)]
-    [InlineData(-1e300)]
-    public void TryGetDecimal_OnUnrepresentableNumber_ReturnsNullWithoutThrowing(double value)
-    {
-      Assert.Null(Cell.Of(value).TryGetDecimal());
-    }
-
-    [Theory]
-    [InlineData(double.NaN)]
-    [InlineData(double.PositiveInfinity)]
-    [InlineData(double.NegativeInfinity)]
-    [InlineData(1e300)]
-    [InlineData(-1e300)]
-    public void GetDecimal_OnUnrepresentableNumber_Throws(double value)
-    {
-      Assert.Throws<InvalidOperationException>(() => Cell.Of(value).GetDecimal());
-    }
 
     [Fact]
     public void TryGetDouble_OnUnrepresentableNumber_StillReturnsTheDouble()
@@ -325,54 +266,12 @@ namespace Unrect.Tests
 
     // --- Integral projection --------------------------------------------------------------------
 
-    [Theory]
-    [InlineData(0.0, 0)]
-    [InlineData(3.0, 3)]
-    [InlineData(-3.0, -3)]
-    [InlineData(2147483647.0, int.MaxValue)]
-    [InlineData(-2147483648.0, int.MinValue)]
-    public void TryGetInt_OnIntegralInRangeNumber_ReturnsTheValue(double value, int expected)
-    {
-      Assert.Equal(expected, Cell.Of(value).TryGetInt());
-    }
-
-    [Theory]
-    [InlineData(3.5)]
-    [InlineData(-0.5)]
-    [InlineData(double.NaN)]
-    [InlineData(double.PositiveInfinity)]
-    public void TryGetInt_OnNonIntegralNumber_ReturnsNull(double value)
-    {
-      Assert.Null(Cell.Of(value).TryGetInt());
-    }
-
-    [Theory]
-    [InlineData(2147483648.0)]
-    [InlineData(-2147483649.0)]
-    [InlineData(1e300)]
-    public void TryGetInt_OnOutOfRangeNumber_ReturnsNull(double value)
-    {
-      Assert.Null(Cell.Of(value).TryGetInt());
-    }
-
-    [Fact]
-    public void GetInt_OnNonIntegralNumber_Throws()
-    {
-      Assert.Throws<InvalidOperationException>(() => Cell.Of(3.5).GetInt());
-    }
-
-    [Fact]
-    public void GetInt_OnOutOfRangeNumber_Throws()
-    {
-      Assert.Throws<InvalidOperationException>(() => Cell.Of(long.MaxValue).GetInt());
-    }
-
     // --- Equality -------------------------------------------------------------------------------
 
     [Fact]
     public void Equals_ComparesNumbersOnTheirDoubleRepresentation()
     {
-      // Documented behaviour: equality is for matching cells, GetDecimal is for extracting values.
+      // Documented behaviour: equality is on the double, whatever precision each cell says.
       Assert.Equal(Cell.Of(1.0), Cell.Of(1m));
       Assert.Equal(Cell.Of(1L), Cell.Of(1));
     }
@@ -592,8 +491,6 @@ namespace Unrect.Tests
 
       Assert.Null(value.TryGetString());
       Assert.Null(value.TryGetDouble());
-      Assert.Null(value.TryGetDecimal());
-      Assert.Null(value.TryGetInt());
       Assert.Null(value.TryGetDateTime());
       Assert.Null(value.TryGetBoolean());
     }
@@ -611,12 +508,6 @@ namespace Unrect.Tests
       Assert.Equal(
         "Cell value is Error (#VALUE!); expected Text.",
         Assert.Throws<InvalidOperationException>(() => value.GetString()).Message);
-      Assert.Equal(
-        "Cell value is Error (#VALUE!); expected Number.",
-        Assert.Throws<InvalidOperationException>(() => value.GetDecimal()).Message);
-      Assert.Equal(
-        "Cell value is Error (#VALUE!); expected Number.",
-        Assert.Throws<InvalidOperationException>(() => value.GetInt()).Message);
       Assert.Equal(
         "Cell value is Error (#VALUE!); expected Temporal.",
         Assert.Throws<InvalidOperationException>(() => value.GetDateTime()).Message);
@@ -781,7 +672,7 @@ namespace Unrect.Tests
 
       Assert.Equal(
         "Cell value is Error (Err:501); expected Number.",
-        Assert.Throws<InvalidOperationException>(() => value.GetDecimal()).Message);
+        Assert.Throws<InvalidOperationException>(() => value.GetDouble()).Message);
       Assert.Equal(
         "Cell value is Error (Err:501); expected Text.",
         Assert.Throws<InvalidOperationException>(() => value.GetString()).Message);
