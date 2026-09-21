@@ -44,7 +44,7 @@ namespace Unrect.Spreadsheets
     /// <typeparam name="TSpace">The sheet the leaf is declared over.</typeparam>
     public static IProjectionDefinition<TSpace, decimal> Decimal<TSpace>()
       where TSpace : class, ISheetCells
-      => Kinded<TSpace, decimal>("Decimal", (Point<TSpace> cell, out decimal v, out CellProblem? p) => cell.Space.DecimalAt(cell.Column, cell.Row, out v, out p));
+      => Kinded<TSpace, decimal>("Decimal", (Point<TSpace> cell, out decimal v, out CellProblem? p) => CellReading.Decimal(cell, out v, out p));
 
     /// <summary>
     /// One cell holding a whole number. A number that is really there but is fractional or out of
@@ -53,13 +53,13 @@ namespace Unrect.Spreadsheets
     /// <typeparam name="TSpace">The sheet the leaf is declared over.</typeparam>
     public static IProjectionDefinition<TSpace, int> Integer<TSpace>()
       where TSpace : class, ISheetCells
-      => Kinded<TSpace, int>("Integer", (Point<TSpace> cell, out int v, out CellProblem? p) => cell.Space.IntegerAt(cell.Column, cell.Row, out v, out p));
+      => Kinded<TSpace, int>("Integer", (Point<TSpace> cell, out int v, out CellProblem? p) => CellReading.Integer(cell, out v, out p));
 
     /// <summary>One cell holding a number, read as a <see cref="double"/>.</summary>
     /// <typeparam name="TSpace">The sheet the leaf is declared over.</typeparam>
     public static IProjectionDefinition<TSpace, double> Double<TSpace>()
       where TSpace : class, ISheetCells
-      => Kinded<TSpace, double>("Double", (Point<TSpace> cell, out double v, out CellProblem? p) => cell.Space.DoubleAt(cell.Column, cell.Row, out v, out p));
+      => Kinded<TSpace, double>("Double", (Point<TSpace> cell, out double v, out CellProblem? p) => cell.Space.TryGetDoubleAt(cell.Column, cell.Row, out v, out p));
 
     /// <summary>
     /// One cell holding a date or time, verbatim. The time of day is kept: truncating is
@@ -69,13 +69,13 @@ namespace Unrect.Spreadsheets
     /// <typeparam name="TSpace">The sheet the leaf is declared over.</typeparam>
     public static IProjectionDefinition<TSpace, DateTime> Date<TSpace>()
       where TSpace : class, ISheetCells
-      => Kinded<TSpace, DateTime>("Date", (Point<TSpace> cell, out DateTime v, out CellProblem? p) => cell.Space.DateTimeAt(cell.Column, cell.Row, out v, out p));
+      => Kinded<TSpace, DateTime>("Date", (Point<TSpace> cell, out DateTime v, out CellProblem? p) => cell.Space.TryGetDateTimeAt(cell.Column, cell.Row, out v, out p));
 
     /// <summary>One cell holding a boolean.</summary>
     /// <typeparam name="TSpace">The sheet the leaf is declared over.</typeparam>
     public static IProjectionDefinition<TSpace, bool> Boolean<TSpace>()
       where TSpace : class, ISheetCells
-      => Kinded<TSpace, bool>("Boolean", (Point<TSpace> cell, out bool v, out CellProblem? p) => cell.Space.BooleanAt(cell.Column, cell.Row, out v, out p));
+      => Kinded<TSpace, bool>("Boolean", (Point<TSpace> cell, out bool v, out CellProblem? p) => cell.Space.TryGetBooleanAt(cell.Column, cell.Row, out v, out p));
 
     internal static IProjectionDefinition<TSpace, T> Kinded<TSpace, T>(string kind, CellRead<TSpace, T> read)
       where TSpace : class, ISheetCells

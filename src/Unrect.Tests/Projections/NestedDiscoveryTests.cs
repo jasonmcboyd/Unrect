@@ -51,7 +51,7 @@ namespace Unrect.Tests.Projections
 
     /// <summary>The outer rule: rows while any cell of them is a number, which stops after row 2.</summary>
     private static IAreaStrategy<ISheetCells> NumericRowsOnly()
-      => RowsWhileAny(cell => cell.Kind() == CellKind.Number);
+      => RowsWhileAny(cell => cell.IsDouble());
 
     /// <summary>
     /// The same rule as a row-and-column pair, which resolves to the interleaved strategy — the one
@@ -60,7 +60,7 @@ namespace Unrect.Tests.Projections
     /// </summary>
     private static IAreaStrategy<ISheetCells> NumericRowsAndValuedColumns()
       => RowsThenColumns(
-        TakeRowsWhileAny(cell => cell.Kind() == CellKind.Number),
+        TakeRowsWhileAny(cell => cell.IsDouble()),
         TakeColumnsWhileAny(cell => cell.HasValue));
 
     [Fact]

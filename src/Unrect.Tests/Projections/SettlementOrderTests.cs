@@ -44,7 +44,7 @@ namespace Unrect.Tests.Projections
     /// than call-count-based, so it breaks in the same place however many cells the reading asks for.
     /// </summary>
     private static Func<Point<ISheetCells>, bool> BreaksOn(int marker)
-      => cell => cell.Kind() == CellKind.Number && cell.Integer() == marker
+      => cell => cell.IsDouble() && cell.Integer() == marker
         ? throw new InvalidOperationException("no")
         : true;
 

@@ -373,20 +373,6 @@ namespace Unrect.Tests
 
     [Theory]
     [MemberData(nameof(CanonicalDoors))]
-    public void APointsKindIsItsSpacesKindAtThoseCoordinates(string door)
-    {
-      // The point extension is an address's way of asking the space, exactly as the canonical four
-      // are. Swept beside them because a predicate reads the point and a message reads the space.
-      ISheetCells cells = CanonicalDoor(door);
-      var plane = Plane<ISheetCells>.Of(cells);
-
-      for (var row = 0; row < cells.Area.Height; row++)
-        for (var column = 0; column < cells.Area.Width; column++)
-          Assert.Equal(cells.KindAt(column, row), plane[column, row].Kind());
-    }
-
-    [Theory]
-    [MemberData(nameof(CanonicalDoors))]
     public void EveryCanonicalMemberRefusesACoordinateOutsideTheSpace(string door)
     {
       // The indexer's rule, extended to the three questions that do not go through it. A member
@@ -400,10 +386,13 @@ namespace Unrect.Tests
         Assert.Throws<OutOfBoundsException>(() => { _ = cells.IsText(column, row); });
         Assert.Throws<OutOfBoundsException>(() => { _ = cells.AsText(column, row); });
 
-        // The kind question answers for every cell IN the space and for no coordinate outside it:
-        // "it fails for none" is about kinds, never about addresses, so a coordinate off the edge
+        // Every read answers for every cell IN the space and for no coordinate outside it: a
+        // refusal is about what a cell holds, never about addresses, so a coordinate off the edge
         // is the same bounds condition here as everywhere else.
-        Assert.Throws<OutOfBoundsException>(() => { _ = cells.KindAt(column, row); });
+        Assert.Throws<OutOfBoundsException>(() => cells.TryGetDoubleAt(column, row, out _, out _));
+        Assert.Throws<OutOfBoundsException>(() => cells.TryGetDateTimeAt(column, row, out _, out _));
+        Assert.Throws<OutOfBoundsException>(() => cells.TryGetBooleanAt(column, row, out _, out _));
+        Assert.Throws<OutOfBoundsException>(() => cells.TryGetErrorAt(column, row, out _));
       }
     }
 

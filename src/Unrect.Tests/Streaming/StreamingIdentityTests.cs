@@ -380,7 +380,7 @@ namespace Unrect.Tests.Streaming
     }
 
     /// <summary>
-    /// All six kinded reads of one cell, each rendered as its value or as the sentence that refused
+    /// All four kinded reads of one cell, each rendered as its value or as the sentence that refused
     /// it, so a whole cell's kinded behaviour is one string to compare.
     /// </summary>
     private static string Read(ISheetCells space, int column, int row)
@@ -397,11 +397,9 @@ namespace Unrect.Tests.Streaming
       return string.Join(
         " | ",
         Of<string>((c, r) => (space.TryGetTextAt(c, r, out var v, out var p), v, p)),
-        Of<decimal>((c, r) => (space.DecimalAt(c, r, out var v, out var p), v, p)),
-        Of<int>((c, r) => (space.IntegerAt(c, r, out var v, out var p), v, p)),
-        Of<double>((c, r) => (space.DoubleAt(c, r, out var v, out var p), v, p)),
-        Of<DateTime>((c, r) => (space.DateTimeAt(c, r, out var v, out var p), v, p)),
-        Of<bool>((c, r) => (space.BooleanAt(c, r, out var v, out var p), v, p)));
+        Of<double>((c, r) => (space.TryGetDoubleAt(c, r, out var v, out var p), v, p)),
+        Of<DateTime>((c, r) => (space.TryGetDateTimeAt(c, r, out var v, out var p), v, p)),
+        Of<bool>((c, r) => (space.TryGetBooleanAt(c, r, out var v, out var p), v, p)));
     }
 
     private static string Describe(IReadOnlyList<ProjectionDiagnostic> diagnostics) =>

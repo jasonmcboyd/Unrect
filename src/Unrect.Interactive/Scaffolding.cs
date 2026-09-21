@@ -368,19 +368,21 @@ namespace Unrect.Interactive
 
       public bool IsText(int line, int position) => _sheet.TryGetTextAt(Column(line, position), Row(line, position), out _, out _);
 
-      public bool IsError(int line, int position) => _sheet.IsErrorAt(Column(line, position), Row(line, position));
+      public bool IsError(int line, int position) => _sheet.TryGetErrorAt(Column(line, position), Row(line, position), out _);
 
       public bool Text(int line, int position, out string text) => _sheet.TryGetTextAt(Column(line, position), Row(line, position), out text, out _);
+
+      private static bool IsWhole(double number)
+        => number >= int.MinValue && number <= int.MaxValue && Math.Floor(number) == number;
 
       /// <summary>The type one cell reads as, narrowest first — a whole number is an <c>int</c> until another sample says otherwise.</summary>
       public string Reads(int line, int position)
       {
         var (column, row) = (Column(line, position), Row(line, position));
 
-        return _sheet.IntegerAt(column, row, out _, out _) ? "int"
-          : _sheet.DoubleAt(column, row, out _, out _) ? "decimal"
-          : _sheet.DateTimeAt(column, row, out _, out _) ? "DateTime"
-          : _sheet.BooleanAt(column, row, out _, out _) ? "bool"
+        return _sheet.TryGetDoubleAt(column, row, out var number, out _) ? (IsWhole(number) ? "int" : "decimal")
+          : _sheet.TryGetDateTimeAt(column, row, out _, out _) ? "DateTime"
+          : _sheet.TryGetBooleanAt(column, row, out _, out _) ? "bool"
           : "string";
       }
     }

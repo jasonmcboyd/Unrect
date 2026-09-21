@@ -21,26 +21,29 @@ namespace Unrect.Spreadsheets
   public static class PointReads
   {
     /// <summary>
-    /// The cell's number as a <see cref="decimal"/> — the accessor that keeps a spreadsheet's exact
-    /// decimal where the file carried one.
+    /// The cell's number as a <see cref="decimal"/> — a conversion, not a reading: a sheet holds
+    /// doubles, and this converts the one it holds, rounding to the fifteen significant digits a
+    /// double carries (a stored 0.30000000000000004 reads as 0.3, which for an amount is the right
+    /// answer). A number that will not fit fails as a conversion, not as a kind.
     /// </summary>
     /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>
     /// <param name="point">The cell.</param>
     public static decimal Decimal<TSpace>(this Point<TSpace> point)
       where TSpace : class, ISheetCells
-      => point.Space.DecimalAt(point.Column, point.Row, out var value, out var problem)
+      => CellReading.Decimal(point, out var value, out var problem)
         ? value
         : throw Failed(point, problem);
 
     /// <summary>
-    /// The cell's number as a whole 32-bit one. A number that is really there but is fractional or
-    /// out of range fails as a conversion, not as a kind.
+    /// The cell's number as a whole 32-bit one — a conversion over the double the sheet holds. A
+    /// number that is really there but is fractional or out of range fails as a conversion, not as
+    /// a kind.
     /// </summary>
     /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>
     /// <param name="point">The cell.</param>
     public static int Integer<TSpace>(this Point<TSpace> point)
       where TSpace : class, ISheetCells
-      => point.Space.IntegerAt(point.Column, point.Row, out var value, out var problem)
+      => CellReading.Integer(point, out var value, out var problem)
         ? value
         : throw Failed(point, problem);
 
@@ -49,7 +52,7 @@ namespace Unrect.Spreadsheets
     /// <param name="point">The cell.</param>
     public static double Double<TSpace>(this Point<TSpace> point)
       where TSpace : class, ISheetCells
-      => point.Space.DoubleAt(point.Column, point.Row, out var value, out var problem)
+      => point.Space.TryGetDoubleAt(point.Column, point.Row, out var value, out var problem)
         ? value
         : throw Failed(point, problem);
 
@@ -62,7 +65,7 @@ namespace Unrect.Spreadsheets
     /// <param name="point">The cell.</param>
     public static DateTime Date<TSpace>(this Point<TSpace> point)
       where TSpace : class, ISheetCells
-      => point.Space.DateTimeAt(point.Column, point.Row, out var value, out var problem)
+      => point.Space.TryGetDateTimeAt(point.Column, point.Row, out var value, out var problem)
         ? value
         : throw Failed(point, problem);
 
@@ -71,7 +74,7 @@ namespace Unrect.Spreadsheets
     /// <param name="point">The cell.</param>
     public static bool Boolean<TSpace>(this Point<TSpace> point)
       where TSpace : class, ISheetCells
-      => point.Space.BooleanAt(point.Column, point.Row, out var value, out var problem)
+      => point.Space.TryGetBooleanAt(point.Column, point.Row, out var value, out var problem)
         ? value
         : throw Failed(point, problem);
 
@@ -120,6 +123,72 @@ namespace Unrect.Spreadsheets
       where TSpace : class, ISheetCells
       => point.IsBlank ? (bool?)null : point.Boolean();
 
+    // --- Asking rather than asserting -------------------------------------------------------------
+    //
+    // Each Is… is true exactly when the read of the same name would succeed, because it IS that
+    // read: there is one definition of what a cell can be read as, and these cannot drift from it.
+    // They ask about a READING, not a kind — a cell holding 1.5 is a double and not an integer.
+    // There is no question that asks "which one is it": a cell can be read several ways at once.
+
+    /// <summary>Whether <see cref="Double{TSpace}"/> would succeed: the cell holds a number.</summary>
+    /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>
+    /// <param name="point">The cell.</param>
+    public static bool IsDouble<TSpace>(this Point<TSpace> point)
+      where TSpace : class, ISheetCells
+      => point.Space.TryGetDoubleAt(point.Column, point.Row, out _, out _);
+
+    /// <summary>Whether <see cref="Decimal{TSpace}"/> would succeed: a number a decimal can hold.</summary>
+    /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>
+    /// <param name="point">The cell.</param>
+    public static bool IsDecimal<TSpace>(this Point<TSpace> point)
+      where TSpace : class, ISheetCells
+      => CellReading.Decimal(point, out _, out _);
+
+    /// <summary>Whether <see cref="Integer{TSpace}"/> would succeed: a whole number in 32-bit range.</summary>
+    /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>
+    /// <param name="point">The cell.</param>
+    public static bool IsInteger<TSpace>(this Point<TSpace> point)
+      where TSpace : class, ISheetCells
+      => CellReading.Integer(point, out _, out _);
+
+    /// <summary>Whether <see cref="Date{TSpace}"/> would succeed: the cell holds a date or time.</summary>
+    /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>
+    /// <param name="point">The cell.</param>
+    public static bool IsDate<TSpace>(this Point<TSpace> point)
+      where TSpace : class, ISheetCells
+      => point.Space.TryGetDateTimeAt(point.Column, point.Row, out _, out _);
+
+    /// <summary>Whether <see cref="Boolean{TSpace}"/> would succeed: the cell holds a boolean.</summary>
+    /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>
+    /// <param name="point">The cell.</param>
+    public static bool IsBoolean<TSpace>(this Point<TSpace> point)
+      where TSpace : class, ISheetCells
+      => point.Space.TryGetBooleanAt(point.Column, point.Row, out _, out _);
+
+    /// <summary>The cell's number, if it holds one.</summary>
+    /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>
+    /// <param name="point">The cell.</param>
+    /// <param name="value">The number, when the answer is true.</param>
+    public static bool TryGetDouble<TSpace>(this Point<TSpace> point, out double value)
+      where TSpace : class, ISheetCells
+      => point.Space.TryGetDoubleAt(point.Column, point.Row, out value, out _);
+
+    /// <summary>The cell's date or time, if it holds one.</summary>
+    /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>
+    /// <param name="point">The cell.</param>
+    /// <param name="value">The date or time, when the answer is true.</param>
+    public static bool TryGetDate<TSpace>(this Point<TSpace> point, out DateTime value)
+      where TSpace : class, ISheetCells
+      => point.Space.TryGetDateTimeAt(point.Column, point.Row, out value, out _);
+
+    /// <summary>The cell's boolean, if it holds one.</summary>
+    /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>
+    /// <param name="point">The cell.</param>
+    /// <param name="value">The boolean, when the answer is true.</param>
+    public static bool TryGetBoolean<TSpace>(this Point<TSpace> point, out bool value)
+      where TSpace : class, ISheetCells
+      => point.Space.TryGetBooleanAt(point.Column, point.Row, out value, out _);
+
     /// <summary>
     /// Whether the cell carries an error rather than a value — <c>#DIV/0!</c> and its kin.
     /// </summary>
@@ -127,37 +196,14 @@ namespace Unrect.Spreadsheets
     /// <param name="point">The cell.</param>
     public static bool IsError<TSpace>(this Point<TSpace> point)
       where TSpace : class, ISheetCells
-      => point.Space.IsErrorAt(point.Column, point.Row);
+      => point.Space.TryGetErrorAt(point.Column, point.Row, out _);
 
     /// <summary>The file's own spelling of the cell's error, or null where the cell is not one.</summary>
     /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>
     /// <param name="point">The cell.</param>
     public static string? ErrorText<TSpace>(this Point<TSpace> point)
       where TSpace : class, ISheetCells
-      => point.Space.ErrorTextAt(point.Column, point.Row);
-
-    /// <summary>
-    /// Which kind the cell is — the question a predicate puts to a cell, where
-    /// <c>Text()</c>, <see cref="Decimal{TSpace}"/>, <see cref="Integer{TSpace}"/>,
-    /// <see cref="Double{TSpace}"/>, <see cref="Date{TSpace}"/> and <see cref="Boolean{TSpace}"/>
-    /// assert one and refuse a cell that disagrees:
-    /// <c>RowsWhileAny(p =&gt; p.Kind() == CellKind.Number)</c>.
-    /// </summary>
-    /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>
-    /// <param name="point">The cell.</param>
-    public static CellKind Kind<TSpace>(this Point<TSpace> point)
-      where TSpace : class, ISheetCells
-      => point.Space.KindAt(point.Column, point.Row);
-
-    /// <summary>
-    /// What kind of thing the cell is, in the document's own vocabulary — for a caller's own
-    /// complaint about a cell this vocabulary has no reading for.
-    /// </summary>
-    /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>
-    /// <param name="point">The cell.</param>
-    public static string Describe<TSpace>(this Point<TSpace> point)
-      where TSpace : class, ISheetCells
-      => point.Space.Describe(point.Column, point.Row);
+      => point.Space.TryGetErrorAt(point.Column, point.Row, out var error) ? error : null;
 
     /// <summary>
     /// The exception a refused read throws. A read that returns false owes a reason, so a null one

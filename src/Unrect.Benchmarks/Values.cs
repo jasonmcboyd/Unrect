@@ -118,7 +118,7 @@ namespace Unrect.Benchmarks
 
     /// <summary>
     /// A million checked numeric reads — the accessor a money column goes through, asked of the
-    /// sheet exactly as a <c>Decimal()</c> leaf asks it.
+    /// sheet as a <c>Decimal()</c> leaf asks it: the double the sheet holds, then the conversion.
     /// </summary>
     [Benchmark]
     public decimal Decimal_Million()
@@ -127,8 +127,8 @@ namespace Unrect.Benchmarks
 
       for (var row = 0; row < CanonicalSpaces.MegaRows; row++)
         for (var column = 0; column < CanonicalSpaces.Columns; column++)
-          if (_numbers.DecimalAt(column, row, out var value, out _))
-            total += value;
+          if (_numbers.TryGetDoubleAt(column, row, out var value, out _))
+            total += (decimal)value;
 
       return total;
     }

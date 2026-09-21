@@ -49,47 +49,31 @@ namespace Unrect.Spreadsheets
       => CellReading.Text(CellAt(column, row), out value, out problem);
 
     /// <inheritdoc/>
-    public bool DecimalAt(int column, int row, out decimal value, out CellProblem? problem)
-      => CellReading.Decimal(CellAt(column, row), out value, out problem);
-
-    /// <inheritdoc/>
-    public bool IntegerAt(int column, int row, out int value, out CellProblem? problem)
-      => CellReading.Integer(CellAt(column, row), out value, out problem);
-
-    /// <inheritdoc/>
-    public bool DoubleAt(int column, int row, out double value, out CellProblem? problem)
+    public bool TryGetDoubleAt(int column, int row, out double value, out CellProblem? problem)
       => CellReading.Double(CellAt(column, row), out value, out problem);
 
     /// <inheritdoc/>
-    public bool DateTimeAt(int column, int row, out DateTime value, out CellProblem? problem)
+    public bool TryGetDateTimeAt(int column, int row, out DateTime value, out CellProblem? problem)
       => CellReading.DateTime(CellAt(column, row), out value, out problem);
 
     /// <inheritdoc/>
-    public bool BooleanAt(int column, int row, out bool value, out CellProblem? problem)
+    public bool TryGetBooleanAt(int column, int row, out bool value, out CellProblem? problem)
       => CellReading.Boolean(CellAt(column, row), out value, out problem);
-
-    /// <inheritdoc/>
-    public CellKind KindAt(int column, int row) => CellAt(column, row).Kind;
-
-    /// <inheritdoc/>
-    public string Describe(int column, int row) => CellReading.Describe(CellAt(column, row));
-
-    /// <inheritdoc/>
-    public bool IsErrorAt(int column, int row) => CellAt(column, row).Kind == CellKind.Error;
 
     /// <inheritdoc/>
     /// <remarks>
     /// Read off <see cref="Cell.AsText"/> rather than off the cell's stored literal: a cell keeps
     /// its literal only where it differs from the canonical spelling, so an error that arrived
-    /// spelled exactly as Excel shows it holds none. Answering null there would make this null for
+    /// spelled exactly as Excel shows it holds none. Answering false there would make this false for
     /// two different reasons — "not an error" and "an error spelled the usual way" — and the
     /// contract has one.
     /// </remarks>
-    public string? ErrorTextAt(int column, int row)
+    public bool TryGetErrorAt(int column, int row, out string error)
     {
       var cell = CellAt(column, row);
 
-      return cell.Kind == CellKind.Error ? cell.AsText() : null;
+      error = cell.Kind == CellKind.Error ? cell.AsText()! : null!;
+      return error is not null;
     }
   }
 }

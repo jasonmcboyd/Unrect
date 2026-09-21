@@ -48,36 +48,19 @@ namespace Unrect.Tests
       => _inner.TryGetTextAt(column, Read(row), out value, out problem);
 
     /// <inheritdoc/>
-    public bool DecimalAt(int column, int row, out decimal value, out CellProblem? problem)
-      => _inner.DecimalAt(column, Read(row), out value, out problem);
+    public bool TryGetDoubleAt(int column, int row, out double value, out CellProblem? problem)
+      => _inner.TryGetDoubleAt(column, Read(row), out value, out problem);
 
     /// <inheritdoc/>
-    public bool IntegerAt(int column, int row, out int value, out CellProblem? problem)
-      => _inner.IntegerAt(column, Read(row), out value, out problem);
+    public bool TryGetDateTimeAt(int column, int row, out DateTime value, out CellProblem? problem)
+      => _inner.TryGetDateTimeAt(column, Read(row), out value, out problem);
 
     /// <inheritdoc/>
-    public bool DoubleAt(int column, int row, out double value, out CellProblem? problem)
-      => _inner.DoubleAt(column, Read(row), out value, out problem);
+    public bool TryGetBooleanAt(int column, int row, out bool value, out CellProblem? problem)
+      => _inner.TryGetBooleanAt(column, Read(row), out value, out problem);
 
     /// <inheritdoc/>
-    public bool DateTimeAt(int column, int row, out DateTime value, out CellProblem? problem)
-      => _inner.DateTimeAt(column, Read(row), out value, out problem);
-
-    /// <inheritdoc/>
-    public bool BooleanAt(int column, int row, out bool value, out CellProblem? problem)
-      => _inner.BooleanAt(column, Read(row), out value, out problem);
-
-    /// <inheritdoc/>
-    public CellKind KindAt(int column, int row) => _inner.KindAt(column, Read(row));
-
-    /// <inheritdoc/>
-    public string Describe(int column, int row) => _inner.Describe(column, Read(row));
-
-    /// <inheritdoc/>
-    public bool IsErrorAt(int column, int row) => _inner.IsErrorAt(column, Read(row));
-
-    /// <inheritdoc/>
-    public string? ErrorTextAt(int column, int row) => _inner.ErrorTextAt(column, Read(row));
+    public bool TryGetErrorAt(int column, int row, out string error) => _inner.TryGetErrorAt(column, Read(row), out error);
 
     /// <summary>
     /// Records one cell read and hands the row straight back, so every member counts by using its

@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 
 using Unrect.Core;
 using Unrect.Projections;
@@ -151,42 +152,74 @@ namespace Unrect.Tests.Spreadsheets
       Assert.Null(Of(null).AsText());
     }
 
-    // --- The kind question ---------------------------------------------------------------------------
+    // --- Asking rather than asserting ---------------------------------------------------------------
 
     [Fact]
-    public void TheKindQuestionAnswersForEveryCellTheStrictReadsRefuse()
+    public void EveryQuestionAnswersForEveryCellTheStrictReadsRefuse()
     {
-      // What a predicate puts to a cell before deciding anything about it. Every cell below is one
-      // a strict read throws on, and the whole point of this read is that it does not: a rule that
-      // had to guard its kind with a try would not be a rule.
-      Assert.Equal(CellKind.Blank, Of(null).Kind());
-      Assert.Equal(CellKind.Text, Of("hello").Kind());
-      Assert.Equal(CellKind.Number, Of(1.5m).Kind());
-      Assert.Equal(CellKind.Temporal, Of(Moment).Kind());
-      Assert.Equal(CellKind.Boolean, Of(true).Kind());
-      Assert.Equal(CellKind.Error, Of(Cell.OfError(CellError.DivisionByZero)).Kind());
+      // What a predicate puts to a cell before deciding anything about it. None of these throws on
+      // any cell: a rule that had to guard its question with a try would not be a rule.
+      var cells = new[] { Of(null), Of("hello"), Of(1.5m), Of(Moment), Of(true), Of(Cell.OfError(CellError.DivisionByZero)) };
+
+      Assert.Equal(new[] { false, true, false, false, false, false }, cells.Select(c => c.IsText).ToArray());
+      Assert.Equal(new[] { false, false, true, false, false, false }, cells.Select(c => c.IsDouble()).ToArray());
+      Assert.Equal(new[] { false, false, false, true, false, false }, cells.Select(c => c.IsDate()).ToArray());
+      Assert.Equal(new[] { false, false, false, false, true, false }, cells.Select(c => c.IsBoolean()).ToArray());
+      Assert.Equal(new[] { false, false, false, false, false, true }, cells.Select(c => c.IsError()).ToArray());
+      Assert.Equal(new[] { true, false, false, false, false, false }, cells.Select(c => c.IsBlank).ToArray());
     }
 
     [Fact]
-    public void AndItIsTheQuestionAStrictReadAnswersWithWhenItRefuses()
+    public void AQuestionIsTrueExactlyWhenTheReadOfTheSameNameSucceeds()
     {
-      // The two halves of the kind vocabulary saying the same thing: what the cell IS, and what a
-      // refusal reports it was found to be. A predicate that ruled a cell in and a leaf that then
-      // refused it would be two readings of one cell, which is the failure this pairing rules out.
-      var cell = Of("x");
+      // Is… is the read with its value thrown away, so a predicate that ruled a cell in and a leaf
+      // that then refused it — two readings of one cell — cannot happen.
+      foreach (var cell in new[] { Of(null), Of("x"), Of(1.5m), Of(2m), Of(1e30), Of(Moment), Of(true) })
+      {
+        Assert.Equal(cell.IsText, Succeeds(() => cell.Text()));
+        Assert.Equal(cell.IsDouble(), Succeeds(() => cell.Double()));
+        Assert.Equal(cell.IsDecimal(), Succeeds(() => cell.Decimal()));
+        Assert.Equal(cell.IsInteger(), Succeeds(() => cell.Integer()));
+        Assert.Equal(cell.IsDate(), Succeeds(() => cell.Date()));
+        Assert.Equal(cell.IsBoolean(), Succeeds(() => cell.Boolean()));
+      }
 
-      Assert.Equal(CellKind.Text, cell.Kind());
-      Assert.Equal($"expected Number at A1, found {cell.Kind()}", Assert.Throws<CellReadException>(() => cell.Decimal()).Message);
+      static bool Succeeds(Action read)
+      {
+        try
+        {
+          read();
+          return true;
+        }
+        catch (CellReadException)
+        {
+          return false;
+        }
+      }
     }
 
     [Fact]
-    public void AndAskingIsNotReading()
+    public void AQuestionIsAboutAReadingAndACellHasSeveral()
     {
-      // The kind is a classification and never a value: it says a cell holds a number without
-      // saying which, so a rule about the value still has to read it. Stated because the read it
-      // sits beside — Describe — answers a sentence, and a rule cannot branch on prose.
-      Assert.Equal(Of(1m).Kind(), Of(9999m).Kind());
-      Assert.NotEqual(Of(1m).Decimal(), Of(9999m).Decimal());
+      // There is no "which one is it": 2 is a double, a decimal and an integer at once, 1.5 is two
+      // of those, and 1e30 is one. Which is why nothing here hands back a single kind.
+      Assert.True(Of(2m).IsDouble() && Of(2m).IsDecimal() && Of(2m).IsInteger());
+      Assert.True(Of(1.5m).IsDouble() && Of(1.5m).IsDecimal() && !Of(1.5m).IsInteger());
+      Assert.True(Of(1e30).IsDouble() && !Of(1e30).IsDecimal() && !Of(1e30).IsInteger());
+    }
+
+    [Fact]
+    public void TheTryFormsHandBackTheValueAndSayNothingOnARefusal()
+    {
+      Assert.True(Of(1.5m).TryGetDouble(out var number));
+      Assert.Equal(1.5, number);
+      Assert.False(Of("x").TryGetDouble(out _));
+
+      Assert.True(Of(Moment).TryGetDate(out var moment));
+      Assert.Equal(Moment, moment);
+
+      Assert.True(Of(true).TryGetBoolean(out var flag));
+      Assert.True(flag);
     }
   }
 }

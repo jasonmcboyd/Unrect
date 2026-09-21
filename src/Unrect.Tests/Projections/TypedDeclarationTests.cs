@@ -36,7 +36,7 @@ namespace Unrect.Tests.Projections
     {
       // Both halves of a typed predicate in one rule: the kind question, which the canonical four
       // cannot ask at all, and the value question, which they could only ask through the rendering.
-      var smallLots = Sized(RowsWhileAny(cell => cell.Kind() == CellKind.Number && cell.Decimal() < 7))
+      var smallLots = Sized(RowsWhileAny(cell => cell.IsDouble() && cell.Decimal() < 7))
         .Of(Range(block => block.Height));
 
       Assert.Equal(2, smallLots.Map(Lots()));
@@ -53,7 +53,7 @@ namespace Unrect.Tests.Projections
         { 5m, 6m },
       });
 
-      var body = On(RowWithCell(cell => cell.Kind() == CellKind.Number)).Of(Row(row => row[0].Decimal()));
+      var body = On(RowWithCell(cell => cell.IsDouble())).Of(Row(row => row[0].Decimal()));
 
       Assert.Equal(5m, body.Map(sheet));
     }
@@ -121,8 +121,8 @@ namespace Unrect.Tests.Projections
 
       // Captions, then five records whose amounts are 100, 150, 400, 500, 1500. The section is the
       // records under 200: found by the first row holding a number, sized by the amounts.
-      var small = On(RowWithCell(cell => cell.Kind() == CellKind.Number))
-        .Sized(RowsWhileAny(cell => cell.Kind() == CellKind.Number && cell.Decimal() < 200))
+      var small = On(RowWithCell(cell => cell.IsDouble()))
+        .Sized(RowsWhileAny(cell => cell.IsDouble() && cell.Decimal() < 200))
         .Of(Range(block => block.Height));
 
       Assert.Equal(2, small.Map(book.Sheet("Detail")));

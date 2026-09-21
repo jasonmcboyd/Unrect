@@ -50,36 +50,19 @@ namespace Unrect.Tests
       => _values.TryGetTextAt(column, row, out value, out problem);
 
     /// <inheritdoc/>
-    public bool DecimalAt(int column, int row, out decimal value, out CellProblem? problem)
-      => _values.DecimalAt(column, row, out value, out problem);
+    public bool TryGetDoubleAt(int column, int row, out double value, out CellProblem? problem)
+      => _values.TryGetDoubleAt(column, row, out value, out problem);
 
     /// <inheritdoc/>
-    public bool IntegerAt(int column, int row, out int value, out CellProblem? problem)
-      => _values.IntegerAt(column, row, out value, out problem);
+    public bool TryGetDateTimeAt(int column, int row, out DateTime value, out CellProblem? problem)
+      => _values.TryGetDateTimeAt(column, row, out value, out problem);
 
     /// <inheritdoc/>
-    public bool DoubleAt(int column, int row, out double value, out CellProblem? problem)
-      => _values.DoubleAt(column, row, out value, out problem);
+    public bool TryGetBooleanAt(int column, int row, out bool value, out CellProblem? problem)
+      => _values.TryGetBooleanAt(column, row, out value, out problem);
 
     /// <inheritdoc/>
-    public bool DateTimeAt(int column, int row, out DateTime value, out CellProblem? problem)
-      => _values.DateTimeAt(column, row, out value, out problem);
-
-    /// <inheritdoc/>
-    public bool BooleanAt(int column, int row, out bool value, out CellProblem? problem)
-      => _values.BooleanAt(column, row, out value, out problem);
-
-    /// <inheritdoc/>
-    public CellKind KindAt(int column, int row) => _values.KindAt(column, row);
-
-    /// <inheritdoc/>
-    public string Describe(int column, int row) => _values.Describe(column, row);
-
-    /// <inheritdoc/>
-    public bool IsErrorAt(int column, int row) => _values.IsErrorAt(column, row);
-
-    /// <inheritdoc/>
-    public string? ErrorTextAt(int column, int row) => _values.ErrorTextAt(column, row);
+    public bool TryGetErrorAt(int column, int row, out string error) => _values.TryGetErrorAt(column, row, out error);
 
     /// <inheritdoc/>
     public string? FormulaAt(int column, int row)

@@ -256,7 +256,7 @@ namespace Unrect.Tests.Spreadsheets
       Assert.Equal("Error(42)", space.Describe(0, 0));
       Assert.Equal("42", space.AsText(0, 0));
 
-      Assert.False(space.DoubleAt(0, 0, out _, out var problem));
+      Assert.False(space.TryGetDoubleAt(0, 0, out _, out var problem));
       Assert.Equal("expected Number at B4, found Error(42)", problem!.Value.Render("B4"));
     }
   }

@@ -64,23 +64,23 @@ namespace Unrect.Spreadsheets
 
       if (type == typeof(decimal))
         return SpreadsheetProjections.Kinded<TSpace, object?>(
-          "Decimal", (Point<TSpace> cell, out object? v, out CellProblem? p) => Box(cell.Space.DecimalAt(cell.Column, cell.Row, out var value, out p), value, out v));
+          "Decimal", (Point<TSpace> cell, out object? v, out CellProblem? p) => Box(CellReading.Decimal(cell, out var value, out p), value, out v));
 
       if (type == typeof(double))
         return SpreadsheetProjections.Kinded<TSpace, object?>(
-          "Double", (Point<TSpace> cell, out object? v, out CellProblem? p) => Box(cell.Space.DoubleAt(cell.Column, cell.Row, out var value, out p), value, out v));
+          "Double", (Point<TSpace> cell, out object? v, out CellProblem? p) => Box(cell.Space.TryGetDoubleAt(cell.Column, cell.Row, out var value, out p), value, out v));
 
       if (type == typeof(int))
         return SpreadsheetProjections.Kinded<TSpace, object?>(
-          "Integer", (Point<TSpace> cell, out object? v, out CellProblem? p) => Box(cell.Space.IntegerAt(cell.Column, cell.Row, out var value, out p), value, out v));
+          "Integer", (Point<TSpace> cell, out object? v, out CellProblem? p) => Box(CellReading.Integer(cell, out var value, out p), value, out v));
 
       if (type == typeof(DateTime))
         return SpreadsheetProjections.Kinded<TSpace, object?>(
-          "Date", (Point<TSpace> cell, out object? v, out CellProblem? p) => Box(cell.Space.DateTimeAt(cell.Column, cell.Row, out var value, out p), value, out v));
+          "Date", (Point<TSpace> cell, out object? v, out CellProblem? p) => Box(cell.Space.TryGetDateTimeAt(cell.Column, cell.Row, out var value, out p), value, out v));
 
       if (type == typeof(bool))
         return SpreadsheetProjections.Kinded<TSpace, object?>(
-          "Boolean", (Point<TSpace> cell, out object? v, out CellProblem? p) => Box(cell.Space.BooleanAt(cell.Column, cell.Row, out var value, out p), value, out v));
+          "Boolean", (Point<TSpace> cell, out object? v, out CellProblem? p) => Box(cell.Space.TryGetBooleanAt(cell.Column, cell.Row, out var value, out p), value, out v));
 
       // Unreachable: the plan refuses a type Reads says no to, where it is written rather than per
       // file. Kept so this method is correct read on its own rather than only in context.

@@ -34,13 +34,13 @@ namespace Unrect.Tests.Projections
 
     /// <summary>A cell rule that breaks, absorbably, on the cell holding <paramref name="marker"/>.</summary>
     private static Func<Point<ISheetCells>, bool> BreaksOn(int marker)
-      => cell => cell.Kind() == CellKind.Number && cell.Integer() == marker
+      => cell => cell.IsDouble() && cell.Integer() == marker
         ? throw new InvalidOperationException("no")
         : true;
 
     /// <summary>A cell rule whose failure is the environment's, not the data's.</summary>
     private static Func<Point<ISheetCells>, bool> FaultsOn(int marker)
-      => cell => cell.Kind() == CellKind.Number && cell.Integer() == marker
+      => cell => cell.IsDouble() && cell.Integer() == marker
         ? throw new IOException("the disk stopped answering")
         : true;
 
