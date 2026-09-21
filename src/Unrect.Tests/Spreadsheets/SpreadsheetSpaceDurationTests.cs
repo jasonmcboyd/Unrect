@@ -87,7 +87,7 @@ namespace Unrect.Tests.Spreadsheets
       var space = Durations();
 
       Assert.False(space.DateTimeAt(0, 1, out _, out var problem));
-      Assert.Equal("expected Temporal at A2, found Number", problem!("A2"));
+      Assert.Equal("expected Temporal at A2, found Number", problem!.Value.Render("A2"));
       Assert.Throws<CellReadException>(() => Plane<ISheetCells>.Of(space)[0, 1].Date());
     }
 

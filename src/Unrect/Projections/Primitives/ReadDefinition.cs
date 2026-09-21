@@ -68,7 +68,7 @@ namespace Unrect.Projections
         return new Settlement<TResult>(default!, size);
 
       if (!Read(cell, out var value, out var problem))
-        throw scope.Failure(problem!(scope.Locate(extent).A1), extent);
+        throw scope.Failure(problem!.Value.Render(scope.Locate(extent).A1), extent);
 
       return new Settlement<TResult>(value, size);
     }

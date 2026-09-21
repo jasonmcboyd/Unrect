@@ -56,7 +56,7 @@ namespace Unrect.Projections
 
       if (value is null)
       {
-        problem = at => $"expected a value at {at}, found a blank cell";
+        problem = new CellProblem("expected a value at ", ", found a blank cell");
         return false;
       }
 

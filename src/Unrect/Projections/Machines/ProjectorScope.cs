@@ -83,7 +83,7 @@ namespace Unrect.Projections
     /// </summary>
     internal ProjectionException Reading<TOther>(CellReadException failure, Plane<TOther> extent)
       where TOther : class, ISpace
-      => Failure(failure.Problem(ProjectionLocation.At(failure.At).A1), extent, failure);
+      => Failure(failure.Problem.Render(ProjectionLocation.At(failure.At).A1), extent, failure);
 
     /// <summary>A failure about <paramref name="projection"/>, raised from here.</summary>
     internal ProjectionException Failure<TOther>(

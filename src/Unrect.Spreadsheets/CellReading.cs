@@ -76,7 +76,7 @@ namespace Unrect.Spreadsheets
       }
 
       value = default;
-      problem = at => $"the Number at {at} ({Number(cell)}) is not representable as a decimal";
+      problem = new CellProblem("the Number at ", $" ({Number(cell)}) is not representable as a decimal");
       return false;
     }
 
@@ -95,9 +95,11 @@ namespace Unrect.Spreadsheets
       var number = cell.GetDouble();
 
       value = default;
-      problem = number < int.MinValue || number > int.MaxValue
-        ? at => $"the Number at {at} ({Number(cell)}) is outside the range of a 32-bit integer"
-        : (CellProblem)(at => $"the Number at {at} ({Number(cell)}) is not a whole number");
+      problem = new CellProblem(
+        "the Number at ",
+        number < int.MinValue || number > int.MaxValue
+          ? $" ({Number(cell)}) is outside the range of a 32-bit integer"
+          : $" ({Number(cell)}) is not a whole number");
       return false;
     }
 
@@ -108,10 +110,31 @@ namespace Unrect.Spreadsheets
     internal static string Describe(Cell cell)
       => cell.Kind == CellKind.Error ? cell.ToString() : cell.Kind.ToString();
 
+    /// <summary>
+    /// The two halves of a kind failure, said once per kind: a refused read is the common case under
+    /// a predicate, and the reason for it is these same few words every time.
+    /// </summary>
+    private static readonly string[] Expected = Halves(kind => $"expected {kind} at ");
+
+    private static readonly string[] Found = Halves(kind => $", found {kind}");
+
+    private static string[] Halves(Func<CellKind, string> say)
+    {
+      var kinds = (CellKind[])Enum.GetValues(typeof(CellKind));
+      var halves = new string[kinds.Length];
+
+      foreach (var kind in kinds)
+        halves[(int)kind] = say(kind);
+
+      return halves;
+    }
+
     private static bool Wrong<T>(CellKind expected, Cell found, out T value, out CellProblem? problem)
     {
       value = default!;
-      problem = at => $"expected {expected} at {at}, found {Describe(found)}";
+      problem = new CellProblem(
+        Expected[(int)expected],
+        found.Kind == CellKind.Error ? ", found " + Describe(found) : Found[(int)found.Kind]);
       return false;
     }
 

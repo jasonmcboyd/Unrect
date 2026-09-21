@@ -391,7 +391,7 @@ namespace Unrect.Tests.Streaming
 
         return ok
           ? Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? "<null>"
-          : problem!(ProjectionLocation.At(Plane<ISheetCells>.Of(space)[column, row]).A1);
+          : problem!.Value.Render(ProjectionLocation.At(Plane<ISheetCells>.Of(space)[column, row]).A1);
       }
 
       return string.Join(
