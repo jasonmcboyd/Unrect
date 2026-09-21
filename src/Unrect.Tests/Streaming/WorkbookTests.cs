@@ -81,6 +81,26 @@ namespace Unrect.Tests.Streaming
     }
 
     [Fact]
+    public void AQuestionPutToAReleasedRowIsRefusedRatherThanAnsweredNo()
+    {
+      // Is… is a read with its value thrown away, and a refusal means "this cell does not hold
+      // that". A cell of a released row holds whatever it held — the SOURCE can no longer say — so
+      // the question throws, as the read does, and is never quietly false: a predicate over a row
+      // that has gone must not rule every cell out.
+      using var book = Workbook.Open(Path("tall-ledger.xlsx"), Cold());
+      var sheet = book.Sheet("Ledger");
+
+      _ = LedgerRows().Map(sheet);
+
+      var gone = Plane<ICellSpace>.Of(sheet)[0, 0];
+
+      Assert.Throws<CellReadException>(() => gone.IsText);
+      Assert.Throws<CellReadException>(() => gone.IsDouble());
+      Assert.Throws<CellReadException>(() => gone.TryGetDouble(out _));
+      Assert.Throws<CellReadException>(() => gone.IsError());
+    }
+
+    [Fact]
     public void AViewIsAValueRatherThanAHandle()
     {
       // Sheet() hands back a new pass each time, each over its own cursor; what they read is the
