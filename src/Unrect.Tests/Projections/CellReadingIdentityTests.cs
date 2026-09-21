@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
+using Unrect.Core;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
 
@@ -303,6 +304,31 @@ namespace Unrect.Tests.Projections
       Assert.Equal(
         "expected Text at B2, found Number",
         SameSentence("Note", 5m, Text().OrBlank(), Table<Annotated>()));
+    }
+
+    [Fact]
+    public void ADecimalIsTheDoubleTheSheetHoldsWithItsBinaryNoiseTakenOff()
+    {
+      // A workbook holds doubles and nothing else, so an amount typed as 0.3 by way of 0.1 + 0.2 is
+      // stored as 0.30000000000000004. The conversion rounds to the fifteen significant digits a
+      // double carries, which is the right answer for money and the reason the conversion exists —
+      // and it is ONE conversion, so the leaf, the point read and a bound decimal column agree.
+      var noisy = 0.1 + 0.2;
+
+      Assert.NotEqual(0.3, noisy);
+
+      var space = Mixed(new object?[,]
+      {
+        { "Client", "Amount" },
+        { "Acme", noisy },
+      });
+
+      Assert.Equal(0.3m, Right(1).Down(1).Of(Decimal()).Map(space));
+      Assert.Equal(0.3m, Plane<ISheetCells>.Of(space)[1, 1].Decimal());
+      Assert.Equal(0.3m, Table<Money>().Map(space).Single().Amount);
+
+      // The double read is the store's own and hands back exactly what is there.
+      Assert.Equal(noisy, Plane<ISheetCells>.Of(space)[1, 1].Double());
     }
   }
 }
