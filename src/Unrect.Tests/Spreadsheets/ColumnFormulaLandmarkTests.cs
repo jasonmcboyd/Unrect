@@ -71,7 +71,7 @@ namespace Unrect.Tests.Spreadsheets
     }
 
     /// <summary>A space that holds no formulas and cannot be asked about them.</summary>
-    private static ISheetCells Plain() => SheetGrid.Of(new object?[,] { { "a", "b" } });
+    private static ICellSpace Plain() => SheetGrid.Of(new object?[,] { { "a", "b" } });
 
     /// <summary>
     /// A space that CAN be asked and has nothing to report — the only way to reach the bare
@@ -139,7 +139,7 @@ namespace Unrect.Tests.Spreadsheets
     {
       // Reached the only way it can be: through Landmark, the plain lift, where the typed layer has
       // handed the demand off and the mismatch survives to run time.
-      var cannotLook = PlainLift().Of(SpreadsheetProjections.Text<ISheetCells>());
+      var cannotLook = PlainLift().Of(ProjectionBuilders<ICellSpace>.Text());
 
       var failure = Assert.Throws<ProjectionException>(() => cannotLook.Map(Plain()));
 
@@ -152,7 +152,7 @@ namespace Unrect.Tests.Spreadsheets
       Assert.Throws<ProjectionException>(() => cannotLook.Optional().Map(Plain()));
       Assert.Throws<ProjectionException>(() => cannotLook.Else("fallback").Map(Plain()));
       Assert.Throws<ProjectionException>(
-        () => ProjectionBuilders<ISheetCells>.Choice(cannotLook, SpreadsheetProjections.Text<ISheetCells>()).Map(Plain()));
+        () => ProjectionBuilders<ICellSpace>.Choice(cannotLook, ProjectionBuilders<ICellSpace>.Text()).Map(Plain()));
     }
 
     [Fact]
@@ -161,11 +161,11 @@ namespace Unrect.Tests.Spreadsheets
       // The other lift and the other strategy slot: UntilColumn bounds an extent rather than placing
       // it, so the demand is made from the area strategy instead of the offset strategy. Two code
       // paths wrap a foreign exception and the fault list is consulted at both.
-      var bounded = ProjectionBuilders<ISheetCells>
+      var bounded = ProjectionBuilders<ICellSpace>
         .UntilColumn(SpreadsheetProjections.ColumnWithFormula().Landmark)
-        .Of(ProjectionBuilders<ISheetCells>.HorizontalFlow(h =>
+        .Of(ProjectionBuilders<ICellSpace>.HorizontalFlow(h =>
         {
-          var spreadsheetProjections = h.Next(SpreadsheetProjections.Text<ISheetCells>());
+          var spreadsheetProjections = h.Next(ProjectionBuilders<ICellSpace>.Text());
 
           return spreadsheetProjections;
         }))
@@ -222,8 +222,8 @@ namespace Unrect.Tests.Spreadsheets
     /// The plain lift of the bare column matcher, over the canonical vocabulary: the one way a
     /// declaration can reach a boundary its space cannot answer.
     /// </summary>
-    private static OffsetStage<ISheetCells> PlainLift()
-      => ProjectionBuilders<ISheetCells>.On(SpreadsheetProjections.ColumnWithFormula().Landmark);
+    private static OffsetStage<ICellSpace> PlainLift()
+      => ProjectionBuilders<ICellSpace>.On(SpreadsheetProjections.ColumnWithFormula().Landmark);
 
     [Fact]
     public void ItRefusesAnEmptyThingToLookFor()

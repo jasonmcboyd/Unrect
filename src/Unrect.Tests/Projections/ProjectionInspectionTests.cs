@@ -7,8 +7,8 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -254,7 +254,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AProjectionTreeCanBeWalkedWithoutASpaceUntilItMeetsALayout()
     {
-      // The dry-run traversal in miniature: no ISheetCells anywhere. It walks the wrappers and the
+      // The dry-run traversal in miniature: no ICellSpace anywhere. It walks the wrappers and the
       // repeat happily, and stops where a layout composite is — reporting why rather than
       // pretending the layout is a leaf.
       var projection = VerticalRepeat(
@@ -352,7 +352,7 @@ namespace Unrect.Tests.Projections
     }
 
     /// <summary>Renders a result as text so array identity never enters the comparison.</summary>
-    private static string Read(IProjectionDefinition<ISheetCells, (int, IReadOnlyList<int>)> projection, ISheetCells space)
+    private static string Read(IProjectionDefinition<ICellSpace, (int, IReadOnlyList<int>)> projection, ICellSpace space)
     {
       var (first, rest) = projection.Map(space);
       return $"{first}:{string.Join(",", rest)}";

@@ -8,8 +8,8 @@ using Unrect.Projections;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -23,12 +23,12 @@ namespace Unrect.Tests.Projections
   {
     // The workbooks are copied into the test output, so tests never depend on the repository
     // layout.
-    private static ISheetCells Workbook(string fileName, string sheet)
+    private static ICellSpace Workbook(string fileName, string sheet)
       => SpreadsheetSpace.Create(Path.Combine(AppContext.BaseDirectory, "TestData", fileName), sheet);
 
     // --- simple-report.xlsx: a fixed header over a table ----------------------------------------------------
 
-    private static IProjectionDefinition<ISheetCells, (SimpleHeader Header, IReadOnlyList<Transaction> Transactions)> SimpleReport() =>
+    private static IProjectionDefinition<ICellSpace, (SimpleHeader Header, IReadOnlyList<Transaction> Transactions)> SimpleReport() =>
       VerticalFlow(v => (
         // The header's kinds are declared rather than asked for: four leaves in a flow read the
         // same four rows Column(4, ...) did, and say what each one is.
@@ -103,7 +103,7 @@ namespace Unrect.Tests.Projections
 
     // --- investors-by-deal.xlsx: repeating blocks of differing lengths ------------------------------------------
 
-    private static IProjectionDefinition<ISheetCells, IReadOnlyList<Deal>> InvestorsByDeal()
+    private static IProjectionDefinition<ICellSpace, IReadOnlyList<Deal>> InvestorsByDeal()
     {
       var deal =
         VerticalFlow(v => new Deal(
@@ -160,7 +160,7 @@ namespace Unrect.Tests.Projections
 
     // --- investor-summary.xlsx: header, summary table, and repeating detail blocks ---------------------------------
 
-    private static IProjectionDefinition<ISheetCells, Report> InvestorSummary()
+    private static IProjectionDefinition<ICellSpace, Report> InvestorSummary()
     {
       var detail =
         VerticalFlow(v => new Detail(
@@ -280,7 +280,7 @@ namespace Unrect.Tests.Projections
     // exactly where the second's caption begins. One declaration reads both, because the first
     // series is bounded by the caption the second is anchored on.
 
-    private static IProjectionDefinition<ISheetCells, IrrReport> InvestorIrr()
+    private static IProjectionDefinition<ICellSpace, IrrReport> InvestorIrr()
     {
       var investorBlock = Table(r => r["Investor Name"].Text()).Named("investor block");
 
@@ -348,7 +348,7 @@ namespace Unrect.Tests.Projections
     // is DESCRIBED by the projection that owns it, not smuggled past inside an offset — so the section's
     // own rows exclude its caption, and the meter counts the caption rows all the same.
 
-    private static ISheetCells CaptionedSheet() => Mixed(new object?[,]
+    private static ICellSpace CaptionedSheet() => Mixed(new object?[,]
     {
       { "K-1 Lines 1-21", null },
       { "Ordinary income", 100 },

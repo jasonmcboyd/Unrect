@@ -3,7 +3,7 @@ using BenchmarkDotNet.Attributes;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 
 namespace Unrect.Benchmarks
 {
@@ -22,25 +22,25 @@ namespace Unrect.Benchmarks
   [BenchmarkCategory("Strategies")]
   public class Strategies
   {
-    private static readonly IProjectionDefinition<ISheetCells, int> WholeHeight = Range(RowsWhileAnyValue(), b => b.Height);
+    private static readonly IProjectionDefinition<ICellSpace, int> WholeHeight = Range(RowsWhileAnyValue(), b => b.Height);
 
-    private static readonly IProjectionDefinition<ISheetCells, int> Seek =
+    private static readonly IProjectionDefinition<ICellSpace, int> Seek =
       On(RowContaining(CanonicalSpaces.Landmark)).Row(r => r.Count);
 
     // The miss: absorbed, so the row measures the full-grid scan and not the throw.
-    private static readonly IProjectionDefinition<ISheetCells, int> SeekMiss = Seek.Optional();
+    private static readonly IProjectionDefinition<ICellSpace, int> SeekMiss = Seek.Optional();
 
-    private static readonly IProjectionDefinition<ISheetCells, int> Bounded =
+    private static readonly IProjectionDefinition<ICellSpace, int> Bounded =
       Until(RowContaining(CanonicalSpaces.Landmark)).Range(RowsWhileAnyValue(), b => b.Height);
 
-    private static readonly IProjectionDefinition<ISheetCells, int> SkipBlanks = OffsetBy(BlankRows()).Row(r => r.Count);
+    private static readonly IProjectionDefinition<ICellSpace, int> SkipBlanks = OffsetBy(BlankRows()).Row(r => r.Count);
 
-    private ISheetCells _dense = default!;
-    private ISheetCells _sparse = default!;
-    private ISheetCells _near = default!;
-    private ISheetCells _far = default!;
-    private ISheetCells _absent = default!;
-    private ISheetCells _blankLed = default!;
+    private ICellSpace _dense = default!;
+    private ICellSpace _sparse = default!;
+    private ICellSpace _near = default!;
+    private ICellSpace _far = default!;
+    private ICellSpace _absent = default!;
+    private ICellSpace _blankLed = default!;
 
     [GlobalSetup]
     public void Setup()

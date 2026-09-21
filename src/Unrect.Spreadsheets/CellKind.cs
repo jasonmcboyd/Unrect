@@ -16,9 +16,8 @@ namespace Unrect.Spreadsheets
     Text,
 
     /// <summary>
-    /// A numeric value — one kind regardless of how it was stored; <see cref="Cell"/>'s granular
-    /// accessors (<see cref="Cell.GetDouble"/>/<see cref="Cell.GetDecimal"/>/<see cref="Cell.GetInt"/>)
-    /// do the interpreting, not the kind.
+    /// A numeric value — one kind, and one representation: a double, which is what the store
+    /// holds. A decimal or a whole number is a conversion a reader asks for, above the space.
     /// </summary>
     Number,
 

@@ -130,7 +130,7 @@ namespace Unrect.Benchmarks
     /// reader hands back one instance per distinct value and there is nothing left to intern.
     /// </para>
     /// </summary>
-    public static ISheetCells EagerSpace(bool unique, bool sharedStrings, int rows = Rows, int columns = Columns) =>
+    public static ICellSpace EagerSpace(bool unique, bool sharedStrings, int rows = Rows, int columns = Columns) =>
       SpreadsheetSpace.Create(
         RetentionWorkbooks.Path(unique, sharedStrings, rows, columns),
         RetentionWorkbooks.SheetName);

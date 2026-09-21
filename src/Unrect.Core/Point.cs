@@ -66,8 +66,30 @@ namespace Unrect.Core
     /// <summary>The negation of <see cref="IsBlank"/>.</summary>
     public bool HasValue => !IsBlank;
 
-    /// <summary>Whether the cell's canonical text is its own value — see <see cref="ISpace.IsText"/>.</summary>
-    public bool IsText => Space.IsText(Column, Row);
+    /// <summary>
+    /// Whether the cell holds text of its own — true exactly when <see cref="TryGetText(out string)"/>
+    /// would hand it back.
+    /// </summary>
+    public bool IsText => Space.TryGetTextAt(Column, Row, out _, out _);
+
+    /// <summary>The text the cell holds, if text is what it holds — see <see cref="ISpace.TryGetTextAt"/>.</summary>
+    /// <param name="value">The cell's own text, when the answer is true.</param>
+    public bool TryGetText(out string value) => Space.TryGetTextAt(Column, Row, out value, out _);
+
+    /// <summary>
+    /// The text the cell holds, or the reason it holds none — the space's own reason where it gave
+    /// one, otherwise what was expected and what the cell says instead.
+    /// </summary>
+    /// <param name="value">The cell's own text, when the answer is true.</param>
+    /// <param name="problem">Why not, when the answer is false; null when it is true.</param>
+    public bool TryGetText(out string value, out CellProblem? problem)
+    {
+      if (Space.TryGetTextAt(Column, Row, out value, out problem))
+        return true;
+
+      problem ??= CellProblem.Expected("Text", Space, Column, Row);
+      return false;
+    }
 
     /// <summary>
     /// What the cell says, or null when it is blank. A method rather than a property because a cell

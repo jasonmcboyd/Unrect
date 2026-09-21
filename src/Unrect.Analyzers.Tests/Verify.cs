@@ -21,7 +21,7 @@ namespace Unrect.Analyzers.Tests
     /// What every test source may use, so that no test spends lines on imports — and, since phase 6,
     /// the file scope itself: there is no <c>Projection.Over&lt;T&gt;()</c> to open a scope with any
     /// more, so a source's space is named once here, in the <c>using static</c> every fixture shares.
-    /// <c>ISheetCells</c> is the narrow one on purpose: it is what the streaming door vends and
+    /// <c>ICellSpace</c> is the narrow one on purpose: it is what the streaming door vends and
     /// what a formula-reading child out-demands.
     /// </summary>
     public const string Usings = """
@@ -31,8 +31,8 @@ namespace Unrect.Analyzers.Tests
       using Unrect.Projections;
       using Unrect.Spreadsheets;
 
-      using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-      using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+      using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+      using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 
       """;
 

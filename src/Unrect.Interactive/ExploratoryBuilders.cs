@@ -31,7 +31,7 @@ namespace Unrect.Interactive
   /// </summary>
   /// <typeparam name="TSpace">The sheet every declaration in the file is written against.</typeparam>
   public static class ExploratoryBuilders<TSpace>
-    where TSpace : class, ISheetCells
+    where TSpace : class, ICellSpace
   {
     /// <summary><c>Table&lt;T&gt;()</c>, forgiving a member no column binds.</summary>
     /// <typeparam name="T">What one record reads.</typeparam>

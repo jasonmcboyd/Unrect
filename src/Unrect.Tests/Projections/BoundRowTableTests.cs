@@ -7,8 +7,8 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Spreadsheets.SpreadsheetProjections;
 using static Unrect.Tests.ProjectionTestSpaces;
 
@@ -37,7 +37,7 @@ namespace Unrect.Tests.Projections
     /// is A2 rather than A1 — an assertion about "the header origin" says nothing if the header is at
     /// the corner of the sheet anyway.
     /// </summary>
-    private static ISheetCells Allocations() => Mixed(new object?[,]
+    private static ICellSpace Allocations() => Mixed(new object?[,]
     {
       { null, null, null },
       { "Account", "Symbol", "Weight" },
@@ -50,7 +50,7 @@ namespace Unrect.Tests.Projections
     /// The same three records with the columns in an order no declaration mentions. Nothing but the
     /// header row and the cell positions differ from <see cref="Allocations"/>.
     /// </summary>
-    private static ISheetCells ReorderedAllocations() => Mixed(new object?[,]
+    private static ICellSpace ReorderedAllocations() => Mixed(new object?[,]
     {
       { null, null, null },
       { "Weight", "Account", "Symbol" },
@@ -64,7 +64,7 @@ namespace Unrect.Tests.Projections
     /// read. Which record is a parameter so the index in the path and the address on the sheet can be
     /// varied independently — they differ by the header row and the blank row above it.
     /// </summary>
-    private static ISheetCells AllocationsWithABadWeightIn(int record)
+    private static ICellSpace AllocationsWithABadWeightIn(int record)
     {
       var cells = new object?[5, 3];
 
@@ -83,10 +83,10 @@ namespace Unrect.Tests.Projections
     }
 
     /// <summary>The one the naming tests use: the SECOND record's weight, at C4.</summary>
-    private static ISheetCells AllocationsWithABadWeight() => AllocationsWithABadWeightIn(1);
+    private static ICellSpace AllocationsWithABadWeight() => AllocationsWithABadWeightIn(1);
 
     /// <summary>Two headered blocks with a blank row between them — one declaration, placed repeatedly.</summary>
-    private static ISheetCells TwoBlocks() => Mixed(new object?[,]
+    private static ICellSpace TwoBlocks() => Mixed(new object?[,]
     {
       { "Account", "Symbol", "Weight" },
       { "A-1", "XYZ", 1.5m },
@@ -111,7 +111,7 @@ namespace Unrect.Tests.Projections
     /// A hoisted bound row is a <em>factory</em>, with its dependence on the captions in its
     /// signature — the spelling the rung recommends, and the one that gives every record a name.
     /// </summary>
-    private static IProjectionDefinition<ISheetCells, Allocation> AllocationRow(LabelMap captions)
+    private static IProjectionDefinition<ICellSpace, Allocation> AllocationRow(LabelMap captions)
       => Overlay(o => new Allocation(
         Account: o.Next(Right(captions["Account"]).Of(Text())),
         Symbol: o.Next(Right(captions["Symbol"]).Of(Text())),
@@ -191,7 +191,7 @@ namespace Unrect.Tests.Projections
     // Minted from a real view through the bottom rung — a real header, a real context, real failures —
     // which is the recipe the spec records rather than a synthetic factory nobody would ship.
 
-    private static LabelMap CaptionsOf(ISheetCells sheet) => Table((TableView<ISheetCells> view) => view.Labels).Map(sheet);
+    private static LabelMap CaptionsOf(ICellSpace sheet) => Table((TableView<ICellSpace> view) => view.Labels).Map(sheet);
 
     [Fact]
     public void CaptionsAreTheColumnsOwnNamesInColumnOrder()
@@ -349,7 +349,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ANullBindIsRejectedAtConstructionToo()
     {
-      Assert.Throws<ArgumentNullException>(() => Table(1, (Func<LabelMap, IProjectionDefinition<ISheetCells, int>>)null!));
+      Assert.Throws<ArgumentNullException>(() => Table(1, (Func<LabelMap, IProjectionDefinition<ICellSpace, int>>)null!));
     }
 
     // --- 4. Fault discipline ----------------------------------------------------------------------------
@@ -360,19 +360,19 @@ namespace Unrect.Tests.Projections
     // boundary that is loud about everything is a different (and wrong) system.
 
     /// <summary>A bind with a bug in it: it hands back no description at all.</summary>
-    private static IProjectionDefinition<ISheetCells, int> NoRow(LabelMap captions) => null!;
+    private static IProjectionDefinition<ICellSpace, int> NoRow(LabelMap captions) => null!;
 
     /// <summary>A bind whose read of the file broke underneath it.</summary>
-    private static IProjectionDefinition<ISheetCells, int> DiskFailed(LabelMap captions) => throw new IOException("the share stopped answering");
+    private static IProjectionDefinition<ICellSpace, int> DiskFailed(LabelMap captions) => throw new IOException("the share stopped answering");
 
     /// <summary>A bind that looked and disagreed — the data-quality side, which tolerance is for.</summary>
-    private static IProjectionDefinition<ISheetCells, int> WrongExport(LabelMap captions)
+    private static IProjectionDefinition<ICellSpace, int> WrongExport(LabelMap captions)
       => throw new InvalidOperationException("this is not the export this declaration reads");
 
     /// <summary>A bind that works, for the half of each test that must stay quiet.</summary>
-    private static IProjectionDefinition<ISheetCells, string> AccountCell(LabelMap captions) => Right(captions["Account"]).Of(Text());
+    private static IProjectionDefinition<ICellSpace, string> AccountCell(LabelMap captions) => Right(captions["Account"]).Of(Text());
 
-    private static ProjectionException Faults<T>(IProjectionDefinition<ISheetCells, T> projection, ISheetCells sheet)
+    private static ProjectionException Faults<T>(IProjectionDefinition<ICellSpace, T> projection, ICellSpace sheet)
     {
       var failure = Assert.Throws<ProjectionException>(() => projection.Map(sheet));
 
@@ -461,7 +461,7 @@ namespace Unrect.Tests.Projections
     private static IProjectionDefinition<ISpreadsheetSpace, SourcedAllocation> SourcedRow(LabelMap captions)
       => ProjectionBuilders<ISpreadsheetSpace>.Overlay(o => new SourcedAllocation(
         Account: o.Next(ProjectionBuilders<ISpreadsheetSpace>.Right(captions["Account"])
-          .Of(SpreadsheetProjections.Text<ISpreadsheetSpace>())),
+          .Of(ProjectionBuilders<ISpreadsheetSpace>.Text())),
         Formula: o.Next(ProjectionBuilders<ISpreadsheetSpace>.Right(captions["Total"])
           .Of(SpreadsheetProjections.Formula<ISpreadsheetSpace>()))));
 
@@ -470,7 +470,7 @@ namespace Unrect.Tests.Projections
     {
       // The assignment IS the assertion, and it is the correction that reversed the design: a lambda
       // RETURNING a projection exposes its demands in its return type, where a value-consuming lambda
-      // never could. (Spelled with prefixes because this file is closed over ISheetCells and this one
+      // never could. (Spelled with prefixes because this file is closed over ICellSpace and this one
       // declaration is not.)
       IProjectionDefinition<ISpreadsheetSpace, IReadOnlyList<SourcedAllocation>> table =
         ProjectionBuilders<ISpreadsheetSpace>.Table(headerRows: 1, eachRow: SourcedRow);
@@ -487,7 +487,7 @@ namespace Unrect.Tests.Projections
       // handed a REGION of its space — an invariant struct — so the interface is invariant and
       // NEITHER conversion exists. Written reflectively so the refusal can be asserted at all: the
       // compiler's half of it is the absence of a conversion.
-      var plain = typeof(IProjectionDefinition<ISheetCells, IReadOnlyList<SourcedAllocation>>);
+      var plain = typeof(IProjectionDefinition<ICellSpace, IReadOnlyList<SourcedAllocation>>);
       var demanding = typeof(IProjectionDefinition<ISpreadsheetSpace, IReadOnlyList<SourcedAllocation>>);
 
       Assert.False(demanding.IsAssignableFrom(plain), "a bound table converts to no other space");
@@ -498,7 +498,7 @@ namespace Unrect.Tests.Projections
     public void APlainBindLeavesTheTablePlain()
     {
       // The control, and the reason every existing declaration still compiles.
-      IProjectionDefinition<ISheetCells, IReadOnlyList<Allocation>> table = Table(headerRows: 1, eachRow: AllocationRow);
+      IProjectionDefinition<ICellSpace, IReadOnlyList<Allocation>> table = Table(headerRows: 1, eachRow: AllocationRow);
 
       Assert.Equal(3, table.Map(Allocations()).Count);
     }

@@ -1,7 +1,6 @@
 using System;
 
 using Unrect.Core;
-using Unrect.Projections;
 using Unrect.Spreadsheets;
 
 namespace Unrect.Tests
@@ -25,7 +24,7 @@ namespace Unrect.Tests
   /// </summary>
   internal sealed class FormulaGridSpace : ISpreadsheetSpace
   {
-    private readonly ISheetCells _values;
+    private readonly ICellSpace _values;
     private readonly string?[,] _formulas;
 
     internal FormulaGridSpace(Cell[,] values, string?[,] formulas)
@@ -44,60 +43,41 @@ namespace Unrect.Tests
     public bool IsBlank(int column, int row) => _values.IsBlank(column, row);
 
     /// <inheritdoc/>
-    public bool IsText(int column, int row) => _values.IsText(column, row);
-
-    /// <inheritdoc/>
     public string? AsText(int column, int row) => _values.AsText(column, row);
 
     /// <inheritdoc/>
-    public bool TextAt(int column, int row, out string value, out CellProblem? problem)
-      => _values.TextAt(column, row, out value, out problem);
+    public bool TryGetTextAt(int column, int row, out string value, out CellProblem? problem)
+      => _values.TryGetTextAt(column, row, out value, out problem);
 
     /// <inheritdoc/>
-    public bool DecimalAt(int column, int row, out decimal value, out CellProblem? problem)
-      => _values.DecimalAt(column, row, out value, out problem);
+    public bool TryGetDoubleAt(int column, int row, out double value, out CellProblem? problem)
+      => _values.TryGetDoubleAt(column, row, out value, out problem);
 
     /// <inheritdoc/>
-    public bool IntegerAt(int column, int row, out int value, out CellProblem? problem)
-      => _values.IntegerAt(column, row, out value, out problem);
+    public bool TryGetDateTimeAt(int column, int row, out DateTime value, out CellProblem? problem)
+      => _values.TryGetDateTimeAt(column, row, out value, out problem);
 
     /// <inheritdoc/>
-    public bool DoubleAt(int column, int row, out double value, out CellProblem? problem)
-      => _values.DoubleAt(column, row, out value, out problem);
+    public bool TryGetBooleanAt(int column, int row, out bool value, out CellProblem? problem)
+      => _values.TryGetBooleanAt(column, row, out value, out problem);
 
     /// <inheritdoc/>
-    public bool DateTimeAt(int column, int row, out DateTime value, out CellProblem? problem)
-      => _values.DateTimeAt(column, row, out value, out problem);
+    public bool TryGetErrorAt(int column, int row, out string error) => _values.TryGetErrorAt(column, row, out error);
 
     /// <inheritdoc/>
-    public bool BooleanAt(int column, int row, out bool value, out CellProblem? problem)
-      => _values.BooleanAt(column, row, out value, out problem);
-
-    /// <inheritdoc/>
-    public CellKind KindAt(int column, int row) => _values.KindAt(column, row);
-
-    /// <inheritdoc/>
-    public string Describe(int column, int row) => _values.Describe(column, row);
-
-    /// <inheritdoc/>
-    public bool IsErrorAt(int column, int row) => _values.IsErrorAt(column, row);
-
-    /// <inheritdoc/>
-    public string? ErrorTextAt(int column, int row) => _values.ErrorTextAt(column, row);
-
-    /// <inheritdoc/>
-    public string? FormulaAt(int column, int row)
+    public bool TryGetFormulaAt(int column, int row, out string formula)
     {
       if (column < 0 || column >= Area.Width || row < 0 || row >= Area.Height)
         throw new OutOfBoundsException();
 
-      return _formulas[row, column];
+      formula = _formulas[row, column]!;
+      return formula is not null;
     }
 
     /// <summary>A formula fixture written as a literal has no formatting: every cell is set the default way.</summary>
     public CellFont FontAt(int column, int row)
     {
-      _ = FormulaAt(column, row);
+      _ = TryGetFormulaAt(column, row, out _);
 
       return default;
     }
@@ -105,7 +85,7 @@ namespace Unrect.Tests
     /// <inheritdoc cref="FontAt"/>
     public CellFill FillAt(int column, int row)
     {
-      _ = FormulaAt(column, row);
+      _ = TryGetFormulaAt(column, row, out _);
 
       return default;
     }

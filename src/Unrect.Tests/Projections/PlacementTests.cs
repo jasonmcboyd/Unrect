@@ -6,8 +6,8 @@ using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -25,7 +25,7 @@ namespace Unrect.Tests.Projections
     /// The shared coordinate grid, turned on its side: this file's placements read down a tall
     /// narrow sheet, where the other suites read across a wide one. Only the default differs.
     /// </summary>
-    private static ISheetCells CoordinateGrid(int width = 3, int height = 4)
+    private static ICellSpace CoordinateGrid(int width = 3, int height = 4)
       => ProjectionTestSpaces.CoordinateGrid(width, height);
 
     // --- The placement is applied at the root ------------------------------------------------------
@@ -81,7 +81,7 @@ namespace Unrect.Tests.Projections
     // --- Whether a placement fits is asked a row at a time -----------------------------------------
     //
     // The fit test reads the available space through the forward probes (its width, and whether it
-    // has a row at the far edge of what is being asked for) rather than off ISheetCells.Area, so that an
+    // has a row at the far edge of what is being asked for) rather than off ICellSpace.Area, so that an
     // extent still being discovered is asked for one row instead of for all of them. What it ANSWERS
     // must not depend on which kind of space it was asked about — so every case below is asserted
     // twice, over a measured grid and over a bound the engine is discovering, and the boundary case
@@ -110,7 +110,7 @@ namespace Unrect.Tests.Projections
       })), CoordinateGrid());
     }
 
-    private static void AssertFit(bool fits, string extent, IProjectionDefinition<ISheetCells, string> declaration, ISheetCells space)
+    private static void AssertFit(bool fits, string extent, IProjectionDefinition<ICellSpace, string> declaration, ICellSpace space)
     {
       if (fits)
       {
@@ -601,8 +601,8 @@ namespace Unrect.Tests.Projections
       // pipeline's terminal: .Of blames "projection" at construction rather than letting a null
       // surface later as a NullReferenceException when the steps run. Both the offset door
       // (OffsetBy) and the extent door (Sized) reach that one guard.
-      Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjectionDefinition<ISheetCells, int>)null!).Named("x")).ParamName);
-      Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjectionDefinition<ISheetCells, int>)null!).Select(v => v)).ParamName);
+      Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjectionDefinition<ICellSpace, int>)null!).Named("x")).ParamName);
+      Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjectionDefinition<ICellSpace, int>)null!).Select(v => v)).ParamName);
       Assert.Equal(
         "projection",
         Assert.Throws<ArgumentNullException>(() => OffsetBy(SkipRows(1)).Of<int>(null!)).ParamName);

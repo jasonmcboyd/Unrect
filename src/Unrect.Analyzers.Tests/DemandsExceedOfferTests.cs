@@ -11,7 +11,7 @@ namespace Unrect.Analyzers.Tests
   /// code that does not compile; the point of the rule is that what the compiler says about it names
   /// no capability, so the two spaces that disagree are named beside it.
   /// <para>
-  /// The space a fixture is scoped to is <c>ISheetCells</c> (see <see cref="Verify.Usings"/>),
+  /// The space a fixture is scoped to is <c>ICellSpace</c> (see <see cref="Verify.Usings"/>),
   /// which is what the streaming door vends and what a formula-reading declaration out-demands — the
   /// same pair the phase-6 vocabulary makes a reader meet.
   /// </para>
@@ -39,7 +39,7 @@ namespace Unrect.Analyzers.Tests
         """
         class Report
         {
-          static string? Read(ISheetCells sheet)
+          static string? Read(ICellSpace sheet)
           {
             IProjectionDefinition<IFormulaSpace, string?> formula = SpreadsheetProjections.Formula<IFormulaSpace>();
 
@@ -47,7 +47,7 @@ namespace Unrect.Analyzers.Tests
           }
         }
         """,
-        Exceeds("IFormulaSpace", "ISheetCells"));
+        Exceeds("IFormulaSpace", "ICellSpace"));
 
     [Fact]
     public Task Apply_is_read_the_same_way()
@@ -55,7 +55,7 @@ namespace Unrect.Analyzers.Tests
         """
         class Report
         {
-          static void Read(ISheetCells sheet)
+          static void Read(ICellSpace sheet)
           {
             IProjectionDefinition<IFormulaSpace, string?> formula = SpreadsheetProjections.Formula<IFormulaSpace>();
 
@@ -63,7 +63,7 @@ namespace Unrect.Analyzers.Tests
           }
         }
         """,
-        Exceeds("IFormulaSpace", "ISheetCells"));
+        Exceeds("IFormulaSpace", "ICellSpace"));
 
     [Fact]
     public Task MapWithDiagnostics_is_read_the_same_way()
@@ -71,7 +71,7 @@ namespace Unrect.Analyzers.Tests
         """
         class Report
         {
-          static void Read(ISheetCells sheet)
+          static void Read(ICellSpace sheet)
           {
             IProjectionDefinition<IFormulaSpace, string?> formula = SpreadsheetProjections.Formula<IFormulaSpace>();
 
@@ -79,7 +79,7 @@ namespace Unrect.Analyzers.Tests
           }
         }
         """,
-        Exceeds("IFormulaSpace", "ISheetCells"));
+        Exceeds("IFormulaSpace", "ICellSpace"));
 
     /// <summary>
     /// The canonical base is the space that asks for nothing, so it is what an over-demand is
@@ -122,7 +122,7 @@ namespace Unrect.Analyzers.Tests
         """
         class Report
         {
-          static string? Read(ISheetCells sheet) => Text().Map(sheet);
+          static string? Read(ICellSpace sheet) => Text().Map(sheet);
         }
         """);
 

@@ -5,7 +5,7 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.Observations;
 using static Unrect.Tests.ProjectionTestSpaces;
 
@@ -20,17 +20,17 @@ namespace Unrect.Tests.Projections
   /// </summary>
   public class NothingDefinitionTests
   {
-    private static ISheetCells Numbers() => Ladder(3);
+    private static ICellSpace Numbers() => Ladder(3);
 
 
     /// <summary>The discovered extent: full width, and as many leading rows as hold anything.</summary>
-    private static IProjectionDefinition<ISheetCells, int> Rows() => Range(RowsWhileAnyValue(), b => b.Height);
+    private static IProjectionDefinition<ICellSpace, int> Rows() => Range(RowsWhileAnyValue(), b => b.Height);
 
     /// <summary>A cell read as text — which is a failure over <see cref="Numbers"/>, and an absorbable one.</summary>
-    private static IProjectionDefinition<ISheetCells, string> Title() => TextCell();
+    private static IProjectionDefinition<ICellSpace, string> Title() => TextCell();
 
     /// <summary>The internal ε, at the one type these tests need it at.</summary>
-    private static IProjectionDefinition<ISheetCells, int> Unit() => NothingDefinition<ISheetCells, int>.Instance;
+    private static IProjectionDefinition<ICellSpace, int> Unit() => NothingDefinition<ICellSpace, int>.Instance;
 
     [Fact]
     public void ALayoutThatDeclaredNothingIsRefusedRatherThanReadingAsNothing()

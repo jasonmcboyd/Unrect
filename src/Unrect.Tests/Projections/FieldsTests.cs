@@ -8,7 +8,7 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -27,14 +27,14 @@ namespace Unrect.Tests.Projections
   public class FieldsTests
   {
     // A card sitting two columns in, as a real one does.
-    private static ISheetCells Card() => Mixed(new object?[,]
+    private static ICellSpace Card() => Mixed(new object?[,]
     {
       { null, null, "EIN:", "12-3456789" },
       { null, null, "Entity Type", "LLC" },
       { null, null, "Deal Type:", "Growth" },
     });
 
-    private static IProjectionDefinition<ISheetCells, System.Collections.Generic.IReadOnlyDictionary<string, Point<ISheetCells>>> Entity()
+    private static IProjectionDefinition<ICellSpace, System.Collections.Generic.IReadOnlyDictionary<string, Point<ICellSpace>>> Entity()
       => Fields(Field("EIN"), Field("Entity Type"), Field("Deal Type"));
 
     // --- What it reads -------------------------------------------------------------------------------
@@ -98,16 +98,16 @@ namespace Unrect.Tests.Projections
       // is what a caller can ask. The static side of the assertion is the local's type; the runtime
       // side is the closed interface the factory's projection implements, so the pin holds even if
       // the factory is later composed out of other projections.
-      IProjectionDefinition<ISheetCells, IReadOnlyDictionary<string, Point<ISheetCells>>> block = Fields(Field("EIN"));
+      IProjectionDefinition<ICellSpace, IReadOnlyDictionary<string, Point<ICellSpace>>> block = Fields(Field("EIN"));
 
       Assert.Contains(
-        typeof(IProjectionDefinition<ISheetCells, IReadOnlyDictionary<string, Point<ISheetCells>>>),
+        typeof(IProjectionDefinition<ICellSpace, IReadOnlyDictionary<string, Point<ICellSpace>>>),
         block.GetType().GetInterfaces());
 
-      IReadOnlyDictionary<string, Point<ISheetCells>> read = block.Map(Card());
+      IReadOnlyDictionary<string, Point<ICellSpace>> read = block.Map(Card());
       object value = read["EIN"];
 
-      Assert.IsType<Point<ISheetCells>>(value);
+      Assert.IsType<Point<ICellSpace>>(value);
     }
 
     // --- The label rule -------------------------------------------------------------------------------

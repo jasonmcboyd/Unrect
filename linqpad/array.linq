@@ -13,7 +13,7 @@
 // the system — in this grid, zero means empty — and everything above it is the same
 // vocabulary the spreadsheet scripts use — down to the header. The query's namespace imports name
 // this file's space once, `using static Unrect.Projections.ProjectionBuilders<Unrect.Core.IValueCells<int>>`,
-// which is the same line the spreadsheet scripts carry with ISheetCells in it: one vocabulary, each
+// which is the same line the spreadsheet scripts carry with ICellSpace in it: one vocabulary, each
 // file naming the space it is written over. What differs is only what a cell can be asked — a point
 // over a grid of values answers Value(), a point over a sheet answers Decimal() — because the
 // reading a space can promise is the space's own.

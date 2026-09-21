@@ -56,13 +56,24 @@ namespace Unrect.Projections
 
       if (value is null)
       {
-        problem = at => $"expected a value at {at}, found a blank cell";
+        problem = new CellProblem("expected a value at ", ", found a blank cell");
         return false;
       }
 
       problem = null;
       return true;
     }
+
+    /// <summary>
+    /// One cell holding text — the one assertion every space can answer. Where <see cref="AsText"/>
+    /// takes whatever the cell says, this refuses a cell that holds anything else: a numeric 42 says
+    /// "42" and holds no text. The space words the refusal in the vocabulary of its own store.
+    /// </summary>
+    public static IProjectionDefinition<TSpace, string> Text()
+      => new ReadDefinition<TSpace, string>("Text", ReadHeldText, Placement.Of(ExplicitArea(1, 1)), blankIsNull: false);
+
+    private static bool ReadHeldText(Point<TSpace> cell, out string value, out CellProblem? problem)
+      => cell.TryGetText(out value, out problem);
 
     /// <summary>One row, as wide as the leading columns that carry values.</summary>
     public static IProjectionDefinition<TSpace, T> Row<T>(Func<CellStrip<TSpace>, T> project)

@@ -8,8 +8,8 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Streaming
@@ -105,7 +105,7 @@ namespace Unrect.Tests.Streaming
     /// INSTANCE — itself for a first sighting, and -1 for a cell that is not text at all. Two
     /// spaces with the same pattern share exactly the same values as each other.
     /// </summary>
-    private static IReadOnlyList<int> SharingPattern(ISheetCells space)
+    private static IReadOnlyList<int> SharingPattern(ICellSpace space)
     {
       // Reference equality on purpose: the question is which instance a cell points at, and the
       // default comparer would answer the one this test is not asking.
@@ -138,7 +138,7 @@ namespace Unrect.Tests.Streaming
     // and it consumes the whole sheet — which is to say it exercises the pool, the window and the
     // diagnostics in one declaration. If streaming can read this, it can read a report.
 
-    private static IProjectionDefinition<ISheetCells, (string Title, IReadOnlyList<string> Summary, IReadOnlyList<IReadOnlyList<string>> ByTransferDate, IReadOnlyList<IReadOnlyList<string>> ByInception)> InvestorIrr()
+    private static IProjectionDefinition<ICellSpace, (string Title, IReadOnlyList<string> Summary, IReadOnlyList<IReadOnlyList<string>> ByTransferDate, IReadOnlyList<IReadOnlyList<string>> ByInception)> InvestorIrr()
     {
       var investorBlock = Table(row => row["Investor Name"].Text()).Named("investor block");
       var series = VerticalRepeat(investorBlock, separatedBy: BlankRows());
@@ -244,7 +244,7 @@ namespace Unrect.Tests.Streaming
 
     private sealed record LedgerEntry(int Entry, int Amount, string Category);
 
-    private static IProjectionDefinition<ISheetCells, IReadOnlyList<LedgerEntry>> Ledger()
+    private static IProjectionDefinition<ICellSpace, IReadOnlyList<LedgerEntry>> Ledger()
     {
       var ledgerEntry = HorizontalFlow(h => new LedgerEntry(
         Entry: h.Next(Integer()),
@@ -272,7 +272,7 @@ namespace Unrect.Tests.Streaming
     /// The same ledger read as a HEADERED table, so the composition the slot rung is built from —
     /// a header read once, then the body tiled beneath it — is the thing under the window.
     /// </summary>
-    private static IProjectionDefinition<ISheetCells, IReadOnlyList<LedgerEntry>> HeaderedLedger()
+    private static IProjectionDefinition<ICellSpace, IReadOnlyList<LedgerEntry>> HeaderedLedger()
     {
       var ledgerEntry = HorizontalFlow(h => new LedgerEntry(
         Entry: h.Next(Integer()),
@@ -348,7 +348,7 @@ namespace Unrect.Tests.Streaming
     /// name the one that differs.
     /// </summary>
     /// <summary>
-    /// Every member of <see cref="ISheetCells"/>, at both doors, for every cell — the canonical four,
+    /// Every member of <see cref="ICellSpace"/>, at both doors, for every cell — the canonical four,
     /// the error queries, and all six kinded reads including the sentence a refused one produces.
     /// <para>
     /// The whole interface rather than the canonical part of it, because the interface is the
@@ -358,7 +358,7 @@ namespace Unrect.Tests.Streaming
     /// and a reading that fails has a sentence, a kind and an A1 to disagree about.
     /// </para>
     /// </summary>
-    private static void AssertEveryCellAgrees(ISheetCells eager, ISheetCells streamed)
+    private static void AssertEveryCellAgrees(ICellSpace eager, ICellSpace streamed)
     {
       for (var row = 0; row < eager.Area.Size.Height; row++)
         for (var column = 0; column < eager.Area.Size.Width; column++)
@@ -368,7 +368,7 @@ namespace Unrect.Tests.Streaming
           Assert.Equal(eager.IsText(column, row), streamed.IsText(column, row));
           Assert.Equal(eager.AsText(column, row), streamed.AsText(column, row));
 
-          // The error queries, which are the two ISheetCells members no leaf reads: IsErrorAt asks
+          // The error queries, which are the two ICellSpace members no leaf reads: IsErrorAt asks
           // whether the cell IS one, and ErrorTextAt hands back the file's own spelling where it
           // differs from the canonical one. A door that lost the literal would answer null here for
           // two different reasons, and the contract has one.
@@ -380,10 +380,10 @@ namespace Unrect.Tests.Streaming
     }
 
     /// <summary>
-    /// All six kinded reads of one cell, each rendered as its value or as the sentence that refused
+    /// All four kinded reads of one cell, each rendered as its value or as the sentence that refused
     /// it, so a whole cell's kinded behaviour is one string to compare.
     /// </summary>
-    private static string Read(ISheetCells space, int column, int row)
+    private static string Read(ICellSpace space, int column, int row)
     {
       string Of<T>(Func<int, int, (bool Read, T Value, CellProblem? Problem)> read)
       {
@@ -391,17 +391,15 @@ namespace Unrect.Tests.Streaming
 
         return ok
           ? Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? "<null>"
-          : problem!(ProjectionLocation.At(Plane<ISheetCells>.Of(space)[column, row]).A1);
+          : problem!.Value.Render(ProjectionLocation.At(Plane<ICellSpace>.Of(space)[column, row]).A1);
       }
 
       return string.Join(
         " | ",
-        Of<string>((c, r) => (space.TextAt(c, r, out var v, out var p), v, p)),
-        Of<decimal>((c, r) => (space.DecimalAt(c, r, out var v, out var p), v, p)),
-        Of<int>((c, r) => (space.IntegerAt(c, r, out var v, out var p), v, p)),
-        Of<double>((c, r) => (space.DoubleAt(c, r, out var v, out var p), v, p)),
-        Of<DateTime>((c, r) => (space.DateTimeAt(c, r, out var v, out var p), v, p)),
-        Of<bool>((c, r) => (space.BooleanAt(c, r, out var v, out var p), v, p)));
+        Of<string>((c, r) => (space.TryGetTextAt(c, r, out var v, out var p), v, p)),
+        Of<double>((c, r) => (space.TryGetDoubleAt(c, r, out var v, out var p), v, p)),
+        Of<DateTime>((c, r) => (space.TryGetDateTimeAt(c, r, out var v, out var p), v, p)),
+        Of<bool>((c, r) => (space.TryGetBooleanAt(c, r, out var v, out var p), v, p)));
     }
 
     private static string Describe(IReadOnlyList<ProjectionDiagnostic> diagnostics) =>

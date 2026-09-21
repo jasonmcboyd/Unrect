@@ -7,7 +7,7 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 
 namespace Unrect.Tests.Projections
 {
@@ -30,10 +30,10 @@ namespace Unrect.Tests.Projections
     /// The owner's workbook: a blank first row and column, "From" and "To" merged over two columns
     /// each, and the captions Id, Code, Id, Code beneath them.
     /// </summary>
-    private static ISheetCells Workbook()
+    private static ICellSpace Workbook()
       => SpreadsheetSpace.Create(Path.Combine(AppContext.BaseDirectory, "TestData", "multi-header-table.xlsx"), "Sheet1");
 
-    private static string[] Paths(int headerRows, ISheetCells sheet)
+    private static string[] Paths(int headerRows, ICellSpace sheet)
       => Table(headerRows, t => t.ColumnPaths).Map(sheet).Select(path => string.Join(" / ", path)).ToArray();
 
     [Fact]
@@ -68,7 +68,7 @@ namespace Unrect.Tests.Projections
     }
 
     /// <summary>A label merged DOWN, a caption under no band, the bands, and a caption to the right of the last.</summary>
-    private static ISheetCells Mixed() => SheetGrid.Of(new object?[,]
+    private static ICellSpace Mixed() => SheetGrid.Of(new object?[,]
     {
       { "Date", null, "From", null, "To", null, null },
       { null, "Rate", "Id", "Code", "Id", "Code", "Notes" },
@@ -174,7 +174,7 @@ namespace Unrect.Tests.Projections
       var labels = ColumnLabels(2).Map(Workbook());
 
       Assert.Equal(new[] { "", "From / Id", "From / Code", "To / Id", "To / Code" }, labels.Paths.Select(path => string.Join(" / ", path)));
-      Assert.Equal(new[] { 2 }, Table(2, Record((TableRow<ISheetCells> r) => r[3].Integer())).Map(Workbook()));
+      Assert.Equal(new[] { 2 }, Table(2, Record((TableRow<ICellSpace> r) => r[3].Integer())).Map(Workbook()));
     }
 
     [Fact]

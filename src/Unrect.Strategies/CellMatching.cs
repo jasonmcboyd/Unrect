@@ -70,7 +70,7 @@ namespace Unrect.Strategies
     {
       var needle = TrimLabel(label);
 
-      return point => point.IsText && Comparison.Equals(TrimLabel(point.AsText()!), needle);
+      return point => point.TryGetText(out var text) && Comparison.Equals(TrimLabel(text), needle);
     }
 
     /// <summary>
@@ -99,7 +99,7 @@ namespace Unrect.Strategies
     {
       var needle = Trimmed(text);
 
-      return point => point.IsText && Comparison.Equals(Trimmed(point.AsText()!), needle);
+      return point => point.TryGetText(out var text) && Comparison.Equals(Trimmed(text), needle);
     }
 
     /// <summary>

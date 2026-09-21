@@ -43,8 +43,8 @@ namespace Unrect.Spreadsheets
     /// <para>
     /// <b>The receiver is a sheet declaration or a canonical one, and nothing else.</b> A streamed
     /// sheet reads values only — <see cref="Workbook.Sheet"/> hands back a plain
-    /// <see cref="ISheetCells"/>, the honest absence — so there is an overload for a declaration
-    /// written over <c>ISheetCells</c> and one for a declaration written over the canonical
+    /// <see cref="ICellSpace"/>, the honest absence — so there is an overload for a declaration
+    /// written over <c>ICellSpace</c> and one for a declaration written over the canonical
     /// <see cref="ISpace"/>, which a sheet also is. A declaration over anything else the sheet
     /// cannot be — <see cref="IFormulaSpace"/>, <see cref="ISpreadsheetSpace"/>, a grid of typed
     /// values — matches neither, so <c>formulaReadingProjection.MapWorkbook(…)</c> is a compile
@@ -60,7 +60,7 @@ namespace Unrect.Spreadsheets
     /// <param name="options">How the file is read; the defaults where omitted.</param>
     /// <exception cref="ArgumentException">No sheet of that name exists.</exception>
     public static TResult MapWorkbook<TResult>(
-      this IProjectionDefinition<ISheetCells, TResult> projection,
+      this IProjectionDefinition<ICellSpace, TResult> projection,
       string path,
       string sheetName,
       WorkbookOptions? options = null)
@@ -71,7 +71,7 @@ namespace Unrect.Spreadsheets
       return Over(path, sheetName, options, projection.Map);
     }
 
-    /// <inheritdoc cref="MapWorkbook{TResult}(IProjectionDefinition{ISheetCells, TResult}, string, string, WorkbookOptions)"/>
+    /// <inheritdoc cref="MapWorkbook{TResult}(IProjectionDefinition{ICellSpace, TResult}, string, string, WorkbookOptions)"/>
     /// <remarks>
     /// The canonical receiver: a declaration written over <see cref="ISpace"/> asks for nothing a
     /// sheet does not answer, so it reads a workbook through the same door — and a projection type
@@ -90,7 +90,7 @@ namespace Unrect.Spreadsheets
     }
 
     /// <summary>
-    /// <see cref="MapWorkbook{TResult}(IProjectionDefinition{ISheetCells, TResult}, string, string, WorkbookOptions)"/>,
+    /// <see cref="MapWorkbook{TResult}(IProjectionDefinition{ICellSpace, TResult}, string, string, WorkbookOptions)"/>,
     /// keeping what the decomposition noticed — every tolerance
     /// boundary that absorbed a failure, every alternative a choice passed over, and space the
     /// projection did not describe.
@@ -107,7 +107,7 @@ namespace Unrect.Spreadsheets
     /// <param name="options">How the file is read; the defaults where omitted.</param>
     /// <exception cref="ArgumentException">No sheet of that name exists.</exception>
     public static MapResult<TResult> MapWorkbookWithDiagnostics<TResult>(
-      this IProjectionDefinition<ISheetCells, TResult> projection,
+      this IProjectionDefinition<ICellSpace, TResult> projection,
       string path,
       string sheetName,
       WorkbookOptions? options = null)
@@ -118,7 +118,7 @@ namespace Unrect.Spreadsheets
       return Over(path, sheetName, options, projection.MapWithDiagnostics);
     }
 
-    /// <inheritdoc cref="MapWorkbookWithDiagnostics{TResult}(IProjectionDefinition{ISheetCells, TResult}, string, string, WorkbookOptions)"/>
+    /// <inheritdoc cref="MapWorkbookWithDiagnostics{TResult}(IProjectionDefinition{ICellSpace, TResult}, string, string, WorkbookOptions)"/>
     /// <remarks>
     /// The canonical receiver, for the same reason its plain twin has one.
     /// </remarks>
@@ -138,7 +138,7 @@ namespace Unrect.Spreadsheets
     /// One open, one sheet, one read, one close — the shape all four entry points share, with the
     /// read handed in so the book closes after it and never before.
     /// </summary>
-    private static TResult Over<TResult>(string path, string sheetName, WorkbookOptions? options, Func<ISheetCells, TResult> read)
+    private static TResult Over<TResult>(string path, string sheetName, WorkbookOptions? options, Func<ICellSpace, TResult> read)
     {
       using var book = Workbook.Open(path, options ?? new WorkbookOptions());
 

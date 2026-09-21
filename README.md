@@ -36,7 +36,7 @@ spelling out the other members.
 notebook: `sheet.At("B4")` reaches a cell by hand, and `sheet.ScaffoldRecord("Transaction")`
 (or `ScaffoldClass`) finds the caption row, reads a few samples under it and hands back a type
 declaration as C# source to dump, paste and edit — `LabelsIn.Column` reads a card, labels down
-a column, the same way. Both are also leaves (`using static Unrect.Interactive.ScaffoldBuilders<ISheetCells>;`
+a column, the same way. Both are also leaves (`using static Unrect.Interactive.ScaffoldBuilders<ICellSpace>;`
 then `v.Next(ScaffoldRecord("Transaction"))`), so a half-written declaration can guess the types
 of the tables it has already found; paste the type and swap the leaf for `Table<Transaction>()`.
 While a type is still being written, `LooseTable<T>()` (from

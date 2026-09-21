@@ -1,7 +1,6 @@
 using System;
 
 using Unrect.Core;
-using Unrect.Projections;
 using Unrect.Spreadsheets;
 
 namespace Unrect.Tests
@@ -22,12 +21,12 @@ namespace Unrect.Tests
   /// and there is nothing to translate.
   /// </para>
   /// </summary>
-  internal sealed class WatermarkSpace : ISheetCells
+  internal sealed class WatermarkSpace : ICellSpace
   {
-    private readonly ISheetCells _inner;
+    private readonly ICellSpace _inner;
     private readonly Trace _trace = new Trace();
 
-    public WatermarkSpace(ISheetCells inner) => _inner = inner;
+    public WatermarkSpace(ICellSpace inner) => _inner = inner;
 
     /// <summary>The deepest a read ever fell behind the furthest row read so far, in rows.</summary>
     public int BackwardReach => _trace.BackwardReach;
@@ -42,46 +41,26 @@ namespace Unrect.Tests
     public bool IsBlank(int column, int row) => _inner.IsBlank(column, Read(row));
 
     /// <inheritdoc/>
-    public bool IsText(int column, int row) => _inner.IsText(column, Read(row));
-
-    /// <inheritdoc/>
     public string? AsText(int column, int row) => _inner.AsText(column, Read(row));
 
     /// <inheritdoc/>
-    public bool TextAt(int column, int row, out string value, out CellProblem? problem)
-      => _inner.TextAt(column, Read(row), out value, out problem);
+    public bool TryGetTextAt(int column, int row, out string value, out CellProblem? problem)
+      => _inner.TryGetTextAt(column, Read(row), out value, out problem);
 
     /// <inheritdoc/>
-    public bool DecimalAt(int column, int row, out decimal value, out CellProblem? problem)
-      => _inner.DecimalAt(column, Read(row), out value, out problem);
+    public bool TryGetDoubleAt(int column, int row, out double value, out CellProblem? problem)
+      => _inner.TryGetDoubleAt(column, Read(row), out value, out problem);
 
     /// <inheritdoc/>
-    public bool IntegerAt(int column, int row, out int value, out CellProblem? problem)
-      => _inner.IntegerAt(column, Read(row), out value, out problem);
+    public bool TryGetDateTimeAt(int column, int row, out DateTime value, out CellProblem? problem)
+      => _inner.TryGetDateTimeAt(column, Read(row), out value, out problem);
 
     /// <inheritdoc/>
-    public bool DoubleAt(int column, int row, out double value, out CellProblem? problem)
-      => _inner.DoubleAt(column, Read(row), out value, out problem);
+    public bool TryGetBooleanAt(int column, int row, out bool value, out CellProblem? problem)
+      => _inner.TryGetBooleanAt(column, Read(row), out value, out problem);
 
     /// <inheritdoc/>
-    public bool DateTimeAt(int column, int row, out DateTime value, out CellProblem? problem)
-      => _inner.DateTimeAt(column, Read(row), out value, out problem);
-
-    /// <inheritdoc/>
-    public bool BooleanAt(int column, int row, out bool value, out CellProblem? problem)
-      => _inner.BooleanAt(column, Read(row), out value, out problem);
-
-    /// <inheritdoc/>
-    public CellKind KindAt(int column, int row) => _inner.KindAt(column, Read(row));
-
-    /// <inheritdoc/>
-    public string Describe(int column, int row) => _inner.Describe(column, Read(row));
-
-    /// <inheritdoc/>
-    public bool IsErrorAt(int column, int row) => _inner.IsErrorAt(column, Read(row));
-
-    /// <inheritdoc/>
-    public string? ErrorTextAt(int column, int row) => _inner.ErrorTextAt(column, Read(row));
+    public bool TryGetErrorAt(int column, int row, out string error) => _inner.TryGetErrorAt(column, Read(row), out error);
 
     /// <summary>
     /// Records one row touched and hands it straight back, so every member traces by using its

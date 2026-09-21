@@ -4,8 +4,8 @@
   <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Engine.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Engine.dll</Reference>
   <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll</Reference>
   <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Strategies.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Strategies.dll</Reference>
-  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Spreadsheets.ISheetCells&gt;</Namespace>
-  <Namespace>static Unrect.Spreadsheets.SheetProjectionBuilders&lt;Unrect.Spreadsheets.ISheetCells&gt;</Namespace>
+  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Spreadsheets.ICellSpace&gt;</Namespace>
+  <Namespace>static Unrect.Spreadsheets.SheetProjectionBuilders&lt;Unrect.Spreadsheets.ICellSpace&gt;</Namespace>
   <Namespace>Unrect.Core</Namespace>
   <Namespace>Unrect.Projections</Namespace>
   <Namespace>Unrect.Spreadsheets</Namespace>
@@ -18,7 +18,7 @@ void Main()
 	// two structures — identical output, different decomposition.
 	//
 	// The space is named once, in the query's namespace imports: the canonical vocabulary as
-	// `using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>`, and the
+	// `using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>`, and the
 	// sheet's own readings as `using static Unrect.Spreadsheets.SheetProjectionBuilders<...>`.
 	var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\examples\investor-summary.xlsx");
 		
@@ -31,33 +31,48 @@ void Main()
 	// offset; the gap before the details section is the AfterBlankRows() entry; the gaps between detail
 	// blocks are the repeat's separator.
 	var report =
-		VerticalFlow(v => new
+		VerticalFlow(v => new Report
 		{
 			ReportHeader = v.Next(
-			Column(c => new
-			{
-				Title      = c[0].Text(),
-				ReportDate = c[1].Date(),
-				ReportId   = c[2].Text(),
-			})),
-			Summary = v.Next(Table<InvestorSummary>()),
+				Column(c => new ReportHeader
+				{
+					Title      = c[0].Text(),
+					ReportDate = c[1].Date(),
+					ReportId   = c[2].Text(),
+				})),
+			Summary = v.Next(Table<InvestorSummary>()).ToArray(),
 			Details = v.Next(
-				AfterBlankRows()
-				.VerticalRepeat(
+				//AfterBlankRows()
+				//.
+				VerticalRepeat(
 					VerticalFlow(block => new InvestorTransactions(block.Next(Text()), block.Next(Table<Transaction>()))),
 					separatedBy: BlankRows(),
-					atLeast: 1)),
+					atLeast: 1))
+				.ToArray(),
 		});
 	
 	var result = report.Map(SpreadsheetSpace.Create(path, "Summary"));
 	
 	// Cross-region correlations are post-parse validation, not decomposition.
-	(result.Summary.Count == result.Details.Count).Dump("summary rows == detail blocks");
+	(result.Summary.Length == result.Details.Length).Dump("summary rows == detail blocks");
 	result.Dump();
 	
 }
 
 // You can define other methods, fields, classes and namespaces here
+public class Report
+{
+	public ReportHeader ReportHeader { get; init; }
+	public InvestorSummary[] Summary { get; init; }
+	public InvestorTransactions[] Details { get; init; }
+}
+public class ReportHeader
+{
+	public string Title { get; init; }
+	public DateTime ReportDate { get; init; }
+	public string ReportId { get; init; }
+}
+
 public class InvestorSummary
 {
 	public string Investor { get; init; }

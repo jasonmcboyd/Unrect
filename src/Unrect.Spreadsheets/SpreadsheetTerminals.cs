@@ -16,46 +16,39 @@ namespace Unrect.Spreadsheets
   /// </summary>
   public static class SpreadsheetTerminals
   {
-    /// <inheritdoc cref="SpreadsheetProjections.Text{TSpace}()"/>
-    /// <typeparam name="TSpace">The sheet the pipeline is declared over.</typeparam>
-    /// <param name="stage">The pipeline this leaf closes.</param>
-    public static IProjectionDefinition<TSpace, string> Text<TSpace>(this PlacementStage<TSpace> stage)
-      where TSpace : class, ISheetCells
-      => Placed(stage).Of(SpreadsheetProjections.Text<TSpace>());
-
     /// <inheritdoc cref="SpreadsheetProjections.Decimal{TSpace}()"/>
     /// <typeparam name="TSpace">The sheet the pipeline is declared over.</typeparam>
     /// <param name="stage">The pipeline this leaf closes.</param>
     public static IProjectionDefinition<TSpace, decimal> Decimal<TSpace>(this PlacementStage<TSpace> stage)
-      where TSpace : class, ISheetCells
+      where TSpace : class, ICellSpace
       => Placed(stage).Of(SpreadsheetProjections.Decimal<TSpace>());
 
     /// <inheritdoc cref="SpreadsheetProjections.Integer{TSpace}()"/>
     /// <typeparam name="TSpace">The sheet the pipeline is declared over.</typeparam>
     /// <param name="stage">The pipeline this leaf closes.</param>
     public static IProjectionDefinition<TSpace, int> Integer<TSpace>(this PlacementStage<TSpace> stage)
-      where TSpace : class, ISheetCells
+      where TSpace : class, ICellSpace
       => Placed(stage).Of(SpreadsheetProjections.Integer<TSpace>());
 
     /// <inheritdoc cref="SpreadsheetProjections.Double{TSpace}()"/>
     /// <typeparam name="TSpace">The sheet the pipeline is declared over.</typeparam>
     /// <param name="stage">The pipeline this leaf closes.</param>
     public static IProjectionDefinition<TSpace, double> Double<TSpace>(this PlacementStage<TSpace> stage)
-      where TSpace : class, ISheetCells
+      where TSpace : class, ICellSpace
       => Placed(stage).Of(SpreadsheetProjections.Double<TSpace>());
 
     /// <inheritdoc cref="SpreadsheetProjections.Date{TSpace}()"/>
     /// <typeparam name="TSpace">The sheet the pipeline is declared over.</typeparam>
     /// <param name="stage">The pipeline this leaf closes.</param>
     public static IProjectionDefinition<TSpace, DateTime> Date<TSpace>(this PlacementStage<TSpace> stage)
-      where TSpace : class, ISheetCells
+      where TSpace : class, ICellSpace
       => Placed(stage).Of(SpreadsheetProjections.Date<TSpace>());
 
     /// <inheritdoc cref="SpreadsheetProjections.Boolean{TSpace}()"/>
     /// <typeparam name="TSpace">The sheet the pipeline is declared over.</typeparam>
     /// <param name="stage">The pipeline this leaf closes.</param>
     public static IProjectionDefinition<TSpace, bool> Boolean<TSpace>(this PlacementStage<TSpace> stage)
-      where TSpace : class, ISheetCells
+      where TSpace : class, ICellSpace
       => Placed(stage).Of(SpreadsheetProjections.Boolean<TSpace>());
 
     /// <inheritdoc cref="SpreadsheetProjections.Formula{TSpace}()"/>

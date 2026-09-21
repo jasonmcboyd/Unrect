@@ -6,7 +6,7 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 
 namespace Unrect.Tests
 {
@@ -29,7 +29,7 @@ namespace Unrect.Tests
   public class ObservationsRenderingTests
   {
     /// <summary>The smallest space a leaf can be read over — the value under test comes from the closure, not the sheet.</summary>
-    private static ISheetCells One() => SheetGrid.Of(new object?[,] { { "x" } });
+    private static ICellSpace One() => SheetGrid.Of(new object?[,] { { "x" } });
 
     /// <summary>Renders <paramref name="value"/> the way the value facet would.</summary>
     private static string Rendered<T>(T value) => Observations.Observe(Point().Select(_ => value), One()).Value;

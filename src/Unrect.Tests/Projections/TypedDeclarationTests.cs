@@ -7,7 +7,7 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -22,7 +22,7 @@ namespace Unrect.Tests.Projections
   public class TypedDeclarationTests
   {
     /// <summary>Two rows of small numbers, one of large ones, then a note.</summary>
-    private static ISheetCells Lots()
+    private static ICellSpace Lots()
       => Mixed(new object?[,]
       {
         { 1m, 2m },
@@ -36,7 +36,7 @@ namespace Unrect.Tests.Projections
     {
       // Both halves of a typed predicate in one rule: the kind question, which the canonical four
       // cannot ask at all, and the value question, which they could only ask through the rendering.
-      var smallLots = Sized(RowsWhileAny(cell => cell.Kind() == CellKind.Number && cell.Decimal() < 7))
+      var smallLots = Sized(RowsWhileAny(cell => cell.IsDouble() && cell.Decimal() < 7))
         .Of(Range(block => block.Height));
 
       Assert.Equal(2, smallLots.Map(Lots()));
@@ -53,7 +53,7 @@ namespace Unrect.Tests.Projections
         { 5m, 6m },
       });
 
-      var body = On(RowWithCell(cell => cell.Kind() == CellKind.Number)).Of(Row(row => row[0].Decimal()));
+      var body = On(RowWithCell(cell => cell.IsDouble())).Of(Row(row => row[0].Decimal()));
 
       Assert.Equal(5m, body.Map(sheet));
     }
@@ -69,7 +69,7 @@ namespace Unrect.Tests.Projections
     public void ARuleBuiltAtTheLeastDemandingSpaceFlowsIntoAFileScopedToMore()
     {
       // Contravariance, doing the work a shared helper needs: an IAreaStrategy<ISpace> IS an
-      // IAreaStrategy<ISheetCells> as far as Sized is concerned, so the helper composes in as it is
+      // IAreaStrategy<ICellSpace> as far as Sized is concerned, so the helper composes in as it is
       // — no unwrapping, no cast, nothing annotated at the call site.
       var sheet = Mixed(new object?[,]
       {
@@ -121,8 +121,8 @@ namespace Unrect.Tests.Projections
 
       // Captions, then five records whose amounts are 100, 150, 400, 500, 1500. The section is the
       // records under 200: found by the first row holding a number, sized by the amounts.
-      var small = On(RowWithCell(cell => cell.Kind() == CellKind.Number))
-        .Sized(RowsWhileAny(cell => cell.Kind() == CellKind.Number && cell.Decimal() < 200))
+      var small = On(RowWithCell(cell => cell.IsDouble()))
+        .Sized(RowsWhileAny(cell => cell.IsDouble() && cell.Decimal() < 200))
         .Of(Range(block => block.Height));
 
       Assert.Equal(2, small.Map(book.Sheet("Detail")));

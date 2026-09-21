@@ -2,8 +2,8 @@ namespace Unrect.Core
 {
   /// <summary>
   /// The canonical surface of a grid: its extent, and the three questions anything may ask of a cell
-  /// without knowing what kind of data lies behind it — whether the cell is empty, whether it says a
-  /// word of its own, and what it says.
+  /// without knowing what kind of data lies behind it — whether the cell is empty, what it says, and
+  /// the text it holds, if it holds any.
   /// <para>
   /// One canonical surface, not one per capability: a backend that can do more says so by adding an
   /// interface of its own, never by answering these four differently.
@@ -37,18 +37,29 @@ namespace Unrect.Core
     bool IsBlank(int column, int row);
 
     /// <summary>
-    /// Whether the cell's canonical text is its own value: true for a cell holding words, false for
-    /// a blank, and false for every cell <see cref="AsText"/> has to render. Text matching asks this
-    /// first, which is why a numeric 42 is not a cell saying "42".
-    /// </summary>
-    /// <exception cref="OutOfBoundsException">The coordinate lies outside <see cref="Area"/>.</exception>
-    bool IsText(int column, int row);
-
-    /// <summary>
-    /// What the cell says: its own string where <see cref="IsText"/> is true, otherwise the
-    /// rendering the backend chose for it. Null exactly where <see cref="IsBlank"/> is true.
+    /// What the cell says, whatever it holds: a word says itself, and anything else says the
+    /// rendering the backend chose for it. Total — every cell that is not blank says something — and
+    /// null exactly where <see cref="IsBlank"/> is true. It is a rendering and never a reading: that
+    /// a cell says "42" does not mean it holds the text "42".
     /// </summary>
     /// <exception cref="OutOfBoundsException">The coordinate lies outside <see cref="Area"/>.</exception>
     string? AsText(int column, int row);
+
+    /// <summary>
+    /// The text the cell holds, if text is what it holds: true with the cell's own string for a cell
+    /// holding words, false for a blank and for every cell <see cref="AsText"/> has to render. Text
+    /// matching asks this, which is why a numeric 42 is not a cell holding "42".
+    /// <para>
+    /// A refusal may say why in <paramref name="problem"/>, in the vocabulary of the store the space
+    /// reads; a space with nothing particular to say leaves it null, and the reader is told what was
+    /// expected and what the cell says instead (<see cref="CellProblem.Expected"/>).
+    /// </para>
+    /// </summary>
+    /// <param name="column">The cell's column.</param>
+    /// <param name="row">The cell's row.</param>
+    /// <param name="value">The cell's own text, when the answer is true.</param>
+    /// <param name="problem">Why not, when the answer is false and the space has a reason to give.</param>
+    /// <exception cref="OutOfBoundsException">The coordinate lies outside <see cref="Area"/>.</exception>
+    bool TryGetTextAt(int column, int row, out string value, out CellProblem? problem);
   }
 }

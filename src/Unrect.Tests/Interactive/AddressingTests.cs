@@ -25,7 +25,7 @@ namespace Unrect.Tests.Interactive
   public class AddressingTests
   {
     /// <summary>Four wide, five tall; every cell says its own coordinate as <c>row * 10 + column + 1</c>.</summary>
-    private static ISheetCells Sheet() => CoordinateGrid(4, 5);
+    private static ICellSpace Sheet() => CoordinateGrid(4, 5);
 
     // --- At(column, row) ------------------------------------------------------------------------------
 
@@ -40,7 +40,7 @@ namespace Unrect.Tests.Interactive
 
       var point = sheet.At(2, 3);
 
-      Assert.Equal(Plane<ISheetCells>.Of(sheet)[2, 3], point);
+      Assert.Equal(Plane<ICellSpace>.Of(sheet)[2, 3], point);
       Assert.Same(sheet, point.Space);
       Assert.Equal(2, point.Column);
       Assert.Equal(3, point.Row);
@@ -55,7 +55,7 @@ namespace Unrect.Tests.Interactive
       // column, same row — rather than merely reading the same value.
       var sheet = Sheet();
 
-      var throughASlice = Plane<ISheetCells>.Of(sheet).Slice(new Offset(1, 1), new Area(3, 3))[1, 2];
+      var throughASlice = Plane<ICellSpace>.Of(sheet).Slice(new Offset(1, 1), new Area(3, 3))[1, 2];
 
       Assert.Equal(throughASlice, sheet.At(2, 3));
       Assert.Equal(throughASlice.GetHashCode(), sheet.At(2, 3).GetHashCode());
@@ -87,14 +87,14 @@ namespace Unrect.Tests.Interactive
     public void AddressingNothingAtAllIsAnArgumentBug()
     {
       // A declaration cannot recover from having no document, so this is never a bounds condition.
-      Assert.Throws<ArgumentNullException>(() => ((ISheetCells)null!).At(0, 0));
-      Assert.Throws<ArgumentNullException>(() => ((ISheetCells)null!).At("A1"));
+      Assert.Throws<ArgumentNullException>(() => ((ICellSpace)null!).At(0, 0));
+      Assert.Throws<ArgumentNullException>(() => ((ICellSpace)null!).At("A1"));
     }
 
     [Fact]
     public void AnySpaceAtAllCanBeAddressed()
     {
-      // The constraint is ISpace and not ISheetCells: addressing a cell is not a spreadsheet's
+      // The constraint is ISpace and not ICellSpace: addressing a cell is not a spreadsheet's
       // privilege, and a script poking at an in-memory grid reaches for the same word. If this ever
       // stops compiling, the sugar has quietly become Excel-only.
       var grid = GridSpace.Create(new[,] { { 1, 2, 3 }, { 4, 5, 6 } });

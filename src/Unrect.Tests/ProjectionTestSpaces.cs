@@ -23,10 +23,10 @@ namespace Unrect.Tests
   internal static class ProjectionTestSpaces
   {
     /// <summary>A grid of numbers in which zero means an empty cell.</summary>
-    public static ISheetCells Grid(int[,] values) => Cells(values, number => number == 0 ? Cell.Blank : Cell.Of(number));
+    public static ICellSpace Grid(int[,] values) => Cells(values, number => number == 0 ? Cell.Blank : Cell.Of(number));
 
     /// <summary>A grid of labels; null and "" are empty cells.</summary>
-    public static ISheetCells Labels(string?[,] values)
+    public static ICellSpace Labels(string?[,] values)
       => Cells(values, text => string.IsNullOrEmpty(text) ? Cell.Blank : Cell.Of(text!));
 
     // --- The doors ----------------------------------------------------------------------------------
@@ -48,7 +48,7 @@ namespace Unrect.Tests
     /// never what a particular cell says.
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="door"/> names no door.</exception>
-    public static ISheetCells Door(string door)
+    public static ICellSpace Door(string door)
     {
       switch (door)
       {
@@ -77,17 +77,17 @@ namespace Unrect.Tests
     /// file: the streaming door's own machinery with nothing of the adapter's in the way. The
     /// workbook behind it is never disposed; a fake source holds nothing to release.
     /// </summary>
-    public static ISheetCells Streamed(FakeSheet sheet)
+    public static ICellSpace Streamed(FakeSheet sheet)
       => Workbook.Over(new FakeRowSource(sheet), new WorkbookOptions()).Sheet(sheet.Name);
 
     /// <summary>A sheet of <paramref name="file"/> in <c>TestData</c>, read whole.</summary>
-    public static ISheetCells Eager(string file, string sheet)
+    public static ICellSpace Eager(string file, string sheet)
       => SpreadsheetSpace.Create(Path.Combine(AppContext.BaseDirectory, "TestData", file), sheet);
 
     /// <summary>
     /// A column of 1..<paramref name="height"/>, so an assertion reads as the row it came from.
     /// </summary>
-    public static ISheetCells Ladder(int height = 3)
+    public static ICellSpace Ladder(int height = 3)
     {
       var values = new int[height, 1];
 
@@ -101,7 +101,7 @@ namespace Unrect.Tests
     /// A grid whose every cell is (row * 10 + column + 1), so an assertion reads as a coordinate:
     /// 1 2 3 4 / 11 12 13 14 / 21 22 23 24. The +1 keeps cell (0, 0) non-blank.
     /// </summary>
-    public static ISheetCells CoordinateGrid(int width = 4, int height = 3)
+    public static ICellSpace CoordinateGrid(int width = 4, int height = 3)
     {
       var values = new int[height, width];
 
@@ -113,7 +113,7 @@ namespace Unrect.Tests
     }
 
     /// <summary>A cell read as a number — the leaf most tests need and none of them vary.</summary>
-    public static IProjectionDefinition<ISheetCells, int> IntCell() => SpreadsheetProjections.Integer<ISheetCells>();
+    public static IProjectionDefinition<ICellSpace, int> IntCell() => SpreadsheetProjections.Integer<ICellSpace>();
 
     /// <summary>
     /// A cell read as text — the other leaf the suite reaches for by reflex, and the twin of
@@ -121,7 +121,7 @@ namespace Unrect.Tests
     /// <c>v.Next(TextCell())</c> is named exactly as the inline lambda it replaced was: by kind and
     /// ordinal.
     /// </summary>
-    public static IProjectionDefinition<ISheetCells, string> TextCell() => SpreadsheetProjections.Text<ISheetCells>();
+    public static IProjectionDefinition<ICellSpace, string> TextCell() => ProjectionBuilders<ICellSpace>.Text();
 
     /// <summary>
     /// The problem text of a failure, without the subject the message template puts in front of it.
@@ -149,7 +149,7 @@ namespace Unrect.Tests
     /// its CLR type implies. The array-adapter equivalent of a real sheet, and the kinded home of the
     /// adaptation table <see cref="SheetGrid.Of(object?[,])"/> ships.
     /// </summary>
-    public static ISheetCells Mixed(object?[,] values) => SheetGrid.Of(values);
+    public static ICellSpace Mixed(object?[,] values) => SheetGrid.Of(values);
 
     /// <summary>
     /// One CLR value as the cell it stands for, shared so a source that is not a grid (the streaming
@@ -157,7 +157,7 @@ namespace Unrect.Tests
     /// </summary>
     public static Cell Adapt(object? value) => SheetGrid.Of(new[,] { { value } }).At(0, 0);
 
-    private static ISheetCells Cells<T>(T[,] values, Func<T, Cell> adapt)
+    private static ICellSpace Cells<T>(T[,] values, Func<T, Cell> adapt)
     {
       var cells = new Cell[values.GetLength(0), values.GetLength(1)];
 

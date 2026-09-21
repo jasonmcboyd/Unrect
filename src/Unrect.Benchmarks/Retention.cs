@@ -10,8 +10,8 @@ using Unrect.Core;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 
 namespace Unrect.Benchmarks
 {
@@ -73,7 +73,7 @@ namespace Unrect.Benchmarks
 
     private const string Unit = "bytes";
 
-    private static readonly IProjectionDefinition<ISheetCells, IReadOnlyList<LedgerRow>> Ledger = Table<LedgerRow>();
+    private static readonly IProjectionDefinition<ICellSpace, IReadOnlyList<LedgerRow>> Ledger = Table<LedgerRow>();
 
     /// <summary>
     /// The scenarios, in the order a reader should meet them: what the grid costs, what the same
@@ -234,12 +234,12 @@ namespace Unrect.Benchmarks
 
       switch (held)
       {
-        case ISheetCells space:
+        case ICellSpace space:
           if (space.Area.Height != rows || space.Area.Width != RetentionSpaces.Columns)
             throw new InvalidOperationException(
               FormattableString.Invariant($"{name}: expected a {rows}x{RetentionSpaces.Columns} grid, got {space.Area.Height}x{space.Area.Width}."));
 
-          var sheet = Plane<ISheetCells>.Of(space);
+          var sheet = Plane<ICellSpace>.Of(space);
 
           for (var row = 1; row < rows; row++)
             clients.Add(sheet[0, row].Text());

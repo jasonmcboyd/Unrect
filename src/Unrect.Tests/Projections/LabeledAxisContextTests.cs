@@ -6,8 +6,8 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -23,13 +23,13 @@ namespace Unrect.Tests.Projections
   public class LabeledAxisContextTests
   {
     /// <summary>Header <c>X Y Amount Z</c> over one body row <c>1 2 100 999</c> — Amount at column 2, its neighbour Z at 3.</summary>
-    private static ISheetCells AmountAtColumnTwo() => Mixed(new object?[,]
+    private static ICellSpace AmountAtColumnTwo() => Mixed(new object?[,]
     {
       { "X", "Y", "Amount", "Z" },
       { 1m,  2m,  100m,     999m },
     });
 
-    private static TableView<ISheetCells> TableOver(ISheetCells sheet) => Table((TableView<ISheetCells> view) => view).Map(sheet);
+    private static TableView<ICellSpace> TableOver(ICellSpace sheet) => Table((TableView<ICellSpace> view) => view).Map(sheet);
 
     // --- 1. CRITICAL: the capture->reading translation is actually applied ----------------------------
     //
@@ -49,8 +49,8 @@ namespace Unrect.Tests.Projections
       // frame is the REGION's now — a plane carries its own root origin — so the context is handed
       // down unchanged and what differs between the two frames is the strip's plane.
       var reading = table.Scope;
-      var strip = new CellStrip<ISheetCells>(Plane<ISheetCells>.Of(sheet).Slice(new Offset(1, 1), new Area(3, 1)), Orientation.Horizontal, reading);
-      var row = new TableRow<ISheetCells>(0, strip, reading);
+      var strip = new CellStrip<ICellSpace>(Plane<ICellSpace>.Of(sheet).Slice(new Offset(1, 1), new Area(3, 1)), Orientation.Horizontal, reading);
+      var row = new TableRow<ICellSpace>(0, strip, reading);
 
       // Translation applied: "Amount" lands on the absolute Amount cell, C2, holding 100.
       Assert.Equal(100m, row["Amount"].Decimal());
@@ -74,8 +74,8 @@ namespace Unrect.Tests.Projections
       var table = TableOver(sheet);
 
       var reading = table.Scope;
-      var strip = new CellStrip<ISheetCells>(Plane<ISheetCells>.Of(sheet).Slice(new Offset(0, 1), new Area(2, 1)), Orientation.Horizontal, reading);
-      var row = new TableRow<ISheetCells>(0, strip, reading);
+      var strip = new CellStrip<ICellSpace>(Plane<ICellSpace>.Of(sheet).Slice(new Offset(0, 1), new Area(2, 1)), Orientation.Horizontal, reading);
+      var row = new TableRow<ICellSpace>(0, strip, reading);
 
       var failure = Assert.Throws<ProjectionException>(() => row["Amount"].Decimal());
 
@@ -100,8 +100,8 @@ namespace Unrect.Tests.Projections
 
       // The reading frame is the last two columns (C, D); "X" (column A) is to their left.
       var reading = table.Scope;
-      var strip = new CellStrip<ISheetCells>(Plane<ISheetCells>.Of(sheet).Slice(new Offset(2, 1), new Area(2, 1)), Orientation.Horizontal, reading);
-      var row = new TableRow<ISheetCells>(0, strip, reading);
+      var strip = new CellStrip<ICellSpace>(Plane<ICellSpace>.Of(sheet).Slice(new Offset(2, 1), new Area(2, 1)), Orientation.Horizontal, reading);
+      var row = new TableRow<ICellSpace>(0, strip, reading);
 
       var failure = Assert.Throws<ProjectionException>(() => row["X"].Decimal());
 
@@ -121,7 +121,7 @@ namespace Unrect.Tests.Projections
       });
 
       var failure = Assert.Throws<ProjectionException>(
-        () => Table((TableRow<ISheetCells> row) => row["Net"].Decimal()).Map(sheet));
+        () => Table((TableRow<ICellSpace> row) => row["Net"].Decimal()).Map(sheet));
 
       Assert.Contains("there is no column named 'Net'; available columns: 'Investor', 'Amount'.", failure.Message);
     }
@@ -136,7 +136,7 @@ namespace Unrect.Tests.Projections
       });
 
       var failure = Assert.Throws<ProjectionException>(
-        () => Table((TableRow<ISheetCells> row) => row["Amount"].Decimal()).Map(sheet));
+        () => Table((TableRow<ICellSpace> row) => row["Amount"].Decimal()).Map(sheet));
 
       Assert.Contains("column 'Amount' appears at indices 0 and 1; use the index.", failure.Message);
     }
@@ -159,7 +159,7 @@ namespace Unrect.Tests.Projections
       // its scope, and the body bands advance from there — the whole chain must carry the labels.
       IReadOnlyList<Line> lines = VerticalFlow(v =>
       {
-        var table = v.Next(Table((TableRow<ISheetCells> row) => new Line(row["Investor"].Text(), row["Amount"].Decimal())));
+        var table = v.Next(Table((TableRow<ICellSpace> row) => new Line(row["Investor"].Text(), row["Amount"].Decimal())));
 
         return table;
       }).Map(sheet);
@@ -179,7 +179,7 @@ namespace Unrect.Tests.Projections
       });
 
       var failure = Assert.Throws<ProjectionException>(
-        () => Table(headerRows: 0, project: (TableRow<ISheetCells> row) => row["Amount"].Decimal()).Map(sheet));
+        () => Table(headerRows: 0, project: (TableRow<ICellSpace> row) => row["Amount"].Decimal()).Map(sheet));
 
       Assert.Contains("the table was declared without a header row; use column indices.", failure.Message);
     }

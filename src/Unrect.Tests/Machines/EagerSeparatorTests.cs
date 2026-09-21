@@ -7,7 +7,7 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Machines
@@ -32,17 +32,17 @@ namespace Unrect.Tests.Machines
       { "x", null },
     };
 
-    private static IProjectionDefinition<ISheetCells, IReadOnlyList<string>> Block()
+    private static IProjectionDefinition<ICellSpace, IReadOnlyList<string>> Block()
       => Sized(RowsWhileAnyValue()).Of(Range(block => (IReadOnlyList<string>)block.Rows.Select(row => row[0].AsText()!).ToList()));
 
-    private static IProjectionDefinition<ISheetCells, IReadOnlyList<IReadOnlyList<string>>> Repeat(IOffsetStrategy<ISheetCells> separator)
+    private static IProjectionDefinition<ICellSpace, IReadOnlyList<IReadOnlyList<string>>> Repeat(IOffsetStrategy<ICellSpace> separator)
       => VerticalRepeat(Block(), separatedBy: separator);
 
-    private static IProjectionDefinition<ISheetCells, IReadOnlyList<IReadOnlyList<string>>> Repeat(IOffsetStrategy separator)
+    private static IProjectionDefinition<ICellSpace, IReadOnlyList<IReadOnlyList<string>>> Repeat(IOffsetStrategy separator)
       => VerticalRepeat(Block(), separatedBy: separator);
 
     /// <summary>The gap is however many leading rows are wholly blank — spelled as a lambda, so it has no per-span form.</summary>
-    private static IOffsetStrategy<ISheetCells> BlankGap()
+    private static IOffsetStrategy<ICellSpace> BlankGap()
       => SelectOffset(plane =>
       {
         var rows = 0;

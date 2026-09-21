@@ -9,8 +9,8 @@ namespace Unrect.Spreadsheets
   /// The kinded vocabulary as a file scope, for a declaration written over a sheet that carries no
   /// formulas — which is what the streaming door vends:
   /// <code>
-  /// using static Unrect.Projections.ProjectionBuilders&lt;Unrect.Spreadsheets.ISheetCells&gt;;
-  /// using static Unrect.Spreadsheets.SheetProjectionBuilders&lt;Unrect.Spreadsheets.ISheetCells&gt;;
+  /// using static Unrect.Projections.ProjectionBuilders&lt;Unrect.Spreadsheets.ICellSpace&gt;;
+  /// using static Unrect.Spreadsheets.SheetProjectionBuilders&lt;Unrect.Spreadsheets.ICellSpace&gt;;
   ///
   /// var row = HorizontalFlow(h =&gt;
   /// {
@@ -23,7 +23,7 @@ namespace Unrect.Spreadsheets
   /// <para>
   /// It is <see cref="SpreadsheetProjectionBuilders{TSpace}"/> without the four members that need a
   /// formula, and its constraint says so: <see cref="Workbook.Sheet"/> hands back an
-  /// <see cref="ISheetCells"/>, so a streamed declaration cannot be scoped to the bundle and would
+  /// <see cref="ICellSpace"/>, so a streamed declaration cannot be scoped to the bundle and would
   /// otherwise have no closed vocabulary at all.
   /// </para>
   /// <para>
@@ -40,11 +40,8 @@ namespace Unrect.Spreadsheets
   /// </summary>
   /// <typeparam name="TSpace">The space every declaration in the importing file is written over.</typeparam>
   public static class SheetProjectionBuilders<TSpace>
-    where TSpace : class, ISheetCells
+    where TSpace : class, ICellSpace
   {
-    /// <inheritdoc cref="SpreadsheetProjections.Text{TSpace}()"/>
-    public static IProjectionDefinition<TSpace, string> Text() => SpreadsheetProjections.Text<TSpace>();
-
     /// <inheritdoc cref="SpreadsheetProjections.Decimal{TSpace}()"/>
     public static IProjectionDefinition<TSpace, decimal> Decimal() => SpreadsheetProjections.Decimal<TSpace>();
 

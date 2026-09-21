@@ -29,7 +29,7 @@ records the conventions that keep the numbers honest.
   timings of the wrong thing.
 - **Fixtures are synthetic sheets built through `SheetGrid`** (`CanonicalSpaces`, `IrrReport`
   — `CanonicalSpaces` keeps its pre-arc name, but every fixture on it is `SheetGrid.Of(...)`,
-  the kinded in-memory `ISheetCells`, not the canonical `GridSpace<T>`) — CI
+  the kinded in-memory `ICellSpace`, not the canonical `GridSpace<T>`) — CI
   runners get no workbooks. The 1M-row xlsx load measurements live outside the rig as
   scratch probes; the rig measures the layers we control. `Streaming`'s fixture keeps the
   same rule a different way: a synthetic `IRowSource` (`StreamingSpaces`) stands in for

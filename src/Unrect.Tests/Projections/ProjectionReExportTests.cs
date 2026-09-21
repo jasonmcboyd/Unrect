@@ -9,14 +9,14 @@ using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
 {
   /// <summary>
-  /// The single-import claim: <c>using static Unrect.Projections.ProjectionBuilders&lt;Unrect.Core.ISheetCells&gt;;</c> is all a
+  /// The single-import claim: <c>using static Unrect.Projections.ProjectionBuilders&lt;Unrect.Core.ICellSpace&gt;;</c> is all a
   /// declaration needs. Every re-export here forwards to a strategy factory, and each test proves
   /// the forwarding by behaviour rather than by reference — a re-export wired to the wrong strategy
   /// would compile.
@@ -38,9 +38,9 @@ namespace Unrect.Tests.Projections
 
     // 3 columns by 2 rows: 1 0 3 / 2 0 4 — a blank middle column, so column-wise and row-wise
     // discovery give different answers and a mis-wired re-export cannot hide.
-    private static ISheetCells Patchy() => Grid(new[,] { { 1, 0, 3 }, { 2, 0, 4 } });
+    private static ICellSpace Patchy() => Grid(new[,] { { 1, 0, 3 }, { 2, 0, 4 } });
 
-    private static ISheetCells Block() => Grid(new[,] { { 1, 2, 3 }, { 4, 5, 6 } });
+    private static ICellSpace Block() => Grid(new[,] { { 1, 2, 3 }, { 4, 5, 6 } });
 
     /// <summary>The extent a strategy resolves to on the patchy grid, as "WxH".</summary>
     private static string Measure(IAreaStrategy area)
@@ -344,7 +344,7 @@ namespace Unrect.Tests.Projections
         .Distinct(StringComparer.Ordinal)
         .OrderBy(name => name, StringComparer.Ordinal);
 
-      var declared = typeof(ProjectionBuilders<ISheetCells>)
+      var declared = typeof(ProjectionBuilders<ICellSpace>)
         .GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
         .Where(member => IsPhantom(member.ReturnType))
         .ToList();

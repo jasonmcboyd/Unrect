@@ -5,7 +5,7 @@ using BenchmarkDotNet.Attributes;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 
 namespace Unrect.Benchmarks
 {
@@ -24,9 +24,9 @@ namespace Unrect.Benchmarks
 
     // Declared once, at field initialization: a projection is a value, and building it is the
     // Tables family's subject, not this one's.
-    private static readonly IProjectionDefinition<ISheetCells, int> Line = Row(r => r.Count);
+    private static readonly IProjectionDefinition<ICellSpace, int> Line = Row(r => r.Count);
 
-    private static readonly IProjectionDefinition<ISheetCells, int> ManyChildren = VerticalFlow(v =>
+    private static readonly IProjectionDefinition<ICellSpace, int> ManyChildren = VerticalFlow(v =>
     {
       // The N children are a loop, not N call sites: the layout lambda declares its children by
       // calling Next, so this is still a declaration -- "N of these, stacked" without naming a row.
@@ -38,9 +38,9 @@ namespace Unrect.Benchmarks
       return total;
     });
 
-    private static readonly IProjectionDefinition<ISheetCells, int> Pair = HorizontalFlow(h => h.Next(Point().Select(p => p.HasValue ? 1 : 0)) + h.Next(Point().Select(_ => 1)));
+    private static readonly IProjectionDefinition<ICellSpace, int> Pair = HorizontalFlow(h => h.Next(Point().Select(p => p.HasValue ? 1 : 0)) + h.Next(Point().Select(_ => 1)));
 
-    private static readonly IProjectionDefinition<ISheetCells, int> Nested = VerticalFlow(v =>
+    private static readonly IProjectionDefinition<ICellSpace, int> Nested = VerticalFlow(v =>
     {
       var total = 0;
 
@@ -52,12 +52,12 @@ namespace Unrect.Benchmarks
 
     // Four independent readings of the same band. An overlay's children each start from the band's
     // own origin, so this measures placement without the flow's advance.
-    private static readonly IProjectionDefinition<ISheetCells, int> Anchored = Overlay(o => o.Next(On(RowContaining(CanonicalSpaces.Landmark)).Row(r => r.Count)) + o.Next(Column(CanonicalSpaces.BlockRows, c => c.Count)) + o.Next(Range(2, 2, b => b.Width)) + o.Next(Point().Select(p => p.HasValue ? 1 : 0)));
+    private static readonly IProjectionDefinition<ICellSpace, int> Anchored = Overlay(o => o.Next(On(RowContaining(CanonicalSpaces.Landmark)).Row(r => r.Count)) + o.Next(Column(CanonicalSpaces.BlockRows, c => c.Count)) + o.Next(Range(2, 2, b => b.Width)) + o.Next(Point().Select(p => p.HasValue ? 1 : 0)));
 
-    private static readonly IProjectionDefinition<ISheetCells, IReadOnlyList<int>> Blocks =
+    private static readonly IProjectionDefinition<ICellSpace, IReadOnlyList<int>> Blocks =
       VerticalRepeat(Range(RowsWhileAnyValue(), b => b.Height), separatedBy: BlankRows());
 
-    private static readonly IProjectionDefinition<ISheetCells, int> AllCells = Range(b =>
+    private static readonly IProjectionDefinition<ICellSpace, int> AllCells = Range(b =>
     {
       var present = 0;
 
@@ -69,14 +69,14 @@ namespace Unrect.Benchmarks
       return present;
     });
 
-    private static readonly IProjectionDefinition<ISheetCells, int> Section =
+    private static readonly IProjectionDefinition<ICellSpace, int> Section =
       Heading(CanonicalSpaces.DetailsCaption).Of(Range(RowsWhileAnyValue(), b => b.Height));
 
-    private ISheetCells _tall = default!;
-    private ISheetCells _blocks = default!;
-    private ISheetCells _band = default!;
-    private ISheetCells _document = default!;
-    private ISheetCells _mixed = default!;
+    private ICellSpace _tall = default!;
+    private ICellSpace _blocks = default!;
+    private ICellSpace _band = default!;
+    private ICellSpace _document = default!;
+    private ICellSpace _mixed = default!;
 
     [GlobalSetup]
     public void Setup()

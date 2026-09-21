@@ -1,7 +1,6 @@
 using System;
-using System.Globalization;
 
-using Unrect.Projections;
+using Unrect.Core;
 
 namespace Unrect.Spreadsheets
 {
@@ -63,41 +62,55 @@ namespace Unrect.Spreadsheets
       return true;
     }
 
-    internal static bool Decimal(Cell cell, out decimal value, out CellProblem? problem)
-    {
-      if (cell.Kind != CellKind.Number)
-        return Wrong(CellKind.Number, cell, out value, out problem);
+    // --- Conversions ---------------------------------------------------------------------------
+    //
+    // A sheet holds doubles. A decimal or a whole number is something a READER wants, so these sit
+    // above the space's contract and take the double it handed back: the point reads, the two
+    // convenience leaves and the table binder all convert here, which is why none of them can word
+    // the same number differently.
 
-      if (cell.TryGetDecimal() is decimal exact)
+    /// <summary>
+    /// The cell's number as a <see cref="decimal"/>. The conversion rounds to the fifteen significant
+    /// digits a double carries, which is what takes the binary noise off an amount: a cell that
+    /// stores 0.30000000000000004 reads as 0.3.
+    /// </summary>
+    internal static bool Decimal<TSpace>(Point<TSpace> cell, out decimal value, out CellProblem? problem)
+      where TSpace : class, ICellSpace
+    {
+      value = default;
+
+      if (!cell.Space.TryGetDoubleAt(cell.Column, cell.Row, out var number, out problem))
+        return false;
+
+      if (number > (double)decimal.MinValue && number < (double)decimal.MaxValue)
       {
-        value = exact;
-        problem = null;
+        value = (decimal)number;
         return true;
       }
 
-      value = default;
-      problem = at => $"the Number at {at} ({Number(cell)}) is not representable as a decimal";
+      problem = new CellProblem("the Number at ", $" ({Said(cell, number)}) is not representable as a decimal");
       return false;
     }
 
-    internal static bool Integer(Cell cell, out int value, out CellProblem? problem)
+    internal static bool Integer<TSpace>(Point<TSpace> cell, out int value, out CellProblem? problem)
+      where TSpace : class, ICellSpace
     {
-      if (cell.Kind != CellKind.Number)
-        return Wrong(CellKind.Number, cell, out value, out problem);
+      value = default;
 
-      if (cell.TryGetInt() is int whole)
+      if (!cell.Space.TryGetDoubleAt(cell.Column, cell.Row, out var number, out problem))
+        return false;
+
+      if (number >= int.MinValue && number <= int.MaxValue && Math.Floor(number) == number)
       {
-        value = whole;
-        problem = null;
+        value = (int)number;
         return true;
       }
 
-      var number = cell.GetDouble();
-
-      value = default;
-      problem = number < int.MinValue || number > int.MaxValue
-        ? at => $"the Number at {at} ({Number(cell)}) is outside the range of a 32-bit integer"
-        : (CellProblem)(at => $"the Number at {at} ({Number(cell)}) is not a whole number");
+      problem = new CellProblem(
+        "the Number at ",
+        number < int.MinValue || number > int.MaxValue
+          ? $" ({Said(cell, number)}) is outside the range of a 32-bit integer"
+          : $" ({Said(cell, number)}) is not a whole number");
       return false;
     }
 
@@ -108,20 +121,40 @@ namespace Unrect.Spreadsheets
     internal static string Describe(Cell cell)
       => cell.Kind == CellKind.Error ? cell.ToString() : cell.Kind.ToString();
 
+    /// <summary>
+    /// The two halves of a kind failure, said once per kind: a refused read is the common case under
+    /// a predicate, and the reason for it is these same few words every time.
+    /// </summary>
+    private static readonly string[] Expected = Halves(kind => $"expected {kind} at ");
+
+    private static readonly string[] Found = Halves(kind => $", found {kind}");
+
+    private static string[] Halves(Func<CellKind, string> say)
+    {
+      var kinds = (CellKind[])Enum.GetValues(typeof(CellKind));
+      var halves = new string[kinds.Length];
+
+      foreach (var kind in kinds)
+        halves[(int)kind] = say(kind);
+
+      return halves;
+    }
+
     private static bool Wrong<T>(CellKind expected, Cell found, out T value, out CellProblem? problem)
     {
       value = default!;
-      problem = at => $"expected {expected} at {at}, found {Describe(found)}";
+      problem = new CellProblem(
+        Expected[(int)expected],
+        found.Kind == CellKind.Error ? ", found " + Describe(found) : Found[(int)found.Kind]);
       return false;
     }
 
     /// <summary>
-    /// Invariant, because a failure message is a diagnostic artefact that gets pasted into an issue
-    /// rather than display output.
+    /// The number as the cell says it, so the failure agrees with the sheet the reader is looking at:
+    /// a cell that says 1.50 is quoted as 1.50.
     /// </summary>
-    private static string Number(Cell cell)
-      => cell.TryGetDecimal() is decimal exact
-        ? exact.ToString(CultureInfo.InvariantCulture)
-        : cell.GetDouble().ToString(CultureInfo.InvariantCulture);
+    private static string Said<TSpace>(Point<TSpace> cell, double number)
+      where TSpace : class, ICellSpace
+      => cell.AsText() ?? Renderings.ShortestRoundTrip(number);
   }
 }

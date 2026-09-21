@@ -8,7 +8,7 @@ using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 
 namespace Unrect.Tests.Spreadsheets
 {
@@ -29,7 +29,7 @@ namespace Unrect.Tests.Spreadsheets
     ///   3    #NULL!       #NUM!      (none)    (none)       7
     /// </code>
     /// </summary>
-    private static ISheetCells Edges(Func<Cell, bool>? isBlank = null)
+    private static ICellSpace Edges(Func<Cell, bool>? isBlank = null)
       => SpreadsheetSpace.Create(
         Path.Combine(AppContext.BaseDirectory, "TestData", "edge-cases.xlsx"),
         "Edges",
@@ -51,7 +51,7 @@ namespace Unrect.Tests.Spreadsheets
     {
       var space = Edges();
 
-      var sheet = Plane<ISheetCells>.Of(space);
+      var sheet = Plane<ICellSpace>.Of(space);
 
       Assert.Equal("text", sheet[0, 0].Text());
       Assert.Equal(42, sheet[1, 0].Integer());
@@ -256,8 +256,8 @@ namespace Unrect.Tests.Spreadsheets
       Assert.Equal("Error(42)", space.Describe(0, 0));
       Assert.Equal("42", space.AsText(0, 0));
 
-      Assert.False(space.DoubleAt(0, 0, out _, out var problem));
-      Assert.Equal("expected Number at B4, found Error(42)", problem!("B4"));
+      Assert.False(space.TryGetDoubleAt(0, 0, out _, out var problem));
+      Assert.Equal("expected Number at B4, found Error(42)", problem!.Value.Render("B4"));
     }
   }
 }

@@ -34,20 +34,31 @@ var strictSpace = SpreadsheetSpace.CreateWithFormulas(path, "Edges", isBlank: _ 
 // plane, which is what checks the coordinate), and it is a script's tool: inside a declaration the
 // Point() leaf hands back the same thing without anyone naming a coordinate.
 
-// 1. The kind map — errors are first-class, never blank. Describe is the document's own vocabulary
-// for a cell, which is the vocabulary a complaint about one is written in.
+// 1. The reading map — errors are first-class, never blank. There is no "what kind is this cell":
+// a cell can be read several ways at once (2 is a double, a decimal and an integer), so a script
+// that wants one word per cell asks the questions in the order it cares about. Each Is… is true
+// exactly when the read of the same name would succeed.
+string Reads(Point<ISpreadsheetSpace> p)
+	=> p.IsBlank ? "Blank"
+	: p.IsText ? "Text"
+	: p.IsInteger() ? "Number (whole)"
+	: p.IsDouble() ? "Number"
+	: p.IsDate() ? "Date"
+	: p.IsBoolean() ? "Boolean"
+	: $"Error({p.ErrorText()})";
+
 Range(5, 4, b => Enumerable.Range(0, 4)
-		.Select(r => Enumerable.Range(0, 5).Select(c => b[c, r].Describe()).ToArray())
+		.Select(r => Enumerable.Range(0, 5).Select(c => Reads(b[c, r])).ToArray())
 		.ToArray())
 	.Map(defaultSpace)
-	.Dump("cell kinds (default blankness)");
+	.Dump("how each cell reads (default blankness)");
 
 // 2. An error cell, end to end. It is not blank and it says what the file says — but no kind agrees
 // with it, so every kinded read refuses in the document's words and cites the cell in A1.
 var err = defaultSpace.At(0, 1);
 new
 {
-	Describe = err.Describe(),
+	Reads = Reads(err),
 	IsError = err.IsError(),
 	ErrorText = err.ErrorText(),
 	AsText = err.AsText(),
@@ -59,7 +70,7 @@ new
 // 3. Blankness belongs to the adapter: the same whitespace row under both rules. IsText separates
 // a cell whose text is its own value from one that merely renders — the distinction the canonical
 // surface is built on.
-string Say(Point<ISpreadsheetSpace> p) => $"{p.Describe()}, says {p.AsText() ?? "null"}, IsBlank={p.IsBlank}, IsText={p.IsText}";
+string Say(Point<ISpreadsheetSpace> p) => $"{Reads(p)}, says {p.AsText() ?? "null"}, IsBlank={p.IsBlank}, IsText={p.IsText}";
 new
 {
 	TwoSpaces_Default = Say(defaultSpace.At(0, 2)),

@@ -19,7 +19,7 @@ namespace Unrect.Spreadsheets
   /// text for every follower would report D5 as reading <c>B2*C2</c>, which is the formula of a
   /// different cell — plausible, wrong, and impossible to notice. Answering null would say "that
   /// cell is a plain value", the one thing null already means in
-  /// <see cref="IFormulaSpace.FormulaAt"/>. Both are lies at the scale real files operate at: a
+  /// <see cref="IFormulaSpace.TryGetFormulaAt"/>. Both are lies at the scale real files operate at: a
   /// genuine fund workbook in this project's corpus carries 35,089 formula cells, of which 14,734
   /// are written out, 706 are shared masters and <b>19,452 are followers</b> — 55% of every formula
   /// in the file, written that way by Excel itself, in a workbook nobody edited to be difficult. A

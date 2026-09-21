@@ -4,7 +4,7 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -31,14 +31,14 @@ namespace Unrect.Tests.Projections
   public class CanonicalLeafTests
   {
     /// <summary>One cell, holding whatever is asked for.</summary>
-    private static ISheetCells One(object? value) => Mixed(new object?[,] { { value } });
+    private static ICellSpace One(object? value) => Mixed(new object?[,] { { value } });
 
     /// <summary>
     /// A blank cell with a neighbour. The neighbour is the point: a row that is blank all the way
     /// across is a gap, which every placement steps over, so a blank that is a VALUE is a blank
     /// cell in a row that has something else in it.
     /// </summary>
-    private static ISheetCells BlankCell() => Mixed(new object?[,] { { null, "." } });
+    private static ICellSpace BlankCell() => Mixed(new object?[,] { { null, "." } });
 
     // --- Point: the address, and exactly one cell of it --------------------------------------------
 

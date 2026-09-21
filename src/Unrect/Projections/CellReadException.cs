@@ -5,23 +5,17 @@ using Unrect.Core;
 namespace Unrect.Projections
 {
   /// <summary>
-  /// A sentence about a cell, with the cell's address left as a hole to be filled in. A backend that
-  /// reads a cell knows what went wrong and where the cell is in its own space; only the projection
-  /// layer knows what to call that place, so the address arrives last.
-  /// </summary>
-  /// <param name="at">The cell's address, as the projection layer renders it.</param>
-  /// <returns>The whole sentence, ready to be read by someone holding a spreadsheet.</returns>
-  public delegate string CellProblem(string at);
-
-  /// <summary>
   /// A read of one cell that disagreed with what the declaration asked for — the wrong kind, a
   /// number that will not fit. Thrown by whatever read the cell, caught by the projection that
   /// called it, and rethrown as a <see cref="ProjectionException"/> carrying the declaration path
   /// and the cell's A1 address.
   /// <para>
-  /// <b>It is not a fault.</b> A cell of the wrong kind is a statement about the data, so a
-  /// tolerance boundary may absorb it — which is why this is an ordinary exception rather than
-  /// anything on the engine's fault list.
+  /// <b>It is not a fault, unless it says it is.</b> A cell of the wrong kind is a statement about
+  /// the data, so a tolerance boundary may absorb it. A read that failed because of the SOURCE —
+  /// a streamed row that has already been released — says nothing about the data at all, and is
+  /// raised with <see cref="IsFault"/> set: <c>Optional</c>, <c>Else</c> and <c>Choice</c> let it
+  /// through, because absorbing it would report a read that could not be made as a section that
+  /// is not there.
   /// </para>
   /// <para>
   /// The address travels as a <see cref="Point{TSpace}"/> over the canonical surface, because the
@@ -36,11 +30,23 @@ namespace Unrect.Projections
     /// </summary>
     /// <param name="at">The cell that was read.</param>
     /// <param name="problem">What was wrong with it, as a sentence awaiting an address.</param>
-    /// <exception cref="ArgumentNullException"><paramref name="problem"/> is null.</exception>
     public CellReadException(Point<ISpace> at, CellProblem problem)
+      : this(at, problem, isFault: false)
+    {
+    }
+
+    /// <summary>
+    /// A failed read of the cell at <paramref name="at"/>, which is a fault when
+    /// <paramref name="isFault"/> says the failure is the source's and not the cell's.
+    /// </summary>
+    /// <param name="at">The cell that was read.</param>
+    /// <param name="problem">What was wrong, as a sentence awaiting an address.</param>
+    /// <param name="isFault">Whether the read failed for a reason that says nothing about the data.</param>
+    public CellReadException(Point<ISpace> at, CellProblem problem, bool isFault)
     {
       At = at;
-      Problem = problem ?? throw new ArgumentNullException(nameof(problem));
+      Problem = problem;
+      IsFault = isFault;
     }
 
     /// <summary>The cell that was read.</summary>
@@ -48,6 +54,12 @@ namespace Unrect.Projections
 
     /// <summary>What was wrong with it, as a sentence awaiting an address.</summary>
     public CellProblem Problem { get; }
+
+    /// <summary>
+    /// Whether the read failed for a reason that says nothing about the data — the source could no
+    /// longer answer. No tolerance boundary absorbs such a failure.
+    /// </summary>
+    public bool IsFault { get; }
 
     /// <summary>
     /// The problem, addressed in A1. A point's coordinates are its space's own and a space is the
@@ -60,6 +72,6 @@ namespace Unrect.Projections
     /// inside the first.
     /// </para>
     /// </summary>
-    public override string Message => Problem(ProjectionLocation.At(At).A1);
+    public override string Message => Problem.Render(ProjectionLocation.At(At).A1);
   }
 }

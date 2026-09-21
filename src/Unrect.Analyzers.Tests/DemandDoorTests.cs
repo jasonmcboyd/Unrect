@@ -77,7 +77,7 @@ namespace Unrect.Analyzers.Tests
         """,
         titled:
           "Use 'ProjectionBuilders<IFormulaSpace>.Table' here — this child demands 'IFormulaSpace', "
-          + "which a 'Table' declared over 'ISheetCells' cannot carry");
+          + "which a 'Table' declared over 'ICellSpace' cannot carry");
 
     /// <summary>CS1503 is a common error; only the projection-shaped one is answered.</summary>
     [Fact]
@@ -105,7 +105,7 @@ namespace Unrect.Analyzers.Tests
         """
         class Report
         {
-          static void Take(IProjectionDefinition<ISheetCells, string?> child)
+          static void Take(IProjectionDefinition<ICellSpace, string?> child)
           {
           }
 
@@ -141,7 +141,7 @@ namespace Unrect.Analyzers.Tests
         """,
         titled:
           "Use 'ProjectionBuilders<ISpreadsheetSpace>.VerticalRepeat' here — this child demands "
-          + "'ISpreadsheetSpace', which a 'VerticalRepeat' declared over 'ISheetCells' cannot carry");
+          + "'ISpreadsheetSpace', which a 'VerticalRepeat' declared over 'ICellSpace' cannot carry");
 
     /// <summary>
     /// The same mis-scoped rule handed to <c>Sized</c>, which composes no child: there is no factory

@@ -59,18 +59,18 @@ namespace Unrect.Benchmarks
 
     // ----- Dense numeric: every cell a number. The engine's cheapest possible content. -----
 
-    private static ISheetCells? _megaDenseNumeric;
-    public static ISheetCells MegaDenseNumeric => _megaDenseNumeric ??= SheetGrid.Of(DenseNumericCells(MegaRows));
+    private static ICellSpace? _megaDenseNumeric;
+    public static ICellSpace MegaDenseNumeric => _megaDenseNumeric ??= SheetGrid.Of(DenseNumericCells(MegaRows));
 
     // ----- Dense mixed: kinds cycle by column, so a sweep sees every branch of the value model. -----
 
-    private static ISheetCells? _megaDenseMixed;
-    public static ISheetCells MegaDenseMixed => _megaDenseMixed ??= SheetGrid.Of(DenseMixedCells(MegaRows));
+    private static ICellSpace? _megaDenseMixed;
+    public static ICellSpace MegaDenseMixed => _megaDenseMixed ??= SheetGrid.Of(DenseMixedCells(MegaRows));
 
     // ----- Sparse: the K-1 shape. Same extent as dense, a quarter of the values. -----
 
-    private static ISheetCells? _megaSparse;
-    public static ISheetCells MegaSparse => _megaSparse ??= SheetGrid.Of(SparseCells(MegaRows));
+    private static ICellSpace? _megaSparse;
+    public static ICellSpace MegaSparse => _megaSparse ??= SheetGrid.Of(SparseCells(MegaRows));
 
     // ----- Raw arrays, for the adaptation benchmarks that measure GridSpace.Create itself. -----
 
@@ -82,24 +82,24 @@ namespace Unrect.Benchmarks
 
     // ----- Dense text: every cell its own string, for the rendering read. -----
 
-    private static ISheetCells? _megaDenseText;
-    public static ISheetCells MegaDenseText => _megaDenseText ??= SheetGrid.Of(DenseTextCells(MegaRows));
+    private static ICellSpace? _megaDenseText;
+    public static ICellSpace MegaDenseText => _megaDenseText ??= SheetGrid.Of(DenseTextCells(MegaRows));
 
     // ----- Tabular: a header row over typed columns that bind to SummaryRow by caption. -----
 
-    private static ISheetCells? _largeTabular;
-    public static ISheetCells LargeTabular => _largeTabular ??= SheetGrid.Of(TabularCells(LargeRows));
+    private static ICellSpace? _largeTabular;
+    public static ICellSpace LargeTabular => _largeTabular ??= SheetGrid.Of(TabularCells(LargeRows));
 
-    private static ISheetCells? _megaTabular;
-    public static ISheetCells MegaTabular => _megaTabular ??= SheetGrid.Of(TabularCells(MegaRows));
+    private static ICellSpace? _megaTabular;
+    public static ICellSpace MegaTabular => _megaTabular ??= SheetGrid.Of(TabularCells(MegaRows));
 
     // ----- Documents: the investor-IRR shape, the end-to-end subject. -----
 
-    private static ISheetCells? _smallDocument;
-    public static ISheetCells SmallDocument => _smallDocument ??= SheetGrid.Of(DocumentCells(SmallDocumentInvestors));
+    private static ICellSpace? _smallDocument;
+    public static ICellSpace SmallDocument => _smallDocument ??= SheetGrid.Of(DocumentCells(SmallDocumentInvestors));
 
-    private static ISheetCells? _largeDocument;
-    public static ISheetCells LargeDocument => _largeDocument ??= SheetGrid.Of(DocumentCells(LargeDocumentInvestors));
+    private static ICellSpace? _largeDocument;
+    public static ICellSpace LargeDocument => _largeDocument ??= SheetGrid.Of(DocumentCells(LargeDocumentInvestors));
 
     /// <summary>
     /// The smaller of the two end-to-end sizes, at roughly 2 ms a parse.
@@ -129,15 +129,15 @@ namespace Unrect.Benchmarks
     /// <summary>The text a <c>RowContaining</c> seek looks for in the landmark fixtures.</summary>
     public const string Landmark = "LANDMARK";
 
-    private static ISheetCells? _landmarkNear;
-    public static ISheetCells LandmarkNear => _landmarkNear ??= SheetGrid.Of(LandmarkCells(MegaRows, MegaRows / 10));
+    private static ICellSpace? _landmarkNear;
+    public static ICellSpace LandmarkNear => _landmarkNear ??= SheetGrid.Of(LandmarkCells(MegaRows, MegaRows / 10));
 
-    private static ISheetCells? _landmarkFar;
-    public static ISheetCells LandmarkFar => _landmarkFar ??= SheetGrid.Of(LandmarkCells(MegaRows, MegaRows * 9 / 10));
+    private static ICellSpace? _landmarkFar;
+    public static ICellSpace LandmarkFar => _landmarkFar ??= SheetGrid.Of(LandmarkCells(MegaRows, MegaRows * 9 / 10));
 
     /// <summary>No landmark anywhere: the seek that scans the whole grid and finds nothing.</summary>
-    private static ISheetCells? _landmarkAbsent;
-    public static ISheetCells LandmarkAbsent => _landmarkAbsent ??= SheetGrid.Of(LandmarkCells(MegaRows, -1));
+    private static ICellSpace? _landmarkAbsent;
+    public static ICellSpace LandmarkAbsent => _landmarkAbsent ??= SheetGrid.Of(LandmarkCells(MegaRows, -1));
 
     // ----- Blocks: many small regions separated by blank rows, the Repeat subject. -----
 
@@ -146,12 +146,12 @@ namespace Unrect.Benchmarks
 
     public const int BlockRows = 4;
 
-    private static ISheetCells? _repeatBlocks;
-    public static ISheetCells RepeatBlocks => _repeatBlocks ??= SheetGrid.Of(BlockCells(BlockCount, BlockRows));
+    private static ICellSpace? _repeatBlocks;
+    public static ICellSpace RepeatBlocks => _repeatBlocks ??= SheetGrid.Of(BlockCells(BlockCount, BlockRows));
 
     /// <summary>A leading run of blank rows, sized so skipping it is the whole measurement.</summary>
-    private static ISheetCells? _blankLed;
-    public static ISheetCells BlankLed => _blankLed ??= SheetGrid.Of(BlankLedCells(MegaRows, MegaRows / 2));
+    private static ICellSpace? _blankLed;
+    public static ICellSpace BlankLed => _blankLed ??= SheetGrid.Of(BlankLedCells(MegaRows, MegaRows / 2));
 
     // ----- Builders -----
 

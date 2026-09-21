@@ -104,11 +104,11 @@ namespace Unrect.Tests.Strategies
     /// transpose, and the other way round, asserting the two agree. Generic in the answer so a count
     /// (<c>int</c>) and a located index (<c>int?</c>) are pinned by the same helper.
     /// </summary>
-    private static void Mirrored<T>(Func<ISheetCells, T> alongRows, Func<ISheetCells, T> alongColumns)
+    private static void Mirrored<T>(Func<ICellSpace, T> alongRows, Func<ICellSpace, T> alongColumns)
       => Mirrored(Grids, alongRows, alongColumns);
 
     /// <summary>The same, over a chosen set of grids.</summary>
-    private static void Mirrored<T>(string?[][,] grids, Func<ISheetCells, T> alongRows, Func<ISheetCells, T> alongColumns)
+    private static void Mirrored<T>(string?[][,] grids, Func<ICellSpace, T> alongRows, Func<ICellSpace, T> alongColumns)
     {
       foreach (var grid in grids)
       {

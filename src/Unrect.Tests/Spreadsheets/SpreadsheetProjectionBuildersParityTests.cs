@@ -59,14 +59,10 @@ namespace Unrect.Tests.Spreadsheets
     [Fact]
     public void AKindedLeafReadsAsItsPlainTwin()
     {
-      // The six kinded members, each one line to the plain family. A forwarder that named the wrong
+      // The five kinded members, each one line to the plain family. A forwarder that named the wrong
       // factory would still compile and still read a cell, which is why the comparison is the
       // reading rather than the type.
       var sheet = Sheet();
-
-      Observations.AssertL3(
-        Observations.Observe(SpreadsheetProjections.Text<ISpreadsheetSpace>(), sheet),
-        Observations.Observe(Text(), sheet));
 
       Observations.AssertL3(
         Observations.Observe(Down(1).Of(SpreadsheetProjections.Decimal<ISpreadsheetSpace>()), sheet),

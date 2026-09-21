@@ -8,8 +8,8 @@ using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -331,7 +331,7 @@ namespace Unrect.Tests.Projections
     // pinned: the trap, and the one-modifier recipe that fixes it.
 
     /// <summary>Two captioned sections, a blank line between them, and a totals row that is neither.</summary>
-    private static ISheetCells CaptionedSections() => Mixed(new object?[,]
+    private static ICellSpace CaptionedSections() => Mixed(new object?[,]
     {
       { "Detail" },
       { "a" },
@@ -432,7 +432,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void Repeat_RejectsANullItem()
     {
-      Assert.Throws<ArgumentNullException>(() => VerticalRepeat((IProjectionDefinition<ISheetCells, int>)null!));
+      Assert.Throws<ArgumentNullException>(() => VerticalRepeat((IProjectionDefinition<ICellSpace, int>)null!));
     }
 
     // --- Horizontal repetition --------------------------------------------------------------------------------
@@ -464,7 +464,7 @@ namespace Unrect.Tests.Projections
     // --- A repeat inside a discovered bound reads forward only ------------------------------------------------------
 
     /// <summary>Two two-row blocks, adjacent: a repeat walks them with nothing between.</summary>
-    private static ISheetCells TwoBlocks() => Mixed(new object?[,]
+    private static ICellSpace TwoBlocks() => Mixed(new object?[,]
     {
       { "A-1", null },
       { null, 10 },
@@ -473,14 +473,14 @@ namespace Unrect.Tests.Projections
     });
 
     /// <summary>A code cell over a value one row down and one column across — two rows per block.</summary>
-    private static IProjectionDefinition<ISheetCells, (string Code, int Amount)> Section()
+    private static IProjectionDefinition<ICellSpace, (string Code, int Amount)> Section()
       => VerticalFlow(v => (Code: v.Next(TextCell()), Amount: v.Next(Right(1).Of(IntCell()))));
 
     /// <summary>
     /// Three record rows, a blank row, and trailing content — the sheet a record walk has to stop
     /// part way down.
     /// </summary>
-    private static ISheetCells RecordsThenTrailingContent() => Mixed(new object?[,]
+    private static ICellSpace RecordsThenTrailingContent() => Mixed(new object?[,]
     {
       { "a", 1 },
       { "b", 2 },
@@ -490,7 +490,7 @@ namespace Unrect.Tests.Projections
     });
 
     /// <summary>A landmark for "a row with nothing on it", spelled through the space predicate.</summary>
-    private static IRowLandmark<ISheetCells> BlankRow()
+    private static IRowLandmark<ICellSpace> BlankRow()
       => RowWhere((space, row) => Enumerable.Range(0, space.Area.Width).All(column => space[column, row].IsBlank));
 
     [Fact]
@@ -501,11 +501,11 @@ namespace Unrect.Tests.Projections
       // trailing content. Ending the walk is a declared bound's job.
       var sheet = RecordsThenTrailingContent();
 
-      Assert.Equal(new[] { 0, 1, 2, 3 }, VerticalRepeat(Record((TableRow<ISheetCells> row) => row.Index)).Map(sheet));
+      Assert.Equal(new[] { 0, 1, 2, 3 }, VerticalRepeat(Record((TableRow<ICellSpace> row) => row.Index)).Map(sheet));
 
       // The same walk under .Until: the bound ends just before the blank row, and is consumed in
       // full, so the trailing content is left where the next sibling would find it.
-      var bounded = Until(BlankRow()).Of(VerticalRepeat(Record((TableRow<ISheetCells> row) => row.Index))).Apply(sheet);
+      var bounded = Until(BlankRow()).Of(VerticalRepeat(Record((TableRow<ICellSpace> row) => row.Index))).Apply(sheet);
 
       Assert.Equal(new[] { 0, 1, 2 }, bounded.Value);
       Assert.Equal(2, bounded.Consumed.Width);

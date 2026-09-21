@@ -6,8 +6,8 @@ using Unrect.Core;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 
 namespace Unrect.Benchmarks
 {
@@ -36,16 +36,16 @@ namespace Unrect.Benchmarks
   [BenchmarkCategory("Tables")]
   public class Tables
   {
-    private static readonly IProjectionDefinition<ISheetCells, IReadOnlyList<decimal>> Projected =
+    private static readonly IProjectionDefinition<ICellSpace, IReadOnlyList<decimal>> Projected =
       Table(r => r["Contribution"].Decimal());
 
-    private static readonly IProjectionDefinition<ISheetCells, IReadOnlyList<TabularRow>> Bound = Table<TabularRow>();
+    private static readonly IProjectionDefinition<ICellSpace, IReadOnlyList<TabularRow>> Bound = Table<TabularRow>();
 
-    private static readonly IProjectionDefinition<ISheetCells, IReadOnlyList<IReadOnlyDictionary<string, Point<ISheetCells>>>> Dictionaries =
+    private static readonly IProjectionDefinition<ICellSpace, IReadOnlyList<IReadOnlyDictionary<string, Point<ICellSpace>>>> Dictionaries =
       Table();
 
-    private ISheetCells _large = default!;
-    private ISheetCells _mega = default!;
+    private ICellSpace _large = default!;
+    private ICellSpace _mega = default!;
 
     [GlobalSetup]
     public void Setup()

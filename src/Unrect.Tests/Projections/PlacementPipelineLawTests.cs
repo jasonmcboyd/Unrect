@@ -9,8 +9,8 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.Observations;
 using static Unrect.Tests.ProjectionTestSpaces;
 
@@ -76,7 +76,7 @@ namespace Unrect.Tests.Projections
     /// hoisted <c>series</c> placed twice the natural declaration — and therefore what makes the two
     /// spellings of the placement worth comparing.
     /// </summary>
-    private static ISheetCells Report() => Mixed(new object?[,]
+    private static ICellSpace Report() => Mixed(new object?[,]
     {
       { "Investor IRR", null, null },
       { "IRR Details", null, null },
@@ -92,11 +92,11 @@ namespace Unrect.Tests.Projections
     });
 
     /// <summary>One investor's run of rows, read as its name and its height.</summary>
-    private static IProjectionDefinition<ISheetCells, string> InvestorBlock()
+    private static IProjectionDefinition<ICellSpace, string> InvestorBlock()
       => Range(RowsWhileAnyValue(), block => $"{block[0, 0].Text()}x{block.Height}");
 
     /// <summary>The repeated series both headings announce — hoisted, because it is declared once.</summary>
-    private static IProjectionDefinition<ISheetCells, IReadOnlyList<string>> Series()
+    private static IProjectionDefinition<ICellSpace, IReadOnlyList<string>> Series()
       => VerticalRepeat(InvestorBlock(), separatedBy: BlankRows());
 
     // --- 1. The denotation sweep: the pipeline against the modifiers it replays ----------------------
@@ -304,7 +304,7 @@ namespace Unrect.Tests.Projections
     // and is indistinguishable wherever the caller's identifier happens to match.
 
     /// <summary>The ledger the capture pins fail over — a text column where a number is asked for.</summary>
-    private static ISheetCells Ledger() => Mixed(new object?[,]
+    private static ICellSpace Ledger() => Mixed(new object?[,]
     {
       { "Fund", "Amount" },
       { "Alpha", 100m },
@@ -314,7 +314,7 @@ namespace Unrect.Tests.Projections
     private static IRowLandmark Header() => RowContaining("Fund");
 
     /// <summary>A bind pointed at the column of fund names, so every record fails.</summary>
-    private static IProjectionDefinition<ISheetCells, decimal> FundColumnAsANumber(LabelMap captions) => Right(captions["Fund"]).Of(Decimal());
+    private static IProjectionDefinition<ICellSpace, decimal> FundColumnAsANumber(LabelMap captions) => Right(captions["Fund"]).Of(Decimal());
 
     [Fact]
     public void AVerticalRepeatTerminalKeepsTheIdentifierItsItemWasWrittenAs()
@@ -426,7 +426,7 @@ namespace Unrect.Tests.Projections
       foreach (var refusal in new[]
       {
         Assert.Throws<ArgumentException>(() => Heading(text!)),
-        Assert.Throws<ArgumentException>(() => ProjectionBuilders<ISheetCells>.Heading(text!)),
+        Assert.Throws<ArgumentException>(() => ProjectionBuilders<ICellSpace>.Heading(text!)),
         Assert.Throws<ArgumentException>(() => Heading("IRR Details").Heading(text!)),
         Assert.Throws<ArgumentException>(() => Until(RowContaining(Inception)).Heading(text!)),
       })
@@ -488,12 +488,12 @@ namespace Unrect.Tests.Projections
     private static readonly IReadOnlyDictionary<string, (Type Type, object Instance)> Stages =
       new Dictionary<string, (Type, object)>(StringComparer.Ordinal)
       {
-        ["PlacementStage"] = (typeof(PlacementStage<ISheetCells>), Down(1)),
-        ["UnboundedStage"] = (typeof(UnboundedStage<ISheetCells>), Down(1)),
-        ["OffsetStage"] = (typeof(OffsetStage<ISheetCells>), Down(1)),
-        ["OffsetAndSizeStage"] = (typeof(OffsetAndSizeStage<ISheetCells>), Down(1).Sized(WholeExtent())),
-        ["BoundStage"] = (typeof(BoundStage<ISheetCells>), Until(RowContaining("IRR Details"))),
-        ["HeadingStage"] = (typeof(HeadingStage<ISheetCells>), Heading("IRR Details")),
+        ["PlacementStage"] = (typeof(PlacementStage<ICellSpace>), Down(1)),
+        ["UnboundedStage"] = (typeof(UnboundedStage<ICellSpace>), Down(1)),
+        ["OffsetStage"] = (typeof(OffsetStage<ICellSpace>), Down(1)),
+        ["OffsetAndSizeStage"] = (typeof(OffsetAndSizeStage<ICellSpace>), Down(1).Sized(WholeExtent())),
+        ["BoundStage"] = (typeof(BoundStage<ICellSpace>), Until(RowContaining("IRR Details"))),
+        ["HeadingStage"] = (typeof(HeadingStage<ICellSpace>), Heading("IRR Details")),
       };
 
     /// <summary>The seven sentences a stage is allowed to refuse with, written once in the library.</summary>

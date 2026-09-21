@@ -7,8 +7,8 @@ using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -31,10 +31,10 @@ namespace Unrect.Tests.Projections
   public class AnchorModifierTests
   {
     // A junk row, the landmark row, two rows under it.
-    private static ISheetCells Rows() => Mixed(new object?[,] { { "junk" }, { "Detail" }, { "a" }, { "b" } });
+    private static ICellSpace Rows() => Mixed(new object?[,] { { "junk" }, { "Detail" }, { "a" }, { "b" } });
 
     // The same four cells turned on their side, so the column twins read identically.
-    private static ISheetCells Columns() => Mixed(new object?[,] { { "junk", "Detail", "a", "b" } });
+    private static ICellSpace Columns() => Mixed(new object?[,] { { "junk", "Detail", "a", "b" } });
 
     private static IRowLandmark Detail() => RowContaining("Detail");
 
@@ -324,10 +324,10 @@ namespace Unrect.Tests.Projections
       // hierarchy now and it is the one above, so the pin said the same thing twice.)
     }
 
-    private static string Miss(IProjectionDefinition<ISheetCells, string> projection, ISheetCells space)
+    private static string Miss(IProjectionDefinition<ICellSpace, string> projection, ICellSpace space)
       => Assert.Throws<ProjectionException>(() => projection.Map(space)).Message;
 
-    private static void AssertSameOffset(IProjectionDefinition<ISheetCells, string> lifted, IProjectionDefinition<ISheetCells, string> anchored, ISheetCells space)
+    private static void AssertSameOffset(IProjectionDefinition<ICellSpace, string> lifted, IProjectionDefinition<ICellSpace, string> anchored, ICellSpace space)
     {
       var expected = lifted.Apply(space);
       var actual = anchored.Apply(space);

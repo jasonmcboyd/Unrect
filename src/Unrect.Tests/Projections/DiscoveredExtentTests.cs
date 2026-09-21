@@ -6,7 +6,7 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -21,7 +21,7 @@ namespace Unrect.Tests.Projections
   public class DiscoveredExtentTests
   {
     /// <summary>A hundred rows of values over three blank ones, so the rule stops at 100 and the sheet goes on to 103.</summary>
-    private static ISheetCells TallSheet()
+    private static ICellSpace TallSheet()
     {
       var values = new int[103, 2];
 

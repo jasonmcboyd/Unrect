@@ -16,7 +16,7 @@ namespace Unrect.Spreadsheets
   /// <typeparam name="TSpace">The sheet the table is declared over — what a row handed to a member's own reading is a row of.</typeparam>
   /// <typeparam name="T">What one record reads.</typeparam>
   public sealed class TableBinding<TSpace, T>
-    where TSpace : class, ISheetCells
+    where TSpace : class, ICellSpace
   {
     internal TableBinding()
       : this(
@@ -107,7 +107,7 @@ namespace Unrect.Spreadsheets
     /// <para>
     /// A reading that does not compile reports itself here, as a <c>Column</c> overload that was not
     /// found. The usual cause is a read the file's space cannot answer — <c>.Font()</c> in a file
-    /// whose <c>using static</c> lines name <see cref="ISheetCells"/> rather than
+    /// whose <c>using static</c> lines name <see cref="ICellSpace"/> rather than
     /// <see cref="ISpreadsheetSpace"/>.
     /// </para>
     /// </summary>

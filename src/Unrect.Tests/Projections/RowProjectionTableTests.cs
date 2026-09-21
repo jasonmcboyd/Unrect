@@ -7,8 +7,8 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Spreadsheets.SpreadsheetProjections;
 using static Unrect.Tests.ProjectionTestSpaces;
 
@@ -49,7 +49,7 @@ namespace Unrect.Tests.Projections
     /// the whole sheet; the gaps between columns 1, 6 and 9 are what makes an overlay the right
     /// layout; and r5 is the record the declaration must be allowed to describe as incomplete.
     /// </summary>
-    private static ISheetCells BuyingPower(object? fepOfSecondRecord = null)
+    private static ICellSpace BuyingPower(object? fepOfSecondRecord = null)
     {
       var cells = new object?[8, 11];
 
@@ -77,7 +77,7 @@ namespace Unrect.Tests.Projections
     }
 
     /// <summary>The dense, headered shape: adjacent columns, so a flow reads it with no coordinates.</summary>
-    private static ISheetCells Allocations() => Mixed(new object?[,]
+    private static ICellSpace Allocations() => Mixed(new object?[,]
     {
       { "Account", "Symbol", "Weight" },
       { "A-1", "XYZ", 1.5m },
@@ -93,7 +93,7 @@ namespace Unrect.Tests.Projections
     /// <summary>
     /// The sparse declaration, hoisted so the record's label is an identifier a reader can grep for.
     /// </summary>
-    private static IProjectionDefinition<ISheetCells, IReadOnlyList<BuyingPowerRow>> SparseTable()
+    private static IProjectionDefinition<ICellSpace, IReadOnlyList<BuyingPowerRow>> SparseTable()
     {
       var allocation = Overlay(o => new BuyingPowerRow(
         FundCode: o.Next(Right(1).Of(Text())),
@@ -359,7 +359,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ANullRowProjectionIsRejectedAtConstruction()
     {
-      Assert.Throws<ArgumentNullException>(() => Table(0, (IProjectionDefinition<ISheetCells, int>)null!));
+      Assert.Throws<ArgumentNullException>(() => Table(0, (IProjectionDefinition<ICellSpace, int>)null!));
     }
 
     [Fact]
@@ -403,12 +403,12 @@ namespace Unrect.Tests.Projections
     {
       // The assignment IS the assertion: this compiles only because Table(headerRows:, eachRow:)
       // carries the row's own space parameter out into its result. (Spelled with prefixes because
-      // this file is closed over ISheetCells and this one declaration is not — which is the
+      // this file is closed over ICellSpace and this one declaration is not — which is the
       // file-is-the-scope rule showing its edge rather than an argument against it.)
       IProjectionDefinition<ISpreadsheetSpace, IReadOnlyList<SourcedRow>> table = ProjectionBuilders<ISpreadsheetSpace>.Table(
         headerRows: 1,
         eachRow: ProjectionBuilders<ISpreadsheetSpace>.Overlay(o => new SourcedRow(
-          Account: o.Next(SpreadsheetProjections.Text<ISpreadsheetSpace>()),
+          Account: o.Next(ProjectionBuilders<ISpreadsheetSpace>.Text()),
           Formula: o.Next(ProjectionBuilders<ISpreadsheetSpace>.Right(2)
             .Of(SpreadsheetProjections.Formula<ISpreadsheetSpace>())))));
 
@@ -422,7 +422,7 @@ namespace Unrect.Tests.Projections
     {
       // The control, and the reason every existing declaration in the corpus still compiles: a slot
       // that demands nothing raises nothing.
-      IProjectionDefinition<ISheetCells, IReadOnlyList<Allocation>> table = Table(
+      IProjectionDefinition<ICellSpace, IReadOnlyList<Allocation>> table = Table(
         headerRows: 1,
         eachRow: HorizontalFlow(h => new Allocation(
           Account: h.Next(Text()),
@@ -441,7 +441,7 @@ namespace Unrect.Tests.Projections
       // it was written over, and applying it to any other is a compile error. Written reflectively
       // because the compiler's half of it cannot be asserted at all, being the absence of a
       // conversion.
-      var plain = typeof(IProjectionDefinition<ISheetCells, IReadOnlyList<SourcedRow>>);
+      var plain = typeof(IProjectionDefinition<ICellSpace, IReadOnlyList<SourcedRow>>);
       var demanding = typeof(IProjectionDefinition<ISpreadsheetSpace, IReadOnlyList<SourcedRow>>);
 
       Assert.False(demanding.IsAssignableFrom(plain), "a table converts to no other space");
@@ -452,6 +452,6 @@ namespace Unrect.Tests.Projections
     /// What a cell says where its own text is its value, and a dash where there is nothing to say.
     /// The reading the two walks are compared on, written once so they cannot differ by spelling.
     /// </summary>
-    private static string Said(Point<ISheetCells> cell) => cell.IsText ? cell.Text() : "-";
+    private static string Said(Point<ICellSpace> cell) => cell.IsText ? cell.Text() : "-";
   }
 }

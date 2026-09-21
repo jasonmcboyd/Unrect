@@ -6,7 +6,7 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -29,7 +29,7 @@ namespace Unrect.Tests.Projections
     /// Two blocks of values with one blank row between them, so a repeat finds exactly two and a
     /// discovered extent has somewhere to stop.
     /// </summary>
-    private static ISheetCells TwoBlocks() => Grid(new[,]
+    private static ICellSpace TwoBlocks() => Grid(new[,]
     {
       { 1, 2 },
       { 3, 4 },
@@ -43,8 +43,8 @@ namespace Unrect.Tests.Projections
     /// A cell rule that breaks on the cell holding <paramref name="marker"/>. Content-based rather
     /// than call-count-based, so it breaks in the same place however many cells the reading asks for.
     /// </summary>
-    private static Func<Point<ISheetCells>, bool> BreaksOn(int marker)
-      => cell => cell.Kind() == CellKind.Number && cell.Integer() == marker
+    private static Func<Point<ICellSpace>, bool> BreaksOn(int marker)
+      => cell => cell.IsDouble() && cell.Integer() == marker
         ? throw new InvalidOperationException("no")
         : true;
 
@@ -74,7 +74,7 @@ namespace Unrect.Tests.Projections
     // --- Site 2: a flow child settles by the advance ----------------------------------------------
 
     /// <summary>Three rows of values, a blank one, and a tail — so a discovered band has a successor.</summary>
-    private static ISheetCells BlockThenGapThenTail() => Mixed(new object?[,] { { 1 }, { 2 }, { 3 }, { null }, { 9 } });
+    private static ICellSpace BlockThenGapThenTail() => Mixed(new object?[,] { { 1 }, { 2 }, { 3 }, { null }, { 9 } });
 
     [Fact]
     public void AFlowChildSettlesByTheAdvance()

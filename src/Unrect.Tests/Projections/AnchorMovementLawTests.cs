@@ -4,8 +4,7 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.Observations;
 using static Unrect.Tests.ProjectionTestSpaces;
 
@@ -33,7 +32,7 @@ namespace Unrect.Tests.Projections
   public class AnchorMovementLawTests
   {
     /// <summary>Four rows, one of which is the landmark — so the anchor can be moved down the sheet.</summary>
-    private static ISheetCells RowsWithLandmarkAt(int row)
+    private static ICellSpace RowsWithLandmarkAt(int row)
     {
       var values = new object?[4, 1];
 
@@ -44,7 +43,7 @@ namespace Unrect.Tests.Projections
     }
 
     /// <summary>The same four cells turned on their side, so the column twin reads identically.</summary>
-    private static ISheetCells ColumnsWithLandmarkAt(int column)
+    private static ICellSpace ColumnsWithLandmarkAt(int column)
     {
       var values = new object?[1, 4];
 

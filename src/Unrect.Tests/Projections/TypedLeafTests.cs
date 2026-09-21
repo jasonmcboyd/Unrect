@@ -5,8 +5,8 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -24,7 +24,7 @@ namespace Unrect.Tests.Projections
   /// </summary>
   public class TypedLeafTests
   {
-    private static ISheetCells One(object? value) => Mixed(new object?[,] { { value } });
+    private static ICellSpace One(object? value) => Mixed(new object?[,] { { value } });
 
     // --- Each leaf reads its kind ------------------------------------------------------------------
 

@@ -5,8 +5,8 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -25,20 +25,20 @@ namespace Unrect.Tests.Projections
   /// </summary>
   public class OrBlankTests
   {
-    private static ISheetCells One(object? value) => Mixed(new object?[,] { { value } });
+    private static ICellSpace One(object? value) => Mixed(new object?[,] { { value } });
 
     /// <summary>
     /// A blank cell with a neighbour. The neighbour is the point: a row that is blank all the way
     /// across is a gap, which every placement steps over, so a blank that is a VALUE is a blank
     /// cell in a row that has something else in it.
     /// </summary>
-    private static ISheetCells BlankCell() => Mixed(new object?[,] { { null, "." } });
+    private static ICellSpace BlankCell() => Mixed(new object?[,] { { null, "." } });
 
     /// <summary>
     /// One row eight columns wide with something in column 0 and <paramref name="atSix"/> in column
     /// 6 — the sparse shape the modifier was designed for, small enough to say one thing.
     /// </summary>
-    private static ISheetCells Sparse(object? atSix)
+    private static ICellSpace Sparse(object? atSix)
     {
       var cells = new object?[1, 8];
 
@@ -249,13 +249,13 @@ namespace Unrect.Tests.Projections
     // NEITHER of these compiles, and they are refused for two different reasons.
     //
     //   Decimal().OrBlank().OrBlank()   CS0453, "the type 'decimal?' must be a non-nullable value
-    //     type". The first call returns IProjectionDefinition<ISheetCells, decimal?>; the generic overload constrains T to
-    //     a non-nullable struct and the reference-typed one takes IProjectionDefinition<ISheetCells, string>. There is no
+    //     type". The first call returns IProjectionDefinition<ICellSpace, decimal?>; the generic overload constrains T to
+    //     a non-nullable struct and the reference-typed one takes IProjectionDefinition<ICellSpace, string>. There is no
     //     Nullable<Nullable<T>> to reach for, so the second "may be absent" has nothing left to say.
     //     This is the library's own refusal, and the one the design intended.
     //
-    //   Text().OrBlank().OrBlank()      CS8620 — IProjectionDefinition<ISheetCells, string?> cannot be passed where
-    //     IProjectionDefinition<ISheetCells, string> is wanted, because IProjectionDefinition<ISheetCells, TResult> is invariant. Verified against
+    //   Text().OrBlank().OrBlank()      CS8620 — IProjectionDefinition<ICellSpace, string?> cannot be passed where
+    //     IProjectionDefinition<ICellSpace, string> is wanted, because IProjectionDefinition<ICellSpace, TResult> is invariant. Verified against
     //     this tree, where TreatWarningsAsErrors makes it an error outright; in a project that only
     //     warns it would compile and be a harmless no-op, since string? and string are one type at
     //     run time and the receiver is a TypedCellProjection either way. So the reference half of
@@ -350,8 +350,8 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AndItRefusesNullTheWayEveryModifierDoes()
     {
-      Assert.Throws<ArgumentNullException>(() => ((IProjectionDefinition<ISheetCells, decimal>)null!).OrBlank());
-      Assert.Throws<ArgumentNullException>(() => ((IProjectionDefinition<ISheetCells, string>)null!).OrBlank());
+      Assert.Throws<ArgumentNullException>(() => ((IProjectionDefinition<ICellSpace, decimal>)null!).OrBlank());
+      Assert.Throws<ArgumentNullException>(() => ((IProjectionDefinition<ICellSpace, string>)null!).OrBlank());
     }
   }
 }

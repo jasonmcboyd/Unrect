@@ -8,7 +8,7 @@ using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -22,9 +22,9 @@ namespace Unrect.Tests.Projections
   public class UntilProjectionTests
   {
     // A, B, Total, C, End — two rows, a caption, two more.
-    private static ISheetCells Sections() => Mixed(new object?[,] { { "A" }, { "B" }, { "Total" }, { "C" }, { "End" } });
+    private static ICellSpace Sections() => Mixed(new object?[,] { { "A" }, { "B" }, { "Total" }, { "C" }, { "End" } });
 
-    private static IProjectionDefinition<ISheetCells, IReadOnlyList<string>> Lines() => VerticalRepeat(TextCell());
+    private static IProjectionDefinition<ICellSpace, IReadOnlyList<string>> Lines() => VerticalRepeat(TextCell());
 
     // --- The bound ------------------------------------------------------------------------------
 
@@ -294,14 +294,14 @@ namespace Unrect.Tests.Projections
     // spelled by nesting, which the last test in this section pins.
 
     // 3 columns by 3 rows: a b Total / c d e / Stop f g.
-    private static ISheetCells BothAxes() => Mixed(new object?[,]
+    private static ICellSpace BothAxes() => Mixed(new object?[,]
     {
       { "a", "b", "Total" },
       { "c", "d", "e" },
       { "Stop", "f", "g" },
     });
 
-    private static IProjectionDefinition<ISheetCells, string> BlockExtent() => Range(b => $"{b.Width}x{b.Height}");
+    private static IProjectionDefinition<ICellSpace, string> BlockExtent() => Range(b => $"{b.Width}x{b.Height}");
 
     [Fact]
     public void AColumnBoundOverARowBoundIsRefused()

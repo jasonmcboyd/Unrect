@@ -84,7 +84,7 @@ namespace Unrect.Projections
   /// <para>
   /// <b>A shared helper states its minimum in a constraint, not in its return type.</b> Write it as
   /// a generic method — <c>static IProjectionDefinition&lt;TSpace, decimal&gt; Total&lt;TSpace&gt;() where
-  /// TSpace : class, ISheetCells</c> — and it composes into any file whose space can answer it,
+  /// TSpace : class, ICellSpace</c> — and it composes into any file whose space can answer it,
   /// instantiated at that file's own space. A helper that named a space outright would hand back a
   /// projection over that space and nothing else, which is a different and much smaller thing.
   /// </para>

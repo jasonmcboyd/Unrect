@@ -26,7 +26,7 @@ namespace Unrect.Tests.Strategies
     // absence and is defeated by anything inserted above the thing being looked for; these anchor on
     // presence, which is what survives an inserted proof row.
 
-    private static ISheetCells Labelled() => Labels(new string?[,]
+    private static ICellSpace Labelled() => Labels(new string?[,]
     {
       { "junk", null },
       { "an inserted proof row", null },
@@ -34,7 +34,7 @@ namespace Unrect.Tests.Strategies
       { "a", "b" },
     });
 
-    private static ISheetCells LabelledColumns() => Labels(new string?[,]
+    private static ICellSpace LabelledColumns() => Labels(new string?[,]
     {
       { "a", "b", "  TOTAL  ", "d" },
       { null, null, null, null },
@@ -217,14 +217,14 @@ namespace Unrect.Tests.Strategies
     // seeks exactly and matches on the same rules; the difference is that a landmark reports "not
     // found" as null and lets the projection bounding itself decide, where a seek throws.
 
-    private static ISheetCells RowsWithATotal() => Labels(new string?[,]
+    private static ICellSpace RowsWithATotal() => Labels(new string?[,]
     {
       { "x", "y" },
       { "  TOTAL  ", null },
       { "z", null },
     });
 
-    private static ISheetCells ColumnsWithATotal() => Labels(new string?[,]
+    private static ICellSpace ColumnsWithATotal() => Labels(new string?[,]
     {
       { "a", "  TOTAL  ", "c" },
       { null, null, "z" },

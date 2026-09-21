@@ -6,8 +6,8 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Interactive.ExploratoryBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Interactive.ExploratoryBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 
 namespace Unrect.Tests.Spreadsheets
 {
@@ -19,7 +19,7 @@ namespace Unrect.Tests.Spreadsheets
   /// </summary>
   public class TableBindingByPathTests
   {
-    private static ISheetCells Workbook()
+    private static ICellSpace Workbook()
       => SpreadsheetSpace.Create(Path.Combine(AppContext.BaseDirectory, "TestData", "multi-header-table.xlsx"), "Sheet1");
 
     public sealed record Transfer(int FromId, string FromCode, int ToId, string ToCode);
@@ -49,7 +49,7 @@ namespace Unrect.Tests.Spreadsheets
       Assert.Equal(new Transfer(1, "FEP", 2, "FCP"), Assert.Single(Table<Transfer>(2).Map(Workbook())));
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        ProjectionBuilders<ISheetCells>.Table(2, r => r["FromId"].Integer()).Map(Workbook()));
+        ProjectionBuilders<ICellSpace>.Table(2, r => r["FromId"].Integer()).Map(Workbook()));
 
       Assert.Contains("there is no column named 'FromId'", failure.Message, StringComparison.Ordinal);
     }

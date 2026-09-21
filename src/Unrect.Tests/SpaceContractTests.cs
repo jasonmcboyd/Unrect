@@ -39,7 +39,7 @@ namespace Unrect.Tests
     /// </summary>
     public static TheoryData<string> Doors => new TheoryData<string> { "grid", "windowed" };
 
-    private static ISheetCells Door(string door) => ProjectionTestSpaces.Door(door);
+    private static ICellSpace Door(string door) => ProjectionTestSpaces.Door(door);
 
     [Theory]
     [MemberData(nameof(Doors))]
@@ -71,7 +71,7 @@ namespace Unrect.Tests
       // refuses to NAME a cell outside the region it was handed, and the space refuses to READ one
       // outside itself. The second is the door's own obligation and the reason this is a theory.
       var space = Door(door);
-      var plane = Plane<ISheetCells>.Of(space);
+      var plane = Plane<ICellSpace>.Of(space);
 
       foreach (var (column, row) in new[] { (-1, 0), (3, 0), (0, -1), (0, 2) })
       {
@@ -135,7 +135,7 @@ namespace Unrect.Tests
 
     /// <summary>Every door as the canonical surface alone, over <see cref="EdgeRows"/>.</summary>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="door"/> names no door.</exception>
-    private static ISheetCells CanonicalDoor(string door)
+    private static ICellSpace CanonicalDoor(string door)
     {
       var file = System.IO.Path.Combine(AppContext.BaseDirectory, "TestData", "edge-cases.xlsx");
 
@@ -228,8 +228,8 @@ namespace Unrect.Tests
       // at those coordinates. A door whose point read differently from its space — or a point that
       // cached what it was minted from — would read as two spaces at once. Swept rather than
       // sampled, because the drift such a door would produce is per cell.
-      ISheetCells cells = CanonicalDoor(door);
-      var plane = Plane<ISheetCells>.Of(cells);
+      ICellSpace cells = CanonicalDoor(door);
+      var plane = Plane<ICellSpace>.Of(cells);
 
       for (var row = 0; row < cells.Area.Height; row++)
         for (var column = 0; column < cells.Area.Width; column++)
@@ -373,20 +373,6 @@ namespace Unrect.Tests
 
     [Theory]
     [MemberData(nameof(CanonicalDoors))]
-    public void APointsKindIsItsSpacesKindAtThoseCoordinates(string door)
-    {
-      // The point extension is an address's way of asking the space, exactly as the canonical four
-      // are. Swept beside them because a predicate reads the point and a message reads the space.
-      ISheetCells cells = CanonicalDoor(door);
-      var plane = Plane<ISheetCells>.Of(cells);
-
-      for (var row = 0; row < cells.Area.Height; row++)
-        for (var column = 0; column < cells.Area.Width; column++)
-          Assert.Equal(cells.KindAt(column, row), plane[column, row].Kind());
-    }
-
-    [Theory]
-    [MemberData(nameof(CanonicalDoors))]
     public void EveryCanonicalMemberRefusesACoordinateOutsideTheSpace(string door)
     {
       // The indexer's rule, extended to the three questions that do not go through it. A member
@@ -400,10 +386,13 @@ namespace Unrect.Tests
         Assert.Throws<OutOfBoundsException>(() => { _ = cells.IsText(column, row); });
         Assert.Throws<OutOfBoundsException>(() => { _ = cells.AsText(column, row); });
 
-        // The kind question answers for every cell IN the space and for no coordinate outside it:
-        // "it fails for none" is about kinds, never about addresses, so a coordinate off the edge
+        // Every read answers for every cell IN the space and for no coordinate outside it: a
+        // refusal is about what a cell holds, never about addresses, so a coordinate off the edge
         // is the same bounds condition here as everywhere else.
-        Assert.Throws<OutOfBoundsException>(() => { _ = cells.KindAt(column, row); });
+        Assert.Throws<OutOfBoundsException>(() => cells.TryGetDoubleAt(column, row, out _, out _));
+        Assert.Throws<OutOfBoundsException>(() => cells.TryGetDateTimeAt(column, row, out _, out _));
+        Assert.Throws<OutOfBoundsException>(() => cells.TryGetBooleanAt(column, row, out _, out _));
+        Assert.Throws<OutOfBoundsException>(() => cells.TryGetErrorAt(column, row, out _));
       }
     }
 
@@ -423,7 +412,7 @@ namespace Unrect.Tests
         System.IO.Path.Combine(AppContext.BaseDirectory, "TestData", "simple-report.xlsx"),
         "Report");
 
-      var plane = Plane<ISheetCells>.Of(space);
+      var plane = Plane<ICellSpace>.Of(space);
 
       Assert.Throws<OutOfBoundsException>(() => { _ = space.IsBlank(-1, 0); });
       Assert.Throws<OutOfBoundsException>(() => { _ = space.AsText(space.Area.Size.Width, 0); });
@@ -455,8 +444,8 @@ namespace Unrect.Tests
       Assert.Equal(eager.Area.Size.Height, streamed.Area.Size.Height);
       Assert.Equal(10, streamed.Area.Size.Height);
 
-      Assert.Throws<OutOfBoundsException>(() => { _ = Plane<ISheetCells>.Of(eager)[0, 0]; });
-      Assert.Throws<OutOfBoundsException>(() => { _ = Plane<ISheetCells>.Of(streamed)[0, 0]; });
+      Assert.Throws<OutOfBoundsException>(() => { _ = Plane<ICellSpace>.Of(eager)[0, 0]; });
+      Assert.Throws<OutOfBoundsException>(() => { _ = Plane<ICellSpace>.Of(streamed)[0, 0]; });
     }
 
     [Fact]
@@ -648,7 +637,7 @@ namespace Unrect.Tests
       using var book = Workbook.Over(new FakeRowSource(new FakeSheet("Empty", 10, 0)), new WorkbookOptions());
       var streamed = book.Sheet("Empty");
 
-      var slice = Plane<ISheetCells>.Of(streamed).Slice(new Offset(0, 2), new Area(0, 5));
+      var slice = Plane<ICellSpace>.Of(streamed).Slice(new Offset(0, 2), new Area(0, 5));
 
       Assert.Equal(0, slice.Area.Size.Width);
       Assert.Equal(5, slice.Area.Size.Height);

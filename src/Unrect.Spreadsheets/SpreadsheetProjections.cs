@@ -37,20 +37,14 @@ namespace Unrect.Spreadsheets
     // any file whose space is a sheet. A file that names its space once imports the closed twins on
     // SpreadsheetProjectionBuilders instead.
 
-    /// <summary>One cell holding text.</summary>
-    /// <typeparam name="TSpace">The sheet the leaf is declared over.</typeparam>
-    public static IProjectionDefinition<TSpace, string> Text<TSpace>()
-      where TSpace : class, ISheetCells
-      => Kinded<TSpace, string>("Text", (Point<TSpace> cell, out string v, out CellProblem? p) => cell.Space.TextAt(cell.Column, cell.Row, out v, out p));
-
     /// <summary>
     /// One cell holding a number, read as a <see cref="decimal"/> — the accessor that keeps a
     /// spreadsheet's exact decimal where the file carried one.
     /// </summary>
     /// <typeparam name="TSpace">The sheet the leaf is declared over.</typeparam>
     public static IProjectionDefinition<TSpace, decimal> Decimal<TSpace>()
-      where TSpace : class, ISheetCells
-      => Kinded<TSpace, decimal>("Decimal", (Point<TSpace> cell, out decimal v, out CellProblem? p) => cell.Space.DecimalAt(cell.Column, cell.Row, out v, out p));
+      where TSpace : class, ICellSpace
+      => Kinded<TSpace, decimal>("Decimal", (Point<TSpace> cell, out decimal v, out CellProblem? p) => CellReading.Decimal(cell, out v, out p));
 
     /// <summary>
     /// One cell holding a whole number. A number that is really there but is fractional or out of
@@ -58,14 +52,14 @@ namespace Unrect.Spreadsheets
     /// </summary>
     /// <typeparam name="TSpace">The sheet the leaf is declared over.</typeparam>
     public static IProjectionDefinition<TSpace, int> Integer<TSpace>()
-      where TSpace : class, ISheetCells
-      => Kinded<TSpace, int>("Integer", (Point<TSpace> cell, out int v, out CellProblem? p) => cell.Space.IntegerAt(cell.Column, cell.Row, out v, out p));
+      where TSpace : class, ICellSpace
+      => Kinded<TSpace, int>("Integer", (Point<TSpace> cell, out int v, out CellProblem? p) => CellReading.Integer(cell, out v, out p));
 
     /// <summary>One cell holding a number, read as a <see cref="double"/>.</summary>
     /// <typeparam name="TSpace">The sheet the leaf is declared over.</typeparam>
     public static IProjectionDefinition<TSpace, double> Double<TSpace>()
-      where TSpace : class, ISheetCells
-      => Kinded<TSpace, double>("Double", (Point<TSpace> cell, out double v, out CellProblem? p) => cell.Space.DoubleAt(cell.Column, cell.Row, out v, out p));
+      where TSpace : class, ICellSpace
+      => Kinded<TSpace, double>("Double", (Point<TSpace> cell, out double v, out CellProblem? p) => cell.Space.TryGetDoubleAt(cell.Column, cell.Row, out v, out p));
 
     /// <summary>
     /// One cell holding a date or time, verbatim. The time of day is kept: truncating is
@@ -74,17 +68,17 @@ namespace Unrect.Spreadsheets
     /// </summary>
     /// <typeparam name="TSpace">The sheet the leaf is declared over.</typeparam>
     public static IProjectionDefinition<TSpace, DateTime> Date<TSpace>()
-      where TSpace : class, ISheetCells
-      => Kinded<TSpace, DateTime>("Date", (Point<TSpace> cell, out DateTime v, out CellProblem? p) => cell.Space.DateTimeAt(cell.Column, cell.Row, out v, out p));
+      where TSpace : class, ICellSpace
+      => Kinded<TSpace, DateTime>("Date", (Point<TSpace> cell, out DateTime v, out CellProblem? p) => cell.Space.TryGetDateTimeAt(cell.Column, cell.Row, out v, out p));
 
     /// <summary>One cell holding a boolean.</summary>
     /// <typeparam name="TSpace">The sheet the leaf is declared over.</typeparam>
     public static IProjectionDefinition<TSpace, bool> Boolean<TSpace>()
-      where TSpace : class, ISheetCells
-      => Kinded<TSpace, bool>("Boolean", (Point<TSpace> cell, out bool v, out CellProblem? p) => cell.Space.BooleanAt(cell.Column, cell.Row, out v, out p));
+      where TSpace : class, ICellSpace
+      => Kinded<TSpace, bool>("Boolean", (Point<TSpace> cell, out bool v, out CellProblem? p) => cell.Space.TryGetBooleanAt(cell.Column, cell.Row, out v, out p));
 
     internal static IProjectionDefinition<TSpace, T> Kinded<TSpace, T>(string kind, CellRead<TSpace, T> read)
-      where TSpace : class, ISheetCells
+      where TSpace : class, ICellSpace
       => new ReadDefinition<TSpace, T>(kind, read, Placement.Of(ProjectionBuilders<TSpace>.Extent(1, 1)), blankIsNull: false);
 
     /// <summary>
@@ -111,21 +105,7 @@ namespace Unrect.Spreadsheets
     /// <typeparam name="TSpace">The space the leaf is declared over; anything carrying formulas.</typeparam>
     public static IProjectionDefinition<TSpace, string?> Formula<TSpace>()
       where TSpace : class, IFormulaSpace
-      => ProjectionBuilders<TSpace>.Range(1, 1, cell => FormulaAt(cell.Space)).Named("Formula");
-
-    /// <summary>
-    /// The formula behind the region's first cell, or null. Asked at the point's own coordinates
-    /// rather than at (0, 0): a space answers about its own cells, and a region may name a
-    /// rectangle part-way into one. The two formula landmarks below ask the same way, so there is
-    /// one rule here rather than a rule and an assumption.
-    /// </summary>
-    private static string? FormulaAt<TSpace>(Plane<TSpace> region)
-      where TSpace : class, IFormulaSpace
-    {
-      var cell = region[0, 0];
-
-      return cell.Space.FormulaAt(cell.Column, cell.Row);
-    }
+      => ProjectionBuilders<TSpace>.Range(1, 1, cell => cell.Space[0, 0].Formula()).Named("Formula");
 
     /// <summary>
     /// The first row holding a formula anywhere in it — the boundary form, for a section that
@@ -222,7 +202,7 @@ namespace Unrect.Spreadsheets
           {
             var cell = space[column, row];
 
-            if (Matches(formulas.FormulaAt(cell.Column, cell.Row)))
+            if (Matches(formulas.TryGetFormulaAt(cell.Column, cell.Row, out var formula) ? formula : null))
               return row;
           }
 
@@ -248,7 +228,7 @@ namespace Unrect.Spreadsheets
           {
             var cell = space[column, row];
 
-            if (Matches(formulas.FormulaAt(cell.Column, cell.Row)))
+            if (Matches(formulas.TryGetFormulaAt(cell.Column, cell.Row, out var formula) ? formula : null))
               return column;
           }
 

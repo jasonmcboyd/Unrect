@@ -20,7 +20,7 @@
 // ISpreadsheetSpace is the FULL space — values, formulas, and what a cell looks like — and it is
 // the one to start a script in: `row["Amount"].Font()` and `Formula()` compile only over it, and
 // the space is fixed by these two imports, not by how the workbook is opened below. (The narrower
-// pair, ISheetCells with SheetProjectionBuilders, reads values alone — cheaper, and the only one
+// pair, ICellSpace with SheetProjectionBuilders, reads values alone — cheaper, and the only one
 // an .xls or a streamed Workbook can answer. Never both sheet classes in one file.)
 var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\examples\simple-report.xlsx");
 
