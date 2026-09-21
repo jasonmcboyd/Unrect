@@ -133,6 +133,31 @@ namespace Unrect.Tests.Machines
     }
 
     [Fact]
+    public void AndNoToleranceAbsorbsItBecauseItSaysNothingAboutTheData()
+    {
+      // A row that has gone is a read the SOURCE could not serve: the declaration read late, the
+      // pass was already spent, or a machine under-reported what it retains. None of those is "this
+      // section is absent", so Optional, Else and Choice let it through — absorbing it would hide
+      // the failure. (A boundary holds the rows of its own attempt, so a late read INSIDE one simply
+      // succeeds; what reaches a boundary is a read of rows released before it began, as here,
+      // where the sheet's one pass has been spent.)
+      var sheet = Blocks(blocks: 30, blockRows: 3);
+      var first = Down(0).Of(AsText());
+
+      foreach (var tolerant in new[] { first.Optional()!, first.Else("absent"), first.Else(Down(1).Of(AsText())), Choice(first, Down(1).Of(AsText())) })
+      {
+        using var book = Workbook.Over(new FakeRowSource(sheet), new WorkbookOptions());
+        var spent = book.Sheet("Data");
+
+        Assert.Equal(30, BlockTotals().Map(spent).Count);
+
+        var failure = Assert.Throws<ProjectionException>(() => tolerant.Map(spent));
+
+        Assert.Contains("has left the buffer", failure.Message);
+      }
+    }
+
+    [Fact]
     public void ReadingTheSamePointInsideTheLeafIsFine()
     {
       var sheet = Blocks(blocks: 30, blockRows: 3);

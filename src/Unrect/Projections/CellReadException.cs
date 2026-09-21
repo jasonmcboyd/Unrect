@@ -10,9 +10,12 @@ namespace Unrect.Projections
   /// called it, and rethrown as a <see cref="ProjectionException"/> carrying the declaration path
   /// and the cell's A1 address.
   /// <para>
-  /// <b>It is not a fault.</b> A cell of the wrong kind is a statement about the data, so a
-  /// tolerance boundary may absorb it — which is why this is an ordinary exception rather than
-  /// anything on the engine's fault list.
+  /// <b>It is not a fault, unless it says it is.</b> A cell of the wrong kind is a statement about
+  /// the data, so a tolerance boundary may absorb it. A read that failed because of the SOURCE —
+  /// a streamed row that has already been released — says nothing about the data at all, and is
+  /// raised with <see cref="IsFault"/> set: <c>Optional</c>, <c>Else</c> and <c>Choice</c> let it
+  /// through, because absorbing it would report a read that could not be made as a section that
+  /// is not there.
   /// </para>
   /// <para>
   /// The address travels as a <see cref="Point{TSpace}"/> over the canonical surface, because the
@@ -28,9 +31,22 @@ namespace Unrect.Projections
     /// <param name="at">The cell that was read.</param>
     /// <param name="problem">What was wrong with it, as a sentence awaiting an address.</param>
     public CellReadException(Point<ISpace> at, CellProblem problem)
+      : this(at, problem, isFault: false)
+    {
+    }
+
+    /// <summary>
+    /// A failed read of the cell at <paramref name="at"/>, which is a fault when
+    /// <paramref name="isFault"/> says the failure is the source's and not the cell's.
+    /// </summary>
+    /// <param name="at">The cell that was read.</param>
+    /// <param name="problem">What was wrong, as a sentence awaiting an address.</param>
+    /// <param name="isFault">Whether the read failed for a reason that says nothing about the data.</param>
+    public CellReadException(Point<ISpace> at, CellProblem problem, bool isFault)
     {
       At = at;
       Problem = problem;
+      IsFault = isFault;
     }
 
     /// <summary>The cell that was read.</summary>
@@ -38,6 +54,12 @@ namespace Unrect.Projections
 
     /// <summary>What was wrong with it, as a sentence awaiting an address.</summary>
     public CellProblem Problem { get; }
+
+    /// <summary>
+    /// Whether the read failed for a reason that says nothing about the data — the source could no
+    /// longer answer. No tolerance boundary absorbs such a failure.
+    /// </summary>
+    public bool IsFault { get; }
 
     /// <summary>
     /// The problem, addressed in A1. A point's coordinates are its space's own and a space is the

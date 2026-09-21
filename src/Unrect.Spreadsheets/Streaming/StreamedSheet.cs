@@ -96,7 +96,8 @@ namespace Unrect.Spreadsheets
           new Point<ISpace>(this, column, row),
           new CellProblem(
             $"row {row + 1} of '{Name}' has left the buffer: a streamed sheet is read once, forward, so read ",
-            " inside the projection rather than after it"));
+            " inside the projection rather than after it"),
+          isFault: true);
 
       // A row not yet loaded is ahead, and a forward pass can reach it: load up to it.
       while (row >= Loaded && Advance())

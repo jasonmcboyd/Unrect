@@ -78,7 +78,9 @@ var result = projection.Map(book.Sheet("Data"));    // Sheet(name) is one forwar
   machine may still read are released. A cell of a released row is a located read failure —
   `row 7 of 'Data' has left the buffer: a streamed sheet is read once, forward, so read B7
   inside the projection rather than after it` — which is what a `Point()` escaping its leaf
-  and read in a combiner, or the same sheet value mapped twice, will see.
+  and read in a combiner, or the same sheet value mapped twice, will see. It is a fault, like a
+  disk error: it says nothing about the data, so `.Optional()`, `.Else()` and `Choice` let it
+  through and never report it as an absent section.
 - **A cell read directly is loaded on the way to it.** Outside the engine nothing is
   released, so a sheet can be walked forward by hand — `sheet.AsText(0, 0)`, then row 1, then
   row 40 — and every row up to the one asked for is loaded and held. Walking backwards over
