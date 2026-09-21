@@ -46,6 +46,25 @@ namespace Unrect.Tests.Spreadsheets
     }
 
     [Fact]
+    public void APointAsksForItsFormulaAndAMissingOneIsNotAFailure()
+    {
+      // One read on the space, TryGetFormulaAt, and the point forms derived from it. A cell with
+      // no formula is the ordinary case, so nothing here throws and there is no reason to give.
+      var plane = Plane<ISpreadsheetSpace>.Of(Sheet());
+      var computed = plane[3, 6];
+      var typed = plane[1, 7];
+
+      Assert.True(computed.HasFormula());
+      Assert.True(computed.TryGetFormula(out var formula));
+      Assert.Equal("SUM(D2:D5)", formula);
+      Assert.Equal("SUM(D2:D5)", computed.Formula());
+
+      Assert.False(typed.HasFormula());
+      Assert.False(typed.TryGetFormula(out _));
+      Assert.Null(typed.Formula());
+    }
+
+    [Fact]
     public void ASharedFollowerIsReconstructedForItsOwnCell()
     {
       var sheet = Sheet();

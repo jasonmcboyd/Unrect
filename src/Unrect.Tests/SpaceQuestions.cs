@@ -28,6 +28,10 @@ namespace Unrect.Tests
     public static string? ErrorTextAt(this ICellSpace space, int column, int row)
       => space.TryGetErrorAt(column, row, out var error) ? error : null;
 
+    /// <summary>The cell's formula, or null where it has none.</summary>
+    public static string? FormulaAt(this IFormulaSpace space, int column, int row)
+      => space.TryGetFormulaAt(column, row, out var formula) ? formula : null;
+
     /// <summary>Which read the cell answers, as the lexer's one word for it.</summary>
     public static CellKind KindAt(this ICellSpace space, int column, int row)
       => space.IsBlank(column, row) ? CellKind.Blank

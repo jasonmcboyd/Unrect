@@ -28,7 +28,8 @@ namespace Unrect.Spreadsheets
   {
     /// <summary>
     /// The formula behind the cell at <paramref name="column"/>, <paramref name="row"/>, in this
-    /// space's own coordinates, or null where the cell is a plain value.
+    /// space's own coordinates; false where the cell is a plain value. A cell with no formula is
+    /// not a failed read — most cells have none — so there is no reason to give.
     /// <para>
     /// <b>The file's own spelling</b>, without the leading <c>=</c>: what the sheet stores is the
     /// expression, and that is what comes back. A shared formula's follower answers with the
@@ -40,7 +41,8 @@ namespace Unrect.Spreadsheets
     /// </summary>
     /// <param name="column">The 0-based column.</param>
     /// <param name="row">The 0-based row.</param>
+    /// <param name="formula">The formula, when the answer is true.</param>
     /// <exception cref="OutOfBoundsException">The coordinates are outside this space.</exception>
-    string? FormulaAt(int column, int row);
+    bool TryGetFormulaAt(int column, int row, out string formula);
   }
 }

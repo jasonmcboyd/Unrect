@@ -31,12 +31,13 @@ namespace Unrect.Spreadsheets
 
     public override Area Area => _values.Area;
 
-    public string? FormulaAt(int column, int row)
+    public bool TryGetFormulaAt(int column, int row, out string formula)
     {
       if (column < 0 || column >= Area.Width || row < 0 || row >= Area.Height)
         throw new OutOfBoundsException();
 
-      return _formulas[row, column];
+      formula = _formulas[row, column]!;
+      return formula is not null;
     }
 
     public CellFont FontAt(int column, int row)

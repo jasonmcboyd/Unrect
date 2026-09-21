@@ -65,18 +65,19 @@ namespace Unrect.Tests
     public bool TryGetErrorAt(int column, int row, out string error) => _values.TryGetErrorAt(column, row, out error);
 
     /// <inheritdoc/>
-    public string? FormulaAt(int column, int row)
+    public bool TryGetFormulaAt(int column, int row, out string formula)
     {
       if (column < 0 || column >= Area.Width || row < 0 || row >= Area.Height)
         throw new OutOfBoundsException();
 
-      return _formulas[row, column];
+      formula = _formulas[row, column]!;
+      return formula is not null;
     }
 
     /// <summary>A formula fixture written as a literal has no formatting: every cell is set the default way.</summary>
     public CellFont FontAt(int column, int row)
     {
-      _ = FormulaAt(column, row);
+      _ = TryGetFormulaAt(column, row, out _);
 
       return default;
     }
@@ -84,7 +85,7 @@ namespace Unrect.Tests
     /// <inheritdoc cref="FontAt"/>
     public CellFill FillAt(int column, int row)
     {
-      _ = FormulaAt(column, row);
+      _ = TryGetFormulaAt(column, row, out _);
 
       return default;
     }

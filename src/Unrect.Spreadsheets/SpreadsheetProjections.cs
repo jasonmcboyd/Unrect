@@ -105,21 +105,7 @@ namespace Unrect.Spreadsheets
     /// <typeparam name="TSpace">The space the leaf is declared over; anything carrying formulas.</typeparam>
     public static IProjectionDefinition<TSpace, string?> Formula<TSpace>()
       where TSpace : class, IFormulaSpace
-      => ProjectionBuilders<TSpace>.Range(1, 1, cell => FormulaAt(cell.Space)).Named("Formula");
-
-    /// <summary>
-    /// The formula behind the region's first cell, or null. Asked at the point's own coordinates
-    /// rather than at (0, 0): a space answers about its own cells, and a region may name a
-    /// rectangle part-way into one. The two formula landmarks below ask the same way, so there is
-    /// one rule here rather than a rule and an assumption.
-    /// </summary>
-    private static string? FormulaAt<TSpace>(Plane<TSpace> region)
-      where TSpace : class, IFormulaSpace
-    {
-      var cell = region[0, 0];
-
-      return cell.Space.FormulaAt(cell.Column, cell.Row);
-    }
+      => ProjectionBuilders<TSpace>.Range(1, 1, cell => cell.Space[0, 0].Formula()).Named("Formula");
 
     /// <summary>
     /// The first row holding a formula anywhere in it — the boundary form, for a section that
@@ -216,7 +202,7 @@ namespace Unrect.Spreadsheets
           {
             var cell = space[column, row];
 
-            if (Matches(formulas.FormulaAt(cell.Column, cell.Row)))
+            if (Matches(formulas.TryGetFormulaAt(cell.Column, cell.Row, out var formula) ? formula : null))
               return row;
           }
 
@@ -242,7 +228,7 @@ namespace Unrect.Spreadsheets
           {
             var cell = space[column, row];
 
-            if (Matches(formulas.FormulaAt(cell.Column, cell.Row)))
+            if (Matches(formulas.TryGetFormulaAt(cell.Column, cell.Row, out var formula) ? formula : null))
               return column;
           }
 
