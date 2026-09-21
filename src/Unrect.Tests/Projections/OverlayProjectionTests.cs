@@ -8,8 +8,8 @@ using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -251,7 +251,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ANullChildIsRefusedWhereItIsWritten()
     {
-      IProjectionDefinition<ISheetCells, int>? missing = null;
+      IProjectionDefinition<ICellSpace, int>? missing = null;
 
       var failure = Assert.Throws<ArgumentNullException>(() =>
         Overlay(o => $"{o.Next(Down(1).Of(IntCell()))}|{o.Next(missing!)}"));

@@ -11,7 +11,7 @@ namespace Unrect.Interactive
   /// <summary>
   /// The scaffolds as leaves, so a type can be guessed where a declaration has already found it:
   /// <code>
-  /// using static Unrect.Interactive.ScaffoldBuilders&lt;Unrect.Spreadsheets.ISheetCells&gt;;
+  /// using static Unrect.Interactive.ScaffoldBuilders&lt;Unrect.Spreadsheets.ICellSpace&gt;;
   ///
   /// var report = VerticalFlow(v =&gt; new
   /// {
@@ -38,7 +38,7 @@ namespace Unrect.Interactive
   /// </summary>
   /// <typeparam name="TSpace">The sheet every declaration in the file is written against.</typeparam>
   public static class ScaffoldBuilders<TSpace>
-    where TSpace : class, ISheetCells
+    where TSpace : class, ICellSpace
   {
     /// <summary>
     /// The source of a positional record matching the labels of the region this is placed on; see

@@ -7,7 +7,7 @@ namespace Unrect.Spreadsheets
   /// addressed by the same coordinates. This type adds the second layer and nothing else, so a cell
   /// reads exactly as it would have without formulas.
   /// </summary>
-  internal sealed class SpreadsheetGridSpace : SheetCellsBase, ISpreadsheetSpace
+  internal sealed class SpreadsheetGridSpace : CellSpaceBase, ISpreadsheetSpace
   {
     private readonly SheetGrid _values;
     private readonly string?[,] _formulas;

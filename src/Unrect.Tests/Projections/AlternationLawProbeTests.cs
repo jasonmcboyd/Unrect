@@ -3,7 +3,7 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.Observations;
 using static Unrect.Tests.ProjectionTestSpaces;
 
@@ -52,16 +52,16 @@ namespace Unrect.Tests.Projections
   public class AlternationLawProbeTests
   {
     /// <summary>One text cell — enough for an arm to agree or disagree about, and nothing else.</summary>
-    private static ISheetCells Sheet() => Mixed(new object?[,] { { "x" } });
+    private static ICellSpace Sheet() => Mixed(new object?[,] { { "x" } });
 
     /// <summary>An arm that reads the cell and marks its answer with its own name.</summary>
-    private static IProjectionDefinition<ISheetCells, string> Accepts(string name) => Point().Select(p => $"{p.Text()}-{name}").Named(name);
+    private static IProjectionDefinition<ICellSpace, string> Accepts(string name) => Point().Select(p => $"{p.Text()}-{name}").Named(name);
 
     /// <summary>
     /// An arm that asks the same cell for a number, which it is not. A disagreement with the data,
     /// never a fault, so every tolerance operator here is being asked the question it exists for.
     /// </summary>
-    private static IProjectionDefinition<ISheetCells, string> Rejects(string name) => Point().Select(p => p.Integer().ToString()).Named(name);
+    private static IProjectionDefinition<ICellSpace, string> Rejects(string name) => Point().Select(p => p.Integer().ToString()).Named(name);
 
     // --- Choice associativity: where it holds ------------------------------------------------------
 
@@ -322,14 +322,14 @@ namespace Unrect.Tests.Projections
       // annotation and not Nullable<T>, so a projection of int stays a projection of int — the
       // absent reading is 0, as BoundaryProjectionTests pins — and both spellings have the same
       // static type at both arities.
-      IProjectionDefinition<ISheetCells, int> once = IntCell().Optional();
-      IProjectionDefinition<ISheetCells, int> twice = IntCell().Optional().Optional();
+      IProjectionDefinition<ICellSpace, int> once = IntCell().Optional();
+      IProjectionDefinition<ICellSpace, int> twice = IntCell().Optional().Optional();
 
       Assert.Equal(0, once.Map(Sheet()));
       Assert.Equal(0, twice.Map(Sheet()));
 
-      IProjectionDefinition<ISheetCells, string?> onceText = Accepts("x").Optional();
-      IProjectionDefinition<ISheetCells, string?> twiceText = Accepts("x").Optional().Optional();
+      IProjectionDefinition<ICellSpace, string?> onceText = Accepts("x").Optional();
+      IProjectionDefinition<ICellSpace, string?> twiceText = Accepts("x").Optional().Optional();
 
       Assert.Equal("x-x", onceText.Map(Sheet()));
       Assert.Equal("x-x", twiceText.Map(Sheet()));

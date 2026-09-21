@@ -3,7 +3,7 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -25,7 +25,7 @@ namespace Unrect.Tests.Projections
     /// cell is a number" and "rows while any cell has a value" give different answers (3 and 6), so a
     /// child that resumed on the sheet instead of on its parent's region says 6 where it should say 3.
     /// </summary>
-    private static ISheetCells Disagreeing()
+    private static ICellSpace Disagreeing()
     {
       var values = new object?[8, 2];
 
@@ -47,10 +47,10 @@ namespace Unrect.Tests.Projections
     private const int NumericRows = 3;
     private const int ValuedRows = 6;
 
-    private static T Read<T>(IProjectionDefinition<ISheetCells, T> declaration) => declaration.Map(Disagreeing());
+    private static T Read<T>(IProjectionDefinition<ICellSpace, T> declaration) => declaration.Map(Disagreeing());
 
     /// <summary>The outer rule: rows while any cell of them is a number, which stops after row 2.</summary>
-    private static IAreaStrategy<ISheetCells> NumericRowsOnly()
+    private static IAreaStrategy<ICellSpace> NumericRowsOnly()
       => RowsWhileAny(cell => cell.IsDouble());
 
     /// <summary>
@@ -58,7 +58,7 @@ namespace Unrect.Tests.Projections
     /// whose scan carries replay state, and therefore the one that reads the space it was begun with
     /// rather than the space it is handed per row.
     /// </summary>
-    private static IAreaStrategy<ISheetCells> NumericRowsAndValuedColumns()
+    private static IAreaStrategy<ICellSpace> NumericRowsAndValuedColumns()
       => RowsThenColumns(
         TakeRowsWhileAny(cell => cell.IsDouble()),
         TakeColumnsWhileAny(cell => cell.HasValue));

@@ -3,8 +3,8 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -31,12 +31,12 @@ namespace Unrect.Tests.Projections
   /// </summary>
   public class NameInferenceTests
   {
-    private static IProjectionDefinition<ISheetCells, int> Number() => IntCell();
+    private static IProjectionDefinition<ICellSpace, int> Number() => IntCell();
 
     /// <summary>A projection that always fails, so every test reads its label off the failure.</summary>
-    private static IProjectionDefinition<ISheetCells, string> Text() => TextCell();
+    private static IProjectionDefinition<ICellSpace, string> Text() => TextCell();
 
-    private static ProjectionException Failure<T>(IProjectionDefinition<ISheetCells, T> projection) => Assert.Throws<ProjectionException>(() => projection.Map(Ladder()));
+    private static ProjectionException Failure<T>(IProjectionDefinition<ICellSpace, T> projection) => Assert.Throws<ProjectionException>(() => projection.Map(Ladder()));
 
     // --- The three rungs ---------------------------------------------------------------------------
 
@@ -490,17 +490,17 @@ namespace Unrect.Tests.Projections
       Assert.Equal("VerticalFlow -> Table#2[0] -> Decimal", failure.Path);
     }
 
-    private static IProjectionDefinition<ISheetCells, string> FullRow() => TextCell();
+    private static IProjectionDefinition<ICellSpace, string> FullRow() => TextCell();
 
-    private static IProjectionDefinition<ISheetCells, string> NamedFullRow() => TextCell().Named("full row");
+    private static IProjectionDefinition<ICellSpace, string> NamedFullRow() => TextCell().Named("full row");
 
-    private static IProjectionDefinition<ISheetCells, string> Pick() => TextCell();
+    private static IProjectionDefinition<ICellSpace, string> Pick() => TextCell();
 
-    private static IProjectionDefinition<ISheetCells, string> MakeBlock() => TextCell();
+    private static IProjectionDefinition<ICellSpace, string> MakeBlock() => TextCell();
 
     private sealed class Projections
     {
-      public IProjectionDefinition<ISheetCells, string> Total { get; } = TextCell();
+      public IProjectionDefinition<ICellSpace, string> Total { get; } = TextCell();
     }
   }
 }

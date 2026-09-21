@@ -7,8 +7,8 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.Observations;
 using static Unrect.Tests.ProjectionTestSpaces;
 
@@ -51,7 +51,7 @@ namespace Unrect.Tests.Projections
     ///   r4  (blank)            body index 3 — trailing blank
     /// </code>
     /// </summary>
-    private static ISheetCells Gapped() => Mixed(new object?[,]
+    private static ICellSpace Gapped() => Mixed(new object?[,]
     {
       { "Name", "Amount" },
       { "Alpha", 100m },
@@ -72,7 +72,7 @@ namespace Unrect.Tests.Projections
     ///   r5  note                past the landmark
     /// </code>
     /// </summary>
-    private static ISheetCells GappedWithTotal() => Mixed(new object?[,]
+    private static ICellSpace GappedWithTotal() => Mixed(new object?[,]
     {
       { "Name", "Amount" },
       { "Alpha", 100m },
@@ -82,7 +82,7 @@ namespace Unrect.Tests.Projections
       { "note", null },
     });
 
-    private static IProjectionDefinition<ISheetCells, IReadOnlyList<Line>> Lines(BlankRowStrategy onBlank)
+    private static IProjectionDefinition<ICellSpace, IReadOnlyList<Line>> Lines(BlankRowStrategy onBlank)
       => Table(r => new Line(r["Name"].Text(), r["Amount"].Decimal()), onBlank);
 
     // --- B. default(BlankRowStrategy) == Stop -------------------------------------------------------

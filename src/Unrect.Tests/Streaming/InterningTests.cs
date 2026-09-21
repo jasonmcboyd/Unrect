@@ -36,7 +36,7 @@ namespace Unrect.Tests.Streaming
     private static Cell Fresh(string value) => Cell.Of(new string(value.ToCharArray()));
 
     /// <summary>Every cell of <paramref name="sheet"/> read, since a pass loads rows only as they are asked for.</summary>
-    private static ISheetCells ReadEveryCell(ISheetCells sheet)
+    private static ICellSpace ReadEveryCell(ICellSpace sheet)
     {
       for (var row = 0; row < sheet.Area.Height; row++)
         for (var column = 0; column < sheet.Area.Width; column++)

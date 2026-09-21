@@ -8,8 +8,8 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -26,14 +26,14 @@ namespace Unrect.Tests.Projections
   /// </summary>
   public class DictionaryTableTests
   {
-    private static ISheetCells Sheet() => Mixed(new object?[,]
+    private static ICellSpace Sheet() => Mixed(new object?[,]
     {
       { "Investor Name", "Transaction Date", "Amount" },
       { "Acme", new DateTime(2026, 3, 4), 10m },
       { "Beta", null, 20m },
     });
 
-    private static IReadOnlyList<IReadOnlyDictionary<string, Point<ISheetCells>>> Rows() => Table().Map(Sheet());
+    private static IReadOnlyList<IReadOnlyDictionary<string, Point<ICellSpace>>> Rows() => Table().Map(Sheet());
 
     // --- Keys and values ---------------------------------------------------------------------------
 
@@ -94,16 +94,16 @@ namespace Unrect.Tests.Projections
       // is whatever their own space answers. The static side of this assertion is the local's type;
       // the runtime side is the closed interface the factory's projection implements, so the pin
       // holds even if the factory is later composed out of other projections.
-      IProjectionDefinition<ISheetCells, IReadOnlyList<IReadOnlyDictionary<string, Point<ISheetCells>>>> table = Table();
+      IProjectionDefinition<ICellSpace, IReadOnlyList<IReadOnlyDictionary<string, Point<ICellSpace>>>> table = Table();
 
       Assert.Contains(
-        typeof(IProjectionDefinition<ISheetCells, IReadOnlyList<IReadOnlyDictionary<string, Point<ISheetCells>>>>),
+        typeof(IProjectionDefinition<ICellSpace, IReadOnlyList<IReadOnlyDictionary<string, Point<ICellSpace>>>>),
         table.GetType().GetInterfaces());
 
-      IReadOnlyDictionary<string, Point<ISheetCells>> row = table.Map(Sheet())[0];
+      IReadOnlyDictionary<string, Point<ICellSpace>> row = table.Map(Sheet())[0];
       object value = row["Amount"];
 
-      Assert.IsType<Point<ISheetCells>>(value);
+      Assert.IsType<Point<ICellSpace>>(value);
     }
 
     [Fact]
@@ -111,7 +111,7 @@ namespace Unrect.Tests.Projections
     {
       var row = Rows()[0];
 
-      Assert.IsAssignableFrom<IReadOnlyDictionary<string, Point<ISheetCells>>>(row);
+      Assert.IsAssignableFrom<IReadOnlyDictionary<string, Point<ICellSpace>>>(row);
       Assert.True(row.ContainsKey("TRANSACTIONDATE"));
       Assert.False(row.ContainsKey("Nope"));
     }

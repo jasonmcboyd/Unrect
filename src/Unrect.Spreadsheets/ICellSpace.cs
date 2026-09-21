@@ -30,7 +30,7 @@ namespace Unrect.Spreadsheets
   /// different objects and none of them is a vendor's type.
   /// </para>
   /// </summary>
-  public interface ISheetCells : ISpace
+  public interface ICellSpace : ISpace
   {
     /// <summary>The cell's number, as the double the store holds.</summary>
     /// <inheritdoc cref="ISpace.TryGetTextAt"/>

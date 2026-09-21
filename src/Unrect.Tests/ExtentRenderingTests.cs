@@ -64,7 +64,7 @@ namespace Unrect.Tests
       // half is character-for-character what the extent would print on its own. A message quoting a
       // plane and one quoting the Area a strategy returned describe the same region in the same
       // words.
-      var plane = Plane<ISheetCells>.Of(CoordinateGrid(4, 2));
+      var plane = Plane<ICellSpace>.Of(CoordinateGrid(4, 2));
 
       Assert.Equal("(0,0) 4x2", plane.ToString());
       Assert.EndsWith(new Size(4, 2).ToString(), plane.ToString(), StringComparison.Ordinal);

@@ -9,9 +9,9 @@ This is the user-facing guide to that door: when to reach for it, the lifecycle 
 declaration holds and the cap on it, the statistics, and the limits that are honestly still
 limits.
 
-`book.Sheet(name)` hands back an `ISheetCells` — the kinded, no-formulas face a streamed sheet
-answers — so a declaration file over it imports `SheetProjectionBuilders<ISheetCells>` beside
-`ProjectionBuilders<ISheetCells>`, never `SpreadsheetProjectionBuilders<TSpace>`: a streamed
+`book.Sheet(name)` hands back an `ICellSpace` — the kinded, no-formulas face a streamed sheet
+answers — so a declaration file over it imports `SheetProjectionBuilders<ICellSpace>` beside
+`ProjectionBuilders<ICellSpace>`, never `SpreadsheetProjectionBuilders<TSpace>`: a streamed
 sheet carries no formulas, and a declaration that calls `Formula()` will not compile against
 one. Read formulas through the eager door instead
 (`SpreadsheetSpace.CreateWithFormulas(path, sheet)`).
@@ -86,7 +86,7 @@ var result = projection.Map(book.Sheet("Data"));    // Sheet(name) is one forwar
 - **One consumer per pass.** A pass is not shared between threads. Many threads over one
   workbook each ask for their own `Sheet(name)`; they share only the string table, which is
   safe to share.
-- **Points have a lifetime, minting does not.** A `Point<ISheetCells>` is a space, a column
+- **Points have a lifetime, minting does not.** A `Point<ICellSpace>` is a space, a column
   and a row — minting one touches nothing. *Reading* through one is what reaches the pass.
 - **A read after `Dispose` throws `ObjectDisposedException`, deterministically**, whether
   or not the row it wants happens still to be held. This exception is a **fault** (see

@@ -52,7 +52,7 @@ namespace Unrect.Spreadsheets
     /// <typeparam name="T">What one record reads.</typeparam>
     /// <param name="labels">This file's captions — what a table's bind rung hands its record.</param>
     public static IProjectionDefinition<TSpace, T> Record<TSpace, T>(LabelMap labels)
-      where TSpace : class, ISheetCells
+      where TSpace : class, ICellSpace
       => RecordRow<TSpace, T>(RowBinding<T>.Create<TSpace>(null, typeof(TSpace)), labels);
 
     /// <summary>
@@ -67,7 +67,7 @@ namespace Unrect.Spreadsheets
     /// <typeparam name="TSpace">The sheet the table is declared over.</typeparam>
     /// <typeparam name="T">What one record reads.</typeparam>
     public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<TSpace, T>()
-      where TSpace : class, ISheetCells
+      where TSpace : class, ICellSpace
       => Bound<TSpace, T>(RowBinding<T>.Create<TSpace>(null, typeof(TSpace)), BlankRowStrategy.Stop);
 
     /// <summary>
@@ -81,7 +81,7 @@ namespace Unrect.Spreadsheets
     /// <typeparam name="T">What one record reads.</typeparam>
     /// <param name="onBlank">How a fully-blank body row is treated.</param>
     public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<TSpace, T>(BlankRowStrategy onBlank)
-      where TSpace : class, ISheetCells
+      where TSpace : class, ICellSpace
       => Bound<TSpace, T>(RowBinding<T>.Create<TSpace>(null, typeof(TSpace)), onBlank);
 
     /// <summary>
@@ -97,7 +97,7 @@ namespace Unrect.Spreadsheets
     /// <typeparam name="T">What one record reads.</typeparam>
     /// <param name="bind">The per-member declarations applied to what reflection would have written.</param>
     public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<TSpace, T>(Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>> bind)
-      where TSpace : class, ISheetCells
+      where TSpace : class, ICellSpace
       => Bound<TSpace, T>(Planned<TSpace, T>(bind), BlankRowStrategy.Stop);
 
     /// <summary>
@@ -112,7 +112,7 @@ namespace Unrect.Spreadsheets
     /// <param name="bind">The per-member declarations applied to what reflection would have written.</param>
     /// <param name="onBlank">How a fully-blank body row is treated.</param>
     public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<TSpace, T>(Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>> bind, BlankRowStrategy onBlank)
-      where TSpace : class, ISheetCells
+      where TSpace : class, ICellSpace
       => Bound<TSpace, T>(Planned<TSpace, T>(bind), onBlank);
 
     /// <summary>
@@ -131,7 +131,7 @@ namespace Unrect.Spreadsheets
       int headerRows,
       Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>>? bind = null,
       BlankRowStrategy? onBlank = null)
-      where TSpace : class, ISheetCells
+      where TSpace : class, ICellSpace
       => Bound<TSpace, T>(
         bind is null ? RowBinding<T>.Create<TSpace>(null, typeof(TSpace)) : Planned<TSpace, T>(bind, headerRows),
         onBlank ?? BlankRowStrategy.Stop,
@@ -139,7 +139,7 @@ namespace Unrect.Spreadsheets
         headerRows);
 
     private static RowBinding<T> Planned<TSpace, T>(Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>> bind, int headerRows = 1)
-      where TSpace : class, ISheetCells
+      where TSpace : class, ICellSpace
     {
       var binding = (bind ?? throw new ArgumentNullException(nameof(bind)))(new TableBinding<TSpace, T>())
         ?? throw new ArgumentException("The binding lambda returned null.", nameof(bind));
@@ -173,7 +173,7 @@ namespace Unrect.Spreadsheets
       Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>>? bind,
       BlankRowStrategy onBlank,
       int headerRows = 1)
-      where TSpace : class, ISheetCells
+      where TSpace : class, ICellSpace
       => Bound<TSpace, T>(
         bind is null ? RowBinding<T>.Create<TSpace>(null, typeof(TSpace)) : Planned<TSpace, T>(bind, headerRows),
         onBlank,
@@ -181,7 +181,7 @@ namespace Unrect.Spreadsheets
         headerRows);
 
     private static IProjectionDefinition<TSpace, IReadOnlyList<T>> Bound<TSpace, T>(RowBinding<T> plan, BlankRowStrategy onBlank, bool loose = false, int headerRows = 1)
-      where TSpace : class, ISheetCells
+      where TSpace : class, ICellSpace
       => ProjectionBuilders<TSpace>
         .Table(headerRows: headerRows, eachRow: labels => RecordRow<TSpace, T>(plan, labels, loose), onBlank, declared: null)
         .AsUnit($"Table<{typeof(T).Name}>");
@@ -197,7 +197,7 @@ namespace Unrect.Spreadsheets
     /// </para>
     /// </summary>
     private static IProjectionDefinition<TSpace, T> RecordRow<TSpace, T>(RowBinding<T> plan, LabelMap labels, bool loose = false)
-      where TSpace : class, ISheetCells
+      where TSpace : class, ICellSpace
     {
       var columns = Columns<T>(plan, labels, loose);
       var members = new IProjectionDefinition<TSpace, object?>[plan.Members.Count];
@@ -250,7 +250,7 @@ namespace Unrect.Spreadsheets
     /// here, once, rather than captured with a loop variable that has moved on by the time it runs.
     /// </summary>
     private static IProjectionDefinition<TSpace, object?> Defaulted<TSpace>(MemberPlan member)
-      where TSpace : class, ISheetCells
+      where TSpace : class, ICellSpace
     {
       var value = Default(member);
 

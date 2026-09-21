@@ -8,7 +8,7 @@ using Unrect.Tests.Streaming;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Spreadsheets.SpreadsheetProjections;
 using static Unrect.Tests.ProjectionTestSpaces;
 
@@ -60,7 +60,7 @@ namespace Unrect.Tests.Projections
     /// A grid whose every cell is <c>row * 10 + column + 1</c>, at each door — so a point's address
     /// and the cell it names can be checked against each other without a table of literals.
     /// </summary>
-    private static ISheetCells Sheet(string door)
+    private static ICellSpace Sheet(string door)
       => door == "grid"
         ? CoordinateGrid(5, 8)
         : Streamed(FakeSheet.Of("Data", Rows()));

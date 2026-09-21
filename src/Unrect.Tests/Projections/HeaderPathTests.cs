@@ -6,7 +6,7 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 
 namespace Unrect.Tests.Projections
 {
@@ -17,7 +17,7 @@ namespace Unrect.Tests.Projections
   /// </summary>
   public class HeaderPathTests
   {
-    private static ISheetCells Workbook()
+    private static ICellSpace Workbook()
       => SpreadsheetSpace.Create(Path.Combine(AppContext.BaseDirectory, "TestData", "multi-header-table.xlsx"), "Sheet1");
 
     [Fact]
@@ -37,14 +37,14 @@ namespace Unrect.Tests.Projections
     }
 
     /// <summary>A column under no band, two bands that share their captions, a band that appears twice, and a caption that says "1".</summary>
-    private static ISheetCells Sheet() => SheetGrid.Of(new object?[,]
+    private static ICellSpace Sheet() => SheetGrid.Of(new object?[,]
     {
       { null, "From", null, "To", null, "Totals", null, "Totals", null },
       { "Id", "Id", "Code", "Id", "1", "Net", "Tax", "Net", "Tax" },
       { 100m, 1m, "FEP", 2m, "one", 10m, 11m, 20m, 21m },
     });
 
-    private static T Read<T>(Func<TableRow<ISheetCells>, T> read) => Assert.Single(Table(2, read).Map(Sheet()));
+    private static T Read<T>(Func<TableRow<ICellSpace>, T> read) => Assert.Single(Table(2, read).Map(Sheet()));
 
     [Fact]
     public void AStepIsANameTheNthOfANameOrAPosition()
@@ -83,7 +83,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal("FEP", Read(r => r["Code"].Text()));
     }
 
-    private static string Problem(Func<TableRow<ISheetCells>, object> read)
+    private static string Problem(Func<TableRow<ICellSpace>, object> read)
       => Assert.Throws<ProjectionException>(() => Table(2, read).Map(Sheet())).Message;
 
     [Fact]

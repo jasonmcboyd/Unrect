@@ -6,8 +6,8 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 
 namespace Unrect.Tests.Projections
 {
@@ -32,7 +32,7 @@ namespace Unrect.Tests.Projections
     /// a name over a table — with gaps of no particular height between every one of them and a few
     /// blank rows trailing.
     /// </summary>
-    private static ISheetCells Report()
+    private static ICellSpace Report()
       => SheetGrid.Of(new object?[,]
       {
         { null, null },

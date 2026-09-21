@@ -21,15 +21,15 @@ namespace Unrect.Tests
       => space.TryGetTextAt(column, row, out _, out _);
 
     /// <summary>Whether the cell carries an error.</summary>
-    public static bool IsErrorAt(this ISheetCells space, int column, int row)
+    public static bool IsErrorAt(this ICellSpace space, int column, int row)
       => space.TryGetErrorAt(column, row, out _);
 
     /// <summary>The error's spelling, or null where the cell carries none.</summary>
-    public static string? ErrorTextAt(this ISheetCells space, int column, int row)
+    public static string? ErrorTextAt(this ICellSpace space, int column, int row)
       => space.TryGetErrorAt(column, row, out var error) ? error : null;
 
     /// <summary>Which read the cell answers, as the lexer's one word for it.</summary>
-    public static CellKind KindAt(this ISheetCells space, int column, int row)
+    public static CellKind KindAt(this ICellSpace space, int column, int row)
       => space.IsBlank(column, row) ? CellKind.Blank
         : space.TryGetTextAt(column, row, out _, out _) ? CellKind.Text
         : space.TryGetDoubleAt(column, row, out _, out _) ? CellKind.Number
@@ -38,11 +38,11 @@ namespace Unrect.Tests
         : CellKind.Error;
 
     /// <summary>The same word as a message says it after "found": an error spells itself out.</summary>
-    public static string Describe(this ISheetCells space, int column, int row)
+    public static string Describe(this ICellSpace space, int column, int row)
       => space.TryGetErrorAt(column, row, out var error) ? $"Error({error})" : space.KindAt(column, row).ToString();
 
-    /// <inheritdoc cref="Describe(ISheetCells, int, int)"/>
-    public static string Describe(this Point<ISheetCells> point)
+    /// <inheritdoc cref="Describe(ICellSpace, int, int)"/>
+    public static string Describe(this Point<ICellSpace> point)
       => point.Space.Describe(point.Column, point.Row);
   }
 }

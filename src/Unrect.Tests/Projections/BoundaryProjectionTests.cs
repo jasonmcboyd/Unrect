@@ -7,7 +7,7 @@ using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -21,7 +21,7 @@ namespace Unrect.Tests.Projections
   public class BoundaryProjectionTests
   {
     // One column of numbers, so a projection asking for text is a guaranteed, well-located failure.
-    private static ISheetCells Numbers(int height = 3)
+    private static ICellSpace Numbers(int height = 3)
     {
       var values = new int[height, 1];
 
@@ -31,10 +31,10 @@ namespace Unrect.Tests.Projections
       return Grid(values);
     }
 
-    private static IProjectionDefinition<ISheetCells, string> Title() => TextCell().Named("title");
+    private static IProjectionDefinition<ICellSpace, string> Title() => TextCell().Named("title");
 
     /// <summary>Two levels below the boundary: the flow whose second child is the one that fails.</summary>
-    private static IProjectionDefinition<ISheetCells, string> Inner()
+    private static IProjectionDefinition<ICellSpace, string> Inner()
       => VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(TextCell())}");
 
     /// <summary>
@@ -263,7 +263,7 @@ namespace Unrect.Tests.Projections
     public void ANullReferenceInAProjection_IsNotAbsorbed()
     {
       var failure = Assert.Throws<ProjectionException>(() =>
-        Point().Select<ISheetCells, Point<ISheetCells>, string>(_ => throw new NullReferenceException("boom")).Named("bad").Optional().Map(Numbers(1)));
+        Point().Select<ICellSpace, Point<ICellSpace>, string>(_ => throw new NullReferenceException("boom")).Named("bad").Optional().Map(Numbers(1)));
 
       Assert.Equal("'bad'", failure.Subject);
       Assert.IsType<NullReferenceException>(failure.GetBaseException());
@@ -274,7 +274,7 @@ namespace Unrect.Tests.Projections
     public void AnIndexOutOfRangeInAProjection_IsNotAbsorbed()
     {
       var failure = Assert.Throws<ProjectionException>(() =>
-        Point().Select<ISheetCells, Point<ISheetCells>, string>(_ => throw new IndexOutOfRangeException("boom")).Named("bad").Optional().Map(Numbers(1)));
+        Point().Select<ICellSpace, Point<ICellSpace>, string>(_ => throw new IndexOutOfRangeException("boom")).Named("bad").Optional().Map(Numbers(1)));
 
       Assert.IsType<IndexOutOfRangeException>(failure.GetBaseException());
     }
@@ -297,7 +297,7 @@ namespace Unrect.Tests.Projections
     {
       // Else would otherwise hide the bug behind a perfectly good fallback reading.
       var failure = Assert.Throws<ProjectionException>(() =>
-        Point().Select<ISheetCells, Point<ISheetCells>, string>(_ => throw new NullReferenceException("boom"))
+        Point().Select<ICellSpace, Point<ICellSpace>, string>(_ => throw new NullReferenceException("boom"))
           .Named("bad")
           .Else(Point().Select(_ => "the fallback would have worked"))
           .Map(Numbers(1)));
@@ -315,7 +315,7 @@ namespace Unrect.Tests.Projections
 
     // --- When the fallback fails too ------------------------------------------------------------------------------------
 
-    private static IProjectionDefinition<ISheetCells, string> PrimaryAndFallbackBothWrong()
+    private static IProjectionDefinition<ICellSpace, string> PrimaryAndFallbackBothWrong()
       => TextCell().Named("primary")
         .Else(Point().Select(p => p.Date().ToString()).Named("fallback"));
 
@@ -362,9 +362,9 @@ namespace Unrect.Tests.Projections
     // failed — and fails the same way, for the same reason, while blaming itself. The note is the
     // framework saying "the projection before me read nothing, which is probably why I am here".
 
-    private static ISheetCells TextOverNumber() => Mixed(new object?[,] { { "x" }, { 5 } });
+    private static ICellSpace TextOverNumber() => Mixed(new object?[,] { { "x" }, { 5 } });
 
-    private static IProjectionDefinition<ISheetCells, string> AbsorbedThenSameCell()
+    private static IProjectionDefinition<ICellSpace, string> AbsorbedThenSameCell()
       => VerticalFlow(v => $"{v.Next(IntCell().Optional())}|{v.Next(IntCell())}");
 
     [Fact]
@@ -575,15 +575,15 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void Else_RejectsANullFallbackProjection()
     {
-      Assert.Equal("fallback", Assert.Throws<ArgumentNullException>(() => Title().Else((IProjectionDefinition<ISheetCells, string>)null!)).ParamName);
+      Assert.Equal("fallback", Assert.Throws<ArgumentNullException>(() => Title().Else((IProjectionDefinition<ICellSpace, string>)null!)).ParamName);
     }
 
     [Fact]
     public void BoundariesRejectANullProjection()
     {
-      Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjectionDefinition<ISheetCells, int>)null!).Optional()).ParamName);
-      Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjectionDefinition<ISheetCells, int>)null!).Else(0)).ParamName);
-      Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjectionDefinition<ISheetCells, int>)null!).Else(IntCell())).ParamName);
+      Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjectionDefinition<ICellSpace, int>)null!).Optional()).ParamName);
+      Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjectionDefinition<ICellSpace, int>)null!).Else(0)).ParamName);
+      Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjectionDefinition<ICellSpace, int>)null!).Else(IntCell())).ParamName);
     }
   }
 }

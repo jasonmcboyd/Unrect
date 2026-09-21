@@ -10,11 +10,11 @@ using static Unrect.Tests.Observations;
 
 // THE SHIPPING SHAPE, WRITTEN AS IT SHIPS. This is a declaration file in the Entry C canon: one
 // space named once, at the top, and not one prefix below it. `Text()`, `Table<T>()`, `Below(...)`
-// and `Heading(...)` all come from here, closed over ISheetCells, and the file is the scope.
+// and `Heading(...)` all come from here, closed over ICellSpace, and the file is the scope.
 //
 // It is therefore the exact opposite of ProjectionBuildersParityTests, whose header explains why
 // THAT file must hold the vocabulary at arm's length behind a `using B = ...` alias: a parity suite
-// has to name both spellings at once, and `Projection.Text()` and `ProjectionBuilders<ISheetCells>.Text()`
+// has to name both spellings at once, and `Projection.Text()` and `ProjectionBuilders<ICellSpace>.Text()`
 // have identical signatures, so a file importing both statically could not invoke either. Here there
 // is nothing to compare against in-file — the pre-campaign spellings live in
 // ProjectionModelAcceptanceTests.cs, which carries its own `using static Unrect.Projections.Projection`
@@ -22,10 +22,10 @@ using static Unrect.Tests.Observations;
 // the two halves of the partial class prove it.
 //
 // The type argument is spelled in FULL, and must be: a using alias or a `using static` is resolved
-// as if the other usings were not there, so `ProjectionBuilders<ISheetCells>` would not bind even with
+// as if the other usings were not there, so `ProjectionBuilders<ICellSpace>` would not bind even with
 // `using Unrect.Core;` four lines above.
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 
 namespace Unrect.Tests.Projections
 {
@@ -85,12 +85,12 @@ namespace Unrect.Tests.Projections
     /// <summary>
     /// The allocation report in the closed vocabulary. Every word of the body is the same word;
     /// what changed is the import at the top of the file and, at the hoisted-helper site, the return
-    /// type — <c>IProjectionDefinition&lt;ISheetCells, Report&gt;</c> rather than <c>IProjectionDefinition&lt;Report&gt;</c>,
+    /// type — <c>IProjectionDefinition&lt;ICellSpace, Report&gt;</c> rather than <c>IProjectionDefinition&lt;Report&gt;</c>,
     /// because the closed class's layouts are closed over the space the file named. The two are one
     /// type up to the derivation that makes the plain form the base, which is the annotation tax the
     /// campaign already recorded and priced.
     /// </summary>
-    private static IProjectionDefinition<ISheetCells, Report> AllocationReportInTheClosedVocabulary()
+    private static IProjectionDefinition<ICellSpace, Report> AllocationReportInTheClosedVocabulary()
     {
       var title = Text();
       var rows = Table<Allocation>();
@@ -114,13 +114,13 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AndTheClosedVocabularysTwinAlsoReadsASpaceThatOffersMore()
     {
-      // Scenario 1's second half survives the respelling too: the twin demands ISheetCells and the sheet
+      // Scenario 1's second half survives the respelling too: the twin demands ICellSpace and the sheet
       // offers formulas, and variance does the work with nothing written about it.
       AssertL3(
         Read(AllocationReport(), CapableAllocations()),
         Read(AllocationReportInTheClosedVocabulary(), CapableAllocations()));
 
-      var read = ((IProjectionDefinition<ISheetCells, Report>)AllocationReportInTheClosedVocabulary()).Map(CapableAllocations());
+      var read = ((IProjectionDefinition<ICellSpace, Report>)AllocationReportInTheClosedVocabulary()).Map(CapableAllocations());
 
       Assert.Equal("Buying Power Allocation", read.Title);
       Assert.Equal(
@@ -144,7 +144,7 @@ namespace Unrect.Tests.Projections
     /// it, exactly as the parity suite's boundary pin says. Declare it, then place it.
     /// </para>
     /// </summary>
-    private static IProjectionDefinition<ISheetCells, BuyingPowerAllocation> BuyingPowerParserThroughThePipeline()
+    private static IProjectionDefinition<ICellSpace, BuyingPowerAllocation> BuyingPowerParserThroughThePipeline()
     {
       var allocation = Overlay(o => new BuyingPowerRow(
         FundCode: o.Next(Right(1).Text()),
@@ -176,7 +176,7 @@ namespace Unrect.Tests.Projections
     {
       // Non-vacuity, and the record the whole declaration exists to be allowed to describe: a fund
       // code with two absences is still a record and not a failure, per field, through the pipeline.
-      var read = ((IProjectionDefinition<ISheetCells, BuyingPowerAllocation>)BuyingPowerParserThroughThePipeline()).Map(BuyingPower());
+      var read = ((IProjectionDefinition<ICellSpace, BuyingPowerAllocation>)BuyingPowerParserThroughThePipeline()).Map(BuyingPower());
 
       Assert.Equal("PCTCAL2 BUYING POWER", read.Title);
       Assert.Equal(2231.25m, read.Total);
@@ -199,7 +199,7 @@ namespace Unrect.Tests.Projections
       // introduce a backwards reach; this is that argument made into an instrument reading.
       var watched = new WatermarkSpace(BuyingPower());
 
-      var read = ((IProjectionDefinition<ISheetCells, BuyingPowerAllocation>)BuyingPowerParserThroughThePipeline()).Map(watched);
+      var read = ((IProjectionDefinition<ICellSpace, BuyingPowerAllocation>)BuyingPowerParserThroughThePipeline()).Map(watched);
 
       Assert.Equal(3, read.Allocations.Count);
       Assert.Equal(7, watched.HighWaterMark);
@@ -224,7 +224,7 @@ namespace Unrect.Tests.Projections
     /// writes, which <see cref="PlacementPipelineLawTests"/> pins as a law in its own right.
     /// </para>
     /// </summary>
-    private static IProjectionDefinition<ISheetCells, IrrReport> IrrReportThroughHeadings()
+    private static IProjectionDefinition<ICellSpace, IrrReport> IrrReportThroughHeadings()
     {
       var investorBlock = Table<CashFlow>();
 
@@ -265,7 +265,7 @@ namespace Unrect.Tests.Projections
     {
       // Non-vacuity for the pin above: the whole document really is read, both series really are the
       // one hoisted series placed twice, and the sheet really is described end to end.
-      var result = ((IProjectionDefinition<ISheetCells, IrrReport>)IrrReportThroughHeadings()).MapWithDiagnostics(Irr());
+      var result = ((IProjectionDefinition<ICellSpace, IrrReport>)IrrReportThroughHeadings()).MapWithDiagnostics(Irr());
       var report = result.Value;
 
       Assert.Equal("Investor IRR Report", report.Header.Title);
@@ -292,7 +292,7 @@ namespace Unrect.Tests.Projections
     /// out to its leaves, so nothing has to be described by hand here — see the class remarks for
     /// what that replaced.
     /// </summary>
-    private static Observation Read<T>(IProjectionDefinition<ISheetCells, T> declaration, ISheetCells space)
+    private static Observation Read<T>(IProjectionDefinition<ICellSpace, T> declaration, ICellSpace space)
       => Observe(declaration, space);
 
   }

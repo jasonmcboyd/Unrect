@@ -75,7 +75,7 @@ namespace Unrect.Spreadsheets
     /// stores 0.30000000000000004 reads as 0.3.
     /// </summary>
     internal static bool Decimal<TSpace>(Point<TSpace> cell, out decimal value, out CellProblem? problem)
-      where TSpace : class, ISheetCells
+      where TSpace : class, ICellSpace
     {
       value = default;
 
@@ -93,7 +93,7 @@ namespace Unrect.Spreadsheets
     }
 
     internal static bool Integer<TSpace>(Point<TSpace> cell, out int value, out CellProblem? problem)
-      where TSpace : class, ISheetCells
+      where TSpace : class, ICellSpace
     {
       value = default;
 
@@ -154,7 +154,7 @@ namespace Unrect.Spreadsheets
     /// a cell that says 1.50 is quoted as 1.50.
     /// </summary>
     private static string Said<TSpace>(Point<TSpace> cell, double number)
-      where TSpace : class, ISheetCells
+      where TSpace : class, ICellSpace
       => cell.AsText() ?? Renderings.ShortestRoundTrip(number);
   }
 }

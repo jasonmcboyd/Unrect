@@ -24,7 +24,7 @@ namespace Unrect.Tests
   /// </summary>
   internal sealed class FormulaGridSpace : ISpreadsheetSpace
   {
-    private readonly ISheetCells _values;
+    private readonly ICellSpace _values;
     private readonly string?[,] _formulas;
 
     internal FormulaGridSpace(Cell[,] values, string?[,] formulas)

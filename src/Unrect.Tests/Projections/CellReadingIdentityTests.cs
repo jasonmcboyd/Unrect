@@ -8,8 +8,8 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -81,8 +81,8 @@ namespace Unrect.Tests.Projections
     private static string SameSentence<TValue, TRow>(
       string caption,
       object? offending,
-      IProjectionDefinition<ISheetCells, TValue> leaf,
-      IProjectionDefinition<ISheetCells, IReadOnlyList<TRow>> table)
+      IProjectionDefinition<ICellSpace, TValue> leaf,
+      IProjectionDefinition<ICellSpace, IReadOnlyList<TRow>> table)
     {
       var space = Mixed(new object?[,]
       {
@@ -324,11 +324,11 @@ namespace Unrect.Tests.Projections
       });
 
       Assert.Equal(0.3m, Right(1).Down(1).Of(Decimal()).Map(space));
-      Assert.Equal(0.3m, Plane<ISheetCells>.Of(space)[1, 1].Decimal());
+      Assert.Equal(0.3m, Plane<ICellSpace>.Of(space)[1, 1].Decimal());
       Assert.Equal(0.3m, Table<Money>().Map(space).Single().Amount);
 
       // The double read is the store's own and hands back exactly what is there.
-      Assert.Equal(noisy, Plane<ISheetCells>.Of(space)[1, 1].Double());
+      Assert.Equal(noisy, Plane<ICellSpace>.Of(space)[1, 1].Double());
     }
   }
 }

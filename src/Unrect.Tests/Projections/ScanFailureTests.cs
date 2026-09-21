@@ -8,7 +8,7 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -23,7 +23,7 @@ namespace Unrect.Tests.Projections
   /// </summary>
   public class ScanFailureTests
   {
-    private static ISheetCells Sheet() => Grid(new[,]
+    private static ICellSpace Sheet() => Grid(new[,]
     {
       { 1, 2, 3 },
       { 4, 5, 6 },
@@ -33,13 +33,13 @@ namespace Unrect.Tests.Projections
     });
 
     /// <summary>A cell rule that breaks, absorbably, on the cell holding <paramref name="marker"/>.</summary>
-    private static Func<Point<ISheetCells>, bool> BreaksOn(int marker)
+    private static Func<Point<ICellSpace>, bool> BreaksOn(int marker)
       => cell => cell.IsDouble() && cell.Integer() == marker
         ? throw new InvalidOperationException("no")
         : true;
 
     /// <summary>A cell rule whose failure is the environment's, not the data's.</summary>
-    private static Func<Point<ISheetCells>, bool> FaultsOn(int marker)
+    private static Func<Point<ICellSpace>, bool> FaultsOn(int marker)
       => cell => cell.IsDouble() && cell.Integer() == marker
         ? throw new IOException("the disk stopped answering")
         : true;
@@ -47,7 +47,7 @@ namespace Unrect.Tests.Projections
     /// <summary>The sheet's 7 is the first cell of row 2, so a rule that breaks on it survives two rows first.</summary>
     private const int LateMarker = 7;
 
-    private static ProjectionException Failure<T>(IProjectionDefinition<ISheetCells, T> projection)
+    private static ProjectionException Failure<T>(IProjectionDefinition<ICellSpace, T> projection)
       => Assert.Throws<ProjectionException>(() => projection.MapWithDiagnostics(Sheet()));
 
     // --- A broken scan is the placement's failure --------------------------------------------------
@@ -84,7 +84,7 @@ namespace Unrect.Tests.Projections
     {
       var broken = Range(RowsWhileAny(FaultsOn(LateMarker)), b => b.Height);
 
-      IProjectionDefinition<ISheetCells, int> projection = boundary switch
+      IProjectionDefinition<ICellSpace, int> projection = boundary switch
       {
         "Optional" => broken.Optional(),
         "Else" => broken.Else(-1),
@@ -141,7 +141,7 @@ namespace Unrect.Tests.Projections
     // --- A repeat's item that runs out of room is a stop, not a failure ----------------------------
 
     /// <summary>Two blocks of values with one blank row between them, so a repeat finds exactly two.</summary>
-    private static ISheetCells TwoBlocks() => Grid(new[,]
+    private static ICellSpace TwoBlocks() => Grid(new[,]
     {
       { 1, 2 },
       { 3, 4 },

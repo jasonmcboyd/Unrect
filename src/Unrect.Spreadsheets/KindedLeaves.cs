@@ -43,7 +43,7 @@ namespace Unrect.Spreadsheets
     /// <typeparam name="TSpace">The sheet the record is declared over.</typeparam>
     /// <param name="member">The member to fill.</param>
     internal static IProjectionDefinition<TSpace, object?> For<TSpace>(MemberPlan member)
-      where TSpace : class, ISheetCells
+      where TSpace : class, ICellSpace
     {
       var leaf = Boxed<TSpace>(member.Type);
 
@@ -51,7 +51,7 @@ namespace Unrect.Spreadsheets
     }
 
     private static IProjectionDefinition<TSpace, object?> Boxed<TSpace>(Type type)
-      where TSpace : class, ISheetCells
+      where TSpace : class, ICellSpace
     {
       // The one member that asserts nothing: it hands over the cell's address and lets the reader
       // ask. No kind, so no kind failure, and nothing for blank tolerance to do.
@@ -105,7 +105,7 @@ namespace Unrect.Spreadsheets
     /// </para>
     /// </summary>
     private static IProjectionDefinition<TSpace, object?> Tolerant<TSpace>(IProjectionDefinition<TSpace, object?> leaf)
-      where TSpace : class, ISheetCells
+      where TSpace : class, ICellSpace
       => ((ReadDefinition<TSpace, object?>)leaf).Tolerating<object?>(value => value);
   }
 }

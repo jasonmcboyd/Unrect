@@ -6,8 +6,8 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.Observations;
 using static Unrect.Tests.ProjectionTestSpaces;
 
@@ -62,7 +62,7 @@ namespace Unrect.Tests.Projections
     // --- The sheets --------------------------------------------------------------------------------
 
     /// <summary>Four rows, two columns, the landmark on row 3 (index 2).</summary>
-    private static ISheetCells Rows() => Mixed(new object?[,]
+    private static ICellSpace Rows() => Mixed(new object?[,]
     {
       { "a0", "a1" },
       { "b0", "b1" },
@@ -71,7 +71,7 @@ namespace Unrect.Tests.Projections
     });
 
     /// <summary>The same sheet with the landmark on the FIRST row, so a bound leaves nothing.</summary>
-    private static ISheetCells MarkFirst() => Mixed(new object?[,]
+    private static ICellSpace MarkFirst() => Mixed(new object?[,]
     {
       { "Mark", "a1" },
       { "b0", "b1" },
@@ -80,7 +80,7 @@ namespace Unrect.Tests.Projections
     });
 
     /// <summary>A wholly blank first row — the filler a content-sensitive movement steps over.</summary>
-    private static ISheetCells BlankLead() => Mixed(new object?[,]
+    private static ICellSpace BlankLead() => Mixed(new object?[,]
     {
       { null, null },
       { "b0", "b1" },
@@ -93,7 +93,7 @@ namespace Unrect.Tests.Projections
     /// IS blank; unsliced it is not — which is what makes a column movement change what "blank row"
     /// means.
     /// </summary>
-    private static ISheetCells Ragged() => Mixed(new object?[,]
+    private static ICellSpace Ragged() => Mixed(new object?[,]
     {
       { "a0", null },
       { "b0", "b1" },
@@ -102,7 +102,7 @@ namespace Unrect.Tests.Projections
     });
 
     /// <summary>Column 1 is numbers all the way down, so a <c>Text</c> leaf fails wherever it lands.</summary>
-    private static ISheetCells Numbers() => Mixed(new object?[,]
+    private static ICellSpace Numbers() => Mixed(new object?[,]
     {
       { 1, "a1" },
       { 2, "b1" },
@@ -115,7 +115,7 @@ namespace Unrect.Tests.Projections
     private static IRowLandmark Missing() => RowContaining("Nope");
 
     /// <summary>A region that renders its own extent and contents, so every geometric difference shows.</summary>
-    private static IProjectionDefinition<ISheetCells, string> Block() => Range(block =>
+    private static IProjectionDefinition<ICellSpace, string> Block() => Range(block =>
     {
       var parts = new string[block.Width * block.Height];
 
@@ -126,7 +126,7 @@ namespace Unrect.Tests.Projections
       return $"({block.Width}x{block.Height}:{string.Join(",", parts)})";
     });
 
-    private static string Describe(Point<ISheetCells> cell)
+    private static string Describe(Point<ICellSpace> cell)
       => cell.IsBlank ? "_" : cell.IsText ? cell.Text() : cell.Describe();
 
     /// <summary>
@@ -135,7 +135,7 @@ namespace Unrect.Tests.Projections
     /// of geometry now; <c>Entry.Of(x)</c> writes the same placement field the retired postfix
     /// modifier wrote, so <c>With(b, With(a, x))</c> still reads as "a inside, b outside".
     /// </summary>
-    private static IProjectionDefinition<ISheetCells, string> With(string modifier, IProjectionDefinition<ISheetCells, string> projection) => modifier switch
+    private static IProjectionDefinition<ICellSpace, string> With(string modifier, IProjectionDefinition<ICellSpace, string> projection) => modifier switch
     {
       "Named" => projection.Named("n"),
       "Sized" => Sized(Extent(2, 2)).Of(projection),

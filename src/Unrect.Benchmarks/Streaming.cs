@@ -5,8 +5,8 @@ using BenchmarkDotNet.Attributes;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 
 namespace Unrect.Benchmarks
 {
@@ -20,12 +20,12 @@ namespace Unrect.Benchmarks
   [BenchmarkCategory("Streaming")]
   public class Streaming
   {
-    private static readonly IProjectionDefinition<ISheetCells, IReadOnlyList<StreamedRow>> Rows = Table<StreamedRow>();
+    private static readonly IProjectionDefinition<ICellSpace, IReadOnlyList<StreamedRow>> Rows = Table<StreamedRow>();
 
     // One range over a band, swept five times — once per column read. A block lambda reads its
     // extent at random, so the whole band is held for the pass: the access pattern a forward pass
     // pays for, and the one a HorizontalFlow of five children over a band produces.
-    private static readonly IProjectionDefinition<ISheetCells, long> Band = Range(Extent(StreamingSpaces.Columns, StreamingSpaces.BandRows), block =>
+    private static readonly IProjectionDefinition<ICellSpace, long> Band = Range(Extent(StreamingSpaces.Columns, StreamingSpaces.BandRows), block =>
     {
       long sum = 0;
 
@@ -36,7 +36,7 @@ namespace Unrect.Benchmarks
       return sum;
     });
 
-    private ISheetCells _grid = default!;
+    private ICellSpace _grid = default!;
 
     [GlobalSetup]
     public void Setup() => _grid = StreamingSpaces.Grid();

@@ -16,7 +16,7 @@ namespace Unrect.Tests.Spreadsheets
   /// the whole of what the kinded surface is, once the leaves and the views are taken away.
   /// <para>
   /// <b>The receiver's type carries the requirement.</b> These are extensions on a
-  /// <c>Point&lt;TSpace&gt;</c> where <c>TSpace</c> is an <see cref="ISheetCells"/>, so a declaration
+  /// <c>Point&lt;TSpace&gt;</c> where <c>TSpace</c> is an <see cref="ICellSpace"/>, so a declaration
   /// written over a plain grid cannot reach them at all and one written over a sheet needs nothing
   /// annotated to. That is the capability seam in its entirety: no chart, no query, no
   /// <c>MissingCapability</c> — a type parameter, and the compiler.
@@ -33,11 +33,11 @@ namespace Unrect.Tests.Spreadsheets
     private static readonly DateTime Moment = new DateTime(2026, 3, 4, 13, 45, 0);
 
     /// <summary>The point addressing the only cell of a one-cell sheet holding <paramref name="value"/>.</summary>
-    private static Point<ISheetCells> Of(object? value)
+    private static Point<ICellSpace> Of(object? value)
     {
       var sheet = Mixed(new object?[,] { { value } });
 
-      return Plane<ISheetCells>.Of(sheet)[0, 0];
+      return Plane<ICellSpace>.Of(sheet)[0, 0];
     }
 
     // --- The six strict reads ----------------------------------------------------------------------

@@ -54,7 +54,7 @@ namespace Unrect.Benchmarks
     }
 
     /// <summary>The same rows as a materialised grid: the eager side of the headline ratio.</summary>
-    public static ISheetCells Grid(int rows = Rows, int columns = Columns)
+    public static ICellSpace Grid(int rows = Rows, int columns = Columns)
     {
       var cells = new Cell[rows, columns];
 

@@ -9,8 +9,8 @@ declaration in the file is written against:
 using Unrect.Projections;                                                      // the postfix half
 using Unrect.Spreadsheets;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 
 var report = VerticalFlow(v => new Report(
     Title: v.Next(Text()),
@@ -34,7 +34,7 @@ living beside that backend.
 |---|---|---|
 | `Point()` | `Point<TSpace>` | One cell, as the address of itself. The leaf for a reading this vocabulary does not name: a backend's own point-extension answers the rest (`Record(r => r["Amount"].Decimal())`, `Range(b => b[0, 0].Value())`), and it is also what a reader hands to its own complaint about a cell |
 | `AsText()` | `string` | One cell, read as what it says: a text cell's own value, or the backend's rendering of anything else. **Total** — every space renders every cell, so the only failure is a blank one, and `OrBlank()` turns that into `null`. `Choice(AsText(), …)` is therefore degenerate: `AsText` cannot fail, so nothing after it in the choice is reachable — put the narrower leaf first |
-| `Text()` `Decimal()` `Integer()` `Double()` `Date()` `Boolean()` | typed value | One cell; asserts its kind, applies the kinded accessor. Live in `Unrect.Spreadsheets`, imported via `SheetProjectionBuilders<TSpace>` (over `ISheetCells`) or `SpreadsheetProjectionBuilders<TSpace>` (over `ISpreadsheetSpace`, which also carries `Formula()`). The family is CLOSED over `ISheetCells`'s kinded reads and never leads it — no `Long()`, ever; a conversion beyond the set is `Select` territory |
+| `Text()` `Decimal()` `Integer()` `Double()` `Date()` `Boolean()` | typed value | One cell; asserts its kind, applies the kinded accessor. Live in `Unrect.Spreadsheets`, imported via `SheetProjectionBuilders<TSpace>` (over `ICellSpace`) or `SpreadsheetProjectionBuilders<TSpace>` (over `ISpreadsheetSpace`, which also carries `Formula()`). The family is CLOSED over `ICellSpace`'s kinded reads and never leads it — no `Long()`, ever; a conversion beyond the set is `Select` territory |
 | `AsText().OrBlank()` / `Text().OrBlank()` / `Decimal().OrBlank()` … | `T?` | The same reading, tolerating a BLANK cell: null, quietly, with no diagnostic — where `.Optional()` absorbs a *failure* and records a Warning. A wrong kind still fails loudly. The standalone spelling of a nullable table member's tolerance |
 | `Cell(v => ...)` | `T` | Removed name; the escape hatch for one cell is `Point(...)` composed with a caller's own read, or a bespoke leaf over `DefinitionNode<TSpace, T>` |
 | `Row(r => ...)` / `Row(width, r => ...)` / `Row(IColumnStrategy, r => ...)` | from `CellStrip<TSpace>` | One row; width discovered (`while any value`), explicit count, or by column strategy |
@@ -54,7 +54,7 @@ captures · geometry skips · matchers locate.** Unchanged from before the point
 ## Tables — one family, split across two packages
 
 The core five rungs live in `Unrect`, over any `ISpace`; the two reflective rungs live in
-`Unrect.Spreadsheets`, over `ISheetCells`, because binding a member asserts a *kind* and only a
+`Unrect.Spreadsheets`, over `ICellSpace`, because binding a member asserts a *kind* and only a
 kinded space can answer that.
 
 | Rung | Operator | Package | Yields | Notes |
@@ -247,14 +247,14 @@ construction — the object the engine receives is the calculus's own, so the sc
 one the rule would build unwrapped.
 
 The vocabulary's own factories build them: `RowsWhileAny(p => p.Kind() == CellKind.Number)` over
-`ProjectionBuilders<ISheetCells>` lowers the predicate and hands back an `IAreaStrategy<ISheetCells>`.
+`ProjectionBuilders<ICellSpace>` lowers the predicate and hands back an `IAreaStrategy<ICellSpace>`.
 `in TSpace` is what makes a shared helper work — a rule built at `ProjectionBuilders<ISpace>` flows
 into every file:
 
 ```csharp
 static IAreaStrategy<ISpace> Populated() => ProjectionBuilders<ISpace>.RowsWhileAny(p => !p.IsBlank);
 
-var header = Sized(Populated()).Row(r => r[0].Text());   // in an ISheetCells file, nothing annotated
+var header = Sized(Populated()).Row(r => r[0].Text());   // in an ICellSpace file, nothing annotated
 ```
 
 A capability-demanding *matcher* is the same trick from the other end:
@@ -296,10 +296,10 @@ All three are usable as method groups — `spaces.Select(report.Map)`.
 — the simple default. `Workbook.Open(path)` (same namespace) is the streaming door: `book.Sheet(name)`
 is one forward pass over the sheet's own cursor — read it inside the projection, once, before the
 workbook that lent it is disposed. `Formula()`
-composes into a file scoped to `ISheetCells`, but a *declaration* that calls it demands
+composes into a file scoped to `ICellSpace`, but a *declaration* that calls it demands
 `IFormulaSpace`, so it will not compile against the streaming door — read formulas through the
 eager door instead. `projection.MapWorkbook(path, sheet)` / `MapWorkbookWithDiagnostics` are sugar
-over the streaming loop's body (open, read, close) for a declaration over `ISheetCells` or the
+over the streaming loop's body (open, read, close) for a declaration over `ICellSpace` or the
 canonical `ISpace`:
 
 ```csharp
@@ -350,10 +350,10 @@ Two boundaries, both load-bearing rather than incidental:
   declarations target the shared base one import already covers. A file that seems to need both
   is two parsers sharing a file, and the fix is the file split.
 - **(b) Scope the file to what the declarations READ, not to what the file parses.** A workbook
-  opened `CreateWithFormulas` whose projections never call `Formula()` should be an `ISheetCells`
+  opened `CreateWithFormulas` whose projections never call `Formula()` should be an `ICellSpace`
   file, not an `ISpreadsheetSpace` one. A **generic helper method**, not a file import, is how a
   hoisted library projection states its own minimum: `static IProjectionDefinition<TSpace, T>
-  Helper<TSpace>(...) where TSpace : class, ISheetCells` composes into any file whose space can
+  Helper<TSpace>(...) where TSpace : class, ICellSpace` composes into any file whose space can
   answer it, instantiated at that file's own space — write library helpers this way, against the
   narrowest constraint, and reserve a full file scope for application declaration files, which are
   one-document-one-space by their nature.
@@ -361,7 +361,7 @@ Two boundaries, both load-bearing rather than incidental:
 **(c) The backend pattern: a sibling closed class, disjoint names.** `Unrect` is backend-agnostic
 and cannot name `Formula()`, `Decimal()` or any other kind-specific leaf, so a backend ships its
 own closed generic class beside `ProjectionBuilders<TSpace>` — `SheetProjectionBuilders<TSpace>`
-(over `ISheetCells`, no formulas) and `SpreadsheetProjectionBuilders<TSpace>` (over
+(over `ICellSpace`, no formulas) and `SpreadsheetProjectionBuilders<TSpace>` (over
 `ISpreadsheetSpace`, with them) in `Unrect.Spreadsheets` — each re-exporting exactly its own
 vocabulary and never a member the core class already publishes with the same signature. `Table`
 and `Record` are the one exception, deliberately: the backend classes add OVERLOADS of those two
@@ -387,7 +387,7 @@ kinded vocabulary under the same names on purpose, so they never meet.
 A **capability** is what a class of spaces can do beyond `ISpace`: an interface the space
 implements, demanded by the projections that use it, checked by the compiler at the point a
 declaration composes or a `Map` call is made — there is no runtime capability transport any more.
-`Unrect.Spreadsheets` ships one (`IFormulaSpace`, bundled with `ISheetCells` into
+`Unrect.Spreadsheets` ships one (`IFormulaSpace`, bundled with `ICellSpace` into
 `ISpreadsheetSpace`):
 
 | Operator | Meaning |
@@ -400,7 +400,7 @@ declaration composes or a `Map` call is made — there is no runtime capability 
 rather than a flag on the first, because the two answers differ in their *type*: what comes back
 is an `ISpreadsheetSpace`, and the plain `Create` hands back a space that does not implement the
 capability at all. The streaming door reads no formulas and says so by absence — `Workbook.Sheet`
-returns a plain `ISheetCells`, so a formula-reading declaration will not compile against it, a
+returns a plain `ICellSpace`, so a formula-reading declaration will not compile against it, a
 compile error rather than a run-time surprise or a file's formulas quietly read as none.
 
 **A capability is spelled as a leaf or a matcher, never as a reach-through.** A hypothetical

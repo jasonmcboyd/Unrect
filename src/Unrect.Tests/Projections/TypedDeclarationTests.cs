@@ -7,7 +7,7 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -22,7 +22,7 @@ namespace Unrect.Tests.Projections
   public class TypedDeclarationTests
   {
     /// <summary>Two rows of small numbers, one of large ones, then a note.</summary>
-    private static ISheetCells Lots()
+    private static ICellSpace Lots()
       => Mixed(new object?[,]
       {
         { 1m, 2m },
@@ -69,7 +69,7 @@ namespace Unrect.Tests.Projections
     public void ARuleBuiltAtTheLeastDemandingSpaceFlowsIntoAFileScopedToMore()
     {
       // Contravariance, doing the work a shared helper needs: an IAreaStrategy<ISpace> IS an
-      // IAreaStrategy<ISheetCells> as far as Sized is concerned, so the helper composes in as it is
+      // IAreaStrategy<ICellSpace> as far as Sized is concerned, so the helper composes in as it is
       // — no unwrapping, no cast, nothing annotated at the call site.
       var sheet = Mixed(new object?[,]
       {

@@ -5,7 +5,7 @@ using Unrect.Core;
 namespace Unrect.Spreadsheets
 {
   /// <summary>
-  /// Everything an <see cref="ISheetCells"/> answers, written once over one question: what is the
+  /// Everything an <see cref="ICellSpace"/> answers, written once over one question: what is the
   /// cell at these coordinates. A door supplies its extent and that one read; the canonical four and
   /// the nine kinded answers follow from them.
   /// <para>
@@ -13,14 +13,14 @@ namespace Unrect.Spreadsheets
   /// would be the one bug nothing above them could see, so the answers are not a door's to write.
   /// </para>
   /// </summary>
-  public abstract class SheetCellsBase : ISheetCells
+  public abstract class CellSpaceBase : ICellSpace
   {
     /// <summary>
     /// Not <c>protected</c>: only this package may be a sheet. The kinded answers below are what
     /// nothing above a door is allowed to disagree about, and an externally authored sheet would be
     /// the one way to make two doors say different things about one cell.
     /// </summary>
-    private protected SheetCellsBase()
+    private protected CellSpaceBase()
     {
     }
 

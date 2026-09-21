@@ -5,7 +5,7 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -25,7 +25,7 @@ namespace Unrect.Tests.Projections
   public class UnderTests
   {
     // A junk row, a caption, two data rows.
-    private static ISheetCells Sheet() => Mixed(new object?[,]
+    private static ICellSpace Sheet() => Mixed(new object?[,]
     {
       { "junk", null },
       { "Detail", null },
@@ -33,7 +33,7 @@ namespace Unrect.Tests.Projections
       { "b", 2 },
     });
 
-    private static IProjectionDefinition<ISheetCells, int> Lines() => Range(b => b.Height);
+    private static IProjectionDefinition<ICellSpace, int> Lines() => Range(b => b.Height);
 
     // --- The desugared tree ---------------------------------------------------------------------------
 

@@ -48,7 +48,7 @@ namespace Unrect.Tests.Strategies
       _ => throw new ArgumentOutOfRangeException(nameof(name), name, "No such predicate."),
     };
 
-    private static ISheetCells Space(string name) => name switch
+    private static ICellSpace Space(string name) => name switch
     {
       "dense" => Grid(new[,]
       {
@@ -126,7 +126,7 @@ namespace Unrect.Tests.Strategies
     /// Column <c>c</c> is included when at least one of its cells satisfies the predicate, and
     /// columns are taken while that holds contiguously from 0.
     /// </summary>
-    private static int LeadingColumnsWhereSomeRowMatches(ISheetCells space, Func<Point<ISpace>, bool> predicate)
+    private static int LeadingColumnsWhereSomeRowMatches(ICellSpace space, Func<Point<ISpace>, bool> predicate)
     {
       for (var column = 0; column < space.Area.Width; column++)
       {
@@ -146,7 +146,7 @@ namespace Unrect.Tests.Strategies
     /// Column <c>c</c> is included when every one of its cells satisfies the predicate, and columns
     /// are taken while that holds contiguously from 0.
     /// </summary>
-    private static int LeadingColumnsWhereEveryRowMatches(ISheetCells space, Func<Point<ISpace>, bool> predicate)
+    private static int LeadingColumnsWhereEveryRowMatches(ICellSpace space, Func<Point<ISpace>, bool> predicate)
     {
       for (var column = 0; column < space.Area.Width; column++)
       {

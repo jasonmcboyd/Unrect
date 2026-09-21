@@ -7,8 +7,8 @@ using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -21,7 +21,7 @@ namespace Unrect.Tests.Projections
   /// </summary>
   public class ProjectionErrorTests
   {
-    private static ISheetCells Square() => Grid(new[,] { { 1, 2 }, { 3, 4 } });
+    private static ICellSpace Square() => Grid(new[,] { { 1, 2 }, { 3, 4 } });
 
     // --- Case A: the offset does not fit ---------------------------------------------------------------
 
@@ -99,7 +99,7 @@ namespace Unrect.Tests.Projections
       Assert.Contains("its offset ran past the available space", Missing(FromRight(9), space));
     }
 
-    private static string Missing(IOffsetStrategy offset, ISheetCells space)
+    private static string Missing(IOffsetStrategy offset, ICellSpace space)
       => Assert.Throws<ProjectionException>(() => OffsetBy(offset).Of(TextCell()).Map(space)).Message;
 
     // --- Case B: the area does not fit ------------------------------------------------------------------
@@ -211,7 +211,7 @@ namespace Unrect.Tests.Projections
       // The generic wrapper, over something the engine has no vocabulary for: a user's own selector
       // blowing up is a bug and reads as one, naming the exception type it was.
       var failure = Assert.Throws<ProjectionException>(() =>
-        IntCell().Select<ISheetCells, int, int>(ThrowingSelector).Map(Square()));
+        IntCell().Select<ICellSpace, int, int>(ThrowingSelector).Map(Square()));
 
       Assert.Contains("the projection threw InvalidOperationException", failure.Message);
       Assert.IsType<InvalidOperationException>(failure.InnerException);
@@ -356,7 +356,7 @@ namespace Unrect.Tests.Projections
             var intCell = h.Next(IntCell());
 
             return intCell;
-          }).Select<ISheetCells, int, int>(ThrowingSelector));
+          }).Select<ICellSpace, int, int>(ThrowingSelector));
 
 return horizontalFlow;
         }).Map(Square()));
@@ -501,7 +501,7 @@ return horizontalFlow;
     public void ApplyRejectsNullArguments()
     {
       Assert.Throws<ArgumentNullException>(() => IntCell().Map(null!));
-      Assert.Throws<ArgumentNullException>(() => ((IProjectionDefinition<ISheetCells, int>)null!).Map(Square()));
+      Assert.Throws<ArgumentNullException>(() => ((IProjectionDefinition<ICellSpace, int>)null!).Map(Square()));
     }
 
     private static int ThrowingSelector(int only)

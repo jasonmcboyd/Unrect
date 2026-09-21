@@ -8,8 +8,8 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -44,7 +44,7 @@ namespace Unrect.Tests.Projections
   /// </summary>
   public class ProjectionBuildersParityTests
   {
-    private static ISheetCells Ledger() => Mixed(new object?[,]
+    private static ICellSpace Ledger() => Mixed(new object?[,]
     {
       { "Fund", "Amount", "Units" },
       { "Alpha", 100m, 2 },
@@ -52,7 +52,7 @@ namespace Unrect.Tests.Projections
     });
 
     /// <summary>The same bind pointed at the column of fund names, so every record fails.</summary>
-    private static IProjectionDefinition<ISheetCells, decimal> FundColumnAsANumber(LabelMap captions) => Right(captions["Fund"]).Of(Decimal());
+    private static IProjectionDefinition<ICellSpace, decimal> FundColumnAsANumber(LabelMap captions) => Right(captions["Fund"]).Of(Decimal());
 
     // --- 1. Name capture, one pin per forwarding site ----------------------------------------------
 
@@ -165,7 +165,7 @@ namespace Unrect.Tests.Projections
       // call. They are never imported together: a file scopes itself to what its declarations READ,
       // and the two classes answer two different questions about one space — does it carry formulas
       // — so no file can want both. Which one a file wants is the same question as which one its
-      // space can answer, and its constraint decides for it (ISheetCells versus ISpreadsheetSpace).
+      // space can answer, and its constraint decides for it (ICellSpace versus ISpreadsheetSpace).
       //
       // Asserted rather than described, so that a member drifting out of the sheet class — leaving
       // it a THIRD vocabulary rather than a subset — is a failure here.

@@ -102,7 +102,7 @@ namespace Unrect.Interactive
     /// <exception cref="OutOfBoundsException"><paramref name="at"/> is past the end of the sheet.</exception>
     /// <exception cref="InvalidOperationException">No labels were found and <paramref name="at"/> was not given.</exception>
     public static string ScaffoldRecord<TSpace>(this TSpace sheet, string typeName, LabelsIn labels = LabelsIn.Row, int? at = null, int samples = 5, int headerRows = 1)
-      where TSpace : class, ISheetCells
+      where TSpace : class, ICellSpace
       => Record(Read(Region.Of(sheet), typeName, labels, at, samples, headerRows), typeName, labels, headerRows);
 
     internal static string Record(List<Member> members, string typeName, LabelsIn labels, int headerRows = 1)
@@ -160,7 +160,7 @@ namespace Unrect.Interactive
     /// <exception cref="OutOfBoundsException"><paramref name="at"/> is past the end of the sheet.</exception>
     /// <exception cref="InvalidOperationException">No labels were found and <paramref name="at"/> was not given.</exception>
     public static string ScaffoldClass<TSpace>(this TSpace sheet, string typeName, LabelsIn labels = LabelsIn.Row, int? at = null, int samples = 5, int headerRows = 1)
-      where TSpace : class, ISheetCells
+      where TSpace : class, ICellSpace
       => Class(Read(Region.Of(sheet), typeName, labels, at, samples, headerRows), typeName, labels, headerRows);
 
     internal static string Class(List<Member> members, string typeName, LabelsIn labels, int headerRows = 1)
@@ -259,9 +259,9 @@ namespace Unrect.Interactive
 
         // The header parse is the table's own, so what is scaffolded is what will bind: the paths a
         // Table<T>(headerRows) would see, read from the same rows.
-        paths ??= ProjectionBuilders<ISheetCells>
+        paths ??= ProjectionBuilders<ICellSpace>
           .Down(region.Row + labelLine)
-          .Of(ProjectionBuilders<ISheetCells>.ColumnLabels(headerRows))
+          .Of(ProjectionBuilders<ICellSpace>.ColumnLabels(headerRows))
           .Map(region.Sheet)
           .Paths;
 
@@ -307,7 +307,7 @@ namespace Unrect.Interactive
     /// <summary>The cells a scaffold reads: a whole sheet, or the region a declaration handed it.</summary>
     internal readonly struct Region
     {
-      public Region(ISheetCells sheet, int column, int row, int width, int height)
+      public Region(ICellSpace sheet, int column, int row, int width, int height)
       {
         Sheet = sheet;
         Column = column;
@@ -316,7 +316,7 @@ namespace Unrect.Interactive
         Height = height;
       }
 
-      public ISheetCells Sheet { get; }
+      public ICellSpace Sheet { get; }
 
       public int Column { get; }
 
@@ -326,13 +326,13 @@ namespace Unrect.Interactive
 
       public int Height { get; }
 
-      public static Region Of(ISheetCells sheet)
+      public static Region Of(ICellSpace sheet)
         => sheet is null
           ? throw new ArgumentNullException(nameof(sheet))
           : new Region(sheet, 0, 0, sheet.Area.Width, sheet.Area.Height);
 
       public static Region Of<TSpace>(Plane<TSpace> plane)
-        where TSpace : class, ISheetCells
+        where TSpace : class, ICellSpace
         => new Region(plane.Space, plane.Origin.Width, plane.Origin.Height, plane.Width, plane.Area.Height);
     }
 
@@ -344,7 +344,7 @@ namespace Unrect.Interactive
     private readonly struct Axes
     {
       private readonly Region _region;
-      private readonly ISheetCells _sheet;
+      private readonly ICellSpace _sheet;
       private readonly bool _rows;
 
       public Axes(Region region, LabelsIn labels)

@@ -6,8 +6,8 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -32,7 +32,7 @@ namespace Unrect.Tests.Projections
     /// declaration in this file sits at the origin, so its advance is its consumed extent;
     /// asserting both says that the composite added nothing of its own to what its children took.
     /// </summary>
-    private static void AssertReads<T>(IProjectionDefinition<ISheetCells, T> projection, ISheetCells space, T value, int consumedWidth, int consumedHeight)
+    private static void AssertReads<T>(IProjectionDefinition<ICellSpace, T> projection, ICellSpace space, T value, int consumedWidth, int consumedHeight)
     {
       var applied = projection.Apply(space);
 
@@ -45,7 +45,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal(consumedHeight, applied.Advance.Height);
     }
 
-    private static void AssertFails<T>(IProjectionDefinition<ISheetCells, T> projection, ISheetCells space, string subject, string path, string a1, string problem)
+    private static void AssertFails<T>(IProjectionDefinition<ICellSpace, T> projection, ICellSpace space, string subject, string path, string a1, string problem)
     {
       var failure = Assert.Throws<ProjectionException>(() => projection.Map(space));
 
@@ -335,7 +335,7 @@ namespace Unrect.Tests.Projections
     public void ABrokenProjectionIsRefusedByABoundary()
     {
       AssertFails(
-        VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(Point().Select<ISheetCells, Point<ISheetCells>, string>(_ => throw new NullReferenceException("boom")).Named("broken"))}")
+        VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(Point().Select<ICellSpace, Point<ICellSpace>, string>(_ => throw new NullReferenceException("boom")).Named("broken"))}")
           .Optional(),
         Ladder(),
         "'broken'",

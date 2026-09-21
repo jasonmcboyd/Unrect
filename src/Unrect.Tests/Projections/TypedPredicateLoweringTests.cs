@@ -7,7 +7,7 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -28,7 +28,7 @@ namespace Unrect.Tests.Projections
   public class TypedPredicateLoweringTests
   {
     /// <summary>Six rows of two values each over four blank ones, so a discovered bound has somewhere to stop.</summary>
-    private static ISheetCells Ledger()
+    private static ICellSpace Ledger()
     {
       var values = new int[10, 2];
 
@@ -50,7 +50,7 @@ namespace Unrect.Tests.Projections
       // predicate sees is at least that far in. A lowering that rebuilt the point from the region's
       // own origin would hand back 0,0 for the first cell — the same reading, a different cell.
       var sheet = CoordinateGrid(4, 6);
-      var seen = new List<Point<ISheetCells>>();
+      var seen = new List<Point<ICellSpace>>();
 
       var region = Sized(RowsWhileAny(cell =>
       {
@@ -62,7 +62,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal(4, Down(2).Right(1).Of(region).Map(sheet));
 
       Assert.All(seen, cell => Assert.Same(sheet, cell.Space));
-      Assert.Equal(new Point<ISheetCells>(sheet, 1, 2), seen[0]);
+      Assert.Equal(new Point<ICellSpace>(sheet, 1, 2), seen[0]);
       Assert.Equal(1, seen.Min(cell => cell.Column));
       Assert.Equal(2, seen.Min(cell => cell.Row));
 
@@ -78,7 +78,7 @@ namespace Unrect.Tests.Projections
       // level down is another region, and the predicate is written over the space named at the top
       // of the file — which is the one the sheet was handed to Map as.
       var sheet = CoordinateGrid(4, 6);
-      var spaces = new List<ISheetCells>();
+      var spaces = new List<ICellSpace>();
 
       var inner = Sized(RowsWhileAny(cell =>
       {
@@ -112,7 +112,7 @@ namespace Unrect.Tests.Projections
     public void ARegionPredicateIsHandedTheRegionsOwnCornerAndWidth()
     {
       var sheet = CoordinateGrid(4, 6);
-      var seen = new List<Plane<ISheetCells>>();
+      var seen = new List<Plane<ICellSpace>>();
 
       var region = Sized(SelectArea(plane =>
       {

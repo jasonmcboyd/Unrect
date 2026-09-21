@@ -6,8 +6,8 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -28,10 +28,10 @@ namespace Unrect.Tests.Projections
   public class BandsProjectionTests
   {
     /// <summary>The extent a band projection was handed, as "WxH" — the whole of what a band is.</summary>
-    private static IProjectionDefinition<ISheetCells, string> BandExtent() => Range(WholeExtent(), block => $"{block.Width}x{block.Height}");
+    private static IProjectionDefinition<ICellSpace, string> BandExtent() => Range(WholeExtent(), block => $"{block.Width}x{block.Height}");
 
     /// <summary>The first cell of a band, so an assertion reads as the row or column it was cut from.</summary>
-    private static IProjectionDefinition<ISheetCells, int> FirstCell() => Range(WholeExtent(), block => block.Space[0, 0].IntegerOrBlank() ?? -1);
+    private static IProjectionDefinition<ICellSpace, int> FirstCell() => Range(WholeExtent(), block => block.Space[0, 0].IntegerOrBlank() ?? -1);
 
     // --- 1. What one band is -----------------------------------------------------------------------
 
@@ -132,7 +132,7 @@ namespace Unrect.Tests.Projections
     // --- 3. The blank-band policy ------------------------------------------------------------------
 
     /// <summary>A value, a fully blank row, and a value: the shape every policy is distinguished on.</summary>
-    private static ISheetCells InteriorBlank() => Grid(new[,]
+    private static ICellSpace InteriorBlank() => Grid(new[,]
     {
       { 1 },
       { 0 },
@@ -260,7 +260,7 @@ namespace Unrect.Tests.Projections
         { "c" },
       });
 
-      IReadOnlyList<int> indices = VerticalBands(1, Record((TableRow<ISheetCells> row) => row.Index)).Map(sheet);
+      IReadOnlyList<int> indices = VerticalBands(1, Record((TableRow<ICellSpace> row) => row.Index)).Map(sheet);
 
       Assert.Equal(new[] { 0, 1, 2 }, indices);
     }
@@ -277,7 +277,7 @@ namespace Unrect.Tests.Projections
         { "b" },
       });
 
-      IReadOnlyList<int> indices = VerticalBands(1, Record((TableRow<ISheetCells> row) => row.Index), onBlank: BlankRowStrategy.Skip).Map(sheet);
+      IReadOnlyList<int> indices = VerticalBands(1, Record((TableRow<ICellSpace> row) => row.Index), onBlank: BlankRowStrategy.Skip).Map(sheet);
 
       Assert.Equal(new[] { 0, 2 }, indices);
     }
@@ -322,8 +322,8 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ANullBandProjectionIsRejectedAtConstruction()
     {
-      Assert.Throws<ArgumentNullException>(() => VerticalBands(1, (IProjectionDefinition<ISheetCells, int>)null!));
-      Assert.Throws<ArgumentNullException>(() => HorizontalBands(1, (IProjectionDefinition<ISheetCells, int>)null!));
+      Assert.Throws<ArgumentNullException>(() => VerticalBands(1, (IProjectionDefinition<ICellSpace, int>)null!));
+      Assert.Throws<ArgumentNullException>(() => HorizontalBands(1, (IProjectionDefinition<ICellSpace, int>)null!));
     }
 
     [Theory]

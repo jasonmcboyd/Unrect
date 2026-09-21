@@ -40,7 +40,7 @@ namespace Unrect.Tests.Spreadsheets
         File.Delete(_path);
     }
 
-    private ISheetCells Durations() => SpreadsheetSpace.Create(_path, "Durations");
+    private ICellSpace Durations() => SpreadsheetSpace.Create(_path, "Durations");
 
     [Fact]
     public void ADurationCellIsANumberOfDays()
@@ -49,7 +49,7 @@ namespace Unrect.Tests.Spreadsheets
       var space = Durations();
 
       Assert.Equal("Number", space.Describe(0, 1));
-      Assert.Equal(1.5, Plane<ISheetCells>.Of(space)[0, 1].Double());
+      Assert.Equal(1.5, Plane<ICellSpace>.Of(space)[0, 1].Double());
     }
 
     [Fact]
@@ -60,7 +60,7 @@ namespace Unrect.Tests.Spreadsheets
       var space = Durations();
 
       Assert.Equal("Number", space.Describe(0, 2));
-      Assert.Equal(0.25, Plane<ISheetCells>.Of(space)[0, 2].Double());
+      Assert.Equal(0.25, Plane<ICellSpace>.Of(space)[0, 2].Double());
     }
 
     [Fact]
@@ -71,7 +71,7 @@ namespace Unrect.Tests.Spreadsheets
       // change what the cell is worth.
       var space = Durations();
 
-      var cells = Plane<ISheetCells>.Of(space);
+      var cells = Plane<ICellSpace>.Of(space);
 
       Assert.Equal(cells[1, 1].Double(), cells[0, 1].Double());
       Assert.Equal(cells[1, 2].Double(), cells[0, 2].Double());
@@ -88,7 +88,7 @@ namespace Unrect.Tests.Spreadsheets
 
       Assert.False(space.TryGetDateTimeAt(0, 1, out _, out var problem));
       Assert.Equal("expected Temporal at A2, found Number", problem!.Value.Render("A2"));
-      Assert.Throws<CellReadException>(() => Plane<ISheetCells>.Of(space)[0, 1].Date());
+      Assert.Throws<CellReadException>(() => Plane<ICellSpace>.Of(space)[0, 1].Date());
     }
 
     [Fact]
@@ -99,7 +99,7 @@ namespace Unrect.Tests.Spreadsheets
       var space = Durations();
 
       Assert.False(space.IsBlank(0, 1));
-      Assert.True(Plane<ISheetCells>.Of(space)[0, 1].HasValue);
+      Assert.True(Plane<ICellSpace>.Of(space)[0, 1].HasValue);
     }
 
     // --- The fixture ----------------------------------------------------------------------------

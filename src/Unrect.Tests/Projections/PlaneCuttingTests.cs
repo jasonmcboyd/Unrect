@@ -5,7 +5,7 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -32,7 +32,7 @@ namespace Unrect.Tests.Projections
       // origin back at zero, because the streaming store learned which band was open from the
       // subspace object's own extent. The store is told directly now, once per placement, so a cut
       // is what it always wanted to be: the same space with a composed origin, allocating nothing.
-      var extent = Plane<ISheetCells>.Of(CoordinateGrid(4, 10));
+      var extent = Plane<ICellSpace>.Of(CoordinateGrid(4, 10));
 
       foreach (var (cut, origin) in new[]
       {

@@ -5,8 +5,8 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -65,15 +65,15 @@ namespace Unrect.Tests.Projections
     /// value cell at B2, handed back as a <see cref="TableRow{TSpace}"/> without being read, so an accessor
     /// call on it is observed directly.
     /// </summary>
-    private static TableRow<ISheetCells> RowOf(string caption, object? value)
-      => Assert.Single(Table((TableRow<ISheetCells> r) => r).Map(Mixed(new object?[,]
+    private static TableRow<ICellSpace> RowOf(string caption, object? value)
+      => Assert.Single(Table((TableRow<ICellSpace> r) => r).Map(Mixed(new object?[,]
       {
         { "Client", caption },
         { "Acme", value },
       })));
 
     /// <summary>A row strip A2:B2 with <paramref name="value"/> at index 1 (B2), handed back unread.</summary>
-    private static CellStrip<ISheetCells> StripOf(object? value)
+    private static CellStrip<ICellSpace> StripOf(object? value)
       => Down(1).Of(Row(2, r => r)).Map(Mixed(new object?[,]
       {
         { "top", "top" },
@@ -100,7 +100,7 @@ namespace Unrect.Tests.Projections
     {
       // The point of caption keying: a reordered export needs no change. "Client" is column B here,
       // and the read finds it there rather than at index 0.
-      var row = Assert.Single(Table((TableRow<ISheetCells> r) => r).Map(Mixed(new object?[,]
+      var row = Assert.Single(Table((TableRow<ICellSpace> r) => r).Map(Mixed(new object?[,]
       {
         { "Amount", "Client" },
         { 10m, "Acme" },
@@ -280,7 +280,7 @@ namespace Unrect.Tests.Projections
       });
 
       var byBinder = Assert.Throws<ProjectionException>(() => Table<Money>().Map(sheet));
-      var row = Assert.Single(Table((TableRow<ISheetCells> r) => r).Map(sheet));
+      var row = Assert.Single(Table((TableRow<ICellSpace> r) => r).Map(sheet));
       var byAccessor = Assert.Throws<CellReadException>(() => row["Amount"].Decimal());
 
       Assert.Equal("expected Number at B2, found Text", Problem(byBinder));
@@ -306,7 +306,7 @@ namespace Unrect.Tests.Projections
         { "Acme", "x" },
       });
 
-      var row = Assert.Single(Table((TableRow<ISheetCells> r) => r).Map(sheet));
+      var row = Assert.Single(Table((TableRow<ICellSpace> r) => r).Map(sheet));
       var failure = Assert.Throws<CellReadException>(() => row["Amount"].Decimal());
 
       Assert.Equal("expected Number at B2, found Text", failure.Message);
@@ -331,10 +331,10 @@ namespace Unrect.Tests.Projections
       });
 
       var outside = Assert.Throws<CellReadException>(
-        () => Assert.Single(Table((TableRow<ISheetCells> r) => r).Map(sheet))["Amount"].Decimal());
+        () => Assert.Single(Table((TableRow<ICellSpace> r) => r).Map(sheet))["Amount"].Decimal());
 
       var inside = Assert.Throws<ProjectionException>(
-        () => Table((TableRow<ISheetCells> r) => r["Amount"].Decimal()).Map(sheet));
+        () => Table((TableRow<ICellSpace> r) => r["Amount"].Decimal()).Map(sheet));
 
       Assert.Equal(outside.Message, Problem(inside));
       Assert.Equal("Table", inside.Path);
@@ -350,7 +350,7 @@ namespace Unrect.Tests.Projections
       // And because it is a statement about the data rather than a fault, the located one is
       // absorbable — which the bare one, having no boundary around it, could never be.
       Assert.False(inside.IsFault);
-      Assert.Null(Table((TableRow<ISheetCells> r) => r["Amount"].Decimal()).Optional().Map(sheet));
+      Assert.Null(Table((TableRow<ICellSpace> r) => r["Amount"].Decimal()).Optional().Map(sheet));
     }
 
     [Fact]
@@ -363,7 +363,7 @@ namespace Unrect.Tests.Projections
       });
 
       var byBinder = Assert.Throws<ProjectionException>(() => Table<Counted>().Map(sheet));
-      var row = Assert.Single(Table((TableRow<ISheetCells> r) => r).Map(sheet));
+      var row = Assert.Single(Table((TableRow<ICellSpace> r) => r).Map(sheet));
       var byAccessor = Assert.Throws<CellReadException>(() => row["Count"].Integer());
 
       Assert.Equal("the Number at B2 (1.5) is not a whole number", Problem(byBinder));
@@ -384,7 +384,7 @@ namespace Unrect.Tests.Projections
 
       var byLeaf = Assert.Throws<ProjectionException>(() => Right(1).Down(1).Of(Decimal()).Map(grid));
       var byStrip = Assert.Throws<CellReadException>(() => Down(1).Of(Row(2, r => r)).Map(grid)[1].Decimal());
-      var byRow = Assert.Throws<CellReadException>(() => Assert.Single(Table((TableRow<ISheetCells> r) => r).Map(grid))[1].Decimal());
+      var byRow = Assert.Throws<CellReadException>(() => Assert.Single(Table((TableRow<ICellSpace> r) => r).Map(grid))[1].Decimal());
 
       Assert.Equal("expected Number at B2, found Text", Problem(byLeaf));
       Assert.Equal(Problem(byLeaf), byStrip.Message);
@@ -423,7 +423,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AnAmbiguousCaptionThrowsAClearProjectionException()
     {
-      var row = Assert.Single(Table((TableRow<ISheetCells> r) => r).Map(Mixed(new object?[,]
+      var row = Assert.Single(Table((TableRow<ICellSpace> r) => r).Map(Mixed(new object?[,]
       {
         { "Amount", "Amount" },
         { 1m, 2m },
@@ -440,7 +440,7 @@ namespace Unrect.Tests.Projections
     {
       // headerRows: 0 — no header a caption could resolve against, so the lookup is a broken
       // declaration, not a missing value.
-      var row = Assert.Single(Table(0, (TableRow<ISheetCells> r) => r).Map(Mixed(new object?[,]
+      var row = Assert.Single(Table(0, (TableRow<ICellSpace> r) => r).Map(Mixed(new object?[,]
       {
         { "Acme", 10m },
       })));

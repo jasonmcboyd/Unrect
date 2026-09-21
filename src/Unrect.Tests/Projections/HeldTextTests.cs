@@ -105,7 +105,7 @@ namespace Unrect.Tests.Projections
       // One leaf, the best sentence its space can give: a sheet knows the cell holds a number.
       var sheet = Mixed(new object?[,] { { 42 } });
       var failure = Assert.Throws<ProjectionException>(
-        () => ProjectionBuilders<ISheetCells>.Text().Map(sheet));
+        () => ProjectionBuilders<ICellSpace>.Text().Map(sheet));
 
       Assert.Equal("expected Text at A1, found Number", Problem(failure));
     }

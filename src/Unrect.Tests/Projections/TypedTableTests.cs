@@ -9,8 +9,8 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -44,11 +44,11 @@ namespace Unrect.Tests.Projections
     // now — the cell's address, from which any reading can be asked. `Cell` was the struct the old
     // canonical layer indexed by, and it lives in a backend now, which is exactly why a member
     // cannot be typed as one: the binder's supported set is closed over what a cell ACCESSOR yields.
-    public record Kinds(Point<ISheetCells> Any, string Client);
+    public record Kinds(Point<ICellSpace> Any, string Client);
 
     public record Longy(string Client, long Quantity);
 
-    public record MaybePoint(Point<ISheetCells>? Any, string Client);
+    public record MaybePoint(Point<ICellSpace>? Any, string Client);
 
     public record Floaty(string Client, float Ratio);
 
@@ -75,7 +75,7 @@ namespace Unrect.Tests.Projections
       int Count,
       DateTime When,
       bool Flag,
-      Point<ISheetCells> Raw);
+      Point<ICellSpace> Raw);
 
     // Four nullable strings and one that is not: enough of a majority that the compiler stops
     // annotating each parameter and puts a NullableContext(2) on the constructor instead. Reading
@@ -125,14 +125,14 @@ namespace Unrect.Tests.Projections
 
     // --- Grids -----------------------------------------------------------------------------------------
 
-    private static ISheetCells Free() => Mixed(new object?[,]
+    private static ICellSpace Free() => Mixed(new object?[,]
     {
       { "Investor Name", "Transaction Date", "Amount" },
       { "Acme", new DateTime(2026, 3, 4), 10m },
       { "Beta", new DateTime(2026, 5, 1), 20m },
     });
 
-    private static ISheetCells Captioned() => Mixed(new object?[,]
+    private static ICellSpace Captioned() => Mixed(new object?[,]
     {
       { "Client", "Transaction Date", "Transaction Type", "Amount" },
       { "Acme", new DateTime(2026, 3, 4), "Capital Call", 10m },
@@ -216,7 +216,7 @@ namespace Unrect.Tests.Projections
       // are unaffected.
       var failure = Assert.Throws<ArgumentException>(() => Table<MaybePoint>());
 
-      Assert.Contains("MaybePoint.Any is a Point<ISheetCells>?", failure.Message);
+      Assert.Contains("MaybePoint.Any is a Point<ICellSpace>?", failure.Message);
       Assert.Contains("a point is the cell itself, blank included", failure.Message);
       Assert.Contains("Declare it non-nullable.", failure.Message);
     }
@@ -434,7 +434,7 @@ namespace Unrect.Tests.Projections
       // to type. It read "Cell" until phase 6, when the kind-agnostic member was the struct rather
       // than a locator — and a struct has one spelling, where a point has one per space.
       Assert.Contains(
-        "Supported: string, decimal, double, int, DateTime, bool, Point<ISheetCells>, and the nullable forms.",
+        "Supported: string, decimal, double, int, DateTime, bool, Point<ICellSpace>, and the nullable forms.",
         failure.Message);
       Assert.Contains("Read it as int or decimal and convert in Select.", failure.Message);
     }
@@ -511,7 +511,7 @@ namespace Unrect.Tests.Projections
       // A positional record's extra init property is filled by nobody: the type is built through
       // its constructor, and the constructor has never heard of it. Binding or ignoring it would
       // be a declaration with no effect, so it is refused instead.
-      foreach (var declaration in new Func<IProjectionDefinition<ISheetCells, IReadOnlyList<ExtraInit>>>[]
+      foreach (var declaration in new Func<IProjectionDefinition<ICellSpace, IReadOnlyList<ExtraInit>>>[]
       {
         () => Table<ExtraInit>(bind => bind.Column(t => t.Extra, "Extra")),
         () => Table<ExtraInit>(bind => bind.Ignore(t => t.Extra)),
@@ -638,7 +638,7 @@ namespace Unrect.Tests.Projections
     {
       // The lambda hands out a builder, and a builder that mutated in place would make the order of
       // the calls matter in ways nobody wrote down.
-      TableBinding<ISheetCells, Wide>? captured = null;
+      TableBinding<ICellSpace, Wide>? captured = null;
 
       var projection = Table<Wide>(bind =>
       {

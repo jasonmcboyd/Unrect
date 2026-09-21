@@ -6,7 +6,7 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -27,14 +27,14 @@ namespace Unrect.Tests.Projections
   /// </summary>
   public class MethodGroupTests
   {
-    private static IProjectionDefinition<ISheetCells, int> Report() => VerticalFlow(v =>
+    private static IProjectionDefinition<ICellSpace, int> Report() => VerticalFlow(v =>
     {
       var intCell = v.Next(IntCell());
 
       return intCell;
     });
 
-    private static ISheetCells[] Workbooks() => new[]
+    private static ICellSpace[] Workbooks() => new[]
     {
       Grid(new[,] { { 1 } }),
       Grid(new[,] { { 2 } }),
@@ -45,7 +45,7 @@ namespace Unrect.Tests.Projections
     public void Map_ConvertsToADelegateAsAMethodGroup()
     {
       // If this stops compiling, Map has grown a parameter and the idiom below is already broken.
-      Func<ISheetCells, int> parse = Report().Map;
+      Func<ICellSpace, int> parse = Report().Map;
 
       Assert.Equal(1, parse(Workbooks()[0]));
     }
@@ -62,7 +62,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void Apply_ConvertsToADelegateAsAMethodGroup()
     {
-      Func<ISheetCells, AppliedResult<int>> apply = Report().Apply;
+      Func<ICellSpace, AppliedResult<int>> apply = Report().Apply;
 
       var applied = apply(Workbooks()[1]);
 
@@ -73,7 +73,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void MapWithDiagnostics_ConvertsToADelegateAsAMethodGroup()
     {
-      Func<ISheetCells, MapResult<int>> read = Report().MapWithDiagnostics;
+      Func<ICellSpace, MapResult<int>> read = Report().MapWithDiagnostics;
 
       var result = read(Workbooks()[2]);
 
@@ -87,9 +87,9 @@ namespace Unrect.Tests.Projections
       var report = Report();
       var space = Workbooks()[0];
 
-      Func<ISheetCells, int> map = report.Map;
-      Func<ISheetCells, AppliedResult<int>> apply = report.Apply;
-      Func<ISheetCells, MapResult<int>> diagnose = report.MapWithDiagnostics;
+      Func<ICellSpace, int> map = report.Map;
+      Func<ICellSpace, AppliedResult<int>> apply = report.Apply;
+      Func<ICellSpace, MapResult<int>> diagnose = report.MapWithDiagnostics;
 
       // The delegate route is pinned against the direct route, which is the contrast the class doc
       // draws: an added optional parameter breaks `report.Map` as a method group while
@@ -138,7 +138,7 @@ namespace Unrect.Tests.Projections
     public void ANamedRootStillConvertsToADelegate()
     {
       // Naming the root must not cost the idiom either.
-      Func<ISheetCells, int> parse = Report().Named("report").Map;
+      Func<ICellSpace, int> parse = Report().Named("report").Map;
 
       Assert.Equal(new[] { 1, 2, 3 }, Workbooks().Select(parse).ToArray());
     }

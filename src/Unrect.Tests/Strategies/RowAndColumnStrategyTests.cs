@@ -92,7 +92,7 @@ namespace Unrect.Tests.Strategies
     // why the pins these replace could not simply be un-skipped.
 
     /// <summary>Labels down column 0 with the boundary at row 2, and a second column of noise.</summary>
-    private static ISheetCells LabelledRows() => Labels(new string?[,]
+    private static ICellSpace LabelledRows() => Labels(new string?[,]
     {
       { "a", "x" },
       { "b", "y" },
@@ -275,7 +275,7 @@ namespace Unrect.Tests.Strategies
     // --- TakeColumnsToText: the same rule, transposed ------------------------------------------------
 
     /// <summary>The transpose of <see cref="LabelledRows"/>: labels along row 0, boundary at column 2.</summary>
-    private static ISheetCells LabelledColumns() => Labels(new string?[,]
+    private static ICellSpace LabelledColumns() => Labels(new string?[,]
     {
       { "a", "b", "  Total  ", "c" },
       { "x", "y", "z", "w" },

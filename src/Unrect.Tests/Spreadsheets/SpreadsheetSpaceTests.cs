@@ -21,9 +21,9 @@ namespace Unrect.Tests.Spreadsheets
     private static string WorkbookPath(string fileName)
       => Path.Combine(AppContext.BaseDirectory, "TestData", fileName);
 
-    private static ISheetCells SimpleReport() => SpreadsheetSpace.Create(WorkbookPath("simple-report.xlsx"), "Report");
+    private static ICellSpace SimpleReport() => SpreadsheetSpace.Create(WorkbookPath("simple-report.xlsx"), "Report");
 
-    private static ISheetCells InvestorsByDeal() => SpreadsheetSpace.Create(WorkbookPath("investors-by-deal.xlsx"), "Investors");
+    private static ICellSpace InvestorsByDeal() => SpreadsheetSpace.Create(WorkbookPath("investors-by-deal.xlsx"), "Investors");
 
     // --- Adapter behaviour ------------------------------------------------------------------------
 
@@ -167,7 +167,7 @@ namespace Unrect.Tests.Spreadsheets
       // would: four are there to be taken, and a fifth is off the end of the file. This is the half
       // a cell read cannot state — with no columns, every read fails on the width before it ever
       // reaches the height.
-      var sheet = Plane<ISheetCells>.Of(space);
+      var sheet = Plane<ICellSpace>.Of(space);
 
       Assert.Equal(4, sheet.Slice(new Offset(0, 0), new Area(0, 4)).Area.Size.Height);
       Assert.Throws<OutOfBoundsException>(() => sheet.Slice(new Offset(0, 0), new Area(0, 5)));
@@ -200,7 +200,7 @@ namespace Unrect.Tests.Spreadsheets
     // path is a sheet with no VALUED cell — which is a sheet with no text to share. The rule is the
     // same one already recorded for the measured path's width above, and for the same reason.
 
-    private static ISheetCells RepeatedText(string sheetName = "Ledger")
+    private static ICellSpace RepeatedText(string sheetName = "Ledger")
       => SpreadsheetSpace.Create(WorkbookPath("repeated-text.xlsx"), sheetName);
 
     [Fact]
@@ -269,7 +269,7 @@ namespace Unrect.Tests.Spreadsheets
       // claim those tests cannot make, because they do not know a table exists.)
       var space = RepeatedText();
 
-      var sheet = Plane<ISheetCells>.Of(space);
+      var sheet = Plane<ICellSpace>.Of(space);
 
       Assert.Equal("Number", space.Describe(3, 1));
       Assert.Equal(1000, sheet[3, 1].Integer());

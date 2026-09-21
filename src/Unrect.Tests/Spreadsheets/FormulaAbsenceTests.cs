@@ -11,7 +11,7 @@ using Unrect.Tests.Streaming;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 
 namespace Unrect.Tests.Spreadsheets
 {
@@ -64,7 +64,7 @@ namespace Unrect.Tests.Spreadsheets
       // of the format. Nothing about .xls is unreadable; one capability over it is.
       var sheet = SpreadsheetSpace.Create(TestData("legacy.xls"), "Legacy");
 
-      var cells = Plane<ISheetCells>.Of(sheet);
+      var cells = Plane<ICellSpace>.Of(sheet);
 
       Assert.Equal("Widget", cells[0, 0].Text());
       Assert.Equal(4, cells[1, 0].Integer());
@@ -174,7 +174,7 @@ namespace Unrect.Tests.Spreadsheets
 
       // ...and a region of it names the same space, so there is no wrapper anywhere in the
       // decomposition that could have answered differently — which is what used to need asking.
-      var region = Plane<ISheetCells>.Of(sheet).Slice(new Offset(1, 2), new Area(2, 4));
+      var region = Plane<ICellSpace>.Of(sheet).Slice(new Offset(1, 2), new Area(2, 4));
 
       Assert.Same(sheet, region.Space);
       Assert.False(region.Space is IFormulaSpace);

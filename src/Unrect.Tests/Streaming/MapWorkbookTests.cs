@@ -8,8 +8,8 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 
 namespace Unrect.Tests.Streaming
 {
@@ -44,8 +44,8 @@ namespace Unrect.Tests.Streaming
     public void ACanonicalDeclarationIsTakenToo_BecauseASheetIsASpace()
     {
       // Two overloads, and the second is not a convenience. The streaming door hands back a plain
-      // ISheetCells — the honest absence, because a streamed sheet reads values and has no formulas
-      // — and an ISheetCells IS an ISpace, so a declaration written over the canonical surface is a
+      // ICellSpace — the honest absence, because a streamed sheet reads values and has no formulas
+      // — and an ICellSpace IS an ISpace, so a declaration written over the canonical surface is a
       // declaration this file can answer. Without the overload, the whole canonical vocabulary would
       // be unusable through the sugar for no reason a reader could name.
       IProjectionDefinition<ISpace, string?> canonical = ProjectionBuilders<ISpace>.AsText().OrBlank();
@@ -62,7 +62,7 @@ namespace Unrect.Tests.Streaming
       //   IProjectionDefinition<IFormulaSpace, string?> formula = SpreadsheetProjections.Formula<IFormulaSpace>();
       //   formula.MapWorkbook(path, sheet);          // CS1929/CS0411 — no overload takes it
       //
-      // The receiver is IProjectionDefinition<ISheetCells, T> on one overload and IProjectionDefinition<ISpace, T> on the
+      // The receiver is IProjectionDefinition<ICellSpace, T> on one overload and IProjectionDefinition<ISpace, T> on the
       // other, and IProjectionDefinition is INVARIANT in its space (phase-6 ruling (i): `in TSpace` and a real
       // Project(Plane<TSpace>, …) are mutually exclusive), so a declaration over IFormulaSpace,
       // ISpreadsheetSpace or IValueCells<T> matches neither. That is the whole guard: the alternative
@@ -76,7 +76,7 @@ namespace Unrect.Tests.Streaming
       //
       // The positive half, asserted rather than described: the two receivers the overloads name.
       Assert.Equal(
-        new[] { "ISheetCells", "ISpace" },
+        new[] { "ICellSpace", "ISpace" },
         typeof(SpreadsheetProjectionExtensions)
           .GetMethods()
           .Where(method => method.Name == nameof(SpreadsheetProjectionExtensions.MapWorkbook) && method.GetParameters().Length == 4)
@@ -223,8 +223,8 @@ namespace Unrect.Tests.Streaming
       // to be an ArgumentNullException rather than whatever opening a missing file would have been.
       var missing = Path("no-such-workbook.xlsx");
 
-      Assert.Throws<ArgumentNullException>(() => ((IProjectionDefinition<ISheetCells, string>)null!).MapWorkbook(missing, "Any"));
-      Assert.Throws<ArgumentNullException>(() => ((IProjectionDefinition<ISheetCells, string>)null!).MapWorkbookWithDiagnostics(missing, "Any"));
+      Assert.Throws<ArgumentNullException>(() => ((IProjectionDefinition<ICellSpace, string>)null!).MapWorkbook(missing, "Any"));
+      Assert.Throws<ArgumentNullException>(() => ((IProjectionDefinition<ICellSpace, string>)null!).MapWorkbookWithDiagnostics(missing, "Any"));
 
       // ...and the path really is one that would have failed, so the assertion above is not vacuous.
       Assert.ThrowsAny<IOException>(() => Text().MapWorkbook(missing, "Any"));
@@ -251,7 +251,7 @@ namespace Unrect.Tests.Streaming
       // return away from losing. The probe captures the extent it was handed on the way past; the
       // sibling after it then fails, and the captured view is dead by the time the exception
       // surfaces.
-      Plane<ISheetCells>? captured = null;
+      Plane<ICellSpace>? captured = null;
 
       var probe = Range(1, 1, block =>
       {
@@ -357,7 +357,7 @@ namespace Unrect.Tests.Streaming
       // The documented trap, pinned as documented: the whole-table rung hands back a TableView, which
       // is a reader over the sheet rather than a value read from it, and the sheet is gone. Project
       // what you need inside the declaration — that is what a declaration is for.
-      var view = Table(headerRows: 1, (TableView<ISheetCells> table) => table).MapWorkbook(Path("multi-sheet.xlsx"), "Detail");
+      var view = Table(headerRows: 1, (TableView<ICellSpace> table) => table).MapWorkbook(Path("multi-sheet.xlsx"), "Detail");
 
       Assert.Throws<ObjectDisposedException>(() => view.Space[0, 0].AsText());
       Assert.Throws<ObjectDisposedException>(() => view.Rows[0][0].AsText());
@@ -368,7 +368,7 @@ namespace Unrect.Tests.Streaming
     {
       // The other half of the trap, so it reads as a rule rather than a defect: the same rung asked
       // for VALUES comes back with values, and nothing about the lifetime is a problem.
-      var captions = Table(headerRows: 1, (TableView<ISheetCells> table) => table.ColumnNames.ToArray())
+      var captions = Table(headerRows: 1, (TableView<ICellSpace> table) => table.ColumnNames.ToArray())
         .MapWorkbook(Path("multi-sheet.xlsx"), "Detail");
 
       Assert.Equal(new[] { "Fund", "Date", "Amount" }, captions);
@@ -388,7 +388,7 @@ namespace Unrect.Tests.Streaming
     //
     // The refusal is the point and the tail is misleading: no import would help, because there is no
     // demanding overload to find. A streamed sheet reads values only — Workbook.Sheet hands back a
-    // plain ISheetCells — so a formula-reading declaration has no capable space here to be applied to, and
+    // plain ICellSpace — so a formula-reading declaration has no capable space here to be applied to, and
     // the alternatives were a run-time fault or a file's formulas quietly read as absent. Read
     // formulas through the eager door instead: projection.Map(SpreadsheetSpace.CreateWithFormulas(…)).
   }

@@ -5,8 +5,8 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Interactive.ExploratoryBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Interactive.ExploratoryBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 
 namespace Unrect.Tests.Interactive
 {
@@ -19,7 +19,7 @@ namespace Unrect.Tests.Interactive
   {
     public sealed record Fund(string Code, decimal Nav, bool IsDeprecated, string? Manager);
 
-    private static ISheetCells Sheet() => SheetGrid.Of(new object?[,]
+    private static ICellSpace Sheet() => SheetGrid.Of(new object?[,]
     {
       { "Code", "NAV", "Region", "Inception" },
       { "A-1", 10m, "EU", new DateTime(2020, 1, 1) },

@@ -7,8 +7,8 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -22,16 +22,16 @@ namespace Unrect.Tests.Projections
   {
     // One column, two rows: a label over a number. The winning alternative below consumes both, so
     // these tests see no unconsumed-space diagnostic to filter out.
-    private static ISheetCells Pair() => Mixed(new object?[,] { { "x" }, { 5 } });
+    private static ICellSpace Pair() => Mixed(new object?[,] { { "x" }, { 5 } });
 
     /// <summary>Reads the pair as text-then-number: what the file actually is.</summary>
-    private static IProjectionDefinition<ISheetCells, int> TextFirst(string name = "vendor A layout")
+    private static IProjectionDefinition<ICellSpace, int> TextFirst(string name = "vendor A layout")
       => VerticalFlow(v => { v.Next(TextCell()); var intCell = v.Next(IntCell());
 
       return intCell; }).Named(name);
 
     /// <summary>Reads the pair as number-then-number: a layout this file is not in.</summary>
-    private static IProjectionDefinition<ISheetCells, int> NumberFirst(string name = "vendor B layout")
+    private static IProjectionDefinition<ICellSpace, int> NumberFirst(string name = "vendor B layout")
       => VerticalFlow(v => { v.Next(IntCell()); var intCell = v.Next(IntCell());
 
       return intCell; }).Named(name);
@@ -236,7 +236,7 @@ namespace Unrect.Tests.Projections
       // the next alternative would turn it into a silently different parse.
       var failure = Assert.Throws<ProjectionException>(() =>
         Choice(
-          Point().Select<ISheetCells, Point<ISheetCells>, int>(_ => throw new NullReferenceException("boom")).Named("first"),
+          Point().Select<ICellSpace, Point<ICellSpace>, int>(_ => throw new NullReferenceException("boom")).Named("first"),
           IntCell().Named("second"))
           .Map(Mixed(new object?[,] { { 5 } })));
 
@@ -253,9 +253,9 @@ namespace Unrect.Tests.Projections
     // AlternationLawProbeTests deliberately asserts no layout — this is the file it defers to.
 
     /// <summary>A typed leaf, named — one clause of a problem, so a tally's line is predictable.</summary>
-    private static IProjectionDefinition<ISheetCells, int> Number(string name) => Integer().Named(name);
+    private static IProjectionDefinition<ICellSpace, int> Number(string name) => Integer().Named(name);
 
-    private static ISheetCells OneText() => Mixed(new object?[,] { { "text" } });
+    private static ICellSpace OneText() => Mixed(new object?[,] { { "text" } });
 
     private const string Wrong = "expected Number at A1, found Text";
 

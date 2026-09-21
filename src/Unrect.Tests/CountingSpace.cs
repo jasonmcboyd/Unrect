@@ -21,12 +21,12 @@ namespace Unrect.Tests
   /// it because that is the only number there is.
   /// </para>
   /// </summary>
-  internal sealed class CountingSpace : ISheetCells
+  internal sealed class CountingSpace : ICellSpace
   {
-    private readonly ISheetCells _inner;
+    private readonly ICellSpace _inner;
     private readonly HashSet<int> _rows = new HashSet<int>();
 
-    public CountingSpace(ISheetCells inner) => _inner = inner;
+    public CountingSpace(ICellSpace inner) => _inner = inner;
 
     /// <summary>How many cells have been read through this space.</summary>
     public int CellReads { get; private set; }

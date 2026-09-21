@@ -8,8 +8,8 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Streaming
@@ -45,7 +45,7 @@ namespace Unrect.Tests.Streaming
     /// not a moment earlier — which is what makes "this projection got that far" a fact rather than
     /// an inference. A fresh pass per call, because the failure is in the load.
     /// </summary>
-    private static ISheetCells Faulting(string fault, int faultRow = 4)
+    private static ICellSpace Faulting(string fault, int faultRow = 4)
     {
       var source = new FakeRowSource(FakeSheet.Of(
         "Data",
@@ -63,7 +63,7 @@ namespace Unrect.Tests.Streaming
       return Workbook.Over(source, new WorkbookOptions()).Sheet("Data");
     }
 
-    private static void AssertSurfacedAsAFault(string fault, Func<ISheetCells, object?> map)
+    private static void AssertSurfacedAsAFault(string fault, Func<ICellSpace, object?> map)
     {
       var failure = Assert.Throws<ProjectionException>(() => { _ = map(Faulting(fault)); });
 
@@ -218,7 +218,7 @@ namespace Unrect.Tests.Streaming
 
     // --- The controls: what a boundary IS still for --------------------------------------------------
 
-    private static ISheetCells Sound() => ProjectionTestSpaces.Mixed(new object?[,]
+    private static ICellSpace Sound() => ProjectionTestSpaces.Mixed(new object?[,]
     {
       { "Name", "Amount" },
       { "a", 1 },

@@ -32,10 +32,10 @@ namespace Unrect.Benchmarks
   {
     private int[,] _ints = default!;
     private object?[,] _objects = default!;
-    private ISheetCells _numbers = default!;
-    private ISheetCells _text = default!;
-    private ISheetCells _mixed = default!;
-    private Plane<ISheetCells> _plane;
+    private ICellSpace _numbers = default!;
+    private ICellSpace _text = default!;
+    private ICellSpace _mixed = default!;
+    private Plane<ICellSpace> _plane;
     private Plane<ISpace> _numericPlane;
     private IRowStrategy _erasedRule = default!;
     private IRowStrategy _typedRule = default!;
@@ -48,14 +48,14 @@ namespace Unrect.Benchmarks
       _numbers = CanonicalSpaces.MegaDenseNumeric;
       _text = CanonicalSpaces.MegaDenseText;
       _mixed = CanonicalSpaces.MegaDenseMixed;
-      _plane = Plane<ISheetCells>.Of(_mixed);
+      _plane = Plane<ICellSpace>.Of(_mixed);
       _numericPlane = Plane<ISpace>.Of(_numbers);
 
       // Built once: lowering happens where a declaration is written, so what the two predicate rows
       // measure is evaluation. Both rules run to the bottom of the dense numeric grid, asking every
       // one of its million cells, which is the output to check when this fixture changes.
       _erasedRule = RowStrategies.TakeRowsWhileAll(cell => !cell.IsBlank);
-      _typedRule = ProjectionBuilders<ISheetCells>.TakeRowsWhileAll(cell => !cell.IsBlank).Strategy;
+      _typedRule = ProjectionBuilders<ICellSpace>.TakeRowsWhileAll(cell => !cell.IsBlank).Strategy;
     }
 
     /// <summary>Adapting a million numbers: the allocation floor for a canonical grid this size.</summary>

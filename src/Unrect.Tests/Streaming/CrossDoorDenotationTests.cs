@@ -11,8 +11,8 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.Observations;
 
 namespace Unrect.Tests.Streaming
@@ -275,11 +275,11 @@ namespace Unrect.Tests.Streaming
     private sealed record Ledger(int Entry, decimal Amount);
 
     /// <summary>A deal block: its name, and how many holdings are under it.</summary>
-    private static IProjectionDefinition<ISheetCells, string> DealBlock() =>
+    private static IProjectionDefinition<ICellSpace, string> DealBlock() =>
       VerticalFlow(v => $"{v.Next(Text())}[{v.Next(Table<Holding>()).Count}]");
 
     /// <summary>The tall ledger, anchored on its caption and bounded by its terminator.</summary>
-    private static IProjectionDefinition<ISheetCells, IReadOnlyList<Ledger>> TallLedger() =>
+    private static IProjectionDefinition<ICellSpace, IReadOnlyList<Ledger>> TallLedger() =>
       Below(RowContaining("Ledger")).Until(RowContaining("End")).Of(Table<Ledger>());
 
     // --- The matrix ----------------------------------------------------------------------------------
@@ -602,9 +602,9 @@ namespace Unrect.Tests.Streaming
     /// </summary>
     private sealed class Scenario
     {
-      private readonly Func<ISheetCells, Observation> _read;
+      private readonly Func<ICellSpace, Observation> _read;
 
-      private Scenario(string grid, Func<ISheetCells, Observation> read)
+      private Scenario(string grid, Func<ICellSpace, Observation> read)
       {
         Grid = grid;
         _read = read;
@@ -613,10 +613,10 @@ namespace Unrect.Tests.Streaming
       /// <summary>Which fixture this scenario is read over.</summary>
       public string Grid { get; }
 
-      public static Scenario Of<T>(IProjectionDefinition<ISheetCells, T> projection, string grid)
+      public static Scenario Of<T>(IProjectionDefinition<ICellSpace, T> projection, string grid)
         => new Scenario(grid, space => Observe(projection, space));
 
-      public Observation Read(ISheetCells space) => _read(space);
+      public Observation Read(ICellSpace space) => _read(space);
     }
 
     // --- The fixture writer -------------------------------------------------------------------------------------

@@ -5,8 +5,8 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 
@@ -22,20 +22,20 @@ namespace Unrect.Tests.Projections
   {
     // --- The grids, and the declarations that meet them --------------------------------------------
 
-    private static ISheetCells Numbers() => Ladder(3);
+    private static ICellSpace Numbers() => Ladder(3);
 
 
-    private static ISheetCells Blank() => Grid(new int[2, 2]);
+    private static ICellSpace Blank() => Grid(new int[2, 2]);
 
 
-    private static ISheetCells TwoNamesThenANumber() => Mixed(new object?[,] { { "a" }, { "b" }, { 1 } });
+    private static ICellSpace TwoNamesThenANumber() => Mixed(new object?[,] { { "a" }, { "b" }, { 1 } });
 
 
     /// <summary>The discovered extent: full width, and as many leading rows as hold anything.</summary>
-    private static IProjectionDefinition<ISheetCells, int> Rows() => Range(RowsWhileAnyValue(), b => b.Height);
+    private static IProjectionDefinition<ICellSpace, int> Rows() => Range(RowsWhileAnyValue(), b => b.Height);
 
     /// <summary>A cell read as text — which is a failure over <see cref="Numbers"/>, and an absorbable one.</summary>
-    private static IProjectionDefinition<ISheetCells, string> Title() => TextCell();
+    private static IProjectionDefinition<ICellSpace, string> Title() => TextCell();
 
     // --- The repetition's exit reasons -------------------------------------------------------------
 
@@ -144,7 +144,7 @@ namespace Unrect.Tests.Projections
     /// whatever the boundary made of it. One row per occurrence, whether the row read or was
     /// tolerated.
     /// </summary>
-    private static IProjectionDefinition<ISheetCells, int> ToleratedRow() => Sized(Extent(1, 1)).Of(Integer().Optional());
+    private static IProjectionDefinition<ICellSpace, int> ToleratedRow() => Sized(Extent(1, 1)).Of(Integer().Optional());
 
     [Fact]
     public void AnAbsorbedItemThatStillConsumedItsExtentGoesOnRepeating()

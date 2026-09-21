@@ -6,7 +6,7 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 
 namespace Unrect.Tests.Projections
 {
@@ -22,7 +22,7 @@ namespace Unrect.Tests.Projections
     public sealed record Transfer(int FromId, string FromCode, int ToId, string ToCode);
 
     /// <summary>Three columns, the third with no caption over it.</summary>
-    private static ISheetCells UnlabeledAmount() => SheetGrid.Of(new object?[,]
+    private static ICellSpace UnlabeledAmount() => SheetGrid.Of(new object?[,]
     {
       { "Transaction Date", "Transaction Type", null },
       { new DateTime(2026, 1, 5), "Buy", 100m },

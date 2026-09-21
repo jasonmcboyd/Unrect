@@ -8,7 +8,7 @@ using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -28,31 +28,31 @@ namespace Unrect.Tests.Projections
   public class TypedStrategyPhantomTests
   {
     /// <summary>Rows while any cell in them carries a value, demanding a sheet.</summary>
-    private sealed class ValueRows : IAreaStrategy<ISheetCells>
+    private sealed class ValueRows : IAreaStrategy<ICellSpace>
     {
       public Unrect.Core.IAreaStrategy Strategy { get; } = SizeStrategies.RowsWhileAnyValue().ToAreaStrategy();
     }
 
     /// <summary>Leading columns that carry values, demanding a sheet.</summary>
-    private sealed class ValueColumns : IColumnStrategy<ISheetCells>
+    private sealed class ValueColumns : IColumnStrategy<ICellSpace>
     {
       public Unrect.Core.IColumnStrategy Strategy { get; } = ColumnStrategies.TakeColumnsWhileAnyValue();
     }
 
     /// <summary>Leading rows that carry values, demanding a sheet.</summary>
-    private sealed class ValueRowCount : IRowStrategy<ISheetCells>
+    private sealed class ValueRowCount : IRowStrategy<ICellSpace>
     {
       public Unrect.Core.IRowStrategy Strategy { get; } = RowStrategies.TakeRowsWhileAnyValue();
     }
 
     /// <summary>Past the blank rows in front, demanding a sheet.</summary>
-    private sealed class PastBlankRows : IOffsetStrategy<ISheetCells>
+    private sealed class PastBlankRows : IOffsetStrategy<ICellSpace>
     {
       public Unrect.Core.IOffsetStrategy Strategy { get; } = OffsetStrategies.SkipBlankRows();
     }
 
     /// <summary>Three rows of values, a blank row, then two more — so a measurement has somewhere to stop.</summary>
-    private static ISheetCells Sheet()
+    private static ICellSpace Sheet()
       => Grid(new[,]
       {
         { 1, 2, 0 },
@@ -166,11 +166,11 @@ namespace Unrect.Tests.Projections
     {
       Action call = parameter switch
       {
-        "area" => () => Sized((IAreaStrategy<ISheetCells>)null!).Of(Point()),
-        "offset" => () => OffsetBy((IOffsetStrategy<ISheetCells>)null!).Of(Point()),
-        "columns" => () => Row((IColumnStrategy<ISheetCells>)null!, strip => strip.Count),
-        "rows" => () => Column((IRowStrategy<ISheetCells>)null!, strip => strip.Count),
-        _ => () => VerticalRepeat(Point(), (IOffsetStrategy<ISheetCells>)null!),
+        "area" => () => Sized((IAreaStrategy<ICellSpace>)null!).Of(Point()),
+        "offset" => () => OffsetBy((IOffsetStrategy<ICellSpace>)null!).Of(Point()),
+        "columns" => () => Row((IColumnStrategy<ICellSpace>)null!, strip => strip.Count),
+        "rows" => () => Column((IRowStrategy<ICellSpace>)null!, strip => strip.Count),
+        _ => () => VerticalRepeat(Point(), (IOffsetStrategy<ICellSpace>)null!),
       };
 
       Assert.Equal(parameter, Assert.Throws<ArgumentNullException>(call).ParamName);
@@ -230,31 +230,31 @@ namespace Unrect.Tests.Projections
       // line of a pipeline whose members all take one rule each.
       Action call = member switch
       {
-        "Sized(area)" => () => Sized((IAreaStrategy<ISheetCells>)null!),
-        "OffsetBy(offset)" => () => OffsetBy((IOffsetStrategy<ISheetCells>)null!),
-        "Range(area)" => () => Range((IAreaStrategy<ISheetCells>)null!, block => block.Height),
-        "Row(columns)" => () => Row((IColumnStrategy<ISheetCells>)null!, strip => strip.Count),
-        "Column(rows)" => () => Column((IRowStrategy<ISheetCells>)null!, strip => strip.Count),
-        "RowsThenColumns(rows)" => () => RowsThenColumns((IRowStrategy<ISheetCells>)null!, new ValueColumns()),
-        "RowsThenColumns(columns)" => () => RowsThenColumns(new ValueRowCount(), (IColumnStrategy<ISheetCells>)null!),
-        "ColumnsThenRows(columns)" => () => ColumnsThenRows((IColumnStrategy<ISheetCells>)null!, new ValueRowCount()),
-        "ColumnsThenRows(rows)" => () => ColumnsThenRows(new ValueColumns(), (IRowStrategy<ISheetCells>)null!),
-        "VerticalRepeat(separatedBy)" => () => VerticalRepeat(Point(), (IOffsetStrategy<ISheetCells>)null!),
-        "HorizontalRepeat(separatedBy)" => () => HorizontalRepeat(Point(), (IOffsetStrategy<ISheetCells>)null!),
-        "On(row)" => () => On((IRowLandmark<ISheetCells>)null!),
-        "On(column)" => () => On((IColumnLandmark<ISheetCells>)null!),
-        "Below(landmark)" => () => Below((IRowLandmark<ISheetCells>)null!),
-        "RightOf(landmark)" => () => RightOf((IColumnLandmark<ISheetCells>)null!),
-        "Until(landmark)" => () => Until((IRowLandmark<ISheetCells>)null!),
-        "UntilColumn(landmark)" => () => UntilColumn((IColumnLandmark<ISheetCells>)null!),
-        "stage Sized(area)" => () => Down(1).Sized((IAreaStrategy<ISheetCells>)null!),
-        "stage Range(area)" => () => Down(1).Range((IAreaStrategy<ISheetCells>)null!, block => block.Height),
-        "stage Row(columns)" => () => Down(1).Row((IColumnStrategy<ISheetCells>)null!, strip => strip.Count),
-        "stage Column(rows)" => () => Down(1).Column((IRowStrategy<ISheetCells>)null!, strip => strip.Count),
-        "stage VerticalRepeat(separatedBy)" => () => Down(1).VerticalRepeat(Point(), (IOffsetStrategy<ISheetCells>)null!),
-        "stage HorizontalRepeat(separatedBy)" => () => Down(1).HorizontalRepeat(Point(), (IOffsetStrategy<ISheetCells>)null!),
-        "stage Until(landmark)" => () => Down(1).Until((IRowLandmark<ISheetCells>)null!),
-        _ => () => Down(1).UntilColumn((IColumnLandmark<ISheetCells>)null!),
+        "Sized(area)" => () => Sized((IAreaStrategy<ICellSpace>)null!),
+        "OffsetBy(offset)" => () => OffsetBy((IOffsetStrategy<ICellSpace>)null!),
+        "Range(area)" => () => Range((IAreaStrategy<ICellSpace>)null!, block => block.Height),
+        "Row(columns)" => () => Row((IColumnStrategy<ICellSpace>)null!, strip => strip.Count),
+        "Column(rows)" => () => Column((IRowStrategy<ICellSpace>)null!, strip => strip.Count),
+        "RowsThenColumns(rows)" => () => RowsThenColumns((IRowStrategy<ICellSpace>)null!, new ValueColumns()),
+        "RowsThenColumns(columns)" => () => RowsThenColumns(new ValueRowCount(), (IColumnStrategy<ICellSpace>)null!),
+        "ColumnsThenRows(columns)" => () => ColumnsThenRows((IColumnStrategy<ICellSpace>)null!, new ValueRowCount()),
+        "ColumnsThenRows(rows)" => () => ColumnsThenRows(new ValueColumns(), (IRowStrategy<ICellSpace>)null!),
+        "VerticalRepeat(separatedBy)" => () => VerticalRepeat(Point(), (IOffsetStrategy<ICellSpace>)null!),
+        "HorizontalRepeat(separatedBy)" => () => HorizontalRepeat(Point(), (IOffsetStrategy<ICellSpace>)null!),
+        "On(row)" => () => On((IRowLandmark<ICellSpace>)null!),
+        "On(column)" => () => On((IColumnLandmark<ICellSpace>)null!),
+        "Below(landmark)" => () => Below((IRowLandmark<ICellSpace>)null!),
+        "RightOf(landmark)" => () => RightOf((IColumnLandmark<ICellSpace>)null!),
+        "Until(landmark)" => () => Until((IRowLandmark<ICellSpace>)null!),
+        "UntilColumn(landmark)" => () => UntilColumn((IColumnLandmark<ICellSpace>)null!),
+        "stage Sized(area)" => () => Down(1).Sized((IAreaStrategy<ICellSpace>)null!),
+        "stage Range(area)" => () => Down(1).Range((IAreaStrategy<ICellSpace>)null!, block => block.Height),
+        "stage Row(columns)" => () => Down(1).Row((IColumnStrategy<ICellSpace>)null!, strip => strip.Count),
+        "stage Column(rows)" => () => Down(1).Column((IRowStrategy<ICellSpace>)null!, strip => strip.Count),
+        "stage VerticalRepeat(separatedBy)" => () => Down(1).VerticalRepeat(Point(), (IOffsetStrategy<ICellSpace>)null!),
+        "stage HorizontalRepeat(separatedBy)" => () => Down(1).HorizontalRepeat(Point(), (IOffsetStrategy<ICellSpace>)null!),
+        "stage Until(landmark)" => () => Down(1).Until((IRowLandmark<ICellSpace>)null!),
+        _ => () => Down(1).UntilColumn((IColumnLandmark<ICellSpace>)null!),
       };
 
       var expected = member.Substring(member.IndexOf('(') + 1).TrimEnd(')');
@@ -287,14 +287,14 @@ namespace Unrect.Tests.Projections
       => (member, typed) switch
       {
         ("Until", false) => typeof(IRowLandmark),
-        ("Until", true) => typeof(IRowLandmark<ISheetCells>),
+        ("Until", true) => typeof(IRowLandmark<ICellSpace>),
         (_, false) => typeof(IColumnLandmark),
-        _ => typeof(IColumnLandmark<ISheetCells>),
+        _ => typeof(IColumnLandmark<ICellSpace>),
       };
 
     private static ObsoleteAttribute Refusal(string member, Type landmark)
     {
-      var refused = typeof(HeadingStage<ISheetCells>).GetMethod(member, new[] { landmark, typeof(bool) });
+      var refused = typeof(HeadingStage<ICellSpace>).GetMethod(member, new[] { landmark, typeof(bool) });
 
       Assert.NotNull(refused);
 
@@ -332,7 +332,7 @@ namespace Unrect.Tests.Projections
     }
 
     /// <summary>A rule and a matcher promised a spreadsheet, unwrapped so a sheet can be handed one.</summary>
-    private static IProjectionDefinition<ISheetCells, int> Smuggled(string door) => door switch
+    private static IProjectionDefinition<ICellSpace, int> Smuggled(string door) => door switch
     {
       "Sized" => Sized(ProjectionBuilders<ISpreadsheetSpace>.RowsWhileAny(cell => cell.HasValue).Strategy)
         .Of(Range(block => block.Height)),
@@ -383,9 +383,9 @@ namespace Unrect.Tests.Projections
     public void RetypingARegionKeepsItsOriginAndItsExtent()
     {
       var sheet = CoordinateGrid(4, 10);
-      var region = Plane<ISheetCells>.Of(sheet).Slice(new Offset(1, 2)).Narrowed(3);
+      var region = Plane<ICellSpace>.Of(sheet).Slice(new Offset(1, 2)).Narrowed(3);
 
-      var retyped = region.Erased().Retyped<ISheetCells>();
+      var retyped = region.Erased().Retyped<ICellSpace>();
 
       Assert.Same(region.Space, retyped.Space);
       Assert.Equal(region.Origin, retyped.Origin);
@@ -399,7 +399,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void RetypingARegionToASpaceItIsNotFails()
     {
-      var region = Plane<ISheetCells>.Of(CoordinateGrid(2, 2)).Erased();
+      var region = Plane<ICellSpace>.Of(CoordinateGrid(2, 2)).Erased();
 
       Assert.Throws<InvalidCastException>(() => region.Retyped<ISpreadsheetSpace>());
     }

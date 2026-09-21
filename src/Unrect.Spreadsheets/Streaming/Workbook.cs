@@ -106,7 +106,7 @@ namespace Unrect.Spreadsheets
     /// <param name="name">The sheet's name.</param>
     /// <exception cref="ArgumentException">No sheet of that name exists.</exception>
     /// <exception cref="ObjectDisposedException">This workbook has been disposed.</exception>
-    public ISheetCells Sheet(string name)
+    public ICellSpace Sheet(string name)
     {
       if (name is null)
         throw new ArgumentNullException(nameof(name));

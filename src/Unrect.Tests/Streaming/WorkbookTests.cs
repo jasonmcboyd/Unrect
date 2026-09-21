@@ -9,8 +9,8 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 
 namespace Unrect.Tests.Streaming
 {
@@ -30,7 +30,7 @@ namespace Unrect.Tests.Streaming
     private static WorkbookOptions Cold() => new WorkbookOptions();
 
     /// <summary>The tall ledger's body, one band per row: what a forward pass streams without holding.</summary>
-    private static IProjectionDefinition<ISheetCells, IReadOnlyList<string>> LedgerRows()
+    private static IProjectionDefinition<ICellSpace, IReadOnlyList<string>> LedgerRows()
       => On(RowContaining("Entry")).Of(Table(headerRows: 1, eachRow: Row(3, cells => cells[2].AsText()!)));
 
     // --- Vending ----------------------------------------------------------------------------------
@@ -101,7 +101,7 @@ namespace Unrect.Tests.Streaming
       // Slicing is free and slices share the pass, so a declaration that decomposes a sheet into
       // a hundred regions still reads it once.
       using var book = Workbook.Open(Path("simple-report.xlsx"), Cold());
-      var sheet = Plane<ISheetCells>.Of(book.Sheet("Report"));
+      var sheet = Plane<ICellSpace>.Of(book.Sheet("Report"));
       var slice = sheet.Slice(new Offset(0, 5), new Area(4, 5));
 
       Assert.Equal(sheet[0, 5], slice[0, 0]);
@@ -132,7 +132,7 @@ namespace Unrect.Tests.Streaming
       Assert.Throws<OutOfBoundsException>(() => space.AsText(space.Area.Size.Width, 0));
       Assert.Throws<OutOfBoundsException>(() => space.AsText(0, space.Area.Size.Height));
       Assert.Throws<OutOfBoundsException>(
-        () => Plane<ISheetCells>.Of(space).Slice(new Offset(0, 0), new Area(99, 99)));
+        () => Plane<ICellSpace>.Of(space).Slice(new Offset(0, 0), new Area(99, 99)));
     }
 
     // --- The catalogue -----------------------------------------------------------------------------
@@ -180,7 +180,7 @@ namespace Unrect.Tests.Streaming
       // the wrong sheet, which an Area alone would not catch.
       Assert.Equal("Alpha Fund", summary.AsText(0, 1));
       Assert.Equal("Fund", detail.AsText(0, 0));
-      Assert.Equal(1500d, Plane<ISheetCells>.Of(detail)[2, 5].Double());
+      Assert.Equal(1500d, Plane<ICellSpace>.Of(detail)[2, 5].Double());
 
       // And the catalogue really did grow: the third sheet is in it, without the walk that
       // SheetNames would have forced.
@@ -443,7 +443,7 @@ namespace Unrect.Tests.Streaming
 
       Parallel.For(0, 16, worker =>
       {
-        var sheet = Plane<ISheetCells>.Of(book.Sheet("Ledger"));
+        var sheet = Plane<ICellSpace>.Of(book.Sheet("Ledger"));
 
         for (var row = 1; row <= 200; row++)
           Assert.Equal(row, sheet[0, row].Integer());

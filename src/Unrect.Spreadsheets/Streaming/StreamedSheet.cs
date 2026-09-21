@@ -14,7 +14,7 @@ namespace Unrect.Spreadsheets
   /// disposed workbook's sheet says the workbook is gone. The sheet's extent is what the file
   /// declares, so a plane over it can be cut before its rows have arrived.
   /// </summary>
-  internal sealed class StreamedSheet : SheetCellsBase, IRowFeed, IDisposable
+  internal sealed class StreamedSheet : CellSpaceBase, IRowFeed, IDisposable
   {
     private readonly IRowCursor _cursor;
     private readonly StringInterner _strings;

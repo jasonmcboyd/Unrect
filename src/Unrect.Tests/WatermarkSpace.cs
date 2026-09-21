@@ -21,12 +21,12 @@ namespace Unrect.Tests
   /// and there is nothing to translate.
   /// </para>
   /// </summary>
-  internal sealed class WatermarkSpace : ISheetCells
+  internal sealed class WatermarkSpace : ICellSpace
   {
-    private readonly ISheetCells _inner;
+    private readonly ICellSpace _inner;
     private readonly Trace _trace = new Trace();
 
-    public WatermarkSpace(ISheetCells inner) => _inner = inner;
+    public WatermarkSpace(ICellSpace inner) => _inner = inner;
 
     /// <summary>The deepest a read ever fell behind the furthest row read so far, in rows.</summary>
     public int BackwardReach => _trace.BackwardReach;

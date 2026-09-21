@@ -8,8 +8,8 @@ using Unrect.Tests.Streaming;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Machines
@@ -37,7 +37,7 @@ namespace Unrect.Tests.Machines
       });
     }
 
-    private static ISheetCells Eagerly(FakeSheet sheet)
+    private static ICellSpace Eagerly(FakeSheet sheet)
     {
       var cells = new Cell[sheet.RowCount, sheet.ColumnCount];
 
@@ -48,7 +48,7 @@ namespace Unrect.Tests.Machines
       return SheetGrid.Of(cells);
     }
 
-    private static IProjectionDefinition<ISheetCells, IReadOnlyList<IReadOnlyList<decimal>>> BlockTotals()
+    private static IProjectionDefinition<ICellSpace, IReadOnlyList<IReadOnlyList<decimal>>> BlockTotals()
       => VerticalRepeat(
         Sized(RowsWhileAnyValue()).Of(Range(block => (IReadOnlyList<decimal>)block.Rows.Select(row => row[1].Decimal()).ToList())),
         separatedBy: BlankRows());

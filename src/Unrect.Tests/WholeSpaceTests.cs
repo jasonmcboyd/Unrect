@@ -29,7 +29,7 @@ namespace Unrect.Tests
     /// A region narrower or shorter than this by any amount gives a different answer to every rule
     /// below, which is what makes the identity worth asserting rather than assuming.
     /// </summary>
-    private static ISheetCells Sheet() => Mixed(new object?[,]
+    private static ICellSpace Sheet() => Mixed(new object?[,]
     {
       { "a", "b", 3, "d" },
       { "e", "f", 7, "h" },

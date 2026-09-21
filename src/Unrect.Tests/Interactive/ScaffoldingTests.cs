@@ -37,7 +37,7 @@ namespace Unrect.Tests.Interactive
     /// simple-report.xlsx: four title rows, a blank, then the captions on the sheet's row 8 — which
     /// is the 0-based row 7 — over eight transactions.
     /// </summary>
-    private static ISheetCells Report()
+    private static ICellSpace Report()
       => SpreadsheetSpace.Create(Path.Combine(AppContext.BaseDirectory, "TestData", "simple-report.xlsx"), "Report");
 
     [Fact]
@@ -86,7 +86,7 @@ namespace Unrect.Tests.Interactive
     /// SEEN TOGETHER — a duplicate is only a duplicate beside its twin, and a positional fallback
     /// name counts positions among the columns that were named.
     /// </summary>
-    private static ISheetCells Corners()
+    private static ICellSpace Corners()
       => SheetGrid.Of(new object?[,]
       {
         { "Amount", "amount", "2024 Total", "Net (USD)", "###", "Notes", "Flag", null, "Count" },
@@ -236,7 +236,7 @@ namespace Unrect.Tests.Interactive
     }
 
     /// <summary>A one-column sheet captioned "Amount", over the sample values given.</summary>
-    private static ISheetCells Grid(params object?[] samples)
+    private static ICellSpace Grid(params object?[] samples)
     {
       var values = new object?[samples.Length + 1, 1];
 
@@ -278,7 +278,7 @@ namespace Unrect.Tests.Interactive
     // --- Labels down a column: the card ----------------------------------------------------------------
 
     /// <summary>A title over a card: labels down the first column, one value to the right of each.</summary>
-    private static ISheetCells Card()
+    private static ICellSpace Card()
       => SheetGrid.Of(new object?[,]
       {
         { "Fund Report", null },

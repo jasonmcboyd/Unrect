@@ -20,7 +20,7 @@ namespace Unrect.Spreadsheets
   /// behaves exactly as it does over a workbook.
   /// </para>
   /// </summary>
-  public sealed class SheetGrid : SheetCellsBase
+  public sealed class SheetGrid : CellSpaceBase
   {
     private readonly Cell[,] _cells;
 

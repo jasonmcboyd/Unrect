@@ -6,7 +6,7 @@ using Unrect.Core;
 namespace Unrect.Spreadsheets
 {
   /// <summary>
-  /// One cell's value, in the vocabulary every <see cref="ISheetCells"/> speaks: a <see cref="CellKind"/>
+  /// One cell's value, in the vocabulary every <see cref="ICellSpace"/> speaks: a <see cref="CellKind"/>
   /// plus a payload for that kind. Construct one with an <c>Of</c> overload (or <see cref="OfError"/>
   /// for <see cref="CellKind.Error"/>); read it back with the typed <c>TryGet*</c>/<c>Get*</c> pairs,
   /// never by inspecting a backend type directly — that boundary is the whole point of the canonical

@@ -9,8 +9,8 @@ using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -40,7 +40,7 @@ namespace Unrect.Tests.Projections
     // deleted. Constructed in the test project because the primitives it composes
     // are public and the assembling FlowDefinition/Placement are reachable through InternalsVisibleTo.
 
-    internal static IProjectionDefinition<ISheetCells, IReadOnlyList<T>> TableFromPrimitives<T>(int headerRows, Func<TableRow<ISheetCells>, T> record)
+    internal static IProjectionDefinition<ICellSpace, IReadOnlyList<T>> TableFromPrimitives<T>(int headerRows, Func<TableRow<ICellSpace>, T> record)
       => PrimitiveTable(headerRows, record, marked: false);
 
     /// <summary>
@@ -49,15 +49,15 @@ namespace Unrect.Tests.Projections
     /// <c>Func&lt;TableRow, T&gt;</c>, so the header, the tiler and the record are all this
     /// method's. Unmarked, nothing folds and a rendered path is the whole tree.
     /// </summary>
-    private static IProjectionDefinition<ISheetCells, IReadOnlyList<T>> PrimitiveTable<T>(int headerRows, Func<TableRow<ISheetCells>, T> record, bool marked)
-      => new LabelledDefinition<ISheetCells, IReadOnlyList<T>>(
+    private static IProjectionDefinition<ICellSpace, IReadOnlyList<T>> PrimitiveTable<T>(int headerRows, Func<TableRow<ICellSpace>, T> record, bool marked)
+      => new LabelledDefinition<ICellSpace, IReadOnlyList<T>>(
         LabelAxis.Column,
         Mark(ColumnLabels(headerRows), marked),
         Mark(VerticalBands(1, Mark(Record(record), marked)), marked),
         TablePlacementReplica(),
         "Table");
 
-    private static IProjectionDefinition<ISheetCells, T> Mark<T>(IProjectionDefinition<ISheetCells, T> part, bool marked) => marked ? part.AsScaffolding() : part;
+    private static IProjectionDefinition<ICellSpace, T> Mark<T>(IProjectionDefinition<ICellSpace, T> part, bool marked) => marked ? part.AsScaffolding() : part;
 
     /// <summary>
     /// A hand copy of the private <c>Projection.TablePlacement()</c> — skip to the first non-blank
@@ -78,12 +78,12 @@ namespace Unrect.Tests.Projections
 
     private sealed record Line(int Index, string Investor, decimal Amount);
 
-    private static Line ReadLine(TableRow<ISheetCells> row) => new Line(row.Index, row["Investor"].Text(), row["Amount"].Decimal());
+    private static Line ReadLine(TableRow<ICellSpace> row) => new Line(row.Index, row["Investor"].Text(), row["Amount"].Decimal());
 
     // --- The sheet set (spec §5.4) -----------------------------------------------------------------
 
     /// <summary>(1) A flat, well-formed table — the case where laziness is preserved.</summary>
-    private static ISheetCells Flat() => Mixed(new object?[,]
+    private static ICellSpace Flat() => Mixed(new object?[,]
     {
       { "Investor", "Amount" },
       { "Acme", 10m },
@@ -91,21 +91,21 @@ namespace Unrect.Tests.Projections
     });
 
     /// <summary>(2) A table missing the "Investor" column the record reads — an absent-column failure.</summary>
-    private static ISheetCells AbsentColumn() => Mixed(new object?[,]
+    private static ICellSpace AbsentColumn() => Mixed(new object?[,]
     {
       { "Client", "Amount" },
       { "Acme", 10m },
     });
 
     /// <summary>(3) A table carrying "Amount" twice — an ambiguous-column failure.</summary>
-    private static ISheetCells AmbiguousColumn() => Mixed(new object?[,]
+    private static ICellSpace AmbiguousColumn() => Mixed(new object?[,]
     {
       { "Investor", "Amount", "Amount" },
       { "Acme", 10m, 11m },
     });
 
     /// <summary>(4) The table shifted one column right — column origin &gt; 0, the translation case.</summary>
-    private static ISheetCells OffsetColumn() => Mixed(new object?[,]
+    private static ICellSpace OffsetColumn() => Mixed(new object?[,]
     {
       { null, "Investor", "Amount" },
       { null, "Acme", 10m },
@@ -113,7 +113,7 @@ namespace Unrect.Tests.Projections
     });
 
     /// <summary>(5) Two blank-separated blocks, each with its own header — per-occurrence scope.</summary>
-    private static ISheetCells Repeated() => Mixed(new object?[,]
+    private static ICellSpace Repeated() => Mixed(new object?[,]
     {
       { "Investor", "Amount" },
       { "Acme", 10m },
@@ -124,7 +124,7 @@ namespace Unrect.Tests.Projections
     });
 
     /// <summary>(6) A table with trailing content past a blank row — forces the discovered block (GAP A).</summary>
-    private static ISheetCells Trailing() => Mixed(new object?[,]
+    private static ICellSpace Trailing() => Mixed(new object?[,]
     {
       { "Investor", "Amount" },
       { "Acme", 10m },
@@ -134,7 +134,7 @@ namespace Unrect.Tests.Projections
     });
 
     /// <summary>(7) A body cell of the wrong kind — text where the record reads a decimal.</summary>
-    private static ISheetCells KindMismatch() => Mixed(new object?[,]
+    private static ICellSpace KindMismatch() => Mixed(new object?[,]
     {
       { "Investor", "Amount" },
       { "Acme", "oops" },
@@ -265,14 +265,14 @@ namespace Unrect.Tests.Projections
     // carrying the failing occurrence's index up onto it, while FullPath keeps the uncollapsed tree
     // GAP B pinned above. The value and the reading are untouched: the markers are presentation-only.
 
-    private static IProjectionDefinition<ISheetCells, IReadOnlyList<T>> UnitTableFromPrimitives<T>(int headerRows, Func<TableRow<ISheetCells>, T> record)
+    private static IProjectionDefinition<ICellSpace, IReadOnlyList<T>> UnitTableFromPrimitives<T>(int headerRows, Func<TableRow<ICellSpace>, T> record)
       => PrimitiveTable(headerRows, record, marked: true).AsUnit("Table");
 
     [Fact]
     public void AsUnitFoldsTheCompositionToOneNamedSegment()
     {
       var failure = Assert.Throws<ProjectionException>(
-        () => UnitTableFromPrimitives(1, (TableRow<ISheetCells> row) => row["Amount"].Decimal()).Map(KindMismatch()));
+        () => UnitTableFromPrimitives(1, (TableRow<ICellSpace> row) => row["Amount"].Decimal()).Map(KindMismatch()));
 
       Assert.Equal("Table[0]", failure.Path);
       Assert.Equal("Table", failure.Subject);
@@ -353,23 +353,23 @@ namespace Unrect.Tests.Projections
     // Both boundaries keep their segments, the marked repeat between them does not, and the failing
     // named leaf keeps its own as the deepest segment. Each flow IS its boundary, so neither "Body"
     // nor "Row" appears: a boundary renders its unit label in place of its description.
-    private static IProjectionDefinition<ISheetCells, decimal> InnerUnit()
-      => new FlowDefinition<ISheetCells, decimal>(
+    private static IProjectionDefinition<ICellSpace, decimal> InnerUnit()
+      => new FlowDefinition<ICellSpace, decimal>(
         Orientation.Vertical,
         SingleChild(Decimal().Named("allocation")),
         Placement.Default,
         "Row").AsUnit("Inner");
 
-    private static IProjectionDefinition<ISheetCells, IReadOnlyList<decimal>> OuterUnit()
-      => new FlowDefinition<ISheetCells, IReadOnlyList<decimal>>(
+    private static IProjectionDefinition<ICellSpace, IReadOnlyList<decimal>> OuterUnit()
+      => new FlowDefinition<ICellSpace, IReadOnlyList<decimal>>(
         Orientation.Vertical,
         SingleChild(VerticalRepeat(InnerUnit()).AsScaffolding()),
         Placement.Default,
         "Body").AsUnit("Outer");
 
     /// <summary>A layout of exactly one child, declared with no use-site text — as a factory declares the parts it assembles.</summary>
-    private static Layout<ISheetCells, T> SingleChild<T>(IProjectionDefinition<ISheetCells, T> child)
-      => Layout<ISheetCells, T>.Declare(flow => flow.Next(child, declared: null), "a flow", nameof(child));
+    private static Layout<ICellSpace, T> SingleChild<T>(IProjectionDefinition<ICellSpace, T> child)
+      => Layout<ICellSpace, T>.Declare(flow => flow.Next(child, declared: null), "a flow", nameof(child));
 
     [Fact]
     public void NestedUnitsBothFoldAndNeitherLeaksScaffolding()
@@ -394,10 +394,10 @@ namespace Unrect.Tests.Projections
     // A diagnostic (not an exception) under a boundary. A tolerant band tiler skips a fully-blank body
     // row with an Info; the boundary folds the Info's Path exactly as it folds a failure's, while
     // FullPath keeps the uncollapsed chain.
-    private static IProjectionDefinition<ISheetCells, IReadOnlyList<int>> TolerantUnit()
-      => new FlowDefinition<ISheetCells, IReadOnlyList<int>>(
+    private static IProjectionDefinition<ICellSpace, IReadOnlyList<int>> TolerantUnit()
+      => new FlowDefinition<ICellSpace, IReadOnlyList<int>>(
         Orientation.Vertical,
-        SingleChild(VerticalBands(1, Record((TableRow<ISheetCells> row) => row.Index), onBlank: BlankRowStrategy.Tolerate).AsScaffolding()),
+        SingleChild(VerticalBands(1, Record((TableRow<ICellSpace> row) => row.Index), onBlank: BlankRowStrategy.Tolerate).AsScaffolding()),
         Placement.Default,
         "Body").AsUnit("Table");
 
@@ -487,8 +487,8 @@ namespace Unrect.Tests.Projections
     // what the collapse acts on, so a unit a user assembles themselves folds exactly the parts they
     // marked and nothing else. Two readings of one declaration, differing only in the marker.
 
-    private static IProjectionDefinition<ISheetCells, IReadOnlyList<string>> Card(bool marked)
-      => new FlowDefinition<ISheetCells, IReadOnlyList<string>>(
+    private static IProjectionDefinition<ICellSpace, IReadOnlyList<string>> Card(bool marked)
+      => new FlowDefinition<ICellSpace, IReadOnlyList<string>>(
         Orientation.Vertical,
         SingleChild(Mark(VerticalRepeat(Text().Named("investor")), marked)),
         Placement.Default,
@@ -564,8 +564,8 @@ namespace Unrect.Tests.Projections
       // of the header.
       var sheet = Flat();
 
-      IReadOnlyList<string> composed = Table(1, Record((TableRow<ISheetCells> row) => row["Investor"].Text())).Map(sheet);
-      IReadOnlyList<string> leaf = Table((TableRow<ISheetCells> row) => row["Investor"].Text()).Map(sheet);
+      IReadOnlyList<string> composed = Table(1, Record((TableRow<ICellSpace> row) => row["Investor"].Text())).Map(sheet);
+      IReadOnlyList<string> leaf = Table((TableRow<ICellSpace> row) => row["Investor"].Text()).Map(sheet);
 
       Assert.Equal(new[] { "Acme", "Beta" }, composed);
       Assert.Equal(leaf, composed);
@@ -587,7 +587,7 @@ namespace Unrect.Tests.Projections
       // The body reads one row by index, so it needs no labels to succeed and the wrapper is the only
       // variable. VerticalRepeat over the sheet gives the wrapper something with a real extent to be
       // transparent about.
-      var body = VerticalRepeat(Record((TableRow<ISheetCells> row) => row.Count));
+      var body = VerticalRepeat(Record((TableRow<ICellSpace> row) => row.Count));
 
       var wrapped = Observations.Observe(WithColumnLabels(map, body), sheet);
       var bare = Observations.Observe(body, sheet);
@@ -603,7 +603,7 @@ namespace Unrect.Tests.Projections
 
       // A body that fails, so its path is observable. Wrapped and bare must reach the same path — the
       // transparent wrapper contributes nothing to it.
-      var body = VerticalRepeat(Record((TableRow<ISheetCells> row) => row["Amount"].Decimal()));
+      var body = VerticalRepeat(Record((TableRow<ICellSpace> row) => row["Amount"].Decimal()));
 
       var wrapped = Assert.Throws<ProjectionException>(() => WithColumnLabels(map, body).Map(sheet));
       var bare = Assert.Throws<ProjectionException>(() => body.Map(sheet));
@@ -620,7 +620,7 @@ namespace Unrect.Tests.Projections
     {
       var sheet = KindMismatch();
       var map = LabelMap.Of(("Amount", 1));
-      var body = VerticalRepeat(Record((TableRow<ISheetCells> row) => row["Amount"].Decimal()).AsScaffolding()).AsScaffolding();
+      var body = VerticalRepeat(Record((TableRow<ICellSpace> row) => row["Amount"].Decimal()).AsScaffolding()).AsScaffolding();
 
       var failure = Assert.Throws<ProjectionException>(
         () => WithColumnLabels(map, body).AsUnit("Table").Map(sheet));
@@ -666,7 +666,7 @@ namespace Unrect.Tests.Projections
 
       var map = LabelMap.Of(("Investor", 0), ("Amount", 1));
 
-      IReadOnlyList<int> widths = WithColumnLabels(map, VerticalRepeat(Record((TableRow<ISheetCells> row) => row.Count))).Map(sheet);
+      IReadOnlyList<int> widths = WithColumnLabels(map, VerticalRepeat(Record((TableRow<ICellSpace> row) => row.Count))).Map(sheet);
 
       Assert.All(widths, width => Assert.Equal(2, width));
     }
@@ -679,7 +679,7 @@ namespace Unrect.Tests.Projections
       var sheet = Flat();
       var map = LabelMap.Of(("Investor", 0), ("Amount", 1));
 
-      IReadOnlyList<int> widths = WithColumnLabels(map, VerticalRepeat(Record((TableRow<ISheetCells> row) => row.Count))).Map(sheet);
+      IReadOnlyList<int> widths = WithColumnLabels(map, VerticalRepeat(Record((TableRow<ICellSpace> row) => row.Count))).Map(sheet);
 
       Assert.All(widths, width => Assert.Equal(2, width));
     }
@@ -694,7 +694,7 @@ namespace Unrect.Tests.Projections
       var sheet = Flat();
 
       LabelMap fromPrimitive = ColumnLabels(1).Map(sheet);
-      var fromTable = Table((TableView<ISheetCells> view) => view).Map(sheet);
+      var fromTable = Table((TableView<ICellSpace> view) => view).Map(sheet);
 
       Assert.Equal(fromTable.ColumnNames, fromPrimitive.Labels);
 
@@ -746,20 +746,20 @@ namespace Unrect.Tests.Projections
 
     // The built-in Table's own map, captured through the bind rung: eachRow is handed the table's
     // LabelMap, and a record that reads only by index lets the Map complete so the capture survives.
-    private static LabelMap ATablesOwnMap(ISheetCells sheet)
+    private static LabelMap ATablesOwnMap(ICellSpace sheet)
     {
       LabelMap captured = null!;
 
       Table(1, captions =>
       {
         captured = captions;
-        return Record((TableRow<ISheetCells> row) => row.Index);
+        return Record((TableRow<ICellSpace> row) => row.Index);
       }).Map(sheet);
 
       return captured;
     }
 
-    private static void SameCitation(ISheetCells sheet, string caption)
+    private static void SameCitation(ICellSpace sheet, string caption)
     {
       LabelMap fromPrimitive = ColumnLabels(1).Map(sheet);
       LabelMap fromTable = ATablesOwnMap(sheet);
@@ -810,7 +810,7 @@ namespace Unrect.Tests.Projections
       HeaderBandCitation(ambiguous, caption: "Amount", expected: new Size(3, 1), fullHeight: 5);
     }
 
-    private static void HeaderBandCitation(ISheetCells sheet, string caption, Size expected, int fullHeight)
+    private static void HeaderBandCitation(ICellSpace sheet, string caption, Size expected, int fullHeight)
     {
       LabelMap fromPrimitive = ColumnLabels(1).Map(sheet);
       LabelMap fromTable = ATablesOwnMap(sheet);
@@ -860,7 +860,7 @@ namespace Unrect.Tests.Projections
       var map = LabelMap.Of(("Investor", 0), ("Amount", 1));
 
       var standalone = Assert.Throws<ProjectionException>(
-        () => WithColumnLabels(map, VerticalRepeat(Record((TableRow<ISheetCells> row) => row["Amount"].Decimal()))).Map(sheet));
+        () => WithColumnLabels(map, VerticalRepeat(Record((TableRow<ICellSpace> row) => row["Amount"].Decimal()))).Map(sheet));
 
       Assert.Equal("expected Number at B1, found Text", Problem(standalone));
     }
@@ -926,7 +926,7 @@ namespace Unrect.Tests.Projections
         { "c" },
       });
 
-      IReadOnlyList<int> indices = VerticalRepeat(Record((TableRow<ISheetCells> row) => row.Index)).Map(sheet);
+      IReadOnlyList<int> indices = VerticalRepeat(Record((TableRow<ICellSpace> row) => row.Index)).Map(sheet);
 
       Assert.Equal(new[] { 0, 1, 2 }, indices);
     }
@@ -950,7 +950,7 @@ namespace Unrect.Tests.Projections
         { "d" },
       });
 
-      var block = TableFromPrimitives(1, (TableRow<ISheetCells> row) => row.Index);
+      var block = TableFromPrimitives(1, (TableRow<ICellSpace> row) => row.Index);
       IReadOnlyList<IReadOnlyList<int>> blocks = VerticalRepeat(block, separatedBy: BlankRows()).Map(sheet);
 
       Assert.Equal(new[] { new[] { 0, 1 }, new[] { 0, 1 } }, blocks.Select(b => b.ToArray()));
@@ -970,7 +970,7 @@ namespace Unrect.Tests.Projections
         { "oops" },
       });
 
-      var record = Record((TableRow<ISheetCells> row) => row[0].Decimal());
+      var record = Record((TableRow<ICellSpace> row) => row[0].Decimal());
 
       var failure = Assert.Throws<ProjectionException>(
         () => VerticalRepeat(record).Map(sheet));
@@ -991,16 +991,16 @@ namespace Unrect.Tests.Projections
     private const string EmptyExtentProblem = "a header row was declared but the table's extent is empty";
 
     /// <summary>An all-blank sheet: a real extent to place onto, with no content row to head it.</summary>
-    private static ISheetCells AllBlank() => Mixed(new object?[,] { { null, null }, { null, null } });
+    private static ICellSpace AllBlank() => Mixed(new object?[,] { { null, null }, { null, null } });
 
     [Fact]
     public void TheComposedRungCitesAnEmptyExtentInTheLeafRungsOwnSentence()
     {
       var composed = Assert.Throws<ProjectionException>(
-        () => Table(1, Record((TableRow<ISheetCells> row) => row.Index)).Map(AllBlank()));
+        () => Table(1, Record((TableRow<ICellSpace> row) => row.Index)).Map(AllBlank()));
 
       // The TableView leaf rung over the same sheet — the parity partner, not a copied string.
-      var leaf = Assert.Throws<ProjectionException>(() => Table((TableView<ISheetCells> view) => view.RowCount).Map(AllBlank()));
+      var leaf = Assert.Throws<ProjectionException>(() => Table((TableView<ICellSpace> view) => view.RowCount).Map(AllBlank()));
 
       Assert.Equal(EmptyExtentProblem, Problem(composed));
       Assert.Equal(Problem(leaf), Problem(composed));
@@ -1023,7 +1023,7 @@ namespace Unrect.Tests.Projections
     {
       // The other half of the regression: a raw OutOfBoundsException escaped .Optional(), so the
       // absence of a table read as a broken file. The guarded failure is absorbed and reads as null.
-      IReadOnlyList<int>? absent = Table(1, Record((TableRow<ISheetCells> row) => row.Index)).Optional().Map(AllBlank());
+      IReadOnlyList<int>? absent = Table(1, Record((TableRow<ICellSpace> row) => row.Index)).Optional().Map(AllBlank());
 
       Assert.Null(absent);
     }
@@ -1041,7 +1041,7 @@ namespace Unrect.Tests.Projections
 
     // --- Machinery ----------------------------------------------------------------------------------
 
-    private static void SameReading<T>(IProjectionDefinition<ISheetCells, T> bespoke, IProjectionDefinition<ISheetCells, T> primitives, ISheetCells sheet)
+    private static void SameReading<T>(IProjectionDefinition<ICellSpace, T> bespoke, IProjectionDefinition<ICellSpace, T> primitives, ICellSpace sheet)
     {
       var expected = Observations.Observe(bespoke, sheet);
       var actual = Observations.Observe(primitives, sheet);
@@ -1056,7 +1056,7 @@ namespace Unrect.Tests.Projections
     private static CountingSpace _gapACounter = null!;
     private static int _gapAAtFirstRecord = -1;
 
-    private static int Instrumented(TableRow<ISheetCells> row)
+    private static int Instrumented(TableRow<ICellSpace> row)
     {
       if (_gapAAtFirstRecord < 0)
         _gapAAtFirstRecord = _gapACounter.RowsTouched;
@@ -1069,7 +1069,7 @@ namespace Unrect.Tests.Projections
     /// can be measured by the same harness. It reads the band it was handed, which is what a record
     /// that measured itself could not do.
     /// </summary>
-    private static IProjectionDefinition<ISheetCells, int> InstrumentedBand() => Range(WholeExtent(), block =>
+    private static IProjectionDefinition<ICellSpace, int> InstrumentedBand() => Range(WholeExtent(), block =>
     {
       if (_gapAAtFirstRecord < 0)
         _gapAAtFirstRecord = _gapACounter.RowsTouched;
@@ -1077,7 +1077,7 @@ namespace Unrect.Tests.Projections
       return block.Height;
     });
 
-    private static (int AtFirstRecord, int Total) RowsTouchedAtFirstRecord(IProjectionDefinition<ISheetCells, IReadOnlyList<int>> table)
+    private static (int AtFirstRecord, int Total) RowsTouchedAtFirstRecord(IProjectionDefinition<ICellSpace, IReadOnlyList<int>> table)
     {
       _gapACounter = new CountingSpace(Trailing());
       _gapAAtFirstRecord = -1;

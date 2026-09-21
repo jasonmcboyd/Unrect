@@ -6,8 +6,8 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -45,7 +45,7 @@ namespace Unrect.Tests.Projections
     /// A two-by-two sheet whose B2 is text. Every case below reads B2 as a decimal, so one cell and
     /// one sentence serve the whole file and the only thing that varies is which lambda asked.
     /// </summary>
-    private static ISheetCells Sheet() => Mixed(new object?[,]
+    private static ICellSpace Sheet() => Mixed(new object?[,]
     {
       { "Client", "Amount" },
       { "Acme", "oops" },
@@ -55,7 +55,7 @@ namespace Unrect.Tests.Projections
     /// A labelled card: two columns, one row per field, with the Amount field's value at B2 — the
     /// same cell as the sheet above, so the sentence is the same one.
     /// </summary>
-    private static ISheetCells Card() => Mixed(new object?[,]
+    private static ICellSpace Card() => Mixed(new object?[,]
     {
       { "Client", "Acme" },
       { "Amount", "oops" },
@@ -70,7 +70,7 @@ namespace Unrect.Tests.Projections
     /// Written as a switch rather than as inline theory data so each case can say what it is.
     /// </para>
     /// </summary>
-    private static (IProjectionDefinition<ISheetCells, object?> Declaration, string Path, ISheetCells Sheet) Site(string site) => site switch
+    private static (IProjectionDefinition<ICellSpace, object?> Declaration, string Path, ICellSpace Sheet) Site(string site) => site switch
     {
       // SelectDefinition — a point handed to Select, which is how every reading the vocabulary does not
       // name is spelled.
@@ -89,18 +89,18 @@ namespace Unrect.Tests.Projections
 
       // RecordDefinition — one labelled row, resolved through the ambient columns.
       "Record" => (
-        WithColumnLabels(LabelMap.Of(("Client", 0), ("Amount", 1)), Down(1).Of(Record((TableRow<ISheetCells> row) => (object?)row["Amount"].Decimal()))),
+        WithColumnLabels(LabelMap.Of(("Client", 0), ("Amount", 1)), Down(1).Of(Record((TableRow<ICellSpace> row) => (object?)row["Amount"].Decimal()))),
         "Record",
         Sheet()),
 
       // TableViewDefinition, the row-lambda rung...
       "Table(row)" => (
-        Table((TableRow<ISheetCells> row) => (object?)row["Amount"].Decimal()).Select(rows => (object?)rows).Named("rows"),
+        Table((TableRow<ICellSpace> row) => (object?)row["Amount"].Decimal()).Select(rows => (object?)rows).Named("rows"),
         "Table",
         Sheet()),
 
       // ...and the view-lambda rung, which reads the whole table at once.
-      "Table(view)" => (Table((TableView<ISheetCells> table) => (object?)table.Rows[0]["Amount"].Decimal()), "Table", Sheet()),
+      "Table(view)" => (Table((TableView<ICellSpace> table) => (object?)table.Rows[0]["Amount"].Decimal()), "Table", Sheet()),
 
       // Fields' consumer: the card yields points, and reading one is the consumer's own business.
       // Its sheet is a labelled CARD — two columns by one row per field — rather than a table, and
@@ -205,7 +205,7 @@ namespace Unrect.Tests.Projections
       // exception the engine cannot have a sentence for, so it says what it was and hands the
       // original along.
       var failure = Assert.Throws<ProjectionException>(
-        () => Point().Select<ISheetCells, Point<ISheetCells>, int>(_ => throw new InvalidOperationException("boom")).Map(Sheet()));
+        () => Point().Select<ICellSpace, Point<ICellSpace>, int>(_ => throw new InvalidOperationException("boom")).Map(Sheet()));
 
       Assert.Contains("the projection threw InvalidOperationException: boom", failure.Message);
       Assert.IsType<InvalidOperationException>(failure.InnerException);
@@ -223,8 +223,8 @@ namespace Unrect.Tests.Projections
       // expect to find on the other side: every other fault is plainly a bug or a broken file
       // (NullReference, IndexOutOfRange, IO, ObjectDisposed), and a failed cast can look like bad
       // data if you squint at it.
-      IProjectionDefinition<ISheetCells, int> miscast =
-        Point().Select<ISheetCells, Point<ISheetCells>, int>(_ => throw new InvalidCastException("not that type"));
+      IProjectionDefinition<ICellSpace, int> miscast =
+        Point().Select<ICellSpace, Point<ICellSpace>, int>(_ => throw new InvalidCastException("not that type"));
 
       Assert.True(Assert.Throws<ProjectionException>(() => miscast.Map(Sheet())).IsFault);
 

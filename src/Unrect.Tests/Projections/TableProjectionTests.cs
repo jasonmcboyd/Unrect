@@ -7,8 +7,8 @@ using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -20,7 +20,7 @@ namespace Unrect.Tests.Projections
   /// </summary>
   public class TableProjectionTests
   {
-    private static ISheetCells SimpleTable() => Mixed(new object?[,]
+    private static ICellSpace SimpleTable() => Mixed(new object?[,]
     {
       { "Investor", "Amount" },
       { "Acme", 10 },
@@ -100,7 +100,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void Table_SplitsTheHeaderFromTheBody()
     {
-      var view = Table((TableView<ISheetCells> t) => t).Map(SimpleTable());
+      var view = Table((TableView<ICellSpace> t) => t).Map(SimpleTable());
 
       Assert.True(view.HasHeader);
       Assert.Equal(2, view.ColumnCount);
@@ -112,7 +112,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void TableView_ExposesTheWholeExtentIncludingTheHeader()
     {
-      var view = Table((TableView<ISheetCells> t) => t).Map(SimpleTable());
+      var view = Table((TableView<ICellSpace> t) => t).Map(SimpleTable());
 
       Assert.Equal(2, view.Space.Area.Size.Width);
       Assert.Equal(4, view.Space.Area.Size.Height);
@@ -132,7 +132,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void Table_WithoutAHeader_TreatsEveryRowAsBody()
     {
-      var view = Table(0, (TableView<ISheetCells> t) => t).Map(SimpleTable());
+      var view = Table(0, (TableView<ICellSpace> t) => t).Map(SimpleTable());
 
       Assert.False(view.HasHeader);
       Assert.Equal(4, view.RowCount);
@@ -144,8 +144,8 @@ namespace Unrect.Tests.Projections
     public void ColumnNames_HasOneEntryPerHeaderCell()
     {
       // ColumnNames mirrors the header strip, so it is empty exactly when there is no header.
-      var withHeader = Table((TableView<ISheetCells> t) => t).Map(SimpleTable());
-      var withoutHeader = Table(0, (TableView<ISheetCells> t) => t).Map(SimpleTable());
+      var withHeader = Table((TableView<ICellSpace> t) => t).Map(SimpleTable());
+      var withoutHeader = Table(0, (TableView<ICellSpace> t) => t).Map(SimpleTable());
 
       Assert.Equal(withHeader.Header.Count, withHeader.ColumnNames.Count);
       Assert.Equal(withoutHeader.Header.Count, withoutHeader.ColumnNames.Count);
@@ -172,7 +172,7 @@ namespace Unrect.Tests.Projections
     {
       var space = Mixed(new object?[,] { { "Investor", "Amount" } });
 
-      var view = Table((TableView<ISheetCells> t) => t).Map(space);
+      var view = Table((TableView<ICellSpace> t) => t).Map(space);
 
       Assert.True(view.HasHeader);
       Assert.Equal(0, view.RowCount);
@@ -273,7 +273,7 @@ namespace Unrect.Tests.Projections
         { "Acme", 10 },
       });
 
-      var view = Table((TableView<ISheetCells> t) => t).Map(space);
+      var view = Table((TableView<ICellSpace> t) => t).Map(space);
 
       Assert.Equal(2, view.ColumnCount);
       Assert.Equal(new[] { "Investor", "" }, view.ColumnNames);
@@ -442,7 +442,7 @@ namespace Unrect.Tests.Projections
       });
 
       var failure = Assert.Throws<ProjectionException>(
-        () => Table(1, Right(1).Of(Record((TableRow<ISheetCells> row) => row.Has("Investor") ? 1 : 0))).Map(space));
+        () => Table(1, Right(1).Of(Record((TableRow<ICellSpace> row) => row.Has("Investor") ? 1 : 0))).Map(space));
 
       Assert.Contains("column 'Investor' is not in this region", failure.Message);
       Assert.False(failure.IsFault);
@@ -497,8 +497,8 @@ namespace Unrect.Tests.Projections
       // Cast in both, because Table<T> carries a binding overload and two lambda rungs, and an
       // untyped null is convertible to all three delegate types. A lambda still resolves without
       // help unless its body touches nothing distinctive — see the note at the top of this file.
-      Assert.Throws<ArgumentNullException>(() => Table((Func<TableView<ISheetCells>, int>)null!));
-      Assert.Throws<ArgumentNullException>(() => Table((Func<TableRow<ISheetCells>, int>)null!));
+      Assert.Throws<ArgumentNullException>(() => Table((Func<TableView<ICellSpace>, int>)null!));
+      Assert.Throws<ArgumentNullException>(() => Table((Func<TableRow<ICellSpace>, int>)null!));
     }
   }
 }

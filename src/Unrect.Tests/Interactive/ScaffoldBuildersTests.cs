@@ -6,9 +6,9 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Interactive.ScaffoldBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Interactive.ScaffoldBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 
 namespace Unrect.Tests.Interactive
 {
@@ -25,7 +25,7 @@ namespace Unrect.Tests.Interactive
     private static string Lines(params string[] lines) => string.Join(Environment.NewLine, lines);
 
     /// <summary>A title, a gap, a table, a gap, and a second table of a different shape.</summary>
-    private static ISheetCells Report()
+    private static ICellSpace Report()
       => SheetGrid.Of(new object?[,]
       {
         { "Fund Report", null, null },

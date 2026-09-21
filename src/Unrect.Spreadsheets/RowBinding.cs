@@ -40,7 +40,7 @@ namespace Unrect.Spreadsheets
     /// another would refuse the member it had just accepted.
     /// </param>
     public static RowBinding<T> Create<TSpace>(TableBinding<TSpace, T>? binding, Type space)
-      where TSpace : class, ISheetCells
+      where TSpace : class, ICellSpace
     {
       var readings = new Dictionary<string, Func<object, object?>>(StringComparer.Ordinal);
 

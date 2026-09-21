@@ -8,7 +8,7 @@ using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -305,6 +305,6 @@ namespace Unrect.Tests.Projections
     /// Runs a projection purely to get hold of the view it was handed, so the view can be exercised
     /// outside a projection — where its own exceptions are not wrapped by the engine.
     /// </summary>
-    private static TView Capture<TView>(IProjectionDefinition<ISheetCells, TView> projection, ISheetCells space) => projection.Map(space);
+    private static TView Capture<TView>(IProjectionDefinition<ICellSpace, TView> projection, ICellSpace space) => projection.Map(space);
   }
 }

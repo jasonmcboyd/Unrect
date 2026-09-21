@@ -8,8 +8,8 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Spreadsheets.SpreadsheetProjections;
 using static Unrect.Tests.ProjectionTestSpaces;
 
@@ -93,7 +93,7 @@ namespace Unrect.Tests.Projections
       return values;
     }
 
-    private static ISheetCells PlainAllocations() => SheetGrid.Of(AllocationValues());
+    private static ICellSpace PlainAllocations() => SheetGrid.Of(AllocationValues());
 
     private static ISpreadsheetSpace CapableAllocations()
     {
@@ -110,7 +110,7 @@ namespace Unrect.Tests.Projections
     /// The declaration under test, hoisted so both tests read the same one. Every character of it
     /// predates the campaign, and its type is what it always was.
     /// </summary>
-    private static IProjectionDefinition<ISheetCells, Report> AllocationReport()
+    private static IProjectionDefinition<ICellSpace, Report> AllocationReport()
     {
       var title = Text();
       var rows = Table<Allocation>();
@@ -124,9 +124,9 @@ namespace Unrect.Tests.Projections
     public void APlainDeclarationIsStillSpelledWithNothingAboutSpacesInIt()
     {
       // The local's annotation is the assertion: a declaration that reads nothing exotic is an
-      // IProjectionDefinition<ISheetCells, T>, which is what every hoisted helper in the corpus and every test in this
+      // IProjectionDefinition<ICellSpace, T>, which is what every hoisted helper in the corpus and every test in this
       // suite says. If the campaign had cost this, it would have cost everything.
-      IProjectionDefinition<ISheetCells, Report> report = AllocationReport();
+      IProjectionDefinition<ICellSpace, Report> report = AllocationReport();
 
       var read = report.Map(PlainAllocations());
 
@@ -179,7 +179,7 @@ namespace Unrect.Tests.Projections
       // The annotated local is the assertion; that it reads its sheet is the proof the type is not
       // the only thing that survived. (The demanding twin of this very chain is in
       // ProjectionModelAcceptanceTests.EntryC.Spreadsheets.cs, because its space is not this file's.)
-      IProjectionDefinition<ISheetCells, decimal> plain = On(RowContaining("Total")).Right(2).Of(Decimal()
+      IProjectionDefinition<ICellSpace, decimal> plain = On(RowContaining("Total")).Right(2).Of(Decimal()
         .Named("total"));
 
       Assert.Equal(1.00m, plain.Map(PlainAllocations()));
@@ -210,7 +210,7 @@ namespace Unrect.Tests.Projections
       // The reason every refusal in the ledger is still a refusal, said the way it is now true: a
       // declaration is INVARIANT in its space, so neither conversion exists and "applied to the
       // wrong backend" is a compile error in both directions.
-      var plain = typeof(IProjectionDefinition<ISheetCells, Report>);
+      var plain = typeof(IProjectionDefinition<ICellSpace, Report>);
       var demanding = typeof(IProjectionDefinition<ISpreadsheetSpace, Report>);
 
       Assert.False(demanding.IsAssignableFrom(plain), "a declaration converts to no other space");
@@ -224,7 +224,7 @@ namespace Unrect.Tests.Projections
     }
 
     /// <summary>A hoisted plain helper: exactly what it was, which is the common case and the point.</summary>
-    private static IProjectionDefinition<ISheetCells, Allocation> AllocationRow()
+    private static IProjectionDefinition<ICellSpace, Allocation> AllocationRow()
       => HorizontalFlow(h => new Allocation(
         Account: h.Next(Text()),
         Symbol: h.Next(Text()),
@@ -239,7 +239,7 @@ namespace Unrect.Tests.Projections
 
     /// <summary>A helper generic in whatever space its caller names — the shape that replaced variance.</summary>
     private static IProjectionDefinition<TSpace, IReadOnlyList<T>> Sections<TSpace, T>(IProjectionDefinition<TSpace, T> item)
-      where TSpace : class, ISheetCells
+      where TSpace : class, ICellSpace
       => ProjectionBuilders<TSpace>.VerticalRepeat(item, separatedBy: BlankRows());
 
     [Fact]
@@ -248,7 +248,7 @@ namespace Unrect.Tests.Projections
       // Scenario 7: what tooltips show over a library of hoisted declarations. The plain one names
       // the plain space; the demanding one names a space that carries formulas, and that IS the
       // requirement; and a generic helper composes either, keeping whatever it was handed.
-      IProjectionDefinition<ISheetCells, IReadOnlyList<Allocation>> plainSections = Sections(AllocationRow());
+      IProjectionDefinition<ICellSpace, IReadOnlyList<Allocation>> plainSections = Sections(AllocationRow());
       IProjectionDefinition<ISpreadsheetSpace, IReadOnlyList<SourcedAllocation>> demandingSections = Sections(SourcedRow());
 
       // Both read the same capable sheet — the plain one because Map's argument converts, the
@@ -290,7 +290,7 @@ namespace Unrect.Tests.Projections
     /// r7   TOTAL             2231.25
     /// </code>
     /// </summary>
-    private static ISheetCells BuyingPower()
+    private static ICellSpace BuyingPower()
     {
       var cells = new object?[8, 11];
 
@@ -322,7 +322,7 @@ namespace Unrect.Tests.Projections
     /// overlay saying which column each field is, <c>OrBlank</c> saying which of them a record may
     /// omit, and the table's own extent discovered from the content below the caption row.
     /// </summary>
-    private static IProjectionDefinition<ISheetCells, BuyingPowerAllocation> BuyingPowerParser()
+    private static IProjectionDefinition<ICellSpace, BuyingPowerAllocation> BuyingPowerParser()
     {
       var allocation = Overlay(o => new BuyingPowerRow(
         FundCode: o.Next(Right(1).Of(Text())),
@@ -426,9 +426,9 @@ namespace Unrect.Tests.Projections
     // spelling never had, plus the two facts that must agree between the spellings (the block
     // counts, and full consumption of the sheet).
 
-    private static ISheetCells Irr() => SpreadsheetSpace.Create(TestData("investor-irr.xlsx"), "IRR");
+    private static ICellSpace Irr() => SpreadsheetSpace.Create(TestData("investor-irr.xlsx"), "IRR");
 
-    private static IProjectionDefinition<ISheetCells, IrrReport> IrrReportDeclaration()
+    private static IProjectionDefinition<ICellSpace, IrrReport> IrrReportDeclaration()
     {
       // Not one caption is written down: "Investor Name" binds to InvestorName and "IRR" to Irr,
       // through the comparer, and each member's own type chooses the kind and the accessor.

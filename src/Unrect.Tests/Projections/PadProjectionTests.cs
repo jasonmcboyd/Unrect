@@ -5,7 +5,7 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISheetCells>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -19,7 +19,7 @@ namespace Unrect.Tests.Projections
   public class PadProjectionTests
   {
     // Values are (row * 10 + column + 1): 1 2 3 4 / 11 12 13 14 / 21 22 23 24 (/ 31 ... / 41 ...).
-    private static IProjectionDefinition<ISheetCells, (int Width, int Height, int TopLeft)> Extent()
+    private static IProjectionDefinition<ICellSpace, (int Width, int Height, int TopLeft)> Extent()
       => Range(b => (b.Width, b.Height, b[0, 0].Integer()));
 
     // --- Inset arithmetic ------------------------------------------------------------------------
@@ -206,7 +206,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void Padded_RejectsANullProjection()
     {
-      Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjectionDefinition<ISheetCells, int>)null!).Padded(1)).ParamName);
+      Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjectionDefinition<ICellSpace, int>)null!).Padded(1)).ParamName);
     }
 
     // --- Error locations -------------------------------------------------------------------------

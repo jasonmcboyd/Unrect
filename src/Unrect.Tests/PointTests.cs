@@ -20,7 +20,7 @@ namespace Unrect.Tests
   public class PointTests
   {
     /// <summary>One cell of each kind worth telling apart: a label, a blank, a number, an error.</summary>
-    private static ISheetCells Kinds() => SheetGrid.Of(
+    private static ICellSpace Kinds() => SheetGrid.Of(
       new object?[,]
       {
         { "Total", null },
@@ -31,8 +31,8 @@ namespace Unrect.Tests
     /// The cell at <paramref name="column"/>, <paramref name="row"/>, minted by hand: the locator
     /// that will mint them does not exist yet, and these laws are the point's own either way.
     /// </summary>
-    private static Point<ISheetCells> At(ISheetCells space, int column, int row)
-      => new Point<ISheetCells>(space, column, row);
+    private static Point<ICellSpace> At(ICellSpace space, int column, int row)
+      => new Point<ICellSpace>(space, column, row);
 
     [Fact]
     public void APointNamesACellOfOneSpace()
@@ -90,11 +90,11 @@ namespace Unrect.Tests
     {
       // default(Point<T>) is unavoidable for a struct, so it is stated rather than guarded against:
       // it compares, hashes and prints like any other point, and has nothing to read.
-      Point<ISheetCells> nowhere = default;
+      Point<ICellSpace> nowhere = default;
 
       Assert.Equal("(0,0)", nowhere.ToString());
-      Assert.Equal(nowhere, default(Point<ISheetCells>));
-      Assert.Equal(nowhere.GetHashCode(), default(Point<ISheetCells>).GetHashCode());
+      Assert.Equal(nowhere, default(Point<ICellSpace>));
+      Assert.Equal(nowhere.GetHashCode(), default(Point<ICellSpace>).GetHashCode());
       Assert.Throws<NullReferenceException>(() => { _ = nowhere.IsBlank; });
     }
 
