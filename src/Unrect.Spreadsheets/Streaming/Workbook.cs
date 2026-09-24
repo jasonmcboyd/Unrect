@@ -24,8 +24,8 @@ namespace Unrect.Spreadsheets
     private bool _catalogueComplete;
     private bool _disposed;
 
-    private static readonly Func<Cell, bool> WhitespaceIsBlank =
-      value => value.TryGetString() is string text && string.IsNullOrWhiteSpace(text);
+    private static readonly Func<CellValue, bool> WhitespaceIsBlank =
+      value => value.TryGetText(out var text) && string.IsNullOrWhiteSpace(text);
 
     private Workbook(string path, IRowSource source, WorkbookOptions options)
     {

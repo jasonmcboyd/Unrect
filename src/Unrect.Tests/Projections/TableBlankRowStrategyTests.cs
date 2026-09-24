@@ -18,7 +18,7 @@ namespace Unrect.Tests.Projections
   /// The <c>onBlank</c> blank-row strategy on the leaf <c>Table</c> — the five presets and the
   /// <c>blankRecord</c> escape hatch.
   /// <para>
-  /// A fully-blank body row (every cell <see cref="Cell.IsBlank"/>) is treated by policy:
+  /// A fully-blank body row (every cell <see cref="CellKind.Blank"/>) is treated by policy:
   /// <c>Stop</c> is self-bounding and ends the block at the blank (today's behaviour, unchanged);
   /// <c>Skip</c> omits the record and runs to a declared bound or the enclosing edge; <c>Fault</c>
   /// is a terminal error no tolerance boundary may absorb; <c>Tolerate</c> is <c>Skip</c> plus a

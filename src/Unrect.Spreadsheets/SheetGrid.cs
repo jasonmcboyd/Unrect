@@ -5,7 +5,7 @@ using Unrect.Core;
 namespace Unrect.Spreadsheets
 {
   /// <summary>
-  /// A rectangular array of <see cref="Cell"/>s viewed as a sheet: the eager door's grid, and what
+  /// A rectangular array of <see cref="CellValue"/>s viewed as a sheet: the eager door's grid, and what
   /// every adapter ends up holding. A backend reads its own format, produces one array of cells, and
   /// hands it here — so the indexing, the bounds checking and the kinded answers are written once
   /// and every adapter agrees on them.
@@ -22,9 +22,9 @@ namespace Unrect.Spreadsheets
   /// </summary>
   public sealed class SheetGrid : CellSpaceBase
   {
-    private readonly Cell[,] _cells;
+    private readonly CellValue[,] _cells;
 
-    private SheetGrid(Cell[,] cells)
+    private SheetGrid(CellValue[,] cells)
     {
       _cells = cells;
       Area = new Area(cells.GetLength(1), cells.GetLength(0));
@@ -40,14 +40,14 @@ namespace Unrect.Spreadsheets
     /// </summary>
     /// <param name="cells">The cells, indexed <c>[row, column]</c>.</param>
     /// <exception cref="ArgumentNullException"><paramref name="cells"/> is null.</exception>
-    public static SheetGrid Of(Cell[,] cells)
+    public static SheetGrid Of(CellValue[,] cells)
       => new SheetGrid(cells ?? throw new ArgumentNullException(nameof(cells)));
 
     /// <summary>
     /// Heterogeneous values, each adapting to the kind its CLR type implies — the array-adapter
     /// equivalent of a real sheet, and the reason a fixture can be written as a literal.
     /// <para>
-    /// Null and the empty string are blank; a <see cref="Cell"/> passes straight through, which is
+    /// Null and the empty string are blank; a <see cref="CellValue"/> passes straight through, which is
     /// how a grid carries an error cell — the one kind with no CLR literal to write it as. A CLR
     /// type with no kind here is an error where the grid is built, not a cell that reads as
     /// something surprising.
@@ -61,7 +61,7 @@ namespace Unrect.Spreadsheets
       if (values is null)
         throw new ArgumentNullException(nameof(values));
 
-      var cells = new Cell[values.GetLength(0), values.GetLength(1)];
+      var cells = new CellValue[values.GetLength(0), values.GetLength(1)];
 
       for (var row = 0; row < values.GetLength(0); row++)
         for (var column = 0; column < values.GetLength(1); column++)
@@ -77,7 +77,7 @@ namespace Unrect.Spreadsheets
     /// <param name="column">The 0-based column.</param>
     /// <param name="row">The 0-based row.</param>
     /// <exception cref="OutOfBoundsException">The coordinate lies outside <see cref="Area"/>.</exception>
-    internal Cell At(int column, int row)
+    internal CellValue At(int column, int row)
     {
       // OutOfBoundsException and not IndexOutOfRangeException: running off the edge of a space is a
       // statement about the data that a declaration may recover from, where an index bug is on the
@@ -88,20 +88,20 @@ namespace Unrect.Spreadsheets
       return _cells[row, column];
     }
 
-    private protected override Cell CellAt(int column, int row) => At(column, row);
+    private protected override CellValue CellAt(int column, int row) => At(column, row);
 
-    private static Cell Adapt(object? value)
+    private static CellValue Adapt(object? value)
       => value switch
       {
-        null => Cell.Blank,
-        Cell cell => cell,
-        string text => text.Length == 0 ? Cell.Blank : Cell.Of(text),
-        int number => Cell.Of(number),
-        long number => Cell.Of(number),
-        double number => Cell.Of(number),
-        decimal number => Cell.Of(number),
-        DateTime moment => Cell.Of(moment),
-        bool flag => Cell.Of(flag),
+        null => CellValue.Blank,
+        CellValue cell => cell,
+        string text => text.Length == 0 ? CellValue.Blank : CellValue.Of(text),
+        int number => CellValue.Of(number),
+        long number => CellValue.Of(number),
+        double number => CellValue.Of(number),
+        decimal number => CellValue.Of((double)number),
+        DateTime moment => CellValue.Of(moment),
+        bool flag => CellValue.Of(flag),
         _ => throw new ArgumentException($"No cell kind for {value.GetType()}.", nameof(value)),
       };
   }

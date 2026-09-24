@@ -34,12 +34,10 @@ namespace Unrect.Spreadsheets
     /// </summary>
     /// <param name="column">The 0-based column.</param>
     /// <param name="row">The 0-based row.</param>
-    private protected abstract Cell CellAt(int column, int row);
+    private protected abstract CellValue CellAt(int column, int row);
 
     /// <inheritdoc/>
-    public bool IsBlank(int column, int row) => CellAt(column, row).IsBlank;
-
-    /// <inheritdoc/>
+    public bool IsBlank(int column, int row) => CellAt(column, row).Kind == CellKind.Blank;
 
     /// <inheritdoc/>
     public string? AsText(int column, int row) => CellAt(column, row).AsText();
@@ -62,7 +60,7 @@ namespace Unrect.Spreadsheets
 
     /// <inheritdoc/>
     /// <remarks>
-    /// Read off <see cref="Cell.AsText"/> rather than off the cell's stored literal: a cell keeps
+    /// Read off <see cref="CellValue.AsText"/> rather than off the cell's stored literal: a cell keeps
     /// its literal only where it differs from the canonical spelling, so an error that arrived
     /// spelled exactly as Excel shows it holds none. Answering false there would make this false for
     /// two different reasons — "not an error" and "an error spelled the usual way" — and the

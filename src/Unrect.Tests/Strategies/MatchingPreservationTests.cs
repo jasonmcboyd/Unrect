@@ -56,7 +56,7 @@ namespace Unrect.Tests.Strategies
     /// to one family and forgotten in another.
     /// <para>
     /// It serves both axes: <see cref="ColumnsHolding"/> places the identical
-    /// <see cref="Cell"/> that <see cref="RowsHolding"/> does, transposed, so a needle
+    /// <see cref="CellValue"/> that <see cref="RowsHolding"/> does, transposed, so a needle
     /// grounded on one is grounded on the other.
     /// </para>
     /// </summary>
@@ -93,7 +93,7 @@ namespace Unrect.Tests.Strategies
         ANumber => 42,
         ATemporal => new DateTime(2026, 3, 4),
         ABoolean => true,
-        AnError => Cell.OfError(CellError.DivisionByZero),
+        AnError => CellValue.OfError(CellError.DivisionByZero),
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "No cell for that kind.")
       };
 

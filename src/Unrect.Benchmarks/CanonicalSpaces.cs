@@ -28,7 +28,7 @@ namespace Unrect.Benchmarks
   /// <para><b>Why fixtures are lazy per-property, not a static initializer.</b> BenchmarkDotNet
   /// runs each benchmark in its own process, so a class-wide static initializer would build every
   /// Mega fixture in every process to serve the one that process needs -- several hundred megabytes
-  /// of <see cref="Cell"/> for nothing. Each fixture caches itself on first touch, and each
+  /// of <see cref="CellValue"/> for nothing. Each fixture caches itself on first touch, and each
   /// benchmark class touches what it needs from a <c>[GlobalSetup]</c>, which BenchmarkDotNet
   /// excludes from measurement. The rule: <b>no benchmark may build a fixture inside a measured
   /// operation</b> -- construction is the subject of exactly one family (Values), where it is
@@ -155,24 +155,24 @@ namespace Unrect.Benchmarks
 
     // ----- Builders -----
 
-    private static Cell[,] DenseNumericCells(int rows)
+    private static CellValue[,] DenseNumericCells(int rows)
     {
-      var cells = new Cell[rows, Columns];
+      var cells = new CellValue[rows, Columns];
 
       for (int row = 0; row < rows; row++)
         for (int column = 0; column < Columns; column++)
-          cells[row, column] = Cell.Of(row * Columns + column);
+          cells[row, column] = CellValue.Of(row * Columns + column);
 
       return cells;
     }
 
-    private static Cell[,] DenseTextCells(int rows)
+    private static CellValue[,] DenseTextCells(int rows)
     {
-      var cells = new Cell[rows, Columns];
+      var cells = new CellValue[rows, Columns];
 
       for (int row = 0; row < rows; row++)
         for (int column = 0; column < Columns; column++)
-          cells[row, column] = Cell.Of(Label(row * Columns + column));
+          cells[row, column] = CellValue.Of(Label(row * Columns + column));
 
       return cells;
     }
@@ -187,9 +187,9 @@ namespace Unrect.Benchmarks
     /// cycle one column per row, so the blanks fall on a diagonal instead.
     /// </para>
     /// </summary>
-    private static Cell[,] DenseMixedCells(int rows)
+    private static CellValue[,] DenseMixedCells(int rows)
     {
-      var cells = new Cell[rows, Columns];
+      var cells = new CellValue[rows, Columns];
 
       for (int row = 0; row < rows; row++)
         for (int column = 0; column < Columns; column++)
@@ -209,82 +209,82 @@ namespace Unrect.Benchmarks
     /// it is labelled, and the amounts against it are sparse.
     /// </para>
     /// </summary>
-    private static Cell[,] SparseCells(int rows)
+    private static CellValue[,] SparseCells(int rows)
     {
-      var cells = new Cell[rows, Columns];
+      var cells = new CellValue[rows, Columns];
       var random = new Random(20260903);
 
       for (int row = 0; row < rows; row++)
       {
-        cells[row, 0] = Cell.Of(Label(row));
+        cells[row, 0] = CellValue.Of(Label(row));
 
         for (int column = 1; column < Columns; column++)
           cells[row, column] = random.NextDouble() < SparseDensity
-            ? Cell.Of(row * Columns + column)
-            : Cell.Blank;
+            ? CellValue.Of(row * Columns + column)
+            : CellValue.Blank;
       }
 
       return cells;
     }
 
-    private static Cell[,] LandmarkCells(int rows, int landmarkRow)
+    private static CellValue[,] LandmarkCells(int rows, int landmarkRow)
     {
       var cells = DenseNumericCells(rows);
 
       // The seek reads column 0 of every row until it matches, so only column 0 can carry the
       // landmark -- putting it anywhere else would make the "hit" fixtures scan to the end too.
       if (landmarkRow >= 0)
-        cells[landmarkRow, 0] = Cell.Of(Landmark);
+        cells[landmarkRow, 0] = CellValue.Of(Landmark);
 
       return cells;
     }
 
-    private static Cell[,] BlankLedCells(int rows, int blankRows)
+    private static CellValue[,] BlankLedCells(int rows, int blankRows)
     {
-      var cells = new Cell[rows, Columns];
+      var cells = new CellValue[rows, Columns];
 
       for (int row = 0; row < rows; row++)
         for (int column = 0; column < Columns; column++)
-          cells[row, column] = row < blankRows ? Cell.Blank : Cell.Of(row * Columns + column);
+          cells[row, column] = row < blankRows ? CellValue.Blank : CellValue.Of(row * Columns + column);
 
       return cells;
     }
 
-    private static Cell[,] BlockCells(int blocks, int blockRows)
+    private static CellValue[,] BlockCells(int blocks, int blockRows)
     {
       // Every block is blockRows tall and followed by one blank separator row.
-      var cells = new Cell[blocks * (blockRows + 1), Columns];
+      var cells = new CellValue[blocks * (blockRows + 1), Columns];
 
       for (int block = 0; block < blocks; block++)
         for (int row = 0; row < blockRows; row++)
           for (int column = 0; column < Columns; column++)
-            cells[block * (blockRows + 1) + row, column] = Cell.Of(block * blockRows + row + column);
+            cells[block * (blockRows + 1) + row, column] = CellValue.Of(block * blockRows + row + column);
 
 
       return cells;
     }
 
-    private static Cell[,] TabularCells(int rows)
+    private static CellValue[,] TabularCells(int rows)
     {
       // One header row, then rows that bind to SummaryRow: text, four decimals, a double. The
       // captions are what Table<T>() matches members against.
-      var cells = new Cell[rows + 1, 6];
+      var cells = new CellValue[rows + 1, 6];
 
-      cells[0, 0] = Cell.Of("Investor");
-      cells[0, 1] = Cell.Of("Contribution");
-      cells[0, 2] = Cell.Of("Distribution");
-      cells[0, 3] = Cell.Of("Fee");
-      cells[0, 4] = Cell.Of("End Balance");
-      cells[0, 5] = Cell.Of("Irr");
+      cells[0, 0] = CellValue.Of("Investor");
+      cells[0, 1] = CellValue.Of("Contribution");
+      cells[0, 2] = CellValue.Of("Distribution");
+      cells[0, 3] = CellValue.Of("Fee");
+      cells[0, 4] = CellValue.Of("End Balance");
+      cells[0, 5] = CellValue.Of("Irr");
 
       for (int row = 1; row <= rows; row++)
       {
-        cells[row, 0] = Cell.Of(Label(row));
-        cells[row, 1] = Cell.Of(1000m + row);
-        cells[row, 2] = Cell.Of(250m + row);
-        cells[row, 3] = Cell.Of(15m + row % 40);
-        cells[row, 4] = Cell.Of(800m + row);
-        cells[row, 5] = Cell.Of(0.05 + row % 100 / 1000.0);
+        cells[row, 0] = CellValue.Of(Label(row));
+        cells[row, 1] = CellValue.Of(1000 + row);
+        cells[row, 2] = CellValue.Of(250 + row);
+        cells[row, 3] = CellValue.Of(15 + row % 40);
+        cells[row, 4] = CellValue.Of(800 + row);
+        cells[row, 5] = CellValue.Of(0.05 + row % 100 / 1000.0);
       }
 
       return cells;
@@ -296,68 +296,68 @@ namespace Unrect.Benchmarks
     /// <c>examples/investor-irr.xlsx</c> -- gap sizes included, since the gaps are what the
     /// placement defaults and the <c>Until</c> bound actually resolve against.
     /// </summary>
-    private static Cell[,] DocumentCells(int investors)
+    private static CellValue[,] DocumentCells(int investors)
     {
       var series = investors * (1 + DocumentBlockRows + 1);   // header + rows + separator, per block
-      var cells = new Cell[4 + 1 + 1 + investors + 3 + 2 + series + 1 + 1 + series, 6];
+      var cells = new CellValue[4 + 1 + 1 + investors + 3 + 2 + series + 1 + 1 + series, 6];
       int row = 0;
 
-      cells[row++, 0] = Cell.Of("Investor IRR Report");
-      cells[row++, 0] = Cell.Of("Growth Fund II, LP");
-      cells[row++, 0] = Cell.Of(new DateTime(2026, 6, 30));
-      cells[row++, 0] = Cell.Of("RPT-00214");
+      cells[row++, 0] = CellValue.Of("Investor IRR Report");
+      cells[row++, 0] = CellValue.Of("Growth Fund II, LP");
+      cells[row++, 0] = CellValue.Of(new DateTime(2026, 6, 30));
+      cells[row++, 0] = CellValue.Of("RPT-00214");
       row++;                                                   // the gap the table's placement absorbs
 
-      cells[row, 0] = Cell.Of("Investors");
-      cells[row, 1] = Cell.Of("Contribution ITD");
-      cells[row, 2] = Cell.Of("Distribution ITD");
-      cells[row, 3] = Cell.Of("Management Fee ITD");
-      cells[row, 4] = Cell.Of("End Balance");
-      cells[row, 5] = Cell.Of("IRR");
+      cells[row, 0] = CellValue.Of("Investors");
+      cells[row, 1] = CellValue.Of("Contribution ITD");
+      cells[row, 2] = CellValue.Of("Distribution ITD");
+      cells[row, 3] = CellValue.Of("Management Fee ITD");
+      cells[row, 4] = CellValue.Of("End Balance");
+      cells[row, 5] = CellValue.Of("IRR");
       row++;
 
       for (int investor = 0; investor < investors; investor++)
       {
-        cells[row, 0] = Cell.Of(Investor(investor));
-        cells[row, 1] = Cell.Of(500000m + investor);
-        cells[row, 2] = Cell.Of(125000m + investor);
-        cells[row, 3] = Cell.Of(15000m + investor);
-        cells[row, 4] = Cell.Of(402500m + investor);
-        cells[row, 5] = Cell.Of(0.08 + investor % 50 / 1000.0);
+        cells[row, 0] = CellValue.Of(Investor(investor));
+        cells[row, 1] = CellValue.Of(500000 + investor);
+        cells[row, 2] = CellValue.Of(125000 + investor);
+        cells[row, 3] = CellValue.Of(15000 + investor);
+        cells[row, 4] = CellValue.Of(402500 + investor);
+        cells[row, 5] = CellValue.Of(0.08 + investor % 50 / 1000.0);
         row++;
       }
 
       row += 3;
-      cells[row++, 0] = Cell.Of(DetailsCaption);
-      cells[row++, 0] = Cell.Of(TransferDateCaption);
+      cells[row++, 0] = CellValue.Of(DetailsCaption);
+      cells[row++, 0] = CellValue.Of(TransferDateCaption);
       row = WriteBlocks(cells, row, investors, 2024);
 
       // Two blank rows before the caption, as in the real workbook: the last block's own separator
       // supplies the first, so only one more is written here.
       row += 1;
-      cells[row++, 0] = Cell.Of(InceptionCaption);
+      cells[row++, 0] = CellValue.Of(InceptionCaption);
       WriteBlocks(cells, row, investors, 2023);
 
 
       return cells;
     }
 
-    private static int WriteBlocks(Cell[,] cells, int row, int investors, int year)
+    private static int WriteBlocks(CellValue[,] cells, int row, int investors, int year)
     {
       for (int investor = 0; investor < investors; investor++)
       {
-        cells[row, 0] = Cell.Of("Investor Name");
-        cells[row, 1] = Cell.Of("Date");
-        cells[row, 2] = Cell.Of("Transaction");
-        cells[row, 3] = Cell.Of("IRR");
+        cells[row, 0] = CellValue.Of("Investor Name");
+        cells[row, 1] = CellValue.Of("Date");
+        cells[row, 2] = CellValue.Of("Transaction");
+        cells[row, 3] = CellValue.Of("IRR");
         row++;
 
         for (int flow = 0; flow < DocumentBlockRows; flow++)
         {
-          cells[row, 0] = Cell.Of(Investor(investor));
-          cells[row, 1] = Cell.Of(new DateTime(year + flow % 2, 1 + flow % 12, 1 + flow));
-          cells[row, 2] = Cell.Of(flow % 2 == 0 ? "Contribution" : "Distribution");
-          cells[row, 3] = Cell.Of(0.03 + flow / 100.0);
+          cells[row, 0] = CellValue.Of(Investor(investor));
+          cells[row, 1] = CellValue.Of(new DateTime(year + flow % 2, 1 + flow % 12, 1 + flow));
+          cells[row, 2] = CellValue.Of(flow % 2 == 0 ? "Contribution" : "Distribution");
+          cells[row, 3] = CellValue.Of(0.03 + flow / 100.0);
           row++;
         }
 
@@ -397,13 +397,13 @@ namespace Unrect.Benchmarks
     }
 
     /// <summary>Kinds cycle, including blanks, so a sweep pays for every branch in proportion.</summary>
-    private static Cell MixedCell(int i) => (i % 5) switch
+    private static CellValue MixedCell(int i) => (i % 5) switch
     {
-      0 => Cell.Of(Label(i)),
-      1 => Cell.Of(i * 1.5),
-      2 => Cell.Of(new DateTime(2020, 1, 1).AddDays(i % 3650)),
-      3 => Cell.Of(i % 2 == 0),
-      _ => Cell.Blank,
+      0 => CellValue.Of(Label(i)),
+      1 => CellValue.Of(i * 1.5),
+      2 => CellValue.Of(new DateTime(2020, 1, 1).AddDays(i % 3650)),
+      3 => CellValue.Of(i % 2 == 0),
+      _ => CellValue.Blank,
     };
 
     private static string Label(int i) => "row-" + i.ToString(CultureInfo.InvariantCulture);

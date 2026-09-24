@@ -54,7 +54,7 @@ namespace Unrect.Tests.Spreadsheets
         { "Beta", 250m, 0.5m, 125m },
       };
 
-      var values = new Cell[cells.GetLength(0), cells.GetLength(1)];
+      var values = new CellValue[cells.GetLength(0), cells.GetLength(1)];
 
       for (var row = 0; row < cells.GetLength(0); row++)
         for (var column = 0; column < cells.GetLength(1); column++)
@@ -78,7 +78,7 @@ namespace Unrect.Tests.Spreadsheets
     /// matcher's absence noun, since over <see cref="Sheet"/> the bare matcher always finds one.
     /// </summary>
     private static ISpreadsheetSpace Barren()
-      => new FormulaGridSpace(new Cell[1, 2] { { Adapt("a"), Adapt("b") } }, new string?[1, 2]);
+      => new FormulaGridSpace(new CellValue[1, 2] { { Adapt("a"), Adapt("b") } }, new string?[1, 2]);
 
     // --- The matcher locates ------------------------------------------------------------------------
 

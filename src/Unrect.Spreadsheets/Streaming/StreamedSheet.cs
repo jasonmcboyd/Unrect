@@ -18,7 +18,7 @@ namespace Unrect.Spreadsheets
   {
     private readonly IRowCursor _cursor;
     private readonly StringInterner _strings;
-    private readonly List<Cell[]> _rows = new List<Cell[]>();
+    private readonly List<CellValue[]> _rows = new List<CellValue[]>();
     private readonly long _rowsMeasured;
     private int _first;
     private bool _exhausted;
@@ -60,7 +60,7 @@ namespace Unrect.Spreadsheets
         return false;
       }
 
-      var row = new Cell[Area.Width];
+      var row = new CellValue[Area.Width];
 
       for (var column = 0; column < row.Length; column++)
         row[column] = _strings.Share(_cursor[column]);
@@ -83,7 +83,7 @@ namespace Unrect.Spreadsheets
       }
     }
 
-    private protected override Cell CellAt(int column, int row)
+    private protected override CellValue CellAt(int column, int row)
     {
       if (_disposed)
         throw new ObjectDisposedException(nameof(Workbook), "the workbook that lent this sheet has been disposed");

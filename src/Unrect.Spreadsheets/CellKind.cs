@@ -1,10 +1,10 @@
 namespace Unrect.Spreadsheets
 {
   /// <summary>
-  /// The canonical cell kinds every <see cref="Cell"/> is classified into — small and closed,
-  /// so a strategy or leaf can test <see cref="Cell.Kind"/> without knowing which backend
+  /// The canonical cell kinds every <see cref="CellValue"/> is classified into — small and closed,
+  /// so a strategy or leaf can test <see cref="CellValue.Kind"/> without knowing which backend
   /// produced the cell. Adapters decide which of a backend's own states map to which kind; nothing
-  /// finer than this set is a value distinction, only a conversion (<see cref="Cell"/>'s
+  /// finer than this set is a value distinction, only a conversion (<see cref="CellValue"/>'s
   /// typed accessors).
   /// </summary>
   public enum CellKind

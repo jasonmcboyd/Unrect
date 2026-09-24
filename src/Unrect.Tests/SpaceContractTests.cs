@@ -123,14 +123,14 @@ namespace Unrect.Tests
       new object?[] { "text", 42, 3.14, new DateTime(2026, 1, 15), true },
       new object?[]
       {
-        Cell.OfError(CellError.Value),
-        Cell.OfError(CellError.DivisionByZero),
-        Cell.OfError(CellError.NotAvailable),
-        Cell.OfError(CellError.Reference),
-        Cell.OfError(CellError.Name),
+        CellValue.OfError(CellError.Value),
+        CellValue.OfError(CellError.DivisionByZero),
+        CellValue.OfError(CellError.NotAvailable),
+        CellValue.OfError(CellError.Reference),
+        CellValue.OfError(CellError.Name),
       },
       new object?[] { "  ", " ", "", null, "x" },
-      new object?[] { Cell.OfError(CellError.Null), Cell.OfError(CellError.Number), null, null, 7 },
+      new object?[] { CellValue.OfError(CellError.Null), CellValue.OfError(CellError.Number), null, null, 7 },
     };
 
     /// <summary>Every door as the canonical surface alone, over <see cref="EdgeRows"/>.</summary>
@@ -434,7 +434,7 @@ namespace Unrect.Tests
       // a worksheet holding nothing but formatting — and the two doors have to say the same about
       // it. Not "throw the same": AGREE. Zero width is a legitimate extent, so both report it, and
       // both refuse the only cell anyone could ask for.
-      var eager = SheetGrid.Of(new Cell[10, 0]);
+      var eager = SheetGrid.Of(new CellValue[10, 0]);
 
       using var book = Workbook.Over(new FakeRowSource(new FakeSheet("Empty", 10, 0)), new WorkbookOptions());
       var streamed = book.Sheet("Empty");
@@ -455,7 +455,7 @@ namespace Unrect.Tests
       // say so as loudly as the indexer does. The trap is that all three have a plausible wrong
       // answer — "it is blank", "it is not text", "it says nothing" — and each would be a claim
       // about a cell that is not there, made by a space that could not have looked.
-      ISpace eager = SheetGrid.Of(new Cell[10, 0]);
+      ISpace eager = SheetGrid.Of(new CellValue[10, 0]);
       ISpace streamed = ProjectionTestSpaces.Streamed(new FakeSheet("Empty", 10, 0));
 
       foreach (var space in new[] { eager, streamed })
@@ -515,12 +515,12 @@ namespace Unrect.Tests
           System.IO.Path.Combine(AppContext.BaseDirectory, "TestData", "formulas.xlsx"),
           "Formulas");
 
-      var values = new Cell[10, 4];
+      var values = new CellValue[10, 4];
       var formulas = new string?[10, 4];
 
       for (var row = 0; row < 10; row++)
         for (var column = 0; column < 4; column++)
-          values[row, column] = Cell.Of($"{column},{row}");
+          values[row, column] = CellValue.Of($"{column},{row}");
 
       for (var row = 1; row <= 4; row++)
         formulas[row, 3] = $"B{row + 1}*C{row + 1}";

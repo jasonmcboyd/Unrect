@@ -24,7 +24,7 @@ namespace Unrect.Tests
       new object?[,]
       {
         { "Total", null },
-        { 42, Cell.OfError(CellError.DivisionByZero) },
+        { 42, CellValue.OfError(CellError.DivisionByZero) },
       });
 
     /// <summary>

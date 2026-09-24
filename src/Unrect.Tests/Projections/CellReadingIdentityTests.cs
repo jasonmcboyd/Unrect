@@ -142,7 +142,7 @@ namespace Unrect.Tests.Projections
       // from either reader — so this is the case where a duplicated message would show first.
       Assert.Equal(
         "expected Number at B2, found Error(#DIV/0!)",
-        SameSentence("Amount", Cell.OfError(CellError.DivisionByZero), Decimal(), Table<Money>()));
+        SameSentence("Amount", CellValue.OfError(CellError.DivisionByZero), Decimal(), Table<Money>()));
     }
 
     [Fact]
@@ -162,11 +162,10 @@ namespace Unrect.Tests.Projections
         "the Number at B2 (1.5) is not a whole number",
         SameSentence("Count", 1.5, Integer(), Table<Counted>()));
 
-      // The scale is the cell's, not the reader's: a decimal 1.50 prints as 1.50 through either
-      // door, where rendering it through a double would print 1.5 and quietly disagree with the
-      // sheet — on whichever reader drifted.
+      // A fixture's decimal literal is not a scale the cell keeps: the sheet holds a double, so
+      // 1.50m says 1.5 through either door, and the sentence quotes what the cell says.
       Assert.Equal(
-        "the Number at B2 (1.50) is not a whole number",
+        "the Number at B2 (1.5) is not a whole number",
         SameSentence("Count", 1.50m, Integer(), Table<Counted>()));
     }
 

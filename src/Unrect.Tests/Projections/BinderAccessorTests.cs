@@ -131,7 +131,7 @@ namespace Unrect.Tests.Projections
       var moment = new DateTime(2026, 3, 4, 13, 45, 0);
 
       Assert.Equal("hi", StripOf("hi")[1].Text());
-      Assert.Equal(1.5m, StripOf(1.5m)[1].Decimal());
+      Assert.Equal(1.5m, StripOf(1.5)[1].Decimal());
       Assert.Equal(42, StripOf(42)[1].Integer());
       Assert.Equal(0.25, StripOf(0.25)[1].Double());
       Assert.Equal(moment, StripOf(moment)[1].Date());
@@ -180,8 +180,8 @@ namespace Unrect.Tests.Projections
     public void AnIndexWrongKindSpeaksTheBareLeafSentence_Strip()
     {
       Assert.Equal("expected Number at B2, found Text", Fails(() => StripOf("x")[1].Decimal()));
-      Assert.Equal("expected Text at B2, found Number", Fails(() => StripOf(5m)[1].Text()));
-      Assert.Equal("expected Boolean at B2, found Number", Fails(() => StripOf(1m)[1].Boolean()));
+      Assert.Equal("expected Text at B2, found Number", Fails(() => StripOf(5)[1].Text()));
+      Assert.Equal("expected Boolean at B2, found Number", Fails(() => StripOf(1)[1].Boolean()));
       Assert.Equal("expected Temporal at B2, found Text", Fails(() => StripOf("x")[1].Date()));
     }
 
@@ -192,11 +192,11 @@ namespace Unrect.Tests.Projections
       // caption and index, and since phase 6 not differing at all.
       Assert.Equal(
         "expected Number at B2, found Error(#DIV/0!)",
-        Fails(() => RowOf("V", Cell.OfError(CellError.DivisionByZero))["V"].Decimal()));
+        Fails(() => RowOf("V", CellValue.OfError(CellError.DivisionByZero))["V"].Decimal()));
 
       Assert.Equal(
         "expected Number at B2, found Error(#DIV/0!)",
-        Fails(() => RowOf("V", Cell.OfError(CellError.DivisionByZero))[1].Decimal()));
+        Fails(() => RowOf("V", CellValue.OfError(CellError.DivisionByZero))[1].Decimal()));
     }
 
     [Fact]
@@ -263,7 +263,7 @@ namespace Unrect.Tests.Projections
     {
       Assert.Equal("expected Number at B2, found Text", Fails(() => RowOf("V", "x")[1].DecimalOrBlank()));
       Assert.Equal("expected Number at B2, found Text", Fails(() => StripOf("x")[1].DecimalOrBlank()));
-      Assert.Equal("expected Temporal at B2, found Number", Fails(() => StripOf(5m)[1].DateOrBlank()));
+      Assert.Equal("expected Temporal at B2, found Number", Fails(() => StripOf(5)[1].DateOrBlank()));
     }
 
     // --- 3. The identity claim: the accessor describes a bad cell as the leaf/binder does -----------
@@ -469,7 +469,7 @@ namespace Unrect.Tests.Projections
     [InlineData(5)]
     public void AnOutOfRangeIndexOnAStripThrowsArgumentOutOfRange(int index)
     {
-      var strip = StripOf(10m);
+      var strip = StripOf(10);
 
       var failure = Assert.Throws<ArgumentOutOfRangeException>(() => strip[index].Decimal());
 

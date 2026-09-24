@@ -23,11 +23,11 @@ namespace Unrect.Tests
   internal static class ProjectionTestSpaces
   {
     /// <summary>A grid of numbers in which zero means an empty cell.</summary>
-    public static ICellSpace Grid(int[,] values) => Cells(values, number => number == 0 ? Cell.Blank : Cell.Of(number));
+    public static ICellSpace Grid(int[,] values) => Cells(values, number => number == 0 ? CellValue.Blank : CellValue.Of(number));
 
     /// <summary>A grid of labels; null and "" are empty cells.</summary>
     public static ICellSpace Labels(string?[,] values)
-      => Cells(values, text => string.IsNullOrEmpty(text) ? Cell.Blank : Cell.Of(text!));
+      => Cells(values, text => string.IsNullOrEmpty(text) ? CellValue.Blank : CellValue.Of(text!));
 
     // --- The doors ----------------------------------------------------------------------------------
     //
@@ -155,11 +155,11 @@ namespace Unrect.Tests
     /// One CLR value as the cell it stands for, shared so a source that is not a grid (the streaming
     /// fake) writes its rows the way <see cref="Mixed"/> does.
     /// </summary>
-    public static Cell Adapt(object? value) => SheetGrid.Of(new[,] { { value } }).At(0, 0);
+    public static CellValue Adapt(object? value) => SheetGrid.Of(new[,] { { value } }).At(0, 0);
 
-    private static ICellSpace Cells<T>(T[,] values, Func<T, Cell> adapt)
+    private static ICellSpace Cells<T>(T[,] values, Func<T, CellValue> adapt)
     {
-      var cells = new Cell[values.GetLength(0), values.GetLength(1)];
+      var cells = new CellValue[values.GetLength(0), values.GetLength(1)];
 
       for (var row = 0; row < values.GetLength(0); row++)
         for (var column = 0; column < values.GetLength(1); column++)

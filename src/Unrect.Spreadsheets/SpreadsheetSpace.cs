@@ -9,7 +9,7 @@ namespace Unrect.Spreadsheets
   /// <summary>
   /// The eager door onto a spreadsheet file: one worksheet, read whole, as a space. Reads
   /// <c>.xls</c> and <c>.xlsx</c> through ExcelDataReader and adapts each cell to a
-  /// <see cref="Cell"/> — which is where <em>blankness is decided</em>, the one question the
+  /// <see cref="CellValue"/> — which is where <em>blankness is decided</em>, the one question the
   /// grid itself cannot answer.
   /// <para>
   /// This is a factory and not a type. What comes back is an <see cref="ICellSpace"/>, or an
@@ -21,9 +21,9 @@ namespace Unrect.Spreadsheets
   /// </para>
   /// <para>
   /// <b>Formulas are opt-in, by a second factory rather than a flag.</b>
-  /// <see cref="CreateWithFormulas(string, string, bool, Func{Cell, bool})"/> costs a second
+  /// <see cref="CreateWithFormulas(string, string, bool, Func{CellValue, bool})"/> costs a second
   /// pass over the file's own bytes and hands back a space that carries formulas; the plain
-  /// <see cref="Create(string, string, bool, Func{Cell, bool})"/> pays nothing and hands back
+  /// <see cref="Create(string, string, bool, Func{CellValue, bool})"/> pays nothing and hands back
   /// one that does not <em>implement</em> the capability at all. A flag could not do this: the two
   /// answers differ in their type, and a space that implemented <see cref="IFormulaSpace"/> and
   /// answered null everywhere would tell every caller the file has no formulas when the truth is
@@ -46,8 +46,8 @@ namespace Unrect.Spreadsheets
   /// </summary>
   public static class SpreadsheetSpace
   {
-    private static readonly Func<Cell, bool> WhitespaceIsBlank =
-      value => value.TryGetString() is string text && string.IsNullOrWhiteSpace(text);
+    private static readonly Func<CellValue, bool> WhitespaceIsBlank =
+      value => value.TryGetText(out var text) && string.IsNullOrWhiteSpace(text);
 
     /// <summary>
     /// The named sheet of <paramref name="path"/>, with blankness decided by
@@ -57,7 +57,7 @@ namespace Unrect.Spreadsheets
       string path,
       string sheetName,
       bool caseSensitive = false,
-      Func<Cell, bool>? isBlank = null)
+      Func<CellValue, bool>? isBlank = null)
       => Sheet(path, sheetName, caseSensitive, isBlank, withFormulas: false);
 
     /// <summary>
@@ -85,7 +85,7 @@ namespace Unrect.Spreadsheets
     public static IEnumerable<ICellSpace> Create(
       string path,
       Func<SpreadsheetContext, bool> predicate,
-      Func<Cell, bool>? isBlank = null)
+      Func<CellValue, bool>? isBlank = null)
       => Read(path, predicate, isBlank, withFormulas: false);
 
     /// <summary>
@@ -119,20 +119,20 @@ namespace Unrect.Spreadsheets
       string path,
       string sheetName,
       bool caseSensitive = false,
-      Func<Cell, bool>? isBlank = null)
+      Func<CellValue, bool>? isBlank = null)
       => (ISpreadsheetSpace)Sheet(path, sheetName, caseSensitive, isBlank, withFormulas: true);
 
     /// <summary>
     /// Every sheet of <paramref name="path"/> matching <paramref name="predicate"/>, carrying
-    /// formulas — see <see cref="CreateWithFormulas(string, string, bool, Func{Cell, bool})"/>
-    /// for what is read and <see cref="Create(string, Func{SpreadsheetContext, bool}, Func{Cell, bool})"/>
+    /// formulas — see <see cref="CreateWithFormulas(string, string, bool, Func{CellValue, bool})"/>
+    /// for what is read and <see cref="Create(string, Func{SpreadsheetContext, bool}, Func{CellValue, bool})"/>
     /// for what <paramref name="isBlank"/> decides.
     /// </summary>
     /// <exception cref="NotSupportedException"><paramref name="path"/> is not an xlsx.</exception>
     public static IEnumerable<ISpreadsheetSpace> CreateWithFormulas(
       string path,
       Func<SpreadsheetContext, bool> predicate,
-      Func<Cell, bool>? isBlank = null)
+      Func<CellValue, bool>? isBlank = null)
       // Every space this enumeration yields was built with a formula grid, so the cast is a
       // statement of what the overload above already decided rather than a hope about the elements.
       => Read(path, predicate, isBlank, withFormulas: true).Cast<ISpreadsheetSpace>();
@@ -141,7 +141,7 @@ namespace Unrect.Spreadsheets
       string path,
       string sheetName,
       bool caseSensitive,
-      Func<Cell, bool>? isBlank,
+      Func<CellValue, bool>? isBlank,
       bool withFormulas)
       => Read(
         path,
@@ -156,7 +156,7 @@ namespace Unrect.Spreadsheets
     private static IEnumerable<ICellSpace> Read(
       string path,
       Func<SpreadsheetContext, bool> predicate,
-      Func<Cell, bool>? isBlank,
+      Func<CellValue, bool>? isBlank,
       bool withFormulas)
     {
       SpreadsheetEncodings.Register();
@@ -218,14 +218,14 @@ namespace Unrect.Spreadsheets
     /// The sheet at the size the reader gave, filled row by row. A sheet that yields fewer rows or
     /// narrower ones than it claimed keeps the size it claimed; the cells nothing reached are blank.
     /// </summary>
-    private static Cell[,] ReadDeclared(IExcelDataReader reader, Func<Cell, bool> blank, TextTable texts)
+    private static CellValue[,] ReadDeclared(IExcelDataReader reader, Func<CellValue, bool> blank, TextTable texts)
     {
       var rowCount = reader.RowCount;
       var fieldCount = reader.FieldCount;
 
-      // Already blank: default(Cell) is Blank, so a short row leaves the cells it never
+      // Already blank: default(CellValue) is Blank, so a short row leaves the cells it never
       // reached exactly as they should be, with no fill pass over the sheet.
-      var cells = new Cell[rowCount, fieldCount];
+      var cells = new CellValue[rowCount, fieldCount];
 
       var row = 0;
       while (row < rowCount && reader.Read())
@@ -260,14 +260,14 @@ namespace Unrect.Spreadsheets
     /// door's fakes. The caveat is recorded in full in <c>SpreadsheetSpaceTests</c>.)
     /// </para>
     /// </summary>
-    private static Cell[,] ReadMeasured(IExcelDataReader reader, Func<Cell, bool> blank, TextTable texts)
+    private static CellValue[,] ReadMeasured(IExcelDataReader reader, Func<CellValue, bool> blank, TextTable texts)
     {
-      var rows = new List<Cell[]>();
+      var rows = new List<CellValue[]>();
       var width = 0;
 
       while (reader.Read())
       {
-        var values = new Cell[reader.FieldCount];
+        var values = new CellValue[reader.FieldCount];
         for (int i = 0; i < values.Length; i++)
           values[i] = Adapt(reader, i, blank, texts);
 
@@ -275,7 +275,7 @@ namespace Unrect.Spreadsheets
         width = Math.Max(width, values.Length);
       }
 
-      var cells = new Cell[rows.Count, width];
+      var cells = new CellValue[rows.Count, width];
       for (int row = 0; row < rows.Count; row++)
         for (int column = 0; column < rows[row].Length; column++)
           cells[row, column] = rows[row][column];
@@ -288,11 +288,11 @@ namespace Unrect.Spreadsheets
     /// where repeated text is given one instance to share. Shared by both fill paths, so a sheet that
     /// reported its extent and one that had to be measured cannot disagree about what a cell is.
     /// </summary>
-    private static Cell Adapt(IExcelDataReader reader, int column, Func<Cell, bool> blank, TextTable texts)
+    private static CellValue Adapt(IExcelDataReader reader, int column, Func<CellValue, bool> blank, TextTable texts)
     {
       var value = reader.GetCellValue(column);
 
-      return blank(value) ? Cell.Blank : texts.Share(value);
+      return blank(value) ? CellValue.Blank : texts.Share(value);
     }
 
     /// <summary>
@@ -323,15 +323,15 @@ namespace Unrect.Spreadsheets
     {
       private readonly Dictionary<string, string> _texts = new Dictionary<string, string>(StringComparer.Ordinal);
 
-      internal Cell Share(Cell value)
+      internal CellValue Share(CellValue value)
       {
-        if (value.TryGetString() is not string text || text.Length > StringInterner.MaximumLength)
+        if (!value.TryGetText(out var text) || text.Length > StringInterner.MaximumLength)
           return value;
 
         // A hit costs one lookup and a first sighting two, which is the right way round: the cells
         // this exists for are the repeats.
         if (_texts.TryGetValue(text, out var canonical))
-          return Cell.Of(canonical);
+          return CellValue.Of(canonical);
 
         _texts.Add(text, text);
 

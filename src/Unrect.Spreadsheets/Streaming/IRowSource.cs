@@ -7,7 +7,7 @@ namespace Unrect.Spreadsheets
   /// against this rather than against ExcelDataReader, for three reasons that are all load-bearing:
   /// <list type="number">
   ///   <item>
-  ///     <b>Blankness stays at the adapter.</b> An implementation produces <see cref="Cell"/>s
+  ///     <b>Blankness stays at the adapter.</b> An implementation produces <see cref="CellValue"/>s
   ///     with the blankness predicate already applied, so the sheet never sees the predicate. That
   ///     is "blankness is decided at adaptation time", the rule the eager path already honours.
   ///   </item>
@@ -82,8 +82,8 @@ namespace Unrect.Spreadsheets
 
     /// <summary>
     /// A cell of the current row, with blankness <em>already applied</em>. A column past the end of
-    /// this row reads as <see cref="Cell.Blank"/> — a short row is missing cells, not an error.
+    /// this row reads as <see cref="CellValue.Blank"/> — a short row is missing cells, not an error.
     /// </summary>
-    Cell this[int column] { get; }
+    CellValue this[int column] { get; }
   }
 }

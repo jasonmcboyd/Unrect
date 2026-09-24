@@ -64,7 +64,7 @@ namespace Unrect.Tests.Projections
       var space = Mixed(new object?[,]
       {
         { "Amount" },
-        { Cell.OfError(CellError.DivisionByZero) },
+        { CellValue.OfError(CellError.DivisionByZero) },
       });
 
       var cell = Table().Map(space)[0]["Amount"];

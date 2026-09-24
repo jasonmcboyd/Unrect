@@ -22,7 +22,7 @@ namespace Unrect.Tests
   /// arbitrary object graphs can hang or throw, and either failure mode would be a test-suite defect
   /// wearing a product defect's clothes. The last two are the JUDGMENT LINE the fix drew: a
   /// hand-written <c>ToString</c> is trusted and a compiler-written one is not, because
-  /// <c>Cell.ToString()</c> prints the value in the cell while its properties would print
+  /// <c>CellValue.ToString()</c> prints the value in the cell while its properties would print
   /// everything about the cell except that.
   /// </para>
   /// </summary>
@@ -103,7 +103,7 @@ namespace Unrect.Tests
       // Cell is the case the rule was written for: its ToString prints the number in the cell,
       // and its three public properties (Kind, IsBlank, HasValue) would print everything about the
       // cell except the number. Reflecting over it would LOSE information, so it is not reflected.
-      var cell = Cell.Of(42m);
+      var cell = CellValue.Of(42);
 
       Assert.Equal(cell.ToString(), Rendered(cell));
       Assert.DoesNotContain("Kind = ", Rendered(cell));

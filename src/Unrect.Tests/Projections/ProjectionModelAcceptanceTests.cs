@@ -71,7 +71,7 @@ namespace Unrect.Tests.Projections
     /// r6  Total   |        | 1.00     &lt;- SUM(C4:C5)
     /// </code>
     /// </summary>
-    private static Cell[,] AllocationValues()
+    private static CellValue[,] AllocationValues()
     {
       var cells = new object?[,]
       {
@@ -84,7 +84,7 @@ namespace Unrect.Tests.Projections
         { "Total", null, 1.00m },
       };
 
-      var values = new Cell[cells.GetLength(0), cells.GetLength(1)];
+      var values = new CellValue[cells.GetLength(0), cells.GetLength(1)];
 
       for (var row = 0; row < cells.GetLength(0); row++)
         for (var column = 0; column < cells.GetLength(1); column++)

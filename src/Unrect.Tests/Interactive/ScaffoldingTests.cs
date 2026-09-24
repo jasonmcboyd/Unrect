@@ -215,7 +215,7 @@ namespace Unrect.Tests.Interactive
       // An error is what a formula did, not what the column holds — the same cell a nullable member
       // tolerates. So beside a number it widens the member exactly as a blank does, and a column of
       // nothing BUT errors has argued for no type at all and falls back to string?.
-      var error = Cell.OfError(CellError.DivisionByZero);
+      var error = CellValue.OfError(CellError.DivisionByZero);
 
       Assert.Contains("int? Amount)", Grid(1m, error).ScaffoldRecord("Row"), StringComparison.Ordinal);
       Assert.Contains("string? Amount)", Grid(error, error).ScaffoldRecord("Row"), StringComparison.Ordinal);

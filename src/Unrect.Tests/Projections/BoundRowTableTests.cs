@@ -438,21 +438,21 @@ namespace Unrect.Tests.Projections
     /// </summary>
     private static ISpreadsheetSpace Sourced()
     {
-      var values = new Cell[3, 3];
+      var values = new CellValue[3, 3];
       var formulas = new string?[3, 3];
 
-      values[0, 0] = Cell.Of("Account");
-      values[0, 1] = Cell.Of("Amount");
-      values[0, 2] = Cell.Of("Total");
+      values[0, 0] = CellValue.Of("Account");
+      values[0, 1] = CellValue.Of("Amount");
+      values[0, 2] = CellValue.Of("Total");
 
-      values[1, 0] = Cell.Of("Acme");
-      values[1, 1] = Cell.Of(10m);
-      values[1, 2] = Cell.Of(30m);
+      values[1, 0] = CellValue.Of("Acme");
+      values[1, 1] = CellValue.Of(10);
+      values[1, 2] = CellValue.Of(30);
       formulas[1, 2] = "B2*3";
 
-      values[2, 0] = Cell.Of("Beta");
-      values[2, 1] = Cell.Of(20m);
-      values[2, 2] = Cell.Of(60m);
+      values[2, 0] = CellValue.Of("Beta");
+      values[2, 1] = CellValue.Of(20);
+      values[2, 2] = CellValue.Of(60);
       formulas[2, 2] = "B3*3";
 
       return new FormulaGridSpace(values, formulas);

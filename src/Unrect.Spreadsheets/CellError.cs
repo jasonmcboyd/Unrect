@@ -6,7 +6,7 @@ namespace Unrect.Spreadsheets
   /// <para>
   /// The named members are the errors an adapter can identify from a <em>saved file's</em> error
   /// literal. Anything else lexes to <see cref="Other"/> rather than throwing, and the literal it
-  /// arrived as is preserved on the cell (<see cref="Cell.TryGetErrorText"/>) so nothing is
+  /// arrived as is preserved on the cell (<see cref="CellValue.AsText"/>) so nothing is
   /// silently lost: an adapter may fail to name an error, but it may never invent one and may never
   /// discard the evidence.
   /// </para>

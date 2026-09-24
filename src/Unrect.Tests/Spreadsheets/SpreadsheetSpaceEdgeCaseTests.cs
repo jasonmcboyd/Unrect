@@ -29,7 +29,7 @@ namespace Unrect.Tests.Spreadsheets
     ///   3    #NULL!       #NUM!      (none)    (none)       7
     /// </code>
     /// </summary>
-    private static ICellSpace Edges(Func<Cell, bool>? isBlank = null)
+    private static ICellSpace Edges(Func<CellValue, bool>? isBlank = null)
       => SpreadsheetSpace.Create(
         Path.Combine(AppContext.BaseDirectory, "TestData", "edge-cases.xlsx"),
         "Edges",
@@ -159,7 +159,7 @@ namespace Unrect.Tests.Spreadsheets
     [Fact]
     public void ACustomPredicateDecidesBlanknessForThisSheet()
     {
-      var space = Edges(isBlank: v => v.IsText && v.AsText() == "x");
+      var space = Edges(isBlank: v => v.TryGetText(out var text) && text == "x");
 
       Assert.True(space.IsBlank(4, 2));
 
@@ -239,7 +239,7 @@ namespace Unrect.Tests.Spreadsheets
     {
       // What the adapter builds when its switch falls through: the code it could not name, plus
       // the reader's own text for it, which for an undefined enum value is the number itself.
-      var space = SheetGrid.Of(new object?[,] { { Cell.OfError(CellError.Other, "42") } });
+      var space = SheetGrid.Of(new object?[,] { { CellValue.OfError(CellError.Other, "42") } });
 
       Assert.True(space.IsErrorAt(0, 0));
       Assert.False(space.IsBlank(0, 0));
@@ -251,7 +251,7 @@ namespace Unrect.Tests.Spreadsheets
     {
       // The reason the literal is carried at all: a reader looking at this message has a string to
       // search the file for. "Error(Other)" would tell them only that something, somewhere, failed.
-      var space = SheetGrid.Of(new object?[,] { { Cell.OfError(CellError.Other, "42") } });
+      var space = SheetGrid.Of(new object?[,] { { CellValue.OfError(CellError.Other, "42") } });
 
       Assert.Equal("Error(42)", space.Describe(0, 0));
       Assert.Equal("42", space.AsText(0, 0));

@@ -33,7 +33,7 @@ namespace Unrect.Tests.Streaming
     /// at all. A literal would be interned by the runtime and every assertion here would pass for
     /// the wrong reason.
     /// </summary>
-    private static Cell Fresh(string value) => Cell.Of(new string(value.ToCharArray()));
+    private static CellValue Fresh(string value) => CellValue.Of(new string(value.ToCharArray()));
 
     /// <summary>Every cell of <paramref name="sheet"/> read, since a pass loads rows only as they are asked for.</summary>
     private static ICellSpace ReadEveryCell(ICellSpace sheet)
@@ -65,18 +65,18 @@ namespace Unrect.Tests.Streaming
       var first = Fresh("Alpha Fund");
       var second = Fresh("Alpha Fund");
 
-      Assert.NotSame(first.GetString(), second.GetString());   // the reader's two copies, as they arrive
+      Assert.NotSame(first.AsText(), second.AsText());   // the reader's two copies, as they arrive
 
       var kept = table.Share(first);
       var joined = table.Share(second);
 
-      Assert.Same(first.GetString(), kept.GetString());
-      Assert.Same(kept.GetString(), joined.GetString());
+      Assert.Same(first.AsText(), kept.AsText());
+      Assert.Same(kept.AsText(), joined.AsText());
 
       // Equal by every measure a caller has; only the identity differs, which is the promise that
       // makes sharing invisible.
       Assert.Equal(first, joined);
-      Assert.Equal("Alpha Fund", joined.GetString());
+      Assert.Equal("Alpha Fund", joined.AsText());
     }
 
     [Fact]
@@ -86,13 +86,13 @@ namespace Unrect.Tests.Streaming
       // the case the table cannot help, and it must say that rather than appear to have helped: no
       // hits, no bytes, and every cell still holding the instance it arrived with.
       var table = new StringInterner(1024);
-      var cells = new Cell[20];
+      var cells = new CellValue[20];
 
       for (var index = 0; index < cells.Length; index++)
         cells[index] = table.Share(Fresh($"ACCT-{index:D5}"));
 
       for (var index = 1; index < cells.Length; index++)
-        Assert.NotSame(cells[0].GetString(), cells[index].GetString());
+        Assert.NotSame(cells[0].AsText(), cells[index].AsText());
 
       var statistics = table.Snapshot();
 
@@ -105,7 +105,7 @@ namespace Unrect.Tests.Streaming
     [Fact]
     public void EveryKindButTextIsHandedBackExactlyAsItArrived()
     {
-      // Strings only. Every other kind is inline in the 24-byte Cell and has no heap object to
+      // Strings only. Every other kind is inline in the 24-byte CellValue and has no heap object to
       // share, so the table must pass it through untouched and enter nothing on its account.
       //
       // Two of these cannot arrive through the spreadsheet door at all — a reader hands the adapter a
@@ -117,15 +117,15 @@ namespace Unrect.Tests.Streaming
 
       var values = new[]
       {
-        Cell.Blank,
-        Cell.Of(1.5),
-        Cell.Of(12.34m),
-        Cell.Of(7),
-        Cell.Of(long.MaxValue),
-        Cell.Of(new DateTime(2026, 3, 31)),
-        Cell.Of(true),
-        Cell.OfError(CellError.Value),
-        Cell.OfError(CellError.Other, "#SPILL!")
+        CellValue.Blank,
+        CellValue.Of(1.5),
+        CellValue.Of(12.34),
+        CellValue.Of(7),
+        CellValue.Of(long.MaxValue),
+        CellValue.Of(new DateTime(2026, 3, 31)),
+        CellValue.Of(true),
+        CellValue.OfError(CellError.Value),
+        CellValue.OfError(CellError.Other, "#SPILL!")
       };
 
       // Twice each, so a table that had entered one of them would show it as a hit on the second.
@@ -135,7 +135,7 @@ namespace Unrect.Tests.Streaming
         Assert.Equal(value, table.Share(value));
       }
 
-      Assert.Equal("12.34", table.Share(Cell.Of(12.34m)).AsText());
+      Assert.Equal("12.34", table.Share(CellValue.Of(12.34)).AsText());
 
       var statistics = table.Snapshot();
 
@@ -163,14 +163,14 @@ namespace Unrect.Tests.Streaming
       Assert.Equal(3, statistics.Capacity);
       Assert.True(statistics.AtCapacity);
 
-      Assert.Same(table.Share(Fresh("two")).GetString(), table.Share(Fresh("two")).GetString());
+      Assert.Same(table.Share(Fresh("two")).AsText(), table.Share(Fresh("two")).AsText());
 
       var late = table.Share(Fresh("four"));
       var alsoLate = table.Share(Fresh("four"));
 
-      Assert.NotSame(late.GetString(), alsoLate.GetString());
+      Assert.NotSame(late.AsText(), alsoLate.AsText());
       Assert.Equal(late, alsoLate);
-      Assert.Equal("four", alsoLate.GetString());
+      Assert.Equal("four", alsoLate.AsText());
 
       // The value met after the cap did not take an entry either — the table stopped growing, it did
       // not start evicting.
@@ -188,7 +188,7 @@ namespace Unrect.Tests.Streaming
       var first = table.Share(Fresh("Alpha Fund"));
       var second = table.Share(Fresh("Alpha Fund"));
 
-      Assert.NotSame(first.GetString(), second.GetString());
+      Assert.NotSame(first.AsText(), second.AsText());
       Assert.Equal(first, second);
 
       var statistics = table.Snapshot();
@@ -212,8 +212,8 @@ namespace Unrect.Tests.Streaming
       var atGuard = new string('a', StringInterner.MaximumLength);
       var pastGuard = new string('b', StringInterner.MaximumLength + 1);
 
-      Assert.Same(table.Share(Fresh(atGuard)).GetString(), table.Share(Fresh(atGuard)).GetString());
-      Assert.NotSame(table.Share(Fresh(pastGuard)).GetString(), table.Share(Fresh(pastGuard)).GetString());
+      Assert.Same(table.Share(Fresh(atGuard)).AsText(), table.Share(Fresh(atGuard)).AsText());
+      Assert.NotSame(table.Share(Fresh(pastGuard)).AsText(), table.Share(Fresh(pastGuard)).AsText());
 
       // One entry, not two: the long one was never entered, so it did not occupy a slot it could
       // never score a hit in — which is the guard's actual purpose.

@@ -22,42 +22,38 @@ namespace Unrect.Spreadsheets
   /// </summary>
   internal static class CellReading
   {
-    internal static bool Text(Cell cell, out string value, out CellProblem? problem)
+    internal static bool Text(CellValue cell, out string value, out CellProblem? problem)
     {
-      if (cell.Kind != CellKind.Text)
+      if (!cell.TryGetText(out value))
         return Wrong(CellKind.Text, cell, out value!, out problem);
 
-      value = cell.GetString();
       problem = null;
       return true;
     }
 
-    internal static bool Double(Cell cell, out double value, out CellProblem? problem)
+    internal static bool Double(CellValue cell, out double value, out CellProblem? problem)
     {
-      if (cell.Kind != CellKind.Number)
+      if (!cell.TryGetNumber(out value))
         return Wrong(CellKind.Number, cell, out value, out problem);
 
-      value = cell.GetDouble();
       problem = null;
       return true;
     }
 
-    internal static bool DateTime(Cell cell, out DateTime value, out CellProblem? problem)
+    internal static bool DateTime(CellValue cell, out DateTime value, out CellProblem? problem)
     {
-      if (cell.Kind != CellKind.Temporal)
+      if (!cell.TryGetDate(out value))
         return Wrong(CellKind.Temporal, cell, out value, out problem);
 
-      value = cell.GetDateTime();
       problem = null;
       return true;
     }
 
-    internal static bool Boolean(Cell cell, out bool value, out CellProblem? problem)
+    internal static bool Boolean(CellValue cell, out bool value, out CellProblem? problem)
     {
-      if (cell.Kind != CellKind.Boolean)
+      if (!cell.TryGetBoolean(out value))
         return Wrong(CellKind.Boolean, cell, out value, out problem);
 
-      value = cell.GetBoolean();
       problem = null;
       return true;
     }
@@ -118,7 +114,7 @@ namespace Unrect.Spreadsheets
     /// What the cell holds, said the way a message says it: an error spells itself out, everything
     /// else says its kind.
     /// </summary>
-    internal static string Describe(Cell cell)
+    internal static string Describe(CellValue cell)
       => cell.Kind == CellKind.Error ? cell.ToString() : cell.Kind.ToString();
 
     /// <summary>
@@ -140,7 +136,7 @@ namespace Unrect.Spreadsheets
       return halves;
     }
 
-    private static bool Wrong<T>(CellKind expected, Cell found, out T value, out CellProblem? problem)
+    private static bool Wrong<T>(CellKind expected, CellValue found, out T value, out CellProblem? problem)
     {
       value = default!;
       problem = new CellProblem(

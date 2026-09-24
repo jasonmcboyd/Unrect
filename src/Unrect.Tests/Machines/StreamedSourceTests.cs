@@ -32,15 +32,15 @@ namespace Unrect.Tests.Machines
         var withinBlock = row % (blockRows + 1);
 
         if (withinBlock == blockRows)
-          return Cell.Blank;
+          return CellValue.Blank;
 
-        return column == 0 ? Cell.Of($"block {row / (blockRows + 1)}") : Cell.Of((decimal)row);
+        return column == 0 ? CellValue.Of($"block {row / (blockRows + 1)}") : CellValue.Of(row);
       });
     }
 
     private static ICellSpace Eagerly(FakeSheet sheet)
     {
-      var cells = new Cell[sheet.RowCount, sheet.ColumnCount];
+      var cells = new CellValue[sheet.RowCount, sheet.ColumnCount];
 
       for (var row = 0; row < sheet.RowCount; row++)
         for (var column = 0; column < sheet.ColumnCount; column++)

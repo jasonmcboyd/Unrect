@@ -27,7 +27,7 @@ namespace Unrect.Tests
     private readonly ICellSpace _values;
     private readonly string?[,] _formulas;
 
-    internal FormulaGridSpace(Cell[,] values, string?[,] formulas)
+    internal FormulaGridSpace(CellValue[,] values, string?[,] formulas)
     {
       if (formulas.GetLength(0) != values.GetLength(0) || formulas.GetLength(1) != values.GetLength(1))
         throw new ArgumentException("The formula grid must be the same shape as the value grid.", nameof(formulas));

@@ -9,7 +9,7 @@ namespace Unrect.Spreadsheets
     /// What counts as a blank cell, decided where data enters the system. Null means the default:
     /// a cell that is empty or holds only whitespace — the same rule the eager door applies.
     /// </summary>
-    public Func<Cell, bool>? IsBlank { get; init; }
+    public Func<CellValue, bool>? IsBlank { get; init; }
 
     /// <summary>
     /// The most rows a sheet read through <see cref="Workbook.Sheet"/> may hold at once, or null

@@ -176,23 +176,23 @@ namespace Unrect.Benchmarks
           {
             case CellKind.Text when strings != null:
               writer.Write(FormattableString.Invariant(
-                $"<c r=\"{reference}\" t=\"s\"><v>{strings.Index(cell.GetString())}</v></c>"));
+                $"<c r=\"{reference}\" t=\"s\"><v>{strings.Index(cell.AsText()!)}</v></c>"));
               break;
 
             case CellKind.Text:
               writer.Write(FormattableString.Invariant($"<c r=\"{reference}\" t=\"inlineStr\"><is><t>"));
-              Escaped(writer, cell.GetString());
+              Escaped(writer, cell.AsText()!);
               writer.Write("</t></is></c>");
               break;
 
             case CellKind.Number:
               writer.Write(FormattableString.Invariant(
-                $"<c r=\"{reference}\"><v>{cell.GetDouble().ToString("R", CultureInfo.InvariantCulture)}</v></c>"));
+                $"<c r=\"{reference}\"><v>{Number(cell).ToString("R", CultureInfo.InvariantCulture)}</v></c>"));
               break;
 
             case CellKind.Boolean:
               writer.Write(FormattableString.Invariant(
-                $"<c r=\"{reference}\" t=\"b\"><v>{(cell.GetBoolean() ? 1 : 0)}</v></c>"));
+                $"<c r=\"{reference}\" t=\"b\"><v>{(cell.AsText() == "TRUE" ? 1 : 0)}</v></c>"));
               break;
 
             case CellKind.Blank:
@@ -243,6 +243,8 @@ namespace Unrect.Benchmarks
 
       return letters + (row + 1).ToString(CultureInfo.InvariantCulture);
     }
+
+    private static double Number(CellValue cell) => cell.TryGetNumber(out var number) ? number : throw new InvalidOperationException("not a number");
 
     private static void Escaped(TextWriter writer, string value)
     {

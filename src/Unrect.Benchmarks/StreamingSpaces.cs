@@ -37,26 +37,26 @@ namespace Unrect.Benchmarks
     /// two headline rows only mean something as a ratio, and a ratio between different data means
     /// nothing.
     /// </summary>
-    public static Cell At(int column, int row)
+    public static CellValue At(int column, int row)
     {
       if (row == 0)
-        return Cell.Of(Caption(column));
+        return CellValue.Of(Caption(column));
 
       // A mix of kinds, so the parse pays what a real one pays rather than reading a column of
       // identical numbers.
       return (column % 4) switch
       {
-        0 => Cell.Of("r" + row.ToString(System.Globalization.CultureInfo.InvariantCulture)),
-        1 => Cell.Of(row * 10 + column),
-        2 => Cell.Of((decimal)(row + column) / 4m),
-        _ => Cell.Of(row % 2 == 0),
+        0 => CellValue.Of("r" + row.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+        1 => CellValue.Of(row * 10 + column),
+        2 => CellValue.Of((row + column) / 4.0),
+        _ => CellValue.Of(row % 2 == 0),
       };
     }
 
     /// <summary>The same rows as a materialised grid: the eager side of the headline ratio.</summary>
     public static ICellSpace Grid(int rows = Rows, int columns = Columns)
     {
-      var cells = new Cell[rows, columns];
+      var cells = new CellValue[rows, columns];
 
       for (var row = 0; row < rows; row++)
         for (var column = 0; column < columns; column++)
@@ -116,8 +116,8 @@ namespace Unrect.Benchmarks
         return true;
       }
 
-      public Cell this[int column] =>
-        column < 0 || column >= ColumnCount ? Cell.Blank : At(column, _row);
+      public CellValue this[int column] =>
+        column < 0 || column >= ColumnCount ? CellValue.Blank : At(column, _row);
 
       public void Dispose()
       {

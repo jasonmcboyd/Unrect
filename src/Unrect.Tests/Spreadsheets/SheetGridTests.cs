@@ -16,11 +16,11 @@ namespace Unrect.Tests.Spreadsheets
     [Fact]
     public void ACellNobodyFilledInIsBlank()
     {
-      // A Cell is a value type whose default IS blank, so an array with a gap in it holds an empty
+      // A CellValue is a value type whose default IS blank, so an array with a gap in it holds an empty
       // cell rather than something broken — the state is unrepresentable rather than merely
       // rejected, and this is where that structural fact is pinned.
-      var values = new Cell[1, 2];
-      values[0, 0] = Cell.Of(1);
+      var values = new CellValue[1, 2];
+      values[0, 0] = CellValue.Of(1);
 
       var grid = SheetGrid.Of(values);
 
@@ -50,11 +50,11 @@ namespace Unrect.Tests.Spreadsheets
     [Fact]
     public void Of_AdaptsEachValueToTheKindItsClrTypeImplies()
     {
-      // The adaptation table, which is what lets a fixture be written as a literal. A Cell passes
+      // The adaptation table, which is what lets a fixture be written as a literal. A CellValue passes
       // straight through, because an error is the one kind with no CLR literal to write it as.
       var grid = SheetGrid.Of(new object?[,]
       {
-        { "word", 42, 3.5m, new DateTime(2026, 1, 15), true, null, "", Cell.OfError(CellError.Value) },
+        { "word", 42, 3.5m, new DateTime(2026, 1, 15), true, null, "", CellValue.OfError(CellError.Value) },
       });
 
       var cells = Plane<SheetGrid>.Of(grid);
@@ -120,10 +120,10 @@ namespace Unrect.Tests.Spreadsheets
     [Fact]
     public void AnErrorCellIsTheOneLiteralOnlyTheKindedDoorTakes()
     {
-      // A Cell passes through SheetGrid.Of because an error is the one kind with no CLR literal to
+      // A CellValue passes through SheetGrid.Of because an error is the one kind with no CLR literal to
       // write it as — and the canonical door has no vocabulary for one, so it refuses the value
       // rather than rendering something. Where the two doors differ, they differ loudly.
-      var values = new object?[,] { { Cell.OfError(CellError.Value) } };
+      var values = new object?[,] { { CellValue.OfError(CellError.Value) } };
 
       Assert.Equal("#VALUE!", SheetGrid.Of(values).AsText(0, 0));
 
@@ -143,7 +143,7 @@ namespace Unrect.Tests.Spreadsheets
       // An error where the grid is built, not a cell that reads as something surprising.
       Assert.Throws<ArgumentException>(() => SheetGrid.Of(new object?[,] { { new object() } }));
       Assert.Throws<ArgumentNullException>(() => SheetGrid.Of((object?[,])null!));
-      Assert.Throws<ArgumentNullException>(() => SheetGrid.Of((Cell[,])null!));
+      Assert.Throws<ArgumentNullException>(() => SheetGrid.Of((CellValue[,])null!));
     }
   }
 }
