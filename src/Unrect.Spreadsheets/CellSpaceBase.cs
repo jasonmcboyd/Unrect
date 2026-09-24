@@ -4,8 +4,8 @@ namespace Unrect.Spreadsheets
 {
   /// <summary>
   /// The text facet of a sheet, written once over its value facet: a door supplies its extent and
-  /// <see cref="ValueAt"/>, and whether a cell is blank, what it says and the text it holds all
-  /// follow from the value there.
+  /// <see cref="ValueAt"/>, and whether a cell is blank and what it says both follow from the value
+  /// there.
   /// <para>
   /// There is no other way to be a sheet in this package. Two doors answering a question
   /// differently would be the one bug nothing above them could see, so the answers are not a door's
@@ -40,8 +40,5 @@ namespace Unrect.Spreadsheets
     /// <inheritdoc/>
     public string? AsText(int column, int row) => ValueAt(column, row).AsText();
 
-    /// <inheritdoc/>
-    public bool TryGetTextAt(int column, int row, out string value, out CellProblem? problem)
-      => CellReading.Text(ValueAt(column, row), out value, out problem);
   }
 }

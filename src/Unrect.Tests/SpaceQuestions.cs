@@ -14,9 +14,9 @@ namespace Unrect.Tests
   /// </summary>
   internal static class SpaceQuestions
   {
-    /// <summary>Whether the cell holds text of its own — true exactly when the read would hand it back.</summary>
-    public static bool IsText(this ISpace space, int column, int row)
-      => space.TryGetTextAt(column, row, out _, out _);
+    /// <summary>Whether the cell holds text of its own.</summary>
+    public static bool IsText(this ICellSpace space, int column, int row)
+      => space.ValueAt(column, row).Kind == CellKind.Text;
 
     /// <summary>The error's spelling, or null where the cell carries none.</summary>
     public static string? ErrorTextAt(this ICellSpace space, int column, int row)

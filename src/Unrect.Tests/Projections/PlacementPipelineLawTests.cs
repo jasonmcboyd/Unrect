@@ -311,7 +311,7 @@ namespace Unrect.Tests.Projections
       { "Beta", 250m },
     });
 
-    private static IRowLandmark Header() => RowContaining("Fund");
+    private static IRowLandmark Header() => RowContaining("Fund").Landmark;
 
     /// <summary>A bind pointed at the column of fund names, so every record fails.</summary>
     private static IProjectionDefinition<ICellSpace, decimal> FundColumnAsANumber(LabelMap captions) => Right(captions["Fund"]).Of(Decimal());

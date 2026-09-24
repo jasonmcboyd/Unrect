@@ -88,7 +88,7 @@ namespace Unrect.Tests
     {
       // An offset that has to look at content to resolve, so the region it looks through matters.
       var space = Sheet();
-      var strategy = OffsetStrategies.To(RowLandmarks.RowContaining("Total"));
+      var strategy = OffsetStrategies.To(RowLandmarks.RowSaying("Total"));
 
       Assert.Equal(strategy.GetOffset(Plane<ISpace>.Of(space)).Size, strategy.GetOffset(space).Size);
       Assert.Equal(3, strategy.GetOffset(space).Height);
@@ -121,7 +121,7 @@ namespace Unrect.Tests
     public void FindRowForwards()
     {
       var space = Sheet();
-      var landmark = RowLandmarks.RowContaining("Total");
+      var landmark = RowLandmarks.RowSaying("Total");
 
       Assert.Equal(landmark.FindRow(Plane<ISpace>.Of(space)), landmark.FindRow(space));
       Assert.Equal(3, landmark.FindRow(space));
@@ -131,7 +131,7 @@ namespace Unrect.Tests
     public void FindColumnForwards()
     {
       var space = Sheet();
-      var landmark = ColumnLandmarks.ColumnContaining("d");
+      var landmark = ColumnLandmarks.ColumnSaying("d");
 
       Assert.Equal(landmark.FindColumn(Plane<ISpace>.Of(space)), landmark.FindColumn(space));
       Assert.Equal(3, landmark.FindColumn(space));

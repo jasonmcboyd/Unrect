@@ -198,9 +198,6 @@ namespace Unrect.Projections
     /// <inheritdoc cref="ProjectionBuilders{TSpace}.AsText()"/>
     public IProjectionDefinition<TSpace, string> AsText() => Close(ProjectionBuilders<TSpace>.AsText());
 
-    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Text"/>
-    public IProjectionDefinition<TSpace, string> Text() => Close(ProjectionBuilders<TSpace>.Text());
-
     /// <inheritdoc cref="ProjectionBuilders{TSpace}.Caption(string)"/>
     /// <param name="text">What the row must say.</param>
     public IProjectionDefinition<TSpace, string> Caption(string text) => Close<string>(ProjectionBuilders<TSpace>.Caption(text));

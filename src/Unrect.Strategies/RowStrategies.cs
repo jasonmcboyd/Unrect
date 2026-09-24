@@ -23,18 +23,6 @@ namespace Unrect.Strategies
     public static IRowStrategy TakeRowsTo(Func<Plane<ISpace>, int, bool> predicate)
       => new TakeToRowStrategy(predicate, true);
 
-    /// <summary>
-    /// Rows up to and including the first whose cell in <paramref name="column"/> is the text
-    /// <paramref name="text"/> — whole-cell, trimmed and case-insensitive, and a text cell only, so
-    /// a numeric cell rendering the same digits does not end the band.
-    /// </summary>
-    public static IRowStrategy TakeRowsToText(int column, string text)
-    {
-      var matches = CellMatching.TextEquals(text ?? throw new ArgumentNullException(nameof(text)));
-
-      return TakeRowsTo((space, row) => matches(space[column, row]));
-    }
-
     /// <summary>Leading rows in which every cell satisfies <paramref name="predicate"/>.</summary>
     public static IRowStrategy TakeRowsWhileAll(Func<Point<ISpace>, bool> predicate)
       => new TakeWhileAllRowStrategy(predicate);

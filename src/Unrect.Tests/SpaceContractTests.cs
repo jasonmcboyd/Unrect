@@ -309,7 +309,6 @@ namespace Unrect.Tests
       ISpace empties = GridSpace.Create(new string?[,] { { "", "kept" } });
 
       Assert.True(empties.IsBlank(0, 0));
-      Assert.False(empties.IsText(0, 0));
       Assert.Null(empties.AsText(0, 0));
 
       // The same string under a rule that says whitespace is empty space, which is the spreadsheet
@@ -317,11 +316,9 @@ namespace Unrect.Tests
       ISpace strict = GridSpace.Create(
         new[,] { { "  ", "kept" } },
         isBlank: text => string.IsNullOrWhiteSpace(text),
-        isText: _ => true,
         asText: text => text);
 
       Assert.True(strict.IsBlank(0, 0));
-      Assert.False(strict.IsText(0, 0));
       Assert.Null(strict.AsText(0, 0));
 
       // ...and under the array adapter's own default, where only null and "" are empty, the very
@@ -329,7 +326,6 @@ namespace Unrect.Tests
       ISpace kept = GridSpace.Create(new string?[,] { { "  ", "kept" } });
 
       Assert.False(kept.IsBlank(0, 0));
-      Assert.True(kept.IsText(0, 0));
       Assert.Equal("  ", kept.AsText(0, 0));
     }
 
@@ -458,7 +454,6 @@ namespace Unrect.Tests
       foreach (var space in new[] { eager, streamed })
       {
         Assert.Throws<OutOfBoundsException>(() => { _ = space.IsBlank(0, 0); });
-        Assert.Throws<OutOfBoundsException>(() => { _ = space.IsText(0, 0); });
         Assert.Throws<OutOfBoundsException>(() => { _ = space.AsText(0, 0); });
       }
     }

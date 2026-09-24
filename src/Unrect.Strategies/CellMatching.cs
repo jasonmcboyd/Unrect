@@ -23,9 +23,9 @@ namespace Unrect.Strategies
   /// place the matched text is known to be a label, where a trailing colon is presentation.
   /// </para>
   /// <para>
-  /// <see cref="TextEquals"/> asks what the cell <em>holds</em> and so sees text cells alone —
-  /// a numeric 42 is not a row containing "42". It is a question about the value's kind, which the
-  /// generic layer no longer asks; the value vocabulary asks it.
+  /// Held-text matching — <c>RowContaining</c>, which sees text cells alone, so that a numeric 42
+  /// is not a row containing "42" — is a question about the value's kind, which this calculus
+  /// cannot ask; the value vocabulary asks it, with <see cref="TextComparer"/>'s rule.
   /// </para>
   /// <para>
   /// A fourth rule lives elsewhere and must not be folded in here: <c>CaptionComparer</c> bridges a
@@ -93,23 +93,12 @@ namespace Unrect.Strategies
     }
 
     /// <summary>
-    /// Whole-cell equality, trimmed and case-insensitive. Not a substring: labels are cell values,
-    /// and substring matching invites false anchors.
-    /// </summary>
-    public static Func<Point<ISpace>, bool> TextEquals(string text)
-    {
-      var needle = Trimmed(text);
-
-      return point => point.TryGetText(out var text) && Comparison.Equals(Trimmed(text), needle);
-    }
-
-    /// <summary>
     /// The same whole-cell comparison against what a cell <em>says</em>, whatever kind it is — the
     /// rule behind <c>RowSaying</c>. It is the one rule here with no text guard, and that is the
     /// whole of the difference: a numeric 42 says "42" and is found by this and by nothing else.
     /// <para>
     /// A rendering is the backend's choice rather than the cell's content, which is why this is the
-    /// opt-in rule and <see cref="TextEquals"/> is the default one. Nothing is widened to reach it.
+    /// rule the generic layer has; held-text matching is the value vocabulary's. Nothing is widened to reach it.
     /// </para>
     /// </summary>
     public static Func<Point<ISpace>, bool> SaysEquals(string text)

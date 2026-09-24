@@ -95,7 +95,6 @@ namespace Unrect.Tests.Spreadsheets
       for (var column = 0; column < 7; column++)
       {
         Assert.Equal(kinded.IsBlank(column, 0), canonical.IsBlank(column, 0));
-        Assert.Equal(kinded.IsText(column, 0), canonical.IsText(column, 0));
         Assert.Equal(kinded.AsText(column, 0), canonical.AsText(column, 0));
       }
     }

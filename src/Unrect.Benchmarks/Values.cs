@@ -97,7 +97,7 @@ namespace Unrect.Benchmarks
 
       for (var row = 0; row < CanonicalSpaces.MegaRows; row++)
         for (var column = 0; column < CanonicalSpaces.Columns; column++)
-          if (_mixed.TryGetTextAt(column, row, out _, out _))
+          if (_mixed.ValueAt(column, row).Kind == CellKind.Text)
             text++;
 
       return text;

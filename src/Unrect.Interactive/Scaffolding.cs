@@ -366,11 +366,11 @@ namespace Unrect.Interactive
 
       public bool IsBlank(int line, int position) => _sheet.IsBlank(Column(line, position), Row(line, position));
 
-      public bool IsText(int line, int position) => _sheet.TryGetTextAt(Column(line, position), Row(line, position), out _, out _);
+      public bool IsText(int line, int position) => _sheet.ValueAt(Column(line, position), Row(line, position)).Kind == CellKind.Text;
 
       public bool IsError(int line, int position) => _sheet.ValueAt(Column(line, position), Row(line, position)).Kind == CellKind.Error;
 
-      public bool Text(int line, int position, out string text) => _sheet.TryGetTextAt(Column(line, position), Row(line, position), out text, out _);
+      public bool Text(int line, int position, out string text) => _sheet.ValueAt(Column(line, position), Row(line, position)).TryGetText(out text);
 
       private static bool IsWhole(double number)
         => number >= int.MinValue && number <= int.MaxValue && Math.Floor(number) == number;

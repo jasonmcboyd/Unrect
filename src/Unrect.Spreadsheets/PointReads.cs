@@ -37,6 +37,17 @@ namespace Unrect.Spreadsheets
     // --- Asserting ------------------------------------------------------------------------------
 
     /// <summary>
+    /// The text the cell holds — <c>row["Name"].Text()</c>. Where <see cref="CanonicalReads.AsText{TSpace}"/>
+    /// takes whatever the cell says, this refuses a cell that holds anything else: a numeric 42 says
+    /// "42" and holds no text (<c>expected Text at B4, found Number</c>).
+    /// </summary>
+    /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>
+    /// <param name="point">The cell.</param>
+    public static string Text<TSpace>(this Point<TSpace> point)
+      where TSpace : class, ICellSpace
+      => point.TryGetText(out var value, out var problem) ? value : throw Failed(point, problem);
+
+    /// <summary>
     /// The cell's number as a <see cref="decimal"/> — a conversion, not a reading: a sheet holds
     /// doubles, and this converts the one it holds, rounding to the fifteen significant digits a
     /// double carries (a stored 0.30000000000000004 reads as 0.3, which for an amount is the right
@@ -93,6 +104,13 @@ namespace Unrect.Spreadsheets
     // They are separate methods rather than an OrBlank() chained on, because a read returns a value,
     // not a projection there is anything left to modify.
 
+    /// <summary>The text the cell holds, or null when the cell is blank. A cell of another kind still throws.</summary>
+    /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>
+    /// <param name="point">The cell.</param>
+    public static string? TextOrBlank<TSpace>(this Point<TSpace> point)
+      where TSpace : class, ICellSpace
+      => point.IsBlank() ? null : point.Text();
+
     /// <summary>The cell's number as a <see cref="decimal"/>, or null when the cell is blank. A cell of another kind still throws.</summary>
     /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>
     /// <param name="point">The cell.</param>
@@ -134,6 +152,13 @@ namespace Unrect.Spreadsheets
     // read: there is one definition of what a cell can be read as, and these cannot drift from it.
     // They ask about a READING, not a kind — a cell holding 1.5 is a double and not an integer.
     // A reader that wants "which one of the cases is it" switches on Value().Kind instead.
+
+    /// <summary>Whether <see cref="Text{TSpace}"/> would succeed — the cell holds text of its own.</summary>
+    /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>
+    /// <param name="point">The cell.</param>
+    public static bool IsText<TSpace>(this Point<TSpace> point)
+      where TSpace : class, ICellSpace
+      => point.Value().Kind == CellKind.Text;
 
     /// <summary>Whether <see cref="Double{TSpace}"/> would succeed — the cell holds a number.</summary>
     /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>
@@ -185,6 +210,23 @@ namespace Unrect.Spreadsheets
       => point.Value() is { Kind: CellKind.Error } value ? value.AsText() : null;
 
     // --- Trying ---------------------------------------------------------------------------------
+
+    /// <summary>The text the cell holds, if text is what it holds.</summary>
+    /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>
+    /// <param name="point">The cell.</param>
+    /// <param name="value">The cell's own text, when the answer is true.</param>
+    public static bool TryGetText<TSpace>(this Point<TSpace> point, out string value)
+      where TSpace : class, ICellSpace
+      => point.TryGetText(out value, out _);
+
+    /// <summary>The text the cell holds, or the reason it holds none — <c>expected Text, found Number</c>.</summary>
+    /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>
+    /// <param name="point">The cell.</param>
+    /// <param name="value">The cell's own text, when the answer is true.</param>
+    /// <param name="problem">Why not, when the answer is false; null when it is true.</param>
+    public static bool TryGetText<TSpace>(this Point<TSpace> point, out string value, out CellProblem? problem)
+      where TSpace : class, ICellSpace
+      => CellReading.Text(point.Value(), out value, out problem);
 
     /// <summary>The cell's number, if a number is what it holds.</summary>
     /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>

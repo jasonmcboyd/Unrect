@@ -45,10 +45,6 @@ namespace Unrect.Tests
     /// <inheritdoc/>
     public string? AsText(int column, int row) => _values.AsText(column, row);
 
-    /// <inheritdoc/>
-    public bool TryGetTextAt(int column, int row, out string value, out CellProblem? problem)
-      => _values.TryGetTextAt(column, row, out value, out problem);
-
     public CellValue ValueAt(int column, int row) => _values.ValueAt(column, row);
 
     /// <inheritdoc/>

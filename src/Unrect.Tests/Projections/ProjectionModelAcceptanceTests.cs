@@ -233,7 +233,7 @@ namespace Unrect.Tests.Projections
     /// <summary>A hoisted demanding helper: its space says what it requires, and it says so once.</summary>
     private static IProjectionDefinition<ISpreadsheetSpace, SourcedAllocation> SourcedRow()
       => ProjectionBuilders<ISpreadsheetSpace>.Overlay(o => new SourcedAllocation(
-        Account: o.Next(ProjectionBuilders<ISpreadsheetSpace>.Text()),
+        Account: o.Next(SpreadsheetProjectionBuilders<ISpreadsheetSpace>.Text()),
         Formula: o.Next(ProjectionBuilders<ISpreadsheetSpace>.Right(2)
           .Of(SpreadsheetProjections.Formula<ISpreadsheetSpace>()))));
 
@@ -259,7 +259,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal("VerticalRepeat", plainSections.Description);
       Assert.Equal("VerticalRepeat", demandingSections.Description);
 
-      var sourced = ProjectionBuilders<ISpreadsheetSpace>.On(ProjectionBuilders<ISpreadsheetSpace>.RowContaining("A-1"))
+      var sourced = ProjectionBuilders<ISpreadsheetSpace>.On(SpreadsheetProjectionBuilders<ISpreadsheetSpace>.RowContaining("A-1"))
         .Of(SourcedRow())
         .Map(CapableAllocations());
 

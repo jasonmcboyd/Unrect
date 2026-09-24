@@ -26,15 +26,6 @@ namespace Unrect.Strategies
         "no column with a matching cell");
 
     /// <summary>
-    /// The first column holding <paramref name="text"/> as a whole cell value, trimmed and
-    /// case-insensitively — the column twin of <see cref="RowLandmarks.RowContaining"/>.
-    /// </summary>
-    public static IColumnLandmark ColumnContaining(string text)
-      => new PredicateColumnLandmark(
-        CellMatching.AnyCellInColumn(CellMatching.TextEquals(NotNull(text, nameof(text)))),
-        $"no column containing '{text}'");
-
-    /// <summary>
     /// The first column in which some cell <em>says</em> <paramref name="text"/> — the transpose of
     /// <see cref="RowLandmarks.RowSaying"/>, with the same rule and the same reasons.
     /// </summary>

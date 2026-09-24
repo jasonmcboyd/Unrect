@@ -10,6 +10,7 @@
          reached for the Predicate*Landmark classes too; RowWhere/ColumnWhere's described overloads
          replaced that.) -->
     <InternalsVisibleTo Include="Unrect" />
+    <InternalsVisibleTo Include="Unrect.Spreadsheets" />
   </ItemGroup>
 
   <ItemGroup>

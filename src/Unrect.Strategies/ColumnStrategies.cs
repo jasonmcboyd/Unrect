@@ -31,18 +31,6 @@ namespace Unrect.Strategies
       => new TakeToColumnStrategy(predicate);
 
     /// <summary>
-    /// Columns up to and including the first whose cell in <paramref name="row"/> is the text
-    /// <paramref name="text"/> — the transpose of <see cref="RowStrategies.TakeRowsToText"/>, and
-    /// a text cell only, for the same reason.
-    /// </summary>
-    public static IColumnStrategy TakeColumnsToText(int row, string text)
-    {
-      var matches = CellMatching.TextEquals(text ?? throw new ArgumentNullException(nameof(text)));
-
-      return TakeColumnsTo((space, column) => matches(space[column, row]));
-    }
-
-    /// <summary>
     /// Every column of the available space. The declared spelling of "the full width", which
     /// otherwise has to be written as the opaque constant predicate <c>(s, c) =&gt; true</c>.
     /// </summary>

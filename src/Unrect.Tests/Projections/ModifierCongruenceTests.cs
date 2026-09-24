@@ -110,9 +110,9 @@ namespace Unrect.Tests.Projections
       { 4, "c1" },
     });
 
-    private static IRowLandmark Mark() => RowContaining("Mark");
+    private static IRowLandmark Mark() => RowContaining("Mark").Landmark;
 
-    private static IRowLandmark Missing() => RowContaining("Nope");
+    private static IRowLandmark Missing() => RowContaining("Nope").Landmark;
 
     /// <summary>A region that renders its own extent and contents, so every geometric difference shows.</summary>
     private static IProjectionDefinition<ICellSpace, string> Block() => Range(block =>

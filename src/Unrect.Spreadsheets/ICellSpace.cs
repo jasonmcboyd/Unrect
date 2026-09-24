@@ -12,7 +12,7 @@ namespace Unrect.Spreadsheets
   /// The readings — <c>p.Double()</c>, <c>p.IsDate()</c>, <c>p.TryGetBoolean(out …)</c>, the
   /// kinded leaves, the table binder — are extensions over the value (<see cref="PointReads"/>),
   /// which is where the kind vocabulary lives and where a failure is worded: a cell of the wrong
-  /// kind is a statement about the data, so it comes back as a <see cref="CellProblem"/> in the
+  /// kind is a statement about the data, so it comes back as a <see cref="Projections.CellProblem"/> in the
   /// document's vocabulary (<c>expected Number at B4, found Text</c>), never as an exception from
   /// the space. There is no decimal or integer here because there is none in a workbook: those are
   /// conversions over the double, asked for above the space and failing as conversions.

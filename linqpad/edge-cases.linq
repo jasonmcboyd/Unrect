@@ -108,7 +108,7 @@ string Message<T>(IProjectionDefinition<ISpreadsheetSpace, T> projection)
 new
 {
 	DecimalOverAnError = Message(OffsetBy(SkipRows(1)).Decimal()),      // A2 is #VALUE!
-	TextOverANumber = Message(OffsetBy(SkipColumns(1)).Text()),         // B1 is 42
+	TextOverANumber = Message(OffsetBy(SkipColumns(1)).Of(Text())),         // B1 is 42
 	IntegerOverAFraction = Message(OffsetBy(SkipColumns(2)).Integer()), // C1 is 3.14
 	AsTextOverTheSameNumber = Message(OffsetBy(SkipColumns(1)).AsText()),
 }.Dump("typed-leaf diagnostics");

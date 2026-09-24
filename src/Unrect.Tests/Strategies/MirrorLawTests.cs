@@ -140,11 +140,11 @@ namespace Unrect.Tests.Strategies
 
       // The same, located: 'o' sits in the last row and the third column, and swaps places under
       // the transpose.
-      Assert.Equal(3, RowLandmarks.RowContaining("o").FindRow(ragged));
-      Assert.Equal(2, ColumnLandmarks.ColumnContaining("o").FindColumn(ragged));
+      Assert.Equal(3, RowLandmarks.RowSaying("o").FindRow(ragged));
+      Assert.Equal(2, ColumnLandmarks.ColumnSaying("o").FindColumn(ragged));
 
-      Assert.Equal(2, RowLandmarks.RowContaining("o").FindRow(transposed));
-      Assert.Equal(3, ColumnLandmarks.ColumnContaining("o").FindColumn(transposed));
+      Assert.Equal(2, RowLandmarks.RowSaying("o").FindRow(transposed));
+      Assert.Equal(3, ColumnLandmarks.ColumnSaying("o").FindColumn(transposed));
     }
 
     // --- The while families: separate algorithms, one denotation (SRC-59) --------------------------------
@@ -183,8 +183,8 @@ namespace Unrect.Tests.Strategies
       // grids that have a cell to address. "Take while the leading cell is not m."
       Mirrored(
         WithCells,
-        RowStrategies.TakeRowsWhile((s, row) => !s[0, row].IsText() || s[0, row].AsText() != "m").SelectRows,
-        ColumnStrategies.TakeColumnsWhile((s, column) => !s[column, 0].IsText() || s[column, 0].AsText() != "m").SelectColumns);
+        RowStrategies.TakeRowsWhile((s, row) => s[0, row].AsText() != "m").SelectRows,
+        ColumnStrategies.TakeColumnsWhile((s, column) => s[column, 0].AsText() != "m").SelectColumns);
 
       // AllRows/AllColumns are the same pair with the constant predicate, which needs no cell to
       // address — so they are checked over every grid, degenerate ones included.
@@ -198,14 +198,14 @@ namespace Unrect.Tests.Strategies
       // keep-the-match flag the column class does not, so the shared denotation is this one.
       Mirrored(
         WithCells,
-        RowStrategies.TakeRowsTo((s, row) => s[0, row].IsText() && s[0, row].AsText() == "m").SelectRows,
-        ColumnStrategies.TakeColumnsTo((s, column) => s[column, 0].IsText() && s[column, 0].AsText() == "m").SelectColumns);
+        RowStrategies.TakeRowsTo((s, row) => s[0, row].AsText() == "m").SelectRows,
+        ColumnStrategies.TakeColumnsTo((s, column) => s[column, 0].AsText() == "m").SelectColumns);
 
       // ...and the by-text spelling of the same pair, which addresses its own cell.
       Mirrored(
         WithCells,
-        RowStrategies.TakeRowsToText(0, "m").SelectRows,
-        ColumnStrategies.TakeColumnsToText(0, "m").SelectColumns);
+        SheetProjectionBuilders<ICellSpace>.TakeRowsToText(0, "m").Strategy.SelectRows,
+        SheetProjectionBuilders<ICellSpace>.TakeColumnsToText(0, "m").Strategy.SelectColumns);
     }
 
     // --- Explicit counts ---------------------------------------------------------------------------------
@@ -326,31 +326,31 @@ namespace Unrect.Tests.Strategies
     public void RowContaining_MirrorsColumnContaining()
     {
       Mirrored(
-        RowLandmarks.RowContaining("o").FindRow,
-        ColumnLandmarks.ColumnContaining("o").FindColumn);
+        RowLandmarks.RowSaying("o").FindRow,
+        ColumnLandmarks.ColumnSaying("o").FindColumn);
 
       // A miss is null on both axes rather than an empty answer, and the trimmed,
       // case-insensitive, whole-cell rule is the same rule on both — the predicate is shared, the
       // scan around it is not.
       Mirrored(
-        RowLandmarks.RowContaining("nope").FindRow,
-        ColumnLandmarks.ColumnContaining("nope").FindColumn);
+        RowLandmarks.RowSaying("nope").FindRow,
+        ColumnLandmarks.ColumnSaying("nope").FindColumn);
 
       Mirrored(
-        RowLandmarks.RowContaining("  O  ").FindRow,
-        ColumnLandmarks.ColumnContaining("  O  ").FindColumn);
+        RowLandmarks.RowSaying("  O  ").FindRow,
+        ColumnLandmarks.ColumnSaying("  O  ").FindColumn);
 
       Mirrored(
-        RowLandmarks.RowContaining("").FindRow,
-        ColumnLandmarks.ColumnContaining("").FindColumn);
+        RowLandmarks.RowSaying("").FindRow,
+        ColumnLandmarks.ColumnSaying("").FindColumn);
     }
 
     [Fact]
     public void RowWithCell_MirrorsColumnWithCell()
     {
       Mirrored(
-        RowLandmarks.RowWithCell(cell => cell.IsText() && cell.AsText() == "h").FindRow,
-        ColumnLandmarks.ColumnWithCell(cell => cell.IsText() && cell.AsText() == "h").FindColumn);
+        RowLandmarks.RowWithCell(cell => cell.AsText() == "h").FindRow,
+        ColumnLandmarks.ColumnWithCell(cell => cell.AsText() == "h").FindColumn);
     }
 
     [Fact]
@@ -360,8 +360,8 @@ namespace Unrect.Tests.Strategies
       // leading cell is m" against "the first column whose leading cell is m".
       Mirrored(
         WithCells,
-        RowLandmarks.RowWhere((s, row) => s[0, row].IsText() && s[0, row].AsText() == "m").FindRow,
-        ColumnLandmarks.ColumnWhere((s, column) => s[column, 0].IsText() && s[column, 0].AsText() == "m").FindColumn);
+        RowLandmarks.RowWhere((s, row) => s[0, row].AsText() == "m").FindRow,
+        ColumnLandmarks.ColumnWhere((s, column) => s[column, 0].AsText() == "m").FindColumn);
     }
 
     // --- Where the mirror deliberately stops --------------------------------------------------------------
@@ -372,8 +372,8 @@ namespace Unrect.Tests.Strategies
       // The specific, intended break. Every law above is about a number; this is about the sentence
       // built from it, and the sentence names the axis it is talking about. A mechanized transpose
       // would have made these one string and sent the reader looking down the wrong axis.
-      Assert.Equal("no row containing 'Total'", RowLandmarks.RowContaining("Total").Description);
-      Assert.Equal("no column containing 'Total'", ColumnLandmarks.ColumnContaining("Total").Description);
+      Assert.Equal("no row saying 'Total'", RowLandmarks.RowSaying("Total").Description);
+      Assert.Equal("no column saying 'Total'", ColumnLandmarks.ColumnSaying("Total").Description);
 
       Assert.Equal("no row with a matching cell", RowLandmarks.RowWithCell(_ => false).Description);
       Assert.Equal("no column with a matching cell", ColumnLandmarks.ColumnWithCell(_ => false).Description);

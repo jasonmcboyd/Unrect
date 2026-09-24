@@ -31,41 +31,5 @@ namespace Unrect.Core
     public static string? AsText<TSpace>(this Point<TSpace> point)
       where TSpace : class, ISpace
       => point.Space.AsText(point.Column, point.Row);
-
-    /// <summary>
-    /// Whether the cell holds text of its own — true exactly when <see cref="TryGetText{TSpace}(Point{TSpace}, out string)"/>
-    /// would hand it back.
-    /// </summary>
-    /// <typeparam name="TSpace">The space the point addresses a cell of.</typeparam>
-    /// <param name="point">The cell.</param>
-    public static bool IsText<TSpace>(this Point<TSpace> point)
-      where TSpace : class, ISpace
-      => point.Space.TryGetTextAt(point.Column, point.Row, out _, out _);
-
-    /// <summary>The text the cell holds, if text is what it holds — see <see cref="ISpace.TryGetTextAt"/>.</summary>
-    /// <typeparam name="TSpace">The space the point addresses a cell of.</typeparam>
-    /// <param name="point">The cell.</param>
-    /// <param name="value">The cell's own text, when the answer is true.</param>
-    public static bool TryGetText<TSpace>(this Point<TSpace> point, out string value)
-      where TSpace : class, ISpace
-      => point.Space.TryGetTextAt(point.Column, point.Row, out value, out _);
-
-    /// <summary>
-    /// The text the cell holds, or the reason it holds none — the space's own reason where it gave
-    /// one, otherwise what was expected and what the cell says instead.
-    /// </summary>
-    /// <typeparam name="TSpace">The space the point addresses a cell of.</typeparam>
-    /// <param name="point">The cell.</param>
-    /// <param name="value">The cell's own text, when the answer is true.</param>
-    /// <param name="problem">Why not, when the answer is false; null when it is true.</param>
-    public static bool TryGetText<TSpace>(this Point<TSpace> point, out string value, out CellProblem? problem)
-      where TSpace : class, ISpace
-    {
-      if (point.Space.TryGetTextAt(point.Column, point.Row, out value, out problem))
-        return true;
-
-      problem ??= CellProblem.Expected("Text", point.Space, point.Column, point.Row);
-      return false;
-    }
   }
 }

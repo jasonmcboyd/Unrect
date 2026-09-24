@@ -96,11 +96,11 @@ namespace Unrect.Tests.Strategies
       };
 
     /// <summary>
-    /// The predicate a declaration writes when it means "the cell that says <paramref name="text"/>".
-    /// Today the only text a cell offers is a <see cref="CellKind.Text"/> cell's own string, so a
-    /// number, a date, a boolean and an error are all invisible to it.
+    /// The predicate a declaration writes when it means "the cell that holds <paramref name="text"/>":
+    /// a typed predicate, because whether a cell holds text is the value's question, and a number, a
+    /// date, a boolean and an error are all invisible to it.
     /// </summary>
-    private static Func<Point<ISpace>, bool> Says(string text) => cell => cell.IsText() && cell.AsText()!.Trim() == text;
+    private static Func<Point<ICellSpace>, bool> Holds(string text) => cell => cell.IsText() && cell.AsText()!.Trim() == text;
 
     /// <summary>A junk row, then <paramref name="value"/> at A2 with a neighbour at B2.</summary>
     private static ICellSpace RowsHolding(object? value) => Mixed(new object?[,]
@@ -153,14 +153,14 @@ namespace Unrect.Tests.Strategies
     [MemberData(nameof(Needles))]
     public void RowContaining_DoesNotMatchANonTextCellsText(string kind, string text)
     {
-      Assert.Null(RowLandmarks.RowContaining(text).FindRow(RowsHolding(CellOf(kind))));
+      Assert.Null(RowContaining(text).Landmark.FindRow(RowsHolding(CellOf(kind))));
     }
 
     [Theory]
     [MemberData(nameof(NeedleTexts))]
     public void RowContaining_MatchesATextCellSpellingTheSameThing(string text)
     {
-      Assert.Equal(1, RowLandmarks.RowContaining(text).FindRow(RowsHolding(text)));
+      Assert.Equal(1, RowContaining(text).Landmark.FindRow(RowsHolding(text)));
     }
 
     // --- RowWithCell --------------------------------------------------------------------------------
@@ -169,14 +169,14 @@ namespace Unrect.Tests.Strategies
     [MemberData(nameof(Needles))]
     public void RowWithCell_DoesNotMatchANonTextCellsText(string kind, string text)
     {
-      Assert.Null(RowLandmarks.RowWithCell(Says(text)).FindRow(RowsHolding(CellOf(kind))));
+      Assert.Null(RowWithCell(Holds(text)).Landmark.FindRow(RowsHolding(CellOf(kind))));
     }
 
     [Theory]
     [MemberData(nameof(NeedleTexts))]
     public void RowWithCell_MatchesATextCellSpellingTheSameThing(string text)
     {
-      Assert.Equal(1, RowLandmarks.RowWithCell(Says(text)).FindRow(RowsHolding(text)));
+      Assert.Equal(1, RowWithCell(Holds(text)).Landmark.FindRow(RowsHolding(text)));
     }
 
     // --- ColumnContaining ---------------------------------------------------------------------------
@@ -185,14 +185,14 @@ namespace Unrect.Tests.Strategies
     [MemberData(nameof(Needles))]
     public void ColumnContaining_DoesNotMatchANonTextCellsText(string kind, string text)
     {
-      Assert.Null(ColumnLandmarks.ColumnContaining(text).FindColumn(ColumnsHolding(CellOf(kind))));
+      Assert.Null(ColumnContaining(text).Landmark.FindColumn(ColumnsHolding(CellOf(kind))));
     }
 
     [Theory]
     [MemberData(nameof(NeedleTexts))]
     public void ColumnContaining_MatchesATextCellSpellingTheSameThing(string text)
     {
-      Assert.Equal(1, ColumnLandmarks.ColumnContaining(text).FindColumn(ColumnsHolding(text)));
+      Assert.Equal(1, ColumnContaining(text).Landmark.FindColumn(ColumnsHolding(text)));
     }
 
     // --- ColumnWithCell -----------------------------------------------------------------------------
@@ -201,14 +201,14 @@ namespace Unrect.Tests.Strategies
     [MemberData(nameof(Needles))]
     public void ColumnWithCell_DoesNotMatchANonTextCellsText(string kind, string text)
     {
-      Assert.Null(ColumnLandmarks.ColumnWithCell(Says(text)).FindColumn(ColumnsHolding(CellOf(kind))));
+      Assert.Null(ColumnWithCell(Holds(text)).Landmark.FindColumn(ColumnsHolding(CellOf(kind))));
     }
 
     [Theory]
     [MemberData(nameof(NeedleTexts))]
     public void ColumnWithCell_MatchesATextCellSpellingTheSameThing(string text)
     {
-      Assert.Equal(1, ColumnLandmarks.ColumnWithCell(Says(text)).FindColumn(ColumnsHolding(text)));
+      Assert.Equal(1, ColumnWithCell(Holds(text)).Landmark.FindColumn(ColumnsHolding(text)));
     }
 
     // --- Caption ------------------------------------------------------------------------------------
@@ -273,7 +273,7 @@ namespace Unrect.Tests.Strategies
       Assert.Equal(1, RowLandmarks.RowSaying(text).FindRow(cells));
 
       // The other half, restated here so the pair reads as one fact rather than two files apart.
-      Assert.Null(RowLandmarks.RowContaining(text).FindRow(cells));
+      Assert.Null(RowContaining(text).Landmark.FindRow(cells));
     }
 
     [Theory]
@@ -283,7 +283,7 @@ namespace Unrect.Tests.Strategies
       var cells = ColumnsHolding(CellOf(kind));
 
       Assert.Equal(1, ColumnLandmarks.ColumnSaying(text).FindColumn(cells));
-      Assert.Null(ColumnLandmarks.ColumnContaining(text).FindColumn(cells));
+      Assert.Null(ColumnContaining(text).Landmark.FindColumn(cells));
     }
 
     [Theory]
@@ -294,10 +294,10 @@ namespace Unrect.Tests.Strategies
       // the narrow rule finds as well as the kinds it refuses. A rule that had somehow swapped the
       // two would pass every theory above and fail here.
       Assert.Equal(1, RowLandmarks.RowSaying(text).FindRow(RowsHolding(text)));
-      Assert.Equal(1, RowLandmarks.RowContaining(text).FindRow(RowsHolding(text)));
+      Assert.Equal(1, RowContaining(text).Landmark.FindRow(RowsHolding(text)));
 
       Assert.Equal(1, ColumnLandmarks.ColumnSaying(text).FindColumn(ColumnsHolding(text)));
-      Assert.Equal(1, ColumnLandmarks.ColumnContaining(text).FindColumn(ColumnsHolding(text)));
+      Assert.Equal(1, ColumnContaining(text).Landmark.FindColumn(ColumnsHolding(text)));
     }
 
     [Theory]

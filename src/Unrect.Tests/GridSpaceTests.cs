@@ -79,7 +79,6 @@ namespace Unrect.Tests
 
       Assert.Throws<OutOfBoundsException>(() => { _ = space.ValueAt(column, row); });
       Assert.Throws<OutOfBoundsException>(() => { _ = space.IsBlank(column, row); });
-      Assert.Throws<OutOfBoundsException>(() => { _ = space.IsText(column, row); });
       Assert.Throws<OutOfBoundsException>(() => { _ = space.AsText(column, row); });
     }
 
@@ -106,7 +105,6 @@ namespace Unrect.Tests
       var space = GridSpace.Create(new[,] { { 0 } }, isBlank: v => v == 0);
 
       Assert.True(space.IsBlank(0, 0));
-      Assert.False(space.IsText(0, 0));
       Assert.Null(space.AsText(0, 0));
       Assert.Equal(0, space.ValueAt(0, 0));
     }
@@ -136,25 +134,21 @@ namespace Unrect.Tests
       var space = GridSpace.Create(new string?[,] { { "x", "", null } });
 
       Assert.Equal("x", space.AsText(0, 0));
-      Assert.True(space.IsText(0, 0));
       Assert.True(space.IsBlank(1, 0));
       Assert.True(space.IsBlank(2, 0));
     }
 
     [Fact]
-    public void Create_WithTheThreeRules_AdaptsArbitraryValues()
+    public void Create_WithBothRules_AdaptsArbitraryValues()
     {
       // The general door, and the whole of what a source has to decide: which values are empty
-      // cells, which say a word of their own, and what the rest render as. A "-" is an empty cell, a
-      // word is its own text, and a flag renders the way a sheet's would.
+      // cells, and what the rest say. A "-" is an empty cell, and a flag says what a sheet's would.
       var space = GridSpace.Create(
         new[,] { { "yes", "-", "no" } },
         isBlank: v => v == "-",
-        isText: v => v != "yes" && v != "no",
         asText: v => v == "yes" ? "TRUE" : "FALSE");
 
       Assert.Equal("TRUE", space.AsText(0, 0));
-      Assert.False(space.IsText(0, 0));
       Assert.True(space.IsBlank(1, 0));
       Assert.Equal("FALSE", space.AsText(2, 0));
     }
@@ -163,17 +157,15 @@ namespace Unrect.Tests
     public void Create_WithValuesOfAnyType_RendersEachAsItsOwnKindImplies()
     {
       // The heterogeneous door, which is what lets a fixture be written as a literal: null and ""
-      // are blank, a string is its own text, and everything else renders the way a spreadsheet's
+      // are blank, a string says itself, and everything else renders the way a spreadsheet's
       // does rather than the way its CLR type's ToString happens to.
       var space = GridSpace.Create(new object?[,]
       {
         { "word", 42, 3.5, new DateTime(2026, 1, 15), true, null, "" },
       });
 
-      Assert.True(space.IsText(0, 0));
       Assert.Equal("word", space.AsText(0, 0));
 
-      Assert.False(space.IsText(1, 0));
       Assert.Equal("42", space.AsText(1, 0));
       Assert.Equal("3.5", space.AsText(2, 0));
       Assert.Equal("2026-01-15", space.AsText(3, 0));
@@ -232,19 +224,6 @@ namespace Unrect.Tests
     }
 
     [Fact]
-    public void AndOnlyAStringIsItsOwnText()
-    {
-      // IsText is the question "is this cell's canonical text its own value" — true for a string,
-      // false for everything that RENDERS, and false for a blank. It is what the matchers are closed
-      // over, so getting it wrong makes RowContaining match numbers by their rendering.
-      var space = GridSpace.Create(new object?[,] { { "word", 42, null } });
-
-      Assert.True(space.IsText(0, 0));
-      Assert.False(space.IsText(1, 0));
-      Assert.False(space.IsText(2, 0));
-    }
-
-    [Fact]
     public void Create_NeedsEveryRuleItWasNotGivenADefaultFor()
     {
       // Not a bounds condition: a grid with no rule for blankness could not answer the one question
@@ -252,11 +231,9 @@ namespace Unrect.Tests
       var values = new[,] { { 1 } };
 
       Assert.Throws<ArgumentNullException>(
-        () => GridSpace.Create(values, isBlank: null!, isText: _ => false, asText: v => v.ToString(CultureInfo.InvariantCulture)));
+        () => GridSpace.Create(values, isBlank: null!, asText: v => v.ToString(CultureInfo.InvariantCulture)));
       Assert.Throws<ArgumentNullException>(
-        () => GridSpace.Create(values, isBlank: _ => false, isText: null!, asText: v => v.ToString(CultureInfo.InvariantCulture)));
-      Assert.Throws<ArgumentNullException>(
-        () => GridSpace.Create(values, isBlank: _ => false, isText: _ => false, asText: null!));
+        () => GridSpace.Create(values, isBlank: _ => false, asText: null!));
       Assert.Throws<ArgumentNullException>(() => GridSpace.Create((int[,])null!));
     }
   }

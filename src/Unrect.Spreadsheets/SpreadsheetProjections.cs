@@ -2,6 +2,7 @@ using System;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Strategies;
 
 namespace Unrect.Spreadsheets
 {
@@ -76,6 +77,71 @@ namespace Unrect.Spreadsheets
     public static IProjectionDefinition<TSpace, bool> Boolean<TSpace>()
       where TSpace : class, ICellSpace
       => Kinded<TSpace, bool>("Boolean", (Point<TSpace> cell, out bool v, out CellProblem? p) => cell.TryGetBoolean(out v, out p));
+
+    /// <summary>
+    /// One cell holding text — the held-text leaf, closed over the value: where <c>AsText()</c>
+    /// takes whatever the cell says, this refuses a cell that holds anything else, in the sheet's
+    /// own words (<c>expected Text at B4, found Number</c>).
+    /// </summary>
+    /// <typeparam name="TSpace">The sheet the leaf is declared over.</typeparam>
+    public static IProjectionDefinition<TSpace, string> Text<TSpace>()
+      where TSpace : class, ICellSpace
+      => Kinded<TSpace, string>("Text", (Point<TSpace> cell, out string v, out CellProblem? p) => cell.TryGetText(out v, out p));
+
+    // --- Held-text matching -----------------------------------------------------------------------
+    //
+    // The generic matchers ask what a cell SAYS, which every space answers. These ask what a cell
+    // HOLDS — text cells alone, so a numeric 2024 is not a row containing "2024" — which is a
+    // question about the value's kind, and so a sheet's to ask. The comparison is the one every
+    // matcher and caption shares (CellMatching.TextComparer): whole-cell, trimmed, case-insensitive.
+
+    /// <summary>
+    /// The first row holding <paramref name="text"/> as a whole cell value, trimmed and
+    /// case-insensitively — text cells alone; <c>RowSaying</c> is the same comparison against what
+    /// every cell says.
+    /// </summary>
+    /// <typeparam name="TSpace">The sheet the landmark is declared over.</typeparam>
+    public static IRowLandmark<TSpace> RowContaining<TSpace>(string text)
+      where TSpace : class, ICellSpace
+      => Demanding.Row<TSpace>(RowLandmarks.RowWhere(
+        CellMatching.AnyCellInRow(Holding<TSpace>(NotNull(text))), $"no row containing '{text}'"));
+
+    /// <summary>The column twin of <see cref="RowContaining{TSpace}"/>, with the same rule.</summary>
+    /// <typeparam name="TSpace">The sheet the landmark is declared over.</typeparam>
+    public static IColumnLandmark<TSpace> ColumnContaining<TSpace>(string text)
+      where TSpace : class, ICellSpace
+      => Demanding.Column<TSpace>(ColumnLandmarks.ColumnWhere(
+        CellMatching.AnyCellInColumn(Holding<TSpace>(NotNull(text))), $"no column containing '{text}'"));
+
+    /// <summary>
+    /// Rows up to and including the first whose cell in <paramref name="column"/> holds
+    /// <paramref name="text"/> — whole-cell, trimmed, case-insensitive, text cells alone.
+    /// </summary>
+    /// <typeparam name="TSpace">The sheet the rule is declared over.</typeparam>
+    public static IRowStrategy<TSpace> TakeRowsToText<TSpace>(int column, string text)
+      where TSpace : class, ICellSpace
+    {
+      var matches = Holding<TSpace>(NotNull(text));
+
+      return Demanding.Rows<TSpace>(RowStrategies.TakeRowsTo((space, row) => matches(space[column, row])));
+    }
+
+    /// <summary>The column twin of <see cref="TakeRowsToText{TSpace}"/>: columns up to and including the first whose cell in <paramref name="row"/> holds <paramref name="text"/>.</summary>
+    /// <typeparam name="TSpace">The sheet the rule is declared over.</typeparam>
+    public static IColumnStrategy<TSpace> TakeColumnsToText<TSpace>(int row, string text)
+      where TSpace : class, ICellSpace
+    {
+      var matches = Holding<TSpace>(NotNull(text));
+
+      return Demanding.Columns<TSpace>(ColumnStrategies.TakeColumnsTo((space, column) => matches(space[column, row])));
+    }
+
+    /// <summary>A cell holding <paramref name="text"/>, lowered to the calculus: the value's own text, compared by the shared rule.</summary>
+    private static Func<Point<ISpace>, bool> Holding<TSpace>(string text)
+      where TSpace : class, ICellSpace
+      => TypedPredicates.Lower<TSpace>(point => point.TryGetText(out var held) && CellMatching.TextComparer.Equals(held, text));
+
+    private static string NotNull(string text) => text ?? throw new ArgumentNullException(nameof(text));
 
     internal static IProjectionDefinition<TSpace, T> Kinded<TSpace, T>(string kind, CellRead<TSpace, T> read)
       where TSpace : class, ICellSpace

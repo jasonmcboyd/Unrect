@@ -535,7 +535,6 @@ namespace Unrect.Tests.Streaming
       var kept = GridSpace.Create(new[,] { { "  " } });
 
       Assert.False(kept.IsBlank(0, 0));
-      Assert.True(kept.IsText(0, 0));
       Assert.Equal("  ", kept.AsText(0, 0));
     }
 
