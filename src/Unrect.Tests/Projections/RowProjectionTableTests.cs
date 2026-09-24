@@ -452,6 +452,6 @@ namespace Unrect.Tests.Projections
     /// What a cell says where its own text is its value, and a dash where there is nothing to say.
     /// The reading the two walks are compared on, written once so they cannot differ by spelling.
     /// </summary>
-    private static string Said(Point<ICellSpace> cell) => cell.IsText ? cell.Text() : "-";
+    private static string Said(Point<ICellSpace> cell) => cell.IsText() ? cell.Text() : "-";
   }
 }

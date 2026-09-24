@@ -47,7 +47,7 @@ namespace Unrect.Tests.Machines
       {
         var rows = 0;
 
-        while (rows < plane.Area.Height && Enumerable.Range(0, plane.Width).All(column => plane[column, rows].IsBlank))
+        while (rows < plane.Area.Height && Enumerable.Range(0, plane.Width).All(column => plane[column, rows].IsBlank()))
           rows++;
 
         return new Size(0, rows);

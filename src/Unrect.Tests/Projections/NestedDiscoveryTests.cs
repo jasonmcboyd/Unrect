@@ -1,3 +1,4 @@
+using Unrect.Core;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
 
@@ -61,7 +62,7 @@ namespace Unrect.Tests.Projections
     private static IAreaStrategy<ICellSpace> NumericRowsAndValuedColumns()
       => RowsThenColumns(
         TakeRowsWhileAny(cell => cell.IsDouble()),
-        TakeColumnsWhileAny(cell => cell.HasValue));
+        TakeColumnsWhileAny(cell => cell.HasValue()));
 
     [Fact]
     public void AChildTakingTheWholeExtentTakesItsParentsAndNotTheSheets()

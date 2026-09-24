@@ -39,8 +39,8 @@ var strictSpace = SpreadsheetSpace.CreateWithFormulas(path, "Edges", isBlank: _ 
 // that wants one word per cell asks the questions in the order it cares about. Each Is… is true
 // exactly when the read of the same name would succeed.
 string Reads(Point<ISpreadsheetSpace> p)
-	=> p.IsBlank ? "Blank"
-	: p.IsText ? "Text"
+	=> p.IsBlank() ? "Blank"
+	: p.IsText() ? "Text"
 	: p.IsInteger() ? "Number (whole)"
 	: p.IsDouble() ? "Number"
 	: p.IsDate() ? "Date"
@@ -62,15 +62,15 @@ new
 	IsError = err.IsError(),
 	ErrorText = err.ErrorText(),
 	AsText = err.AsText(),
-	err.IsBlank,
-	err.IsText,
+	err.IsBlank(),
+	err.IsText(),
 	DecimalRefuses = ((Func<string>)(() => { try { err.Decimal(); return "no"; } catch (CellReadException ex) { return ex.Message; } }))(),
 }.Dump("the #VALUE! cell");
 
 // 3. Blankness belongs to the adapter: the same whitespace row under both rules. IsText separates
 // a cell whose text is its own value from one that merely renders — the distinction the canonical
 // surface is built on.
-string Say(Point<ISpreadsheetSpace> p) => $"{Reads(p)}, says {p.AsText() ?? "null"}, IsBlank={p.IsBlank}, IsText={p.IsText}";
+string Say(Point<ISpreadsheetSpace> p) => $"{Reads(p)}, says {p.AsText() ?? "null"}, IsBlank={p.IsBlank()}, IsText={p.IsText()}";
 new
 {
 	TwoSpaces_Default = Say(defaultSpace.At(0, 2)),

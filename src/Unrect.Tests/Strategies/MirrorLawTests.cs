@@ -38,7 +38,7 @@ namespace Unrect.Tests.Strategies
   /// </summary>
   public class MirrorLawTests
   {
-    private static bool HasValue(Point<ISpace> value) => value.HasValue;
+    private static bool HasValue(Point<ISpace> value) => value.HasValue();
 
     // --- The grids ------------------------------------------------------------------------------------
     //
@@ -183,8 +183,8 @@ namespace Unrect.Tests.Strategies
       // grids that have a cell to address. "Take while the leading cell is not m."
       Mirrored(
         WithCells,
-        RowStrategies.TakeRowsWhile((s, row) => !s[0, row].IsText || s[0, row].AsText() != "m").SelectRows,
-        ColumnStrategies.TakeColumnsWhile((s, column) => !s[column, 0].IsText || s[column, 0].AsText() != "m").SelectColumns);
+        RowStrategies.TakeRowsWhile((s, row) => !s[0, row].IsText() || s[0, row].AsText() != "m").SelectRows,
+        ColumnStrategies.TakeColumnsWhile((s, column) => !s[column, 0].IsText() || s[column, 0].AsText() != "m").SelectColumns);
 
       // AllRows/AllColumns are the same pair with the constant predicate, which needs no cell to
       // address — so they are checked over every grid, degenerate ones included.
@@ -198,8 +198,8 @@ namespace Unrect.Tests.Strategies
       // keep-the-match flag the column class does not, so the shared denotation is this one.
       Mirrored(
         WithCells,
-        RowStrategies.TakeRowsTo((s, row) => s[0, row].IsText && s[0, row].AsText() == "m").SelectRows,
-        ColumnStrategies.TakeColumnsTo((s, column) => s[column, 0].IsText && s[column, 0].AsText() == "m").SelectColumns);
+        RowStrategies.TakeRowsTo((s, row) => s[0, row].IsText() && s[0, row].AsText() == "m").SelectRows,
+        ColumnStrategies.TakeColumnsTo((s, column) => s[column, 0].IsText() && s[column, 0].AsText() == "m").SelectColumns);
 
       // ...and the by-text spelling of the same pair, which addresses its own cell.
       Mirrored(
@@ -349,8 +349,8 @@ namespace Unrect.Tests.Strategies
     public void RowWithCell_MirrorsColumnWithCell()
     {
       Mirrored(
-        RowLandmarks.RowWithCell(cell => cell.IsText && cell.AsText() == "h").FindRow,
-        ColumnLandmarks.ColumnWithCell(cell => cell.IsText && cell.AsText() == "h").FindColumn);
+        RowLandmarks.RowWithCell(cell => cell.IsText() && cell.AsText() == "h").FindRow,
+        ColumnLandmarks.ColumnWithCell(cell => cell.IsText() && cell.AsText() == "h").FindColumn);
     }
 
     [Fact]
@@ -360,8 +360,8 @@ namespace Unrect.Tests.Strategies
       // leading cell is m" against "the first column whose leading cell is m".
       Mirrored(
         WithCells,
-        RowLandmarks.RowWhere((s, row) => s[0, row].IsText && s[0, row].AsText() == "m").FindRow,
-        ColumnLandmarks.ColumnWhere((s, column) => s[column, 0].IsText && s[column, 0].AsText() == "m").FindColumn);
+        RowLandmarks.RowWhere((s, row) => s[0, row].IsText() && s[0, row].AsText() == "m").FindRow,
+        ColumnLandmarks.ColumnWhere((s, column) => s[column, 0].IsText() && s[column, 0].AsText() == "m").FindColumn);
     }
 
     // --- Where the mirror deliberately stops --------------------------------------------------------------

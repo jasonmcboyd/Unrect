@@ -35,10 +35,10 @@ var space = SpreadsheetSpace.CreateWithFormulas(path, "Sheet1");
 
 // A cell comes back as a place, and the reading is written at it: an ATAX code is either the words
 // in a text cell or a whole number, and the cell's own kind says which.
-string Code(Point<ISpreadsheetSpace> cell) => cell.IsText ? cell.Text() : cell.IntegerOrBlank()?.ToString() ?? "";
+string Code(Point<ISpreadsheetSpace> cell) => cell.IsText() ? cell.Text() : cell.IntegerOrBlank()?.ToString() ?? "";
 
 int Find(Point<ISpreadsheetSpace>[] row, string caption) => Array.FindIndex(row,
-	cell => cell.IsText && string.Equals(cell.Text().Trim(), caption, StringComparison.OrdinalIgnoreCase));
+	cell => cell.IsText() && string.Equals(cell.Text().Trim(), caption, StringComparison.OrdinalIgnoreCase));
 
 // A full-width single row anchored by a content seek. AllColumns() is the declared spelling of
 // "the whole width" — Row's default discovers its width and would stop at the first gap, and a
@@ -86,7 +86,7 @@ var header = Sized(RowsWhileAnyValue()).Of(Overlay(o =>
 	var columns = new[] { (Code: "FEDERAL", Percent: 1.0, Column: Find(captions, "Federal")) }
 		.Concat(fundNames
 			.Select((cell, i) => (Cell: cell, Index: i))
-			.Where(x => x.Index > label && x.Cell.HasValue)
+			.Where(x => x.Index > label && x.Cell.HasValue())
 			.Select(x => (Code: x.Cell.Text(), Percent: ownership[x.Index].Double(), Column: x.Index)))
 		.ToArray();
 
@@ -117,7 +117,7 @@ var report = VerticalFlow(v => new
 
 	// Every coded row across both sections, pivot-neutral.
 	var allRows = r.K1Rows.Concat(r.PortfolioRows ?? Array.Empty<Point<ISpreadsheetSpace>[]>())
-		.Where(row => row[head.AtaxColumn].HasValue)
+		.Where(row => row[head.AtaxColumn].HasValue())
 		.ToArray();
 
 	// Fund-centric pivot, legacy-import-style: each fund carries only its non-empty, non-zero

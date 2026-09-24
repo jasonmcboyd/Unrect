@@ -144,10 +144,10 @@ namespace Unrect.Tests.Spreadsheets
       // What is underneath the kinded reads, and what a declaration over a plain grid is left with.
       // Nothing here can fail: a blank cell has an address, an error cell has an address, and both
       // render.
-      Assert.True(Of(null).IsBlank);
-      Assert.False(Of("hello").IsBlank);
-      Assert.True(Of("hello").IsText);
-      Assert.False(Of(1.5m).IsText);
+      Assert.True(Of(null).IsBlank());
+      Assert.False(Of("hello").IsBlank());
+      Assert.True(Of("hello").IsText());
+      Assert.False(Of(1.5m).IsText());
       Assert.Equal("1.5", Of(1.5m).AsText());
       Assert.Null(Of(null).AsText());
     }
@@ -161,12 +161,12 @@ namespace Unrect.Tests.Spreadsheets
       // any cell: a rule that had to guard its question with a try would not be a rule.
       var cells = new[] { Of(null), Of("hello"), Of(1.5m), Of(Moment), Of(true), Of(Cell.OfError(CellError.DivisionByZero)) };
 
-      Assert.Equal(new[] { false, true, false, false, false, false }, cells.Select(c => c.IsText).ToArray());
+      Assert.Equal(new[] { false, true, false, false, false, false }, cells.Select(c => c.IsText()).ToArray());
       Assert.Equal(new[] { false, false, true, false, false, false }, cells.Select(c => c.IsDouble()).ToArray());
       Assert.Equal(new[] { false, false, false, true, false, false }, cells.Select(c => c.IsDate()).ToArray());
       Assert.Equal(new[] { false, false, false, false, true, false }, cells.Select(c => c.IsBoolean()).ToArray());
       Assert.Equal(new[] { false, false, false, false, false, true }, cells.Select(c => c.IsError()).ToArray());
-      Assert.Equal(new[] { true, false, false, false, false, false }, cells.Select(c => c.IsBlank).ToArray());
+      Assert.Equal(new[] { true, false, false, false, false, false }, cells.Select(c => c.IsBlank()).ToArray());
     }
 
     [Fact]
@@ -176,7 +176,7 @@ namespace Unrect.Tests.Spreadsheets
       // that then refused it — two readings of one cell — cannot happen.
       foreach (var cell in new[] { Of(null), Of("x"), Of(1.5m), Of(2m), Of(1e30), Of(Moment), Of(true) })
       {
-        Assert.Equal(cell.IsText, Succeeds(() => cell.Text()));
+        Assert.Equal(cell.IsText(), Succeeds(() => cell.Text()));
         Assert.Equal(cell.IsDouble(), Succeeds(() => cell.Double()));
         Assert.Equal(cell.IsDecimal(), Succeeds(() => cell.Decimal()));
         Assert.Equal(cell.IsInteger(), Succeeds(() => cell.Integer()));

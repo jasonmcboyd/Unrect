@@ -108,7 +108,7 @@ namespace Unrect.Tests
     public void SelectColumnsForwards()
     {
       var space = Sheet();
-      var strategy = ColumnStrategies.TakeColumnsWhileAll(point => point.HasValue);
+      var strategy = ColumnStrategies.TakeColumnsWhileAll(point => point.HasValue());
 
       Assert.Equal(strategy.SelectColumns(Plane<ISpace>.Of(space)), strategy.SelectColumns(space));
 

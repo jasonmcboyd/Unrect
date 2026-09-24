@@ -27,6 +27,6 @@ namespace Unrect.Projections
     /// <param name="point">The cell.</param>
     public static string? TextOrBlank<TSpace>(this Point<TSpace> point)
       where TSpace : class, ISpace
-      => point.IsBlank ? null : point.Text();
+      => point.IsBlank() ? null : point.Text();
   }
 }

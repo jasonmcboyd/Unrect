@@ -127,7 +127,7 @@ namespace Unrect.Tests.Projections
     });
 
     private static string Describe(Point<ICellSpace> cell)
-      => cell.IsBlank ? "_" : cell.IsText ? cell.Text() : cell.Describe();
+      => cell.IsBlank() ? "_" : cell.IsText() ? cell.Text() : cell.Describe();
 
     /// <summary>
     /// One modifier, by name — so a theory can name a pair rather than carry two lambdas. The

@@ -20,7 +20,7 @@ namespace Unrect.Strategies
         var reach = Spans.Across(region, _along);
 
         for (across = 0; across < reach; across++)
-          if (Spans.Cell(region, index, across, _along).HasValue)
+          if (Spans.Cell(region, index, across, _along).HasValue())
             return OffsetStep.StartHere;
 
         across = 0;

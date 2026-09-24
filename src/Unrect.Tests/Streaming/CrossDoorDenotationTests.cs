@@ -6,6 +6,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text;
 
+using Unrect.Core;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
 
@@ -290,7 +291,7 @@ namespace Unrect.Tests.Streaming
       // has something to say about where the declaration stops.
       "one row of a report" => Scenario.Of(Row(cells => cells.Count), "report"),
       "a flow of two leaves" => Scenario.Of(
-        VerticalFlow(v => $"{v.Next(Text())}|{v.Next(Point().Select(point => point.IsBlank ? "-" : "x"))}"),
+        VerticalFlow(v => $"{v.Next(Text())}|{v.Next(Point().Select(point => point.IsBlank() ? "-" : "x"))}"),
         "report"),
 
       // An overlay whose second child places itself three rows down and one across: an extent far

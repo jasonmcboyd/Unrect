@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 
+using Unrect.Core;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
 using Unrect.Strategies;

@@ -102,7 +102,7 @@ namespace Unrect.Tests.Strategies
     /// Today the only text a cell offers is a <see cref="CellKind.Text"/> cell's own string, so a
     /// number, a date, a boolean and an error are all invisible to it.
     /// </summary>
-    private static Func<Point<ISpace>, bool> Says(string text) => cell => cell.IsText && cell.AsText()!.Trim() == text;
+    private static Func<Point<ISpace>, bool> Says(string text) => cell => cell.IsText() && cell.AsText()!.Trim() == text;
 
     /// <summary>A junk row, then <paramref name="value"/> at A2 with a neighbour at B2.</summary>
     private static ICellSpace RowsHolding(object? value) => Mixed(new object?[,]

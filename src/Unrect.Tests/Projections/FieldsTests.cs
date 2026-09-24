@@ -85,7 +85,7 @@ namespace Unrect.Tests.Projections
 
       // A blank value cell is a blank cell, not a failure: the label was there, which is what the
       // block asserted.
-      Assert.True(entity["Note"].IsBlank);
+      Assert.True(entity["Note"].IsBlank());
       Assert.Null(entity["Note"].AsText());
     }
 

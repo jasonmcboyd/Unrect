@@ -54,7 +54,7 @@ point's space can answer — not a property the framework already decided to exp
 interface lists what its store holds, as a try that hands back the value or the reason it could not
 be had (`TryGetTextAt` on every space; `TryGetDoubleAt`/`TryGetDateTimeAt`/`TryGetBooleanAt`/
 `TryGetErrorAt` on an `ICellSpace`; `TryGetFormulaAt` on an `IFormulaSpace`). Written once over
-those, and so unable to disagree with them: the asking forms `point.IsText`, `IsDouble()`,
+those, and so unable to disagree with them: the asking forms `point.IsText()`, `IsDouble()`,
 `IsDecimal()`, `IsInteger()`, `IsDate()`, `IsBoolean()`, `IsError()`, `HasFormula()` — each true
 exactly when the read of the same name would succeed — the `TryGetText(out)`/`TryGetDouble(out)`/…
 forms, the asserting `Text()`/`Double()`/… that throw the located failure, and the `…OrBlank()`
@@ -265,7 +265,7 @@ The vocabulary's own factories build them: `RowsWhileAny(p => p.IsDouble())` ove
 into every file:
 
 ```csharp
-static IAreaStrategy<ISpace> Populated() => ProjectionBuilders<ISpace>.RowsWhileAny(p => !p.IsBlank);
+static IAreaStrategy<ISpace> Populated() => ProjectionBuilders<ISpace>.RowsWhileAny(p => !p.IsBlank());
 
 var header = Sized(Populated()).Row(r => r[0].Text());   // in an ICellSpace file, nothing annotated
 ```

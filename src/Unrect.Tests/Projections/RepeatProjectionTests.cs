@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 
+using Unrect.Core;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
 using Unrect.Strategies;
@@ -491,7 +492,7 @@ namespace Unrect.Tests.Projections
 
     /// <summary>A landmark for "a row with nothing on it", spelled through the space predicate.</summary>
     private static IRowLandmark<ICellSpace> BlankRow()
-      => RowWhere((space, row) => Enumerable.Range(0, space.Area.Width).All(column => space[column, row].IsBlank));
+      => RowWhere((space, row) => Enumerable.Range(0, space.Area.Width).All(column => space[column, row].IsBlank()));
 
     [Fact]
     public void Repeat_OfRecords_IsEndedByALandmarkAndNotByABlankRow()

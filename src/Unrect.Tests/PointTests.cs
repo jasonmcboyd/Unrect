@@ -51,22 +51,22 @@ namespace Unrect.Tests
     {
       var space = Kinds();
 
-      Assert.True(At(space, 0, 0).IsText);
-      Assert.True(At(space, 0, 0).HasValue);
+      Assert.True(At(space, 0, 0).IsText());
+      Assert.True(At(space, 0, 0).HasValue());
       Assert.Equal("Total", At(space, 0, 0).AsText());
 
-      Assert.True(At(space, 1, 0).IsBlank);
-      Assert.False(At(space, 1, 0).HasValue);
-      Assert.False(At(space, 1, 0).IsText);
+      Assert.True(At(space, 1, 0).IsBlank());
+      Assert.False(At(space, 1, 0).HasValue());
+      Assert.False(At(space, 1, 0).IsText());
       Assert.Null(At(space, 1, 0).AsText());
 
       // A number and an error both say something, and neither says it as text — the distinction
       // every text matcher turns on.
-      Assert.False(At(space, 0, 1).IsText);
+      Assert.False(At(space, 0, 1).IsText());
       Assert.Equal("42", At(space, 0, 1).AsText());
 
-      Assert.False(At(space, 1, 1).IsText);
-      Assert.False(At(space, 1, 1).IsBlank);
+      Assert.False(At(space, 1, 1).IsText());
+      Assert.False(At(space, 1, 1).IsBlank());
       Assert.Equal("#DIV/0!", At(space, 1, 1).AsText());
     }
 
@@ -80,8 +80,8 @@ namespace Unrect.Tests
       var outside = At(Kinds(), 5, 5);
 
       Assert.Equal(5, outside.Column);
-      Assert.Throws<OutOfBoundsException>(() => { _ = outside.IsBlank; });
-      Assert.Throws<OutOfBoundsException>(() => { _ = outside.IsText; });
+      Assert.Throws<OutOfBoundsException>(() => { _ = outside.IsBlank(); });
+      Assert.Throws<OutOfBoundsException>(() => { _ = outside.IsText(); });
       Assert.Throws<OutOfBoundsException>(() => { _ = outside.AsText(); });
     }
 
@@ -95,7 +95,7 @@ namespace Unrect.Tests
       Assert.Equal("(0,0)", nowhere.ToString());
       Assert.Equal(nowhere, default(Point<ICellSpace>));
       Assert.Equal(nowhere.GetHashCode(), default(Point<ICellSpace>).GetHashCode());
-      Assert.Throws<NullReferenceException>(() => { _ = nowhere.IsBlank; });
+      Assert.Throws<NullReferenceException>(() => { _ = nowhere.IsBlank(); });
     }
 
     // --- Address equality ---------------------------------------------------------------------------
@@ -143,8 +143,8 @@ namespace Unrect.Tests
       // distinguishes two blank cells.
       var space = SheetGrid.Of(new object?[,] { { null, null } });
 
-      Assert.True(At(space, 0, 0).IsBlank);
-      Assert.True(At(space, 1, 0).IsBlank);
+      Assert.True(At(space, 0, 0).IsBlank());
+      Assert.True(At(space, 1, 0).IsBlank());
       Assert.NotEqual(At(space, 0, 0), At(space, 1, 0));
     }
 

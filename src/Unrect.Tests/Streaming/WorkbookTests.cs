@@ -94,7 +94,7 @@ namespace Unrect.Tests.Streaming
 
       var gone = Plane<ICellSpace>.Of(sheet)[0, 0];
 
-      Assert.Throws<CellReadException>(() => gone.IsText);
+      Assert.Throws<CellReadException>(() => gone.IsText());
       Assert.Throws<CellReadException>(() => gone.IsDouble());
       Assert.Throws<CellReadException>(() => gone.TryGetDouble(out _));
       Assert.Throws<CellReadException>(() => gone.IsError());

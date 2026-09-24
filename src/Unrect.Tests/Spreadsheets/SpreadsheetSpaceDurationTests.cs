@@ -99,7 +99,7 @@ namespace Unrect.Tests.Spreadsheets
       var space = Durations();
 
       Assert.False(space.IsBlank(0, 1));
-      Assert.True(Plane<ICellSpace>.Of(space)[0, 1].HasValue);
+      Assert.True(Plane<ICellSpace>.Of(space)[0, 1].HasValue());
     }
 
     // --- The fixture ----------------------------------------------------------------------------

@@ -27,7 +27,7 @@ namespace Unrect.Projections
           // A column with no caption and nothing in it is not a column anyone could miss — the
           // blank lead of an indented table is the usual one — so it simply has no entry. One that
           // holds a value would be dropped silently, which is the thing this rung refuses to do.
-          if (table.Rows.All(row => row[column].IsBlank))
+          if (table.Rows.All(row => row[column].IsBlank()))
             continue;
 
           throw table.Failure(

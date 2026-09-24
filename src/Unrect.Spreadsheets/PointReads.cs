@@ -93,35 +93,35 @@ namespace Unrect.Spreadsheets
     /// <param name="point">The cell.</param>
     public static decimal? DecimalOrBlank<TSpace>(this Point<TSpace> point)
       where TSpace : class, ICellSpace
-      => point.IsBlank ? (decimal?)null : point.Decimal();
+      => point.IsBlank() ? (decimal?)null : point.Decimal();
 
     /// <summary>The cell's number as a whole 32-bit one, or null when the cell is blank.</summary>
     /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>
     /// <param name="point">The cell.</param>
     public static int? IntegerOrBlank<TSpace>(this Point<TSpace> point)
       where TSpace : class, ICellSpace
-      => point.IsBlank ? (int?)null : point.Integer();
+      => point.IsBlank() ? (int?)null : point.Integer();
 
     /// <summary>The cell's number as a <see cref="double"/>, or null when the cell is blank.</summary>
     /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>
     /// <param name="point">The cell.</param>
     public static double? DoubleOrBlank<TSpace>(this Point<TSpace> point)
       where TSpace : class, ICellSpace
-      => point.IsBlank ? (double?)null : point.Double();
+      => point.IsBlank() ? (double?)null : point.Double();
 
     /// <summary>The cell's date or time, or null when the cell is blank.</summary>
     /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>
     /// <param name="point">The cell.</param>
     public static DateTime? DateOrBlank<TSpace>(this Point<TSpace> point)
       where TSpace : class, ICellSpace
-      => point.IsBlank ? (DateTime?)null : point.Date();
+      => point.IsBlank() ? (DateTime?)null : point.Date();
 
     /// <summary>The cell's boolean, or null when the cell is blank.</summary>
     /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>
     /// <param name="point">The cell.</param>
     public static bool? BooleanOrBlank<TSpace>(this Point<TSpace> point)
       where TSpace : class, ICellSpace
-      => point.IsBlank ? (bool?)null : point.Boolean();
+      => point.IsBlank() ? (bool?)null : point.Boolean();
 
     // --- Asking rather than asserting -------------------------------------------------------------
     //

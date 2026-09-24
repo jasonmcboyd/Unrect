@@ -24,7 +24,7 @@ namespace Unrect.Strategies
 
     /// <summary>Full available width, and the leading rows that carry values — <see cref="RowsWhileAny"/> with <c>HasValue</c> as the predicate.</summary>
     public static ISizeStrategy RowsWhileAnyValue()
-      => RowsWhileAny(v => v.HasValue);
+      => RowsWhileAny(v => v.HasValue());
 
     /// <summary>
     /// Full available height, and as many leading columns as have at least one cell satisfying
@@ -35,7 +35,7 @@ namespace Unrect.Strategies
 
     /// <summary>Full available height, and the leading columns that carry values.</summary>
     public static ISizeStrategy ColumnsWhileAnyValue()
-      => ColumnsWhileAny(v => v.HasValue);
+      => ColumnsWhileAny(v => v.HasValue());
 
     /// <summary>Whatever <paramref name="selector"/> computes from the available space — the escape hatch when no other strategy fits.</summary>
     public static ISizeStrategy SelectSize(Func<Plane<ISpace>, Size> selector)

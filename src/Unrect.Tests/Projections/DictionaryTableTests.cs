@@ -53,7 +53,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal(10m, rows[0]["Amount"].Decimal());
 
       // A blank cell is a blank cell rather than an absent key or an empty string.
-      Assert.True(rows[1]["Transaction Date"].IsBlank);
+      Assert.True(rows[1]["Transaction Date"].IsBlank());
       Assert.Null(rows[1]["Transaction Date"].AsText());
       Assert.True(rows[1].ContainsKey("Transaction Date"));
     }

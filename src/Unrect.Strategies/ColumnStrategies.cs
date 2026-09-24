@@ -58,14 +58,14 @@ namespace Unrect.Strategies
 
     /// <summary>Leading columns that carry a value — <see cref="TakeColumnsWhileAny(Func{Point{ISpace}, bool})"/> with <c>HasValue</c> as the predicate.</summary>
     public static IColumnStrategy TakeColumnsWhileAnyValue()
-      => TakeColumnsWhileAny(v => v.HasValue);
+      => TakeColumnsWhileAny(v => v.HasValue());
 
     /// <summary>
     /// A table's columns: any leading columns the first row leaves blank — columns with no caption,
     /// which nothing binds to — and then the columns that carry a value.
     /// </summary>
     internal static IColumnStrategy TakeTableColumns()
-      => new TakeWhileAnyColumnStrategy(v => v.HasValue, afterLead: true);
+      => new TakeWhileAnyColumnStrategy(v => v.HasValue(), afterLead: true);
 
     /// <summary>Combines <paramref name="strategy"/>'s rows with columns selected by <see cref="TakeColumnsWhile(Func{Plane{ISpace}, int, bool})"/>, rows measured first.</summary>
     public static IAreaStrategy TakeColumnsWhile(
@@ -87,7 +87,7 @@ namespace Unrect.Strategies
 
     /// <summary>Those rows, at the columns that carry values — <see cref="TakeColumnsWhileAny(Func{Point{ISpace}, bool})"/> with <c>HasValue</c> as the predicate.</summary>
     public static IAreaStrategy TakeColumnsWhileAnyValue(this IRowStrategy strategy)
-      => strategy.TakeColumnsWhileAny(v => v.HasValue);
+      => strategy.TakeColumnsWhileAny(v => v.HasValue());
 
     /// <summary>Those rows, at the full available width.</summary>
     public static IAreaStrategy AllColumns(this IRowStrategy strategy)

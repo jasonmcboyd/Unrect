@@ -35,7 +35,7 @@ namespace Unrect.Strategies
 
     /// <summary>Past the leading entirely-blank rows — the zero-argument form of <see cref="SkipRowsWhileAll"/>.</summary>
     public static IOffsetStrategy SkipBlankRows()
-      => SkipRowsWhileAll(v => v.IsBlank);
+      => SkipRowsWhileAll(v => v.IsBlank());
 
     /// <summary>Past the leading columns in which every cell satisfies <paramref name="predicate"/>; the column twin of <see cref="SkipRowsWhileAll"/>.</summary>
     public static IOffsetStrategy SkipColumnsWhileAll(Func<Point<ISpace>, bool> predicate)
@@ -47,7 +47,7 @@ namespace Unrect.Strategies
 
     /// <summary>Past the leading entirely-blank columns — the zero-argument form of <see cref="SkipColumnsWhileAll"/>.</summary>
     public static IOffsetStrategy SkipBlankColumns()
-      => SkipColumnsWhileAll(v => v.IsBlank);
+      => SkipColumnsWhileAll(v => v.IsBlank());
 
     /// <summary>
     /// Onto the first non-blank cell scanning row-major from the top-left — down to the first row

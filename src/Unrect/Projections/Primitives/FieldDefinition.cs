@@ -57,7 +57,7 @@ namespace Unrect.Projections
     /// </summary>
     private static string Describe(Point<TSpace> cell)
       => cell.AsText() is not string text ? "is blank"
-       : cell.IsText ? $"reads '{text}'"
+       : cell.IsText() ? $"reads '{text}'"
        : $"renders as '{text}'";
   }
 }

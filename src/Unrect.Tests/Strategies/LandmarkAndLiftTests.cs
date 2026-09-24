@@ -57,7 +57,7 @@ namespace Unrect.Tests.Strategies
     public void To_RowWithCell_LandsOnTheFirstRowWithAMatchingCell()
     {
       // Column 1 is empty until the last row, so this finds a row by a cell that is not the first.
-      Assert.Equal(3, To(RowLandmarks.RowWithCell(cell => cell.IsText && cell.AsText() == "b")).GetOffset(Labelled()).Size.Height);
+      Assert.Equal(3, To(RowLandmarks.RowWithCell(cell => cell.IsText() && cell.AsText() == "b")).GetOffset(Labelled()).Size.Height);
     }
 
     [Fact]
@@ -80,7 +80,7 @@ namespace Unrect.Tests.Strategies
     [Fact]
     public void To_ColumnWithCell_LandsOnTheFirstColumnWithAMatchingCell()
     {
-      Assert.Equal(3, To(ColumnLandmarks.ColumnWithCell(cell => cell.IsText && cell.AsText() == "d")).GetOffset(LabelledColumns()).Size.Width);
+      Assert.Equal(3, To(ColumnLandmarks.ColumnWithCell(cell => cell.IsText() && cell.AsText() == "d")).GetOffset(LabelledColumns()).Size.Width);
     }
 
     [Fact]
@@ -233,7 +233,7 @@ namespace Unrect.Tests.Strategies
     [Fact]
     public void RowWhere_FindsTheFirstRowSatisfyingAPositionalPredicate()
     {
-      Assert.Equal(2, RowLandmarks.RowWhere((space, row) => space[0, row].IsText && space[0, row].AsText() == "z").FindRow(RowsWithATotal()));
+      Assert.Equal(2, RowLandmarks.RowWhere((space, row) => space[0, row].IsText() && space[0, row].AsText() == "z").FindRow(RowsWithATotal()));
     }
 
     [Fact]
@@ -241,7 +241,7 @@ namespace Unrect.Tests.Strategies
     {
       // Column 1 is empty except on the first row, so this finds a row by a cell that is not its
       // first — the reason the "any cell" form exists at all.
-      Assert.Equal(0, RowLandmarks.RowWithCell(cell => cell.IsText && cell.AsText() == "y").FindRow(RowsWithATotal()));
+      Assert.Equal(0, RowLandmarks.RowWithCell(cell => cell.IsText() && cell.AsText() == "y").FindRow(RowsWithATotal()));
     }
 
     [Fact]
@@ -272,13 +272,13 @@ namespace Unrect.Tests.Strategies
     [Fact]
     public void ColumnWhere_FindsTheFirstColumnSatisfyingAPositionalPredicate()
     {
-      Assert.Equal(2, ColumnLandmarks.ColumnWhere((space, column) => space[column, 0].IsText && space[column, 0].AsText() == "c").FindColumn(ColumnsWithATotal()));
+      Assert.Equal(2, ColumnLandmarks.ColumnWhere((space, column) => space[column, 0].IsText() && space[column, 0].AsText() == "c").FindColumn(ColumnsWithATotal()));
     }
 
     [Fact]
     public void ColumnWithCell_FindsTheFirstColumnWithAMatchingCell()
     {
-      Assert.Equal(2, ColumnLandmarks.ColumnWithCell(cell => cell.IsText && cell.AsText() == "z").FindColumn(ColumnsWithATotal()));
+      Assert.Equal(2, ColumnLandmarks.ColumnWithCell(cell => cell.IsText() && cell.AsText() == "z").FindColumn(ColumnsWithATotal()));
     }
 
     [Fact]

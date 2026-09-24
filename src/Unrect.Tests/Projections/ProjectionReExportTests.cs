@@ -97,7 +97,7 @@ namespace Unrect.Tests.Projections
     // agree. What only the typed door can say — a cell's kind, its value — is measured where those
     // rules live.
 
-    private static bool Valued(Point<ISpace> cell) => cell.HasValue;
+    private static bool Valued(Point<ISpace> cell) => cell.HasValue();
 
     private static TheoryData<string> Data(string[] names)
     {
@@ -115,21 +115,21 @@ namespace Unrect.Tests.Projections
     private static (IAreaStrategy Typed, IAreaStrategy Erased) Extents(string name) => name switch
     {
       "RowsWhileAny" => (
-        RowsWhileAny(cell => cell.HasValue).Strategy,
+        RowsWhileAny(cell => cell.HasValue()).Strategy,
         SizeStrategies.RowsWhileAny(Valued).ToAreaStrategy()),
       "ColumnsWhileAny" => (
-        ColumnsWhileAny(cell => cell.HasValue).Strategy,
+        ColumnsWhileAny(cell => cell.HasValue()).Strategy,
         SizeStrategies.ColumnsWhileAny(Valued).ToAreaStrategy()),
       "SelectArea" => (
         SelectArea(region => new Size(region.Width, 1)).Strategy,
         AreaStrategies.SelectArea(region => new Size(region.Width, 1))),
       "RowsThenColumns" => (
-        RowsThenColumns(TakeRowsWhileAny(cell => cell.HasValue), TakeColumnsWhileAny(cell => cell.HasValue)).Strategy,
+        RowsThenColumns(TakeRowsWhileAny(cell => cell.HasValue()), TakeColumnsWhileAny(cell => cell.HasValue())).Strategy,
         AreaStrategies.RowsThenColumns(
           RowStrategies.TakeRowsWhileAny(Valued),
           ColumnStrategies.TakeColumnsWhileAny(Valued))),
       "ColumnsThenRows" => (
-        ColumnsThenRows(TakeColumnsWhileAny(cell => cell.HasValue), TakeRowsWhileAny(cell => cell.HasValue)).Strategy,
+        ColumnsThenRows(TakeColumnsWhileAny(cell => cell.HasValue()), TakeRowsWhileAny(cell => cell.HasValue())).Strategy,
         AreaStrategies.ColumnsThenRows(
           ColumnStrategies.TakeColumnsWhileAny(Valued),
           RowStrategies.TakeRowsWhileAny(Valued))),
@@ -156,19 +156,19 @@ namespace Unrect.Tests.Projections
     private static (IRowStrategy Typed, IRowStrategy Erased) RowRules(string name) => name switch
     {
       "TakeRowsWhile" => (
-        TakeRowsWhile((region, row) => region[0, row].HasValue).Strategy,
-        RowStrategies.TakeRowsWhile((region, row) => region[0, row].HasValue)),
+        TakeRowsWhile((region, row) => region[0, row].HasValue()).Strategy,
+        RowStrategies.TakeRowsWhile((region, row) => region[0, row].HasValue())),
       "TakeRowsWhile(column)" => (
-        TakeRowsWhile(0, (cell, _) => cell.HasValue).Strategy,
-        RowStrategies.TakeRowsWhile(0, (cell, _) => cell.HasValue)),
+        TakeRowsWhile(0, (cell, _) => cell.HasValue()).Strategy,
+        RowStrategies.TakeRowsWhile(0, (cell, _) => cell.HasValue())),
       "TakeRowsTo" => (
-        TakeRowsTo((region, row) => region[2, row].HasValue).Strategy,
-        RowStrategies.TakeRowsTo((region, row) => region[2, row].HasValue)),
+        TakeRowsTo((region, row) => region[2, row].HasValue()).Strategy,
+        RowStrategies.TakeRowsTo((region, row) => region[2, row].HasValue())),
       "TakeRowsWhileAll" => (
-        TakeRowsWhileAll(cell => cell.HasValue).Strategy,
+        TakeRowsWhileAll(cell => cell.HasValue()).Strategy,
         RowStrategies.TakeRowsWhileAll(Valued)),
       "TakeRowsWhileAny" => (
-        TakeRowsWhileAny(cell => cell.HasValue).Strategy,
+        TakeRowsWhileAny(cell => cell.HasValue()).Strategy,
         RowStrategies.TakeRowsWhileAny(Valued)),
 
       _ => throw new ArgumentOutOfRangeException(nameof(name), name, "No such rule."),
@@ -192,19 +192,19 @@ namespace Unrect.Tests.Projections
     private static (IColumnStrategy Typed, IColumnStrategy Erased) ColumnRules(string name) => name switch
     {
       "TakeColumnsWhile" => (
-        TakeColumnsWhile((region, column) => region[column, 0].HasValue).Strategy,
-        ColumnStrategies.TakeColumnsWhile((region, column) => region[column, 0].HasValue)),
+        TakeColumnsWhile((region, column) => region[column, 0].HasValue()).Strategy,
+        ColumnStrategies.TakeColumnsWhile((region, column) => region[column, 0].HasValue())),
       "TakeColumnsWhile(row)" => (
-        TakeColumnsWhile(0, (cell, _) => cell.HasValue).Strategy,
-        ColumnStrategies.TakeColumnsWhile(0, (cell, _) => cell.HasValue)),
+        TakeColumnsWhile(0, (cell, _) => cell.HasValue()).Strategy,
+        ColumnStrategies.TakeColumnsWhile(0, (cell, _) => cell.HasValue())),
       "TakeColumnsTo" => (
-        TakeColumnsTo((region, column) => region[column, 1].HasValue).Strategy,
-        ColumnStrategies.TakeColumnsTo((region, column) => region[column, 1].HasValue)),
+        TakeColumnsTo((region, column) => region[column, 1].HasValue()).Strategy,
+        ColumnStrategies.TakeColumnsTo((region, column) => region[column, 1].HasValue())),
       "TakeColumnsWhileAll" => (
-        TakeColumnsWhileAll(cell => cell.HasValue).Strategy,
+        TakeColumnsWhileAll(cell => cell.HasValue()).Strategy,
         ColumnStrategies.TakeColumnsWhileAll(Valued)),
       "TakeColumnsWhileAny" => (
-        TakeColumnsWhileAny(cell => cell.HasValue).Strategy,
+        TakeColumnsWhileAny(cell => cell.HasValue()).Strategy,
         ColumnStrategies.TakeColumnsWhileAny(Valued)),
 
       _ => throw new ArgumentOutOfRangeException(nameof(name), name, "No such rule."),
@@ -228,16 +228,16 @@ namespace Unrect.Tests.Projections
     private static (IOffsetStrategy Typed, IOffsetStrategy Erased) Offsets(string name) => name switch
     {
       "SkipRowsWhileAll" => (
-        SkipRowsWhileAll(cell => cell.HasValue).Strategy,
+        SkipRowsWhileAll(cell => cell.HasValue()).Strategy,
         OffsetStrategies.SkipRowsWhileAll(Valued)),
       "SkipRowsWhileAny" => (
-        SkipRowsWhileAny(cell => cell.HasValue).Strategy,
+        SkipRowsWhileAny(cell => cell.HasValue()).Strategy,
         OffsetStrategies.SkipRowsWhileAny(Valued)),
       "SkipColumnsWhileAll" => (
-        SkipColumnsWhileAll(cell => cell.HasValue).Strategy,
+        SkipColumnsWhileAll(cell => cell.HasValue()).Strategy,
         OffsetStrategies.SkipColumnsWhileAll(Valued)),
       "SkipColumnsWhileAny" => (
-        SkipColumnsWhileAny(cell => cell.HasValue).Strategy,
+        SkipColumnsWhileAny(cell => cell.HasValue()).Strategy,
         OffsetStrategies.SkipColumnsWhileAny(Valued)),
       "SelectOffset" => (
         SelectOffset(region => new Size(1, region.Area.Height)).Strategy,
@@ -280,9 +280,9 @@ namespace Unrect.Tests.Projections
     public void ATypedRowMatcherIsTheMatcherItBoxes(string name)
     {
       var (typed, erased) = name == "RowWhere"
-        ? (RowWhere((region, row) => region[2, row].HasValue).Landmark,
-           RowLandmarks.RowWhere((region, row) => region[2, row].HasValue))
-        : (RowWithCell(cell => cell.HasValue).Landmark,
+        ? (RowWhere((region, row) => region[2, row].HasValue()).Landmark,
+           RowLandmarks.RowWhere((region, row) => region[2, row].HasValue()))
+        : (RowWithCell(cell => cell.HasValue()).Landmark,
            RowLandmarks.RowWithCell(Valued));
 
       Assert.Equal(erased.FindRow(Patchy()), typed.FindRow(Patchy()));
@@ -299,9 +299,9 @@ namespace Unrect.Tests.Projections
     public void ATypedColumnMatcherIsTheMatcherItBoxes(string name)
     {
       var (typed, erased) = name == "ColumnWhere"
-        ? (ColumnWhere((region, column) => region[column, 0].HasValue).Landmark,
-           ColumnLandmarks.ColumnWhere((region, column) => region[column, 0].HasValue))
-        : (ColumnWithCell(cell => cell.HasValue).Landmark,
+        ? (ColumnWhere((region, column) => region[column, 0].HasValue()).Landmark,
+           ColumnLandmarks.ColumnWhere((region, column) => region[column, 0].HasValue()))
+        : (ColumnWithCell(cell => cell.HasValue()).Landmark,
            ColumnLandmarks.ColumnWithCell(Valued));
 
       Assert.Equal(erased.FindColumn(Patchy()), typed.FindColumn(Patchy()));
@@ -366,10 +366,10 @@ namespace Unrect.Tests.Projections
       // from the calculus without either being unwrapped — which is what lets a one-import file
       // write RowsThenColumns(TakeRows(3), AllColumns()) at all. All four spellings measure the same
       // region; only the demand they carry differs, and that is a compile-time matter.
-      var typed = RowsThenColumns(TakeRowsWhileAny(cell => cell.HasValue), TakeColumnsWhileAny(cell => cell.HasValue));
+      var typed = RowsThenColumns(TakeRowsWhileAny(cell => cell.HasValue()), TakeColumnsWhileAny(cell => cell.HasValue()));
       var erased = RowsThenColumns(RowStrategies.TakeRowsWhileAny(Valued), ColumnStrategies.TakeColumnsWhileAny(Valued));
-      var typedRows = RowsThenColumns(TakeRowsWhileAny(cell => cell.HasValue), ColumnStrategies.TakeColumnsWhileAny(Valued));
-      var typedColumns = RowsThenColumns(RowStrategies.TakeRowsWhileAny(Valued), TakeColumnsWhileAny(cell => cell.HasValue));
+      var typedRows = RowsThenColumns(TakeRowsWhileAny(cell => cell.HasValue()), ColumnStrategies.TakeColumnsWhileAny(Valued));
+      var typedColumns = RowsThenColumns(RowStrategies.TakeRowsWhileAny(Valued), TakeColumnsWhileAny(cell => cell.HasValue()));
 
       Assert.Equal("1x2", Measure(erased));
       Assert.Equal(Measure(erased), Measure(typed.Strategy));

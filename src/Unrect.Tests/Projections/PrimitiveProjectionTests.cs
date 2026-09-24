@@ -91,7 +91,7 @@ namespace Unrect.Tests.Projections
         { 0, 0, 0 },
       });
 
-      var projection = Row(ColumnStrategies.TakeColumnsWhileAll(v => v.HasValue), s => s.Count);
+      var projection = Row(ColumnStrategies.TakeColumnsWhileAll(v => v.HasValue()), s => s.Count);
 
       Assert.Equal(3, projection.Map(space));
     }
@@ -140,7 +140,7 @@ namespace Unrect.Tests.Projections
         { 3, 0 },
       });
 
-      var projection = Column(RowStrategies.TakeRowsWhileAll(v => v.HasValue), s => s.Count);
+      var projection = Column(RowStrategies.TakeRowsWhileAll(v => v.HasValue()), s => s.Count);
 
       Assert.Equal(3, projection.Map(space));
     }

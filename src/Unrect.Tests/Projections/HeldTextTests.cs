@@ -36,13 +36,13 @@ namespace Unrect.Tests.Projections
       {
         var point = At(space, column);
 
-        Assert.Equal(point.TryGetText(out _), point.IsText);
-        Assert.Equal(point.TryGetText(out _, out _), point.IsText);
+        Assert.Equal(point.TryGetText(out _), point.IsText());
+        Assert.Equal(point.TryGetText(out _, out _), point.IsText());
       }
 
-      Assert.True(At(space, 0).IsText);
-      Assert.False(At(space, 1).IsText);
-      Assert.False(At(space, 2).IsText);
+      Assert.True(At(space, 0).IsText());
+      Assert.False(At(space, 1).IsText());
+      Assert.False(At(space, 2).IsText());
     }
 
     [Fact]

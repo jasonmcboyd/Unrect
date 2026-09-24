@@ -64,7 +64,7 @@ namespace Unrect.Projections
 
       var cell = extent[0, 0];
 
-      if (BlankIsNull && cell.IsBlank)
+      if (BlankIsNull && cell.IsBlank())
         return new Settlement<TResult>(default!, size);
 
       if (!Read(cell, out var value, out var problem))
