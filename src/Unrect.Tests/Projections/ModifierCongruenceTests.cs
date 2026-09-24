@@ -434,7 +434,7 @@ namespace Unrect.Tests.Projections
 
       var failure = Assert.Throws<ProjectionException>(() => Sized(Extent(2, 1)).Of(Heading("Mark").Of(Block())).Map(space));
 
-      Assert.Contains("no row containing 'Mark' exists in the available space", failure.Message);
+      Assert.Contains("no row saying 'Mark' exists in the available space", failure.Message);
     }
 
     [Theory]
@@ -542,7 +542,7 @@ namespace Unrect.Tests.Projections
 
       var failure = Assert.Throws<ProjectionException>(() => Heading("Nope").Of(Text().Optional()).Map(space));
 
-      Assert.Contains("no row containing 'Nope' exists in the available space", failure.Message);
+      Assert.Contains("no row saying 'Nope' exists in the available space", failure.Message);
     }
 
     [Fact]

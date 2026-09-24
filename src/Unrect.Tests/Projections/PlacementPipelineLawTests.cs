@@ -378,7 +378,7 @@ namespace Unrect.Tests.Projections
 
       Assert.Equal("Heading -> Caption(\"Nope\")#1", failure.Path);
       Assert.Equal("Caption(\"Nope\")#1", failure.Subject);
-      Assert.Contains("no row containing 'Nope' exists", failure.Message);
+      Assert.Contains("no row saying 'Nope' exists", failure.Message);
       Assert.False(failure.IsFault);
     }
 

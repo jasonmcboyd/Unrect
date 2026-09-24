@@ -56,8 +56,6 @@ namespace Unrect.Projections
     /// cell that says a word of its own quotes it, and anything else says what it renders as.
     /// </summary>
     private static string Describe(Point<TSpace> cell)
-      => cell.AsText() is not string text ? "is blank"
-       : cell.IsText() ? $"reads '{text}'"
-       : $"renders as '{text}'";
+      => cell.AsText() is string text ? $"says '{text}'" : "is blank";
   }
 }

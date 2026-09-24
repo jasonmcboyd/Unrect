@@ -15,20 +15,18 @@ using static Unrect.Tests.ProjectionTestSpaces;
 namespace Unrect.Tests.Strategies
 {
   /// <summary>
-  /// What every text matcher refuses, pinned kind by kind: a cell that is not <c>Text</c> is not
-  /// found by a declaration that spells out what the cell would <em>look like</em>. A numeric 42 is
-  /// not a row containing "42"; a boolean is not a row containing "TRUE"; an error cell is not a row
-  /// containing "#DIV/0!". The same for the column twins, for <c>Caption</c>, for <c>Field</c>, and
-  /// for the header parse behind a label map, where a non-text header cell leaves its column
-  /// unlabelled rather than named by its rendering.
+  /// Which matchers see a cell's KIND and which see only what it SAYS, pinned kind by kind. The
+  /// held-text matchers — <c>RowContaining</c>, <c>ColumnContaining</c> and their strategy twins —
+  /// ask what a cell holds and so see text cells alone: a numeric 42 is not a row containing "42";
+  /// a boolean is not a row containing "TRUE"; an error cell is not a row containing "#DIV/0!". The
+  /// structural words — <c>Caption</c>, <c>Heading</c>, <c>Field</c>, the header parse behind a
+  /// label map — match what a cell SAYS, whatever its kind, because structure is written in what a
+  /// reader sees: a heading that is a year is still the heading.
   /// <para>
-  /// This is not a new rule — it falls out of every matcher reading a cell through
-  /// <c>TryGetString</c>, which answers only for <see cref="CellKind.Text"/>. It is pinned because
-  /// the rule is currently an emergent property of one accessor and is due to become an explicit
-  /// guard: once a cell can render itself as text, the same predicates would see "42" everywhere
-  /// unless the text-only test is kept. A widening here would silently re-anchor real declarations
-  /// — a section bounded by <c>RowContaining("2026")</c> would start finding date cells — so the
-  /// refusals are stated positively, one per matcher, rather than left to be inferred.
+  /// Pinned because a change either way would silently re-anchor real declarations — a section
+  /// bounded by <c>RowContaining("2026")</c> starting to find date cells, or a caption that is a
+  /// year starting to miss — so each rule is stated positively, one per matcher, rather than left
+  /// to be inferred from which read it happens to go through.
   /// </para>
   /// <para>
   /// Each test carries its positive twin: the same matcher, the same needle, over a <em>text</em>
@@ -215,17 +213,15 @@ namespace Unrect.Tests.Strategies
 
     // --- Caption ------------------------------------------------------------------------------------
     //
-    // A caption asserts a LABEL. A rendered number is not one, so a caption over a numeric cell is a
-    // miss — the loud, absorbable "no row containing ..." failure, not a silent anchor onto the
-    // number.
+    // A caption is what a row SAYS, whatever the cell's kind: the caption over a year's figures is
+    // the year, and a period-end date is a caption too. What it yields is the cell's rendering, the
+    // same words the matcher compared.
 
     [Theory]
     [MemberData(nameof(Needles))]
-    public void Caption_DoesNotMatchANonTextCellsText(string kind, string text)
+    public void Caption_MatchesWhatANonTextCellSays(string kind, string text)
     {
-      var failure = Assert.Throws<ProjectionException>(() => Caption(text).Map(RowsHolding(CellOf(kind))));
-
-      Assert.Equal($"no row containing '{text}' exists in the available space", Problem(failure));
+      Assert.Equal(text, Caption(text).Map(RowsHolding(CellOf(kind))));
     }
 
     [Theory]
@@ -236,14 +232,16 @@ namespace Unrect.Tests.Strategies
     }
 
     // --- Field --------------------------------------------------------------------------------------
+    //
+    // A label is what a cell says, as a caption is.
 
     [Theory]
     [MemberData(nameof(Needles))]
-    public void Field_DoesNotMatchANonTextCellsText(string kind, string text)
+    public void Field_MatchesWhatANonTextCellSays(string kind, string text)
     {
-      var failure = Assert.Throws<ProjectionException>(() => Fields(Field(text)).Map(RowsHolding(CellOf(kind))));
+      IReadOnlyDictionary<string, Point<ICellSpace>> read = Fields(Field(text)).Map(RowsHolding(CellOf(kind)));
 
-      Assert.Equal($"no column with the label '{text}' exists in the available space", Problem(failure));
+      Assert.Equal("x", read[text].Text());
     }
 
     [Theory]

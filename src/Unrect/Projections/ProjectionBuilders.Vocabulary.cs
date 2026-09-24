@@ -150,15 +150,16 @@ namespace Unrect.Projections
     /// </code>
     /// </para>
     /// <para>
-    /// Matching is whole-cell, trimmed and case-insensitive — the same rule
-    /// <see cref="RowContaining"/> uses, so a caption and a bound written from the same literal
-    /// cannot disagree. Share the literal with a <c>const</c> when both are needed.
+    /// Matching is on what the cell SAYS, whole-cell, trimmed and case-insensitive, whatever the
+    /// cell's kind — a caption that is a year matches "2024" — and it is the same rule
+    /// <see cref="RowSaying"/> uses, so a caption and a bound written from the same literal cannot
+    /// disagree. Share the literal with a <c>const</c> when both are needed.
     /// </para>
     /// </summary>
     public static IProjectionDefinition<TSpace, string> Caption(string text)
       => new CaptionDefinition<TSpace>(
         NotEmpty(text, nameof(text)),
-        new Placement(OffsetStrategies.To(RowLandmarks.RowContaining(text)), FullRow()));
+        new Placement(OffsetStrategies.To(RowLandmarks.RowSaying(text)), FullRow()));
 
     // --- Tables — one mechanism at several degrees of declaredness ------------------------------
     //
@@ -552,10 +553,10 @@ namespace Unrect.Projections
     /// One labelled pair for a <see cref="Fields"/> block: the cell reading <paramref
     /// name="label"/>, and the value cell immediately to its right.
     /// <para>
-    /// A label is matched whole-cell, trimmed, case-insensitively, and <em>with a trailing colon
-    /// ignored on both sides</em> — a colon is presentation of a label, not part of it, and an
-    /// export that drops it next year should not break the declaration. That rule applies here and
-    /// nowhere else.
+    /// A label is what a cell SAYS, whatever its kind, matched whole-cell, trimmed,
+    /// case-insensitively, and <em>with a trailing colon ignored on both sides</em> — a colon is
+    /// presentation of a label, not part of it, and an export that drops it next year should not
+    /// break the declaration. That rule applies here and nowhere else.
     /// </para>
     /// </summary>
     public static Field Field(string label) => new Field(NotEmptyLabel(label));

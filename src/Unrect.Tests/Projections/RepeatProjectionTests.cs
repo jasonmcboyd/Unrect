@@ -356,7 +356,7 @@ namespace Unrect.Tests.Projections
       // The repeat's own index, then the item — labelled by the local it was hoisted into — then
       // the caption that was not found, at its ordinal inside the desugared flow.
       Assert.Equal("VerticalRepeat[2] -> 'section' -> Caption(\"Detail\")#1", hoisted.Path);
-      Assert.Contains("no row containing 'Detail' exists in the available space", hoisted.Message);
+      Assert.Contains("no row saying 'Detail' exists in the available space", hoisted.Message);
 
       // Written inline there is no identifier to capture, and the flow renders by its description.
       var inline = Assert.Throws<ProjectionException>(() =>

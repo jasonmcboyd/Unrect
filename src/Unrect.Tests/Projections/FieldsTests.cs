@@ -243,7 +243,7 @@ namespace Unrect.Tests.Projections
         Fields(Field("EIN"), Field("Deal Type")).Map(Card()));
 
       Assert.Equal(
-        "expected a label reading 'Deal Type' here, but this cell reads 'Entity Type'",
+        "expected a label reading 'Deal Type' here, but this cell says 'Entity Type'",
         Problem(failure));
       Assert.Equal("Field(\"Deal Type\")#2", failure.Subject);
     }

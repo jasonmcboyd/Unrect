@@ -130,7 +130,7 @@ namespace Unrect.Tests.Projections
       var failure = Assert.Throws<ProjectionException>(() => Caption("Nope").Map(Sheet()));
 
       Assert.Equal("Caption(\"Nope\")", failure.Subject);
-      Assert.Contains("no row containing 'Nope' exists in the available space", failure.Message);
+      Assert.Contains("no row saying 'Nope' exists in the available space", failure.Message);
     }
 
     [Fact]
@@ -149,7 +149,7 @@ namespace Unrect.Tests.Projections
 
       var failure = Assert.Throws<ProjectionException>(() => OffsetBy(SkipRows(1)).Of(Caption("ein:")).Map(space));
 
-      Assert.Contains("expected a row containing 'ein:' here", failure.Message);
+      Assert.Contains("expected a row saying 'ein:' here", failure.Message);
       Assert.Equal("A2", failure.Location.A1);
     }
 

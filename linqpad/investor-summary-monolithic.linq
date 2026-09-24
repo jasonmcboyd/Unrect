@@ -31,21 +31,23 @@ void Main()
 	// offset; the gap before the details section is the AfterBlankRows() entry; the gaps between detail
 	// blocks are the repeat's separator.
 	var report =
-		VerticalFlow(v => new Report
-		{
-			ReportHeader = v.Next(
-				Column(c => new ReportHeader
-				{
-					Title      = c[0].Text(),
-					ReportDate = c[1].Date(),
-					ReportId   = c[2].Text(),
-				})),
-			Summary = v.Next(Table<InvestorSummary>()).ToArray(),
-			Details = v.Next(
-				VerticalRepeat(
-					VerticalFlow(v => new InvestorTransactions(v.Next(Text()), v.Next(Table<Transaction>())))))
-				.ToArray(),
-		});
+		VerticalFlow(v =>
+			new Report
+			{
+				ReportHeader =
+					v.Next(
+						Column(c =>
+							new ReportHeader
+							{
+								Title      = c[0].Text(),
+								ReportDate = c[1].Date(),
+								ReportId   = c[2].Text()
+							})),
+				Summary = v.Next(Table<InvestorSummary>()).ToArray(),
+				Details =
+					v.Next(VerticalRepeat(VerticalFlow(v => new InvestorTransactions(v.Next(Text()), v.Next(Table<Transaction>())))))
+					.ToArray(),
+			});
 	
 	var result = report.Map(SpreadsheetSpace.Create(path, "Summary"));
 	

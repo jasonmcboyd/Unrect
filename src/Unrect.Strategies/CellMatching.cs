@@ -9,22 +9,23 @@ namespace Unrect.Strategies
   /// The one place that decides what matching text means — and it deliberately holds more than one
   /// rule, because more than one question is being asked.
   /// <para>
-  /// <see cref="TextEquals"/> is <b>content matching</b>: a cell against a literal the declaration
-  /// wrote. Every caller of it must agree, or a section would assert one thing and be bounded by
-  /// another — <c>Caption("Total")</c> and <c>RowContaining("Total")</c> have to find the same row.
-  /// <see cref="TextComparer"/> is that same rule as a lookup key comparer, for a caller who needs
-  /// it by the tableful; agreement between the two is by construction, not by resemblance.
+  /// <see cref="SaysEquals"/> is <b>content matching</b>: what a cell says against a literal the
+  /// declaration wrote, whatever the cell's kind — a heading that is a year, a caption that is a
+  /// date, match as the words they show. It is the rule the generic layer can have, because what a
+  /// cell says is the one thing every space answers, and every caller of it must agree, or a
+  /// section would assert one thing and be bounded by another: <c>Caption("Total")</c> and
+  /// <c>RowSaying("Total")</c> have to find the same row. <see cref="TextComparer"/> is that same
+  /// rule as a lookup key comparer, for a caller who needs it by the tableful; agreement between
+  /// the two is by construction, not by resemblance.
   /// </para>
   /// <para>
   /// <see cref="LabelEquals"/> is <b>label matching</b>: the same question, narrowed for the one
   /// place the matched text is known to be a label, where a trailing colon is presentation.
   /// </para>
   /// <para>
-  /// <see cref="SaysEquals"/> is <b>rendering matching</b>, and the only rule here that looks past
-  /// a cell's kind. The other two ask what the cell <em>holds</em> and so see text cells alone —
-  /// which is why a numeric 42 is not a row containing "42". This one asks what the cell
-  /// <em>says</em>, and a declaration reaches it by writing <c>Saying</c> rather than
-  /// <c>Containing</c>, so the widening is always something someone asked for.
+  /// <see cref="TextEquals"/> asks what the cell <em>holds</em> and so sees text cells alone —
+  /// a numeric 42 is not a row containing "42". It is a question about the value's kind, which the
+  /// generic layer no longer asks; the value vocabulary asks it.
   /// </para>
   /// <para>
   /// A fourth rule lives elsewhere and must not be folded in here: <c>CaptionComparer</c> bridges a
@@ -70,7 +71,7 @@ namespace Unrect.Strategies
     {
       var needle = TrimLabel(label);
 
-      return point => point.TryGetText(out var text) && Comparison.Equals(TrimLabel(text), needle);
+      return point => point.AsText() is string text && Comparison.Equals(TrimLabel(text), needle);
     }
 
     /// <summary>
