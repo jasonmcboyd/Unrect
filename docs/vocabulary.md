@@ -26,16 +26,15 @@ does today.
 
 ## Leaves — where cells become values
 
-Two families: the **canonical** three, closed over the four questions every `ISpace` answers
-(`Area`, `IsBlank`, `AsText`, `TryGetTextAt`) and living in `Unrect` itself; and a backend's own
-leaves, closed over what that backend's store holds and living beside it.
+Two families: the **canonical** two, closed over the text facet every `ISpace` answers
+(`Area`, `IsBlank`, `AsText` — is there anything, and what it says) and living in `Unrect` itself;
+and a backend's own leaves, closed over the VALUE its store holds and living beside it.
 
 | Operator | Yields | Notes |
 |---|---|---|
 | `Point()` | `Point<TSpace>` | One cell, as the address of itself. The leaf for a reading this vocabulary does not name: a backend's own point-extension answers the rest (`Record(r => r["Amount"].Decimal())`, `Range(b => b[0, 0].Value())`), and it is also what a reader hands to its own complaint about a cell |
 | `AsText()` | `string` | One cell, read as what it says: a text cell's own value, or the backend's rendering of anything else. **Total** — every space renders every cell, so the only failure is a blank one, and `OrBlank()` turns that into `null`. `Choice(AsText(), …)` is therefore degenerate: `AsText` cannot fail, so nothing after it in the choice is reachable — put the narrower leaf first |
-| `Text()` | `string` | One cell HOLDING text — the one assertion every space can answer, so it is canonical and there is exactly one of it. Where `AsText()` takes whatever the cell says, `Text()` refuses a numeric 42 that merely says "42". The space words the refusal in its own store's vocabulary (`expected Text at B4, found Number` from a sheet); a space with nothing to say gets the floor, `expected Text at B4; the cell says '42'` |
-| `Double()` `Date()` `Boolean()` | typed value | One cell; asserts what the STORE holds. Live in `Unrect.Spreadsheets`, imported via `SheetProjectionBuilders<TSpace>` (over `ICellSpace`) or `SpreadsheetProjectionBuilders<TSpace>` (over `ISpreadsheetSpace`, which also carries `Formula()`). Closed over `ICellSpace`'s reads — `TryGetDoubleAt`/`TryGetDateTimeAt`/`TryGetBooleanAt` — and never leading them. A workbook's numbers are doubles, so that is the number read |
+| `Text()` `Double()` `Date()` `Boolean()` | typed value | One cell; asserts which CASE of the value the cell holds. Live in `Unrect.Spreadsheets`, imported via `SheetProjectionBuilders<TSpace>` (over `ICellSpace`) or `SpreadsheetProjectionBuilders<TSpace>` (over `ISpreadsheetSpace`, which also carries `Formula()`). Closed over the `CellValue` at the cell (`p.Value()`) and never leading it: where `AsText()` takes whatever the cell says, `Text()` refuses a numeric 42 that merely says "42", in the sheet's own words (`expected Text at B4, found Number`). A workbook's numbers are doubles, so that is the number read |
 | `Decimal()` `Integer()` | `decimal` / `int` | CONVERSIONS over the double the sheet holds, kept as leaves because nearly every amount and count wants one. `Decimal()` rounds to the fifteen significant digits a double carries (a stored 0.30000000000000004 reads as 0.3); a number that will not fit fails as a conversion, quoting the number as the cell says it, never as a kind. The same conversion fills a bound `decimal`/`int` member. No `Long()`, ever; a conversion beyond these is `Select` territory |
 | `AsText().OrBlank()` / `Text().OrBlank()` / `Decimal().OrBlank()` … | `T?` | The same reading, tolerating a BLANK cell: null, quietly, with no diagnostic — where `.Optional()` absorbs a *failure* and records a Warning. A wrong kind still fails loudly. The standalone spelling of a nullable table member's tolerance |
 | `Cell(v => ...)` | `T` | Removed name; the escape hatch for one cell is `Point(...)` composed with a caller's own read, or a bespoke leaf over `DefinitionNode<TSpace, T>` |
@@ -50,16 +49,19 @@ Every leaf, matcher and view member hands back a `Point<TSpace>` (or a collectio
 than a value: reading one is `point.AsText()`/`point.Decimal()`/`point.Value()` — whatever the
 point's space can answer — not a property the framework already decided to expose.
 
-**One `TryGet…At` per reading on the space; everything else derived on the point.** A space's
-interface lists what its store holds, as a try that hands back the value or the reason it could not
-be had (`TryGetTextAt` on every space; `TryGetDoubleAt`/`TryGetDateTimeAt`/`TryGetBooleanAt`/
-`TryGetErrorAt` on an `ICellSpace`; `TryGetFormulaAt` on an `IFormulaSpace`). Written once over
-those, and so unable to disagree with them: the asking forms `point.IsText()`, `IsDouble()`,
-`IsDecimal()`, `IsInteger()`, `IsDate()`, `IsBoolean()`, `IsError()`, `HasFormula()` — each true
+**One value per space; everything else derived on the point.** A space with a value facet says
+what its values are by implementing `IValueSpace<TValue>` — one member, `ValueAt` — and a sheet's
+value is `CellValue`, a sum type: `Kind` is the tag (Blank, Text, Number, Temporal, Boolean,
+Error), one `TryGet` per case hands back its payload, and `AsText()` renders it. Every read is
+written once over `p.Value()`, and so cannot disagree with it: the asking forms `point.IsText()`,
+`IsDouble()`, `IsDecimal()`, `IsInteger()`, `IsDate()`, `IsBoolean()`, `IsError()` — each true
 exactly when the read of the same name would succeed — the `TryGetText(out)`/`TryGetDouble(out)`/…
-forms, the asserting `Text()`/`Double()`/… that throw the located failure, and the `…OrBlank()`
-twins. They ask about a READING, not a kind: 2 is a double, a decimal and an integer at once, which
-is why nothing hands back "the kind" of a cell and there is nothing to switch over.
+forms (with a twin that also hands back the `CellProblem`), the asserting `Text()`/`Double()`/…
+that throw the located failure, and the `…OrBlank()` twins. They ask about a READING: 2 is a
+double, a decimal and an integer at once. A reader that wants "which case is it" switches on
+`Value().Kind`, which is exhaustive because the cases partition the cell — where no switch over a
+POINT could be, since a point may also have a formula and a fill. `HasFormula()` and `Formula()`
+are the formula facet's, over `IFormulaSpace.TryGetFormulaAt`.
 
 **The locked taxonomy — one sentence, four words, no overlap: `Heading` asserts · `Caption`
 captures · geometry skips · matchers locate.** Unchanged from before the point-substrate arc.
@@ -208,17 +210,21 @@ under Matchers, below.
 
 ## Matchers — one family, four rules, four modifiers
 
-`RowContaining(text)` · `RowWhere(spacePredicate)` · `RowWithCell(cellPredicate)` · `RowSaying(text)`
-— and the three column twins. Predicates read the file's own space:
+`RowSaying(text)` · `RowWhere(spacePredicate)` · `RowWithCell(cellPredicate)` — and the three
+column twins — in the generic vocabulary; `RowContaining(text)` and its column twin in the value
+vocabulary (`SheetProjectionBuilders`), with `TakeRowsToText`/`TakeColumnsToText` beside them.
+Predicates read the file's own space:
 `Func<Plane<TSpace>, int, bool>` for `Where`, `Func<Point<TSpace>, bool>` for `WithCell`, so a
 matcher can ask what a cell *is* as well as what it says, and what it hands back carries that
 demand (see "The typed phantoms", below). The erased spellings live on in `Unrect.Strategies`
 (`RowLandmarks`/`ColumnLandmarks`), which is the calculus a helper writes against. Naming
 law: bare `Where`/`While` = a space predicate; a cell predicate is always marked (`WithCell`,
-`WhileAll`, `WhileAny`); `Containing` = whole-cell text, trimmed, case-insensitive; `Saying` is the
-one rule that looks past a cell's kind — the same whole-cell comparison against what a cell
-*renders*, so a numeric 42, a date, a boolean and an error are all reachable through it and none
-of them through `Containing`.
+`WhileAll`, `WhileAny`); `Saying` = what a cell SAYS, whole-cell, trimmed, case-insensitive,
+whatever its kind — the rule the generic layer can have, since what a cell says is the one thing
+every space answers, and the rule `Caption`, `Heading` and `Field` share; `Containing` is the same
+comparison against the text a cell HOLDS, so a numeric 42, a date, a boolean and an error are all
+reachable through `Saying` and none of them through `Containing`. Whether a cell holds text is a
+question about the value's kind, which is why `Containing` is the sheet's.
 
 A matcher only *locates* and reports absence; what absence means belongs to the modifier that
 takes it — `.On` (own the match), `.Below` / `.RightOf` (one beyond), `.Until` (bound by it).
@@ -226,18 +232,19 @@ Because a section can start at `.On(RowContaining("A"))` and end at `.Until(RowC
 through the same matcher, the start and the end cannot disagree about what a caption is.
 
 Three matching rules exist in the library and deliberately never unify: the **content rule**
-above (matchers, `Caption`, and `TableView`/`TableRow`'s by-caption row access), **`LabelEquals`**
-(`Field` only — content rule plus a trailing colon-run ignored), and **`CaptionComparer`** (the
+above (matchers, `Caption`, and `TableView`/`TableRow`'s by-caption row access — what a cell says),
+**`LabelEquals`** (`Field` only — content rule plus a trailing colon-run ignored), and **`CaptionComparer`** (the
 reflective `Table<T>` binding and the `Table()` dictionary's keys — case- and
 whitespace-insensitive, bridging caption ↔ identifier). A declaration must never start in one and
 end in another.
 
 ### The typed phantoms — a demand that crosses the erased seam
 
-**A canonical predicate asks the four questions; anything about kind or value is a typed predicate
-and names its space.** The strategy and landmark interfaces in `Unrect.Core` speak
-`Plane<ISpace>`/`Point<ISpace>`, which answers `IsBlank`/`HasValue`/`IsText`/`TryGetText`/`AsText` and nothing
-else — so a rule that asks "is this a number" has to carry the space it needs. Seven interfaces
+**A canonical predicate asks the text facet's questions; anything about kind or value is a typed
+predicate and names its space.** The strategy and landmark interfaces in `Unrect.Core` speak
+`Plane<ISpace>`/`Point<ISpace>`, which answers `IsBlank()`/`HasValue()`/`AsText()` and nothing
+else — so a rule that asks "is this a number", or "does this hold text", has to carry the space it
+needs. Seven interfaces
 do that, one per thing the calculus takes:
 
 ```csharp
