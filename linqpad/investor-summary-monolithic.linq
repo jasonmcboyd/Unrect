@@ -42,12 +42,8 @@ void Main()
 				})),
 			Summary = v.Next(Table<InvestorSummary>()).ToArray(),
 			Details = v.Next(
-				//AfterBlankRows()
-				//.
 				VerticalRepeat(
-					VerticalFlow(block => new InvestorTransactions(block.Next(Text()), block.Next(Table<Transaction>()))),
-					separatedBy: BlankRows(),
-					atLeast: 1))
+					VerticalFlow(v => new InvestorTransactions(v.Next(Text()), v.Next(Table<Transaction>())))))
 				.ToArray(),
 		});
 	

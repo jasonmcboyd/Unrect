@@ -83,7 +83,8 @@ namespace Unrect.Spreadsheets
       }
     }
 
-    private protected override CellValue CellAt(int column, int row)
+    /// <inheritdoc/>
+    public override CellValue ValueAt(int column, int row)
     {
       if (_disposed)
         throw new ObjectDisposedException(nameof(Workbook), "the workbook that lent this sheet has been disposed");

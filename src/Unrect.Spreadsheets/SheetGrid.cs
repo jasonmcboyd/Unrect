@@ -77,7 +77,8 @@ namespace Unrect.Spreadsheets
     /// <param name="column">The 0-based column.</param>
     /// <param name="row">The 0-based row.</param>
     /// <exception cref="OutOfBoundsException">The coordinate lies outside <see cref="Area"/>.</exception>
-    internal CellValue At(int column, int row)
+    /// <inheritdoc/>
+    public override CellValue ValueAt(int column, int row)
     {
       // OutOfBoundsException and not IndexOutOfRangeException: running off the edge of a space is a
       // statement about the data that a declaration may recover from, where an index bug is on the
@@ -87,8 +88,6 @@ namespace Unrect.Spreadsheets
 
       return _cells[row, column];
     }
-
-    private protected override CellValue CellAt(int column, int row) => At(column, row);
 
     private static CellValue Adapt(object? value)
       => value switch

@@ -368,7 +368,7 @@ namespace Unrect.Interactive
 
       public bool IsText(int line, int position) => _sheet.TryGetTextAt(Column(line, position), Row(line, position), out _, out _);
 
-      public bool IsError(int line, int position) => _sheet.TryGetErrorAt(Column(line, position), Row(line, position), out _);
+      public bool IsError(int line, int position) => _sheet.ValueAt(Column(line, position), Row(line, position)).Kind == CellKind.Error;
 
       public bool Text(int line, int position, out string text) => _sheet.TryGetTextAt(Column(line, position), Row(line, position), out text, out _);
 
@@ -378,12 +378,15 @@ namespace Unrect.Interactive
       /// <summary>The type one cell reads as, narrowest first — a whole number is an <c>int</c> until another sample says otherwise.</summary>
       public string Reads(int line, int position)
       {
-        var (column, row) = (Column(line, position), Row(line, position));
+        var value = _sheet.ValueAt(Column(line, position), Row(line, position));
 
-        return _sheet.TryGetDoubleAt(column, row, out var number, out _) ? (IsWhole(number) ? "int" : "decimal")
-          : _sheet.TryGetDateTimeAt(column, row, out _, out _) ? "DateTime"
-          : _sheet.TryGetBooleanAt(column, row, out _, out _) ? "bool"
-          : "string";
+        return value.Kind switch
+        {
+          CellKind.Number => value.TryGetNumber(out var number) && IsWhole(number) ? "int" : "decimal",
+          CellKind.Temporal => "DateTime",
+          CellKind.Boolean => "bool",
+          _ => "string",
+        };
       }
     }
 

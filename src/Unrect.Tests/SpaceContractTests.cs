@@ -354,11 +354,11 @@ namespace Unrect.Tests
       for (var row = 0; row < cells.Area.Height; row++)
         for (var column = 0; column < cells.Area.Width; column++)
         {
-          var kind = cells.KindAt(column, row);
+          var kind = cells.ValueAt(column, row).Kind;
 
           Assert.Equal(kind == CellKind.Blank, cells.IsBlank(column, row));
           Assert.Equal(kind == CellKind.Text, cells.IsText(column, row));
-          Assert.Equal(kind == CellKind.Error, cells.IsErrorAt(column, row));
+          Assert.Equal(kind == CellKind.Error, cells.ValueAt(column, row).Kind == CellKind.Error);
 
           seen.Add(kind);
         }
@@ -389,10 +389,7 @@ namespace Unrect.Tests
         // Every read answers for every cell IN the space and for no coordinate outside it: a
         // refusal is about what a cell holds, never about addresses, so a coordinate off the edge
         // is the same bounds condition here as everywhere else.
-        Assert.Throws<OutOfBoundsException>(() => cells.TryGetDoubleAt(column, row, out _, out _));
-        Assert.Throws<OutOfBoundsException>(() => cells.TryGetDateTimeAt(column, row, out _, out _));
-        Assert.Throws<OutOfBoundsException>(() => cells.TryGetBooleanAt(column, row, out _, out _));
-        Assert.Throws<OutOfBoundsException>(() => cells.TryGetErrorAt(column, row, out _));
+        Assert.Throws<OutOfBoundsException>(() => cells.ValueAt(column, row));
       }
     }
 

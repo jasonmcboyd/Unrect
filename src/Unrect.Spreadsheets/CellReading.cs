@@ -75,7 +75,7 @@ namespace Unrect.Spreadsheets
     {
       value = default;
 
-      if (!cell.Space.TryGetDoubleAt(cell.Column, cell.Row, out var number, out problem))
+      if (!cell.TryGetDouble(out var number, out problem))
         return false;
 
       if (number > (double)decimal.MinValue && number < (double)decimal.MaxValue)
@@ -93,7 +93,7 @@ namespace Unrect.Spreadsheets
     {
       value = default;
 
-      if (!cell.Space.TryGetDoubleAt(cell.Column, cell.Row, out var number, out problem))
+      if (!cell.TryGetDouble(out var number, out problem))
         return false;
 
       if (number >= int.MinValue && number <= int.MaxValue && Math.Floor(number) == number)

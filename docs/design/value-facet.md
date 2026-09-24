@@ -1,8 +1,9 @@
 # The value facet — call-site sketches
 
 A design record for a live arc (branch `feature/value-facet`). It is deleted when the arc lands and
-CLAUDE.md carries what stands. **Status:** step 1 of the order below is built (the bare point;
-`CanonicalReads` in Core holds the questions every space answers); the rest is not. The broad strokes are the owner's
+CLAUDE.md carries what stands. **Status:** steps 1 and 2 of the order below are built (the bare point, with
+`CanonicalReads` in Core; `IValueSpace<TValue>`; `CellValue`; `ICellSpace : IValueSpace<CellValue>` with the
+reads derived in `PointReads`); steps 3 to 5 are not. The broad strokes are the owner's
 (2026-09-21/23); the details are there to be quibbled with.
 
 ## The model

@@ -127,7 +127,7 @@ namespace Unrect.Benchmarks
 
       for (var row = 0; row < CanonicalSpaces.MegaRows; row++)
         for (var column = 0; column < CanonicalSpaces.Columns; column++)
-          if (_numbers.TryGetDoubleAt(column, row, out var value, out _))
+          if (_numbers.ValueAt(column, row).TryGetNumber(out var value))
             total += (decimal)value;
 
       return total;

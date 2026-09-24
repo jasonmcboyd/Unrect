@@ -155,7 +155,7 @@ namespace Unrect.Tests
     /// One CLR value as the cell it stands for, shared so a source that is not a grid (the streaming
     /// fake) writes its rows the way <see cref="Mixed"/> does.
     /// </summary>
-    public static CellValue Adapt(object? value) => SheetGrid.Of(new[,] { { value } }).At(0, 0);
+    public static CellValue Adapt(object? value) => SheetGrid.Of(new[,] { { value } }).ValueAt(0, 0);
 
     private static ICellSpace Cells<T>(T[,] values, Func<T, CellValue> adapt)
     {

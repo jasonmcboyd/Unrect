@@ -70,7 +70,7 @@ namespace Unrect.Tests.Spreadsheets
       Assert.True(grid.IsBlank(5, 0));
       Assert.True(grid.IsBlank(6, 0));
 
-      Assert.True(grid.IsErrorAt(7, 0));
+      Assert.True(grid.ValueAt(7, 0).Kind == CellKind.Error);
       Assert.Equal("#VALUE!", grid.AsText(7, 0));
       Assert.Equal("Error(#VALUE!)", grid.Describe(7, 0));
     }

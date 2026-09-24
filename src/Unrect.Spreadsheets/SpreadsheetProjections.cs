@@ -59,7 +59,7 @@ namespace Unrect.Spreadsheets
     /// <typeparam name="TSpace">The sheet the leaf is declared over.</typeparam>
     public static IProjectionDefinition<TSpace, double> Double<TSpace>()
       where TSpace : class, ICellSpace
-      => Kinded<TSpace, double>("Double", (Point<TSpace> cell, out double v, out CellProblem? p) => cell.Space.TryGetDoubleAt(cell.Column, cell.Row, out v, out p));
+      => Kinded<TSpace, double>("Double", (Point<TSpace> cell, out double v, out CellProblem? p) => cell.TryGetDouble(out v, out p));
 
     /// <summary>
     /// One cell holding a date or time, verbatim. The time of day is kept: truncating is
@@ -69,13 +69,13 @@ namespace Unrect.Spreadsheets
     /// <typeparam name="TSpace">The sheet the leaf is declared over.</typeparam>
     public static IProjectionDefinition<TSpace, DateTime> Date<TSpace>()
       where TSpace : class, ICellSpace
-      => Kinded<TSpace, DateTime>("Date", (Point<TSpace> cell, out DateTime v, out CellProblem? p) => cell.Space.TryGetDateTimeAt(cell.Column, cell.Row, out v, out p));
+      => Kinded<TSpace, DateTime>("Date", (Point<TSpace> cell, out DateTime v, out CellProblem? p) => cell.TryGetDate(out v, out p));
 
     /// <summary>One cell holding a boolean.</summary>
     /// <typeparam name="TSpace">The sheet the leaf is declared over.</typeparam>
     public static IProjectionDefinition<TSpace, bool> Boolean<TSpace>()
       where TSpace : class, ICellSpace
-      => Kinded<TSpace, bool>("Boolean", (Point<TSpace> cell, out bool v, out CellProblem? p) => cell.Space.TryGetBooleanAt(cell.Column, cell.Row, out v, out p));
+      => Kinded<TSpace, bool>("Boolean", (Point<TSpace> cell, out bool v, out CellProblem? p) => cell.TryGetBoolean(out v, out p));
 
     internal static IProjectionDefinition<TSpace, T> Kinded<TSpace, T>(string kind, CellRead<TSpace, T> read)
       where TSpace : class, ICellSpace

@@ -49,20 +49,7 @@ namespace Unrect.Tests
     public bool TryGetTextAt(int column, int row, out string value, out CellProblem? problem)
       => _values.TryGetTextAt(column, row, out value, out problem);
 
-    /// <inheritdoc/>
-    public bool TryGetDoubleAt(int column, int row, out double value, out CellProblem? problem)
-      => _values.TryGetDoubleAt(column, row, out value, out problem);
-
-    /// <inheritdoc/>
-    public bool TryGetDateTimeAt(int column, int row, out DateTime value, out CellProblem? problem)
-      => _values.TryGetDateTimeAt(column, row, out value, out problem);
-
-    /// <inheritdoc/>
-    public bool TryGetBooleanAt(int column, int row, out bool value, out CellProblem? problem)
-      => _values.TryGetBooleanAt(column, row, out value, out problem);
-
-    /// <inheritdoc/>
-    public bool TryGetErrorAt(int column, int row, out string error) => _values.TryGetErrorAt(column, row, out error);
+    public CellValue ValueAt(int column, int row) => _values.ValueAt(column, row);
 
     /// <inheritdoc/>
     public bool TryGetFormulaAt(int column, int row, out string formula)

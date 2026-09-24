@@ -86,7 +86,7 @@ namespace Unrect.Tests.Spreadsheets
       // 1900 — a real number that means nothing.
       var space = Durations();
 
-      Assert.False(space.TryGetDateTimeAt(0, 1, out _, out var problem));
+      Assert.False(Plane<ICellSpace>.Of(space)[0, 1].TryGetDate(out _, out var problem));
       Assert.Equal("expected Temporal at A2, found Number", problem!.Value.Render("A2"));
       Assert.Throws<CellReadException>(() => Plane<ICellSpace>.Of(space)[0, 1].Date());
     }

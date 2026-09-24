@@ -75,7 +75,7 @@ namespace Unrect.Tests.Spreadsheets
     {
       var space = Edges();
 
-      Assert.True(space.IsErrorAt(column, row));
+      Assert.True(space.ValueAt(column, row).Kind == CellKind.Error);
       Assert.Equal(spelling, space.AsText(column, row));
       Assert.Equal($"Error({spelling})", space.Describe(column, row));
     }
@@ -103,9 +103,9 @@ namespace Unrect.Tests.Spreadsheets
     {
       // #REF! is not text, so the whitespace rule never sees it — which is the right outcome: an
       // error is something the sheet says, not empty space to be skipped past.
-      Assert.True(Edges().IsErrorAt(3, 1));
+      Assert.True(Edges().ValueAt(3, 1).Kind == CellKind.Error);
       Assert.Equal("#REF!", Edges().AsText(3, 1));
-      Assert.True(Edges().IsErrorAt(0, 3));
+      Assert.True(Edges().ValueAt(0, 3).Kind == CellKind.Error);
       Assert.Equal("#NULL!", Edges().AsText(0, 3));
     }
 
@@ -241,7 +241,7 @@ namespace Unrect.Tests.Spreadsheets
       // the reader's own text for it, which for an undefined enum value is the number itself.
       var space = SheetGrid.Of(new object?[,] { { CellValue.OfError(CellError.Other, "42") } });
 
-      Assert.True(space.IsErrorAt(0, 0));
+      Assert.True(space.ValueAt(0, 0).Kind == CellKind.Error);
       Assert.False(space.IsBlank(0, 0));
       Assert.Equal("42", space.AsText(0, 0));
     }
@@ -256,7 +256,7 @@ namespace Unrect.Tests.Spreadsheets
       Assert.Equal("Error(42)", space.Describe(0, 0));
       Assert.Equal("42", space.AsText(0, 0));
 
-      Assert.False(space.TryGetDoubleAt(0, 0, out _, out var problem));
+      Assert.False(Plane<ICellSpace>.Of(space)[0, 0].TryGetDouble(out _, out var problem));
       Assert.Equal("expected Number at B4, found Error(42)", problem!.Value.Render("B4"));
     }
   }

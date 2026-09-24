@@ -1,4 +1,3 @@
-using System;
 
 using Unrect.Core;
 using Unrect.Spreadsheets;
@@ -47,20 +46,7 @@ namespace Unrect.Tests
     public bool TryGetTextAt(int column, int row, out string value, out CellProblem? problem)
       => _inner.TryGetTextAt(column, Read(row), out value, out problem);
 
-    /// <inheritdoc/>
-    public bool TryGetDoubleAt(int column, int row, out double value, out CellProblem? problem)
-      => _inner.TryGetDoubleAt(column, Read(row), out value, out problem);
-
-    /// <inheritdoc/>
-    public bool TryGetDateTimeAt(int column, int row, out DateTime value, out CellProblem? problem)
-      => _inner.TryGetDateTimeAt(column, Read(row), out value, out problem);
-
-    /// <inheritdoc/>
-    public bool TryGetBooleanAt(int column, int row, out bool value, out CellProblem? problem)
-      => _inner.TryGetBooleanAt(column, Read(row), out value, out problem);
-
-    /// <inheritdoc/>
-    public bool TryGetErrorAt(int column, int row, out string error) => _inner.TryGetErrorAt(column, Read(row), out error);
+    public CellValue ValueAt(int column, int row) => _inner.ValueAt(column, Read(row));
 
     /// <summary>
     /// Records one row touched and hands it straight back, so every member traces by using its
