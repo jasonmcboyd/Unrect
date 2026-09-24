@@ -40,7 +40,7 @@ kind, and leaves with `IsText`. A text-only space never has to answer it.
 ## 2. `IValueSpace<TValue>` — the value facet
 
 ```csharp
-public interface IValueSpace<out TValue> : ISpace     // today's IValueCells<T>, renamed
+public interface IValueSpace<out TValue> : ISpace     // today's IValueSpace<T>, renamed
 {
     TValue ValueAt(int column, int row);
 }

@@ -8,7 +8,7 @@ namespace Unrect
   /// <summary>
   /// A rectangular array of <typeparamref name="T"/> viewed as a space: the canonical four answered
   /// from three rules the source supplies once, and the values themselves through
-  /// <see cref="IValueCells{T}"/>.
+  /// <see cref="IValueSpace{T}"/>.
   /// <para>
   /// The array is indexed <c>[row, column]</c>, the way a 2D array literal reads on the page, while
   /// a space is indexed <c>[column, row]</c>, the way a spreadsheet address does. This type is where
@@ -25,7 +25,7 @@ namespace Unrect
   /// </para>
   /// </summary>
   /// <typeparam name="T">What every cell of the grid holds.</typeparam>
-  public sealed class GridSpace<T> : IValueCells<T>
+  public sealed class GridSpace<T> : IValueSpace<T>
   {
     private readonly T[,] _values;
     private readonly Func<T, bool> _isBlank;

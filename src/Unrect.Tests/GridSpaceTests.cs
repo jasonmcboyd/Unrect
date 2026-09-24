@@ -20,7 +20,7 @@ namespace Unrect.Tests
   public class GridSpaceTests
   {
     // A 3-wide, 2-tall grid. Backing storage is row-major, so the outer initializer is rows.
-    private static IValueCells<string?> TextGrid() =>
+    private static IValueSpace<string?> TextGrid() =>
       GridSpace.Create(new[,]
       {
         { "a", "b", "c" },
@@ -29,7 +29,7 @@ namespace Unrect.Tests
 
     // A 4-wide, 4-tall grid whose cell value is (row * 10 + column), so a misread coordinate is
     // immediately obvious in the failure message.
-    private static IValueCells<int> CoordinateGrid()
+    private static IValueSpace<int> CoordinateGrid()
     {
       var values = new int[4, 4];
 
@@ -188,18 +188,18 @@ namespace Unrect.Tests
     [Fact]
     public void AGridIsAValueSpaceAndItsPointsHandBackTheValueUnrendered()
     {
-      // IValueCells<T> is one member wide, and this is why it is worth having: the canonical four
+      // IValueSpace<T> is one member wide, and this is why it is worth having: the canonical four
       // answer ABOUT a cell, and this answers WITH it — the int, not "42". A declaration that wants
-      // the value says so in its own type, and then Point<IValueCells<T>>.Value() is there.
-      IValueCells<int> grid = GridSpace.Create(new[,] { { 1, 2 }, { 3, 0 } }, isBlank: v => v == 0);
+      // the value says so in its own type, and then Point<IValueSpace<T>>.Value() is there.
+      IValueSpace<int> grid = GridSpace.Create(new[,] { { 1, 2 }, { 3, 0 } }, isBlank: v => v == 0);
 
-      Assert.Equal(3, Plane<IValueCells<int>>.Of(grid)[0, 1].Value());
+      Assert.Equal(3, Plane<IValueSpace<int>>.Of(grid)[0, 1].Value());
       Assert.Equal(2, grid.ValueAt(1, 0));
 
       // A blank cell still HAS a value — blankness is the space's question, not this one's — so the
       // zero comes back rather than a null the type could not hold anyway.
       Assert.True(grid.IsBlank(1, 1));
-      Assert.Equal(0, Plane<IValueCells<int>>.Of(grid)[1, 1].Value());
+      Assert.Equal(0, Plane<IValueSpace<int>>.Of(grid)[1, 1].Value());
     }
 
     [Fact]
@@ -208,7 +208,7 @@ namespace Unrect.Tests
       // OutOfBoundsException and not IndexOutOfRangeException: running off the edge of a space is a
       // statement about the data that a declaration may recover from, where an index bug is on the
       // engine's fault list and would make the overrun unrecoverable.
-      IValueCells<int> grid = GridSpace.Create(new[,] { { 1, 2 } }, isBlank: v => v == 0);
+      IValueSpace<int> grid = GridSpace.Create(new[,] { { 1, 2 } }, isBlank: v => v == 0);
 
       Assert.Throws<OutOfBoundsException>(() => grid.ValueAt(2, 0));
       Assert.Throws<OutOfBoundsException>(() => grid.ValueAt(0, 1));

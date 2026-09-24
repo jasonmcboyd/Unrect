@@ -65,7 +65,7 @@ namespace Unrect.Tests.Streaming
       // The receiver is IProjectionDefinition<ICellSpace, T> on one overload and IProjectionDefinition<ISpace, T> on the
       // other, and IProjectionDefinition is INVARIANT in its space (phase-6 ruling (i): `in TSpace` and a real
       // Project(Plane<TSpace>, …) are mutually exclusive), so a declaration over IFormulaSpace,
-      // ISpreadsheetSpace or IValueCells<T> matches neither. That is the whole guard: the alternative
+      // ISpreadsheetSpace or IValueSpace<T> matches neither. That is the whole guard: the alternative
       // to a compile error here is a file's formulas quietly reading as absent, which is the failure
       // mode the capability seam exists to make unspellable.
       //
