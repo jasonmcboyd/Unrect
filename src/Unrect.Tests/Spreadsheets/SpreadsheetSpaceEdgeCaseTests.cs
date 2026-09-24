@@ -29,7 +29,7 @@ namespace Unrect.Tests.Spreadsheets
     ///   3    #NULL!       #NUM!      (none)    (none)       7
     /// </code>
     /// </summary>
-    private static ICellSpace Edges(Func<CellValue, bool>? isBlank = null)
+    private static ICellSpace Edges(Func<string, bool>? isBlank = null)
       => SpreadsheetSpace.Create(
         Path.Combine(AppContext.BaseDirectory, "TestData", "edge-cases.xlsx"),
         "Edges",
@@ -159,7 +159,7 @@ namespace Unrect.Tests.Spreadsheets
     [Fact]
     public void ACustomPredicateDecidesBlanknessForThisSheet()
     {
-      var space = Edges(isBlank: v => v.TryGetText(out var text) && text == "x");
+      var space = Edges(isBlank: text => text == "x");
 
       Assert.True(space.IsBlank(4, 2));
 

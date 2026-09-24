@@ -11,9 +11,9 @@ namespace Unrect.Spreadsheets
   /// </summary>
   internal sealed class SpreadsheetRowSource : IRowSource
   {
-    private readonly Func<CellValue, bool> _isBlank;
+    private readonly Func<string, bool> _isBlank;
 
-    internal SpreadsheetRowSource(string path, Func<CellValue, bool> isBlank)
+    internal SpreadsheetRowSource(string path, Func<string, bool> isBlank)
     {
       Name = path ?? throw new ArgumentNullException(nameof(path));
       _isBlank = isBlank ?? throw new ArgumentNullException(nameof(isBlank));
@@ -34,9 +34,9 @@ namespace Unrect.Spreadsheets
   {
     private readonly FileStream _stream;
     private readonly IExcelDataReader _reader;
-    private readonly Func<CellValue, bool> _isBlank;
+    private readonly Func<string, bool> _isBlank;
 
-    internal SpreadsheetRowCursor(string path, Func<CellValue, bool> isBlank)
+    internal SpreadsheetRowCursor(string path, Func<string, bool> isBlank)
     {
       _isBlank = isBlank;
       SpreadsheetEncodings.Register();
@@ -99,7 +99,7 @@ namespace Unrect.Spreadsheets
 
         var value = _reader.GetCellValue(column);
 
-        return _isBlank(value) ? CellValue.Blank : value;
+        return value.TryGetText(out var text) && _isBlank(text) ? CellValue.Blank : value;
       }
     }
 

@@ -47,9 +47,9 @@ namespace Unrect.Spreadsheets
     /// Heterogeneous values, each adapting to the kind its CLR type implies — the array-adapter
     /// equivalent of a real sheet, and the reason a fixture can be written as a literal.
     /// <para>
-    /// Null and the empty string are blank; a <see cref="CellValue"/> passes straight through, which is
-    /// how a grid carries an error cell — the one kind with no CLR literal to write it as. A CLR
-    /// type with no kind here is an error where the grid is built, not a cell that reads as
+    /// Null and the empty string are blank; a <see cref="CellError"/> is an error cell — the one
+    /// kind with no CLR literal of its own — and a <see cref="CellValue"/> passes straight through.
+    /// A CLR type with no kind here is an error where the grid is built, not a cell that reads as
     /// something surprising.
     /// </para>
     /// </summary>
@@ -101,6 +101,7 @@ namespace Unrect.Spreadsheets
         decimal number => CellValue.Of((double)number),
         DateTime moment => CellValue.Of(moment),
         bool flag => CellValue.Of(flag),
+        CellError error => CellValue.OfError(error),
         _ => throw new ArgumentException($"No cell kind for {value.GetType()}.", nameof(value)),
       };
   }

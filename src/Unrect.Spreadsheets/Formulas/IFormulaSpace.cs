@@ -16,7 +16,7 @@ namespace Unrect.Spreadsheets
   /// "that cell is a plain value" — a statement about the file — and a whole grid of them would say
   /// the file has no formulas when nobody looked. That is why the eager door has a second factory
   /// rather than a flag on the first: see
-  /// <see cref="SpreadsheetSpace.CreateWithFormulas(string, string, bool, System.Func{CellValue, bool})"/>.
+  /// <see cref="SpreadsheetSpace.CreateWithFormulas(string, string, bool, System.Func{string, bool})"/>.
   /// </para>
   /// <para>
   /// <b>Root coordinates, like every other read.</b> The coordinates are the whole sheet's; a region

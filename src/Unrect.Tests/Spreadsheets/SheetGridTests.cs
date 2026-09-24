@@ -119,12 +119,15 @@ namespace Unrect.Tests.Spreadsheets
     [Fact]
     public void AnErrorCellIsTheOneLiteralOnlyTheKindedDoorTakes()
     {
-      // A CellValue passes through SheetGrid.Of because an error is the one kind with no CLR literal to
-      // write it as — and the canonical door has no vocabulary for one, so it refuses the value
-      // rather than rendering something. Where the two doors differ, they differ loudly.
-      var values = new object?[,] { { CellValue.OfError(CellError.Value) } };
+      // A CellError is the one kind with no CLR literal to write it as, so the kinded door takes the
+      // error itself (and a CellValue passes straight through) — and the canonical door has no
+      // vocabulary for one, so it refuses the value rather than rendering something. Where the two
+      // doors differ, they differ loudly.
+      var values = new object?[,] { { CellError.Value } };
 
       Assert.Equal("#VALUE!", SheetGrid.Of(values).AsText(0, 0));
+      Assert.Equal(CellValue.OfError(CellError.Value), SheetGrid.Of(values).ValueAt(0, 0));
+      Assert.Equal("#VALUE!", SheetGrid.Of(new object?[,] { { CellValue.OfError(CellError.Value) } }).AsText(0, 0));
 
       // And they refuse at different moments, which is the other half of the difference: the kinded
       // door decides every cell's kind when the grid is made, so a value it has no kind for is an

@@ -4,7 +4,8 @@ A design record for a live arc (branch `feature/value-facet`). It is deleted whe
 CLAUDE.md carries what stands. **Status:** steps 1 to 3 of the order below are built (the bare point, with
 `CanonicalReads` in Core; `IValueSpace<TValue>`; `CellValue`; `ICellSpace : IValueSpace<CellValue>` with the
 reads derived in `PointReads`; `ISpace` the text facet alone, held text and its matchers in the
-value vocabulary, `Caption`/`Field`/`Heading` matching what a cell says); steps 4 and 5 are not. The broad strokes are the owner's
+value vocabulary, `Caption`/`Field`/`Heading` matching what a cell says; the blankness rule over
+text and `CellError` in a literal fixture); step 5, the docs, is not. The broad strokes are the owner's
 (2026-09-21/23); the details are there to be quibbled with.
 
 ## The model
