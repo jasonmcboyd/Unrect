@@ -68,7 +68,7 @@ namespace Unrect.Tests.Projections
 
       // ...and the point really addresses that cell: a point minted by the region the predicate is
       // measuring reads the same value as one minted from the whole sheet.
-      Assert.Equal(sheet.AsText(1, 2), seen[0].AsText());
+      Assert.Equal(sheet.AsTextAt(1, 2), seen[0].AsText());
     }
 
     [Fact]
@@ -148,7 +148,7 @@ namespace Unrect.Tests.Projections
 
       Down(2).Right(1).Of(region).Map(sheet);
 
-      Assert.Equal(new[] { sheet.AsText(1, 2), sheet.AsText(3, 3) }, read);
+      Assert.Equal(new[] { sheet.AsTextAt(1, 2), sheet.AsTextAt(3, 3) }, read);
     }
 
     // --- A matcher's predicate ----------------------------------------------------------------------

@@ -37,10 +37,10 @@ namespace Unrect.Tests
     public Area Area => _inner.Area;
 
     /// <inheritdoc/>
-    public bool IsBlank(int column, int row) => _inner.IsBlank(column, Read(row));
+    public bool IsBlankAt(int column, int row) => _inner.IsBlankAt(column, Read(row));
 
     /// <inheritdoc/>
-    public string? AsText(int column, int row) => _inner.AsText(column, Read(row));
+    public string? AsTextAt(int column, int row) => _inner.AsTextAt(column, Read(row));
 
     public CellValue ValueAt(int column, int row) => _inner.ValueAt(column, Read(row));
 

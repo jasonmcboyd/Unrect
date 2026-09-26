@@ -37,16 +37,16 @@ namespace Unrect.Core
     /// a formula or a fill, which are other facets.
     /// </summary>
     /// <exception cref="OutOfBoundsException">The coordinate lies outside <see cref="Area"/>.</exception>
-    bool IsBlank(int column, int row);
+    bool IsBlankAt(int column, int row);
 
     /// <summary>
     /// What the cell says, whatever it holds: a word says itself, and anything else says the
     /// rendering the backend chose for it. Total — every cell that is not blank says something — and
-    /// null exactly where <see cref="IsBlank"/> is true. It is a rendering and never a reading: that
+    /// null exactly where <see cref="IsBlankAt"/> is true. It is a rendering and never a reading: that
     /// a cell says "42" does not mean it holds the text "42", and whether it does is the value
     /// facet's question.
     /// </summary>
     /// <exception cref="OutOfBoundsException">The coordinate lies outside <see cref="Area"/>.</exception>
-    string? AsText(int column, int row);
+    string? AsTextAt(int column, int row);
   }
 }

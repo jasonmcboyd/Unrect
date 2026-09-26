@@ -35,10 +35,10 @@ namespace Unrect.Spreadsheets
     public abstract CellValue ValueAt(int column, int row);
 
     /// <inheritdoc/>
-    public bool IsBlank(int column, int row) => ValueAt(column, row).Kind == CellKind.Blank;
+    public bool IsBlankAt(int column, int row) => ValueAt(column, row).Kind == CellKind.Blank;
 
     /// <inheritdoc/>
-    public string? AsText(int column, int row) => ValueAt(column, row).AsText();
+    public string? AsTextAt(int column, int row) => ValueAt(column, row).AsText();
 
   }
 }

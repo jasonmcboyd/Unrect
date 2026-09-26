@@ -364,7 +364,7 @@ namespace Unrect.Interactive
 
       private int Row(int line, int position) => _region.Row + (_rows ? line : position);
 
-      public bool IsBlank(int line, int position) => _sheet.IsBlank(Column(line, position), Row(line, position));
+      public bool IsBlank(int line, int position) => _sheet.IsBlankAt(Column(line, position), Row(line, position));
 
       public bool IsText(int line, int position) => _sheet.ValueAt(Column(line, position), Row(line, position)).Kind == CellKind.Text;
 

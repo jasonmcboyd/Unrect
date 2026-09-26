@@ -76,7 +76,7 @@ namespace Unrect.Tests.Spreadsheets
       Assert.Equal(cells[1, 1].Double(), cells[0, 1].Double());
       Assert.Equal(cells[1, 2].Double(), cells[0, 2].Double());
       Assert.Equal(space.Describe(1, 1), space.Describe(0, 1));
-      Assert.Equal(space.AsText(1, 1), space.AsText(0, 1));
+      Assert.Equal(space.AsTextAt(1, 1), space.AsTextAt(0, 1));
     }
 
     [Fact]
@@ -98,7 +98,7 @@ namespace Unrect.Tests.Spreadsheets
       // duration would end a region early and the failure would be a silently short table.
       var space = Durations();
 
-      Assert.False(space.IsBlank(0, 1));
+      Assert.False(space.IsBlankAt(0, 1));
       Assert.False(Plane<ICellSpace>.Of(space)[0, 1].IsBlank());
     }
 

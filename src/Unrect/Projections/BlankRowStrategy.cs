@@ -2,7 +2,7 @@ namespace Unrect.Projections
 {
   /// <summary>
   /// How the body of a <c>Table</c> treats a fully-blank row (one whose every cell
-  /// <see cref="Unrect.Core.ISpace.IsBlank"/> is true).
+  /// <see cref="Unrect.Core.ISpace.IsBlankAt"/> is true).
   /// </summary>
   public readonly struct BlankRowStrategy
   {

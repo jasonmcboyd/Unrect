@@ -64,8 +64,8 @@ namespace Unrect.Tests
       Assert.Equal("d", space.ValueAt(0, 1));
       Assert.Equal("f", space.ValueAt(2, 1));
 
-      Assert.Equal("b", space.AsText(1, 0));
-      Assert.Equal("d", space.AsText(0, 1));
+      Assert.Equal("b", space.AsTextAt(1, 0));
+      Assert.Equal("d", space.AsTextAt(0, 1));
     }
 
     [Theory]
@@ -78,8 +78,8 @@ namespace Unrect.Tests
       var space = TextGrid();
 
       Assert.Throws<OutOfBoundsException>(() => { _ = space.ValueAt(column, row); });
-      Assert.Throws<OutOfBoundsException>(() => { _ = space.IsBlank(column, row); });
-      Assert.Throws<OutOfBoundsException>(() => { _ = space.AsText(column, row); });
+      Assert.Throws<OutOfBoundsException>(() => { _ = space.IsBlankAt(column, row); });
+      Assert.Throws<OutOfBoundsException>(() => { _ = space.AsTextAt(column, row); });
     }
 
     // --- Adaptation and blankness ---------------------------------------------------------------
@@ -90,8 +90,8 @@ namespace Unrect.Tests
       var space = GridSpace.Create(new[,] { { 1, 0 }, { 0, 2 } }, isBlank: v => v == 0);
 
       Assert.Equal(1, space.ValueAt(0, 0));
-      Assert.True(space.IsBlank(1, 0));
-      Assert.True(space.IsBlank(0, 1));
+      Assert.True(space.IsBlankAt(1, 0));
+      Assert.True(space.IsBlankAt(0, 1));
       Assert.Equal(2, space.ValueAt(1, 1));
     }
 
@@ -104,8 +104,8 @@ namespace Unrect.Tests
       // "is there anything in this cell" a question with two answers.
       var space = GridSpace.Create(new[,] { { 0 } }, isBlank: v => v == 0);
 
-      Assert.True(space.IsBlank(0, 0));
-      Assert.Null(space.AsText(0, 0));
+      Assert.True(space.IsBlankAt(0, 0));
+      Assert.Null(space.AsTextAt(0, 0));
       Assert.Equal(0, space.ValueAt(0, 0));
     }
 
@@ -114,9 +114,9 @@ namespace Unrect.Tests
     {
       var space = GridSpace.Create(new[,] { { 0, 1 } });
 
-      Assert.False(space.IsBlank(0, 0));
+      Assert.False(space.IsBlankAt(0, 0));
       Assert.Equal(0, space.ValueAt(0, 0));
-      Assert.Equal("0", space.AsText(0, 0));
+      Assert.Equal("0", space.AsTextAt(0, 0));
     }
 
     [Fact]
@@ -125,7 +125,7 @@ namespace Unrect.Tests
       var space = GridSpace.Create(new[,] { { 1.5, double.NaN } }, isBlank: double.IsNaN);
 
       Assert.Equal(1.5, space.ValueAt(0, 0));
-      Assert.True(space.IsBlank(1, 0));
+      Assert.True(space.IsBlankAt(1, 0));
     }
 
     [Fact]
@@ -133,9 +133,9 @@ namespace Unrect.Tests
     {
       var space = GridSpace.Create(new string?[,] { { "x", "", null } });
 
-      Assert.Equal("x", space.AsText(0, 0));
-      Assert.True(space.IsBlank(1, 0));
-      Assert.True(space.IsBlank(2, 0));
+      Assert.Equal("x", space.AsTextAt(0, 0));
+      Assert.True(space.IsBlankAt(1, 0));
+      Assert.True(space.IsBlankAt(2, 0));
     }
 
     [Fact]
@@ -148,9 +148,9 @@ namespace Unrect.Tests
         isBlank: v => v == "-",
         asText: v => v == "yes" ? "TRUE" : "FALSE");
 
-      Assert.Equal("TRUE", space.AsText(0, 0));
-      Assert.True(space.IsBlank(1, 0));
-      Assert.Equal("FALSE", space.AsText(2, 0));
+      Assert.Equal("TRUE", space.AsTextAt(0, 0));
+      Assert.True(space.IsBlankAt(1, 0));
+      Assert.Equal("FALSE", space.AsTextAt(2, 0));
     }
 
     [Fact]
@@ -164,15 +164,15 @@ namespace Unrect.Tests
         { "word", 42, 3.5, new DateTime(2026, 1, 15), true, null, "" },
       });
 
-      Assert.Equal("word", space.AsText(0, 0));
+      Assert.Equal("word", space.AsTextAt(0, 0));
 
-      Assert.Equal("42", space.AsText(1, 0));
-      Assert.Equal("3.5", space.AsText(2, 0));
-      Assert.Equal("2026-01-15", space.AsText(3, 0));
-      Assert.Equal("TRUE", space.AsText(4, 0));
+      Assert.Equal("42", space.AsTextAt(1, 0));
+      Assert.Equal("3.5", space.AsTextAt(2, 0));
+      Assert.Equal("2026-01-15", space.AsTextAt(3, 0));
+      Assert.Equal("TRUE", space.AsTextAt(4, 0));
 
-      Assert.True(space.IsBlank(5, 0));
-      Assert.True(space.IsBlank(6, 0));
+      Assert.True(space.IsBlankAt(5, 0));
+      Assert.True(space.IsBlankAt(6, 0));
     }
 
     // --- The value surface: what a homogeneous grid knows that a space does not ---------------------
@@ -190,7 +190,7 @@ namespace Unrect.Tests
 
       // A blank cell still HAS a value — blankness is the space's question, not this one's — so the
       // zero comes back rather than a null the type could not hold anyway.
-      Assert.True(grid.IsBlank(1, 1));
+      Assert.True(grid.IsBlankAt(1, 1));
       Assert.Equal(0, Plane<IValueSpace<int>>.Of(grid)[1, 1].Value());
     }
 
@@ -220,7 +220,7 @@ namespace Unrect.Tests
       // against this, so it is pinned per type rather than left to the default overload's judgement.
       var space = GridSpace.Create(new object?[,] { { value } });
 
-      Assert.Equal(rendered, space.AsText(0, 0));
+      Assert.Equal(rendered, space.AsTextAt(0, 0));
     }
 
     [Fact]

@@ -245,7 +245,7 @@ namespace Unrect.Tests
       Assert.Same(plane.Space, slice.Space);
       Assert.Equal(plane[2, 1], slice[0, 0]);
       Assert.Equal(plane[2, 1].GetHashCode(), slice[0, 0].GetHashCode());
-      Assert.Equal(plane.Space.AsText(2, 1), slice[0, 0].AsText());
+      Assert.Equal(plane.Space.AsTextAt(2, 1), slice[0, 0].AsText());
 
       // Non-vacuity for the identity above, and the transposed coordinate specifically: (1, 2) is
       // what a locator that had swapped its components would have landed on.
@@ -269,7 +269,7 @@ namespace Unrect.Tests
       Assert.Same(plane.Space, inner.Space);
       Assert.Equal(plane[2, 0], inner[0, 0]);
       Assert.Equal(plane[2, 1], inner[0, 1]);
-      Assert.Equal(plane.Space.AsText(2, 0), inner[0, 0].AsText());
+      Assert.Equal(plane.Space.AsTextAt(2, 0), inner[0, 0].AsText());
 
       // The once-translated cell, which is where a composition that dropped the inner offset would
       // have landed, and the band's own corner, which is where one that dropped the outer would.

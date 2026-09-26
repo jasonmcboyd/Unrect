@@ -130,9 +130,9 @@ namespace Unrect.Tests.Strategies
     {
       var cells = RowsHolding(CellOf(kind));
 
-      Assert.Equal(text, cells.AsText(0, 1));
+      Assert.Equal(text, cells.AsTextAt(0, 1));
       Assert.False(cells.IsText(0, 1));
-      Assert.False(cells.IsBlank(0, 1));
+      Assert.False(cells.IsBlankAt(0, 1));
     }
 
     [Theory]
@@ -143,7 +143,7 @@ namespace Unrect.Tests.Strategies
       // whole of the difference the matchers read.
       var cells = RowsHolding(text);
 
-      Assert.Equal(text, cells.AsText(0, 1));
+      Assert.Equal(text, cells.AsTextAt(0, 1));
       Assert.True(cells.IsText(0, 1));
     }
 

@@ -82,16 +82,16 @@ namespace Unrect.Tests.Spreadsheets
       var space = SimpleReport();
 
       // The title row has a value only in column 0; the rest of the row is genuinely empty.
-      Assert.False(space.IsBlank(0, 0));
-      Assert.True(space.IsBlank(1, 0));
+      Assert.False(space.IsBlankAt(0, 0));
+      Assert.True(space.IsBlankAt(1, 0));
 
       // An empty cell in the middle of a grid is the blank cell and nothing else: the kind says so
       // and it says nothing, where a space that had adapted it to "" would leave every skip-while-
       // blank strategy walking through content it could not see.
       Assert.Equal("Blank", space.Describe(1, 0));
-      Assert.Null(space.AsText(1, 0));
+      Assert.Null(space.AsTextAt(1, 0));
       Assert.Equal("Blank", space.Describe(3, 0));
-      Assert.Null(space.AsText(3, 0));
+      Assert.Null(space.AsTextAt(3, 0));
     }
 
     [Fact]
@@ -101,7 +101,7 @@ namespace Unrect.Tests.Spreadsheets
 
       Assert.All(
         Enumerable.Range(0, space.Area.Size.Width),
-        column => Assert.True(space.IsBlank(column, 5)));
+        column => Assert.True(space.IsBlankAt(column, 5)));
     }
 
     [Fact]
@@ -161,7 +161,7 @@ namespace Unrect.Tests.Spreadsheets
       // Zero wide means there is no cell to read at all, the first one included — that is the whole
       // of what a zero-wide space refuses, and it refuses it rather than answering Blank, which a
       // scan would happily walk forever.
-      Assert.Throws<OutOfBoundsException>(() => space.IsBlank(0, 0));
+      Assert.Throws<OutOfBoundsException>(() => space.IsBlankAt(0, 0));
 
       // The rows are real even though no cell is, so they bound a region the way a declared height
       // would: four are there to be taken, and a fifth is off the end of the file. This is the half
@@ -211,14 +211,14 @@ namespace Unrect.Tests.Spreadsheets
       // per cell, and on a text-heavy sheet those copies are most of what the grid retains.
       var space = RepeatedText();
 
-      Assert.Same(space.AsText(0, 1), space.AsText(0, 2));     // "Alpha Fund", twice
-      Assert.Same(space.AsText(1, 1), space.AsText(1, 2));     // "Capital Call", twice
+      Assert.Same(space.AsTextAt(0, 1), space.AsTextAt(0, 2));     // "Alpha Fund", twice
+      Assert.Same(space.AsTextAt(1, 1), space.AsTextAt(1, 2));     // "Capital Call", twice
 
       // A different value is a different instance, which is the half that says the first assertion
       // is about identity rather than about the adapter handing back one string for everything.
-      Assert.NotSame(space.AsText(0, 1), space.AsText(0, 3));
-      Assert.Equal("Alpha Fund", space.AsText(0, 2));
-      Assert.Equal("Beta Fund", space.AsText(0, 3));
+      Assert.NotSame(space.AsTextAt(0, 1), space.AsTextAt(0, 3));
+      Assert.Equal("Alpha Fund", space.AsTextAt(0, 2));
+      Assert.Equal("Beta Fund", space.AsTextAt(0, 3));
     }
 
     [Fact]
@@ -231,12 +231,12 @@ namespace Unrect.Tests.Spreadsheets
       var ledger = sheets[0];
       var notes = sheets[1];
 
-      Assert.Same(ledger.AsText(0, 0), notes.AsText(0, 0));    // "Fund"
-      Assert.Same(ledger.AsText(0, 1), notes.AsText(0, 1));    // "Alpha Fund"
+      Assert.Same(ledger.AsTextAt(0, 0), notes.AsTextAt(0, 0));    // "Fund"
+      Assert.Same(ledger.AsTextAt(0, 1), notes.AsTextAt(0, 1));    // "Alpha Fund"
 
       // ...and the scope is the call. A second call reads the file again and builds its own table,
       // so nothing here is a process-wide intern pool that would outlive the grid it was made for.
-      Assert.NotSame(ledger.AsText(0, 1), RepeatedText().AsText(0, 1));
+      Assert.NotSame(ledger.AsTextAt(0, 1), RepeatedText().AsTextAt(0, 1));
     }
 
     [Fact]
@@ -249,14 +249,14 @@ namespace Unrect.Tests.Spreadsheets
       // the table.
       var space = RepeatedText();
 
-      Assert.Equal(256, space.AsText(2, 1)!.Length);
-      Assert.Same(space.AsText(2, 1), space.AsText(2, 2));
+      Assert.Equal(256, space.AsTextAt(2, 1)!.Length);
+      Assert.Same(space.AsTextAt(2, 1), space.AsTextAt(2, 2));
 
-      Assert.Equal(257, space.AsText(2, 3)!.Length);
-      Assert.NotSame(space.AsText(2, 3), space.AsText(2, 4));
+      Assert.Equal(257, space.AsTextAt(2, 3)!.Length);
+      Assert.NotSame(space.AsTextAt(2, 3), space.AsTextAt(2, 4));
 
       // Not shared is not the same as not equal: the cell is exactly what the file says either way.
-      Assert.Equal(space.AsText(2, 3), space.AsText(2, 4));
+      Assert.Equal(space.AsTextAt(2, 3), space.AsTextAt(2, 4));
       Assert.Equal(space.Describe(2, 3), space.Describe(2, 4));
     }
 
@@ -274,7 +274,7 @@ namespace Unrect.Tests.Spreadsheets
       Assert.Equal("Number", space.Describe(3, 1));
       Assert.Equal(1000, sheet[3, 1].Integer());
       Assert.Equal(4000, sheet[3, 4].Integer());
-      Assert.False(space.IsBlank(0, 0));
+      Assert.False(space.IsBlankAt(0, 0));
     }
   }
 }

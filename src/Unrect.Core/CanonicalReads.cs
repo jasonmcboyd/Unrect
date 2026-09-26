@@ -13,16 +13,16 @@ namespace Unrect.Core
     /// <param name="point">The cell.</param>
     public static bool IsBlank<TSpace>(this Point<TSpace> point)
       where TSpace : class, ISpace
-      => point.Space.IsBlank(point.Column, point.Row);
+      => point.Space.IsBlankAt(point.Column, point.Row);
 
     /// <summary>
-    /// What the cell says, or null when it is blank — see <see cref="ISpace.AsText"/>. Rendering a
+    /// What the cell says, or null when it is blank — see <see cref="ISpace.AsTextAt"/>. Rendering a
     /// cell that is not text may allocate.
     /// </summary>
     /// <typeparam name="TSpace">The space the point addresses a cell of.</typeparam>
     /// <param name="point">The cell.</param>
     public static string? AsText<TSpace>(this Point<TSpace> point)
       where TSpace : class, ISpace
-      => point.Space.AsText(point.Column, point.Row);
+      => point.Space.AsTextAt(point.Column, point.Row);
   }
 }

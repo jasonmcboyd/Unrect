@@ -49,8 +49,8 @@ namespace Unrect.Tests
 
       Assert.Equal(3, space.Area.Size.Width);
       Assert.Equal(2, space.Area.Size.Height);
-      Assert.Equal("0,0", space.AsText(0, 0));
-      Assert.Equal("2,1", space.AsText(2, 1));
+      Assert.Equal("0,0", space.AsTextAt(0, 0));
+      Assert.Equal("2,1", space.AsTextAt(2, 1));
     }
 
     [Theory]
@@ -76,8 +76,8 @@ namespace Unrect.Tests
       foreach (var (column, row) in new[] { (-1, 0), (3, 0), (0, -1), (0, 2) })
       {
         Assert.Throws<OutOfBoundsException>(() => { _ = plane[column, row]; });
-        Assert.Throws<OutOfBoundsException>(() => { _ = space.IsBlank(column, row); });
-        Assert.Throws<OutOfBoundsException>(() => { _ = space.AsText(column, row); });
+        Assert.Throws<OutOfBoundsException>(() => { _ = space.IsBlankAt(column, row); });
+        Assert.Throws<OutOfBoundsException>(() => { _ = space.AsTextAt(column, row); });
       }
     }
 
@@ -183,9 +183,9 @@ namespace Unrect.Tests
       for (var row = 0; row < cells.Area.Height; row++)
         for (var column = 0; column < cells.Area.Width; column++)
         {
-          Assert.Equal(cells.IsBlank(column, row), cells.AsText(column, row) is null);
+          Assert.Equal(cells.IsBlankAt(column, row), cells.AsTextAt(column, row) is null);
 
-          if (cells.IsBlank(column, row))
+          if (cells.IsBlankAt(column, row))
             blank++;
           else if (cells.IsText(column, row))
             text++;
@@ -213,7 +213,7 @@ namespace Unrect.Tests
         for (var column = 0; column < cells.Area.Width; column++)
           if (cells.IsText(column, row))
           {
-            Assert.False(cells.IsBlank(column, row));
+            Assert.False(cells.IsBlankAt(column, row));
             text++;
           }
 
@@ -236,10 +236,10 @@ namespace Unrect.Tests
         {
           var point = plane[column, row];
 
-          Assert.Equal(point.IsBlank(), cells.IsBlank(column, row));
-          Assert.Equal(!point.IsBlank(), !cells.IsBlank(column, row));
+          Assert.Equal(point.IsBlank(), cells.IsBlankAt(column, row));
+          Assert.Equal(!point.IsBlank(), !cells.IsBlankAt(column, row));
           Assert.Equal(point.IsText(), cells.IsText(column, row));
-          Assert.Equal(point.AsText(), cells.AsText(column, row));
+          Assert.Equal(point.AsText(), cells.AsTextAt(column, row));
         }
     }
 
@@ -283,9 +283,9 @@ namespace Unrect.Tests
       // every door, or a declaration anchored on one would stop anchoring through another.
       var cells = CanonicalDoor(door);
 
-      Assert.False(cells.IsBlank(column, row));
+      Assert.False(cells.IsBlankAt(column, row));
       Assert.False(cells.IsText(column, row));
-      Assert.Equal(said, cells.AsText(column, row));
+      Assert.Equal(said, cells.AsTextAt(column, row));
     }
 
     [Theory]
@@ -296,7 +296,7 @@ namespace Unrect.Tests
       var cells = CanonicalDoor(door);
 
       Assert.True(cells.IsText(0, 0));
-      Assert.Equal("text", cells.AsText(0, 0));
+      Assert.Equal("text", cells.AsTextAt(0, 0));
     }
 
     [Fact]
@@ -308,8 +308,8 @@ namespace Unrect.Tests
       // matcher must not find it by the characters it happens to be made of.
       ISpace empties = GridSpace.Create(new string?[,] { { "", "kept" } });
 
-      Assert.True(empties.IsBlank(0, 0));
-      Assert.Null(empties.AsText(0, 0));
+      Assert.True(empties.IsBlankAt(0, 0));
+      Assert.Null(empties.AsTextAt(0, 0));
 
       // The same string under a rule that says whitespace is empty space, which is the spreadsheet
       // adapter's default and the case a real export produces by the thousand.
@@ -318,15 +318,15 @@ namespace Unrect.Tests
         isBlank: text => string.IsNullOrWhiteSpace(text),
         asText: text => text);
 
-      Assert.True(strict.IsBlank(0, 0));
-      Assert.Null(strict.AsText(0, 0));
+      Assert.True(strict.IsBlankAt(0, 0));
+      Assert.Null(strict.AsTextAt(0, 0));
 
       // ...and under the array adapter's own default, where only null and "" are empty, the very
       // same two spaces are a cell with a value, and that value is text.
       ISpace kept = GridSpace.Create(new string?[,] { { "  ", "kept" } });
 
-      Assert.False(kept.IsBlank(0, 0));
-      Assert.Equal("  ", kept.AsText(0, 0));
+      Assert.False(kept.IsBlankAt(0, 0));
+      Assert.Equal("  ", kept.AsTextAt(0, 0));
     }
 
     // --- The kind question ---------------------------------------------------------------------------
@@ -352,7 +352,7 @@ namespace Unrect.Tests
         {
           var kind = cells.ValueAt(column, row).Kind;
 
-          Assert.Equal(kind == CellKind.Blank, cells.IsBlank(column, row));
+          Assert.Equal(kind == CellKind.Blank, cells.IsBlankAt(column, row));
           Assert.Equal(kind == CellKind.Text, cells.IsText(column, row));
           Assert.Equal(kind == CellKind.Error, cells.ValueAt(column, row).Kind == CellKind.Error);
 
@@ -378,9 +378,9 @@ namespace Unrect.Tests
 
       foreach (var (column, row) in new[] { (-1, 0), (cells.Area.Width, 0), (0, -1), (0, cells.Area.Height) })
       {
-        Assert.Throws<OutOfBoundsException>(() => { _ = cells.IsBlank(column, row); });
+        Assert.Throws<OutOfBoundsException>(() => { _ = cells.IsBlankAt(column, row); });
         Assert.Throws<OutOfBoundsException>(() => { _ = cells.IsText(column, row); });
-        Assert.Throws<OutOfBoundsException>(() => { _ = cells.AsText(column, row); });
+        Assert.Throws<OutOfBoundsException>(() => { _ = cells.AsTextAt(column, row); });
 
         // Every read answers for every cell IN the space and for no coordinate outside it: a
         // refusal is about what a cell holds, never about addresses, so a coordinate off the edge
@@ -407,8 +407,8 @@ namespace Unrect.Tests
 
       var plane = Plane<ICellSpace>.Of(space);
 
-      Assert.Throws<OutOfBoundsException>(() => { _ = space.IsBlank(-1, 0); });
-      Assert.Throws<OutOfBoundsException>(() => { _ = space.AsText(space.Area.Size.Width, 0); });
+      Assert.Throws<OutOfBoundsException>(() => { _ = space.IsBlankAt(-1, 0); });
+      Assert.Throws<OutOfBoundsException>(() => { _ = space.AsTextAt(space.Area.Size.Width, 0); });
       Assert.Throws<OutOfBoundsException>(() => { _ = space.IsText(0, space.Area.Size.Height); });
       Assert.Throws<OutOfBoundsException>(() => { _ = plane[-1, 0]; });
       Assert.Throws<OutOfBoundsException>(
@@ -453,8 +453,8 @@ namespace Unrect.Tests
 
       foreach (var space in new[] { eager, streamed })
       {
-        Assert.Throws<OutOfBoundsException>(() => { _ = space.IsBlank(0, 0); });
-        Assert.Throws<OutOfBoundsException>(() => { _ = space.AsText(0, 0); });
+        Assert.Throws<OutOfBoundsException>(() => { _ = space.IsBlankAt(0, 0); });
+        Assert.Throws<OutOfBoundsException>(() => { _ = space.AsTextAt(0, 0); });
       }
     }
 

@@ -142,7 +142,7 @@ namespace Unrect.Tests.Strategies
       var space = Mixed(new object?[,] { { "a" }, { 42 }, { "42" }, { "b" } });
 
       // Non-vacuity: the numeric cell really does render the needle, so the refusal is about kind.
-      Assert.Equal("42", space.AsText(0, 1));
+      Assert.Equal("42", space.AsTextAt(0, 1));
       Assert.False(space.IsText(0, 1));
       Assert.True(space.IsText(0, 2));
 
@@ -313,7 +313,7 @@ namespace Unrect.Tests.Strategies
       // NUMBER 42 and column 2 the TEXT "42".
       var space = Mixed(new object?[,] { { "a", 42, "42", "b" } });
 
-      Assert.Equal("42", space.AsText(1, 0));
+      Assert.Equal("42", space.AsTextAt(1, 0));
       Assert.False(space.IsText(1, 0));
       Assert.True(space.IsText(2, 0));
 

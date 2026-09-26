@@ -182,9 +182,9 @@ namespace Unrect.Tests
 
       public override int GetHashCode() => 1;
 
-      public bool IsBlank(int column, int row) => true;
+      public bool IsBlankAt(int column, int row) => true;
 
-      public string? AsText(int column, int row) => null;
+      public string? AsTextAt(int column, int row) => null;
     }
 
     [Fact]

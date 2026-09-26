@@ -44,7 +44,7 @@ namespace Unrect.Tests.Streaming
 
       Assert.Equal(eager.Area.Size.Width, streamed.Area.Size.Width);
       Assert.Equal(eager.Area.Size.Height, streamed.Area.Size.Height);
-      Assert.Equal("Capital Activity Report", streamed.AsText(0, 0));
+      Assert.Equal("Capital Activity Report", streamed.AsTextAt(0, 0));
     }
 
     [Fact]
@@ -111,7 +111,7 @@ namespace Unrect.Tests.Streaming
       var second = book.Sheet("Report");
 
       Assert.NotSame(first, second);
-      Assert.Equal(first.AsText(0, 0), second.AsText(0, 0));
+      Assert.Equal(first.AsTextAt(0, 0), second.AsTextAt(0, 0));
       Assert.Equal(first.Describe(0, 0), second.Describe(0, 0));
     }
 
@@ -148,9 +148,9 @@ namespace Unrect.Tests.Streaming
       using var book = Workbook.Open(Path("simple-report.xlsx"), Cold());
       var space = book.Sheet("Report");
 
-      Assert.Throws<OutOfBoundsException>(() => space.AsText(-1, 0));
-      Assert.Throws<OutOfBoundsException>(() => space.AsText(space.Area.Size.Width, 0));
-      Assert.Throws<OutOfBoundsException>(() => space.AsText(0, space.Area.Size.Height));
+      Assert.Throws<OutOfBoundsException>(() => space.AsTextAt(-1, 0));
+      Assert.Throws<OutOfBoundsException>(() => space.AsTextAt(space.Area.Size.Width, 0));
+      Assert.Throws<OutOfBoundsException>(() => space.AsTextAt(0, space.Area.Size.Height));
       Assert.Throws<OutOfBoundsException>(
         () => Plane<ICellSpace>.Of(space).Slice(new Offset(0, 0), new Area(99, 99)));
     }
@@ -178,7 +178,7 @@ namespace Unrect.Tests.Streaming
       Assert.Equal(2, book.Sheet("Cover").Area.Size.Height);
       Assert.Equal(4, book.Sheet("Summary").Area.Size.Height);
       Assert.Equal(6, book.Sheet("Detail").Area.Size.Height);
-      Assert.Equal("Alpha Fund", book.Sheet("Detail").AsText(0, 1));
+      Assert.Equal("Alpha Fund", book.Sheet("Detail").AsTextAt(0, 1));
     }
 
     [Fact]
@@ -198,8 +198,8 @@ namespace Unrect.Tests.Streaming
 
       // Not just vended — read. A catalogue entry with the wrong index would hand back a view over
       // the wrong sheet, which an Area alone would not catch.
-      Assert.Equal("Alpha Fund", summary.AsText(0, 1));
-      Assert.Equal("Fund", detail.AsText(0, 0));
+      Assert.Equal("Alpha Fund", summary.AsTextAt(0, 1));
+      Assert.Equal("Fund", detail.AsTextAt(0, 0));
       Assert.Equal(1500d, Plane<ICellSpace>.Of(detail)[2, 5].Double());
 
       // And the catalogue really did grow: the third sheet is in it, without the walk that
@@ -217,8 +217,8 @@ namespace Unrect.Tests.Streaming
 
       Assert.Equal(6, book.Sheet("Detail").Area.Size.Height);
 
-      Assert.Equal("Alpha Fund", book.Sheet("Summary").AsText(0, 1));
-      Assert.Equal("Quarterly Pack", book.Sheet("Cover").AsText(0, 0));
+      Assert.Equal("Alpha Fund", book.Sheet("Summary").AsTextAt(0, 1));
+      Assert.Equal("Quarterly Pack", book.Sheet("Cover").AsTextAt(0, 0));
     }
 
     [Fact]
@@ -237,7 +237,7 @@ namespace Unrect.Tests.Streaming
         foreach (var name in order)
           Assert.Equal(heights[name], book.Sheet(name).Area.Size.Height);
 
-        Assert.Equal("Fund", book.Sheet("Detail").AsText(0, 0));
+        Assert.Equal("Fund", book.Sheet("Detail").AsTextAt(0, 0));
       }
     }
 
@@ -314,7 +314,7 @@ namespace Unrect.Tests.Streaming
       Assert.True(walked.PeakRetained < 16, $"peak retained {walked.PeakRetained}");
 
       // ...and reaching back to a row the pass has released is a read failure, not a reload.
-      Assert.Throws<CellReadException>(() => space.AsText(0, 0));
+      Assert.Throws<CellReadException>(() => space.AsTextAt(0, 0));
     }
 
     [Fact]
@@ -343,7 +343,7 @@ namespace Unrect.Tests.Streaming
       Assert.Null(book.Statistics("Report"));
 
       var space = book.Sheet("Report");
-      _ = space.AsText(0, 0);
+      _ = space.AsTextAt(0, 0);
 
       var stats = book.Statistics("Report");
 
@@ -371,11 +371,11 @@ namespace Unrect.Tests.Streaming
       var book = Workbook.Open(Path("simple-report.xlsx"), Cold());
       var space = book.Sheet("Report");
 
-      _ = space.AsText(0, 0);        // the row is now held
+      _ = space.AsTextAt(0, 0);        // the row is now held
 
       book.Dispose();
 
-      Assert.Throws<ObjectDisposedException>(() => space.AsText(0, 0));
+      Assert.Throws<ObjectDisposedException>(() => space.AsTextAt(0, 0));
     }
 
     [Fact]
@@ -504,8 +504,8 @@ namespace Unrect.Tests.Streaming
         Path("edge-cases.xlsx"),
         new WorkbookOptions { IsBlank = _ => false });
 
-      Assert.True(lenient.Sheet("Edges").IsBlank(0, 2));
-      Assert.Equal("  ", strict.Sheet("Edges").AsText(0, 2));
+      Assert.True(lenient.Sheet("Edges").IsBlankAt(0, 2));
+      Assert.Equal("  ", strict.Sheet("Edges").AsTextAt(0, 2));
     }
   }
 }

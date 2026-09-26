@@ -40,7 +40,7 @@ namespace Unrect.Tests.Streaming
     {
       for (var row = 0; row < sheet.Area.Height; row++)
         for (var column = 0; column < sheet.Area.Width; column++)
-          _ = sheet.AsText(column, row);
+          _ = sheet.AsTextAt(column, row);
 
       return sheet;
     }
@@ -333,7 +333,7 @@ namespace Unrect.Tests.Streaming
       var summary = ReadEveryCell(book.Sheet("Summary"));
       var detail = ReadEveryCell(book.Sheet("Detail"));
 
-      Assert.Same(summary.AsText(0, 0), detail.AsText(0, 0));
+      Assert.Same(summary.AsTextAt(0, 0), detail.AsTextAt(0, 0));
 
       // One distinct value for two sheets of three cells each: five of the six joined the first.
       var statistics = book.InterningStatistics;
@@ -352,7 +352,7 @@ namespace Unrect.Tests.Streaming
       // whose pinned renders this change does not touch), and the book's line is where the story is.
       using var book = Book(new FakeRowSource(Repeating("Data", 8, 2)));
 
-      _ = book.Sheet("Data").AsText(0, 0);
+      _ = book.Sheet("Data").AsTextAt(0, 0);
 
       var sheetLine = book.Statistics("Data")!.Value.ToString();
 
@@ -384,8 +384,8 @@ namespace Unrect.Tests.Streaming
 
       var sheet = book.Sheet("Data");
 
-      Assert.NotSame(sheet.AsText(0, 0), sheet.AsText(0, 1));
-      Assert.Equal(sheet.AsText(0, 0), sheet.AsText(0, 1));
+      Assert.NotSame(sheet.AsTextAt(0, 0), sheet.AsTextAt(0, 1));
+      Assert.Equal(sheet.AsTextAt(0, 0), sheet.AsTextAt(0, 1));
 
       var statistics = book.InterningStatistics;
 
@@ -409,7 +409,7 @@ namespace Unrect.Tests.Streaming
       var sheet = book.Sheet("Data");
 
       for (var row = 0; row < 4; row++)
-        Assert.Equal($"Fund {row}", sheet.AsText(0, row));
+        Assert.Equal($"Fund {row}", sheet.AsTextAt(0, row));
 
       var statistics = book.InterningStatistics;
 
@@ -489,7 +489,7 @@ namespace Unrect.Tests.Streaming
     private static WeakReference ReadThenDispose()
     {
       var book = Book(new FakeRowSource(Repeating("Data", 6, 2)));
-      var reference = new WeakReference(book.Sheet("Data").AsText(0, 0));
+      var reference = new WeakReference(book.Sheet("Data").AsTextAt(0, 0));
 
       book.Dispose();
 

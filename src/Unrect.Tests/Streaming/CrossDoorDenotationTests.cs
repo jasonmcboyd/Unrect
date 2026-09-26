@@ -518,8 +518,8 @@ namespace Unrect.Tests.Streaming
       using var book = Workbook.Open(path, Cold());
       var streamed = book.Sheet(SheetName);
 
-      Assert.True(eager.IsBlank(0, 1));
-      Assert.True(streamed.IsBlank(0, 1));
+      Assert.True(eager.IsBlankAt(0, 1));
+      Assert.True(streamed.IsBlankAt(0, 1));
 
       // Not just the verdict: blankness is decided AT ADAPTATION, so a cell the predicate calls
       // blank arrives as an empty cell and its two spaces are gone. Both doors do the same thing to
@@ -527,15 +527,15 @@ namespace Unrect.Tests.Streaming
       // and different on everything else a declaration could read out of the cell.
       Assert.Equal("Blank", eager.Describe(0, 1));
       Assert.Equal(eager.Describe(0, 1), streamed.Describe(0, 1));
-      Assert.Null(streamed.AsText(0, 1));
+      Assert.Null(streamed.AsTextAt(0, 1));
       Assert.False(streamed.IsText(0, 1));
 
       // ...and the same characters through a door that decides nothing about whitespace: text, and
       // not blank. The agreement above is a shared decision, not an inevitability.
       var kept = GridSpace.Create(new[,] { { "  " } });
 
-      Assert.False(kept.IsBlank(0, 0));
-      Assert.Equal("  ", kept.AsText(0, 0));
+      Assert.False(kept.IsBlankAt(0, 0));
+      Assert.Equal("  ", kept.AsTextAt(0, 0));
     }
 
     // --- The sheet that will not say how big it is --------------------------------------------------------

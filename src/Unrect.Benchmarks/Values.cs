@@ -80,7 +80,7 @@ namespace Unrect.Benchmarks
 
       for (var row = 0; row < CanonicalSpaces.MegaRows; row++)
         for (var column = 0; column < CanonicalSpaces.Columns; column++)
-          if (_mixed.IsBlank(column, row))
+          if (_mixed.IsBlankAt(column, row))
             blank++;
 
       return blank;
@@ -111,7 +111,7 @@ namespace Unrect.Benchmarks
 
       for (var row = 0; row < CanonicalSpaces.MegaRows; row++)
         for (var column = 0; column < CanonicalSpaces.Columns; column++)
-          total += _text.AsText(column, row)!.Length;
+          total += _text.AsTextAt(column, row)!.Length;
 
       return total;
     }

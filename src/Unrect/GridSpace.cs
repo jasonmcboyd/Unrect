@@ -64,10 +64,10 @@ namespace Unrect
     }
 
     /// <inheritdoc/>
-    public bool IsBlank(int column, int row) => _isBlank(ValueAt(column, row));
+    public bool IsBlankAt(int column, int row) => _isBlank(ValueAt(column, row));
 
     /// <inheritdoc/>
-    public string? AsText(int column, int row)
+    public string? AsTextAt(int column, int row)
     {
       var value = ValueAt(column, row);
 

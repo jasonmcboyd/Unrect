@@ -40,10 +40,10 @@ namespace Unrect.Tests
     public Area Area => _values.Area;
 
     /// <inheritdoc/>
-    public bool IsBlank(int column, int row) => _values.IsBlank(column, row);
+    public bool IsBlankAt(int column, int row) => _values.IsBlankAt(column, row);
 
     /// <inheritdoc/>
-    public string? AsText(int column, int row) => _values.AsText(column, row);
+    public string? AsTextAt(int column, int row) => _values.AsTextAt(column, row);
 
     public CellValue ValueAt(int column, int row) => _values.ValueAt(column, row);
 

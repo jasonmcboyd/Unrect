@@ -17,7 +17,7 @@ namespace Unrect.Core
     /// <summary>
     /// The value in the cell at <paramref name="column"/>, <paramref name="row"/>, 0-based from this
     /// space's own origin. A blank cell answers with whatever the source calls empty — blankness is
-    /// <see cref="ISpace.IsBlank"/>'s question, not this one's.
+    /// <see cref="ISpace.IsBlankAt"/>'s question, not this one's.
     /// </summary>
     /// <param name="column">The 0-based column.</param>
     /// <param name="row">The 0-based row.</param>

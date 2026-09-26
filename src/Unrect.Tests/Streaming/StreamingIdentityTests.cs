@@ -115,7 +115,7 @@ namespace Unrect.Tests.Streaming
       for (var row = 0; row < space.Area.Size.Height; row++)
         for (var column = 0; column < space.Area.Size.Width; column++)
         {
-          if (!space.IsText(column, row) || space.AsText(column, row) is not string text)
+          if (!space.IsText(column, row) || space.AsTextAt(column, row) is not string text)
           {
             pattern.Add(-1);
             continue;
@@ -336,9 +336,9 @@ namespace Unrect.Tests.Streaming
       var streamed = book.Sheet("Edges");
 
       Assert.True(streamed.ValueAt(0, 1).Kind == CellKind.Error);
-      Assert.Equal("#VALUE!", streamed.AsText(0, 1));
+      Assert.Equal("#VALUE!", streamed.AsTextAt(0, 1));
       Assert.Equal("Error(#VALUE!)", streamed.Describe(0, 1));
-      Assert.False(streamed.IsBlank(0, 1));
+      Assert.False(streamed.IsBlankAt(0, 1));
     }
 
     /// <summary>
@@ -364,9 +364,9 @@ namespace Unrect.Tests.Streaming
         for (var column = 0; column < eager.Area.Size.Width; column++)
         {
           Assert.Equal(eager.Describe(column, row), streamed.Describe(column, row));
-          Assert.Equal(eager.IsBlank(column, row), streamed.IsBlank(column, row));
+          Assert.Equal(eager.IsBlankAt(column, row), streamed.IsBlankAt(column, row));
           Assert.Equal(eager.IsText(column, row), streamed.IsText(column, row));
-          Assert.Equal(eager.AsText(column, row), streamed.AsText(column, row));
+          Assert.Equal(eager.AsTextAt(column, row), streamed.AsTextAt(column, row));
 
           // The error questions, which no leaf reads: whether the cell IS one (the value's Kind),
           // and ErrorTextAt, the file's own spelling where it differs from the canonical one. A

@@ -27,7 +27,7 @@ does today.
 ## Leaves — where cells become values
 
 Two families: the **canonical** two, closed over the text facet every `ISpace` answers
-(`Area`, `IsBlank`, `AsText` — is there anything, and what it says) and living in `Unrect` itself;
+(`Area`, `IsBlankAt`, `AsTextAt` — is there anything, and what it says) and living in `Unrect` itself;
 and a backend's own leaves, closed over the VALUE its store holds and living beside it.
 
 | Operator | Yields | Notes |
