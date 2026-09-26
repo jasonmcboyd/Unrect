@@ -340,7 +340,7 @@ namespace Unrect.Tests.Projections
 
       Assert.Contains("it stands in for 'primary', which failed too: ", failure.Message);
       Assert.Contains("expected Text at A1, found Number", failure.Message);
-      Assert.Contains("expected Temporal at A1, found Number", failure.Message);
+      Assert.Contains("expected Date at A1, found Number", failure.Message);
     }
 
     [Fact]

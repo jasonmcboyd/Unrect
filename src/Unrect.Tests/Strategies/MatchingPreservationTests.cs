@@ -44,7 +44,7 @@ namespace Unrect.Tests.Strategies
     // serialisable and a failing case names its kind in the runner.
 
     private const string ANumber = "Number";
-    private const string ATemporal = "Temporal";
+    private const string ATemporal = "Date";
     private const string ABoolean = "Boolean";
     private const string AnError = "Error";
 

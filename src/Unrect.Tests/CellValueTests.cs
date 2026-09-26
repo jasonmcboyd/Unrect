@@ -69,7 +69,7 @@ namespace Unrect.Tests
     [Fact]
     public void Of_DateTime_IsTemporal()
     {
-      Assert.Equal(CellKind.Temporal, CellValue.Of(new DateTime(2026, 6, 30)).Kind);
+      Assert.Equal(CellKind.Date, CellValue.Of(new DateTime(2026, 6, 30)).Kind);
     }
 
     [Fact]
@@ -174,7 +174,7 @@ namespace Unrect.Tests
         CellKind.Blank => "nothing",
         CellKind.Text => "words",
         CellKind.Number => "a number",
-        CellKind.Temporal => "a moment",
+        CellKind.Date => "a moment",
         CellKind.Boolean => "a flag",
         CellKind.Error => "an error",
         _ => throw new ArgumentOutOfRangeException(nameof(value)),

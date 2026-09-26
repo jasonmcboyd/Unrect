@@ -149,7 +149,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal("expected Number at B2, found Text", Fails(() => RowOf("V", "x")["V"].Decimal()));
       Assert.Equal("expected Text at B2, found Number", Fails(() => RowOf("V", 5m)["V"].Text()));
       Assert.Equal("expected Boolean at B2, found Number", Fails(() => RowOf("V", 1m)["V"].Boolean()));
-      Assert.Equal("expected Temporal at B2, found Text", Fails(() => RowOf("V", "x")["V"].Date()));
+      Assert.Equal("expected Date at B2, found Text", Fails(() => RowOf("V", "x")["V"].Date()));
       Assert.Equal("expected Number at B2, found Text", Fails(() => RowOf("V", "x")["V"].Integer()));
       Assert.Equal("expected Number at B2, found Text", Fails(() => RowOf("V", "x")["V"].Double()));
     }
@@ -173,7 +173,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal("expected Number at B2, found Text", Fails(() => RowOf("V", "x")[1].Decimal()));
       Assert.Equal("expected Text at B2, found Number", Fails(() => RowOf("V", 5m)[1].Text()));
       Assert.Equal("expected Boolean at B2, found Number", Fails(() => RowOf("V", 1m)[1].Boolean()));
-      Assert.Equal("expected Temporal at B2, found Text", Fails(() => RowOf("V", "x")[1].Date()));
+      Assert.Equal("expected Date at B2, found Text", Fails(() => RowOf("V", "x")[1].Date()));
     }
 
     [Fact]
@@ -182,7 +182,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal("expected Number at B2, found Text", Fails(() => StripOf("x")[1].Decimal()));
       Assert.Equal("expected Text at B2, found Number", Fails(() => StripOf(5)[1].Text()));
       Assert.Equal("expected Boolean at B2, found Number", Fails(() => StripOf(1)[1].Boolean()));
-      Assert.Equal("expected Temporal at B2, found Text", Fails(() => StripOf("x")[1].Date()));
+      Assert.Equal("expected Date at B2, found Text", Fails(() => StripOf("x")[1].Date()));
     }
 
     [Fact]
@@ -263,7 +263,7 @@ namespace Unrect.Tests.Projections
     {
       Assert.Equal("expected Number at B2, found Text", Fails(() => RowOf("V", "x")[1].DecimalOrBlank()));
       Assert.Equal("expected Number at B2, found Text", Fails(() => StripOf("x")[1].DecimalOrBlank()));
-      Assert.Equal("expected Temporal at B2, found Number", Fails(() => StripOf(5)[1].DateOrBlank()));
+      Assert.Equal("expected Date at B2, found Number", Fails(() => StripOf(5)[1].DateOrBlank()));
     }
 
     // --- 3. The identity claim: the accessor describes a bad cell as the leaf/binder does -----------

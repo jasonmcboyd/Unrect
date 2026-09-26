@@ -19,7 +19,7 @@ namespace Unrect.Tests.Projections
   /// header's captions. It is the exploratory spelling — what a script reaches for before the
   /// record exists — and its one promise is that it reads the sheet without deciding anything.
   /// <para>
-  /// Nothing is stringified. A date column stays <c>Temporal</c>, a blank stays <c>Blank</c>, an
+  /// Nothing is stringified. A date column stays <c>Date</c>, a blank stays <c>Blank</c>, an
   /// error stays <c>Error</c>; interpreting them is the caller's job, at the point where the
   /// meaning is known.
   /// </para>

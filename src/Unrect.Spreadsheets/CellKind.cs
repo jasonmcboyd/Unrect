@@ -22,7 +22,7 @@ namespace Unrect.Spreadsheets
     Number,
 
     /// <summary>A date or date-time value.</summary>
-    Temporal,
+    Date,
 
     /// <summary>A boolean value.</summary>
     Boolean,

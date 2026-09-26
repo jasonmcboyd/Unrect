@@ -186,7 +186,7 @@ namespace Unrect.Spreadsheets
     /// <param name="point">The cell.</param>
     public static bool IsDate<TSpace>(this Point<TSpace> point)
       where TSpace : class, ICellSpace
-      => point.Value().Kind == CellKind.Temporal;
+      => point.Value().Kind == CellKind.Date;
 
     /// <summary>Whether <see cref="Boolean{TSpace}"/> would succeed — the cell holds a boolean.</summary>
     /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>

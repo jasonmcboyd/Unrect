@@ -383,7 +383,7 @@ namespace Unrect.Interactive
         return value.Kind switch
         {
           CellKind.Number => value.TryGetNumber(out var number) && IsWhole(number) ? "int" : "decimal",
-          CellKind.Temporal => "DateTime",
+          CellKind.Date => "DateTime",
           CellKind.Boolean => "bool",
           _ => "string",
         };

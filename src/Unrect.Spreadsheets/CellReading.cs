@@ -45,7 +45,7 @@ namespace Unrect.Spreadsheets
     internal static bool DateTime(CellValue cell, out DateTime value, out CellProblem? problem)
     {
       if (!cell.TryGetDate(out value))
-        return Wrong(CellKind.Temporal, cell, out value, out problem);
+        return Wrong(CellKind.Date, cell, out value, out problem);
 
       problem = null;
       return true;

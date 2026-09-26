@@ -47,7 +47,7 @@ namespace Unrect.Tests.Interactive
       // own record, arrived at from the file rather than from a human reading it — minus the two
       // demonstration caption overrides, because the members here are named after the FULL captions
       // and so need no override at all. Each of the four types is a different argument: text
-      // throughout, a temporal column, text again, and numbers that do not all fit an int.
+      // throughout, a date column, text again, and numbers that do not all fit an int.
       Assert.Equal(
         Lines(
           "public sealed record Transaction(string Client, DateTime TransactionDate, string TransactionType, decimal Amount);"),

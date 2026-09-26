@@ -128,10 +128,10 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ADateLeafAndADateTimeColumnDescribeATextCellIdentically()
     {
-      // Temporal, not DateTime: the sentence speaks the document's six kinds, and it does so
+      // Date, not DateTime: the sentence speaks the document's six kinds, and it does so
       // identically whether the declaration named a leaf or a member type.
       Assert.Equal(
-        "expected Temporal at B2, found Text",
+        "expected Date at B2, found Text",
         SameSentence("Date", "x", Date(), Table<Dated>()));
     }
 

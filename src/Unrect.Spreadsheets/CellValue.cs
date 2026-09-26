@@ -64,8 +64,8 @@ namespace Unrect.Spreadsheets
     /// </summary>
     public static CellValue Of(double number) => new CellValue(CellKind.Number, BitConverter.DoubleToInt64Bits(number), null);
 
-    /// <summary>A <see cref="CellKind.Temporal"/> value, its time of day kept.</summary>
-    public static CellValue Of(DateTime moment) => new CellValue(CellKind.Temporal, moment.Ticks | ((long)moment.Kind << 62), null);
+    /// <summary>A <see cref="CellKind.Date"/> value, its time of day kept.</summary>
+    public static CellValue Of(DateTime moment) => new CellValue(CellKind.Date, moment.Ticks | ((long)moment.Kind << 62), null);
 
     /// <summary>A <see cref="CellKind.Boolean"/> value.</summary>
     public static CellValue Of(bool flag) => new CellValue(CellKind.Boolean, flag ? 1L : 0L, null);
@@ -107,12 +107,12 @@ namespace Unrect.Spreadsheets
       return _kind == CellKind.Number;
     }
 
-    /// <summary>The date or time, verbatim, when this value is <see cref="CellKind.Temporal"/>. Truncating is the caller's.</summary>
+    /// <summary>The date or time, verbatim, when this value is <see cref="CellKind.Date"/>. Truncating is the caller's.</summary>
     /// <param name="moment">The date and time, when the answer is true.</param>
     public bool TryGetDate(out DateTime moment)
     {
-      moment = _kind == CellKind.Temporal ? Temporal : default;
-      return _kind == CellKind.Temporal;
+      moment = _kind == CellKind.Date ? Date : default;
+      return _kind == CellKind.Date;
     }
 
     /// <summary>The boolean, when this value is <see cref="CellKind.Boolean"/>.</summary>
@@ -134,7 +134,7 @@ namespace Unrect.Spreadsheets
       return _kind == CellKind.Error;
     }
 
-    private DateTime Temporal => new DateTime(_value & TicksMask, (DateTimeKind)((_value >> 62) & 3L));
+    private DateTime Date => new DateTime(_value & TicksMask, (DateTimeKind)((_value >> 62) & 3L));
 
     /// <summary>
     /// What the cell says: a text's own string, a number's digits, a date's ISO form, <c>TRUE</c>
@@ -157,8 +157,8 @@ namespace Unrect.Spreadsheets
         // A date says its date; a moment within a day says the time too, rather than silently
         // rendering as the midnight it is not. Sub-second digits are carried only when there are
         // some, so a whole second still says hh:mm:ss.
-        CellKind.Temporal => Temporal.ToString(
-          Temporal.TimeOfDay == TimeSpan.Zero ? "yyyy-MM-dd" : "yyyy-MM-ddTHH:mm:ss.FFFFFFF",
+        CellKind.Date => Date.ToString(
+          Date.TimeOfDay == TimeSpan.Zero ? "yyyy-MM-dd" : "yyyy-MM-ddTHH:mm:ss.FFFFFFF",
           CultureInfo.InvariantCulture),
         CellKind.Boolean => _value != 0L ? "TRUE" : "FALSE",
         CellKind.Error => _text ?? Display((CellError)_value),
@@ -218,7 +218,7 @@ namespace Unrect.Spreadsheets
       {
         CellKind.Text => $"Text({_text})",
         CellKind.Number => $"Number({BitConverter.Int64BitsToDouble(_value)})",
-        CellKind.Temporal => $"Temporal({Temporal})",
+        CellKind.Date => $"Date({Date})",
         CellKind.Boolean => $"Boolean({_value != 0L})",
         CellKind.Error => $"Error({AsText()})",
         _ => "Blank"

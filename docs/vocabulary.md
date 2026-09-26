@@ -51,7 +51,7 @@ point's space can answer — not a property the framework already decided to exp
 
 **One value per space; everything else derived on the point.** A space with a value facet says
 what its values are by implementing `IValueSpace<TValue>` — one member, `ValueAt` — and a sheet's
-value is `CellValue`, a sum type: `Kind` is the tag (Blank, Text, Number, Temporal, Boolean,
+value is `CellValue`, a sum type: `Kind` is the tag (Blank, Text, Number, Date, Boolean,
 Error), one `TryGet` per case hands back its payload, and `AsText()` renders it. Every read is
 written once over `p.Value()`, and so cannot disagree with it: the asking forms `point.IsText()`,
 `IsDouble()`, `IsDecimal()`, `IsInteger()`, `IsDate()`, `IsBoolean()`, `IsError()` — each true

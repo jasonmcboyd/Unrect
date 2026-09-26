@@ -363,7 +363,7 @@ namespace Unrect.Tests
       // every kind there is, so a door that threw on one — or classified a kind it had no word for
       // as something else — has nowhere to hide.
       Assert.Equal(
-        new HashSet<CellKind> { CellKind.Blank, CellKind.Text, CellKind.Number, CellKind.Temporal, CellKind.Boolean, CellKind.Error },
+        new HashSet<CellKind> { CellKind.Blank, CellKind.Text, CellKind.Number, CellKind.Date, CellKind.Boolean, CellKind.Error },
         seen);
     }
 

@@ -110,7 +110,7 @@ namespace Unrect.Tests.Spreadsheets
       var space = SimpleReport();
 
       Assert.Equal("Text", space.Describe(0, 0));
-      Assert.Equal("Temporal", space.Describe(0, 2));
+      Assert.Equal("Date", space.Describe(0, 2));
       Assert.Equal("Number", space.Describe(3, 8));
       Assert.Equal("Blank", space.Describe(1, 4));
     }

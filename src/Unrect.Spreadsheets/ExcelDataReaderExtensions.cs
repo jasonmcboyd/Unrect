@@ -28,7 +28,7 @@ namespace Unrect.Spreadsheets
         float value => CellValue.Of((double)value),
         string value => string.IsNullOrEmpty(value) ? CellValue.Blank : CellValue.Of(value),
         // An elapsed-time cell — built-in number format 46 ([h]:mm:ss), 79, or any custom [h]/[m]/[s]
-        // format. A duration is not an instant, so it cannot honestly lex to Temporal; it lexes to a
+        // format. A duration is not an instant, so it cannot honestly lex to Date; it lexes to a
         // Number of days, the unit every serial-based format already agrees on. Lossless by
         // construction: the reader produced this TimeSpan as TimeSpan.FromDays(serial), so TotalDays
         // hands back the serial it started from. (FromDays rounds to the nearest millisecond, so the

@@ -64,7 +64,7 @@ namespace Unrect.Tests.Spreadsheets
       // makes a bare CellReadException readable on its own.
       var failure = Assert.Throws<CellReadException>(() => Of(value).Date());
 
-      Assert.Equal($"expected Temporal at A1, found {found}", failure.Message);
+      Assert.Equal($"expected Date at A1, found {found}", failure.Message);
     }
 
     [Fact]
@@ -120,7 +120,7 @@ namespace Unrect.Tests.Spreadsheets
       // the strict read's, word for word, because it is the same reading with one condition moved.
       Assert.Equal("expected Number at A1, found Text", Assert.Throws<CellReadException>(() => Of("x").DecimalOrBlank()).Message);
       Assert.Equal("expected Text at A1, found Number", Assert.Throws<CellReadException>(() => Of(5).TextOrBlank()).Message);
-      Assert.Equal("expected Temporal at A1, found Number", Assert.Throws<CellReadException>(() => Of(5).DateOrBlank()).Message);
+      Assert.Equal("expected Date at A1, found Number", Assert.Throws<CellReadException>(() => Of(5).DateOrBlank()).Message);
       Assert.Equal("expected Boolean at A1, found Number", Assert.Throws<CellReadException>(() => Of(1).BooleanOrBlank()).Message);
       Assert.Equal("expected Number at A1, found Text", Assert.Throws<CellReadException>(() => Of("x").IntegerOrBlank()).Message);
       Assert.Equal("expected Number at A1, found Text", Assert.Throws<CellReadException>(() => Of("x").DoubleOrBlank()).Message);
