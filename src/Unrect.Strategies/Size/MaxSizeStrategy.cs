@@ -21,9 +21,7 @@ namespace Unrect.Strategies
 
       public int Along(Plane<ISpace> region, int taken) => taken;
 
-      public bool Complete(int taken) => true;
-
-      public Size Declared => default;
+      public Size? Required => null;
     }
   }
 }

@@ -74,11 +74,9 @@ namespace Unrect.Strategies
       }
 
       public int Along(Plane<ISpace> region, int taken)
-        => _rows.Required is int required && taken < required ? throw new OutOfBoundsException() : taken;
+        => _rows.Required ?? taken;
 
-      public bool Complete(int taken) => _rows.Required is not int required || taken == required;
-
-      public Size Declared => default;
+      public Size? Required => _rows.Required is int required ? new Size(0, required) : null;
     }
   }
 }

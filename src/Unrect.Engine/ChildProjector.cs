@@ -428,9 +428,10 @@ namespace Unrect.Projections
         if (!PlacementFailed && !_placement.Complete(_taken))
         {
           var region = InnerRegion(_taken);
+          var required = _placement.Required!.Value;   // Complete is false only when something was required
 
           if (_strict)
-            throw _child.Failure(_definition, $"an extent of {EngineRules.Describe(_placement.Declared)} does not fit here", region, _placement.Declared, null);
+            throw _child.Failure(_definition, $"an extent of {EngineRules.Describe(required)} does not fit here", region, required, null);
 
           PlacementFailed = true;
         }

@@ -23,15 +23,16 @@ namespace Unrect.Core
 
     /// <summary>
     /// How many of the <paramref name="taken"/> spans the region keeps, asked once no more are
-    /// coming. Every span for a scan that decided as it went; a whole-region scan decides here.
-    /// A scan that was owed more than it was shown throws <see cref="OutOfBoundsException"/>.
+    /// coming. Every span for a scan that decided as it went; a whole-region scan decides here; a
+    /// scan that is owed a count answers that count, shown enough or not, and the caller compares.
     /// </summary>
     int Along(Plane<ISpace> region, int taken);
 
-    /// <summary>Whether <paramref name="taken"/> spans satisfy the scan — false for an explicit extent that was owed more.</summary>
-    bool Complete(int taken);
-
-    /// <summary>What the strategy declared outright, for a message about an extent that does not fit; the default when the extent is discovered.</summary>
-    Size Declared { get; }
+    /// <summary>
+    /// What the scan is owed, or null for one that discovers its extent: the spans it must be shown
+    /// along its axis, and how far it reaches across, with zero on an axis it discovers. Fewer spans
+    /// than that is the bounds condition a placement reports as an extent that does not fit.
+    /// </summary>
+    Size? Required { get; }
   }
 }

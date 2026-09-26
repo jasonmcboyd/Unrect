@@ -16,6 +16,8 @@
                                                                      strategy's whole-region answer
       Size, Offset, Size, Orientation, OffsetStep                    the strategy signatures
       OutOfBoundsException                                           the throw ISpace mandates
+      ScanContractException                                          the throw Scans mandates of a
+                                                                     scan that broke its contract
 
     Hashes, Renderings and Spans are internal and exempt: the charter is about what this project's
     contracts SPEAK, and nothing outside this package can name them. Hashes exists because the value

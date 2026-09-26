@@ -34,6 +34,7 @@ namespace Unrect.Projections
         or IOException                 // the disk, the network share, the workbook replaced mid-read
         or ObjectDisposedException     // a view outliving its Workbook
         or InvalidCastException        // an invariant this library owes itself; never the data
+        or ScanContractException       // a scan that broke its own contract; never the data
         or OutOfMemoryException        // never a statement about the data
         or CellReadException { IsFault: true };  // a read the SOURCE could not serve, not a cell that disagreed
 

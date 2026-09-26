@@ -77,10 +77,11 @@ namespace Unrect.Core
     /// <summary>
     /// The size <paramref name="scan"/> settles on over <paramref name="region"/>: the spans along
     /// <paramref name="along"/> shown one at a time until it refuses one or they run out, then what
-    /// it keeps and how far across it reaches. The answer may exceed the region — an explicit
-    /// extent says what it wants — and it is the caller's to compare.
+    /// it keeps and how far across it reaches. The answer may exceed the region — a scan that is
+    /// owed an extent (<see cref="ISizeScan.Required"/>) answers what it is owed, shown enough or
+    /// not — and it is the caller's to compare with the region.
     /// </summary>
-    /// <exception cref="OutOfBoundsException">The scan was owed more than the region holds.</exception>
+    /// <exception cref="ScanContractException">The scan broke its contract: asked at the end, it did not say how far across it reaches.</exception>
     public static Size FoldSize(ISizeScan scan, Plane<ISpace> region, Orientation along)
     {
       var count = Spans.Along(region, along);
@@ -91,9 +92,13 @@ namespace Unrect.Core
 
       var kept = Spans.Prefix(region, taken, along);
       var length = scan.Along(kept, taken);
-      var across = scan.Across(kept, taken, final: true) ?? throw new OutOfBoundsException();
+      var across = scan.Across(kept, taken, final: true) ?? throw NoWidthAtTheEnd();
 
       return Spans.ToSize(length, across, along);
     }
+
+    /// <summary>The one breach a size scan can commit: asked at the end, it did not say how far across it reaches.</summary>
+    internal static ScanContractException NoWidthAtTheEnd()
+      => new ScanContractException("a size scan must say how far across it reaches once the spans have run out");
   }
 }

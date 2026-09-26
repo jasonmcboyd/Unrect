@@ -48,9 +48,7 @@ namespace Unrect.Strategies
         return _answer;
       }
 
-      public bool Complete(int taken) => true;
-
-      public Size Declared => default;
+      public Size? Required => null;
     }
 
     /// <summary>An offset scan that answers only over the whole region: it skips every span and settles at the end with the offset of everything.</summary>

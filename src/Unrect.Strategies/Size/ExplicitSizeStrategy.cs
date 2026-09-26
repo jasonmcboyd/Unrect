@@ -41,9 +41,7 @@ namespace Unrect.Strategies
 
       public int Along(Plane<ISpace> region, int taken) => Spans.Along(_declared, _along);
 
-      public bool Complete(int taken) => taken == Spans.Along(_declared, _along);
-
-      public Size Declared => _declared;
+      public Size? Required => _declared;
     }
   }
 }

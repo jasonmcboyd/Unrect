@@ -42,11 +42,9 @@ namespace Unrect.Strategies
     public int? Across(Plane<ISpace> region, int taken, bool final) => _fullWidth ? region.Width : 0;
 
     public int Along(Plane<ISpace> region, int taken)
-      => _rows.Required is int required && taken < required ? throw new OutOfBoundsException() : taken;
+      => _rows.Required ?? taken;
 
-    public bool Complete(int taken) => _rows.Required is not int required || taken == required;
-
-    public Size Declared => _rows.Required is int required ? new Size(0, required) : default;
+    public Size? Required => _rows.Required is int required ? new Size(0, required) : null;
   }
 
   /// <summary>The mirror: columns decided by a column scan, one per span across a region.</summary>
@@ -68,10 +66,8 @@ namespace Unrect.Strategies
     public int? Across(Plane<ISpace> region, int taken, bool final) => _fullHeight ? region.Height : 0;
 
     public int Along(Plane<ISpace> region, int taken)
-      => _columns.Required is int required && taken < required ? throw new OutOfBoundsException() : taken;
+      => _columns.Required ?? taken;
 
-    public bool Complete(int taken) => _columns.Required is not int required || taken == required;
-
-    public Size Declared => _columns.Required is int required ? new Size(required, 0) : default;
+    public Size? Required => _columns.Required is int required ? new Size(required, 0) : null;
   }
 }

@@ -39,8 +39,8 @@ namespace Unrect.Projections
     /// <summary>The width across the driver's axis, once the size rule has settled it.</summary>
     internal int? Width { get; private set; }
 
-    /// <summary>What the size rule declared, for a message about an extent that does not fit.</summary>
-    internal Size Declared => _size!.Declared;
+    /// <summary>What the size rule is owed, for a message about an extent that does not fit; null when it discovers its extent.</summary>
+    internal Size? Required => _size!.Required;
 
     /// <summary>
     /// Set when a placement failed and the child was started non-strictly: the parent reads the
@@ -147,14 +147,21 @@ namespace Unrect.Projections
       }
 
       if (width is not int settled)
+      {
+        // Asked at the end and still no answer: the scan broke its contract, which is a fault of
+        // the strategy's code and never a bounds condition the data could have caused.
+        if (rowsSettled)
+          throw EngineRules.ExtentFailure(child, _definition, region, Scans.NoWidthAtTheEnd());
+
         return false;
+      }
 
       if (settled > Spans.Across(region.Extent, _driver))
       {
         if (!rowsSettled)
           return false;
 
-        var size = _size.Declared.Height > 0 ? _size.Declared : new Size(settled, taken);
+        var size = _size.Required is Size required && Spans.Along(required, _driver) > 0 ? required : new Size(settled, taken);
 
         if (_strict)
           throw child.Failure(_definition, $"an extent of {EngineRules.Describe(size)} does not fit here", region, size, null);
@@ -168,7 +175,7 @@ namespace Unrect.Projections
     }
 
     /// <summary>Whether <paramref name="taken"/> spans satisfy the size rule — an explicit height wants all of them.</summary>
-    internal bool Complete(int taken) => _size!.Complete(taken);
+    internal bool Complete(int taken) => _size!.Required is not Size required || taken == Spans.Along(required, _driver);
 
     /// <summary>
     /// How many of the <paramref name="taken"/> spans the size keeps, asked once no more are coming:
