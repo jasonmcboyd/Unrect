@@ -93,7 +93,7 @@ namespace Unrect.Tests.Projections
 
     /// <summary>One investor's run of rows, read as its name and its height.</summary>
     private static IProjectionDefinition<ICellSpace, string> InvestorBlock()
-      => Range(RowsWhileAnyValue(), block => $"{block[0, 0].Text()}x{block.Height}");
+      => Range(RowsWhileAnyIsNotBlank(), block => $"{block[0, 0].Text()}x{block.Height}");
 
     /// <summary>The repeated series both headings announce — hoisted, because it is declared once.</summary>
     private static IProjectionDefinition<ICellSpace, IReadOnlyList<string>> Series()

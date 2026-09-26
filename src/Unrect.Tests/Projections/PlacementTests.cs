@@ -100,9 +100,9 @@ namespace Unrect.Tests.Projections
       AssertFit(fits, extent, block, CoordinateGrid());
 
       // The same declaration inside a discovered bound of exactly the same 3x4, walked a row at a
-      // time. RowsWhileAnyValue takes every row of the coordinate grid, so the two spaces differ in
+      // time. RowsWhileAnyIsNotBlank takes every row of the coordinate grid, so the two spaces differ in
       // how their extent is arrived at and in nothing else.
-      AssertFit(fits, extent, Sized(RowsWhileAnyValue()).Of(VerticalFlow(v =>
+      AssertFit(fits, extent, Sized(RowsWhileAnyIsNotBlank()).Of(VerticalFlow(v =>
       {
         var block2 = v.Next(block);
 

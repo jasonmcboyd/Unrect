@@ -163,8 +163,8 @@ double and says "1.5". The test-only `SpaceQuestions.KindAt`/`Describe` — the 
 - Names: `CellValue` (or keep `Cell`)? `CellKind.Temporal` → `Date`? `IValueSpace` vs `ICellSpace`
   — is the cell space just `IValueSpace<CellValue>` with no name of its own?
 - `IsBlank(c, r)`/`AsText(c, r)` break the `…At` convention `ValueAt` follows. `IsBlankAt`/`AsTextAt`?
-- `HasValue()` on a point: at the `ISpace` level "value" is now another facet's word. Keep
-  `IsBlank()` alone?
+- RULED 2026-09-26: `HasValue()` is gone (`!p.IsBlank()`), and `…WhileAnyValue` is
+  `…WhileAnyIsNotBlank` — "value" is the value facet's word.
 - Where the `ISpace` extensions live. Core has a precedent (`Scans`), and `Unrect.Strategies` needs them.
 - A date is a double with a date format, and the partition is our lexer's: the number read refuses
   a date. Deliberate; say so in `CellKind`'s own doc.

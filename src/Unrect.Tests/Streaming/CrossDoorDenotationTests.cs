@@ -373,7 +373,7 @@ namespace Unrect.Tests.Streaming
       // Blankness, which is the adapter's decision and therefore the one most easily made twice: the
       // row-wise rule must stop above the whitespace-only cell through either door.
       "a rule stopped by a whitespace-only cell" => Scenario.Of(
-        Range(RowsWhileAnyValue(), block => $"{block.Width}x{block.Height}"),
+        Range(RowsWhileAnyIsNotBlank(), block => $"{block.Width}x{block.Height}"),
         "whitespace"),
 
       // The measured-by-reading path: a sheet with no valued cell has no width, so the leaf that

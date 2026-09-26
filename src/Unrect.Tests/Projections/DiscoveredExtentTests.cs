@@ -42,7 +42,7 @@ namespace Unrect.Tests.Projections
       // The extent is 100 rows and the sheet is 103, so row 100 exists and is still outside this
       // region — exactly as it would be outside a declared one. Nothing broke; the declaration ran
       // out of room, which is OutOfBounds and not the scan's own failure.
-      var extent = Range(RowsWhileAnyValue(), block => block.Space[0, BoundHeight].IntegerOrBlank());
+      var extent = Range(RowsWhileAnyIsNotBlank(), block => block.Space[0, BoundHeight].IntegerOrBlank());
 
       var failure = Assert.Throws<ProjectionException>(() => extent.Map(TallSheet()));
 
@@ -62,7 +62,7 @@ namespace Unrect.Tests.Projections
       // here" and "let me go and look": row 102 is a real row of the sheet and outside the region.
       Exception? refused = null;
 
-      Range(RowsWhileAnyValue(), block =>
+      Range(RowsWhileAnyIsNotBlank(), block =>
       {
         try
         {
@@ -87,7 +87,7 @@ namespace Unrect.Tests.Projections
       // ArgumentOutOfRangeException and therefore on the fault list. Same row, same edge, different
       // verdict.
       var failure = Assert.Throws<ProjectionException>(() =>
-        Range(RowsWhileAnyValue(), block => block[0, BoundHeight].Integer()).Named("bad").Map(TallSheet()));
+        Range(RowsWhileAnyIsNotBlank(), block => block[0, BoundHeight].Integer()).Named("bad").Map(TallSheet()));
 
       Assert.IsType<ArgumentOutOfRangeException>(failure.GetBaseException());
       Assert.True(failure.IsFault);
@@ -99,7 +99,7 @@ namespace Unrect.Tests.Projections
       // A reading bug reported as "this section was absent" would be the worst outcome a boundary
       // could produce.
       var failure = Assert.Throws<ProjectionException>(() =>
-        Range(RowsWhileAnyValue(), block => block[0, BoundHeight].Integer()).Named("bad").Optional().Map(TallSheet()));
+        Range(RowsWhileAnyIsNotBlank(), block => block[0, BoundHeight].Integer()).Named("bad").Optional().Map(TallSheet()));
 
       Assert.IsType<ArgumentOutOfRangeException>(failure.GetBaseException());
       Assert.Equal("'bad'", failure.Subject);

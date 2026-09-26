@@ -68,7 +68,7 @@ namespace Unrect.Tests.Projections
     private static Placement TablePlacementReplica()
       => new Placement(
         OffsetStrategies.SkipToFirstNonBlankCell(),
-        RowStrategies.TakeRowsWhileAnyValue().TakeColumnsWhileAnyValue());
+        RowStrategies.TakeRowsWhileAnyIsNotBlank().TakeColumnsWhileAnyIsNotBlank());
 
     // --- The record read, shared by both spellings -------------------------------------------------
     //

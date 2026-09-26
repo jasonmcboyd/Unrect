@@ -62,7 +62,7 @@ namespace Unrect.Tests.Projections
       // This item asks its extent for nothing at all, and the repetition still finds two occurrences
       // and consumes both blocks and the gap: the run steps by the extent the item's rule
       // discovered, whether or not the item read a cell of it.
-      var item = Range(RowsWhileAnyValue(), _ => 0);
+      var item = Range(RowsWhileAnyIsNotBlank(), _ => 0);
 
       var applied = VerticalRepeat(item, separatedBy: BlankRows()).Apply(TwoBlocks());
 
@@ -88,7 +88,7 @@ namespace Unrect.Tests.Projections
 
       var flow = VerticalFlow(v =>
       {
-        v.Next(Range(RowsWhileAnyValue(), _ => 0).Named("body"));
+        v.Next(Range(RowsWhileAnyIsNotBlank(), _ => 0).Named("body"));
 
         var afterBlankRows = v.Next(AfterBlankRows().Of(Point().Select(point =>
         {

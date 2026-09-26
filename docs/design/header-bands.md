@@ -36,7 +36,7 @@ and CLAUDE.md carries what stands. Nothing here is built except where it says so
   itself (its width rule is "columns while any value", which is what lets two tables sit side by
   side), so the bands to its right are outside the table. From the cells a spacer inside one table
   and a gap between two are the same thing; the declaration says which by declaring its width
-  (`Sized(RowsWhileAnyValue()).Of(Table(2, …))`). A by-name miss should say so when there is more
+  (`Sized(RowsWhileAnyIsNotBlank()).Of(Table(2, …))`). A by-name miss should say so when there is more
   header to the right of where the table ended.
 - **A label is whatever a non-blank header cell SAYS** — not only a text cell. A header cell is a
   label by position, not by kind: period columns (`2023 | 2024 | 2025`, period-end dates) are

@@ -11,7 +11,7 @@ namespace Unrect.Projections
   /// <code>
   /// Below(mark)                 // the entry — anchors exist ONLY here
   ///   .Down(1)                  // movements compose onto the offset
-  ///   .Sized(RowsWhileAnyValue())
+  ///   .Sized(RowsWhileAnyIsNotBlank())
   ///   .Heading("Transactions")  // what announces the section
   ///   .Table&lt;Transaction&gt;();    // the terminal: the subject closes the pipeline
   /// </code>

@@ -36,11 +36,11 @@ namespace Unrect.Tests.Streaming
 
     /// <summary>Two rows taken without reading anything, then the columns measured inside them.</summary>
     private static IAreaStrategy FirstHalfReadsNothing()
-      => AreaStrategies.RowsThenColumns(RowStrategies.TakeRows(2), ColumnStrategies.TakeColumnsWhileAnyValue());
+      => AreaStrategies.RowsThenColumns(RowStrategies.TakeRows(2), ColumnStrategies.TakeColumnsWhileAnyIsNotBlank());
 
     /// <summary>The contrast: a first half that walks the sheet itself, so the reading is its own.</summary>
     private static IAreaStrategy FirstHalfReads()
-      => AreaStrategies.RowsThenColumns(RowStrategies.TakeRowsWhileAnyValue(), ColumnStrategies.TakeColumnsWhileAnyValue());
+      => AreaStrategies.RowsThenColumns(RowStrategies.TakeRowsWhileAnyIsNotBlank(), ColumnStrategies.TakeColumnsWhileAnyIsNotBlank());
 
     [Theory]
     [InlineData("first-half-reads-nothing", "3x2")]

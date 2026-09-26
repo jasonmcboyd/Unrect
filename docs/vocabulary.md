@@ -201,7 +201,7 @@ under Matchers, below.
 |---|---|
 | `.Sized(area)` | Declared extent, consumed in full; replaces a shape's own default extent, refuses a second `.Sized` |
 | `.Until(matcher)` / `.Until(matcher, orEnd: true)` / `.UntilColumn(...)` | Extent ends just BEFORE a forward landmark; the bound is consumed in full so the next sibling starts AT the landmark |
-| `Extent(w, h)` `WholeExtent()` `NoExtent()` `RowsWhileAnyValue()` `RowsWhileAny(p)` `ColumnsWhileAnyValue()` `ColumnsWhileAny(p)` | The area vocabulary, mirrored on both axes; `p` is `Func<Point<TSpace>, bool>` over the file's own space, so it may ask a cell's kind or its value |
+| `Extent(w, h)` `WholeExtent()` `NoExtent()` `RowsWhileAnyIsNotBlank()` `RowsWhileAny(p)` `ColumnsWhileAnyIsNotBlank()` `ColumnsWhileAny(p)` | The area vocabulary, mirrored on both axes; `p` is `Func<Point<TSpace>, bool>` over the file's own space, so it may ask a cell's kind or its value |
 | `TakeRows(n)` `TakeColumns(n)` `AllRows()` `AllColumns()` | Axis selectors, not area strategies — for `Row(AllColumns(), ...)` and for composing an extent from its two axes |
 | `TakeRowsWhile(p)` `TakeRowsTo(p)` `TakeRowsWhileAll(p)` `TakeRowsWhileAny(p)` and the four `TakeColumns…` twins | Predicate-driven axis selectors, over the file's space |
 | `RowsThenColumns(rows, columns)` / `ColumnsThenRows(columns, rows)` | The two axes as one extent; each axis is taken as it comes, demanding or not |

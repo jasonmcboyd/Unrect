@@ -94,7 +94,7 @@ namespace Unrect.Tests.Projections
       var rows = Sized(NumericRowsOnly()).Of(
         VerticalFlow(v =>
         {
-          var rangeSlot = v.Next(Range(RowsWhileAnyValue(), block => block.Rows.Count));
+          var rangeSlot = v.Next(Range(RowsWhileAnyIsNotBlank(), block => block.Rows.Count));
 
           return rangeSlot;
         }));
@@ -111,7 +111,7 @@ namespace Unrect.Tests.Projections
       var rows = Sized(NumericRowsAndValuedColumns()).Of(
         VerticalFlow(v =>
         {
-          var rangeSlot = v.Next(Range(RowsWhileAnyValue(), block => block.Rows.Count));
+          var rangeSlot = v.Next(Range(RowsWhileAnyIsNotBlank(), block => block.Rows.Count));
 
           return rangeSlot;
         }));
@@ -128,7 +128,7 @@ namespace Unrect.Tests.Projections
       var outer = Sized(NumericRowsOnly()).Of(Range(WholeExtent(), block => block.Rows.Count));
 
       Assert.Equal(NumericRows, Read(outer));
-      Assert.Equal(ValuedRows, Read(Range(RowsWhileAnyValue(), block => block.Rows.Count)));
+      Assert.Equal(ValuedRows, Read(Range(RowsWhileAnyIsNotBlank(), block => block.Rows.Count)));
       Assert.Equal(8, Disagreeing().Area.Height);
     }
   }

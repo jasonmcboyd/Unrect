@@ -66,7 +66,7 @@ namespace Unrect.Projections
 
     /// <summary>One row, as wide as the leading columns that carry values.</summary>
     public static IProjectionDefinition<TSpace, T> Row<T>(Func<CellStrip<TSpace>, T> project)
-      => Strip(Orientation.Horizontal, project, RowStrategies.TakeRows(1).TakeColumnsWhileAnyValue(), "Row");
+      => Strip(Orientation.Horizontal, project, RowStrategies.TakeRows(1).TakeColumnsWhileAnyIsNotBlank(), "Row");
 
     /// <summary>One row exactly <paramref name="width"/> columns wide.</summary>
     public static IProjectionDefinition<TSpace, T> Row<T>(int width, Func<CellStrip<TSpace>, T> project)
@@ -84,7 +84,7 @@ namespace Unrect.Projections
 
     /// <summary>One column, as tall as the leading rows that carry values.</summary>
     public static IProjectionDefinition<TSpace, T> Column<T>(Func<CellStrip<TSpace>, T> project)
-      => Strip(Orientation.Vertical, project, ColumnStrategies.TakeColumns(1).TakeRowsWhileAnyValue(), "Column");
+      => Strip(Orientation.Vertical, project, ColumnStrategies.TakeColumns(1).TakeRowsWhileAnyIsNotBlank(), "Column");
 
     /// <summary>One column exactly <paramref name="height"/> rows tall.</summary>
     public static IProjectionDefinition<TSpace, T> Column<T>(int height, Func<CellStrip<TSpace>, T> project)
@@ -133,7 +133,7 @@ namespace Unrect.Projections
     /// consumed once, and rendered into failure paths like anything else. Put a section under one
     /// with <c>Under</c>:
     /// <code>
-    /// var lines   = Range(RowsWhileAnyValue(), b =&gt; b.Rows);
+    /// var lines   = Range(RowsWhileAnyIsNotBlank(), b =&gt; b.Rows);
     /// var section = lines.Under(Caption("K-1 Lines 1-21"))
     ///                    .Until(RowContaining("Portfolio Income"), orEnd: true);
     /// </code>
@@ -282,7 +282,7 @@ namespace Unrect.Projections
     ///   return o.Build(read =&gt; new Allocation(Fund: read.Of(fund), Primary: read.Of(primary)));
     /// }))
     ///   .Below(RowContaining("ACCOUNT"))
-    ///   .Sized(RowsWhileAnyValue())
+    ///   .Sized(RowsWhileAnyIsNotBlank())
     /// </code>
     /// A flow full of <c>Right(n)</c>, or an overlay with none, is worth a second look: flows are
     /// relative and overlays are grid-absolute, and reading both value and formula out of one cell
@@ -916,7 +916,7 @@ namespace Unrect.Projections
     // Columns the header leaves blank on the way to its first caption are columns with no label:
     // part of the table, bound to nothing.
     private static IAreaStrategy DiscoveredBlock()
-      => AreaStrategies.RowsThenColumns(RowStrategies.TakeRowsWhileAnyValue(), ColumnStrategies.TakeTableColumns());
+      => AreaStrategies.RowsThenColumns(RowStrategies.TakeRowsWhileAnyIsNotBlank(), ColumnStrategies.TakeTableColumns());
 
     /// <summary>
     /// The same width rule as <see cref="DiscoveredBlock"/>, but the height runs to the enclosing

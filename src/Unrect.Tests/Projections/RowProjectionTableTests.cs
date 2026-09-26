@@ -100,7 +100,7 @@ namespace Unrect.Tests.Projections
         Primary: o.Next(Right(6).Of(Decimal().OrBlank())),
         Fep: o.Next(Right(9).Of(Decimal().OrBlank()))));
 
-      return Below(RowContaining("ACCOUNT")).Sized(RowsWhileAnyValue()).Of(Table(headerRows: 0, eachRow: allocation));
+      return Below(RowContaining("ACCOUNT")).Sized(RowsWhileAnyIsNotBlank()).Of(Table(headerRows: 0, eachRow: allocation));
     }
 
     // --- Matrix cell 4: no headers, sparse, incomplete ---------------------------------------------
@@ -150,7 +150,7 @@ namespace Unrect.Tests.Projections
     {
       // The other side of the same contract. Take OrBlank off the fund code and the last row is no
       // longer describable — which is the point of stating tolerance per field rather than per row.
-      var strict = Below(RowContaining("ACCOUNT")).Sized(RowsWhileAnyValue()).Of(Table(
+      var strict = Below(RowContaining("ACCOUNT")).Sized(RowsWhileAnyIsNotBlank()).Of(Table(
         headerRows: 0,
         eachRow: Overlay(o => new BuyingPowerRow(
           FundCode: o.Next(Right(1).Of(Text())),
@@ -236,7 +236,7 @@ namespace Unrect.Tests.Projections
       // nothing in it has described everything it was asked to describe.
       var blank = Mixed(new object?[2, 2]);
 
-      var read = Sized(RowsWhileAnyValue()).Of(Table(headerRows: 0, eachRow: Row(cells => cells.Count)))
+      var read = Sized(RowsWhileAnyIsNotBlank()).Of(Table(headerRows: 0, eachRow: Row(cells => cells.Count)))
         .MapWithDiagnostics(blank);
 
       Assert.Empty(read.Value);
@@ -273,7 +273,7 @@ namespace Unrect.Tests.Projections
       // own ("as wide as the leading columns that carry values"), so over this fixture it would
       // measure ITSELF at zero — column 0 is empty in every body row — and say nothing about the
       // band it was handed.
-      var bands = Below(RowContaining("ACCOUNT")).Sized(RowsWhileAnyValue()).Of(Table(headerRows: 0, eachRow: Range(WholeExtent(), block => $"{block.Width}x{block.Height}")))
+      var bands = Below(RowContaining("ACCOUNT")).Sized(RowsWhileAnyIsNotBlank()).Of(Table(headerRows: 0, eachRow: Range(WholeExtent(), block => $"{block.Width}x{block.Height}")))
         .Map(BuyingPower());
 
       Assert.Equal(new[] { "11x1", "11x1", "11x1" }, bands);
@@ -304,7 +304,7 @@ namespace Unrect.Tests.Projections
         Fep: o.Next(Right(9).Of(Decimal().OrBlank()))));
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        Below(RowContaining("ACCOUNT")).Sized(RowsWhileAnyValue()).Of(Table(headerRows: 0, eachRow: buyingPowerRow))
+        Below(RowContaining("ACCOUNT")).Sized(RowsWhileAnyIsNotBlank()).Of(Table(headerRows: 0, eachRow: buyingPowerRow))
           .Map(BuyingPower()));
 
       Assert.Equal("Table[2] -> 'buyingPowerRow' -> Decimal#2", failure.Path);
@@ -316,7 +316,7 @@ namespace Unrect.Tests.Projections
       // An inline row has no identifier to borrow, so it renders as what it is. The index is still
       // the table's, which is the half that has to survive either way.
       var failure = Assert.Throws<ProjectionException>(() =>
-        Below(RowContaining("ACCOUNT")).Sized(RowsWhileAnyValue()).Of(Table(
+        Below(RowContaining("ACCOUNT")).Sized(RowsWhileAnyIsNotBlank()).Of(Table(
           headerRows: 0,
           eachRow: Overlay(o => new BuyingPowerRow(
             FundCode: o.Next(Right(1).Of(Text())),
@@ -331,7 +331,7 @@ namespace Unrect.Tests.Projections
     public void AndANamedRowOutranksBoth()
     {
       var failure = Assert.Throws<ProjectionException>(() =>
-        Below(RowContaining("ACCOUNT")).Sized(RowsWhileAnyValue()).Of(Table(
+        Below(RowContaining("ACCOUNT")).Sized(RowsWhileAnyIsNotBlank()).Of(Table(
           headerRows: 0,
           eachRow: Overlay(o => new BuyingPowerRow(
             FundCode: o.Next(Right(1).Of(Text())),

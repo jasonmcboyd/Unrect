@@ -122,7 +122,7 @@ namespace Unrect.Projections
     public static IAreaStrategy Extent(int width, int height) => AreaStrategies.ExplicitArea(width, height);
 
     /// <summary>Full available width, and the leading rows that carry values.</summary>
-    public static IAreaStrategy RowsWhileAnyValue() => SizeStrategies.RowsWhileAnyValue().ToAreaStrategy();
+    public static IAreaStrategy RowsWhileAnyIsNotBlank() => SizeStrategies.RowsWhileAnyIsNotBlank().ToAreaStrategy();
 
     /// <summary>
     /// Full available width, and as many leading rows as have at least one cell satisfying
@@ -132,7 +132,7 @@ namespace Unrect.Projections
       => Demanding.Area<TSpace>(SizeStrategies.RowsWhileAny(TypedPredicates.Lower(anyCell)).ToAreaStrategy());
 
     /// <summary>Full available height, and the leading columns that carry values.</summary>
-    public static IAreaStrategy ColumnsWhileAnyValue() => SizeStrategies.ColumnsWhileAnyValue().ToAreaStrategy();
+    public static IAreaStrategy ColumnsWhileAnyIsNotBlank() => SizeStrategies.ColumnsWhileAnyIsNotBlank().ToAreaStrategy();
 
     /// <summary>
     /// Full available height, and as many leading columns as have at least one cell satisfying

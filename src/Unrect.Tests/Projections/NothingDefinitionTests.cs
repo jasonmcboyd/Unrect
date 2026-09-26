@@ -24,7 +24,7 @@ namespace Unrect.Tests.Projections
 
 
     /// <summary>The discovered extent: full width, and as many leading rows as hold anything.</summary>
-    private static IProjectionDefinition<ICellSpace, int> Rows() => Range(RowsWhileAnyValue(), b => b.Height);
+    private static IProjectionDefinition<ICellSpace, int> Rows() => Range(RowsWhileAnyIsNotBlank(), b => b.Height);
 
     /// <summary>A cell read as text — which is a failure over <see cref="Numbers"/>, and an absorbable one.</summary>
     private static IProjectionDefinition<ICellSpace, string> Title() => TextCell();

@@ -38,7 +38,7 @@ namespace Unrect.Spreadsheets
   /// </para>
   /// <para>
   /// It matters more than an ordinary fidelity gap because blankness is load-bearing:
-  /// <c>AfterBlankRows</c>, <c>RowsWhileAnyValue</c> and a repeat's separator all key off it, so a
+  /// <c>AfterBlankRows</c>, <c>RowsWhileAnyIsNotBlank</c> and a repeat's separator all key off it, so a
   /// single such cell in a data column can quietly truncate a region rather than fail loudly. The
   /// <c>.xls</c> path is unaffected — it reports an error code, and an unrecognised one lexes to
   /// <see cref="CellError.Other"/> carrying its literal.

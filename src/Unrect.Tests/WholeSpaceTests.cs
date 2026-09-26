@@ -62,7 +62,7 @@ namespace Unrect.Tests
     public void GetSizeForwards()
     {
       var space = Sheet();
-      var strategy = SizeStrategies.RowsWhileAnyValue();
+      var strategy = SizeStrategies.RowsWhileAnyIsNotBlank();
 
       Assert.Equal(strategy.GetSize(Plane<ISpace>.Of(space)).Height, strategy.GetSize(space).Height);
       Assert.Equal(strategy.GetSize(Plane<ISpace>.Of(space)).Width, strategy.GetSize(space).Width);
@@ -77,7 +77,7 @@ namespace Unrect.Tests
     public void GetAreaForwards()
     {
       var space = Sheet();
-      var strategy = SizeStrategies.RowsWhileAnyValue().ToAreaStrategy();
+      var strategy = SizeStrategies.RowsWhileAnyIsNotBlank().ToAreaStrategy();
 
       Assert.Equal(strategy.GetArea(Plane<ISpace>.Of(space)).Size, strategy.GetArea(space).Size);
       Assert.Equal(2, strategy.GetArea(space).Height);
@@ -98,7 +98,7 @@ namespace Unrect.Tests
     public void SelectRowsForwards()
     {
       var space = Sheet();
-      var strategy = RowStrategies.TakeRowsWhileAnyValue();
+      var strategy = RowStrategies.TakeRowsWhileAnyIsNotBlank();
 
       Assert.Equal(strategy.SelectRows(Plane<ISpace>.Of(space)), strategy.SelectRows(space));
       Assert.Equal(2, strategy.SelectRows(space));

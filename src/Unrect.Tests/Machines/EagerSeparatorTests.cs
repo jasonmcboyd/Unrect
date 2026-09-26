@@ -33,7 +33,7 @@ namespace Unrect.Tests.Machines
     };
 
     private static IProjectionDefinition<ICellSpace, IReadOnlyList<string>> Block()
-      => Sized(RowsWhileAnyValue()).Of(Range(block => (IReadOnlyList<string>)block.Rows.Select(row => row[0].AsText()!).ToList()));
+      => Sized(RowsWhileAnyIsNotBlank()).Of(Range(block => (IReadOnlyList<string>)block.Rows.Select(row => row[0].AsText()!).ToList()));
 
     private static IProjectionDefinition<ICellSpace, IReadOnlyList<IReadOnlyList<string>>> Repeat(IOffsetStrategy<ICellSpace> separator)
       => VerticalRepeat(Block(), separatedBy: separator);

@@ -115,7 +115,7 @@ namespace Unrect.Tests.Spreadsheets
       // The consequence that matters downstream: a discovered region does not stop at such a row.
       var errorsOnly = Edges().Region().Slice(new Offset(0, 1), new Area(5, 1));
 
-      Assert.Equal(1, SizeStrategies.RowsWhileAnyValue().GetSize(errorsOnly).Height);
+      Assert.Equal(1, SizeStrategies.RowsWhileAnyIsNotBlank().GetSize(errorsOnly).Height);
     }
 
     // --- Blankness is the adapter's decision ---------------------------------------------------------
@@ -181,8 +181,8 @@ namespace Unrect.Tests.Spreadsheets
       var firstFour = new Offset(0, 0);
       var block = new Area(4, 4);
 
-      Assert.Equal(2, SizeStrategies.RowsWhileAnyValue().GetSize(byDefault.Region().Slice(firstFour, block)).Height);
-      Assert.Equal(4, SizeStrategies.RowsWhileAnyValue().GetSize(strict.Region().Slice(firstFour, block)).Height);
+      Assert.Equal(2, SizeStrategies.RowsWhileAnyIsNotBlank().GetSize(byDefault.Region().Slice(firstFour, block)).Height);
+      Assert.Equal(4, SizeStrategies.RowsWhileAnyIsNotBlank().GetSize(strict.Region().Slice(firstFour, block)).Height);
 
       // ...and the leaf that discovers its own extent sees exactly what the strategy does, which is
       // the half that says blankness reaches the declaration and not merely the calculus. The first
@@ -190,7 +190,7 @@ namespace Unrect.Tests.Spreadsheets
       // rule, and a region that included it could not tell the two apart.
       var fourColumns = AreaStrategies.ColumnsThenRows(
         ColumnStrategies.TakeColumns(4),
-        RowStrategies.TakeRowsWhileAnyValue());
+        RowStrategies.TakeRowsWhileAnyIsNotBlank());
 
       Assert.Equal((4, 2), Range(fourColumns, b => (b.Width, b.Height)).Map(byDefault));
       Assert.Equal((4, 4), Range(fourColumns, b => (b.Width, b.Height)).Map(strict));

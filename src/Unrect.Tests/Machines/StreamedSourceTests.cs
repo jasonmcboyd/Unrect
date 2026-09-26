@@ -51,7 +51,7 @@ namespace Unrect.Tests.Machines
 
     private static IProjectionDefinition<ICellSpace, IReadOnlyList<IReadOnlyList<decimal>>> BlockTotals()
       => VerticalRepeat(
-        Sized(RowsWhileAnyValue()).Of(Range(block => (IReadOnlyList<decimal>)block.Rows.Select(row => row[1].Decimal()).ToList())),
+        Sized(RowsWhileAnyIsNotBlank()).Of(Range(block => (IReadOnlyList<decimal>)block.Rows.Select(row => row[1].Decimal()).ToList())),
         separatedBy: BlankRows());
 
     [Fact]

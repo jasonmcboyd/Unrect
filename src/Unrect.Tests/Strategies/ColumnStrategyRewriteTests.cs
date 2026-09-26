@@ -196,14 +196,14 @@ namespace Unrect.Tests.Strategies
     [InlineData("one-column")]
     [InlineData("no-rows")]
     [InlineData("no-columns")]
-    public void TakeColumnsWhileAnyValue_IsTakeColumnsWhileAnyOfHasValue(string grid)
+    public void TakeColumnsWhileAnyIsNotBlank_IsTakeColumnsWhileAnyOfHasValue(string grid)
     {
       // The convenience keeps no separate reading of the grid — the whole of it is the predicate.
       var space = Space(grid);
 
       Assert.Equal(
         ColumnStrategies.TakeColumnsWhileAny(value => !value.IsBlank()).SelectColumns(space),
-        ColumnStrategies.TakeColumnsWhileAnyValue().SelectColumns(space));
+        ColumnStrategies.TakeColumnsWhileAnyIsNotBlank().SelectColumns(space));
     }
 
     [Theory]
@@ -241,7 +241,7 @@ namespace Unrect.Tests.Strategies
       // in reads — one row — however tall it is.
       var space = new CountingSpace(CoordinateGrid(width: 4, height: 50));
 
-      Assert.Equal(4, ColumnStrategies.TakeColumnsWhileAnyValue().SelectColumns(space));
+      Assert.Equal(4, ColumnStrategies.TakeColumnsWhileAnyIsNotBlank().SelectColumns(space));
 
       Assert.Equal(4, space.CellReads);
       Assert.Equal(1, space.RowsTouched);
@@ -259,7 +259,7 @@ namespace Unrect.Tests.Strategies
         { 0, 2 },
       }));
 
-      Assert.Equal(2, ColumnStrategies.TakeColumnsWhileAnyValue().SelectColumns(space));
+      Assert.Equal(2, ColumnStrategies.TakeColumnsWhileAnyIsNotBlank().SelectColumns(space));
 
       Assert.Equal(3, space.CellReads);   // both of row 0, then column 1 of row 1
       Assert.Equal(2, space.RowsTouched);

@@ -30,19 +30,19 @@ namespace Unrect.Tests.Projections
     /// <summary>Rows while any cell in them carries a value, demanding a sheet.</summary>
     private sealed class ValueRows : IAreaStrategy<ICellSpace>
     {
-      public Unrect.Core.IAreaStrategy Strategy { get; } = SizeStrategies.RowsWhileAnyValue().ToAreaStrategy();
+      public Unrect.Core.IAreaStrategy Strategy { get; } = SizeStrategies.RowsWhileAnyIsNotBlank().ToAreaStrategy();
     }
 
     /// <summary>Leading columns that carry values, demanding a sheet.</summary>
     private sealed class ValueColumns : IColumnStrategy<ICellSpace>
     {
-      public Unrect.Core.IColumnStrategy Strategy { get; } = ColumnStrategies.TakeColumnsWhileAnyValue();
+      public Unrect.Core.IColumnStrategy Strategy { get; } = ColumnStrategies.TakeColumnsWhileAnyIsNotBlank();
     }
 
     /// <summary>Leading rows that carry values, demanding a sheet.</summary>
     private sealed class ValueRowCount : IRowStrategy<ICellSpace>
     {
-      public Unrect.Core.IRowStrategy Strategy { get; } = RowStrategies.TakeRowsWhileAnyValue();
+      public Unrect.Core.IRowStrategy Strategy { get; } = RowStrategies.TakeRowsWhileAnyIsNotBlank();
     }
 
     /// <summary>Past the blank rows in front, demanding a sheet.</summary>

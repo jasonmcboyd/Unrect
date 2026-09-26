@@ -191,7 +191,7 @@ namespace Unrect.Tests.Spreadsheets
 
       var sheet = book.Sheet("Data");
 
-      var probe = Range(RowsWhileAnyValue(), block => block.Space.Space);
+      var probe = Range(RowsWhileAnyIsNotBlank(), block => block.Space.Space);
 
       Assert.Same(sheet, probe.Map(sheet));
       Assert.False(probe.Map(sheet) is IFormulaSpace);

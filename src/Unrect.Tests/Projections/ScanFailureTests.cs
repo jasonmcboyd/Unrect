@@ -154,7 +154,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ARepeatOfDiscoveredItemsStopsRatherThanThrowing()
     {
-      var repeat = VerticalRepeat(Range(RowsWhileAnyValue(), b => b.Height), separatedBy: BlankRows());
+      var repeat = VerticalRepeat(Range(RowsWhileAnyIsNotBlank(), b => b.Height), separatedBy: BlankRows());
 
       IReadOnlyList<int> items = repeat.Map(TwoBlocks());
 

@@ -23,7 +23,7 @@ namespace Unrect.Tests.Strategies
     // --- SizeStrategies.RowsWhileAny ------------------------------------------------------------
 
     [Fact]
-    public void RowsWhileAnyValue_TakesTheFullWidthAndStopsAtTheFirstAllBlankRow()
+    public void RowsWhileAnyIsNotBlank_TakesTheFullWidthAndStopsAtTheFirstAllBlankRow()
     {
       var space = Grid(new[,]
       {
@@ -33,14 +33,14 @@ namespace Unrect.Tests.Strategies
         { 4, 0, 0 },
       });
 
-      var size = RowsWhileAnyValue().GetSize(space);
+      var size = RowsWhileAnyIsNotBlank().GetSize(space);
 
       Assert.Equal(3, size.Width);
       Assert.Equal(2, size.Height);
     }
 
     [Fact]
-    public void RowsWhileAnyValue_OnAnImmediatelyBlankSpace_TakesNoRows()
+    public void RowsWhileAnyIsNotBlank_OnAnImmediatelyBlankSpace_TakesNoRows()
     {
       var space = Grid(new[,]
       {
@@ -48,18 +48,18 @@ namespace Unrect.Tests.Strategies
         { 1, 1 },
       });
 
-      var size = RowsWhileAnyValue().GetSize(space);
+      var size = RowsWhileAnyIsNotBlank().GetSize(space);
 
       Assert.Equal(2, size.Width);
       Assert.Equal(0, size.Height);
     }
 
     [Fact]
-    public void RowsWhileAnyValue_WhenEveryRowHasAValue_TakesEveryRow()
+    public void RowsWhileAnyIsNotBlank_WhenEveryRowHasAValue_TakesEveryRow()
     {
       var space = Grid(new[,] { { 1, 0 }, { 0, 2 }, { 3, 3 } });
 
-      Assert.Equal(3, RowsWhileAnyValue().GetSize(space).Height);
+      Assert.Equal(3, RowsWhileAnyIsNotBlank().GetSize(space).Height);
     }
 
     [Fact]
@@ -85,7 +85,7 @@ namespace Unrect.Tests.Strategies
     // hole in one axis shows up as a missing test rather than as a missing method nobody noticed.
 
     [Fact]
-    public void ColumnsWhileAnyValue_TakesTheFullHeightAndStopsAtTheFirstAllBlankColumn()
+    public void ColumnsWhileAnyIsNotBlank_TakesTheFullHeightAndStopsAtTheFirstAllBlankColumn()
     {
       var space = Grid(new[,]
       {
@@ -93,29 +93,29 @@ namespace Unrect.Tests.Strategies
         { 2, 3, 0, 0 },
       });
 
-      var size = ColumnsWhileAnyValue().GetSize(space);
+      var size = ColumnsWhileAnyIsNotBlank().GetSize(space);
 
       Assert.Equal(2, size.Width);    // column 2 is empty in both rows: the region ends there
       Assert.Equal(2, size.Height);
     }
 
     [Fact]
-    public void ColumnsWhileAnyValue_OnAnImmediatelyBlankSpace_TakesNoColumns()
+    public void ColumnsWhileAnyIsNotBlank_OnAnImmediatelyBlankSpace_TakesNoColumns()
     {
       var space = Grid(new[,] { { 0, 1 }, { 0, 1 } });
 
-      var size = ColumnsWhileAnyValue().GetSize(space);
+      var size = ColumnsWhileAnyIsNotBlank().GetSize(space);
 
       Assert.Equal(0, size.Width);
       Assert.Equal(2, size.Height);
     }
 
     [Fact]
-    public void ColumnsWhileAnyValue_WhenEveryColumnHasAValue_TakesEveryColumn()
+    public void ColumnsWhileAnyIsNotBlank_WhenEveryColumnHasAValue_TakesEveryColumn()
     {
       var space = Grid(new[,] { { 1, 0, 3 }, { 0, 2, 3 } });
 
-      Assert.Equal(3, ColumnsWhileAnyValue().GetSize(space).Width);
+      Assert.Equal(3, ColumnsWhileAnyIsNotBlank().GetSize(space).Width);
     }
 
     [Fact]
@@ -222,7 +222,7 @@ namespace Unrect.Tests.Strategies
       });
 
       // Rows first (one row), then columns within that row.
-      var area = RowStrategies.TakeRows(1).TakeColumnsWhileAnyValue().GetArea(space);
+      var area = RowStrategies.TakeRows(1).TakeColumnsWhileAnyIsNotBlank().GetArea(space);
 
       Assert.Equal(2, area.Size.Width);
       Assert.Equal(1, area.Size.Height);
@@ -239,7 +239,7 @@ namespace Unrect.Tests.Strategies
       });
 
       // Columns first (two columns), then rows within those columns.
-      var area = ColumnStrategies.TakeColumns(2).TakeRowsWhileAnyValue().GetArea(space);
+      var area = ColumnStrategies.TakeColumns(2).TakeRowsWhileAnyIsNotBlank().GetArea(space);
 
       Assert.Equal(2, area.Size.Width);
       Assert.Equal(1, area.Size.Height);
@@ -256,8 +256,8 @@ namespace Unrect.Tests.Strategies
         { 0, 0, 1 },
       });
 
-      var rowsFirst = RowStrategies.TakeRows(1).TakeColumnsWhileAnyValue().GetArea(space);
-      var columnsFirst = ColumnStrategies.TakeColumnsWhileAnyValue().TakeRowsWhileAnyValue().GetArea(space);
+      var rowsFirst = RowStrategies.TakeRows(1).TakeColumnsWhileAnyIsNotBlank().GetArea(space);
+      var columnsFirst = ColumnStrategies.TakeColumnsWhileAnyIsNotBlank().TakeRowsWhileAnyIsNotBlank().GetArea(space);
 
       Assert.Equal(2, rowsFirst.Size.Width);
       Assert.Equal(1, rowsFirst.Size.Height);

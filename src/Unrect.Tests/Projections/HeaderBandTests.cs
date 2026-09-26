@@ -120,7 +120,7 @@ namespace Unrect.Tests.Projections
         { 1m, "FEP", null, 2m, "FCP" },
       });
 
-      var paths = Sized(RowsWhileAnyValue()).Of(Table(2, t => t.ColumnPaths)).Map(sheet).Select(path => string.Join(" / ", path));
+      var paths = Sized(RowsWhileAnyIsNotBlank()).Of(Table(2, t => t.ColumnPaths)).Map(sheet).Select(path => string.Join(" / ", path));
 
       Assert.Equal(new[] { "From / Id", "From / Code", "", "To / Id", "To / Code" }, paths);
     }

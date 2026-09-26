@@ -152,7 +152,7 @@ namespace Unrect.Tests.Projections
         Fep: o.Next(Right(9).Of(Decimal().OrBlank()))));
 
       var allocations = Below(RowContaining("ACCOUNT"))
-        .Sized(RowsWhileAnyValue())
+        .Sized(RowsWhileAnyIsNotBlank())
         .Table(headerRows: 0, eachRow: allocation);
 
       return VerticalFlow(v => new BuyingPowerAllocation(

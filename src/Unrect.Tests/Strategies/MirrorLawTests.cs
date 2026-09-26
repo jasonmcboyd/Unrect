@@ -132,11 +132,11 @@ namespace Unrect.Tests.Strategies
       var ragged = Labels(WithCells[0]);
       var transposed = Labels(Transposed(WithCells[0]));
 
-      Assert.Equal(2, RowStrategies.TakeRowsWhileAnyValue().SelectRows(ragged));
-      Assert.Equal(4, ColumnStrategies.TakeColumnsWhileAnyValue().SelectColumns(ragged));
+      Assert.Equal(2, RowStrategies.TakeRowsWhileAnyIsNotBlank().SelectRows(ragged));
+      Assert.Equal(4, ColumnStrategies.TakeColumnsWhileAnyIsNotBlank().SelectColumns(ragged));
 
-      Assert.Equal(4, RowStrategies.TakeRowsWhileAnyValue().SelectRows(transposed));
-      Assert.Equal(2, ColumnStrategies.TakeColumnsWhileAnyValue().SelectColumns(transposed));
+      Assert.Equal(4, RowStrategies.TakeRowsWhileAnyIsNotBlank().SelectRows(transposed));
+      Assert.Equal(2, ColumnStrategies.TakeColumnsWhileAnyIsNotBlank().SelectColumns(transposed));
 
       // The same, located: 'o' sits in the last row and the third column, and swaps places under
       // the transpose.
@@ -150,11 +150,11 @@ namespace Unrect.Tests.Strategies
     // --- The while families: separate algorithms, one denotation (SRC-59) --------------------------------
 
     [Fact]
-    public void TakeRowsWhileAnyValue_MirrorsTakeColumnsWhileAnyValue()
+    public void TakeRowsWhileAnyIsNotBlank_MirrorsTakeColumnsWhileAnyIsNotBlank()
     {
       Mirrored(
-        RowStrategies.TakeRowsWhileAnyValue().SelectRows,
-        ColumnStrategies.TakeColumnsWhileAnyValue().SelectColumns);
+        RowStrategies.TakeRowsWhileAnyIsNotBlank().SelectRows,
+        ColumnStrategies.TakeColumnsWhileAnyIsNotBlank().SelectColumns);
     }
 
     [Fact]
@@ -312,8 +312,8 @@ namespace Unrect.Tests.Strategies
         Assert.Equal(byRows.Height, byColumns.Width);
         Assert.Equal(byRows.Width, byColumns.Height);
 
-        var byValue = SizeStrategies.RowsWhileAnyValue().GetSize(space);
-        var byValueColumns = SizeStrategies.ColumnsWhileAnyValue().GetSize(transposed);
+        var byValue = SizeStrategies.RowsWhileAnyIsNotBlank().GetSize(space);
+        var byValueColumns = SizeStrategies.ColumnsWhileAnyIsNotBlank().GetSize(transposed);
 
         Assert.Equal(byValue.Height, byValueColumns.Width);
         Assert.Equal(byValue.Width, byValueColumns.Height);

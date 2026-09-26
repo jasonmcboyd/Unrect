@@ -57,7 +57,7 @@ namespace Unrect.Benchmarks
     private static readonly IProjectionDefinition<ICellSpace, int> Anchored = Overlay(o => o.Next(On(RowContaining(CanonicalSpaces.Landmark)).Row(r => r.Count)) + o.Next(Column(CanonicalSpaces.BlockRows, c => c.Count)) + o.Next(Range(2, 2, b => b.Width)) + o.Next(Point().Select(p => !p.IsBlank() ? 1 : 0)));
 
     private static readonly IProjectionDefinition<ICellSpace, IReadOnlyList<int>> Blocks =
-      VerticalRepeat(Range(RowsWhileAnyValue(), b => b.Height), separatedBy: BlankRows());
+      VerticalRepeat(Range(RowsWhileAnyIsNotBlank(), b => b.Height), separatedBy: BlankRows());
 
     private static readonly IProjectionDefinition<ICellSpace, int> AllCells = Range(b =>
     {
@@ -72,7 +72,7 @@ namespace Unrect.Benchmarks
     });
 
     private static readonly IProjectionDefinition<ICellSpace, int> Section =
-      Heading(CanonicalSpaces.DetailsCaption).Of(Range(RowsWhileAnyValue(), b => b.Height));
+      Heading(CanonicalSpaces.DetailsCaption).Of(Range(RowsWhileAnyIsNotBlank(), b => b.Height));
 
     private ICellSpace _tall = default!;
     private ICellSpace _blocks = default!;

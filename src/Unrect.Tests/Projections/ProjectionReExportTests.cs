@@ -64,16 +64,16 @@ namespace Unrect.Tests.Projections
     public void TheRowExtentReExportsForwardToTheirStrategies()
     {
       Assert.Equal(
-        Measure(SizeStrategies.RowsWhileAnyValue().ToAreaStrategy()),
-        Measure(RowsWhileAnyValue()));
+        Measure(SizeStrategies.RowsWhileAnyIsNotBlank().ToAreaStrategy()),
+        Measure(RowsWhileAnyIsNotBlank()));
     }
 
     [Fact]
     public void TheColumnExtentReExportsForwardToTheirStrategies()
     {
       Assert.Equal(
-        Measure(SizeStrategies.ColumnsWhileAnyValue().ToAreaStrategy()),
-        Measure(ColumnsWhileAnyValue()));
+        Measure(SizeStrategies.ColumnsWhileAnyIsNotBlank().ToAreaStrategy()),
+        Measure(ColumnsWhileAnyIsNotBlank()));
     }
 
     [Fact]
@@ -81,8 +81,8 @@ namespace Unrect.Tests.Projections
     {
       // The guard on the two tests above: if both re-exports were wired to the same strategy they
       // would still pass, so pin that the two axes genuinely see different things here.
-      Assert.Equal("3x2", Measure(RowsWhileAnyValue()));
-      Assert.Equal("1x2", Measure(ColumnsWhileAnyValue()));
+      Assert.Equal("3x2", Measure(RowsWhileAnyIsNotBlank()));
+      Assert.Equal("1x2", Measure(ColumnsWhileAnyIsNotBlank()));
     }
 
     // --- The transparency law -----------------------------------------------------------------------
@@ -481,10 +481,10 @@ namespace Unrect.Tests.Projections
     {
       // The single-import claim where it is most load-bearing: the Sized entry taking an
       // IAreaStrategy, handed a re-export, with no strategies import in scope at the call site.
-      var projection = Sized(ColumnsWhileAnyValue()).Of(Range(b => $"{b.Width}x{b.Height}"));
+      var projection = Sized(ColumnsWhileAnyIsNotBlank()).Of(Range(b => $"{b.Width}x{b.Height}"));
 
       Assert.Equal("1x2", projection.Map(Patchy()));
-      Assert.Equal("3x2", Sized(RowsWhileAnyValue()).Of(Range(b => $"{b.Width}x{b.Height}")).Map(Patchy()));
+      Assert.Equal("3x2", Sized(RowsWhileAnyIsNotBlank()).Of(Range(b => $"{b.Width}x{b.Height}")).Map(Patchy()));
       Assert.Equal("2x1", Sized(Extent(2, 1)).Of(Range(b => $"{b.Width}x{b.Height}")).Map(Patchy()));
     }
   }

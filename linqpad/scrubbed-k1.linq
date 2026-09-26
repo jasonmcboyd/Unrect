@@ -72,7 +72,7 @@ var ownershipRow = Down(4).Of(FullRow("Fund Short Name"));
 // column layout from them, so what leaves here is the answer, not the evidence. It is bounded, so
 // every seek inside stays unambiguous — and the bound is declared where all geometry is, ahead of
 // the shape it places: Sized is the entry for an extent with no movement to its left.
-var header = Sized(RowsWhileAnyValue()).Of(Overlay(o =>
+var header = Sized(RowsWhileAnyIsNotBlank()).Of(Overlay(o =>
 {
 	// Fields hands back each label's cell as a place; AsText is the total reading, so the card
 	// leaves here as what it says rather than as five addresses for someone else to read.
@@ -95,7 +95,7 @@ var header = Sized(RowsWhileAnyValue()).Of(Overlay(o =>
 }));
 
 // One section projection: rows while any value, wherever it is anchored.
-var section = Range(RowsWhileAnyValue(), b => b.Rows.Select(r => r.ToArray()).ToArray());
+var section = Range(RowsWhileAnyIsNotBlank(), b => b.Rows.Select(r => r.ToArray()).ToArray());
 
 var k1Lines = Heading("K-1 Lines 1-21").Of(section);
 

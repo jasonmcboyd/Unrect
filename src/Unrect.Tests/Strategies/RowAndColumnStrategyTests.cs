@@ -206,13 +206,13 @@ namespace Unrect.Tests.Strategies
     }
 
     [Fact]
-    public void TakeColumnsWhileAnyValue_IsNotInverted()
+    public void TakeColumnsWhileAnyIsNotBlank_IsNotInverted()
     {
       // Regression: this once delegated to the "while all" strategy with a negated predicate, which
       // computes "take while none match" — the exact opposite of the name.
       var space = Grid(new[,] { { 1, 1, 0, 1 } });
 
-      Assert.Equal(2, ColumnStrategies.TakeColumnsWhileAnyValue().SelectColumns(space));
+      Assert.Equal(2, ColumnStrategies.TakeColumnsWhileAnyIsNotBlank().SelectColumns(space));
     }
 
     [Fact]

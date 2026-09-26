@@ -32,7 +32,7 @@ namespace Unrect.Strategies
       => new TakeWhileAnyRowStrategy(predicate);
 
     /// <summary>Leading rows that carry a value — <see cref="TakeRowsWhileAny(Func{Point{ISpace}, bool})"/> with <c>HasValue</c> as the predicate.</summary>
-    public static IRowStrategy TakeRowsWhileAnyValue()
+    public static IRowStrategy TakeRowsWhileAnyIsNotBlank()
       => TakeRowsWhileAny(v => !v.IsBlank());
 
     /// <summary>
@@ -60,7 +60,7 @@ namespace Unrect.Strategies
       => AreaStrategies.ColumnsThenRows(strategy, TakeRowsWhileAny(predicate));
 
     /// <summary>Those columns, at the rows that carry values — <see cref="TakeRowsWhileAny(Func{Point{ISpace}, bool})"/> with <c>HasValue</c> as the predicate.</summary>
-    public static IAreaStrategy TakeRowsWhileAnyValue(this IColumnStrategy strategy)
+    public static IAreaStrategy TakeRowsWhileAnyIsNotBlank(this IColumnStrategy strategy)
       => strategy.TakeRowsWhileAny(v => !v.IsBlank());
 
     /// <summary>Those columns, at the full available height.</summary>
