@@ -12,12 +12,12 @@ namespace Unrect.Strategies
       RowSelectionStrategy = new TakeWhileAnyRowStrategy(predicate);
     }
 
-    internal IRowStrategy RowSelectionStrategy { get; }
+    internal ILineStrategy RowSelectionStrategy { get; }
 
     public ISizeScan Begin(Orientation along)
       => along == Orientation.Vertical
         ? new RowsSizeScan(RowSelectionStrategy.Begin(), fullWidth: true)
-        : new Scanning.WholeSize(region => new Size(region.Width, Scans.SelectRows(RowSelectionStrategy, region)), along);
+        : new Scanning.WholeSize(region => new Size(region.Width, Scans.SelectLines(RowSelectionStrategy, region)), along);
   }
 
   /// <summary>
@@ -26,10 +26,10 @@ namespace Unrect.Strategies
   /// </summary>
   internal sealed class RowsSizeScan : ISizeScan
   {
-    private readonly IRowScan _rows;
+    private readonly ILineScan _rows;
     private readonly bool _fullWidth;
 
-    internal RowsSizeScan(IRowScan rows, bool fullWidth)
+    internal RowsSizeScan(ILineScan rows, bool fullWidth)
     {
       _rows = rows;
       _fullWidth = fullWidth;
@@ -37,7 +37,7 @@ namespace Unrect.Strategies
 
     public bool Incremental => true;
 
-    public bool Take(Plane<ISpace> region, int taken) => _rows.IncludesRow(region, taken);
+    public bool Take(Plane<ISpace> region, int taken) => _rows.Includes(region, taken);
 
     public int? Across(Plane<ISpace> region, int taken, bool final) => _fullWidth ? region.Width : 0;
 
@@ -50,10 +50,10 @@ namespace Unrect.Strategies
   /// <summary>The mirror: columns decided by a column scan, one per span across a region.</summary>
   internal sealed class ColumnsSizeScan : ISizeScan
   {
-    private readonly IColumnScan _columns;
+    private readonly ILineScan _columns;
     private readonly bool _fullHeight;
 
-    internal ColumnsSizeScan(IColumnScan columns, bool fullHeight)
+    internal ColumnsSizeScan(ILineScan columns, bool fullHeight)
     {
       _columns = columns;
       _fullHeight = fullHeight;
@@ -61,7 +61,7 @@ namespace Unrect.Strategies
 
     public bool Incremental => true;
 
-    public bool Take(Plane<ISpace> region, int taken) => _columns.IncludesColumn(region, taken);
+    public bool Take(Plane<ISpace> region, int taken) => _columns.Includes(region, taken);
 
     public int? Across(Plane<ISpace> region, int taken, bool final) => _fullHeight ? region.Height : 0;
 

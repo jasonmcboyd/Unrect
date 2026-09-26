@@ -12,11 +12,11 @@ namespace Unrect.Strategies
       ColumnSelectionStrategy = ColumnStrategies.TakeColumnsWhileAny(predicate);
     }
 
-    private IColumnStrategy ColumnSelectionStrategy { get; }
+    private ILineStrategy ColumnSelectionStrategy { get; }
 
     public ISizeScan Begin(Orientation along)
       => along == Orientation.Horizontal
         ? new ColumnsSizeScan(ColumnSelectionStrategy.Begin(), fullHeight: true)
-        : new Scanning.WholeSize(region => new Size(Scans.SelectColumns(ColumnSelectionStrategy, region), region.Height), along);
+        : new Scanning.WholeSize(region => new Size(Scans.SelectLines(ColumnSelectionStrategy, region), region.Height), along);
   }
 }

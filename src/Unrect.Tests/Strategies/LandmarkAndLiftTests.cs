@@ -242,7 +242,7 @@ namespace Unrect.Tests.Strategies
     [Fact]
     public void RowWhere_FindsTheFirstRowSatisfyingAPositionalPredicate()
     {
-      Assert.Equal(2, RowLandmarks.RowWhere((space, row) => space[0, row].AsText() == "z").FindRow(RowsWithATotal()));
+      Assert.Equal(2, RowLandmarks.RowWhere((space, row) => space[0, row].AsText() == "z").Find(RowsWithATotal()));
     }
 
     [Fact]
@@ -250,22 +250,22 @@ namespace Unrect.Tests.Strategies
     {
       // Column 1 is empty except on the first row, so this finds a row by a cell that is not its
       // first — the reason the "any cell" form exists at all.
-      Assert.Equal(0, RowLandmarks.RowWithCell(cell => cell.AsText() == "y").FindRow(RowsWithATotal()));
+      Assert.Equal(0, RowLandmarks.RowWithCell(cell => cell.AsText() == "y").Find(RowsWithATotal()));
     }
 
     [Fact]
     public void RowContaining_MatchesWholeCellsTrimmedAndCaseInsensitively()
     {
       // The sheet says "  TOTAL  "; the declaration may say it any way that reads well.
-      Assert.Equal(1, RowLandmarks.RowSaying("Total").FindRow(RowsWithATotal()));
-      Assert.Equal(1, RowLandmarks.RowSaying("  total  ").FindRow(RowsWithATotal()));
+      Assert.Equal(1, RowLandmarks.RowSaying("Total").Find(RowsWithATotal()));
+      Assert.Equal(1, RowLandmarks.RowSaying("  total  ").Find(RowsWithATotal()));
     }
 
     [Fact]
     public void RowContaining_MatchesWholeCellsNotSubstrings()
     {
-      Assert.Null(RowLandmarks.RowSaying("TOT").FindRow(RowsWithATotal()));
-      Assert.Null(RowLandmarks.RowSaying("TOTALS").FindRow(RowsWithATotal()));
+      Assert.Null(RowLandmarks.RowSaying("TOT").Find(RowsWithATotal()));
+      Assert.Null(RowLandmarks.RowSaying("TOTALS").Find(RowsWithATotal()));
     }
 
     [Fact]
@@ -273,37 +273,37 @@ namespace Unrect.Tests.Strategies
     {
       // The whole difference from a seek: a missing end is a question for the projection being
       // bounded, not a failure in itself.
-      Assert.Null(RowLandmarks.RowWhere((_, _) => false).FindRow(RowsWithATotal()));
-      Assert.Null(RowLandmarks.RowWithCell(_ => false).FindRow(RowsWithATotal()));
-      Assert.Null(RowLandmarks.RowSaying("Nope").FindRow(RowsWithATotal()));
+      Assert.Null(RowLandmarks.RowWhere((_, _) => false).Find(RowsWithATotal()));
+      Assert.Null(RowLandmarks.RowWithCell(_ => false).Find(RowsWithATotal()));
+      Assert.Null(RowLandmarks.RowSaying("Nope").Find(RowsWithATotal()));
     }
 
     [Fact]
     public void ColumnWhere_FindsTheFirstColumnSatisfyingAPositionalPredicate()
     {
-      Assert.Equal(2, ColumnLandmarks.ColumnWhere((space, column) => space[column, 0].AsText() == "c").FindColumn(ColumnsWithATotal()));
+      Assert.Equal(2, ColumnLandmarks.ColumnWhere((space, column) => space[column, 0].AsText() == "c").Find(ColumnsWithATotal()));
     }
 
     [Fact]
     public void ColumnWithCell_FindsTheFirstColumnWithAMatchingCell()
     {
-      Assert.Equal(2, ColumnLandmarks.ColumnWithCell(cell => cell.AsText() == "z").FindColumn(ColumnsWithATotal()));
+      Assert.Equal(2, ColumnLandmarks.ColumnWithCell(cell => cell.AsText() == "z").Find(ColumnsWithATotal()));
     }
 
     [Fact]
     public void ColumnContaining_MatchesWholeCellsTrimmedAndCaseInsensitively()
     {
-      Assert.Equal(1, ColumnLandmarks.ColumnSaying("Total").FindColumn(ColumnsWithATotal()));
-      Assert.Equal(1, ColumnLandmarks.ColumnSaying("  total  ").FindColumn(ColumnsWithATotal()));
-      Assert.Null(ColumnLandmarks.ColumnSaying("TOT").FindColumn(ColumnsWithATotal()));
+      Assert.Equal(1, ColumnLandmarks.ColumnSaying("Total").Find(ColumnsWithATotal()));
+      Assert.Equal(1, ColumnLandmarks.ColumnSaying("  total  ").Find(ColumnsWithATotal()));
+      Assert.Null(ColumnLandmarks.ColumnSaying("TOT").Find(ColumnsWithATotal()));
     }
 
     [Fact]
     public void ColumnLandmarks_ReportAMissAsNullRatherThanThrowing()
     {
-      Assert.Null(ColumnLandmarks.ColumnWhere((_, _) => false).FindColumn(ColumnsWithATotal()));
-      Assert.Null(ColumnLandmarks.ColumnWithCell(_ => false).FindColumn(ColumnsWithATotal()));
-      Assert.Null(ColumnLandmarks.ColumnSaying("Nope").FindColumn(ColumnsWithATotal()));
+      Assert.Null(ColumnLandmarks.ColumnWhere((_, _) => false).Find(ColumnsWithATotal()));
+      Assert.Null(ColumnLandmarks.ColumnWithCell(_ => false).Find(ColumnsWithATotal()));
+      Assert.Null(ColumnLandmarks.ColumnSaying("Nope").Find(ColumnsWithATotal()));
     }
 
     [Fact]
@@ -331,14 +331,14 @@ namespace Unrect.Tests.Strategies
 
       foreach (var needle in new[] { "Total", "  total  ", "TOTAL" })
       {
-        Assert.Equal(1, RowLandmarks.RowSaying(needle).FindRow(space));
+        Assert.Equal(1, RowLandmarks.RowSaying(needle).Find(space));
         Assert.Equal(1, To(RowLandmarks.RowSaying(needle)).GetOffset(space).Row);
       }
 
       // ...including on what does not match, which the two report differently: the landmark returns
       // null and leaves the decision to its caller, and the lift turns that into a placement
       // failure.
-      Assert.Null(RowLandmarks.RowSaying("TOT").FindRow(space));
+      Assert.Null(RowLandmarks.RowSaying("TOT").Find(space));
       Assert.ThrowsAny<OutOfBoundsException>(() => To(RowLandmarks.RowSaying("TOT")).GetOffset(space));
     }
 

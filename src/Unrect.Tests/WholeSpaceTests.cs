@@ -90,8 +90,8 @@ namespace Unrect.Tests
       var space = Sheet();
       var strategy = RowStrategies.TakeRowsWhileAnyIsNotBlank();
 
-      Assert.Equal(strategy.SelectRows(Plane<ISpace>.Of(space)), strategy.SelectRows(space));
-      Assert.Equal(2, strategy.SelectRows(space));
+      Assert.Equal(strategy.SelectLines(Plane<ISpace>.Of(space)), strategy.SelectLines(space));
+      Assert.Equal(2, strategy.SelectLines(space));
     }
 
     [Fact]
@@ -100,11 +100,11 @@ namespace Unrect.Tests
       var space = Sheet();
       var strategy = ColumnStrategies.TakeColumnsWhileAll(point => !point.IsBlank());
 
-      Assert.Equal(strategy.SelectColumns(Plane<ISpace>.Of(space)), strategy.SelectColumns(space));
+      Assert.Equal(strategy.SelectLines(Plane<ISpace>.Of(space)), strategy.SelectLines(space));
 
       // Row 2 is blank, so no column has a value in every row: the answer is zero, and a shortcut
       // that had trimmed the region to its valued rows would say four.
-      Assert.Equal(0, strategy.SelectColumns(space));
+      Assert.Equal(0, strategy.SelectLines(space));
     }
 
     [Fact]
@@ -113,8 +113,8 @@ namespace Unrect.Tests
       var space = Sheet();
       var landmark = RowLandmarks.RowSaying("Total");
 
-      Assert.Equal(landmark.FindRow(Plane<ISpace>.Of(space)), landmark.FindRow(space));
-      Assert.Equal(3, landmark.FindRow(space));
+      Assert.Equal(landmark.Find(Plane<ISpace>.Of(space)), landmark.Find(space));
+      Assert.Equal(3, landmark.Find(space));
     }
 
     [Fact]
@@ -123,8 +123,8 @@ namespace Unrect.Tests
       var space = Sheet();
       var landmark = ColumnLandmarks.ColumnSaying("d");
 
-      Assert.Equal(landmark.FindColumn(Plane<ISpace>.Of(space)), landmark.FindColumn(space));
-      Assert.Equal(3, landmark.FindColumn(space));
+      Assert.Equal(landmark.Find(Plane<ISpace>.Of(space)), landmark.Find(space));
+      Assert.Equal(3, landmark.Find(space));
     }
   }
 }

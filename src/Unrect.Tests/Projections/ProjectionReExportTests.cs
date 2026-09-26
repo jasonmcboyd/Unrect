@@ -150,7 +150,7 @@ namespace Unrect.Tests.Projections
       AssertTransparent(typed, erased);
     }
 
-    private static (IRowStrategy Typed, IRowStrategy Erased) RowRules(string name) => name switch
+    private static (ILineStrategy Typed, ILineStrategy Erased) RowRules(string name) => name switch
     {
       "TakeRowsWhile" => (
         TakeRowsWhile((region, row) => !region[0, row].IsBlank()).Strategy,
@@ -182,11 +182,11 @@ namespace Unrect.Tests.Projections
     {
       var (typed, erased) = RowRules(name);
 
-      Assert.Equal(erased.SelectRows(Patchy()), typed.SelectRows(Patchy()));
+      Assert.Equal(erased.SelectLines(Patchy()), typed.SelectLines(Patchy()));
       AssertTransparent(typed, erased);
     }
 
-    private static (IColumnStrategy Typed, IColumnStrategy Erased) ColumnRules(string name) => name switch
+    private static (ILineStrategy Typed, ILineStrategy Erased) ColumnRules(string name) => name switch
     {
       "TakeColumnsWhile" => (
         TakeColumnsWhile((region, column) => !region[column, 0].IsBlank()).Strategy,
@@ -218,7 +218,7 @@ namespace Unrect.Tests.Projections
     {
       var (typed, erased) = ColumnRules(name);
 
-      Assert.Equal(erased.SelectColumns(Patchy()), typed.SelectColumns(Patchy()));
+      Assert.Equal(erased.SelectLines(Patchy()), typed.SelectLines(Patchy()));
       AssertTransparent(typed, erased);
     }
 
@@ -282,7 +282,7 @@ namespace Unrect.Tests.Projections
         : (RowWithCell(cell => !cell.IsBlank()).Landmark,
            RowLandmarks.RowWithCell(Valued));
 
-      Assert.Equal(erased.FindRow(Patchy()), typed.FindRow(Patchy()));
+      Assert.Equal(erased.Find(Patchy()), typed.Find(Patchy()));
       Assert.Equal(erased.Description, typed.Description);
       Assert.IsType(erased.GetType(), typed);
     }
@@ -301,24 +301,21 @@ namespace Unrect.Tests.Projections
         : (ColumnWithCell(cell => !cell.IsBlank()).Landmark,
            ColumnLandmarks.ColumnWithCell(Valued));
 
-      Assert.Equal(erased.FindColumn(Patchy()), typed.FindColumn(Patchy()));
+      Assert.Equal(erased.Find(Patchy()), typed.Find(Patchy()));
       Assert.Equal(erased.Description, typed.Description);
       Assert.IsType(erased.GetType(), typed);
     }
 
-    /// <summary>The seven interfaces a factory returns when what it hands back carries a demand.</summary>
+    /// <summary>The four interfaces a factory returns when what it hands back carries a demand.</summary>
     private static bool IsPhantom(Type type)
       => type.IsGenericType
         && type.Namespace == "Unrect.Projections"
         && new[]
         {
-          typeof(IRowLandmark<>),
-          typeof(IColumnLandmark<>),
+          typeof(ILineLandmark<>),
           typeof(Unrect.Projections.ISizeStrategy<>),
           typeof(Unrect.Projections.IOffsetStrategy<>),
-          typeof(Unrect.Projections.ISizeStrategy<>),
-          typeof(Unrect.Projections.IRowStrategy<>),
-          typeof(Unrect.Projections.IColumnStrategy<>),
+          typeof(Unrect.Projections.ILineStrategy<>),
         }.Contains(type.GetGenericTypeDefinition());
 
     [Fact]
@@ -385,17 +382,17 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void TheSelectorReExportsForwardToTheirStrategies()
     {
-      Assert.Equal(RowStrategies.TakeRows(1).SelectRows(Block()), TakeRows(1).SelectRows(Block()));
-      Assert.Equal(ColumnStrategies.TakeColumns(2).SelectColumns(Block()), TakeColumns(2).SelectColumns(Block()));
-      Assert.Equal(RowStrategies.AllRows().SelectRows(Block()), AllRows().SelectRows(Block()));
-      Assert.Equal(ColumnStrategies.AllColumns().SelectColumns(Block()), AllColumns().SelectColumns(Block()));
+      Assert.Equal(RowStrategies.TakeRows(1).SelectLines(Block()), TakeRows(1).SelectLines(Block()));
+      Assert.Equal(ColumnStrategies.TakeColumns(2).SelectLines(Block()), TakeColumns(2).SelectLines(Block()));
+      Assert.Equal(RowStrategies.AllRows().SelectLines(Block()), AllRows().SelectLines(Block()));
+      Assert.Equal(ColumnStrategies.AllColumns().SelectLines(Block()), AllColumns().SelectLines(Block()));
     }
 
     [Fact]
     public void AllRowsAndAllColumnsSeeTheWholeExtent()
     {
-      Assert.Equal(2, AllRows().SelectRows(Block()));
-      Assert.Equal(3, AllColumns().SelectColumns(Block()));
+      Assert.Equal(2, AllRows().SelectLines(Block()));
+      Assert.Equal(3, AllColumns().SelectLines(Block()));
     }
 
     // --- The spellings the re-exports exist for --------------------------------------------------------

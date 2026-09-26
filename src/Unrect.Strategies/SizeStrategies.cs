@@ -47,11 +47,11 @@ namespace Unrect.Strategies
     /// two are read as one forward walk, which leaves the height discoverable as a projection
     /// consumes it; otherwise the extent is measured up front.
     /// </summary>
-    public static ISizeStrategy RowsThenColumns(IRowStrategy rows, IColumnStrategy columns)
+    public static ISizeStrategy RowsThenColumns(ILineStrategy rows, ILineStrategy columns)
       => RowAndColumnSizeStrategy.RowsThenColumns(rows, columns);
 
     /// <summary>Columns first, then rows measured inside them; the transpose of <see cref="RowsThenColumns"/>, and always measured up front.</summary>
-    public static ISizeStrategy ColumnsThenRows(IColumnStrategy columns, IRowStrategy rows)
+    public static ISizeStrategy ColumnsThenRows(ILineStrategy columns, ILineStrategy rows)
       => RowAndColumnSizeStrategy.ColumnsThenRows(columns, rows);
   }
 }

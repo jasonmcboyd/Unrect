@@ -7,7 +7,7 @@ namespace Unrect.Projections
   /// one whose predicate asks about a cell's kind or its value rather than the four questions every
   /// space answers.
   /// <para>
-  /// Like <see cref="IRowLandmark{TSpace}"/> it deliberately does <em>not</em> derive from
+  /// Like <see cref="ILineLandmark{TSpace}"/> it deliberately does <em>not</em> derive from
   /// <see cref="ISizeStrategy"/>: keeping the two families apart is what makes the demand visible
   /// to the member that takes one, and what lets a declaration carry it with nothing annotated. The
   /// strategy calculus, which knows nothing of capabilities, still runs it — the lift unwraps
@@ -35,22 +35,13 @@ namespace Unrect.Projections
     IOffsetStrategy Strategy { get; }
   }
 
-  /// <summary>The row-count twin of <see cref="ISizeStrategy{TSpace}"/>.</summary>
+  /// <summary>The line-count twin of <see cref="ISizeStrategy{TSpace}"/> — a rule about rows or about columns, the rule says which.</summary>
   /// <typeparam name="TSpace">The space this rule must be able to look at.</typeparam>
-  public interface IRowStrategy<in TSpace>
+  public interface ILineStrategy<in TSpace>
     where TSpace : class, ISpace
   {
     /// <summary>The rule as the strategy calculus takes it, its demand discharged by the lift.</summary>
-    IRowStrategy Strategy { get; }
-  }
-
-  /// <summary>The column-count twin of <see cref="ISizeStrategy{TSpace}"/>.</summary>
-  /// <typeparam name="TSpace">The space this rule must be able to look at.</typeparam>
-  public interface IColumnStrategy<in TSpace>
-    where TSpace : class, ISpace
-  {
-    /// <summary>The rule as the strategy calculus takes it, its demand discharged by the lift.</summary>
-    IColumnStrategy Strategy { get; }
+    ILineStrategy Strategy { get; }
   }
 
   /// <summary>
@@ -68,13 +59,9 @@ namespace Unrect.Projections
       where TSpace : class, ISpace
       => new DemandedOffset<TSpace>(strategy);
 
-    internal static IRowStrategy<TSpace> Rows<TSpace>(IRowStrategy strategy)
+    internal static ILineStrategy<TSpace> Lines<TSpace>(ILineStrategy strategy)
       where TSpace : class, ISpace
-      => new DemandedRows<TSpace>(strategy);
-
-    internal static IColumnStrategy<TSpace> Columns<TSpace>(IColumnStrategy strategy)
-      where TSpace : class, ISpace
-      => new DemandedColumns<TSpace>(strategy);
+      => new DemandedLines<TSpace>(strategy);
 
     private sealed class DemandedSize<TSpace> : ISizeStrategy<TSpace>
       where TSpace : class, ISpace
@@ -92,20 +79,12 @@ namespace Unrect.Projections
       public IOffsetStrategy Strategy { get; }
     }
 
-    private sealed class DemandedRows<TSpace> : IRowStrategy<TSpace>
+    private sealed class DemandedLines<TSpace> : ILineStrategy<TSpace>
       where TSpace : class, ISpace
     {
-      internal DemandedRows(IRowStrategy strategy) => Strategy = strategy;
+      internal DemandedLines(ILineStrategy strategy) => Strategy = strategy;
 
-      public IRowStrategy Strategy { get; }
-    }
-
-    private sealed class DemandedColumns<TSpace> : IColumnStrategy<TSpace>
-      where TSpace : class, ISpace
-    {
-      internal DemandedColumns(IColumnStrategy strategy) => Strategy = strategy;
-
-      public IColumnStrategy Strategy { get; }
+      public ILineStrategy Strategy { get; }
     }
   }
 }

@@ -116,7 +116,7 @@ namespace Unrect.Strategies
     /// from the count, reading no column it has ruled out; asked about the newest column of a
     /// region that stops there — a column driver — it reads that column.
     /// </summary>
-    internal sealed class RowMajorColumns : IColumnScan
+    internal sealed class RowMajorColumns : ILineScan
     {
       private readonly IRowMajorColumnStrategy _strategy;
       private readonly Func<Plane<ISpace>, int, bool> _column;
@@ -131,7 +131,7 @@ namespace Unrect.Strategies
 
       public int? Required => null;
 
-      public bool IncludesColumn(Plane<ISpace> space, int column)
+      public bool Includes(Plane<ISpace> space, int column)
       {
         // Already folded over this region: every column of it is answered from the count, the last
         // one included, so no column is read a second time on the way to it.
@@ -149,13 +149,13 @@ namespace Unrect.Strategies
     }
 
     /// <summary>A column scan driven by a predicate over the whole column, with no columns owed.</summary>
-    internal sealed class ColumnPredicate : IColumnScan
+    internal sealed class ColumnPredicate : ILineScan
     {
       private readonly Func<Plane<ISpace>, int, bool> _predicate;
 
       internal ColumnPredicate(Func<Plane<ISpace>, int, bool> predicate) => _predicate = predicate;
 
-      public bool IncludesColumn(Plane<ISpace> space, int column) => _predicate(space, column);
+      public bool Includes(Plane<ISpace> space, int column) => _predicate(space, column);
 
       public int? Required => null;
     }

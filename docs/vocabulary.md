@@ -38,8 +38,8 @@ and a backend's own leaves, closed over the VALUE its store holds and living bes
 | `Decimal()` `Integer()` | `decimal` / `int` | CONVERSIONS over the double the sheet holds, kept as leaves because nearly every amount and count wants one. `Decimal()` rounds to the fifteen significant digits a double carries (a stored 0.30000000000000004 reads as 0.3); a number that will not fit fails as a conversion, quoting the number as the cell says it, never as a kind. The same conversion fills a bound `decimal`/`int` member. No `Long()`, ever; a conversion beyond these is `Select` territory |
 | `AsText().OrBlank()` / `Text().OrBlank()` / `Decimal().OrBlank()` … | `T?` | The same reading, tolerating a BLANK cell: null, quietly, with no diagnostic — where `.Optional()` absorbs a *failure* and records a Warning. A wrong kind still fails loudly. The standalone spelling of a nullable table member's tolerance |
 | `Cell(v => ...)` | `T` | Removed name; the escape hatch for one cell is `Point(...)` composed with a caller's own read, or a bespoke leaf over `DefinitionNode<TSpace, T>` |
-| `Row(r => ...)` / `Row(width, r => ...)` / `Row(IColumnStrategy, r => ...)` | from `CellStrip<TSpace>` | One row; width discovered (`while any value`), explicit count, or by column strategy |
-| `Column(c => ...)` / `Column(height, c => ...)` / `Column(IRowStrategy, c => ...)` | from `CellStrip<TSpace>` | One column; height discovered, explicit count, or by row strategy |
+| `Row(r => ...)` / `Row(width, r => ...)` / `Row(columns, r => ...)` | from `CellStrip<TSpace>` | One row; width discovered (`while any value`), explicit count, or by column strategy |
+| `Column(c => ...)` / `Column(height, c => ...)` / `Column(rows, c => ...)` | from `CellStrip<TSpace>` | One column; height discovered, explicit count, or by row strategy |
 | `Range(b => ...)` / `Range(w, h, ...)` / `Range(area, ...)` | from `CellBlock<TSpace>` | Rectangular block |
 | `Caption(text)` | matched text (verbatim) | A declared anchor: seeks its row by the content rule, consumes exactly that row, asserts the text |
 | `Fields(Field(a), Field(b), ...)` | `IReadOnlyDictionary<string, Point<TSpace>>` | Labelled-pair block; self-anchors on its first label; labels matched colon-tolerantly (`LabelEquals`) |
@@ -180,7 +180,7 @@ The strategy vocabulary `.OffsetBy` takes:
 ### The pipeline's stages and terminals
 
 `Below(mark)` opens an `OffsetStage<TSpace>`, which offers movements, an optional `.Sized`,
-`.Until`/`.UntilColumn`, `.Heading`, and every terminal; `.Sized(...)` narrows to an
+`.Until`, `.Heading`, and every terminal; `.Sized(...)` narrows to an
 `OffsetAndSizeStage<TSpace>` (drops the movements and a second `.Sized`, keeps `.Until`/
 `.Heading`); `.Until(...)` narrows to a `BoundStage<TSpace>` (drops everything geometric); a
 `.Heading(...)` opens or chains a `HeadingStage<TSpace>` (drops everything except more headings
@@ -190,8 +190,8 @@ repeats — plus `.Of(projection)` for anything already declared elsewhere (a ho
 backend's own leaf: `Below(mark).Of(Formula())`).
 
 **A demanding matcher opens a demanding pipeline with nothing annotated.** `On(rowMatcher)` and
-`Below(rowMatcher)` are overloaded on `IRowLandmark<TSpace>` as well as the plain `IRowLandmark`
-(and the column twins), so `On(RowWithFormula())` infers `TSpace : IFormulaSpace` from the
+`Below(rowMatcher)` are overloaded on `ILineLandmark<TSpace>` as well as the plain `ILineLandmark`
+(a landmark carries its own axis; `Below` refuses a column landmark where it is written), so `On(RowWithFormula())` infers `TSpace : IFormulaSpace` from the
 matcher's own type and hands back a demanding `OffsetStage<TSpace>` — see "The typed phantoms"
 under Matchers, below.
 
@@ -200,7 +200,7 @@ under Matchers, below.
 | Operator | Meaning |
 |---|---|
 | `.Sized(area)` | Declared extent, consumed in full; replaces a shape's own default extent, refuses a second `.Sized` |
-| `.Until(matcher)` / `.Until(matcher, orEnd: true)` / `.UntilColumn(...)` | Extent ends just BEFORE a forward landmark; the bound is consumed in full so the next sibling starts AT the landmark |
+| `.Until(matcher)` / `.Until(matcher, orEnd: true)` | Extent ends just BEFORE a forward landmark; the bound is consumed in full so the next sibling starts AT the landmark |
 | `Extent(w, h)` `WholeExtent()` `NoExtent()` `RowsWhileAnyIsNotBlank()` `RowsWhileAny(p)` `ColumnsWhileAnyIsNotBlank()` `ColumnsWhileAny(p)` | The area vocabulary, mirrored on both axes; `p` is `Func<Point<TSpace>, bool>` over the file's own space, so it may ask a cell's kind or its value |
 | `TakeRows(n)` `TakeColumns(n)` `AllRows()` `AllColumns()` | Axis selectors, not area strategies — for `Row(AllColumns(), ...)` and for composing an extent from its two axes |
 | `TakeRowsWhile(p)` `TakeRowsTo(p)` `TakeRowsWhileAll(p)` `TakeRowsWhileAny(p)` and the four `TakeColumns…` twins | Predicate-driven axis selectors, over the file's space |
@@ -248,13 +248,11 @@ needs. Seven interfaces
 do that, one per thing the calculus takes:
 
 ```csharp
-public interface IRowLandmark<in TSpace>    where TSpace : class, ISpace { IRowLandmark    Landmark { get; } }
-public interface IColumnLandmark<in TSpace> where TSpace : class, ISpace { IColumnLandmark Landmark { get; } }
+public interface ILineLandmark<in TSpace>   where TSpace : class, ISpace { ILineLandmark   Landmark { get; } }
 
 public interface ISizeStrategy<in TSpace>   where TSpace : class, ISpace { ISizeStrategy   Strategy { get; } }
 public interface IOffsetStrategy<in TSpace> where TSpace : class, ISpace { IOffsetStrategy Strategy { get; } }
-public interface IRowStrategy<in TSpace>    where TSpace : class, ISpace { IRowStrategy    Strategy { get; } }
-public interface IColumnStrategy<in TSpace> where TSpace : class, ISpace { IColumnStrategy Strategy { get; } }
+public interface ILineStrategy<in TSpace>   where TSpace : class, ISpace { ILineStrategy   Strategy { get; } }
 ```
 
 None of them derives from the plain form. That is the whole mechanism: a member that takes a
@@ -277,8 +275,8 @@ var header = Sized(Populated()).Row(r => r[0].Text());   // in an ICellSpace fil
 ```
 
 A capability-demanding *matcher* is the same trick from the other end:
-`Unrect.Spreadsheets.SpreadsheetProjections.RowWithFormula()` implements the plain `IRowLandmark`
-the calculus takes *and* `IRowLandmark<IFormulaSpace>`, so `On(RowWithFormula())` hands back a
+`Unrect.Spreadsheets.SpreadsheetProjections.RowWithFormula()` implements the plain `ILineLandmark`
+the calculus takes *and* `ILineLandmark<IFormulaSpace>`, so `On(RowWithFormula())` hands back a
 pipeline demanding `IFormulaSpace`. It is ordinary contravariant inference throughout, never a
 runtime capability walk.
 

@@ -187,7 +187,7 @@ namespace Unrect.Tests.Projections
     //
     // The offset and the extent families each have a DEFAULT path the refusal leaves alone — a shape
     // states an offset or an extent in its own constructor, and a modifier replaces it silently. The
-    // bound has no such path to guard: nothing builds an BoundedDefinition but .Until/.UntilColumn, so
+    // bound has no such path to guard: nothing builds a BoundedDefinition but .Until, so
     // a projection has no default end and the FIRST bound is always the declaration. That asymmetry
     // is why these pins are all refusals with no silent-replacement twin.
 
@@ -274,11 +274,11 @@ namespace Unrect.Tests.Projections
     // --- The column twin ------------------------------------------------------------------------------------
 
     [Fact]
-    public void UntilColumn_BoundsAcrossInsteadOfDown()
+    public void Until_WithAColumnLandmark_BoundsAcrossInsteadOfDown()
     {
       var space = Mixed(new object?[,] { { "a", "b", "Total", "d" } });
 
-      var cells = UntilColumn(ColumnContaining("Total")).Of(HorizontalRepeat(TextCell()));
+      var cells = Until(ColumnContaining("Total")).Of(HorizontalRepeat(TextCell()));
       var applied = HorizontalFlow(h => string.Join(",", h.Next(cells))).Apply(space);
 
       Assert.Equal("a,b", applied.Value);
@@ -310,10 +310,10 @@ namespace Unrect.Tests.Projections
       // Was AColumnBoundReplacesARowBound, which read "2x3": the column bound won outright and the
       // row landmark was dropped unsought.
       var failure = Assert.Throws<ArgumentException>(() =>
-        UntilColumn(ColumnContaining("Total")).Of(Until(RowContaining("Stop")).Of(BlockExtent())));
+        Until(ColumnContaining("Total")).Of(Until(RowContaining("Stop")).Of(BlockExtent())));
 
       Assert.Equal("projection", failure.ParamName);
-      Assert.Contains("already ends at a landmark, and UntilColumn would replace that end", failure.Message);
+      Assert.Contains("already ends at a landmark, and Until would replace that end", failure.Message);
       Assert.Contains("Bound it once", failure.Message);
     }
 
@@ -324,7 +324,7 @@ namespace Unrect.Tests.Projections
       // is not about the axis: what a second bound would replace is the projection's one END,
       // whichever direction it happens to cut.
       var failure = Assert.Throws<ArgumentException>(() =>
-        Until(RowContaining("Stop")).Of(UntilColumn(ColumnContaining("Total")).Of(BlockExtent())));
+        Until(RowContaining("Stop")).Of(Until(ColumnContaining("Total")).Of(BlockExtent())));
 
       Assert.Equal("projection", failure.ParamName);
       Assert.Contains("already ends at a landmark, and Until would replace that end", failure.Message);
@@ -340,9 +340,9 @@ namespace Unrect.Tests.Projections
       // happens at construction, before any space exists to search, so it names the modifier and the
       // receiver and neither landmark's text.
       var failure = Assert.Throws<ArgumentException>(() =>
-        UntilColumn(ColumnContaining("Nope")).Of(Until(RowContaining("Stop")).Of(BlockExtent())));
+        Until(ColumnContaining("Nope")).Of(Until(RowContaining("Stop")).Of(BlockExtent())));
 
-      Assert.Contains("already ends at a landmark, and UntilColumn would replace that end", failure.Message);
+      Assert.Contains("already ends at a landmark, and Until would replace that end", failure.Message);
       Assert.DoesNotContain("Stop", failure.Message);
       Assert.DoesNotContain("Nope", failure.Message);
     }
@@ -356,10 +356,10 @@ namespace Unrect.Tests.Projections
       // does not make it a LAYER, so the second bound still meets the first and is refused, in the
       // user's own word for the projection.
       var failure = Assert.Throws<ArgumentException>(() =>
-        UntilColumn(ColumnContaining("Nope")).Of(Until(RowContaining("Stop")).Of(BlockExtent()).Named("band")));
+        Until(ColumnContaining("Nope")).Of(Until(RowContaining("Stop")).Of(BlockExtent()).Named("band")));
 
       Assert.Equal("projection", failure.ParamName);
-      Assert.Contains("'band' already ends at a landmark, and UntilColumn would replace that end", failure.Message);
+      Assert.Contains("'band' already ends at a landmark, and Until would replace that end", failure.Message);
     }
 
     [Fact]
@@ -369,7 +369,7 @@ namespace Unrect.Tests.Projections
       // for: a wrapper between the two bounds makes the second one bound the FIRST, so both are in
       // force. The column bound leaves columns 0-1 of the whole sheet; the row bound inside it finds
       // "Stop" in what is left and stops before it.
-      var projection = UntilColumn(ColumnContaining("Total")).Of(Until(RowContaining("Stop")).Of(BlockExtent()).Select(value => value));
+      var projection = Until(ColumnContaining("Total")).Of(Until(RowContaining("Stop")).Of(BlockExtent()).Select(value => value));
 
       var applied = projection.Apply(BothAxes());
 
@@ -378,7 +378,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal(2, applied.Consumed.Height);
 
       // The outermost bound is the one the projection describes itself by; the inner one is a child.
-      Assert.Equal("UntilColumn", projection.Description);
+      Assert.Equal("Until", projection.Description);
     }
 
     // --- A landmark the anchor cannot be reached past -----------------------------------------------------------
@@ -446,7 +446,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal("Until", bound.Description);
       Assert.True(bound.IsWrapper);
       Assert.True(bound.Named("section").IsWrapper);
-      Assert.Equal("UntilColumn", UntilColumn(ColumnContaining("Total")).Of(Lines()).Description);
+      Assert.Equal("Until", Until(ColumnContaining("Total")).Of(Lines()).Description);
     }
 
     [Fact]
@@ -460,8 +460,8 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ABoundRejectsANullLandmark()
     {
-      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => Until((IRowLandmark)null!).Of(Lines())).ParamName);
-      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => UntilColumn((IColumnLandmark)null!).Of(Lines())).ParamName);
+      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => Until((ILineLandmark)null!).Of(Lines())).ParamName);
+      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => Until((ILineLandmark)null!).Of(Lines())).ParamName);
     }
   }
 }

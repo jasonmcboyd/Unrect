@@ -21,14 +21,10 @@ namespace Unrect.Tests
 
     public static Offset GetOffset(this IOffsetStrategy strategy, ICellSpace space) => strategy.GetOffset(space.Region());
 
-    public static int SelectRows(this IRowStrategy strategy, ICellSpace space) => strategy.SelectRows(space.Region());
+    public static int SelectLines(this ILineStrategy strategy, ICellSpace space) => strategy.SelectLines(space.Region());
 
-    public static int SelectColumns(this IColumnStrategy strategy, ICellSpace space) => strategy.SelectColumns(space.Region());
+    public static int? Find(this ILineLandmark landmark, ICellSpace space) => landmark.Find(space.Region());
 
-    public static int? FindRow(this IRowLandmark landmark, ICellSpace space) => landmark.FindRow(space.Region());
-
-    public static int? FindColumn(this IColumnLandmark landmark, ICellSpace space) => landmark.FindColumn(space.Region());
-
-    public static bool IncludesRow(this IRowScan scan, ICellSpace space, int row) => scan.IncludesRow(space.Region(), row);
+    public static bool Includes(this ILineScan scan, ICellSpace space, int row) => scan.Includes(space.Region(), row);
   }
 }

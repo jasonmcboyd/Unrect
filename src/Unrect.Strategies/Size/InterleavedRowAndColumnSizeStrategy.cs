@@ -9,13 +9,13 @@ namespace Unrect.Strategies
   /// </summary>
   internal sealed class InterleavedRowAndColumnSizeStrategy : ISizeStrategy
   {
-    public InterleavedRowAndColumnSizeStrategy(IRowStrategy rowSelectionStrategy, IRowMajorColumnStrategy columnSelectionStrategy)
+    public InterleavedRowAndColumnSizeStrategy(ILineStrategy rowSelectionStrategy, IRowMajorColumnStrategy columnSelectionStrategy)
     {
       RowSelectionStrategy = rowSelectionStrategy;
       ColumnSelectionStrategy = columnSelectionStrategy;
     }
 
-    internal IRowStrategy RowSelectionStrategy { get; }
+    internal ILineStrategy RowSelectionStrategy { get; }
 
     internal IRowMajorColumnStrategy ColumnSelectionStrategy { get; }
 
@@ -26,7 +26,7 @@ namespace Unrect.Strategies
 
     private Size Whole(Plane<ISpace> region)
     {
-      var rows = Scans.SelectRows(RowSelectionStrategy, region);
+      var rows = Scans.SelectLines(RowSelectionStrategy, region);
       var columns = ColumnAccumulators.Fold(ColumnSelectionStrategy.BeginColumns(region.Width), region.Slice(new Size(region.Width, rows)));
 
       return new Size(columns, rows);
@@ -34,12 +34,12 @@ namespace Unrect.Strategies
 
     private sealed class Scan : ISizeScan
     {
-      private readonly IRowScan _rows;
+      private readonly ILineScan _rows;
       private readonly IRowMajorColumnStrategy _columns;
       private IColumnAccumulator? _accumulator;
       private bool _stopped;
 
-      internal Scan(IRowScan rows, IRowMajorColumnStrategy columns)
+      internal Scan(ILineScan rows, IRowMajorColumnStrategy columns)
       {
         _rows = rows;
         _columns = columns;
@@ -54,7 +54,7 @@ namespace Unrect.Strategies
 
         _accumulator ??= _columns.BeginColumns(region.Width);
 
-        if (!_rows.IncludesRow(region, taken))
+        if (!_rows.Includes(region, taken))
         {
           _stopped = true;
           return false;

@@ -37,8 +37,8 @@ namespace Unrect.Benchmarks
     private ICellSpace _mixed = default!;
     private Plane<ICellSpace> _plane;
     private Plane<ISpace> _numericPlane;
-    private IRowStrategy _erasedRule = default!;
-    private IRowStrategy _typedRule = default!;
+    private ILineStrategy _erasedRule = default!;
+    private ILineStrategy _typedRule = default!;
 
     [GlobalSetup]
     public void Setup()
@@ -155,7 +155,7 @@ namespace Unrect.Benchmarks
     /// every row of a grid with no blank in it, so every cell is asked.
     /// </summary>
     [Benchmark]
-    public int Predicate_Million() => _erasedRule.SelectRows(_numericPlane);
+    public int Predicate_Million() => _erasedRule.SelectLines(_numericPlane);
 
     /// <summary>
     /// The same million evaluations of the same question, through the rule a declaration writes
@@ -170,7 +170,7 @@ namespace Unrect.Benchmarks
     /// same work.</para>
     /// </summary>
     [Benchmark]
-    public int TypedPredicate_Million() => _typedRule.SelectRows(_numericPlane);
+    public int TypedPredicate_Million() => _typedRule.SelectLines(_numericPlane);
 
     /// <summary>
     /// A million slices: the arithmetic a composite does where it used to allocate a subspace. One

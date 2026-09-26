@@ -11,6 +11,8 @@ namespace Unrect.Strategies
   /// </summary>
   internal sealed class TakeWhileAllColumnStrategy : IRowMajorColumnStrategy
   {
+    public Orientation Along => Orientation.Horizontal;
+
     public TakeWhileAllColumnStrategy(Func<Point<ISpace>, bool> predicate)
     {
       Predicate = predicate;
@@ -20,7 +22,7 @@ namespace Unrect.Strategies
 
     public IColumnAccumulator BeginColumns(int width) => new Accumulator(Predicate, width);
 
-    public IColumnScan Begin() => new Scanning.RowMajorColumns(this, (space, column) =>
+    public ILineScan Begin() => new Scanning.RowMajorColumns(this, (space, column) =>
     {
       for (var row = 0; space.HasRow(row); row++)
         if (!Predicate(space[column, row]))

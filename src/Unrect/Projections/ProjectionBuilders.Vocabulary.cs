@@ -74,13 +74,13 @@ namespace Unrect.Projections
       => Strip(Orientation.Horizontal, project, ExplicitSize(width, 1), $"Row({width})");
 
     /// <summary>One row, as wide as <paramref name="columns"/> selects.</summary>
-    public static IProjectionDefinition<TSpace, T> Row<T>(IColumnStrategy columns, Func<CellStrip<TSpace>, T> project)
-      => Strip(Orientation.Horizontal, project, RowsThenColumns(RowStrategies.TakeRows(1), columns), "Row");
+    public static IProjectionDefinition<TSpace, T> Row<T>(ILineStrategy columns, Func<CellStrip<TSpace>, T> project)
+      => Strip(Orientation.Horizontal, project, RowsThenColumns(RowStrategies.TakeRows(1), LineAxis.Require(columns, Orientation.Horizontal, nameof(columns))), "Row");
 
-    /// <inheritdoc cref="Row{T}(IColumnStrategy, Func{CellStrip{TSpace}, T})"/>
+    /// <inheritdoc cref="Row{T}(ILineStrategy, Func{CellStrip{TSpace}, T})"/>
     /// <param name="columns">The columns the row spans. A rule demanding less is accepted as it is.</param>
     /// <param name="project">The reading applied to the row's cells.</param>
-    public static IProjectionDefinition<TSpace, T> Row<T>(IColumnStrategy<TSpace> columns, Func<CellStrip<TSpace>, T> project)
+    public static IProjectionDefinition<TSpace, T> Row<T>(ILineStrategy<TSpace> columns, Func<CellStrip<TSpace>, T> project)
       => Row(Required(columns).Strategy, project);
 
     /// <summary>One column, as tall as the leading rows that carry values.</summary>
@@ -92,13 +92,13 @@ namespace Unrect.Projections
       => Strip(Orientation.Vertical, project, ExplicitSize(1, height), $"Column({height})");
 
     /// <summary>One column, as tall as <paramref name="rows"/> selects.</summary>
-    public static IProjectionDefinition<TSpace, T> Column<T>(IRowStrategy rows, Func<CellStrip<TSpace>, T> project)
-      => Strip(Orientation.Vertical, project, ColumnsThenRows(ColumnStrategies.TakeColumns(1), rows), "Column");
+    public static IProjectionDefinition<TSpace, T> Column<T>(ILineStrategy rows, Func<CellStrip<TSpace>, T> project)
+      => Strip(Orientation.Vertical, project, ColumnsThenRows(ColumnStrategies.TakeColumns(1), LineAxis.Require(rows, Orientation.Vertical, nameof(rows))), "Column");
 
-    /// <inheritdoc cref="Column{T}(IRowStrategy, Func{CellStrip{TSpace}, T})"/>
+    /// <inheritdoc cref="Column{T}(ILineStrategy, Func{CellStrip{TSpace}, T})"/>
     /// <param name="rows">The rows the column spans. A rule demanding less is accepted as it is.</param>
     /// <param name="project">The reading applied to the column's cells.</param>
-    public static IProjectionDefinition<TSpace, T> Column<T>(IRowStrategy<TSpace> rows, Func<CellStrip<TSpace>, T> project)
+    public static IProjectionDefinition<TSpace, T> Column<T>(ILineStrategy<TSpace> rows, Func<CellStrip<TSpace>, T> project)
       => Column(Required(rows).Strategy, project);
 
     /// <summary>

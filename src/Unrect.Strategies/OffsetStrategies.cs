@@ -86,27 +86,21 @@ namespace Unrect.Strategies
     // where the word carries the relation and a direction appears only where the concept has one.
 
     /// <summary>
-    /// Onto the row <paramref name="landmark"/> matches. The region starts AT that row, so the
-    /// projection owns it — a caption its section should describe, or a label row it reads.
+    /// Onto the line <paramref name="landmark"/> matches — a row or a column, whichever the landmark
+    /// looks for. The region starts AT that line, so the projection owns it — a caption its section
+    /// should describe, or a label row it reads.
     /// </summary>
-    public static IOffsetStrategy To(IRowLandmark landmark)
-      => new RowLandmarkOffsetStrategy(NotNull(landmark, nameof(landmark)), past: false);
-
-    /// <summary>Onto the column <paramref name="landmark"/> matches; the column twin of <see cref="To(IRowLandmark)"/>.</summary>
-    public static IOffsetStrategy To(IColumnLandmark landmark)
-      => new ColumnLandmarkOffsetStrategy(NotNull(landmark, nameof(landmark)), past: false);
+    public static IOffsetStrategy To(ILineLandmark landmark)
+      => new LandmarkOffsetStrategy(NotNull(landmark, nameof(landmark)), past: false);
 
     /// <summary>
-    /// Onto the row after the one <paramref name="landmark"/> matches, for a projection that starts
-    /// below a row it does not want to own. This is the whole of the old anchor-then-skip idiom,
-    /// without the hard-coded 1 that stood in for the matched row's own height.
+    /// Onto the line after the one <paramref name="landmark"/> matches, for a projection that
+    /// starts below a row, or right of a column, it does not want to own. This is the whole of the
+    /// old anchor-then-skip idiom, without the hard-coded 1 that stood in for the matched line's
+    /// own size.
     /// </summary>
-    public static IOffsetStrategy Past(IRowLandmark landmark)
-      => new RowLandmarkOffsetStrategy(NotNull(landmark, nameof(landmark)), past: true);
-
-    /// <summary>Onto the column after the match; the column twin of <see cref="Past(IRowLandmark)"/>.</summary>
-    public static IOffsetStrategy Past(IColumnLandmark landmark)
-      => new ColumnLandmarkOffsetStrategy(NotNull(landmark, nameof(landmark)), past: true);
+    public static IOffsetStrategy Past(ILineLandmark landmark)
+      => new LandmarkOffsetStrategy(NotNull(landmark, nameof(landmark)), past: true);
 
     // --- Anchoring to the far edge --------------------------------------------------------------
     //

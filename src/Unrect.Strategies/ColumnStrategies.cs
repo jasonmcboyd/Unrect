@@ -3,11 +3,11 @@ using Unrect.Core;
 
 namespace Unrect.Strategies
 {
-  /// <summary>Factories for <see cref="IColumnStrategy"/> — the column twin of <see cref="RowStrategies"/>.</summary>
+  /// <summary>Factories for <see cref="ILineStrategy"/> — the column twin of <see cref="RowStrategies"/>.</summary>
   public static class ColumnStrategies
   {
     /// <summary>Leading columns for which <paramref name="predicate"/> holds; stops at the first column it does not, keeping the match out.</summary>
-    public static IColumnStrategy TakeColumnsWhile(Func<Plane<ISpace>, int, bool> predicate)
+    public static ILineStrategy TakeColumnsWhile(Func<Plane<ISpace>, int, bool> predicate)
       => new TakeWhileColumnStrategy(predicate);
 
     /// <summary>
@@ -15,11 +15,11 @@ namespace Unrect.Strategies
     /// transpose of <see cref="RowStrategies.TakeRowsWhile(int, Func{Point{ISpace}, int, bool})"/>, for
     /// reading a band off one caption row.
     /// </summary>
-    public static IColumnStrategy TakeColumnsWhile(int row, Func<Point<ISpace>, int, bool> predicate)
+    public static ILineStrategy TakeColumnsWhile(int row, Func<Point<ISpace>, int, bool> predicate)
       => TakeColumnsWhile((space, column) => predicate(space[column, row], column));
 
     /// <summary>Exactly <paramref name="count"/> columns; throws <see cref="OutOfBoundsException"/> when that does not fit.</summary>
-    public static IColumnStrategy TakeColumns(int count)
+    public static ILineStrategy TakeColumns(int count)
       => new ExplicitColumnCountStrategy(count);
 
     /// <summary>
@@ -27,58 +27,58 @@ namespace Unrect.Strategies
     /// of <see cref="RowStrategies.TakeRowsTo"/>. The match is kept, where a while-strategy stops
     /// before it.
     /// </summary>
-    public static IColumnStrategy TakeColumnsTo(Func<Plane<ISpace>, int, bool> predicate)
+    public static ILineStrategy TakeColumnsTo(Func<Plane<ISpace>, int, bool> predicate)
       => new TakeToColumnStrategy(predicate);
 
     /// <summary>
     /// Every column of the available space. The declared spelling of "the full width", which
     /// otherwise has to be written as the opaque constant predicate <c>(s, c) =&gt; true</c>.
     /// </summary>
-    public static IColumnStrategy AllColumns() => TakeColumnsWhile((_, _) => true);
+    public static ILineStrategy AllColumns() => TakeColumnsWhile((_, _) => true);
 
     /// <summary>Leading columns in which every cell satisfies <paramref name="predicate"/>.</summary>
-    public static IColumnStrategy TakeColumnsWhileAll(Func<Point<ISpace>, bool> predicate)
+    public static ILineStrategy TakeColumnsWhileAll(Func<Point<ISpace>, bool> predicate)
       => new TakeWhileAllColumnStrategy(predicate);
 
     /// <summary>Leading columns in which at least one cell satisfies <paramref name="predicate"/>.</summary>
-    public static IColumnStrategy TakeColumnsWhileAny(Func<Point<ISpace>, bool> predicate)
+    public static ILineStrategy TakeColumnsWhileAny(Func<Point<ISpace>, bool> predicate)
       => new TakeWhileAnyColumnStrategy(predicate);
 
     /// <summary>Leading columns that carry a value — <see cref="TakeColumnsWhileAny(Func{Point{ISpace}, bool})"/> with <c>HasValue</c> as the predicate.</summary>
-    public static IColumnStrategy TakeColumnsWhileAnyIsNotBlank()
+    public static ILineStrategy TakeColumnsWhileAnyIsNotBlank()
       => TakeColumnsWhileAny(v => !v.IsBlank());
 
     /// <summary>
     /// A table's columns: any leading columns the first row leaves blank — columns with no caption,
     /// which nothing binds to — and then the columns that carry a value.
     /// </summary>
-    internal static IColumnStrategy TakeTableColumns()
+    internal static ILineStrategy TakeTableColumns()
       => new TakeWhileAnyColumnStrategy(v => !v.IsBlank(), afterLead: true);
 
     /// <summary>Combines <paramref name="strategy"/>'s rows with columns selected by <see cref="TakeColumnsWhile(Func{Plane{ISpace}, int, bool})"/>, rows measured first.</summary>
     public static ISizeStrategy TakeColumnsWhile(
-      this IRowStrategy strategy,
+      this ILineStrategy strategy,
       Func<Plane<ISpace>, int, bool> predicate)
       => SizeStrategies.RowsThenColumns(strategy, TakeColumnsWhile(predicate));
 
     /// <summary>Combines <paramref name="strategy"/>'s rows with columns selected by <see cref="TakeColumnsWhileAll(Func{Point{ISpace}, bool})"/>, rows measured first.</summary>
     public static ISizeStrategy TakeColumnsWhileAll(
-      this IRowStrategy strategy,
+      this ILineStrategy strategy,
       Func<Point<ISpace>, bool> predicate)
       => SizeStrategies.RowsThenColumns(strategy, TakeColumnsWhileAll(predicate));
 
     /// <summary>Combines <paramref name="strategy"/>'s rows with columns selected by <see cref="TakeColumnsWhileAny(Func{Point{ISpace}, bool})"/>, rows measured first.</summary>
     public static ISizeStrategy TakeColumnsWhileAny(
-      this IRowStrategy strategy,
+      this ILineStrategy strategy,
       Func<Point<ISpace>, bool> predicate)
       => SizeStrategies.RowsThenColumns(strategy, TakeColumnsWhileAny(predicate));
 
     /// <summary>Those rows, at the columns that carry values — <see cref="TakeColumnsWhileAny(Func{Point{ISpace}, bool})"/> with <c>HasValue</c> as the predicate.</summary>
-    public static ISizeStrategy TakeColumnsWhileAnyIsNotBlank(this IRowStrategy strategy)
+    public static ISizeStrategy TakeColumnsWhileAnyIsNotBlank(this ILineStrategy strategy)
       => strategy.TakeColumnsWhileAny(v => !v.IsBlank());
 
     /// <summary>Those rows, at the full available width.</summary>
-    public static ISizeStrategy AllColumns(this IRowStrategy strategy)
+    public static ISizeStrategy AllColumns(this ILineStrategy strategy)
       => strategy.TakeColumnsWhile((_, _) => true);
   }
 }

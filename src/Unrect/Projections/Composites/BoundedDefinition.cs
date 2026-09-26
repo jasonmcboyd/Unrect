@@ -17,7 +17,7 @@ namespace Unrect.Projections
   internal sealed class BoundedDefinition<TSpace, TResult> : DefinitionNode<TSpace, TResult>
     where TSpace : class, ISpace
   {
-    public BoundedDefinition(IProjectionDefinition<TSpace, TResult> inner, Landmark landmark, bool orEnd, Placement placement)
+    public BoundedDefinition(IProjectionDefinition<TSpace, TResult> inner, ILineLandmark landmark, bool orEnd, Placement placement)
       : base(placement)
     {
       Inner = inner ?? throw new ArgumentNullException(nameof(inner));
@@ -27,10 +27,10 @@ namespace Unrect.Projections
     }
 
     private IProjectionDefinition<TSpace, TResult> Inner { get; }
-    private Landmark Landmark { get; }
+    private ILineLandmark Landmark { get; }
     private bool OrEnd { get; }
 
-    private bool IsVertical => Landmark.Orientation == Orientation.Vertical;
+    private bool IsVertical => Landmark.Along == Orientation.Vertical;
 
     public override string Description => Spelling(Landmark);
 
@@ -45,7 +45,7 @@ namespace Unrect.Projections
     /// would replace the end already declared, and the landmark it replaced would never be looked
     /// for: the erasure is silent and total.
     /// </summary>
-    public ArgumentException AlreadyEnded(Landmark landmark)
+    public ArgumentException AlreadyEnded(ILineLandmark landmark)
       => new ArgumentException(
         $"{PathRenderer.DescribeThrough(this)} already ends at a landmark, and {Spelling(landmark)} would "
         + "replace that end rather than bound what is inside it — a projection has one end, and the replaced "
@@ -54,7 +54,7 @@ namespace Unrect.Projections
         "projection");
 
     /// <summary>A bound is driven along its landmark's axis: a row landmark is looked for on each row span, a column landmark on each column span.</summary>
-    public override Axes Axis => Landmark.Orientation.Of();
+    public override Axes Axis => Landmark.Along.Of();
 
     public override IProjector<TSpace, TResult> Build(ProjectorScope<TSpace> scope) => new Machine(this, scope);
 
@@ -81,7 +81,7 @@ namespace Unrect.Projections
         _scope = scope;
       }
 
-      private Orientation Along => _bounded.Landmark.Orientation;
+      private Orientation Along => _bounded.Landmark.Along;
 
       public bool Next(Plane<TSpace> span)
       {
@@ -130,8 +130,8 @@ namespace Unrect.Projections
     internal override Reach Retains => Reach.Extent;
 
     /// <summary>The word a reader wrote for a bound on this axis, which is also how it describes itself.</summary>
-    private static string Spelling(Landmark landmark)
-      => landmark.Orientation == Orientation.Vertical ? "Until" : "UntilColumn";
+    private static string Spelling(ILineLandmark landmark)
+      => "Until";
 
     private Size Consumed(int limit, Size advance)
       => IsVertical ? new Size(advance.Width, limit) : new Size(limit, advance.Height);

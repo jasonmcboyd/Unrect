@@ -162,7 +162,7 @@ namespace Unrect.Tests.Spreadsheets
       // it, so the demand is made from the area strategy instead of the offset strategy. Two code
       // paths wrap a foreign exception and the fault list is consulted at both.
       var bounded = ProjectionBuilders<ICellSpace>
-        .UntilColumn(SpreadsheetProjections.ColumnWithFormula().Landmark)
+        .Until(SpreadsheetProjections.ColumnWithFormula().Landmark)
         .Of(ProjectionBuilders<ICellSpace>.HorizontalFlow(h =>
         {
           var spreadsheetProjections = h.Next(SheetProjectionBuilders<ICellSpace>.Text());

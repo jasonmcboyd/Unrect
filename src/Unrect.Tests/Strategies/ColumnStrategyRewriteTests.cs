@@ -171,7 +171,7 @@ namespace Unrect.Tests.Strategies
 
       Assert.Equal(
         LeadingColumnsWhereSomeRowMatches(space, rule),
-        ColumnStrategies.TakeColumnsWhileAny(rule).SelectColumns(space));
+        ColumnStrategies.TakeColumnsWhileAny(rule).SelectLines(space));
     }
 
     [Theory]
@@ -183,7 +183,7 @@ namespace Unrect.Tests.Strategies
 
       Assert.Equal(
         LeadingColumnsWhereEveryRowMatches(space, rule),
-        ColumnStrategies.TakeColumnsWhileAll(rule).SelectColumns(space));
+        ColumnStrategies.TakeColumnsWhileAll(rule).SelectLines(space));
     }
 
     [Theory]
@@ -202,8 +202,8 @@ namespace Unrect.Tests.Strategies
       var space = Space(grid);
 
       Assert.Equal(
-        ColumnStrategies.TakeColumnsWhileAny(value => !value.IsBlank()).SelectColumns(space),
-        ColumnStrategies.TakeColumnsWhileAnyIsNotBlank().SelectColumns(space));
+        ColumnStrategies.TakeColumnsWhileAny(value => !value.IsBlank()).SelectLines(space),
+        ColumnStrategies.TakeColumnsWhileAnyIsNotBlank().SelectLines(space));
     }
 
     [Theory]
@@ -226,8 +226,8 @@ namespace Unrect.Tests.Strategies
       // loop.
       var space = Space(grid);
 
-      Assert.Equal(any, ColumnStrategies.TakeColumnsWhileAny(value => !value.IsBlank()).SelectColumns(space));
-      Assert.Equal(all, ColumnStrategies.TakeColumnsWhileAll(value => !value.IsBlank()).SelectColumns(space));
+      Assert.Equal(any, ColumnStrategies.TakeColumnsWhileAny(value => !value.IsBlank()).SelectLines(space));
+      Assert.Equal(all, ColumnStrategies.TakeColumnsWhileAll(value => !value.IsBlank()).SelectLines(space));
     }
 
     // --- The early exit: the point of the rewrite --------------------------------------------------
@@ -241,7 +241,7 @@ namespace Unrect.Tests.Strategies
       // in reads — one row — however tall it is.
       var space = new CountingSpace(CoordinateGrid(width: 4, height: 50));
 
-      Assert.Equal(4, ColumnStrategies.TakeColumnsWhileAnyIsNotBlank().SelectColumns(space));
+      Assert.Equal(4, ColumnStrategies.TakeColumnsWhileAnyIsNotBlank().SelectLines(space));
 
       Assert.Equal(4, space.CellReads);
       Assert.Equal(1, space.RowsTouched);
@@ -259,7 +259,7 @@ namespace Unrect.Tests.Strategies
         { 0, 2 },
       }));
 
-      Assert.Equal(2, ColumnStrategies.TakeColumnsWhileAnyIsNotBlank().SelectColumns(space));
+      Assert.Equal(2, ColumnStrategies.TakeColumnsWhileAnyIsNotBlank().SelectLines(space));
 
       Assert.Equal(3, space.CellReads);   // both of row 0, then column 1 of row 1
       Assert.Equal(2, space.RowsTouched);
@@ -278,7 +278,7 @@ namespace Unrect.Tests.Strategies
         { 5, 6, 7, 8 },
       }));
 
-      Assert.Equal(0, ColumnStrategies.TakeColumnsWhileAll(value => !value.IsBlank()).SelectColumns(space));
+      Assert.Equal(0, ColumnStrategies.TakeColumnsWhileAll(value => !value.IsBlank()).SelectLines(space));
 
       Assert.Equal(1, space.CellReads);
       Assert.Equal(1, space.RowsTouched);
@@ -299,7 +299,7 @@ namespace Unrect.Tests.Strategies
         { 13, 14, 15, 16 },
       }));
 
-      Assert.Equal(1, ColumnStrategies.TakeColumnsWhileAll(value => !value.IsBlank()).SelectColumns(space));
+      Assert.Equal(1, ColumnStrategies.TakeColumnsWhileAll(value => !value.IsBlank()).SelectLines(space));
 
       Assert.Equal(8, space.CellReads);
       Assert.Equal(4, space.RowsTouched);

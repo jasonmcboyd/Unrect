@@ -3,10 +3,10 @@ using Unrect.Core;
 namespace Unrect.Projections
 {
   /// <summary>
-  /// A row matcher that can only look at a space offering at least
-  /// <typeparamref name="TSpace"/> — <c>RowWithFormula()</c> and its kind.
+  /// A line matcher — a row's or a column's, the landmark says which — that can only look at a
+  /// space offering at least <typeparamref name="TSpace"/>: <c>RowWithFormula()</c> and its kind.
   /// <para>
-  /// It deliberately does <em>not</em> derive from <see cref="IRowLandmark"/>. If it did, every
+  /// It deliberately does <em>not</em> derive from <see cref="ILineLandmark"/>. If it did, every
   /// plain lift (<c>On</c>, <c>Below</c>, <c>Until</c>) would still accept it and the demand would
   /// be lost at the one site the typed layer exists to protect; keeping the two families apart is
   /// what lets <c>projection.On(RowWithFormula())</c> <em>infer</em> the demand and hand back a
@@ -20,48 +20,25 @@ namespace Unrect.Projections
   /// </para>
   /// </summary>
   /// <typeparam name="TSpace">The space this matcher must be able to look at.</typeparam>
-  public interface IRowLandmark<in TSpace>
+  public interface ILineLandmark<in TSpace>
     where TSpace : class, ISpace
   {
     /// <summary>The matcher as the strategy calculus takes it, its demand discharged by the lift.</summary>
-    IRowLandmark Landmark { get; }
-  }
-
-  /// <summary>
-  /// The column twin of <see cref="IRowLandmark{TSpace}"/>.
-  /// </summary>
-  /// <typeparam name="TSpace">The space this matcher must be able to look at.</typeparam>
-  public interface IColumnLandmark<in TSpace>
-    where TSpace : class, ISpace
-  {
-    /// <summary>The matcher as the strategy calculus takes it, its demand discharged by the lift.</summary>
-    IColumnLandmark Landmark { get; }
+    ILineLandmark Landmark { get; }
   }
 
   internal static partial class Demanding
   {
-    internal static IRowLandmark<TSpace> Row<TSpace>(IRowLandmark landmark)
+    internal static ILineLandmark<TSpace> Landmark<TSpace>(ILineLandmark landmark)
       where TSpace : class, ISpace
-      => new DemandedRow<TSpace>(landmark);
+      => new DemandedLandmark<TSpace>(landmark);
 
-    internal static IColumnLandmark<TSpace> Column<TSpace>(IColumnLandmark landmark)
-      where TSpace : class, ISpace
-      => new DemandedColumn<TSpace>(landmark);
-
-    private sealed class DemandedRow<TSpace> : IRowLandmark<TSpace>
+    private sealed class DemandedLandmark<TSpace> : ILineLandmark<TSpace>
       where TSpace : class, ISpace
     {
-      internal DemandedRow(IRowLandmark landmark) => Landmark = landmark;
+      internal DemandedLandmark(ILineLandmark landmark) => Landmark = landmark;
 
-      public IRowLandmark Landmark { get; }
-    }
-
-    private sealed class DemandedColumn<TSpace> : IColumnLandmark<TSpace>
-      where TSpace : class, ISpace
-    {
-      internal DemandedColumn(IColumnLandmark landmark) => Landmark = landmark;
-
-      public IColumnLandmark Landmark { get; }
+      public ILineLandmark Landmark { get; }
     }
   }
 }

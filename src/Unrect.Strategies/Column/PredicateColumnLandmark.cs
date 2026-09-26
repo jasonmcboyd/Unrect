@@ -5,8 +5,10 @@ using Unrect.Core;
 namespace Unrect.Strategies
 {
   /// <summary>The column twin of <see cref="PredicateRowLandmark"/>.</summary>
-  internal sealed class PredicateColumnLandmark : IColumnLandmark
+  internal sealed class PredicateColumnLandmark : ILineLandmark
   {
+    public Orientation Along => Orientation.Horizontal;
+
     public PredicateColumnLandmark(Func<Plane<ISpace>, int, bool> predicate, string description)
     {
       Predicate = predicate;
@@ -17,7 +19,7 @@ namespace Unrect.Strategies
 
     public string Description { get; }
 
-    public int? FindColumn(Plane<ISpace> space)
+    public int? Find(Plane<ISpace> space)
     {
       for (var column = 0; column < space.Width; column++)
         if (Predicate(space, column))

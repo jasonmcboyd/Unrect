@@ -9,7 +9,7 @@ namespace Unrect.Strategies
   /// It is exposed rather than kept private because the width and height of a rows-then-columns
   /// extent are decided by one forward walk over the same rows — see
   /// <see cref="InterleavedRowAndColumnSizeStrategy"/>, which drives an accumulator of its own
-  /// alongside a row scan. It is deliberately NOT the column twin of <see cref="IRowScan"/>: a column
+  /// alongside a row scan. It is deliberately NOT the column twin of <see cref="ILineScan"/>: a column
   /// rule cannot be discovered as a projection consumes, because a width must be settled before the
   /// first row is handed out. What it can be is accumulated, and settle early.
   /// </para>

@@ -4,8 +4,10 @@ using Unrect.Core;
 
 namespace Unrect.Strategies
 {
-  internal sealed class TakeToRowStrategy : IRowStrategy
+  internal sealed class TakeToRowStrategy : ILineStrategy
   {
+    public Orientation Along => Orientation.Vertical;
+
     public TakeToRowStrategy(Func<Plane<ISpace>, int, bool> predicate, bool keepMatchingRow)
     {
       Predicate = predicate;
@@ -16,9 +18,9 @@ namespace Unrect.Strategies
 
     private bool KeepMatchingRow { get; }
 
-    public IRowScan Begin() => new Scan(this);
+    public ILineScan Begin() => new Scan(this);
 
-    private sealed class Scan : IRowScan
+    private sealed class Scan : ILineScan
     {
       public Scan(TakeToRowStrategy strategy)
       {
@@ -31,7 +33,7 @@ namespace Unrect.Strategies
 
       public int? Required => null;
 
-      public bool IncludesRow(Plane<ISpace> space, int row)
+      public bool Includes(Plane<ISpace> space, int row)
       {
         // Only reachable when the match was kept — an unkept match ends the extent by returning
         // false, and nothing is asked after that.

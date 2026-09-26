@@ -84,10 +84,10 @@ namespace Unrect.Tests.Projections
     }
 
     /// <summary>The matcher and row-rule halves of the same helper, at the same least demanding space.</summary>
-    private static IRowLandmark<ISpace> FirstPopulatedRow()
+    private static ILineLandmark<ISpace> FirstPopulatedRow()
       => ProjectionBuilders<ISpace>.RowWithCell(cell => !cell.IsBlank());
 
-    private static IRowStrategy<ISpace> PopulatedRows()
+    private static ILineStrategy<ISpace> PopulatedRows()
       => ProjectionBuilders<ISpace>.TakeRowsWhileAny(cell => !cell.IsBlank());
 
     [Fact]

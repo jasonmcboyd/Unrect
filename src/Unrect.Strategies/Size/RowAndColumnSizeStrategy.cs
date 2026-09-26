@@ -9,20 +9,20 @@ namespace Unrect.Strategies
   /// </summary>
   internal sealed class RowAndColumnSizeStrategy : ISizeStrategy
   {
-    private RowAndColumnSizeStrategy(IRowStrategy rowSelectionStrategy, IColumnStrategy columnSelectionStrategy, bool rowFirst)
+    private RowAndColumnSizeStrategy(ILineStrategy rowSelectionStrategy, ILineStrategy columnSelectionStrategy, bool rowFirst)
     {
-      RowSelectionStrategy = rowSelectionStrategy;
-      ColumnSelectionStrategy = columnSelectionStrategy;
+      RowSelectionStrategy = LineAxis.Require(rowSelectionStrategy, Orientation.Vertical, "rows");
+      ColumnSelectionStrategy = LineAxis.Require(columnSelectionStrategy, Orientation.Horizontal, "columns");
       RowFirst = rowFirst;
     }
 
-    internal IRowStrategy RowSelectionStrategy { get; }
+    internal ILineStrategy RowSelectionStrategy { get; }
 
-    internal IColumnStrategy ColumnSelectionStrategy { get; }
+    internal ILineStrategy ColumnSelectionStrategy { get; }
 
     internal bool RowFirst { get; }
 
-    public static ISizeStrategy RowsThenColumns(IRowStrategy rows, IColumnStrategy columns)
+    public static ISizeStrategy RowsThenColumns(ILineStrategy rows, ILineStrategy columns)
     {
       // Two rules that can both be told about a row as it arrives decide the width and the height
       // in one pass, which is what a discovered block on a streamed sheet wants.
@@ -32,16 +32,16 @@ namespace Unrect.Strategies
       return new RowAndColumnSizeStrategy(rows, columns, rowFirst: true);
     }
 
-    public static ISizeStrategy ColumnsThenRows(IColumnStrategy columns, IRowStrategy rows)
+    public static ISizeStrategy ColumnsThenRows(ILineStrategy columns, ILineStrategy rows)
       => new RowAndColumnSizeStrategy(rows, columns, rowFirst: false);
 
     public ISizeScan Begin(Orientation along)
     {
       if (RowFirst && along == Orientation.Vertical)
-        return new RowsThenAcross(RowSelectionStrategy.Begin(), region => Scans.SelectColumns(ColumnSelectionStrategy, region));
+        return new RowsThenAcross(RowSelectionStrategy.Begin(), region => Scans.SelectLines(ColumnSelectionStrategy, region));
 
       if (!RowFirst && along == Orientation.Horizontal)
-        return new ColumnsThenAcross(ColumnSelectionStrategy.Begin(), region => Scans.SelectRows(RowSelectionStrategy, region));
+        return new ColumnsThenAcross(ColumnSelectionStrategy.Begin(), region => Scans.SelectLines(RowSelectionStrategy, region));
 
       return new Scanning.WholeSize(Whole, along);
     }
@@ -50,15 +50,15 @@ namespace Unrect.Strategies
     {
       if (RowFirst)
       {
-        var rowCount = Scans.SelectRows(RowSelectionStrategy, region);
-        var columnCount = Scans.SelectColumns(ColumnSelectionStrategy, region.Slice(new Size(region.Width, rowCount)));
+        var rowCount = Scans.SelectLines(RowSelectionStrategy, region);
+        var columnCount = Scans.SelectLines(ColumnSelectionStrategy, region.Slice(new Size(region.Width, rowCount)));
 
         return new Size(columnCount, rowCount);
       }
       else
       {
-        var columnCount = Scans.SelectColumns(ColumnSelectionStrategy, region);
-        var rowCount = Scans.SelectRows(RowSelectionStrategy, region.Slice(new Size(columnCount, region.Height)));
+        var columnCount = Scans.SelectLines(ColumnSelectionStrategy, region);
+        var rowCount = Scans.SelectLines(RowSelectionStrategy, region.Slice(new Size(columnCount, region.Height)));
 
         return new Size(columnCount, rowCount);
       }
@@ -67,11 +67,11 @@ namespace Unrect.Strategies
     /// <summary>Rows one at a time; the columns folded over the rows taken once those have settled.</summary>
     private sealed class RowsThenAcross : ISizeScan
     {
-      private readonly IRowScan _rows;
+      private readonly ILineScan _rows;
       private readonly System.Func<Plane<ISpace>, int> _columns;
       private bool _stopped;
 
-      internal RowsThenAcross(IRowScan rows, System.Func<Plane<ISpace>, int> columns)
+      internal RowsThenAcross(ILineScan rows, System.Func<Plane<ISpace>, int> columns)
       {
         _rows = rows;
         _columns = columns;
@@ -84,7 +84,7 @@ namespace Unrect.Strategies
         if (_stopped)
           return false;
 
-        var take = _rows.IncludesRow(region, taken);
+        var take = _rows.Includes(region, taken);
 
         if (!take)
           _stopped = true;
@@ -108,11 +108,11 @@ namespace Unrect.Strategies
     /// <summary>The mirror: columns one at a time; the rows folded over the columns taken once those have settled.</summary>
     private sealed class ColumnsThenAcross : ISizeScan
     {
-      private readonly IColumnScan _columns;
+      private readonly ILineScan _columns;
       private readonly System.Func<Plane<ISpace>, int> _rows;
       private bool _stopped;
 
-      internal ColumnsThenAcross(IColumnScan columns, System.Func<Plane<ISpace>, int> rows)
+      internal ColumnsThenAcross(ILineScan columns, System.Func<Plane<ISpace>, int> rows)
       {
         _columns = columns;
         _rows = rows;
@@ -125,7 +125,7 @@ namespace Unrect.Strategies
         if (_stopped)
           return false;
 
-        var take = _columns.IncludesColumn(region, taken);
+        var take = _columns.Includes(region, taken);
 
         if (!take)
           _stopped = true;

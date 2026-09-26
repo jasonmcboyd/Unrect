@@ -101,16 +101,16 @@ namespace Unrect.Spreadsheets
     /// every cell says.
     /// </summary>
     /// <typeparam name="TSpace">The sheet the landmark is declared over.</typeparam>
-    public static IRowLandmark<TSpace> RowContaining<TSpace>(string text)
+    public static ILineLandmark<TSpace> RowContaining<TSpace>(string text)
       where TSpace : class, ICellSpace
-      => Demanding.Row<TSpace>(RowLandmarks.RowWhere(
+      => Demanding.Landmark<TSpace>(RowLandmarks.RowWhere(
         CellMatching.AnyCellInRow(Holding<TSpace>(NotNull(text))), $"no row containing '{text}'"));
 
     /// <summary>The column twin of <see cref="RowContaining{TSpace}"/>, with the same rule.</summary>
     /// <typeparam name="TSpace">The sheet the landmark is declared over.</typeparam>
-    public static IColumnLandmark<TSpace> ColumnContaining<TSpace>(string text)
+    public static ILineLandmark<TSpace> ColumnContaining<TSpace>(string text)
       where TSpace : class, ICellSpace
-      => Demanding.Column<TSpace>(ColumnLandmarks.ColumnWhere(
+      => Demanding.Landmark<TSpace>(ColumnLandmarks.ColumnWhere(
         CellMatching.AnyCellInColumn(Holding<TSpace>(NotNull(text))), $"no column containing '{text}'"));
 
     /// <summary>
@@ -118,22 +118,22 @@ namespace Unrect.Spreadsheets
     /// <paramref name="text"/> — whole-cell, trimmed, case-insensitive, text cells alone.
     /// </summary>
     /// <typeparam name="TSpace">The sheet the rule is declared over.</typeparam>
-    public static IRowStrategy<TSpace> TakeRowsToText<TSpace>(int column, string text)
+    public static ILineStrategy<TSpace> TakeRowsToText<TSpace>(int column, string text)
       where TSpace : class, ICellSpace
     {
       var matches = Holding<TSpace>(NotNull(text));
 
-      return Demanding.Rows<TSpace>(RowStrategies.TakeRowsTo((space, row) => matches(space[column, row])));
+      return Demanding.Lines<TSpace>(RowStrategies.TakeRowsTo((space, row) => matches(space[column, row])));
     }
 
     /// <summary>The column twin of <see cref="TakeRowsToText{TSpace}"/>: columns up to and including the first whose cell in <paramref name="row"/> holds <paramref name="text"/>.</summary>
     /// <typeparam name="TSpace">The sheet the rule is declared over.</typeparam>
-    public static IColumnStrategy<TSpace> TakeColumnsToText<TSpace>(int row, string text)
+    public static ILineStrategy<TSpace> TakeColumnsToText<TSpace>(int row, string text)
       where TSpace : class, ICellSpace
     {
       var matches = Holding<TSpace>(NotNull(text));
 
-      return Demanding.Columns<TSpace>(ColumnStrategies.TakeColumnsTo((space, column) => matches(space[column, row])));
+      return Demanding.Lines<TSpace>(ColumnStrategies.TakeColumnsTo((space, column) => matches(space[column, row])));
     }
 
     /// <summary>A cell holding <paramref name="text"/>, lowered to the calculus: the value's own text, compared by the shared rule.</summary>
@@ -185,7 +185,7 @@ namespace Unrect.Spreadsheets
     /// <c>Landmark</c>.
     /// </para>
     /// </summary>
-    public static IRowLandmark<IFormulaSpace> RowWithFormula() => new FormulaRowLandmark(null);
+    public static ILineLandmark<IFormulaSpace> RowWithFormula() => new FormulaRowLandmark(null);
 
     /// <summary>
     /// The first row holding a formula that mentions <paramref name="containing"/> —
@@ -198,15 +198,15 @@ namespace Unrect.Spreadsheets
     /// </para>
     /// </summary>
     /// <param name="containing">The text the formula must mention.</param>
-    public static IRowLandmark<IFormulaSpace> RowWithFormula(string containing)
+    public static ILineLandmark<IFormulaSpace> RowWithFormula(string containing)
       => new FormulaRowLandmark(NotEmpty(containing));
 
     /// <inheritdoc cref="RowWithFormula()"/>
-    public static IColumnLandmark<IFormulaSpace> ColumnWithFormula() => new FormulaColumnLandmark(null);
+    public static ILineLandmark<IFormulaSpace> ColumnWithFormula() => new FormulaColumnLandmark(null);
 
     /// <inheritdoc cref="RowWithFormula(string)"/>
     /// <param name="containing">The text the formula must mention.</param>
-    public static IColumnLandmark<IFormulaSpace> ColumnWithFormula(string containing)
+    public static ILineLandmark<IFormulaSpace> ColumnWithFormula(string containing)
       => new FormulaColumnLandmark(NotEmpty(containing));
 
     private static string NotEmpty(string containing)
@@ -247,16 +247,18 @@ namespace Unrect.Spreadsheets
           && (_containing is null || formula.IndexOf(_containing, StringComparison.OrdinalIgnoreCase) >= 0);
     }
 
-    private sealed class FormulaRowLandmark : FormulaLandmark, IRowLandmark<IFormulaSpace>, IRowLandmark
+    private sealed class FormulaRowLandmark : FormulaLandmark, ILineLandmark<IFormulaSpace>, ILineLandmark
     {
       internal FormulaRowLandmark(string? containing)
         : base("Row", containing)
       {
       }
 
-      IRowLandmark IRowLandmark<IFormulaSpace>.Landmark => this;
+      public Orientation Along => Orientation.Vertical;
 
-      public int? FindRow(Plane<ISpace> space)
+      ILineLandmark ILineLandmark<IFormulaSpace>.Landmark => this;
+
+      public int? Find(Plane<ISpace> space)
       {
         var formulas = Formulas(space.Space);
 
@@ -276,16 +278,18 @@ namespace Unrect.Spreadsheets
       }
     }
 
-    private sealed class FormulaColumnLandmark : FormulaLandmark, IColumnLandmark<IFormulaSpace>, IColumnLandmark
+    private sealed class FormulaColumnLandmark : FormulaLandmark, ILineLandmark<IFormulaSpace>, ILineLandmark
     {
       internal FormulaColumnLandmark(string? containing)
         : base("Column", containing)
       {
       }
 
-      IColumnLandmark IColumnLandmark<IFormulaSpace>.Landmark => this;
+      public Orientation Along => Orientation.Horizontal;
 
-      public int? FindColumn(Plane<ISpace> space)
+      ILineLandmark ILineLandmark<IFormulaSpace>.Landmark => this;
+
+      public int? Find(Plane<ISpace> space)
       {
         var formulas = Formulas(space.Space);
 

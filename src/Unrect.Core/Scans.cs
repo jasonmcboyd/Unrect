@@ -18,33 +18,21 @@ namespace Unrect.Core
     public static Size GetSize(this ISizeStrategy strategy, Plane<ISpace> region)
       => FoldSize(strategy.Begin(Orientation.Vertical), region, Orientation.Vertical);
 
-    /// <summary>How many leading rows of <paramref name="region"/> <paramref name="strategy"/> takes.</summary>
-    /// <exception cref="OutOfBoundsException">The scan was owed more rows than the space holds.</exception>
-    public static int SelectRows(this IRowStrategy strategy, Plane<ISpace> region) => FoldRows(strategy.Begin(), region);
+    /// <summary>How many leading lines of <paramref name="region"/> <paramref name="strategy"/> takes, along the axis it names.</summary>
+    /// <exception cref="OutOfBoundsException">The scan was owed more lines than the region holds.</exception>
+    public static int SelectLines(this ILineStrategy strategy, Plane<ISpace> region) => FoldLines(strategy.Begin(), region, strategy.Along);
 
-    /// <summary>How many leading columns of <paramref name="region"/> <paramref name="strategy"/> takes.</summary>
-    /// <exception cref="OutOfBoundsException">The scan was owed more columns than the space holds.</exception>
-    public static int SelectColumns(this IColumnStrategy strategy, Plane<ISpace> region) => FoldColumns(strategy.Begin(), region);
-
-    /// <summary>The rows <paramref name="scan"/> includes, asked one at a time from the top until it says no or the rows run out.</summary>
-    /// <exception cref="OutOfBoundsException">The scan was owed more rows than there are.</exception>
-    public static int FoldRows(IRowScan scan, Plane<ISpace> region)
+    /// <summary>
+    /// The lines <paramref name="scan"/> includes along <paramref name="along"/>, asked one at a
+    /// time from the first until it says no or the lines run out.
+    /// </summary>
+    /// <exception cref="OutOfBoundsException">The scan was owed more lines than there are.</exception>
+    public static int FoldLines(ILineScan scan, Plane<ISpace> region, Orientation along)
     {
       var count = 0;
+      var lines = Spans.Along(region, along);
 
-      while (region.HasRow(count) && scan.IncludesRow(region, count))
-        count++;
-
-      return scan.Required is int required && count < required ? throw new OutOfBoundsException() : count;
-    }
-
-    /// <summary>The columns <paramref name="scan"/> includes, asked one at a time from the left until it says no or the columns run out.</summary>
-    /// <exception cref="OutOfBoundsException">The scan was owed more columns than there are.</exception>
-    public static int FoldColumns(IColumnScan scan, Plane<ISpace> region)
-    {
-      var count = 0;
-
-      while (region.HasColumn(count) && scan.IncludesColumn(region, count))
+      while (count < lines && scan.Includes(region, count))
         count++;
 
       return scan.Required is int required && count < required ? throw new OutOfBoundsException() : count;

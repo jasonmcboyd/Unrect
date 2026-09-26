@@ -34,15 +34,15 @@ namespace Unrect.Tests.Projections
     }
 
     /// <summary>Leading columns that carry values, demanding a sheet.</summary>
-    private sealed class ValueColumns : IColumnStrategy<ICellSpace>
+    private sealed class ValueColumns : ILineStrategy<ICellSpace>
     {
-      public Unrect.Core.IColumnStrategy Strategy { get; } = ColumnStrategies.TakeColumnsWhileAnyIsNotBlank();
+      public Unrect.Core.ILineStrategy Strategy { get; } = ColumnStrategies.TakeColumnsWhileAnyIsNotBlank();
     }
 
     /// <summary>Leading rows that carry values, demanding a sheet.</summary>
-    private sealed class ValueRowCount : IRowStrategy<ICellSpace>
+    private sealed class ValueRowCount : ILineStrategy<ICellSpace>
     {
-      public Unrect.Core.IRowStrategy Strategy { get; } = RowStrategies.TakeRowsWhileAnyIsNotBlank();
+      public Unrect.Core.ILineStrategy Strategy { get; } = RowStrategies.TakeRowsWhileAnyIsNotBlank();
     }
 
     /// <summary>Past the blank rows in front, demanding a sheet.</summary>
@@ -168,8 +168,8 @@ namespace Unrect.Tests.Projections
       {
         "extent" => () => Sized((ISizeStrategy<ICellSpace>)null!).Of(Point()),
         "offset" => () => OffsetBy((IOffsetStrategy<ICellSpace>)null!).Of(Point()),
-        "columns" => () => Row((IColumnStrategy<ICellSpace>)null!, strip => strip.Count),
-        "rows" => () => Column((IRowStrategy<ICellSpace>)null!, strip => strip.Count),
+        "columns" => () => Row((ILineStrategy<ICellSpace>)null!, strip => strip.Count),
+        "rows" => () => Column((ILineStrategy<ICellSpace>)null!, strip => strip.Count),
         _ => () => VerticalRepeat(Point(), (IOffsetStrategy<ICellSpace>)null!),
       };
 
@@ -213,11 +213,11 @@ namespace Unrect.Tests.Projections
       "Sized(extent)", "OffsetBy(offset)", "Range(extent)", "Row(columns)", "Column(rows)",
       "RowsThenColumns(rows)", "RowsThenColumns(columns)", "ColumnsThenRows(columns)", "ColumnsThenRows(rows)",
       "VerticalRepeat(separatedBy)", "HorizontalRepeat(separatedBy)",
-      "On(row)", "On(column)", "Below(landmark)", "RightOf(landmark)",
-      "Until(landmark)", "UntilColumn(landmark)",
+      "On(landmark)", "Below(landmark)", "RightOf(landmark)",
+      "Until(landmark)",
       "stage Sized(extent)", "stage Range(extent)", "stage Row(columns)", "stage Column(rows)",
       "stage VerticalRepeat(separatedBy)", "stage HorizontalRepeat(separatedBy)",
-      "stage Until(landmark)", "stage UntilColumn(landmark)",
+      "stage Until(landmark)",
     };
 
     [Theory]
@@ -233,48 +233,42 @@ namespace Unrect.Tests.Projections
         "Sized(extent)" => () => Sized((ISizeStrategy<ICellSpace>)null!),
         "OffsetBy(offset)" => () => OffsetBy((IOffsetStrategy<ICellSpace>)null!),
         "Range(extent)" => () => Range((ISizeStrategy<ICellSpace>)null!, block => block.Height),
-        "Row(columns)" => () => Row((IColumnStrategy<ICellSpace>)null!, strip => strip.Count),
-        "Column(rows)" => () => Column((IRowStrategy<ICellSpace>)null!, strip => strip.Count),
-        "RowsThenColumns(rows)" => () => RowsThenColumns((IRowStrategy<ICellSpace>)null!, new ValueColumns()),
-        "RowsThenColumns(columns)" => () => RowsThenColumns(new ValueRowCount(), (IColumnStrategy<ICellSpace>)null!),
-        "ColumnsThenRows(columns)" => () => ColumnsThenRows((IColumnStrategy<ICellSpace>)null!, new ValueRowCount()),
-        "ColumnsThenRows(rows)" => () => ColumnsThenRows(new ValueColumns(), (IRowStrategy<ICellSpace>)null!),
+        "Row(columns)" => () => Row((ILineStrategy<ICellSpace>)null!, strip => strip.Count),
+        "Column(rows)" => () => Column((ILineStrategy<ICellSpace>)null!, strip => strip.Count),
+        "RowsThenColumns(rows)" => () => RowsThenColumns((ILineStrategy<ICellSpace>)null!, new ValueColumns()),
+        "RowsThenColumns(columns)" => () => RowsThenColumns(new ValueRowCount(), (ILineStrategy<ICellSpace>)null!),
+        "ColumnsThenRows(columns)" => () => ColumnsThenRows((ILineStrategy<ICellSpace>)null!, new ValueRowCount()),
+        "ColumnsThenRows(rows)" => () => ColumnsThenRows(new ValueColumns(), (ILineStrategy<ICellSpace>)null!),
         "VerticalRepeat(separatedBy)" => () => VerticalRepeat(Point(), (IOffsetStrategy<ICellSpace>)null!),
         "HorizontalRepeat(separatedBy)" => () => HorizontalRepeat(Point(), (IOffsetStrategy<ICellSpace>)null!),
-        "On(row)" => () => On((IRowLandmark<ICellSpace>)null!),
-        "On(column)" => () => On((IColumnLandmark<ICellSpace>)null!),
-        "Below(landmark)" => () => Below((IRowLandmark<ICellSpace>)null!),
-        "RightOf(landmark)" => () => RightOf((IColumnLandmark<ICellSpace>)null!),
-        "Until(landmark)" => () => Until((IRowLandmark<ICellSpace>)null!),
-        "UntilColumn(landmark)" => () => UntilColumn((IColumnLandmark<ICellSpace>)null!),
+        "On(landmark)" => () => On((ILineLandmark<ICellSpace>)null!),
+        "Below(landmark)" => () => Below((ILineLandmark<ICellSpace>)null!),
+        "RightOf(landmark)" => () => RightOf((ILineLandmark<ICellSpace>)null!),
+        "Until(landmark)" => () => Until((ILineLandmark<ICellSpace>)null!),
         "stage Sized(extent)" => () => Down(1).Sized((ISizeStrategy<ICellSpace>)null!),
         "stage Range(extent)" => () => Down(1).Range((ISizeStrategy<ICellSpace>)null!, block => block.Height),
-        "stage Row(columns)" => () => Down(1).Row((IColumnStrategy<ICellSpace>)null!, strip => strip.Count),
-        "stage Column(rows)" => () => Down(1).Column((IRowStrategy<ICellSpace>)null!, strip => strip.Count),
+        "stage Row(columns)" => () => Down(1).Row((ILineStrategy<ICellSpace>)null!, strip => strip.Count),
+        "stage Column(rows)" => () => Down(1).Column((ILineStrategy<ICellSpace>)null!, strip => strip.Count),
         "stage VerticalRepeat(separatedBy)" => () => Down(1).VerticalRepeat(Point(), (IOffsetStrategy<ICellSpace>)null!),
         "stage HorizontalRepeat(separatedBy)" => () => Down(1).HorizontalRepeat(Point(), (IOffsetStrategy<ICellSpace>)null!),
-        "stage Until(landmark)" => () => Down(1).Until((IRowLandmark<ICellSpace>)null!),
-        _ => () => Down(1).UntilColumn((IColumnLandmark<ICellSpace>)null!),
+        _ => () => Down(1).Until((ILineLandmark<ICellSpace>)null!),
       };
 
       var expected = member.Substring(member.IndexOf('(') + 1).TrimEnd(')');
 
-      Assert.Equal(
-        expected switch { "row" or "column" => "landmark", _ => expected },
-        Assert.Throws<ArgumentNullException>(call).ParamName);
+      Assert.Equal(expected, Assert.Throws<ArgumentNullException>(call).ParamName);
     }
 
     // --- The refusals are doubled with the declarations --------------------------------------------
 
     [Theory]
     [InlineData("Until")]
-    [InlineData("UntilColumn")]
     public void AHeadingRefusesATypedBoundInTheSameWordsAsACanonicalOne(string member)
     {
       // The hole this closes: a heading is self-anchoring and already says where its section is, so
       // a bound after it is refused — but only the canonical spelling was refused, and the typed one
-      // fell through to the compiler's own words about an IRowLandmark<TSpace> not being an
-      // IRowLandmark. Same refusal, both spellings.
+      // fell through to the compiler's own words about an ILineLandmark<TSpace> not being an
+      // ILineLandmark. Same refusal, both spellings.
       var canonical = Refusal(member, Landmark(member, typed: false));
       var typed = Refusal(member, Landmark(member, typed: true));
 
@@ -286,10 +280,8 @@ namespace Unrect.Tests.Projections
     private static Type Landmark(string member, bool typed)
       => (member, typed) switch
       {
-        ("Until", false) => typeof(IRowLandmark),
-        ("Until", true) => typeof(IRowLandmark<ICellSpace>),
-        (_, false) => typeof(IColumnLandmark),
-        _ => typeof(IColumnLandmark<ICellSpace>),
+        (_, false) => typeof(ILineLandmark),
+        _ => typeof(ILineLandmark<ICellSpace>),
       };
 
     private static ObsoleteAttribute Refusal(string member, Type landmark)

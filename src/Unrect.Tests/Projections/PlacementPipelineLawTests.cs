@@ -311,7 +311,7 @@ namespace Unrect.Tests.Projections
       { "Beta", 250m },
     });
 
-    private static IRowLandmark Header() => RowContaining("Fund").Landmark;
+    private static ILineLandmark Header() => RowContaining("Fund").Landmark;
 
     /// <summary>A bind pointed at the column of fund names, so every record fails.</summary>
     private static IProjectionDefinition<ICellSpace, decimal> FundColumnAsANumber(LabelMap captions) => Right(captions["Fund"]).Of(Decimal());
@@ -542,31 +542,33 @@ namespace Unrect.Tests.Projections
       // The census, so a stub that quietly disappeared — taking its sentence with it and leaving the
       // compiler to explain the refusal in its own words — is noticed. Counted per stage rather than
       // in total, because that is where a reader can check the claim: an unbounded pipeline refuses
-      // only a second anchor (5); a sized one refuses the movements as well (6, all of them — the
+      // only a second anchor (4); a sized one refuses the movements as well (6, all of them — the
       // three of Down/Right/AfterBlank*, the new SkipToFirstNonBlankCell offset entry, and Sized
       // itself); a bounded one refuses a second end, an extent and the anchors (12); a headed one
       // refuses everything but another heading (13, gaining the same new offset entry).
       //
       // Every member that takes a landmark or a strategy is DOUBLED, taking the canonical form or
-      // the typed phantom (`IRowLandmark<TSpace>`, `ISizeStrategy<TSpace>`, ...) that carries a
+      // the typed phantom (`ILineLandmark<TSpace>`, `ISizeStrategy<TSpace>`, ...) that carries a
       // demand across the erased seam. A stage that refused only the canonical half of a doubled
       // member would refuse in the library's words down one overload and in the compiler's down the
       // other, for the same contradiction; so each refusal is spelled twice, once per twin. Nothing
-      // about the taxonomy moved — only how many spellings each refusal has to cover: an unbounded
-      // pipeline's five anchors become ten; a sized one adds the typed Sized to its six; a bounded
-      // one doubles its five anchors and Sized (Until/UntilColumn were already doubled), 12 -> 18; a
-      // headed one doubles the same five anchors, Sized, Until and UntilColumn, 13 -> 21.
+      // about the taxonomy moved — only how many spellings each refusal has to cover. A landmark
+      // carries its own axis, so On and Until are one member each rather than a row form and a
+      // column form: an unbounded pipeline's four anchors become eight; a sized one adds the typed
+      // Sized to its six; a bounded one doubles its four anchors, Sized and Until, 7 -> 14; a
+      // headed one doubles the same four anchors, Sized and Until, and keeps its five movements
+      // single, 12 -> 17.
       var counted = Stages.ToDictionary(stage => stage.Key, stage => Refusals(stage.Value.Type), StringComparer.Ordinal);
 
       Assert.Equal(
         new Dictionary<string, int>(StringComparer.Ordinal)
         {
           ["PlacementStage"] = 0,
-          ["UnboundedStage"] = 10,
+          ["UnboundedStage"] = 8,
           ["OffsetStage"] = 0,
           ["OffsetAndSizeStage"] = 7,
-          ["BoundStage"] = 18,
-          ["HeadingStage"] = 21,
+          ["BoundStage"] = 14,
+          ["HeadingStage"] = 17,
         },
         counted);
     }
@@ -579,11 +581,11 @@ namespace Unrect.Tests.Projections
 
       var demanding = parameter.GetGenericTypeDefinition();
 
-      if (demanding == typeof(IRowLandmark<>))
-        return typeof(IRowLandmark);
+      if (demanding == typeof(ILineLandmark<>))
+        return typeof(ILineLandmark);
 
-      if (demanding == typeof(IColumnLandmark<>))
-        return typeof(IColumnLandmark);
+      if (demanding == typeof(ILineLandmark<>))
+        return typeof(ILineLandmark);
 
       if (demanding == typeof(Unrect.Projections.ISizeStrategy<>))
         return typeof(ISizeStrategy);
@@ -638,11 +640,11 @@ namespace Unrect.Tests.Projections
       new Dictionary<string, int>(StringComparer.Ordinal)
       {
         ["PlacementStage"] = 0,
-        ["UnboundedStage"] = 5,
+        ["UnboundedStage"] = 4,
         ["OffsetStage"] = 0,
         ["OffsetAndSizeStage"] = 1,
-        ["BoundStage"] = 8,
-        ["HeadingStage"] = 8,
+        ["BoundStage"] = 6,
+        ["HeadingStage"] = 6,
       };
 
     private static int Refusals(Type stage)

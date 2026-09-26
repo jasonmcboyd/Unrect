@@ -4,8 +4,10 @@ using Unrect.Core;
 
 namespace Unrect.Strategies
 {
-  internal sealed class TakeWhileAllRowStrategy : IRowStrategy, IRowScan
+  internal sealed class TakeWhileAllRowStrategy : ILineStrategy, ILineScan
   {
+    public Orientation Along => Orientation.Vertical;
+
     public TakeWhileAllRowStrategy(Func<Point<ISpace>, bool> predicate)
     {
       Predicate = predicate;
@@ -14,11 +16,11 @@ namespace Unrect.Strategies
     private Func<Point<ISpace>, bool> Predicate { get; }
 
     // The rule carries nothing from row to row, so one instance is every scan of it.
-    public IRowScan Begin() => this;
+    public ILineScan Begin() => this;
 
     public int? Required => null;
 
-    public bool IncludesRow(Plane<ISpace> space, int row)
+    public bool Includes(Plane<ISpace> space, int row)
     {
       for (int i = 0; i < space.Width; i++)
       {

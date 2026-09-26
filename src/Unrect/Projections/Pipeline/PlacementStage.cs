@@ -214,18 +214,18 @@ namespace Unrect.Projections
     public IProjectionDefinition<TSpace, T> Row<T>(int width, Func<CellStrip<TSpace>, T> project)
       => Close<T>(ProjectionBuilders<TSpace>.Row(width, project));
 
-    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Row{T}(IColumnStrategy, Func{CellStrip{TSpace}, T})"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Row{T}(ILineStrategy, Func{CellStrip{TSpace}, T})"/>
     /// <typeparam name="T">What the row reads.</typeparam>
     /// <param name="columns">The columns the row spans.</param>
     /// <param name="project">The reading applied to the row's cells.</param>
-    public IProjectionDefinition<TSpace, T> Row<T>(IColumnStrategy columns, Func<CellStrip<TSpace>, T> project)
+    public IProjectionDefinition<TSpace, T> Row<T>(ILineStrategy columns, Func<CellStrip<TSpace>, T> project)
       => Close<T>(ProjectionBuilders<TSpace>.Row(columns, project));
 
-    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Row{T}(IColumnStrategy{TSpace}, Func{CellStrip{TSpace}, T})"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Row{T}(ILineStrategy{TSpace}, Func{CellStrip{TSpace}, T})"/>
     /// <typeparam name="T">What the row reads.</typeparam>
     /// <param name="columns">The columns the row spans. A rule demanding less is accepted as it is.</param>
     /// <param name="project">The reading applied to the row's cells.</param>
-    public IProjectionDefinition<TSpace, T> Row<T>(IColumnStrategy<TSpace> columns, Func<CellStrip<TSpace>, T> project)
+    public IProjectionDefinition<TSpace, T> Row<T>(ILineStrategy<TSpace> columns, Func<CellStrip<TSpace>, T> project)
       => Close<T>(ProjectionBuilders<TSpace>.Row(columns, project));
 
     /// <inheritdoc cref="ProjectionBuilders{TSpace}.Column{T}(Func{CellStrip{TSpace}, T})"/>
@@ -240,18 +240,18 @@ namespace Unrect.Projections
     public IProjectionDefinition<TSpace, T> Column<T>(int height, Func<CellStrip<TSpace>, T> project)
       => Close<T>(ProjectionBuilders<TSpace>.Column(height, project));
 
-    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Column{T}(IRowStrategy, Func{CellStrip{TSpace}, T})"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Column{T}(ILineStrategy, Func{CellStrip{TSpace}, T})"/>
     /// <typeparam name="T">What the column reads.</typeparam>
     /// <param name="rows">The rows the column spans.</param>
     /// <param name="project">The reading applied to the column's cells.</param>
-    public IProjectionDefinition<TSpace, T> Column<T>(IRowStrategy rows, Func<CellStrip<TSpace>, T> project)
+    public IProjectionDefinition<TSpace, T> Column<T>(ILineStrategy rows, Func<CellStrip<TSpace>, T> project)
       => Close<T>(ProjectionBuilders<TSpace>.Column(rows, project));
 
-    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Column{T}(IRowStrategy{TSpace}, Func{CellStrip{TSpace}, T})"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Column{T}(ILineStrategy{TSpace}, Func{CellStrip{TSpace}, T})"/>
     /// <typeparam name="T">What the column reads.</typeparam>
     /// <param name="rows">The rows the column spans. A rule demanding less is accepted as it is.</param>
     /// <param name="project">The reading applied to the column's cells.</param>
-    public IProjectionDefinition<TSpace, T> Column<T>(IRowStrategy<TSpace> rows, Func<CellStrip<TSpace>, T> project)
+    public IProjectionDefinition<TSpace, T> Column<T>(ILineStrategy<TSpace> rows, Func<CellStrip<TSpace>, T> project)
       => Close<T>(ProjectionBuilders<TSpace>.Column(rows, project));
 
     /// <inheritdoc cref="ProjectionBuilders{TSpace}.Range{T}(Func{CellBlock{TSpace}, T})"/>
@@ -336,81 +336,53 @@ namespace Unrect.Projections
     /// </summary>
     /// <param name="landmark">The row the extent stops before.</param>
     /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
-    public BoundStage<TSpace> Until(IRowLandmark landmark, bool orEnd = false)
-      => new BoundStage<TSpace>(Steps.Then(Step.UntilRow(landmark, orEnd)));
+    public BoundStage<TSpace> Until(ILineLandmark landmark, bool orEnd = false)
+      => new BoundStage<TSpace>(Steps.Then(Step.Until(landmark, orEnd)));
 
-    /// <inheritdoc cref="Until(IRowLandmark, bool)"/>
+    /// <inheritdoc cref="Until(ILineLandmark, bool)"/>
     /// <param name="landmark">The row the extent stops before. A matcher demanding less is accepted as it is.</param>
     /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
-    public BoundStage<TSpace> Until(IRowLandmark<TSpace> landmark, bool orEnd = false)
-      => new BoundStage<TSpace>(Steps.Then(Step.UntilRow(
-        (landmark ?? throw new ArgumentNullException(nameof(landmark))).Landmark,
-        orEnd)));
-
-    /// <summary>
-    /// Ends the section just before the column <paramref name="landmark"/> matches — the column twin
-    /// of <see cref="Until(IRowLandmark, bool)"/>, spelled distinctly so the common row form never
-    /// has to be disambiguated by the reader.
-    /// </summary>
-    /// <param name="landmark">The column the extent stops before.</param>
-    /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
-    public BoundStage<TSpace> UntilColumn(IColumnLandmark landmark, bool orEnd = false)
-      => new BoundStage<TSpace>(Steps.Then(Step.UntilColumn(landmark, orEnd)));
-
-    /// <inheritdoc cref="UntilColumn(IColumnLandmark, bool)"/>
-    /// <param name="landmark">The column the extent stops before. A matcher demanding less is accepted as it is.</param>
-    /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
-    public BoundStage<TSpace> UntilColumn(IColumnLandmark<TSpace> landmark, bool orEnd = false)
-      => new BoundStage<TSpace>(Steps.Then(Step.UntilColumn(
+    public BoundStage<TSpace> Until(ILineLandmark<TSpace> landmark, bool orEnd = false)
+      => new BoundStage<TSpace>(Steps.Then(Step.Until(
         (landmark ?? throw new ArgumentNullException(nameof(landmark))).Landmark,
         orEnd)));
 
     /// <summary>Refused: a pipeline's anchor is its entry, so a second one is not a declaration.</summary>
     /// <param name="landmark">The row that would be anchored on.</param>
     [Obsolete(PipelineRefusals.SecondAnchor, error: true)]
-    public OffsetStage<TSpace> On(IRowLandmark landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
+    public OffsetStage<TSpace> On(ILineLandmark landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
 
-    /// <inheritdoc cref="UnboundedStage{TSpace}.On(IRowLandmark)"/>
-    /// <param name="landmark">The column that would be anchored on.</param>
-    [Obsolete(PipelineRefusals.SecondAnchor, error: true)]
-    public OffsetStage<TSpace> On(IColumnLandmark landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
-
-    /// <inheritdoc cref="UnboundedStage{TSpace}.On(IRowLandmark)"/>
+    /// <inheritdoc cref="UnboundedStage{TSpace}.On(ILineLandmark)"/>
     /// <param name="landmark">The row that would be anchored on, demanding a space of its own.</param>
     [Obsolete(PipelineRefusals.SecondAnchor, error: true)]
-    public OffsetStage<TSpace> On(IRowLandmark<TSpace> landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
+    public OffsetStage<TSpace> On(ILineLandmark<TSpace> landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
 
-    /// <inheritdoc cref="UnboundedStage{TSpace}.On(IRowLandmark)"/>
-    /// <param name="landmark">The column that would be anchored on, demanding a space of its own.</param>
-    [Obsolete(PipelineRefusals.SecondAnchor, error: true)]
-    public OffsetStage<TSpace> On(IColumnLandmark<TSpace> landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
-
-    /// <inheritdoc cref="UnboundedStage{TSpace}.On(IRowLandmark)"/>
+    /// <inheritdoc cref="UnboundedStage{TSpace}.On(ILineLandmark)"/>
     /// <param name="landmark">The row that would be anchored below.</param>
     [Obsolete(PipelineRefusals.SecondAnchor, error: true)]
-    public OffsetStage<TSpace> Below(IRowLandmark landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
+    public OffsetStage<TSpace> Below(ILineLandmark landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
 
-    /// <inheritdoc cref="UnboundedStage{TSpace}.On(IRowLandmark)"/>
+    /// <inheritdoc cref="UnboundedStage{TSpace}.On(ILineLandmark)"/>
     /// <param name="landmark">The row that would be anchored below, demanding a space of its own.</param>
     [Obsolete(PipelineRefusals.SecondAnchor, error: true)]
-    public OffsetStage<TSpace> Below(IRowLandmark<TSpace> landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
+    public OffsetStage<TSpace> Below(ILineLandmark<TSpace> landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
 
-    /// <inheritdoc cref="UnboundedStage{TSpace}.On(IRowLandmark)"/>
+    /// <inheritdoc cref="UnboundedStage{TSpace}.On(ILineLandmark)"/>
     /// <param name="landmark">The column that would be anchored right of.</param>
     [Obsolete(PipelineRefusals.SecondAnchor, error: true)]
-    public OffsetStage<TSpace> RightOf(IColumnLandmark landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
+    public OffsetStage<TSpace> RightOf(ILineLandmark landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
 
-    /// <inheritdoc cref="UnboundedStage{TSpace}.On(IRowLandmark)"/>
+    /// <inheritdoc cref="UnboundedStage{TSpace}.On(ILineLandmark)"/>
     /// <param name="landmark">The column that would be anchored right of, demanding a space of its own.</param>
     [Obsolete(PipelineRefusals.SecondAnchor, error: true)]
-    public OffsetStage<TSpace> RightOf(IColumnLandmark<TSpace> landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
+    public OffsetStage<TSpace> RightOf(ILineLandmark<TSpace> landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
 
-    /// <inheritdoc cref="UnboundedStage{TSpace}.On(IRowLandmark)"/>
+    /// <inheritdoc cref="UnboundedStage{TSpace}.On(ILineLandmark)"/>
     /// <param name="offset">The offset that would replace the pipeline's.</param>
     [Obsolete(PipelineRefusals.SecondAnchor, error: true)]
     public OffsetStage<TSpace> OffsetBy(IOffsetStrategy offset) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
 
-    /// <inheritdoc cref="UnboundedStage{TSpace}.On(IRowLandmark)"/>
+    /// <inheritdoc cref="UnboundedStage{TSpace}.On(ILineLandmark)"/>
     /// <param name="offset">The offset that would replace the pipeline's, demanding a space of its own.</param>
     [Obsolete(PipelineRefusals.SecondAnchor, error: true)]
     public OffsetStage<TSpace> OffsetBy(IOffsetStrategy<TSpace> offset) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
@@ -536,33 +508,19 @@ namespace Unrect.Projections
     /// <param name="landmark">The row that would be the second end.</param>
     /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
     [Obsolete(PipelineRefusals.ProjectionHasOneEnd, error: true)]
-    public BoundStage<TSpace> Until(IRowLandmark landmark, bool orEnd = false)
+    public BoundStage<TSpace> Until(ILineLandmark landmark, bool orEnd = false)
       => throw new NotSupportedException(PipelineRefusals.ProjectionHasOneEnd);
 
-    /// <inheritdoc cref="Until(IRowLandmark, bool)"/>
+    /// <inheritdoc cref="Until(ILineLandmark, bool)"/>
     /// <param name="landmark">The row that would be the second end, demanding a space of its own.</param>
     /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
     /// <remarks>
     /// The refusal is doubled exactly as the declaration is, so a demanding landmark is turned away
     /// by the reason rather than by the argument type: without this the compiler would say only that
-    /// an <c>IRowLandmark&lt;TSpace&gt;</c> is not an <c>IRowLandmark</c>, which is true and useless.
+    /// an <c>ILineLandmark&lt;TSpace&gt;</c> is not an <c>ILineLandmark</c>, which is true and useless.
     /// </remarks>
     [Obsolete(PipelineRefusals.ProjectionHasOneEnd, error: true)]
-    public BoundStage<TSpace> Until(IRowLandmark<TSpace> landmark, bool orEnd = false)
-      => throw new NotSupportedException(PipelineRefusals.ProjectionHasOneEnd);
-
-    /// <inheritdoc cref="Until(IRowLandmark, bool)"/>
-    /// <param name="landmark">The column that would be the second end.</param>
-    /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
-    [Obsolete(PipelineRefusals.ProjectionHasOneEnd, error: true)]
-    public BoundStage<TSpace> UntilColumn(IColumnLandmark landmark, bool orEnd = false)
-      => throw new NotSupportedException(PipelineRefusals.ProjectionHasOneEnd);
-
-    /// <inheritdoc cref="Until(IRowLandmark{TSpace}, bool)"/>
-    /// <param name="landmark">The column that would be the second end, demanding a space of its own.</param>
-    /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
-    [Obsolete(PipelineRefusals.ProjectionHasOneEnd, error: true)]
-    public BoundStage<TSpace> UntilColumn(IColumnLandmark<TSpace> landmark, bool orEnd = false)
+    public BoundStage<TSpace> Until(ILineLandmark<TSpace> landmark, bool orEnd = false)
       => throw new NotSupportedException(PipelineRefusals.ProjectionHasOneEnd);
 
     /// <summary>Refused: an extent declared after a bound frames the search rather than narrowing it.</summary>
@@ -587,52 +545,42 @@ namespace Unrect.Projections
     [Obsolete(PipelineRefusals.OffsetComesFirst, error: true)]
     public BoundStage<TSpace> Right(int columns) => throw new NotSupportedException(PipelineRefusals.OffsetComesFirst);
 
-    /// <inheritdoc cref="UnboundedStage{TSpace}.On(IRowLandmark)"/>
+    /// <inheritdoc cref="UnboundedStage{TSpace}.On(ILineLandmark)"/>
     /// <param name="landmark">The row that would be anchored on.</param>
     [Obsolete(PipelineRefusals.SecondAnchor, error: true)]
-    public BoundStage<TSpace> On(IRowLandmark landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
+    public BoundStage<TSpace> On(ILineLandmark landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
 
-    /// <inheritdoc cref="UnboundedStage{TSpace}.On(IRowLandmark)"/>
-    /// <param name="landmark">The column that would be anchored on.</param>
-    [Obsolete(PipelineRefusals.SecondAnchor, error: true)]
-    public BoundStage<TSpace> On(IColumnLandmark landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
-
-    /// <inheritdoc cref="UnboundedStage{TSpace}.On(IRowLandmark)"/>
+    /// <inheritdoc cref="UnboundedStage{TSpace}.On(ILineLandmark)"/>
     /// <param name="landmark">The row that would be anchored on, demanding a space of its own.</param>
     [Obsolete(PipelineRefusals.SecondAnchor, error: true)]
-    public BoundStage<TSpace> On(IRowLandmark<TSpace> landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
+    public BoundStage<TSpace> On(ILineLandmark<TSpace> landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
 
-    /// <inheritdoc cref="UnboundedStage{TSpace}.On(IRowLandmark)"/>
-    /// <param name="landmark">The column that would be anchored on, demanding a space of its own.</param>
-    [Obsolete(PipelineRefusals.SecondAnchor, error: true)]
-    public BoundStage<TSpace> On(IColumnLandmark<TSpace> landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
-
-    /// <inheritdoc cref="UnboundedStage{TSpace}.On(IRowLandmark)"/>
+    /// <inheritdoc cref="UnboundedStage{TSpace}.On(ILineLandmark)"/>
     /// <param name="landmark">The row that would be anchored below.</param>
     [Obsolete(PipelineRefusals.SecondAnchor, error: true)]
-    public BoundStage<TSpace> Below(IRowLandmark landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
+    public BoundStage<TSpace> Below(ILineLandmark landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
 
-    /// <inheritdoc cref="UnboundedStage{TSpace}.On(IRowLandmark)"/>
+    /// <inheritdoc cref="UnboundedStage{TSpace}.On(ILineLandmark)"/>
     /// <param name="landmark">The row that would be anchored below, demanding a space of its own.</param>
     [Obsolete(PipelineRefusals.SecondAnchor, error: true)]
-    public BoundStage<TSpace> Below(IRowLandmark<TSpace> landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
+    public BoundStage<TSpace> Below(ILineLandmark<TSpace> landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
 
-    /// <inheritdoc cref="UnboundedStage{TSpace}.On(IRowLandmark)"/>
+    /// <inheritdoc cref="UnboundedStage{TSpace}.On(ILineLandmark)"/>
     /// <param name="landmark">The column that would be anchored right of.</param>
     [Obsolete(PipelineRefusals.SecondAnchor, error: true)]
-    public BoundStage<TSpace> RightOf(IColumnLandmark landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
+    public BoundStage<TSpace> RightOf(ILineLandmark landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
 
-    /// <inheritdoc cref="UnboundedStage{TSpace}.On(IRowLandmark)"/>
+    /// <inheritdoc cref="UnboundedStage{TSpace}.On(ILineLandmark)"/>
     /// <param name="landmark">The column that would be anchored right of, demanding a space of its own.</param>
     [Obsolete(PipelineRefusals.SecondAnchor, error: true)]
-    public BoundStage<TSpace> RightOf(IColumnLandmark<TSpace> landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
+    public BoundStage<TSpace> RightOf(ILineLandmark<TSpace> landmark) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
 
-    /// <inheritdoc cref="UnboundedStage{TSpace}.On(IRowLandmark)"/>
+    /// <inheritdoc cref="UnboundedStage{TSpace}.On(ILineLandmark)"/>
     /// <param name="offset">The offset that would replace the pipeline's.</param>
     [Obsolete(PipelineRefusals.SecondAnchor, error: true)]
     public BoundStage<TSpace> OffsetBy(IOffsetStrategy offset) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);
 
-    /// <inheritdoc cref="UnboundedStage{TSpace}.On(IRowLandmark)"/>
+    /// <inheritdoc cref="UnboundedStage{TSpace}.On(ILineLandmark)"/>
     /// <param name="offset">The offset that would replace the pipeline's, demanding a space of its own.</param>
     [Obsolete(PipelineRefusals.SecondAnchor, error: true)]
     public BoundStage<TSpace> OffsetBy(IOffsetStrategy<TSpace> offset) => throw new NotSupportedException(PipelineRefusals.SecondAnchor);

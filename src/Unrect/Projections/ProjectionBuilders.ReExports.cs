@@ -78,12 +78,12 @@ namespace Unrect.Projections
     // spelled with the raw lift there too.
 
     /// <summary>The first row satisfying <paramref name="predicate"/>.</summary>
-    public static IRowLandmark<TSpace> RowWhere(Func<Plane<TSpace>, int, bool> predicate)
-      => Demanding.Row<TSpace>(RowLandmarks.RowWhere(TypedPredicates.Lower(predicate)));
+    public static ILineLandmark<TSpace> RowWhere(Func<Plane<TSpace>, int, bool> predicate)
+      => Demanding.Landmark<TSpace>(RowLandmarks.RowWhere(TypedPredicates.Lower(predicate)));
 
     /// <summary>The first row with any cell satisfying <paramref name="anyCell"/>.</summary>
-    public static IRowLandmark<TSpace> RowWithCell(Func<Point<TSpace>, bool> anyCell)
-      => Demanding.Row<TSpace>(RowLandmarks.RowWithCell(TypedPredicates.Lower(anyCell)));
+    public static ILineLandmark<TSpace> RowWithCell(Func<Point<TSpace>, bool> anyCell)
+      => Demanding.Landmark<TSpace>(RowLandmarks.RowWithCell(TypedPredicates.Lower(anyCell)));
 
     /// <summary>
     /// The first row in which some cell <em>says</em> <paramref name="text"/> — whole-cell, trimmed
@@ -92,18 +92,18 @@ namespace Unrect.Projections
     /// space answers. A value vocabulary adds <c>RowContaining</c>, the same comparison against
     /// text cells alone.
     /// </summary>
-    public static IRowLandmark RowSaying(string text) => RowLandmarks.RowSaying(text);
+    public static ILineLandmark RowSaying(string text) => RowLandmarks.RowSaying(text);
 
     /// <summary>The first column satisfying <paramref name="predicate"/>.</summary>
-    public static IColumnLandmark<TSpace> ColumnWhere(Func<Plane<TSpace>, int, bool> predicate)
-      => Demanding.Column<TSpace>(ColumnLandmarks.ColumnWhere(TypedPredicates.Lower(predicate)));
+    public static ILineLandmark<TSpace> ColumnWhere(Func<Plane<TSpace>, int, bool> predicate)
+      => Demanding.Landmark<TSpace>(ColumnLandmarks.ColumnWhere(TypedPredicates.Lower(predicate)));
 
     /// <summary>The first column with any cell satisfying <paramref name="anyCell"/>.</summary>
-    public static IColumnLandmark<TSpace> ColumnWithCell(Func<Point<TSpace>, bool> anyCell)
-      => Demanding.Column<TSpace>(ColumnLandmarks.ColumnWithCell(TypedPredicates.Lower(anyCell)));
+    public static ILineLandmark<TSpace> ColumnWithCell(Func<Point<TSpace>, bool> anyCell)
+      => Demanding.Landmark<TSpace>(ColumnLandmarks.ColumnWithCell(TypedPredicates.Lower(anyCell)));
 
     /// <summary>The column twin of <see cref="RowSaying"/>, with the same rule.</summary>
-    public static IColumnLandmark ColumnSaying(string text) => ColumnLandmarks.ColumnSaying(text);
+    public static ILineLandmark ColumnSaying(string text) => ColumnLandmarks.ColumnSaying(text);
 
     // --- Extent vocabulary ----------------------------------------------------------------------
     //
@@ -145,16 +145,16 @@ namespace Unrect.Projections
     // overloads that take one — Row(AllColumns(), ...) is a full-width row.
 
     /// <summary>Exactly <paramref name="count"/> rows.</summary>
-    public static IRowStrategy TakeRows(int count) => RowStrategies.TakeRows(count);
+    public static ILineStrategy TakeRows(int count) => RowStrategies.TakeRows(count);
 
     /// <summary>Exactly <paramref name="count"/> columns.</summary>
-    public static IColumnStrategy TakeColumns(int count) => ColumnStrategies.TakeColumns(count);
+    public static ILineStrategy TakeColumns(int count) => ColumnStrategies.TakeColumns(count);
 
     /// <summary>Every row of the available space — the declared spelling of "the full height".</summary>
-    public static IRowStrategy AllRows() => RowStrategies.AllRows();
+    public static ILineStrategy AllRows() => RowStrategies.AllRows();
 
     /// <summary>Every column of the available space — the declared spelling of "the full width".</summary>
-    public static IColumnStrategy AllColumns() => ColumnStrategies.AllColumns();
+    public static ILineStrategy AllColumns() => ColumnStrategies.AllColumns();
 
     // The area-composing forms (rows.AllColumns(), columns.AllRows()) are deliberately NOT
     // re-exported: they are extension methods, and a script with `using Unrect.Strategies;` in
@@ -167,57 +167,57 @@ namespace Unrect.Projections
     // — WithCell, WhileAll, WhileAny. Both halves read this file's space.
 
     /// <summary>Leading rows for which <paramref name="predicate"/> holds, stopping before the first it does not.</summary>
-    public static IRowStrategy<TSpace> TakeRowsWhile(Func<Plane<TSpace>, int, bool> predicate)
-      => Demanding.Rows<TSpace>(RowStrategies.TakeRowsWhile(TypedPredicates.Lower(predicate)));
+    public static ILineStrategy<TSpace> TakeRowsWhile(Func<Plane<TSpace>, int, bool> predicate)
+      => Demanding.Lines<TSpace>(RowStrategies.TakeRowsWhile(TypedPredicates.Lower(predicate)));
 
     /// <summary>
     /// Leading rows while <paramref name="predicate"/> holds of the cell in <paramref name="column"/>
     /// — a band read off one label column.
     /// </summary>
-    public static IRowStrategy<TSpace> TakeRowsWhile(int column, Func<Point<TSpace>, int, bool> predicate)
-      => Demanding.Rows<TSpace>(RowStrategies.TakeRowsWhile(column, TypedPredicates.Lower(predicate)));
+    public static ILineStrategy<TSpace> TakeRowsWhile(int column, Func<Point<TSpace>, int, bool> predicate)
+      => Demanding.Lines<TSpace>(RowStrategies.TakeRowsWhile(column, TypedPredicates.Lower(predicate)));
 
     /// <summary>
     /// Rows up to and including the first for which <paramref name="predicate"/> holds — the match is
     /// kept, where <see cref="TakeRowsWhile(Func{Plane{TSpace}, int, bool})"/> stops before it.
     /// </summary>
-    public static IRowStrategy<TSpace> TakeRowsTo(Func<Plane<TSpace>, int, bool> predicate)
-      => Demanding.Rows<TSpace>(RowStrategies.TakeRowsTo(TypedPredicates.Lower(predicate)));
+    public static ILineStrategy<TSpace> TakeRowsTo(Func<Plane<TSpace>, int, bool> predicate)
+      => Demanding.Lines<TSpace>(RowStrategies.TakeRowsTo(TypedPredicates.Lower(predicate)));
 
     /// <summary>Leading rows in which every cell satisfies <paramref name="predicate"/>.</summary>
-    public static IRowStrategy<TSpace> TakeRowsWhileAll(Func<Point<TSpace>, bool> predicate)
-      => Demanding.Rows<TSpace>(RowStrategies.TakeRowsWhileAll(TypedPredicates.Lower(predicate)));
+    public static ILineStrategy<TSpace> TakeRowsWhileAll(Func<Point<TSpace>, bool> predicate)
+      => Demanding.Lines<TSpace>(RowStrategies.TakeRowsWhileAll(TypedPredicates.Lower(predicate)));
 
     /// <summary>Leading rows in which at least one cell satisfies <paramref name="predicate"/>.</summary>
-    public static IRowStrategy<TSpace> TakeRowsWhileAny(Func<Point<TSpace>, bool> predicate)
-      => Demanding.Rows<TSpace>(RowStrategies.TakeRowsWhileAny(TypedPredicates.Lower(predicate)));
+    public static ILineStrategy<TSpace> TakeRowsWhileAny(Func<Point<TSpace>, bool> predicate)
+      => Demanding.Lines<TSpace>(RowStrategies.TakeRowsWhileAny(TypedPredicates.Lower(predicate)));
 
     /// <summary>Leading columns for which <paramref name="predicate"/> holds, stopping before the first it does not.</summary>
-    public static IColumnStrategy<TSpace> TakeColumnsWhile(Func<Plane<TSpace>, int, bool> predicate)
-      => Demanding.Columns<TSpace>(ColumnStrategies.TakeColumnsWhile(TypedPredicates.Lower(predicate)));
+    public static ILineStrategy<TSpace> TakeColumnsWhile(Func<Plane<TSpace>, int, bool> predicate)
+      => Demanding.Lines<TSpace>(ColumnStrategies.TakeColumnsWhile(TypedPredicates.Lower(predicate)));
 
     /// <summary>
     /// Leading columns while <paramref name="predicate"/> holds of the cell in <paramref name="row"/>
     /// — a band read off one label row.
     /// </summary>
-    public static IColumnStrategy<TSpace> TakeColumnsWhile(int row, Func<Point<TSpace>, int, bool> predicate)
-      => Demanding.Columns<TSpace>(ColumnStrategies.TakeColumnsWhile(row, TypedPredicates.Lower(predicate)));
+    public static ILineStrategy<TSpace> TakeColumnsWhile(int row, Func<Point<TSpace>, int, bool> predicate)
+      => Demanding.Lines<TSpace>(ColumnStrategies.TakeColumnsWhile(row, TypedPredicates.Lower(predicate)));
 
     /// <summary>
     /// Columns up to and including the first for which <paramref name="predicate"/> holds — the
     /// match is kept, where <see cref="TakeColumnsWhile(Func{Plane{TSpace}, int, bool})"/> stops
     /// before it.
     /// </summary>
-    public static IColumnStrategy<TSpace> TakeColumnsTo(Func<Plane<TSpace>, int, bool> predicate)
-      => Demanding.Columns<TSpace>(ColumnStrategies.TakeColumnsTo(TypedPredicates.Lower(predicate)));
+    public static ILineStrategy<TSpace> TakeColumnsTo(Func<Plane<TSpace>, int, bool> predicate)
+      => Demanding.Lines<TSpace>(ColumnStrategies.TakeColumnsTo(TypedPredicates.Lower(predicate)));
 
     /// <summary>Leading columns in which every cell satisfies <paramref name="predicate"/>.</summary>
-    public static IColumnStrategy<TSpace> TakeColumnsWhileAll(Func<Point<TSpace>, bool> predicate)
-      => Demanding.Columns<TSpace>(ColumnStrategies.TakeColumnsWhileAll(TypedPredicates.Lower(predicate)));
+    public static ILineStrategy<TSpace> TakeColumnsWhileAll(Func<Point<TSpace>, bool> predicate)
+      => Demanding.Lines<TSpace>(ColumnStrategies.TakeColumnsWhileAll(TypedPredicates.Lower(predicate)));
 
     /// <summary>Leading columns in which at least one cell satisfies <paramref name="predicate"/>.</summary>
-    public static IColumnStrategy<TSpace> TakeColumnsWhileAny(Func<Point<TSpace>, bool> predicate)
-      => Demanding.Columns<TSpace>(ColumnStrategies.TakeColumnsWhileAny(TypedPredicates.Lower(predicate)));
+    public static ILineStrategy<TSpace> TakeColumnsWhileAny(Func<Point<TSpace>, bool> predicate)
+      => Demanding.Lines<TSpace>(ColumnStrategies.TakeColumnsWhileAny(TypedPredicates.Lower(predicate)));
 
     /// <summary>Past the leading rows in which every cell satisfies <paramref name="predicate"/>.</summary>
     public static IOffsetStrategy<TSpace> SkipRowsWhileAll(Func<Point<TSpace>, bool> predicate)
@@ -255,39 +255,39 @@ namespace Unrect.Projections
     /// too.
     /// </para>
     /// </summary>
-    public static ISizeStrategy RowsThenColumns(IRowStrategy rows, IColumnStrategy columns)
+    public static ISizeStrategy RowsThenColumns(ILineStrategy rows, ILineStrategy columns)
       => SizeStrategies.RowsThenColumns(rows, columns);
 
-    /// <inheritdoc cref="RowsThenColumns(IRowStrategy, IColumnStrategy)"/>
-    public static ISizeStrategy<TSpace> RowsThenColumns(IRowStrategy<TSpace> rows, IColumnStrategy<TSpace> columns)
+    /// <inheritdoc cref="RowsThenColumns(ILineStrategy, ILineStrategy)"/>
+    public static ISizeStrategy<TSpace> RowsThenColumns(ILineStrategy<TSpace> rows, ILineStrategy<TSpace> columns)
       => Demanding.Size<TSpace>(SizeStrategies.RowsThenColumns(Required(rows).Strategy, Required(columns).Strategy));
 
-    /// <inheritdoc cref="RowsThenColumns(IRowStrategy, IColumnStrategy)"/>
-    public static ISizeStrategy<TSpace> RowsThenColumns(IRowStrategy<TSpace> rows, IColumnStrategy columns)
+    /// <inheritdoc cref="RowsThenColumns(ILineStrategy, ILineStrategy)"/>
+    public static ISizeStrategy<TSpace> RowsThenColumns(ILineStrategy<TSpace> rows, ILineStrategy columns)
       => Demanding.Size<TSpace>(SizeStrategies.RowsThenColumns(Required(rows).Strategy, columns));
 
-    /// <inheritdoc cref="RowsThenColumns(IRowStrategy, IColumnStrategy)"/>
-    public static ISizeStrategy<TSpace> RowsThenColumns(IRowStrategy rows, IColumnStrategy<TSpace> columns)
+    /// <inheritdoc cref="RowsThenColumns(ILineStrategy, ILineStrategy)"/>
+    public static ISizeStrategy<TSpace> RowsThenColumns(ILineStrategy rows, ILineStrategy<TSpace> columns)
       => Demanding.Size<TSpace>(SizeStrategies.RowsThenColumns(rows, Required(columns).Strategy));
 
     /// <summary>
     /// <paramref name="columns"/> measured first, then <paramref name="rows"/> within them — the
     /// other order, and the one a column-led region wants. It pairs the two axes exactly as
-    /// <see cref="RowsThenColumns(IRowStrategy, IColumnStrategy)"/> does.
+    /// <see cref="RowsThenColumns(ILineStrategy, ILineStrategy)"/> does.
     /// </summary>
-    public static ISizeStrategy ColumnsThenRows(IColumnStrategy columns, IRowStrategy rows)
+    public static ISizeStrategy ColumnsThenRows(ILineStrategy columns, ILineStrategy rows)
       => SizeStrategies.ColumnsThenRows(columns, rows);
 
-    /// <inheritdoc cref="ColumnsThenRows(IColumnStrategy, IRowStrategy)"/>
-    public static ISizeStrategy<TSpace> ColumnsThenRows(IColumnStrategy<TSpace> columns, IRowStrategy<TSpace> rows)
+    /// <inheritdoc cref="ColumnsThenRows(ILineStrategy, ILineStrategy)"/>
+    public static ISizeStrategy<TSpace> ColumnsThenRows(ILineStrategy<TSpace> columns, ILineStrategy<TSpace> rows)
       => Demanding.Size<TSpace>(SizeStrategies.ColumnsThenRows(Required(columns).Strategy, Required(rows).Strategy));
 
-    /// <inheritdoc cref="ColumnsThenRows(IColumnStrategy, IRowStrategy)"/>
-    public static ISizeStrategy<TSpace> ColumnsThenRows(IColumnStrategy<TSpace> columns, IRowStrategy rows)
+    /// <inheritdoc cref="ColumnsThenRows(ILineStrategy, ILineStrategy)"/>
+    public static ISizeStrategy<TSpace> ColumnsThenRows(ILineStrategy<TSpace> columns, ILineStrategy rows)
       => Demanding.Size<TSpace>(SizeStrategies.ColumnsThenRows(Required(columns).Strategy, rows));
 
-    /// <inheritdoc cref="ColumnsThenRows(IColumnStrategy, IRowStrategy)"/>
-    public static ISizeStrategy<TSpace> ColumnsThenRows(IColumnStrategy columns, IRowStrategy<TSpace> rows)
+    /// <inheritdoc cref="ColumnsThenRows(ILineStrategy, ILineStrategy)"/>
+    public static ISizeStrategy<TSpace> ColumnsThenRows(ILineStrategy columns, ILineStrategy<TSpace> rows)
       => Demanding.Size<TSpace>(SizeStrategies.ColumnsThenRows(columns, Required(rows).Strategy));
   }
 }

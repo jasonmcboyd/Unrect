@@ -6,7 +6,7 @@
     Every type here appears in a contract signature, or in behaviour a contract documents:
 
       ISpace, the strategy and scan interfaces,
-      IRowLandmark/IColumnLandmark                                   the contracts themselves
+      ILineLandmark                                                  the contracts themselves
       Plane                                                          the 2-D locator: the region a
                                                                      strategy is shown, spoken by
                                                                      every scan and landmark

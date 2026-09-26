@@ -48,7 +48,7 @@ namespace Unrect.Tests.Projections
         seen.Add($"{point.Column},{point.Row}");
 
         return point.AsText() == stopAt;
-      }).FindRow(region);
+      }).Find(region);
 
       return (found, seen);
     }
@@ -174,15 +174,15 @@ namespace Unrect.Tests.Projections
       // report an honest, wrong "not found".
       var band = Plane<ISpace>.Of(FormulaSheet()).Slice(new Offset(1, 6), new Size(3, 4));
 
-      Assert.Equal(2, RowWithFormula("LOG10").Landmark.FindRow(band));
+      Assert.Equal(2, RowWithFormula("LOG10").Landmark.Find(band));
 
       // Non-vacuity, twice over. The whole sheet puts the same formula at row 8, so the band's
       // answer is the same cell reached from a different corner...
-      Assert.Equal(8, RowWithFormula("LOG10").Landmark.FindRow(Plane<ISpace>.Of(FormulaSheet())));
+      Assert.Equal(8, RowWithFormula("LOG10").Landmark.Find(Plane<ISpace>.Of(FormulaSheet())));
 
       // ...and the coordinates the untranslated reading would have used hold a formula too, so the
       // wrong answer would not have been an obvious zero: D7's SUM sits at the band's own (2, 0).
-      Assert.Equal(0, RowWithFormula("SUM(D2:D5)").Landmark.FindRow(band));
+      Assert.Equal(0, RowWithFormula("SUM(D2:D5)").Landmark.Find(band));
     }
 
     [Fact]
@@ -192,11 +192,11 @@ namespace Unrect.Tests.Projections
       // band that carries one is the band's column 0 — which is the sheet's column 1.
       var band = Plane<ISpace>.Of(FormulaSheet()).Slice(new Offset(1, 6), new Size(3, 4));
 
-      Assert.Equal(0, ColumnWithFormula("LOG10").Landmark.FindColumn(band));
+      Assert.Equal(0, ColumnWithFormula("LOG10").Landmark.Find(band));
 
       // And a needle that only column 2 of the band carries, so the answer is not the corner by
       // accident: C9's formula mentions C8 and no other does.
-      Assert.Equal(1, ColumnWithFormula("LOG10(C8)").Landmark.FindColumn(band));
+      Assert.Equal(1, ColumnWithFormula("LOG10(C8)").Landmark.Find(band));
     }
 
     [Fact]

@@ -16,18 +16,15 @@ namespace Unrect.Analyzers
   {
     /// <summary>
     /// The generic types that carry a demand in their first type argument, in the order
-    /// <see cref="DemandOf"/> asks them: the projection itself, then the phantoms — the two matchers
-    /// and the five strategies.
+    /// <see cref="DemandOf"/> asks them: the projection itself, then the phantoms — the matcher
+    /// and the three strategies.
     /// </summary>
     private static readonly string[] PhantomNames =
     {
-      "Unrect.Projections.IRowLandmark`1",
-      "Unrect.Projections.IColumnLandmark`1",
+      "Unrect.Projections.ILineLandmark`1",
       "Unrect.Projections.ISizeStrategy`1",
       "Unrect.Projections.IOffsetStrategy`1",
-      "Unrect.Projections.ISizeStrategy`1",
-      "Unrect.Projections.IRowStrategy`1",
-      "Unrect.Projections.IColumnStrategy`1",
+      "Unrect.Projections.ILineStrategy`1",
     };
 
     private readonly IReadOnlyList<INamedTypeSymbol> _demanding;

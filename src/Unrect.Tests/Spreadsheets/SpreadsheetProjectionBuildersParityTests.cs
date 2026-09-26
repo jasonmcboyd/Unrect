@@ -143,13 +143,13 @@ namespace Unrect.Tests.Spreadsheets
 
       var region = Plane<ISpace>.Of(sheet);
 
-      Assert.Equal(rowPlain.Landmark.FindRow(region), rowThroughBuilders.Landmark.FindRow(region));
-      Assert.Equal(columnPlain.Landmark.FindColumn(region), columnThroughBuilders.Landmark.FindColumn(region));
+      Assert.Equal(rowPlain.Landmark.Find(region), rowThroughBuilders.Landmark.Find(region));
+      Assert.Equal(columnPlain.Landmark.Find(region), columnThroughBuilders.Landmark.Find(region));
 
       // Non-vacuity: the first two cases find something and the third finds nothing, so the equality
       // above is not two nulls agreeing.
-      Assert.Equal(containing == "PRODUCT" ? null : (int?)1, rowThroughBuilders.Landmark.FindRow(region));
-      Assert.Equal(containing == "PRODUCT" ? null : (int?)0, columnThroughBuilders.Landmark.FindColumn(region));
+      Assert.Equal(containing == "PRODUCT" ? null : (int?)1, rowThroughBuilders.Landmark.Find(region));
+      Assert.Equal(containing == "PRODUCT" ? null : (int?)0, columnThroughBuilders.Landmark.Find(region));
     }
 
     // --- 2. The two rules that make the pair usable ---------------------------------------------------

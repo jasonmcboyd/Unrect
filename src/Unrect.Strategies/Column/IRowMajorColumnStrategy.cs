@@ -9,9 +9,9 @@ namespace Unrect.Strategies
   /// <c>ColumnAccumulators.Fold(BeginColumns(space.Width), space)</c>, which is how an
   /// implementation is expected to spell it, so that it states its rule once. The definition is a
   /// convention rather than an inherited body for the reason given on
-  /// <c>IRowStrategy</c>: netstandard2.0 has no default interface members.
+  /// <c>ILineStrategy</c>: netstandard2.0 has no default interface members.
   /// </summary>
-  internal interface IRowMajorColumnStrategy : IColumnStrategy
+  internal interface IRowMajorColumnStrategy : ILineStrategy
   {
     /// <summary>
     /// An accumulator over an extent <paramref name="width"/> columns wide, positioned before row 0.

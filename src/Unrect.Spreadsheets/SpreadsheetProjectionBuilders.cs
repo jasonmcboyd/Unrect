@@ -63,16 +63,16 @@ namespace Unrect.Spreadsheets
     public static IProjectionDefinition<TSpace, string> Text() => SpreadsheetProjections.Text<TSpace>();
 
     /// <inheritdoc cref="SpreadsheetProjections.RowContaining{TSpace}"/>
-    public static IRowLandmark<TSpace> RowContaining(string text) => SpreadsheetProjections.RowContaining<TSpace>(text);
+    public static ILineLandmark<TSpace> RowContaining(string text) => SpreadsheetProjections.RowContaining<TSpace>(text);
 
     /// <inheritdoc cref="SpreadsheetProjections.ColumnContaining{TSpace}"/>
-    public static IColumnLandmark<TSpace> ColumnContaining(string text) => SpreadsheetProjections.ColumnContaining<TSpace>(text);
+    public static ILineLandmark<TSpace> ColumnContaining(string text) => SpreadsheetProjections.ColumnContaining<TSpace>(text);
 
     /// <inheritdoc cref="SpreadsheetProjections.TakeRowsToText{TSpace}"/>
-    public static IRowStrategy<TSpace> TakeRowsToText(int column, string text) => SpreadsheetProjections.TakeRowsToText<TSpace>(column, text);
+    public static ILineStrategy<TSpace> TakeRowsToText(int column, string text) => SpreadsheetProjections.TakeRowsToText<TSpace>(column, text);
 
     /// <inheritdoc cref="SpreadsheetProjections.TakeColumnsToText{TSpace}"/>
-    public static IColumnStrategy<TSpace> TakeColumnsToText(int row, string text) => SpreadsheetProjections.TakeColumnsToText<TSpace>(row, text);
+    public static ILineStrategy<TSpace> TakeColumnsToText(int row, string text) => SpreadsheetProjections.TakeColumnsToText<TSpace>(row, text);
 
     /// <inheritdoc cref="SpreadsheetProjections.Decimal{TSpace}()"/>
     public static IProjectionDefinition<TSpace, decimal> Decimal() => SpreadsheetProjections.Decimal<TSpace>();
@@ -128,19 +128,19 @@ namespace Unrect.Spreadsheets
     public static IProjectionDefinition<TSpace, string?> Formula() => SpreadsheetProjections.Formula<TSpace>();
 
     /// <inheritdoc cref="SpreadsheetProjections.RowWithFormula()"/>
-    public static IRowLandmark<TSpace> RowWithFormula() => SpreadsheetProjections.RowWithFormula();
+    public static ILineLandmark<TSpace> RowWithFormula() => SpreadsheetProjections.RowWithFormula();
 
     /// <inheritdoc cref="SpreadsheetProjections.RowWithFormula(string)"/>
     /// <param name="containing">The text the formula must mention.</param>
-    public static IRowLandmark<TSpace> RowWithFormula(string containing)
+    public static ILineLandmark<TSpace> RowWithFormula(string containing)
       => SpreadsheetProjections.RowWithFormula(containing);
 
     /// <inheritdoc cref="SpreadsheetProjections.ColumnWithFormula()"/>
-    public static IColumnLandmark<TSpace> ColumnWithFormula() => SpreadsheetProjections.ColumnWithFormula();
+    public static ILineLandmark<TSpace> ColumnWithFormula() => SpreadsheetProjections.ColumnWithFormula();
 
     /// <inheritdoc cref="SpreadsheetProjections.ColumnWithFormula(string)"/>
     /// <param name="containing">The text the formula must mention.</param>
-    public static IColumnLandmark<TSpace> ColumnWithFormula(string containing)
+    public static ILineLandmark<TSpace> ColumnWithFormula(string containing)
       => SpreadsheetProjections.ColumnWithFormula(containing);
   }
 }

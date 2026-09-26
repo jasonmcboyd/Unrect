@@ -46,16 +46,16 @@ namespace Unrect.Spreadsheets
     public static IProjectionDefinition<TSpace, string> Text() => SpreadsheetProjections.Text<TSpace>();
 
     /// <inheritdoc cref="SpreadsheetProjections.RowContaining{TSpace}"/>
-    public static IRowLandmark<TSpace> RowContaining(string text) => SpreadsheetProjections.RowContaining<TSpace>(text);
+    public static ILineLandmark<TSpace> RowContaining(string text) => SpreadsheetProjections.RowContaining<TSpace>(text);
 
     /// <inheritdoc cref="SpreadsheetProjections.ColumnContaining{TSpace}"/>
-    public static IColumnLandmark<TSpace> ColumnContaining(string text) => SpreadsheetProjections.ColumnContaining<TSpace>(text);
+    public static ILineLandmark<TSpace> ColumnContaining(string text) => SpreadsheetProjections.ColumnContaining<TSpace>(text);
 
     /// <inheritdoc cref="SpreadsheetProjections.TakeRowsToText{TSpace}"/>
-    public static IRowStrategy<TSpace> TakeRowsToText(int column, string text) => SpreadsheetProjections.TakeRowsToText<TSpace>(column, text);
+    public static ILineStrategy<TSpace> TakeRowsToText(int column, string text) => SpreadsheetProjections.TakeRowsToText<TSpace>(column, text);
 
     /// <inheritdoc cref="SpreadsheetProjections.TakeColumnsToText{TSpace}"/>
-    public static IColumnStrategy<TSpace> TakeColumnsToText(int row, string text) => SpreadsheetProjections.TakeColumnsToText<TSpace>(row, text);
+    public static ILineStrategy<TSpace> TakeColumnsToText(int row, string text) => SpreadsheetProjections.TakeColumnsToText<TSpace>(row, text);
 
     /// <inheritdoc cref="SpreadsheetProjections.Decimal{TSpace}()"/>
     public static IProjectionDefinition<TSpace, decimal> Decimal() => SpreadsheetProjections.Decimal<TSpace>();

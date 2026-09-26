@@ -46,7 +46,7 @@ sheet determines what a pass has to hold:
   thousand blocks retains one block, its separator and the row in hand.
 - **A shape driven across its axis is held and driven again.** A `HorizontalFlow` under a
   row-major source holds its band until its extent is known, then runs along it. So does a
-  column landmark (`RightOf(ColumnContaining(…))`, `UntilColumn`), which can only be found
+  column landmark (`RightOf(ColumnContaining(…))`, `Until(ColumnContaining(…))`), which can only be found
   over the whole extent.
 
 **Ask before reading.** `CostReport.Of(definition)` is the dry run: one line per node saying

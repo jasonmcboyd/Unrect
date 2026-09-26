@@ -32,15 +32,15 @@ namespace Unrect.Strategies
     /// failure renders — "no row with the label 'EIN'" — so a projection that anchors on something
     /// other than a caption can still fail in the vocabulary's own voice.
     /// </summary>
-    public static IRowLandmark RowWhere(Func<Plane<ISpace>, int, bool> predicate, string description)
+    public static ILineLandmark RowWhere(Func<Plane<ISpace>, int, bool> predicate, string description)
       => new PredicateRowLandmark(NotNull(predicate, nameof(predicate)), NotNull(description, nameof(description)));
 
     /// <summary>The first row satisfying <paramref name="predicate"/>, described generically as "no matching row" when it fails.</summary>
-    public static IRowLandmark RowWhere(Func<Plane<ISpace>, int, bool> predicate)
+    public static ILineLandmark RowWhere(Func<Plane<ISpace>, int, bool> predicate)
       => new PredicateRowLandmark(NotNull(predicate, nameof(predicate)), "no matching row");
 
     /// <summary>The first row with any cell satisfying <paramref name="anyCell"/>.</summary>
-    public static IRowLandmark RowWithCell(Func<Point<ISpace>, bool> anyCell)
+    public static ILineLandmark RowWithCell(Func<Point<ISpace>, bool> anyCell)
       => new PredicateRowLandmark(
         CellMatching.AnyCellInRow(NotNull(anyCell, nameof(anyCell))),
         "no row with a matching cell");
@@ -61,7 +61,7 @@ namespace Unrect.Strategies
     /// out of a declaration.
     /// </para>
     /// </summary>
-    public static IRowLandmark RowSaying(string text)
+    public static ILineLandmark RowSaying(string text)
       => new PredicateRowLandmark(
         CellMatching.AnyCellInRow(CellMatching.SaysEquals(NotNull(text, nameof(text)))),
         $"no row saying '{text}'");
