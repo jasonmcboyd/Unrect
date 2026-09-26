@@ -15,13 +15,6 @@ namespace Unrect.Core
       where TSpace : class, ISpace
       => point.Space.IsBlank(point.Column, point.Row);
 
-    /// <summary>The negation of <see cref="IsBlank{TSpace}"/>.</summary>
-    /// <typeparam name="TSpace">The space the point addresses a cell of.</typeparam>
-    /// <param name="point">The cell.</param>
-    public static bool HasValue<TSpace>(this Point<TSpace> point)
-      where TSpace : class, ISpace
-      => !point.IsBlank();
-
     /// <summary>
     /// What the cell says, or null when it is blank — see <see cref="ISpace.AsText"/>. Rendering a
     /// cell that is not text may allocate.

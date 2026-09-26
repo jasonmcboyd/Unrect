@@ -18,7 +18,7 @@ namespace Unrect.Tests.Strategies
   /// </summary>
   public class SizeStrategyTests
   {
-    private static bool HasValue(Point<ISpace> value) => value.HasValue();
+    private static bool HasValue(Point<ISpace> value) => !value.IsBlank();
 
     // --- SizeStrategies.RowsWhileAny ------------------------------------------------------------
 

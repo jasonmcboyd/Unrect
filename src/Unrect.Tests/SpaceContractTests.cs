@@ -237,7 +237,7 @@ namespace Unrect.Tests
           var point = plane[column, row];
 
           Assert.Equal(point.IsBlank(), cells.IsBlank(column, row));
-          Assert.Equal(point.HasValue(), !cells.IsBlank(column, row));
+          Assert.Equal(!point.IsBlank(), !cells.IsBlank(column, row));
           Assert.Equal(point.IsText(), cells.IsText(column, row));
           Assert.Equal(point.AsText(), cells.AsText(column, row));
         }

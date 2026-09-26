@@ -242,7 +242,7 @@ end in another.
 
 **A canonical predicate asks the text facet's questions; anything about kind or value is a typed
 predicate and names its space.** The strategy and landmark interfaces in `Unrect.Core` speak
-`Plane<ISpace>`/`Point<ISpace>`, which answers `IsBlank()`/`HasValue()`/`AsText()` and nothing
+`Plane<ISpace>`/`Point<ISpace>`, which answers `IsBlank()`/`AsText()` and nothing
 else — so a rule that asks "is this a number", or "does this hold text", has to carry the space it
 needs. Seven interfaces
 do that, one per thing the calculus takes:

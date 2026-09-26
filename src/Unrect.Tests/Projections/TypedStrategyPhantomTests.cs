@@ -314,7 +314,7 @@ namespace Unrect.Tests.Projections
       // the declaration was wired to a space that cannot answer it. Absorbing that as "no section
       // here" is exactly the lie the typed layer exists to prevent, so Optional and Else must let it
       // out.
-      var smuggled = ProjectionBuilders<ISpreadsheetSpace>.RowsWhileAny(cell => cell.HasValue()).Strategy;
+      var smuggled = ProjectionBuilders<ISpreadsheetSpace>.RowsWhileAny(cell => !cell.IsBlank()).Strategy;
       var declaration = Sized(smuggled).Of(Range(block => block.Height));
 
       var failure = Assert.Throws<ProjectionException>(() => declaration.Map(Sheet()));
@@ -334,22 +334,22 @@ namespace Unrect.Tests.Projections
     /// <summary>A rule and a matcher promised a spreadsheet, unwrapped so a sheet can be handed one.</summary>
     private static IProjectionDefinition<ICellSpace, int> Smuggled(string door) => door switch
     {
-      "Sized" => Sized(ProjectionBuilders<ISpreadsheetSpace>.RowsWhileAny(cell => cell.HasValue()).Strategy)
+      "Sized" => Sized(ProjectionBuilders<ISpreadsheetSpace>.RowsWhileAny(cell => !cell.IsBlank()).Strategy)
         .Of(Range(block => block.Height)),
 
-      "On" => On(ProjectionBuilders<ISpreadsheetSpace>.RowWithCell(cell => cell.HasValue()).Landmark)
+      "On" => On(ProjectionBuilders<ISpreadsheetSpace>.RowWithCell(cell => !cell.IsBlank()).Landmark)
         .Of(Range(block => block.Height)),
 
-      "OffsetBy" => OffsetBy(ProjectionBuilders<ISpreadsheetSpace>.SkipRowsWhileAny(cell => cell.HasValue()).Strategy)
+      "OffsetBy" => OffsetBy(ProjectionBuilders<ISpreadsheetSpace>.SkipRowsWhileAny(cell => !cell.IsBlank()).Strategy)
         .Of(Range(block => block.Height)),
 
-      "Row" => Row(ProjectionBuilders<ISpreadsheetSpace>.TakeColumnsWhileAny(cell => cell.HasValue()).Strategy, strip => strip.Count),
+      "Row" => Row(ProjectionBuilders<ISpreadsheetSpace>.TakeColumnsWhileAny(cell => !cell.IsBlank()).Strategy, strip => strip.Count),
 
       // A separator is never applied before the first occurrence, so this one faults on the second
       // — which is the interesting half: the declaration had already read something.
       _ => VerticalRepeat(
         Range(Extent(3, 1), block => block.Height),
-        ProjectionBuilders<ISpreadsheetSpace>.SkipRowsWhileAny(cell => cell.HasValue()).Strategy)
+        ProjectionBuilders<ISpreadsheetSpace>.SkipRowsWhileAny(cell => !cell.IsBlank()).Strategy)
         .Select(occurrences => occurrences.Count),
     };
 

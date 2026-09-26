@@ -38,7 +38,7 @@ namespace Unrect.Tests.Strategies
   /// </summary>
   public class MirrorLawTests
   {
-    private static bool HasValue(Point<ISpace> value) => value.HasValue();
+    private static bool HasValue(Point<ISpace> value) => !value.IsBlank();
 
     // --- The grids ------------------------------------------------------------------------------------
     //

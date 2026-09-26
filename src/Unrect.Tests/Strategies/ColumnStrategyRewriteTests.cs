@@ -35,7 +35,7 @@ namespace Unrect.Tests.Strategies
   {
     private static Func<Point<ISpace>, bool> Predicate(string name) => name switch
     {
-      "has-value" => value => value.HasValue(),
+      "has-value" => value => !value.IsBlank(),
       "blank" => value => value.IsBlank(),
 
       // Neither total nor the negation of the others, so a strategy that quietly substituted one
@@ -202,7 +202,7 @@ namespace Unrect.Tests.Strategies
       var space = Space(grid);
 
       Assert.Equal(
-        ColumnStrategies.TakeColumnsWhileAny(value => value.HasValue()).SelectColumns(space),
+        ColumnStrategies.TakeColumnsWhileAny(value => !value.IsBlank()).SelectColumns(space),
         ColumnStrategies.TakeColumnsWhileAnyValue().SelectColumns(space));
     }
 
@@ -226,8 +226,8 @@ namespace Unrect.Tests.Strategies
       // loop.
       var space = Space(grid);
 
-      Assert.Equal(any, ColumnStrategies.TakeColumnsWhileAny(value => value.HasValue()).SelectColumns(space));
-      Assert.Equal(all, ColumnStrategies.TakeColumnsWhileAll(value => value.HasValue()).SelectColumns(space));
+      Assert.Equal(any, ColumnStrategies.TakeColumnsWhileAny(value => !value.IsBlank()).SelectColumns(space));
+      Assert.Equal(all, ColumnStrategies.TakeColumnsWhileAll(value => !value.IsBlank()).SelectColumns(space));
     }
 
     // --- The early exit: the point of the rewrite --------------------------------------------------
@@ -278,7 +278,7 @@ namespace Unrect.Tests.Strategies
         { 5, 6, 7, 8 },
       }));
 
-      Assert.Equal(0, ColumnStrategies.TakeColumnsWhileAll(value => value.HasValue()).SelectColumns(space));
+      Assert.Equal(0, ColumnStrategies.TakeColumnsWhileAll(value => !value.IsBlank()).SelectColumns(space));
 
       Assert.Equal(1, space.CellReads);
       Assert.Equal(1, space.RowsTouched);
@@ -299,7 +299,7 @@ namespace Unrect.Tests.Strategies
         { 13, 14, 15, 16 },
       }));
 
-      Assert.Equal(1, ColumnStrategies.TakeColumnsWhileAll(value => value.HasValue()).SelectColumns(space));
+      Assert.Equal(1, ColumnStrategies.TakeColumnsWhileAll(value => !value.IsBlank()).SelectColumns(space));
 
       Assert.Equal(8, space.CellReads);
       Assert.Equal(4, space.RowsTouched);

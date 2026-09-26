@@ -27,7 +27,7 @@ namespace Unrect.Tests.Strategies
   /// </summary>
   public class RowAndColumnStrategyTests
   {
-    private static bool HasValue(Point<ISpace> value) => value.HasValue();
+    private static bool HasValue(Point<ISpace> value) => !value.IsBlank();
 
     // --- Row strategies -------------------------------------------------------------------------
 

@@ -56,7 +56,7 @@ namespace Unrect.Tests.Projections
       {
         seen.Add(cell);
 
-        return cell.HasValue();
+        return !cell.IsBlank();
       })).Of(Range(block => block.Height));
 
       Assert.Equal(4, Down(2).Right(1).Of(region).Map(sheet));
@@ -84,7 +84,7 @@ namespace Unrect.Tests.Projections
       {
         spaces.Add(cell.Space);
 
-        return cell.HasValue();
+        return !cell.IsBlank();
       })).Of(Range(block => block.Height));
 
       var declaration = VerticalFlow(outer =>

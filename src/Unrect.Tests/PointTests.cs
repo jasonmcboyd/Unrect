@@ -52,11 +52,11 @@ namespace Unrect.Tests
       var space = Kinds();
 
       Assert.True(At(space, 0, 0).IsText());
-      Assert.True(At(space, 0, 0).HasValue());
+      Assert.True(!At(space, 0, 0).IsBlank());
       Assert.Equal("Total", At(space, 0, 0).AsText());
 
       Assert.True(At(space, 1, 0).IsBlank());
-      Assert.False(At(space, 1, 0).HasValue());
+      Assert.False(!At(space, 1, 0).IsBlank());
       Assert.False(At(space, 1, 0).IsText());
       Assert.Null(At(space, 1, 0).AsText());
 

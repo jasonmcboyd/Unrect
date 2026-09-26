@@ -40,7 +40,7 @@ namespace Unrect.Benchmarks
       return total;
     });
 
-    private static readonly IProjectionDefinition<ICellSpace, int> Pair = HorizontalFlow(h => h.Next(Point().Select(p => p.HasValue() ? 1 : 0)) + h.Next(Point().Select(_ => 1)));
+    private static readonly IProjectionDefinition<ICellSpace, int> Pair = HorizontalFlow(h => h.Next(Point().Select(p => !p.IsBlank() ? 1 : 0)) + h.Next(Point().Select(_ => 1)));
 
     private static readonly IProjectionDefinition<ICellSpace, int> Nested = VerticalFlow(v =>
     {
@@ -54,7 +54,7 @@ namespace Unrect.Benchmarks
 
     // Four independent readings of the same band. An overlay's children each start from the band's
     // own origin, so this measures placement without the flow's advance.
-    private static readonly IProjectionDefinition<ICellSpace, int> Anchored = Overlay(o => o.Next(On(RowContaining(CanonicalSpaces.Landmark)).Row(r => r.Count)) + o.Next(Column(CanonicalSpaces.BlockRows, c => c.Count)) + o.Next(Range(2, 2, b => b.Width)) + o.Next(Point().Select(p => p.HasValue() ? 1 : 0)));
+    private static readonly IProjectionDefinition<ICellSpace, int> Anchored = Overlay(o => o.Next(On(RowContaining(CanonicalSpaces.Landmark)).Row(r => r.Count)) + o.Next(Column(CanonicalSpaces.BlockRows, c => c.Count)) + o.Next(Range(2, 2, b => b.Width)) + o.Next(Point().Select(p => !p.IsBlank() ? 1 : 0)));
 
     private static readonly IProjectionDefinition<ICellSpace, IReadOnlyList<int>> Blocks =
       VerticalRepeat(Range(RowsWhileAnyValue(), b => b.Height), separatedBy: BlankRows());
@@ -65,7 +65,7 @@ namespace Unrect.Benchmarks
 
       for (int row = 0; row < b.Height; row++)
         for (int column = 0; column < b.Width; column++)
-          if (b[column, row].HasValue())
+          if (!b[column, row].IsBlank())
             present++;
 
       return present;

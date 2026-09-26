@@ -33,7 +33,7 @@ namespace Unrect.Strategies
 
     /// <summary>Leading rows that carry a value — <see cref="TakeRowsWhileAny(Func{Point{ISpace}, bool})"/> with <c>HasValue</c> as the predicate.</summary>
     public static IRowStrategy TakeRowsWhileAnyValue()
-      => TakeRowsWhileAny(v => v.HasValue());
+      => TakeRowsWhileAny(v => !v.IsBlank());
 
     /// <summary>
     /// Every row of the available space. The declared spelling of "the full height", which
@@ -61,7 +61,7 @@ namespace Unrect.Strategies
 
     /// <summary>Those columns, at the rows that carry values — <see cref="TakeRowsWhileAny(Func{Point{ISpace}, bool})"/> with <c>HasValue</c> as the predicate.</summary>
     public static IAreaStrategy TakeRowsWhileAnyValue(this IColumnStrategy strategy)
-      => strategy.TakeRowsWhileAny(v => v.HasValue());
+      => strategy.TakeRowsWhileAny(v => !v.IsBlank());
 
     /// <summary>Those columns, at the full available height.</summary>
     public static IAreaStrategy AllRows(this IColumnStrategy strategy)

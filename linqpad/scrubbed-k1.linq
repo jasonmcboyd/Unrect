@@ -87,7 +87,7 @@ var header = Sized(RowsWhileAnyValue()).Of(Overlay(o =>
 	var columns = new[] { (Code: "FEDERAL", Percent: 1.0, Column: Find(captions, "Federal")) }
 		.Concat(fundNames
 			.Select((cell, i) => (Cell: cell, Index: i))
-			.Where(x => x.Index > label && x.Cell.HasValue())
+			.Where(x => x.Index > label && !x.Cell.IsBlank())
 			.Select(x => (Code: x.Cell.Text(), Percent: ownership[x.Index].Double(), Column: x.Index)))
 		.ToArray();
 
@@ -118,7 +118,7 @@ var report = VerticalFlow(v => new
 
 	// Every coded row across both sections, pivot-neutral.
 	var allRows = r.K1Rows.Concat(r.PortfolioRows ?? Array.Empty<Point<ISpreadsheetSpace>[]>())
-		.Where(row => row[head.AtaxColumn].HasValue())
+		.Where(row => !row[head.AtaxColumn].IsBlank())
 		.ToArray();
 
 	// Fund-centric pivot, legacy-import-style: each fund carries only its non-empty, non-zero
