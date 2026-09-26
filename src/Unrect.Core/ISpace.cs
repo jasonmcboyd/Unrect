@@ -7,7 +7,7 @@ namespace Unrect.Core
   /// carries nothing about kind: a plain CSV is an <see cref="ISpace"/> and nothing more.
   /// <para>
   /// One canonical surface, not one per capability: a backend that can do more says so by adding an
-  /// interface of its own — the value facet, <see cref="IValueSpace{TValue}"/>, first among them —
+  /// interface of its own — the value facet, <c>IValueSpace&lt;TValue&gt;</c> in Unrect, first among them —
   /// never by answering these differently.
   /// </para>
   /// <para>

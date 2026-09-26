@@ -14,7 +14,6 @@
       CanonicalReads                                                 ISpace's questions asked of a Point
       Scans                                                          the fold that defines a
                                                                      strategy's whole-region answer
-      IValueSpace                                                    the value facet beside the text one
       Size, Offset, Area, Orientation, OffsetStep                    the strategy signatures
       OutOfBoundsException                                           the throw ISpace mandates
 
