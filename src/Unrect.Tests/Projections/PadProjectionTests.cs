@@ -106,7 +106,7 @@ namespace Unrect.Tests.Projections
       var applied = Down(1).Of(IntCell().Padded(1)).Apply(CoordinateGrid(height: 5));
 
       Assert.Equal(22, applied.Value);
-      Assert.Equal(1, applied.Offset.Size.Height);
+      Assert.Equal(1, applied.Offset.Row);
     }
 
     [Fact]

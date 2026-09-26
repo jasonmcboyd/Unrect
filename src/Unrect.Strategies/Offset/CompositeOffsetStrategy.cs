@@ -102,16 +102,16 @@ namespace Unrect.Strategies
       {
         // Each stage over what the last one left: the same arithmetic the streaming form does,
         // stated over the whole region for a chain whose stages need it that way.
-        var total = new Size(0, 0);
+        var total = default(Offset);
 
         foreach (var stage in _stages)
         {
           var offset = Scans.FoldOffset(stage, region, _along);
-          total += offset.Size;
+          total += offset;
           region = region.Slice(offset);
         }
 
-        return new Offset(total);
+        return total;
       }
     }
   }

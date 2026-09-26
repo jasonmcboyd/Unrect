@@ -114,7 +114,7 @@ namespace Unrect.Tests.Projections
       var canonical = OffsetBy(new PastBlankRows().Strategy).Of(Point()).Apply(blankLed);
 
       Assert.Equal(canonical.Offset, typed.Offset);
-      Assert.Equal(2, typed.Offset.Height);
+      Assert.Equal(2, typed.Offset.Row);
     }
 
     [Fact]

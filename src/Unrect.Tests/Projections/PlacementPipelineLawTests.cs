@@ -156,7 +156,7 @@ namespace Unrect.Tests.Projections
       var pipeline = Until(RowContaining(Inception)).Heading("IRR Details").Heading(Transfer).Of(Series());
       var applied = pipeline.Apply(space);
 
-      Assert.Equal("0x0", $"{applied.Offset.Size.Width}x{applied.Offset.Size.Height}");
+      Assert.Equal("0x0", $"{applied.Offset.Column}x{applied.Offset.Row}");
       Assert.Equal("3x7", $"{applied.Consumed.Width}x{applied.Consumed.Height}");
       Assert.Equal("3x7", $"{applied.Advance.Width}x{applied.Advance.Height}");
     }

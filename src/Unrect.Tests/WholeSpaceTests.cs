@@ -50,8 +50,8 @@ namespace Unrect.Tests
       var region = space.Region();
 
       Assert.Same(space, region.Space);
-      Assert.Equal(0, region.Origin.Width);
-      Assert.Equal(0, region.Origin.Height);
+      Assert.Equal(0, region.Origin.Column);
+      Assert.Equal(0, region.Origin.Row);
       Assert.Equal(space.Extent.Width, region.Extent.Width);
       Assert.Equal(space.Extent.Height, region.Extent.Height);
 
@@ -80,8 +80,8 @@ namespace Unrect.Tests
       var space = Sheet();
       var strategy = OffsetStrategies.To(RowLandmarks.RowSaying("Total"));
 
-      Assert.Equal(strategy.GetOffset(Plane<ISpace>.Of(space)).Size, strategy.GetOffset(space).Size);
-      Assert.Equal(3, strategy.GetOffset(space).Height);
+      Assert.Equal(strategy.GetOffset(Plane<ISpace>.Of(space)), strategy.GetOffset(space));
+      Assert.Equal(3, strategy.GetOffset(space).Row);
     }
 
     [Fact]

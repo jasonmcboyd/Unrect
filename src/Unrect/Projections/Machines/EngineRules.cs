@@ -42,7 +42,14 @@ namespace Unrect.Projections
       where TSpace : class, ISpace
       => size.Width > space.Width || size.Height > space.Height;
 
+    /// <summary>Whether <paramref name="offset"/> lies beyond <paramref name="space"/>'s far edge on either axis.</summary>
+    internal static bool Exceeds<TSpace>(Offset offset, Plane<TSpace> space)
+      where TSpace : class, ISpace
+      => offset.Column > space.Width || offset.Row > space.Height;
+
     internal static string Describe(Size size) => $"{size.Width}x{size.Height}";
+
+    internal static string Describe(Offset offset) => offset.ToString();
 
     internal static string Threw(string what, Exception exception)
       => $"its {what} strategy threw {exception.GetType().Name}: {exception.Message}";

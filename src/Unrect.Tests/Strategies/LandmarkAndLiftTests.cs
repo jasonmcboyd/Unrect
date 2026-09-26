@@ -49,15 +49,15 @@ namespace Unrect.Tests.Strategies
       // junk rows above are exactly what a skip-while would have tripped on.
       var offset = To(RowLandmarks.RowSaying("SECTION")).GetOffset(Labelled());
 
-      Assert.Equal(0, offset.Size.Width);
-      Assert.Equal(2, offset.Size.Height);
+      Assert.Equal(0, offset.Column);
+      Assert.Equal(2, offset.Row);
     }
 
     [Fact]
     public void To_RowWithCell_LandsOnTheFirstRowWithAMatchingCell()
     {
       // Column 1 is empty until the last row, so this finds a row by a cell that is not the first.
-      Assert.Equal(3, To(RowLandmarks.RowWithCell(cell => cell.AsText() == "b")).GetOffset(Labelled()).Size.Height);
+      Assert.Equal(3, To(RowLandmarks.RowWithCell(cell => cell.AsText() == "b")).GetOffset(Labelled()).Row);
     }
 
     [Fact]
@@ -65,7 +65,7 @@ namespace Unrect.Tests.Strategies
     {
       var space = Grid(new[,] { { 1, 0 }, { 2, 0 }, { 3, 0 } });
 
-      Assert.Equal(2, To(RowLandmarks.RowWhere((s, row) => s[0, row].AsText() == "3")).GetOffset(space).Size.Height);
+      Assert.Equal(2, To(RowLandmarks.RowWhere((s, row) => s[0, row].AsText() == "3")).GetOffset(space).Row);
     }
 
     [Fact]
@@ -73,14 +73,14 @@ namespace Unrect.Tests.Strategies
     {
       var offset = To(ColumnLandmarks.ColumnSaying("Total")).GetOffset(LabelledColumns());
 
-      Assert.Equal(2, offset.Size.Width);
-      Assert.Equal(0, offset.Size.Height);
+      Assert.Equal(2, offset.Column);
+      Assert.Equal(0, offset.Row);
     }
 
     [Fact]
     public void To_ColumnWithCell_LandsOnTheFirstColumnWithAMatchingCell()
     {
-      Assert.Equal(3, To(ColumnLandmarks.ColumnWithCell(cell => cell.AsText() == "d")).GetOffset(LabelledColumns()).Size.Width);
+      Assert.Equal(3, To(ColumnLandmarks.ColumnWithCell(cell => cell.AsText() == "d")).GetOffset(LabelledColumns()).Column);
     }
 
     [Fact]
@@ -88,7 +88,7 @@ namespace Unrect.Tests.Strategies
     {
       var space = Grid(new[,] { { 1, 2, 3 } });
 
-      Assert.Equal(1, To(ColumnLandmarks.ColumnWhere((s, column) => s[column, 0].AsText() == "2")).GetOffset(space).Size.Width);
+      Assert.Equal(1, To(ColumnLandmarks.ColumnWhere((s, column) => s[column, 0].AsText() == "2")).GetOffset(space).Column);
     }
 
     // --- Past lands one after -----------------------------------------------------------------------
@@ -96,7 +96,7 @@ namespace Unrect.Tests.Strategies
     [Fact]
     public void Past_LandsOnTheRowAfterTheMatch()
     {
-      Assert.Equal(3, Past(RowLandmarks.RowSaying("SECTION")).GetOffset(Labelled()).Size.Height);
+      Assert.Equal(3, Past(RowLandmarks.RowSaying("SECTION")).GetOffset(Labelled()).Row);
     }
 
     [Fact]
@@ -107,14 +107,14 @@ namespace Unrect.Tests.Strategies
       var space = Labelled();
 
       Assert.Equal(
-        Then(To(RowLandmarks.RowSaying("SECTION")), ExplicitOffset(0, 1)).GetOffset(space).Size.Height,
-        Past(RowLandmarks.RowSaying("SECTION")).GetOffset(space).Size.Height);
+        Then(To(RowLandmarks.RowSaying("SECTION")), ExplicitOffset(0, 1)).GetOffset(space).Row,
+        Past(RowLandmarks.RowSaying("SECTION")).GetOffset(space).Row);
     }
 
     [Fact]
     public void Past_LandsOnTheColumnAfterTheMatch()
     {
-      Assert.Equal(3, Past(ColumnLandmarks.ColumnSaying("Total")).GetOffset(LabelledColumns()).Size.Width);
+      Assert.Equal(3, Past(ColumnLandmarks.ColumnSaying("Total")).GetOffset(LabelledColumns()).Column);
     }
 
     [Fact]
@@ -124,7 +124,7 @@ namespace Unrect.Tests.Strategies
       // caller is what reports it.
       var space = Labels(new string?[,] { { "a" }, { "TARGET" } });
 
-      Assert.Equal(2, Past(RowLandmarks.RowSaying("TARGET")).GetOffset(space).Size.Height);
+      Assert.Equal(2, Past(RowLandmarks.RowSaying("TARGET")).GetOffset(space).Row);
       Assert.Equal(2, space.Extent.Height);
     }
 
@@ -134,12 +134,12 @@ namespace Unrect.Tests.Strategies
     public void ALift_TrimsBothSidesAndIgnoresCase()
     {
       // The sheet says "  SECTION  "; the declaration may say it any way that reads well.
-      Assert.Equal(2, To(RowLandmarks.RowSaying("Section")).GetOffset(Labelled()).Size.Height);
-      Assert.Equal(2, To(RowLandmarks.RowSaying("section")).GetOffset(Labelled()).Size.Height);
-      Assert.Equal(2, To(RowLandmarks.RowSaying("  section  ")).GetOffset(Labelled()).Size.Height);
+      Assert.Equal(2, To(RowLandmarks.RowSaying("Section")).GetOffset(Labelled()).Row);
+      Assert.Equal(2, To(RowLandmarks.RowSaying("section")).GetOffset(Labelled()).Row);
+      Assert.Equal(2, To(RowLandmarks.RowSaying("  section  ")).GetOffset(Labelled()).Row);
 
-      Assert.Equal(2, To(ColumnLandmarks.ColumnSaying("total")).GetOffset(LabelledColumns()).Size.Width);
-      Assert.Equal(2, To(ColumnLandmarks.ColumnSaying("  Total  ")).GetOffset(LabelledColumns()).Size.Width);
+      Assert.Equal(2, To(ColumnLandmarks.ColumnSaying("total")).GetOffset(LabelledColumns()).Column);
+      Assert.Equal(2, To(ColumnLandmarks.ColumnSaying("  Total  ")).GetOffset(LabelledColumns()).Column);
     }
 
     [Theory]
@@ -207,8 +207,8 @@ namespace Unrect.Tests.Strategies
         To(RowLandmarks.RowSaying("EIN:")))
         .GetOffset(space);
 
-      Assert.Equal(1, offset.Size.Width);
-      Assert.Equal(1, offset.Size.Height);
+      Assert.Equal(1, offset.Column);
+      Assert.Equal(1, offset.Row);
     }
 
     // --- Landmarks: the same content rules, without the offset -------------------------------------
@@ -323,7 +323,7 @@ namespace Unrect.Tests.Strategies
       foreach (var needle in new[] { "Total", "  total  ", "TOTAL" })
       {
         Assert.Equal(1, RowLandmarks.RowSaying(needle).FindRow(space));
-        Assert.Equal(1, To(RowLandmarks.RowSaying(needle)).GetOffset(space).Size.Height);
+        Assert.Equal(1, To(RowLandmarks.RowSaying(needle)).GetOffset(space).Row);
       }
 
       // ...including on what does not match, which the two report differently: the landmark returns

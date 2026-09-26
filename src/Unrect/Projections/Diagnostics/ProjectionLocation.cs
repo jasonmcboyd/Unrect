@@ -20,7 +20,7 @@ namespace Unrect.Projections
     /// place that conversion is done.
     /// </summary>
     internal static ProjectionLocation At(Offset origin, Size available)
-      => new ProjectionLocation(origin.Height + 1, origin.Width + 1, available);
+      => new ProjectionLocation(origin.Row + 1, origin.Column + 1, available);
 
     /// <summary>
     /// Where <paramref name="point"/> is. A point carries its space's own coordinates, so the

@@ -36,7 +36,7 @@ namespace Unrect.Tests.Projections
     // The table captures its columns at origin width 0, so "Amount" is ordinal 2. We then read a row
     // whose own frame is one column to the right (origin width 1) over the same sheet. The label must
     // still land on the absolute Amount cell (C2 = 100), which means the local index is ordinal - 1 = 1,
-    // not the bare ordinal 2. If the `CaptureOrigin.Width - Origin.Width` term were dropped, index 2
+    // not the bare ordinal 2. If the `CaptureOrigin.Column - Origin.Column` term were dropped, index 2
     // would be read instead — the neighbour Z (999). row.Decimal(2) is that neighbour, proved distinct.
 
     [Fact]

@@ -166,8 +166,8 @@ namespace Unrect.Tests.Strategies
     {
       var offset = ExplicitOffset(1, 2).GetOffset(Grid(new[,] { { 1, 1 }, { 1, 1 }, { 1, 1 } }));
 
-      Assert.Equal(1, offset.Size.Width);
-      Assert.Equal(2, offset.Size.Height);
+      Assert.Equal(1, offset.Column);
+      Assert.Equal(2, offset.Row);
     }
 
     [Fact]
@@ -175,8 +175,8 @@ namespace Unrect.Tests.Strategies
     {
       var offset = MinOffset().GetOffset(Grid(new[,] { { 1, 1 } }));
 
-      Assert.Equal(0, offset.Size.Width);
-      Assert.Equal(0, offset.Size.Height);
+      Assert.Equal(0, offset.Column);
+      Assert.Equal(0, offset.Row);
     }
 
     [Fact]

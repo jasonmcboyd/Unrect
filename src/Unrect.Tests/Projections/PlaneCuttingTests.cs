@@ -43,8 +43,8 @@ namespace Unrect.Tests.Projections
       })
       {
         Assert.Same(extent.Space, cut.Space);
-        Assert.Equal(origin.Width, cut.Origin.Width);
-        Assert.Equal(origin.Height, cut.Origin.Height);
+        Assert.Equal(origin.Column, cut.Origin.Column);
+        Assert.Equal(origin.Row, cut.Origin.Row);
       }
     }
 
@@ -71,8 +71,8 @@ namespace Unrect.Tests.Projections
       var root = Range(WholeExtent(), block => block.Space).Map(space);
 
       Assert.Same(space, root.Space);
-      Assert.Equal(default(Offset).Width, root.Origin.Width);
-      Assert.Equal(default(Offset).Height, root.Origin.Height);
+      Assert.Equal(default(Offset).Column, root.Origin.Column);
+      Assert.Equal(default(Offset).Row, root.Origin.Row);
       Assert.Equal(space.Extent.Width, root.Extent.Width);
       Assert.Equal(space.Extent.Height, root.Extent.Height);
     }
@@ -99,8 +99,8 @@ namespace Unrect.Tests.Projections
         return rangeSlot;
       }).Map(CoordinateGrid(4, 10));
 
-      Assert.Equal(0, origin.Width);
-      Assert.Equal(2, origin.Height);
+      Assert.Equal(0, origin.Column);
+      Assert.Equal(2, origin.Row);
     }
   }
 }

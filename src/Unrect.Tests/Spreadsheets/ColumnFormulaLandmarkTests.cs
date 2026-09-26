@@ -90,8 +90,8 @@ namespace Unrect.Tests.Spreadsheets
       var applied = On(ColumnWithFormula()).Of(Text()).Apply(Sheet());
 
       Assert.Equal("Rate", applied.Value);
-      Assert.Equal(2, applied.Offset.Size.Width);
-      Assert.Equal(0, applied.Offset.Size.Height);
+      Assert.Equal(2, applied.Offset.Column);
+      Assert.Equal(0, applied.Offset.Row);
     }
 
     [Fact]
@@ -100,12 +100,12 @@ namespace Unrect.Tests.Spreadsheets
       var applied = RightOf(ColumnWithFormula()).Of(Text()).Apply(Sheet());
 
       Assert.Equal("Total", applied.Value);
-      Assert.Equal(3, applied.Offset.Size.Width);
+      Assert.Equal(3, applied.Offset.Column);
 
       // Said the other way, so a regression in either operator shows up here: one more than On.
       Assert.Equal(
-        On(ColumnWithFormula()).Of(Text()).Apply(Sheet()).Offset.Size.Width + 1,
-        applied.Offset.Size.Width);
+        On(ColumnWithFormula()).Of(Text()).Apply(Sheet()).Offset.Column + 1,
+        applied.Offset.Column);
     }
 
     [Fact]

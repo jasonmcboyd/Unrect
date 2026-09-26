@@ -70,8 +70,8 @@ namespace Unrect.Tests.Projections
       var applied = Down(2).Of(IntCell()).Apply(CoordinateGrid());
 
       Assert.Equal(21, applied.Value);
-      Assert.Equal(0, applied.Offset.Size.Width);
-      Assert.Equal(2, applied.Offset.Size.Height);
+      Assert.Equal(0, applied.Offset.Column);
+      Assert.Equal(2, applied.Offset.Row);
       Assert.Equal(1, applied.Consumed.Width);
       Assert.Equal(1, applied.Consumed.Height);
       Assert.Equal(1, applied.Advance.Width);
@@ -158,7 +158,7 @@ namespace Unrect.Tests.Projections
       var applied = AfterBlankRows().Of(VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(IntCell())}")).Apply(space);
 
       Assert.Equal("1|2", applied.Value);
-      Assert.Equal(1, applied.Offset.Size.Height);
+      Assert.Equal(1, applied.Offset.Row);
       Assert.Equal(2, applied.Consumed.Height);
     }
 
@@ -174,7 +174,7 @@ namespace Unrect.Tests.Projections
 
       // The flow itself starts at the origin and therefore consumes the row its child stepped over.
       Assert.Equal("1|2", applied.Value);
-      Assert.Equal(0, applied.Offset.Size.Height);
+      Assert.Equal(0, applied.Offset.Row);
       Assert.Equal(3, applied.Consumed.Height);
     }
 
@@ -407,7 +407,7 @@ namespace Unrect.Tests.Projections
       var bare = Assert.Throws<ProjectionException>(() => Down(5).Of(IntCell()).Map(CoordinateGrid()));
 
       Assert.Equal(bare.Message, stated.Message);
-      Assert.Contains("an offset of 0x5 does not fit the available space", stated.Message);
+      Assert.Contains("an offset of (0,5) does not fit the available space", stated.Message);
 
       // The composing spelling, for contrast: the same movement, reported by the composite.
       var composed = Assert.Throws<ProjectionException>(() =>
@@ -433,7 +433,7 @@ namespace Unrect.Tests.Projections
       // Nothing to carry on from, so the first movement is not composed with a phantom no-op.
       var applied = Down(2).Of(IntCell()).Apply(CoordinateGrid(width: 1));
 
-      Assert.Equal(2, applied.Offset.Size.Height);
+      Assert.Equal(2, applied.Offset.Row);
       Assert.Equal(21, applied.Value);
     }
 

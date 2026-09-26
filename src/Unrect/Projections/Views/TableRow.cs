@@ -143,7 +143,7 @@ namespace Unrect.Projections
 
       // One subtraction, and nothing accumulated: both origins are the root space's own, so the
       // frame the header was read in and the frame this row reads in are directly comparable.
-      var local = ordinals[0] + scope.CaptureOrigin.Width - Strip.Space.Origin.Width;
+      var local = ordinals[0] + scope.CaptureOrigin.Column - Strip.Space.Origin.Column;
 
       if (local < 0 || local >= Count)
         throw Failure($"column '{columnName}' is not in this region");
@@ -176,7 +176,7 @@ namespace Unrect.Projections
         throw Failure($"{string.Join(", ", path.Select(step => step.ToString()))} is a band over {answer.Columns.Count} columns, not a column; say which, by name or by position");
 
       // The same one subtraction a name makes: from the frame the header was read in to this row's.
-      var local = answer.Columns[0] + scope.CaptureOrigin.Width - Strip.Space.Origin.Width;
+      var local = answer.Columns[0] + scope.CaptureOrigin.Column - Strip.Space.Origin.Column;
 
       return local >= 0 && local < Count
         ? local

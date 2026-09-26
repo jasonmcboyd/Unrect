@@ -49,7 +49,7 @@ namespace Unrect.Projections
 
         var step = Step(index);
 
-        return Space[step.Width, step.Height];
+        return Space[step.Column, step.Row];
       }
     }
 

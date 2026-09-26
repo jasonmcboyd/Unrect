@@ -50,8 +50,8 @@ namespace Unrect.Tests.Projections
       var applied = On(Detail()).Of(Text()).Apply(Rows());
 
       Assert.Equal("Detail", applied.Value);
-      Assert.Equal(1, applied.Offset.Size.Height);
-      Assert.Equal(0, applied.Offset.Size.Width);
+      Assert.Equal(1, applied.Offset.Row);
+      Assert.Equal(0, applied.Offset.Column);
 
       Assert.Equal(3, On(Detail()).Of(Range(b => b.Height)).Map(Rows()));
     }
@@ -63,8 +63,8 @@ namespace Unrect.Tests.Projections
       var applied = On(DetailColumn()).Of(Text()).Apply(Columns());
 
       Assert.Equal("Detail", applied.Value);
-      Assert.Equal(1, applied.Offset.Size.Width);
-      Assert.Equal(0, applied.Offset.Size.Height);
+      Assert.Equal(1, applied.Offset.Column);
+      Assert.Equal(0, applied.Offset.Row);
 
       Assert.Equal(3, On(DetailColumn()).Of(Range(b => b.Width)).Map(Columns()));
     }
@@ -79,13 +79,13 @@ namespace Unrect.Tests.Projections
       var applied = Below(Detail()).Of(Text()).Apply(Rows());
 
       Assert.Equal("a", applied.Value);
-      Assert.Equal(2, applied.Offset.Size.Height);
-      Assert.Equal(0, applied.Offset.Size.Width);
+      Assert.Equal(2, applied.Offset.Row);
+      Assert.Equal(0, applied.Offset.Column);
 
       // Said the other way, so a regression in either operator shows up here: one more than On.
       Assert.Equal(
-        On(Detail()).Of(Text()).Apply(Rows()).Offset.Size.Height + 1,
-        applied.Offset.Size.Height);
+        On(Detail()).Of(Text()).Apply(Rows()).Offset.Row + 1,
+        applied.Offset.Row);
 
       // ...and the matched row is outside the extent, where On had it inside.
       Assert.Equal(2, Below(Detail()).Of(Range(b => b.Height)).Map(Rows()));
@@ -97,12 +97,12 @@ namespace Unrect.Tests.Projections
       var applied = RightOf(DetailColumn()).Of(Text()).Apply(Columns());
 
       Assert.Equal("a", applied.Value);
-      Assert.Equal(2, applied.Offset.Size.Width);
-      Assert.Equal(0, applied.Offset.Size.Height);
+      Assert.Equal(2, applied.Offset.Column);
+      Assert.Equal(0, applied.Offset.Row);
 
       Assert.Equal(
-        On(DetailColumn()).Of(Text()).Apply(Columns()).Offset.Size.Width + 1,
-        applied.Offset.Size.Width);
+        On(DetailColumn()).Of(Text()).Apply(Columns()).Offset.Column + 1,
+        applied.Offset.Column);
 
       Assert.Equal(2, RightOf(DetailColumn()).Of(Range(b => b.Width)).Map(Columns()));
     }
@@ -333,8 +333,8 @@ namespace Unrect.Tests.Projections
       var actual = anchored.Apply(space);
 
       Assert.Equal(expected.Value, actual.Value);
-      Assert.Equal(expected.Offset.Size.Width, actual.Offset.Size.Width);
-      Assert.Equal(expected.Offset.Size.Height, actual.Offset.Size.Height);
+      Assert.Equal(expected.Offset.Column, actual.Offset.Column);
+      Assert.Equal(expected.Offset.Row, actual.Offset.Row);
     }
   }
 }

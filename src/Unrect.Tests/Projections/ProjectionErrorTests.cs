@@ -30,7 +30,7 @@ namespace Unrect.Tests.Projections
     {
       var failure = Assert.Throws<ProjectionException>(() => Down(5).Of(IntCell()).Map(Square()));
 
-      Assert.Contains("an offset of 0x5 does not fit the available space", failure.Message);
+      Assert.Contains("an offset of (0,5) does not fit the available space", failure.Message);
       Assert.Contains("2x2 available", failure.Message);
       Assert.Equal(0, failure.Requested!.Value.Width);
       Assert.Equal(5, failure.Requested!.Value.Height);

@@ -705,7 +705,7 @@ namespace Unrect.Tests.Projections
       var projected = Table(r => r["Amount"].Decimal()).Apply(space);
 
       Assert.Equal(projected.Value, typed.Value.Select(row => row.Amount).ToArray());
-      Assert.Equal(projected.Offset.Size.Height, typed.Offset.Size.Height);
+      Assert.Equal(projected.Offset.Row, typed.Offset.Row);
       Assert.Equal(projected.Consumed.Width, typed.Consumed.Width);
       Assert.Equal(projected.Consumed.Height, typed.Consumed.Height);
     }

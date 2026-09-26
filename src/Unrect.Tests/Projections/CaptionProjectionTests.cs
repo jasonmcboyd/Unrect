@@ -38,8 +38,8 @@ namespace Unrect.Tests.Projections
     {
       var applied = Caption("ein:").Apply(Sheet());
 
-      Assert.Equal(0, applied.Offset.Size.Width);
-      Assert.Equal(1, applied.Offset.Size.Height);
+      Assert.Equal(0, applied.Offset.Column);
+      Assert.Equal(1, applied.Offset.Row);
     }
 
     [Fact]

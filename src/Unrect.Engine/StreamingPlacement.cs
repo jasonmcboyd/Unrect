@@ -90,7 +90,7 @@ namespace Unrect.Projections
       if (column > across)
       {
         if (_strict)
-          throw parent.Failure(_definition, $"an offset of {EngineRules.Describe(Offset.Size)} does not fit the available space", region, Offset.Size, null);
+          throw parent.Failure(_definition, $"an offset of {EngineRules.Describe(Offset)} does not fit the available space", region, new Size(Offset.Column, Offset.Row), null);
 
         Failed = true;
       }
@@ -223,10 +223,10 @@ namespace Unrect.Projections
 
       Offset = offset;
 
-      if (EngineRules.Exceeds(offset.Size, region))
+      if (EngineRules.Exceeds(offset, region))
       {
         if (_strict)
-          throw parent.Failure(_definition, $"an offset of {EngineRules.Describe(offset.Size)} does not fit the available space", region, offset.Size, null);
+          throw parent.Failure(_definition, $"an offset of {EngineRules.Describe(offset)} does not fit the available space", region, new Size(offset.Column, offset.Row), null);
 
         Failed = true;
         return false;

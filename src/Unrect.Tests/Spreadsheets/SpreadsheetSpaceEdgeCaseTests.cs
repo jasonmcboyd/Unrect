@@ -202,8 +202,8 @@ namespace Unrect.Tests.Spreadsheets
       var byDefault = Edges().Region().Slice(new Offset(0, 2), new Size(4, 2));
       var strict = Edges(isBlank: _ => false).Region().Slice(new Offset(0, 2), new Size(4, 2));
 
-      Assert.Equal(1, OffsetStrategies.SkipBlankRows().GetOffset(byDefault).Size.Height);
-      Assert.Equal(0, OffsetStrategies.SkipBlankRows().GetOffset(strict).Size.Height);
+      Assert.Equal(1, OffsetStrategies.SkipBlankRows().GetOffset(byDefault).Row);
+      Assert.Equal(0, OffsetStrategies.SkipBlankRows().GetOffset(strict).Row);
     }
 
     [Fact]

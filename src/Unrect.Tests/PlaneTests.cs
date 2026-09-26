@@ -32,8 +32,8 @@ namespace Unrect.Tests
       var plane = Plane<ISpace>.Of(space);
 
       Assert.Same(space, plane.Space);
-      Assert.Equal(0, plane.Origin.Width);
-      Assert.Equal(0, plane.Origin.Height);
+      Assert.Equal(0, plane.Origin.Column);
+      Assert.Equal(0, plane.Origin.Row);
       Assert.Equal(3, plane.Extent.Width);
       Assert.Equal(2, plane.Extent.Height);
     }
@@ -70,9 +70,9 @@ namespace Unrect.Tests
       var band = Whole().Slice(new Offset(1, 0), new Size(2, 2));
       var corner = band.Slice(new Offset(1, 1), new Size(1, 1));
 
-      Assert.Equal(1, band.Origin.Width);
-      Assert.Equal(2, corner.Origin.Width);
-      Assert.Equal(1, corner.Origin.Height);
+      Assert.Equal(1, band.Origin.Column);
+      Assert.Equal(2, corner.Origin.Column);
+      Assert.Equal(1, corner.Origin.Row);
       Assert.Equal("2,1", corner[0, 0].AsText());
     }
 
@@ -108,7 +108,7 @@ namespace Unrect.Tests
 
       Assert.Equal(0, nothing.Extent.Width);
       Assert.Equal(0, nothing.Extent.Height);
-      Assert.Equal(3, nothing.Origin.Width);
+      Assert.Equal(3, nothing.Origin.Column);
 
       // A zero-width band over real rows is legitimate too, the way a sheet with rows and no columns
       // is: the rows are there to be bounded against even though nothing can be read from them.

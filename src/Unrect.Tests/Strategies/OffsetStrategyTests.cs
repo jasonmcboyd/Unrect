@@ -30,8 +30,8 @@ namespace Unrect.Tests.Strategies
 
       var offset = SkipBlankRows().GetOffset(space);
 
-      Assert.Equal(0, offset.Size.Width);
-      Assert.Equal(2, offset.Size.Height);
+      Assert.Equal(0, offset.Column);
+      Assert.Equal(2, offset.Row);
     }
 
     [Fact]
@@ -39,7 +39,7 @@ namespace Unrect.Tests.Strategies
     {
       var space = Grid(new[,] { { 1, 0 }, { 0, 0 } });
 
-      Assert.Equal(0, SkipBlankRows().GetOffset(space).Size.Height);
+      Assert.Equal(0, SkipBlankRows().GetOffset(space).Row);
     }
 
     [Fact]
@@ -47,7 +47,7 @@ namespace Unrect.Tests.Strategies
     {
       var space = Grid(new[,] { { 0, 0 }, { 0, 0 } });
 
-      Assert.Equal(2, SkipBlankRows().GetOffset(space).Size.Height);
+      Assert.Equal(2, SkipBlankRows().GetOffset(space).Row);
     }
 
     [Fact]
@@ -61,8 +61,8 @@ namespace Unrect.Tests.Strategies
 
       var offset = SkipBlankColumns().GetOffset(space);
 
-      Assert.Equal(2, offset.Size.Width);
-      Assert.Equal(0, offset.Size.Height);
+      Assert.Equal(2, offset.Column);
+      Assert.Equal(0, offset.Row);
     }
 
     [Fact]
@@ -77,7 +77,7 @@ namespace Unrect.Tests.Strategies
 
       var offset = SkipRowsWhileAny(v => v.IsBlank() || v.AsText() == "1").GetOffset(space);
 
-      Assert.Equal(2, offset.Size.Height);
+      Assert.Equal(2, offset.Row);
     }
 
     [Fact]
@@ -91,8 +91,8 @@ namespace Unrect.Tests.Strategies
 
       var offset = SkipColumnsWhileAny(v => v.AsText() == "1").GetOffset(space);
 
-      Assert.Equal(2, offset.Size.Width);
-      Assert.Equal(0, offset.Size.Height);
+      Assert.Equal(2, offset.Column);
+      Assert.Equal(0, offset.Row);
     }
 
     // --- SkipToFirstNonBlankCell: the lazy corner heuristic -------------------------------------------
@@ -111,8 +111,8 @@ namespace Unrect.Tests.Strategies
 
       var offset = SkipToFirstNonBlankCell().GetOffset(space);
 
-      Assert.Equal(0, offset.Size.Width);
-      Assert.Equal(0, offset.Size.Height);
+      Assert.Equal(0, offset.Column);
+      Assert.Equal(0, offset.Row);
     }
 
     [Fact]
@@ -126,8 +126,8 @@ namespace Unrect.Tests.Strategies
 
       var offset = SkipToFirstNonBlankCell().GetOffset(space);
 
-      Assert.Equal(2, offset.Size.Width);
-      Assert.Equal(0, offset.Size.Height);
+      Assert.Equal(2, offset.Column);
+      Assert.Equal(0, offset.Row);
     }
 
     [Fact]
@@ -142,8 +142,8 @@ namespace Unrect.Tests.Strategies
 
       var offset = SkipToFirstNonBlankCell().GetOffset(space);
 
-      Assert.Equal(0, offset.Size.Width);
-      Assert.Equal(2, offset.Size.Height);
+      Assert.Equal(0, offset.Column);
+      Assert.Equal(2, offset.Row);
     }
 
     [Fact]
@@ -158,8 +158,8 @@ namespace Unrect.Tests.Strategies
 
       var offset = SkipToFirstNonBlankCell().GetOffset(space);
 
-      Assert.Equal(1, offset.Size.Width);
-      Assert.Equal(1, offset.Size.Height);
+      Assert.Equal(1, offset.Column);
+      Assert.Equal(1, offset.Row);
     }
 
     [Fact]
@@ -179,8 +179,8 @@ namespace Unrect.Tests.Strategies
 
       var offset = SkipToFirstNonBlankCell().GetOffset(space);
 
-      Assert.Equal(2, offset.Size.Width);
-      Assert.Equal(0, offset.Size.Height);
+      Assert.Equal(2, offset.Column);
+      Assert.Equal(0, offset.Row);
     }
 
     [Fact]
@@ -199,9 +199,9 @@ namespace Unrect.Tests.Strategies
       var skipToCell = SkipToFirstNonBlankCell().GetOffset(space);
       var skipRows = SkipBlankRows().GetOffset(space);
 
-      Assert.Equal(3, skipToCell.Size.Height);
-      Assert.Equal(skipRows.Size.Height, skipToCell.Size.Height);
-      Assert.Equal(skipRows.Size.Width, skipToCell.Size.Width);
+      Assert.Equal(3, skipToCell.Row);
+      Assert.Equal(skipRows.Row, skipToCell.Row);
+      Assert.Equal(skipRows.Column, skipToCell.Column);
     }
 
     // --- SkipToFirstNonBlankCell is lazy (column-cheap): it reads rows only to the first with content
@@ -250,8 +250,8 @@ namespace Unrect.Tests.Strategies
 
       var offset = FromRight(2).GetOffset(space);
 
-      Assert.Equal(2, offset.Size.Width);
-      Assert.Equal(0, offset.Size.Height);
+      Assert.Equal(2, offset.Column);
+      Assert.Equal(0, offset.Row);
     }
 
     [Fact]
@@ -261,8 +261,8 @@ namespace Unrect.Tests.Strategies
 
       var offset = FromBottom(1).GetOffset(space);
 
-      Assert.Equal(0, offset.Size.Width);
-      Assert.Equal(2, offset.Size.Height);
+      Assert.Equal(0, offset.Column);
+      Assert.Equal(2, offset.Row);
     }
 
     [Fact]
@@ -270,8 +270,8 @@ namespace Unrect.Tests.Strategies
     {
       var space = Grid(new[,] { { 1, 2, 3, 4 }, { 11, 12, 13, 14 }, { 21, 22, 23, 24 } });
 
-      Assert.Equal(0, FromRight(4).GetOffset(space).Size.Width);
-      Assert.Equal(0, FromBottom(3).GetOffset(space).Size.Height);
+      Assert.Equal(0, FromRight(4).GetOffset(space).Column);
+      Assert.Equal(0, FromBottom(3).GetOffset(space).Row);
     }
 
     [Fact]

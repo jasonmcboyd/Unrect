@@ -18,6 +18,12 @@ namespace Unrect.Core
     /// <summary>How far <paramref name="size"/> reaches across <paramref name="along"/>.</summary>
     internal static int Across(Size size, Orientation along) => along == Orientation.Vertical ? size.Width : size.Height;
 
+    /// <summary>How many spans in <paramref name="offset"/> lies along <paramref name="along"/>.</summary>
+    internal static int Along(Offset offset, Orientation along) => along == Orientation.Vertical ? offset.Row : offset.Column;
+
+    /// <summary>How far across <paramref name="along"/> <paramref name="offset"/> starts.</summary>
+    internal static int Across(Offset offset, Orientation along) => along == Orientation.Vertical ? offset.Column : offset.Row;
+
     /// <summary>How many spans <paramref name="region"/> has along <paramref name="along"/>.</summary>
     internal static int Along<TSpace>(Plane<TSpace> region, Orientation along)
       where TSpace : class, ISpace
@@ -70,7 +76,7 @@ namespace Unrect.Core
     {
       var origin = first.Origin + Step(distance, along);
 
-      return Along(origin.Size, along) <= Along(first.Space.Extent, along)
+      return Along(origin, along) <= Along(first.Space.Extent, along)
         ? new Plane<TSpace>(first.Space, origin, ToSize(0, Across(first, along), along))
         : Empty(first, along);
     }

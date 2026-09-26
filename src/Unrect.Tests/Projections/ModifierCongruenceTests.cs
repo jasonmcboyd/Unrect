@@ -458,8 +458,8 @@ namespace Unrect.Tests.Projections
       AssertL1(inside, outside);
       Assert.Equal(inside.Advance, outside.Advance);
 
-      Assert.Equal("0x0", inside.Offset);
-      Assert.Equal("0x1", outside.Offset);
+      Assert.Equal("(0,0)", inside.Offset);
+      Assert.Equal("(0,1)", outside.Offset);
       Assert.NotEqual(inside.Consumed, outside.Consumed);
     }
 

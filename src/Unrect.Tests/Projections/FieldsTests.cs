@@ -151,8 +151,8 @@ namespace Unrect.Tests.Projections
       // Two columns in and no rows down here; the offset is what the anchor found.
       var applied = Entity().Apply(Card());
 
-      Assert.Equal(2, applied.Offset.Size.Width);
-      Assert.Equal(0, applied.Offset.Size.Height);
+      Assert.Equal(2, applied.Offset.Column);
+      Assert.Equal(0, applied.Offset.Row);
     }
 
     [Fact]

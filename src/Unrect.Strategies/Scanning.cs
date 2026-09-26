@@ -101,9 +101,15 @@ namespace Unrect.Strategies
         return OffsetStep.StartHere;
       }
 
-      // The size, wherever it lands: a skip past the end is the placement's to report as not
+      // The size, wherever it lands, read as the displacement it measures — this lift is the one
+      // place an extent becomes an offset. A skip past the end is the placement's to report as not
       // fitting, with what was asked and what was there.
-      public Offset Settle(Plane<ISpace> region) => new Offset(Scans.FoldSize(_size, region, _along));
+      public Offset Settle(Plane<ISpace> region)
+      {
+        var size = Scans.FoldSize(_size, region, _along);
+
+        return new Offset(size.Width, size.Height);
+      }
     }
 
     /// <summary>

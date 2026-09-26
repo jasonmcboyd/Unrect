@@ -265,8 +265,8 @@ namespace Unrect.Tests.Strategies
     public void SkipBlankRows_MirrorsSkipBlankColumns()
     {
       Mirrored(
-        space => OffsetStrategies.SkipBlankRows().GetOffset(space).Height,
-        space => OffsetStrategies.SkipBlankColumns().GetOffset(space).Width);
+        space => OffsetStrategies.SkipBlankRows().GetOffset(space).Row,
+        space => OffsetStrategies.SkipBlankColumns().GetOffset(space).Column);
 
       // The other half of the offset mirror: each lift is (0, rows) or (columns, 0), so a skip
       // declared on one axis can never quietly displace the other.
@@ -274,8 +274,8 @@ namespace Unrect.Tests.Strategies
       {
         var space = Labels(grid);
 
-        Assert.Equal(0, OffsetStrategies.SkipBlankRows().GetOffset(space).Width);
-        Assert.Equal(0, OffsetStrategies.SkipBlankColumns().GetOffset(space).Height);
+        Assert.Equal(0, OffsetStrategies.SkipBlankRows().GetOffset(space).Column);
+        Assert.Equal(0, OffsetStrategies.SkipBlankColumns().GetOffset(space).Row);
       }
     }
 
@@ -283,14 +283,14 @@ namespace Unrect.Tests.Strategies
     public void SkipRowsWhile_MirrorsSkipColumnsWhile_OnBothQuantifiers()
     {
       Mirrored(
-        space => OffsetStrategies.SkipRowsWhileAny(HasValue).GetOffset(space).Height,
-        space => OffsetStrategies.SkipColumnsWhileAny(HasValue).GetOffset(space).Width);
+        space => OffsetStrategies.SkipRowsWhileAny(HasValue).GetOffset(space).Row,
+        space => OffsetStrategies.SkipColumnsWhileAny(HasValue).GetOffset(space).Column);
 
       // The two-argument "all" form, which the suite otherwise only exercises through its
       // zero-argument spelling, SkipBlankRows.
       Mirrored(
-        space => OffsetStrategies.SkipRowsWhileAll(HasValue).GetOffset(space).Height,
-        space => OffsetStrategies.SkipColumnsWhileAll(HasValue).GetOffset(space).Width);
+        space => OffsetStrategies.SkipRowsWhileAll(HasValue).GetOffset(space).Row,
+        space => OffsetStrategies.SkipColumnsWhileAll(HasValue).GetOffset(space).Column);
     }
 
     // --- Sizes: the mirror is a transposed rectangle, not a transposed count -------------------------------

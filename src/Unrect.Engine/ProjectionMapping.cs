@@ -115,7 +115,7 @@ namespace Unrect.Projections
       // Suppressed only when the whole parse is one absorbed failure: two boundaries that each
       // absorbed something have left a gap worth mentioning, even though neither consumed anything.
       if (!(applied.Advance.Width == 0 && applied.Advance.Height == 0 && scope.Diagnostics.AbsorbedAt(mark)))
-        ProjectionExtensions.ReportUnconsumed(projection, extent, applied.Offset.Size, applied.Consumed, scope);
+        ProjectionExtensions.ReportUnconsumed(projection, extent, applied.Offset, applied.Consumed, scope);
 
       return (applied, scope.Diagnostics.Snapshot());
     }

@@ -37,8 +37,8 @@ namespace Unrect.Tests.Projections
       var applied = projection.Apply(space);
 
       Assert.Equal(value, applied.Value);
-      Assert.Equal(0, applied.Offset.Size.Width);
-      Assert.Equal(0, applied.Offset.Size.Height);
+      Assert.Equal(0, applied.Offset.Column);
+      Assert.Equal(0, applied.Offset.Row);
       Assert.Equal(consumedWidth, applied.Consumed.Width);
       Assert.Equal(consumedHeight, applied.Consumed.Height);
       Assert.Equal(consumedWidth, applied.Advance.Width);

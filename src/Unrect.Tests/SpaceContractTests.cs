@@ -545,7 +545,7 @@ namespace Unrect.Tests
         for (var row = 0; row < sample.Of.Height; row++)
           for (var column = 0; column < sample.Of.Width; column++)
           {
-            var expected = parent.FormulaAt(sample.At.Width + column, sample.At.Height + row);
+            var expected = parent.FormulaAt(sample.At.Column + column, sample.At.Row + row);
 
             var cell = slice[column, row];
 

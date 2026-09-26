@@ -322,23 +322,23 @@ namespace Unrect.Projections
       public OffsetStep Next(Plane<ISpace> region, int row, out int column)
       {
         var start = _along == Orientation.Vertical
-          ? region.Origin.Height - _whole.Origin.Height
-          : region.Origin.Width - _whole.Origin.Width;
+          ? region.Origin.Row - _whole.Origin.Row
+          : region.Origin.Column - _whole.Origin.Column;
 
         if (start != _start)
         {
           var remaining = _whole.Slice(Spans.Step(start, _along));
           var offset = Scans.FoldOffset(_strategy.Begin(_along), remaining, _along);
 
-          if (offset.Width > remaining.Width || offset.Height > remaining.Height)
+          if (offset.Column > remaining.Width || offset.Row > remaining.Height)
             throw new OutOfBoundsException();
 
           _start = start;
           _offset = offset;
         }
 
-        column = Spans.Across(_offset.Size, _along);
-        return row < Spans.Along(_offset.Size, _along) ? OffsetStep.Skip : OffsetStep.StartHere;
+        column = Spans.Across(_offset, _along);
+        return row < Spans.Along(_offset, _along) ? OffsetStep.Skip : OffsetStep.StartHere;
       }
 
       public Offset Settle(Plane<ISpace> region) => throw new OutOfBoundsException();

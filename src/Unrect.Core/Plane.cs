@@ -50,7 +50,7 @@ namespace Unrect.Core
       // int.MaxValue plus any extent at all wraps to a negative that passes a "> width" test, and
       // the region would then be built past the edge and fail later as an argument bug — a fault,
       // which no tolerance boundary may absorb — instead of as the bounds condition it is.
-      if (origin.Width > whole.Width - extent.Width || origin.Height > whole.Height - extent.Height)
+      if (origin.Column > whole.Width - extent.Width || origin.Row > whole.Height - extent.Height)
         throw new OutOfBoundsException();
 
       Space = space;
@@ -102,7 +102,7 @@ namespace Unrect.Core
     public Plane<TSpace> Slice(Offset offset, Size extent)
     {
       // Both checks avoid adding the two terms, which can overflow — see the constructor.
-      if (offset.Width > Width - extent.Width || offset.Height > _extent.Height - extent.Height)
+      if (offset.Column > Width - extent.Width || offset.Row > _extent.Height - extent.Height)
         throw new OutOfBoundsException();
 
       return new Plane<TSpace>(Space, Origin + offset, extent, known: true);
@@ -115,10 +115,10 @@ namespace Unrect.Core
       // Checked before the subtraction below: without the check an oversized offset produces a
       // negative extent, which Size reports as an argument bug rather than as the bounds condition
       // a declaration may recover from.
-      if (offset.Width > Width || offset.Height > _extent.Height)
+      if (offset.Column > Width || offset.Row > _extent.Height)
         throw new OutOfBoundsException();
 
-      return new Plane<TSpace>(Space, Origin + offset, new Size(Width - offset.Width, _extent.Height - offset.Height), known: true);
+      return new Plane<TSpace>(Space, Origin + offset, new Size(Width - offset.Column, _extent.Height - offset.Row), known: true);
     }
 
     /// <summary><paramref name="extent"/>, from this region's own corner.</summary>
@@ -154,7 +154,7 @@ namespace Unrect.Core
         if (!HasColumn(column) || !HasRow(row))
           throw new OutOfBoundsException();
 
-        return new Point<TSpace>(Space, Origin.Width + column, Origin.Height + row);
+        return new Point<TSpace>(Space, Origin.Column + column, Origin.Row + row);
       }
     }
 
@@ -187,6 +187,6 @@ namespace Unrect.Core
     /// The region as <c>(column,row) WxH</c>: its origin in the space's own root coordinates, then
     /// its extent. Coordinates rather than A1, because a space need not be a sheet.
     /// </summary>
-    public override string ToString() => $"({Origin.Width},{Origin.Height}) {Width}x{_extent.Height}";
+    public override string ToString() => $"({Origin.Column},{Origin.Row}) {Width}x{_extent.Height}";
   }
 }

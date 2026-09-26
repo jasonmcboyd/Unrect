@@ -136,7 +136,7 @@ namespace Unrect.Projections
       return Math.Max(innerStart, current - own.Count!.Value + 1);
     }
 
-    private int Row(Plane<TSpace> span) => _driver == Orientation.Vertical ? span.Origin.Height : span.Origin.Width;
+    private int Row(Plane<TSpace> span) => _driver == Orientation.Vertical ? span.Origin.Row : span.Origin.Column;
 
     // --- What the parent reads off the handle --------------------------------------------------
 
@@ -221,7 +221,7 @@ namespace Unrect.Projections
           if (step == OffsetStep.Skip)
             return true;
 
-          _column = _driver == Orientation.Vertical ? _placement.Offset.Width : _placement.Offset.Height;
+          _column = _driver == Orientation.Vertical ? _placement.Offset.Column : _placement.Offset.Row;
           Offset = _placement.Offset;
 
           if (step == OffsetStep.StartNext)
@@ -402,9 +402,9 @@ namespace Unrect.Projections
         else
         {
           Offset = _placement.Offset;
-          _column = Spans.Across(Offset.Size, _driver);
+          _column = Spans.Across(Offset, _driver);
 
-          var start = Spans.Along(Offset.Size, _driver);
+          var start = Spans.Along(Offset, _driver);
           Start(start, Spans.EmptyAt(_offered.Count == 0 ? _anchor : _offered[0], start, _driver));
 
           for (var index = start; index < _offered.Count && _phase != Phase.Finished; index++)
@@ -503,7 +503,7 @@ namespace Unrect.Projections
     {
       Consumed = consumed;
       Absorbed = absorbed;
-      Advance = Offset.Size + consumed;
+      Advance = Offset + consumed;
       _settlement = new Settlement<T>(value, consumed, absorbed);
     }
 
