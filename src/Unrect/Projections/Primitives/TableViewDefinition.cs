@@ -7,7 +7,7 @@ namespace Unrect.Projections
   internal sealed class TableViewDefinition<TSpace, T> : CollectorNode<TSpace, T>
     where TSpace : class, ISpace
   {
-    public TableViewDefinition(int headerRows, Func<TableView<TSpace>, T> project, Placement placement, string description, string? opacity = null)
+    public TableViewDefinition(int headerRows, Func<TableView<TSpace>, T> project, Placement<TSpace> placement, string description, string? opacity = null)
       : base(placement)
     {
       HeaderRows = headerRows;

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 
+using Unrect.Core;
 using Unrect.Projections;
 
 namespace Unrect.Spreadsheets
@@ -127,20 +128,20 @@ namespace Unrect.Spreadsheets
     /// <inheritdoc cref="SpreadsheetProjections.Formula{TSpace}()"/>
     public static IProjectionDefinition<TSpace, string?> Formula() => SpreadsheetProjections.Formula<TSpace>();
 
-    /// <inheritdoc cref="SpreadsheetProjections.RowWithFormula()"/>
-    public static ILineLandmark<TSpace> RowWithFormula() => SpreadsheetProjections.RowWithFormula();
+    /// <inheritdoc cref="SpreadsheetProjections.RowWithFormula{TSpace}()"/>
+    public static ILineLandmark<TSpace> RowWithFormula() => SpreadsheetProjections.RowWithFormula<TSpace>();
 
-    /// <inheritdoc cref="SpreadsheetProjections.RowWithFormula(string)"/>
+    /// <inheritdoc cref="SpreadsheetProjections.RowWithFormula{TSpace}(string)"/>
     /// <param name="containing">The text the formula must mention.</param>
     public static ILineLandmark<TSpace> RowWithFormula(string containing)
-      => SpreadsheetProjections.RowWithFormula(containing);
+      => SpreadsheetProjections.RowWithFormula<TSpace>(containing);
 
-    /// <inheritdoc cref="SpreadsheetProjections.ColumnWithFormula()"/>
-    public static ILineLandmark<TSpace> ColumnWithFormula() => SpreadsheetProjections.ColumnWithFormula();
+    /// <inheritdoc cref="SpreadsheetProjections.ColumnWithFormula{TSpace}()"/>
+    public static ILineLandmark<TSpace> ColumnWithFormula() => SpreadsheetProjections.ColumnWithFormula<TSpace>();
 
-    /// <inheritdoc cref="SpreadsheetProjections.ColumnWithFormula(string)"/>
+    /// <inheritdoc cref="SpreadsheetProjections.ColumnWithFormula{TSpace}(string)"/>
     /// <param name="containing">The text the formula must mention.</param>
     public static ILineLandmark<TSpace> ColumnWithFormula(string containing)
-      => SpreadsheetProjections.ColumnWithFormula(containing);
+      => SpreadsheetProjections.ColumnWithFormula<TSpace>(containing);
   }
 }

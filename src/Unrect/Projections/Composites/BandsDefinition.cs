@@ -23,7 +23,7 @@ namespace Unrect.Projections
       int stride,
       UseSite eachSite,
       BlankRowStrategy? onBlank,
-      Placement placement)
+      Placement<TSpace> placement)
       : base(placement)
     {
       Each = each ?? throw new ArgumentNullException(nameof(each));

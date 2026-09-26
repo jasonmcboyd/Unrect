@@ -6,6 +6,8 @@ namespace Unrect.Strategies
   public static class SizeStrategyExtensions
   {
     /// <summary><paramref name="sizeStrategy"/> as an offset: skip that many spans, start that far across.</summary>
-    public static IOffsetStrategy ToOffsetStrategy(this ISizeStrategy sizeStrategy) => new OffsetStrategy(sizeStrategy);
+    public static IOffsetStrategy<TSpace> ToOffsetStrategy<TSpace>(this ISizeStrategy<TSpace> sizeStrategy)
+      where TSpace : class, ISpace
+      => new OffsetStrategy<TSpace>(sizeStrategy);
   }
 }

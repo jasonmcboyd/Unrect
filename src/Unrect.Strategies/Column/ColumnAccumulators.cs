@@ -4,7 +4,7 @@ namespace Unrect.Strategies
 {
   /// <summary>
   /// The column side's definitional fold, the counterpart of <see cref="Scans"/>: what an
-  /// <see cref="IRowMajorColumnStrategy"/>'s eager reading means, written once so each implementation
+  /// <see cref="IRowMajorColumnStrategy{TSpace}"/>'s eager reading means, written once so each implementation
   /// can say it in a line rather than in a loop of its own.
   /// </summary>
   internal static class ColumnAccumulators
@@ -14,7 +14,8 @@ namespace Unrect.Strategies
     /// rows taken into account in order, stopping as soon as the answer is settled or the rows run
     /// out.
     /// </summary>
-    internal static int Fold(IColumnAccumulator accumulator, Plane<ISpace> space)
+    internal static int Fold<TSpace>(IColumnAccumulator<TSpace> accumulator, Plane<TSpace> space)
+      where TSpace : class, ISpace
     {
       // Asked a row at a time, as the row twin is, stopping as soon as the answer is settled.
       for (var row = 0; !accumulator.IsSettled && space.HasRow(row); row++)

@@ -11,7 +11,7 @@ namespace Unrect.Projections
   internal sealed class FlowDefinition<TSpace, T> : LayoutDefinition<TSpace, T>
     where TSpace : class, ISpace
   {
-    public FlowDefinition(Orientation orientation, Layout<TSpace, T> layout, Placement placement, string? description = null)
+    public FlowDefinition(Orientation orientation, Layout<TSpace, T> layout, Placement<TSpace> placement, string? description = null)
       : base(layout, placement)
     {
       Orientation = orientation;

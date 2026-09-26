@@ -15,7 +15,7 @@ namespace Unrect.Projections
   internal sealed class ChoiceDefinition<TSpace, T> : DefinitionNode<TSpace, T>
     where TSpace : class, ISpace
   {
-    public ChoiceDefinition(IReadOnlyList<IProjectionDefinition<TSpace, T>> alternatives, Placement placement)
+    public ChoiceDefinition(IReadOnlyList<IProjectionDefinition<TSpace, T>> alternatives, Placement<TSpace> placement)
       : base(placement)
     {
       var copy = new IProjectionDefinition<TSpace, T>[alternatives.Count];

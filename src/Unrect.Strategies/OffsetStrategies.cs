@@ -4,50 +4,63 @@ using static Unrect.Strategies.SizeStrategies;
 
 namespace Unrect.Strategies
 {
-  /// <summary>Factories for <see cref="IOffsetStrategy"/> — how a projection's origin is found within the space it is handed.</summary>
+  /// <summary>Factories for <see cref="IOffsetStrategy{TSpace}"/> — how a projection's origin is found within the space it is handed.</summary>
   public static class OffsetStrategies
   {
     // "No movement" is one value rather than one per call: a placement recognises it to decide
     // whether a later movement composes onto a declared offset or replaces an undeclared one, so
     // two spellings of nothing must not be two different offsets. The strategy is immutable, so
     // there is nothing to share but the answer.
-    private static readonly IOffsetStrategy NoMovement = MinSize().ToOffsetStrategy();
+    private static class NoMovement<TSpace>
+      where TSpace : class, ISpace
+    {
+      internal static readonly IOffsetStrategy<TSpace> Value = MinSize<TSpace>().ToOffsetStrategy();
+    }
 
     /// <summary>No movement — the origin the projection was handed.</summary>
-    public static IOffsetStrategy MinOffset()
-      => NoMovement;
+    public static IOffsetStrategy<TSpace> MinOffset<TSpace>()
+      where TSpace : class, ISpace
+      => NoMovement<TSpace>.Value;
 
     /// <summary>A fixed displacement of <paramref name="width"/> columns and <paramref name="height"/> rows.</summary>
-    public static IOffsetStrategy ExplicitOffset(int width, int height)
-      => ExplicitSize(width, height).ToOffsetStrategy();
+    public static IOffsetStrategy<TSpace> ExplicitOffset<TSpace>(int width, int height)
+      where TSpace : class, ISpace
+      => ExplicitSize<TSpace>(width, height).ToOffsetStrategy();
 
     /// <summary>Whatever <paramref name="selector"/> computes from the available space.</summary>
-    public static IOffsetStrategy SelectOffset(Func<Plane<ISpace>, Size> selector)
+    public static IOffsetStrategy<TSpace> SelectOffset<TSpace>(Func<Plane<TSpace>, Size> selector)
+      where TSpace : class, ISpace
       => SelectSize(selector).ToOffsetStrategy();
 
     /// <summary>Past the leading rows in which every cell satisfies <paramref name="predicate"/>.</summary>
-    public static IOffsetStrategy SkipRowsWhileAll(Func<Point<ISpace>, bool> predicate)
-      => new RowOffsetSizeStrategy(RowStrategies.TakeRowsWhileAll(predicate)).ToOffsetStrategy();
+    public static IOffsetStrategy<TSpace> SkipRowsWhileAll<TSpace>(Func<Point<TSpace>, bool> predicate)
+      where TSpace : class, ISpace
+      => new RowOffsetSizeStrategy<TSpace>(RowStrategies.TakeRowsWhileAll(predicate)).ToOffsetStrategy();
 
     /// <summary>Past the leading rows in which at least one cell satisfies <paramref name="predicate"/>.</summary>
-    public static IOffsetStrategy SkipRowsWhileAny(Func<Point<ISpace>, bool> predicate)
-      => new RowOffsetSizeStrategy(RowStrategies.TakeRowsWhileAny(predicate)).ToOffsetStrategy();
+    public static IOffsetStrategy<TSpace> SkipRowsWhileAny<TSpace>(Func<Point<TSpace>, bool> predicate)
+      where TSpace : class, ISpace
+      => new RowOffsetSizeStrategy<TSpace>(RowStrategies.TakeRowsWhileAny(predicate)).ToOffsetStrategy();
 
     /// <summary>Past the leading entirely-blank rows — the zero-argument form of <see cref="SkipRowsWhileAll"/>.</summary>
-    public static IOffsetStrategy SkipBlankRows()
-      => SkipRowsWhileAll(v => v.IsBlank());
+    public static IOffsetStrategy<TSpace> SkipBlankRows<TSpace>()
+      where TSpace : class, ISpace
+      => SkipRowsWhileAll<TSpace>(v => v.IsBlank());
 
     /// <summary>Past the leading columns in which every cell satisfies <paramref name="predicate"/>; the column twin of <see cref="SkipRowsWhileAll"/>.</summary>
-    public static IOffsetStrategy SkipColumnsWhileAll(Func<Point<ISpace>, bool> predicate)
-      => new ColumnOffsetSizeStrategy(ColumnStrategies.TakeColumnsWhileAll(predicate)).ToOffsetStrategy();
+    public static IOffsetStrategy<TSpace> SkipColumnsWhileAll<TSpace>(Func<Point<TSpace>, bool> predicate)
+      where TSpace : class, ISpace
+      => new ColumnOffsetSizeStrategy<TSpace>(ColumnStrategies.TakeColumnsWhileAll(predicate)).ToOffsetStrategy();
 
     /// <summary>Past the leading columns in which at least one cell satisfies <paramref name="predicate"/>; the column twin of <see cref="SkipRowsWhileAny"/>.</summary>
-    public static IOffsetStrategy SkipColumnsWhileAny(Func<Point<ISpace>, bool> predicate)
-      => new ColumnOffsetSizeStrategy(ColumnStrategies.TakeColumnsWhileAny(predicate)).ToOffsetStrategy();
+    public static IOffsetStrategy<TSpace> SkipColumnsWhileAny<TSpace>(Func<Point<TSpace>, bool> predicate)
+      where TSpace : class, ISpace
+      => new ColumnOffsetSizeStrategy<TSpace>(ColumnStrategies.TakeColumnsWhileAny(predicate)).ToOffsetStrategy();
 
     /// <summary>Past the leading entirely-blank columns — the zero-argument form of <see cref="SkipColumnsWhileAll"/>.</summary>
-    public static IOffsetStrategy SkipBlankColumns()
-      => SkipColumnsWhileAll(v => v.IsBlank());
+    public static IOffsetStrategy<TSpace> SkipBlankColumns<TSpace>()
+      where TSpace : class, ISpace
+      => SkipColumnsWhileAll<TSpace>(v => v.IsBlank());
 
     /// <summary>
     /// Onto the first non-blank cell scanning row-major from the top-left — down to the first row
@@ -61,16 +74,18 @@ namespace Unrect.Strategies
     /// does.
     /// </para>
     /// </summary>
-    public static IOffsetStrategy SkipToFirstNonBlankCell()
-      => new SkipToFirstNonBlankCellStrategy();
+    public static IOffsetStrategy<TSpace> SkipToFirstNonBlankCell<TSpace>()
+      where TSpace : class, ISpace
+      => new SkipToFirstNonBlankCellStrategy<TSpace>();
 
     /// <summary>
     /// Sequences <paramref name="offsets"/>: each is resolved against the space the one before it
     /// left, and the displacements sum — so <c>Then(SkipBlankRows(), ExplicitOffset(0, 1))</c>
     /// reads as "past the blank band, then one more row".
     /// </summary>
-    public static IOffsetStrategy Then(params IOffsetStrategy[] offsets)
-      => new CompositeOffsetStrategy(offsets);
+    public static IOffsetStrategy<TSpace> Then<TSpace>(params IOffsetStrategy<TSpace>[] offsets)
+      where TSpace : class, ISpace
+      => new CompositeOffsetStrategy<TSpace>(offsets);
 
     // --- The two lifts: where a matcher puts a projection ---------------------------------------------
     //
@@ -90,8 +105,9 @@ namespace Unrect.Strategies
     /// looks for. The region starts AT that line, so the projection owns it — a caption its section
     /// should describe, or a label row it reads.
     /// </summary>
-    public static IOffsetStrategy To(ILineLandmark landmark)
-      => new LandmarkOffsetStrategy(NotNull(landmark, nameof(landmark)), past: false);
+    public static IOffsetStrategy<TSpace> To<TSpace>(ILineLandmark<TSpace> landmark)
+      where TSpace : class, ISpace
+      => new LandmarkOffsetStrategy<TSpace>(NotNull(landmark, nameof(landmark)), past: false);
 
     /// <summary>
     /// Onto the line after the one <paramref name="landmark"/> matches, for a projection that
@@ -99,8 +115,9 @@ namespace Unrect.Strategies
     /// old anchor-then-skip idiom, without the hard-coded 1 that stood in for the matched line's
     /// own size.
     /// </summary>
-    public static IOffsetStrategy Past(ILineLandmark landmark)
-      => new LandmarkOffsetStrategy(NotNull(landmark, nameof(landmark)), past: true);
+    public static IOffsetStrategy<TSpace> Past<TSpace>(ILineLandmark<TSpace> landmark)
+      where TSpace : class, ISpace
+      => new LandmarkOffsetStrategy<TSpace>(NotNull(landmark, nameof(landmark)), past: true);
 
     // --- Anchoring to the far edge --------------------------------------------------------------
     //
@@ -109,19 +126,21 @@ namespace Unrect.Strategies
     // anything, since the anchor discards where the movement left off.
 
     /// <summary>The rightmost <paramref name="width"/> columns of the available space.</summary>
-    public static IOffsetStrategy FromRight(int width)
+    public static IOffsetStrategy<TSpace> FromRight<TSpace>(int width)
+      where TSpace : class, ISpace
     {
       NotNegative(width, nameof(width));
 
-      return SelectOffset(space => new Size(Reserve(space.Width, width), 0));
+      return SelectOffset<TSpace>(space => new Size(Reserve(space.Width, width), 0));
     }
 
     /// <summary>The bottom <paramref name="height"/> rows of the available space.</summary>
-    public static IOffsetStrategy FromBottom(int height)
+    public static IOffsetStrategy<TSpace> FromBottom<TSpace>(int height)
+      where TSpace : class, ISpace
     {
       NotNegative(height, nameof(height));
 
-      return SelectOffset(space => new Size(0, Reserve(space.Height, height)));
+      return SelectOffset<TSpace>(space => new Size(0, Reserve(space.Height, height)));
     }
 
     /// <summary>How far in to start so that <paramref name="extent"/> reaches the far edge.</summary>

@@ -40,9 +40,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- The internal helpers — a plane erased to the canonical surface or retyped back, the span
-         arithmetic every scan and machine shares, the one double rendering — are the parts of Core
-         the packages above it are written with and a consumer never touches. -->
+    <!-- The internal helpers — the span arithmetic every scan and machine shares, the one double
+         rendering, the one sentence a scan that breaks its contract is refused with — are the parts
+         of Core the packages above it are written with and a consumer never touches. -->
     <InternalsVisibleTo Include="Unrect" />
     <InternalsVisibleTo Include="Unrect.Engine" />
     <InternalsVisibleTo Include="Unrect.Strategies" />

@@ -132,7 +132,7 @@ namespace Unrect.Projections
         NotNull(projection),
         NotNull(fallback, nameof(fallback)),
         default!,
-        Placement.Default,
+        Placement<TSpace>.Default,
         "Else",
         UseSite.From(declared, null));
 
@@ -169,7 +169,7 @@ namespace Unrect.Projections
     /// <param name="fallbackValue">What to yield instead.</param>
     public static IProjectionDefinition<TSpace, T> Else<TSpace, T>(this IProjectionDefinition<TSpace, T> projection, T fallbackValue)
       where TSpace : class, ISpace
-      => new FallbackDefinition<TSpace, T>(NotNull(projection), null, fallbackValue, Placement.Default, "Else");
+      => new FallbackDefinition<TSpace, T>(NotNull(projection), null, fallbackValue, Placement<TSpace>.Default, "Else");
 
     /// <summary>
     /// Yields the default value when this projection fails, recording a <c>Warning</c> that carries
@@ -187,7 +187,7 @@ namespace Unrect.Projections
     /// <param name="projection">The declaration.</param>
     public static IProjectionDefinition<TSpace, T?> Optional<TSpace, T>(this IProjectionDefinition<TSpace, T> projection)
       where TSpace : class, ISpace
-      => new FallbackDefinition<TSpace, T?>(NotNull(projection).Select(value => (T?)value), null, default, Placement.Default, "Optional");
+      => new FallbackDefinition<TSpace, T?>(NotNull(projection).Select(value => (T?)value), null, default, Placement<TSpace>.Default, "Optional");
 
     /// <summary>
     /// Reads a blank cell as null, quietly — the leaf's way of saying "this field may be absent".
@@ -249,7 +249,7 @@ namespace Unrect.Projections
     /// <param name="selector">The transformation applied to what it reads.</param>
     public static IProjectionDefinition<TSpace, TResult> Select<TSpace, T, TResult>(this IProjectionDefinition<TSpace, T> projection, Func<T, TResult> selector)
       where TSpace : class, ISpace
-      => new SelectDefinition<TSpace, T, TResult>(NotNull(projection), selector, Placement.Default);
+      => new SelectDefinition<TSpace, T, TResult>(NotNull(projection), selector, Placement<TSpace>.Default);
 
     /// <summary>
     /// Insets the projection's extent by <paramref name="all"/> cells on every side.
@@ -319,7 +319,7 @@ namespace Unrect.Projections
 
     private static IProjectionDefinition<TSpace, TResult> Pad<TSpace, TResult>(IProjectionDefinition<TSpace, TResult> projection, int left, int top, int right, int bottom)
       where TSpace : class, ISpace
-      => new PadDefinition<TSpace, TResult>(NotNull(projection), left, top, right, bottom, Placement.Default);
+      => new PadDefinition<TSpace, TResult>(NotNull(projection), left, top, right, bottom, Placement<TSpace>.Default);
 
     /// <summary>
     /// The receiver as the one node that can tolerate a blank: a blank is a value in a reading of

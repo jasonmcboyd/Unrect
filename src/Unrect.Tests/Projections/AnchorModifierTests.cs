@@ -36,9 +36,9 @@ namespace Unrect.Tests.Projections
     // The same four cells turned on their side, so the column twins read identically.
     private static ICellSpace Columns() => Mixed(new object?[,] { { "junk", "Detail", "a", "b" } });
 
-    private static ILineLandmark Detail() => RowContaining("Detail").Landmark;
+    private static ILineLandmark<ICellSpace> Detail() => RowContaining("Detail");
 
-    private static ILineLandmark DetailColumn() => ColumnContaining("Detail").Landmark;
+    private static ILineLandmark<ICellSpace> DetailColumn() => ColumnContaining("Detail");
 
     // --- On: the projection lands on the match and owns it -------------------------------------------------
 
@@ -234,19 +234,19 @@ namespace Unrect.Tests.Projections
       var column = ColumnContaining("Nope");
 
       Assert.Equal(
-        Miss(OffsetBy(OffsetStrategies.To(row.Landmark)).Of(Text()), Rows()),
+        Miss(OffsetBy(OffsetStrategies.To(row)).Of(Text()), Rows()),
         Miss(On(row).Of(Text()), Rows()));
 
       Assert.Equal(
-        Miss(OffsetBy(OffsetStrategies.Past(row.Landmark)).Of(Text()), Rows()),
+        Miss(OffsetBy(OffsetStrategies.Past(row)).Of(Text()), Rows()),
         Miss(Below(row).Of(Text()), Rows()));
 
       Assert.Equal(
-        Miss(OffsetBy(OffsetStrategies.To(column.Landmark)).Of(Text()), Columns()),
+        Miss(OffsetBy(OffsetStrategies.To(column)).Of(Text()), Columns()),
         Miss(On(column).Of(Text()), Columns()));
 
       Assert.Equal(
-        Miss(OffsetBy(OffsetStrategies.Past(column.Landmark)).Of(Text()), Columns()),
+        Miss(OffsetBy(OffsetStrategies.Past(column)).Of(Text()), Columns()),
         Miss(RightOf(column).Of(Text()), Columns()));
     }
 
@@ -295,10 +295,10 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void TheAnchorModifiersRejectANullLandmark()
     {
-      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => On((ILineLandmark)null!).Of(Text())).ParamName);
-      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => On((ILineLandmark)null!).Of(Text())).ParamName);
-      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => Below((ILineLandmark)null!).Of(Text())).ParamName);
-      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => RightOf((ILineLandmark)null!).Of(Text())).ParamName);
+      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => On((ILineLandmark<ICellSpace>)null!).Of(Text())).ParamName);
+      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => On((ILineLandmark<ICellSpace>)null!).Of(Text())).ParamName);
+      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => Below((ILineLandmark<ICellSpace>)null!).Of(Text())).ParamName);
+      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => RightOf((ILineLandmark<ICellSpace>)null!).Of(Text())).ParamName);
     }
 
     // The anchors' null-projection guard now lives on the pipeline terminal: .Of blames "projection"

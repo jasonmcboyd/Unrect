@@ -71,7 +71,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void Sized_OverridesWhatTheFlowDerived()
     {
-      var applied = Sized(SizeStrategies.ExplicitSize(1, 3)).Of(VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(IntCell())}"))
+      var applied = Sized(SizeStrategies.ExplicitSize<ICellSpace>(1, 3)).Of(VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(IntCell())}"))
         .Apply(Ladder());
 
       Assert.Equal(1, applied.Consumed.Width);
@@ -145,7 +145,7 @@ namespace Unrect.Tests.Projections
     public void ANestedFlowWithADeclaredExtent_IsConsumedInFull()
     {
       // Declared three rows tall while reading only two, so the next child starts after the third.
-      var projection = VerticalFlow(v => $"{v.Next(Sized(SizeStrategies.ExplicitSize(1, 3)).Of(VerticalFlow(w => $"({w.Next(IntCell())},{w.Next(IntCell())})")))}|{v.Next(IntCell())}");
+      var projection = VerticalFlow(v => $"{v.Next(Sized(SizeStrategies.ExplicitSize<ICellSpace>(1, 3)).Of(VerticalFlow(w => $"({w.Next(IntCell())},{w.Next(IntCell())})")))}|{v.Next(IntCell())}");
 
       Assert.Equal("(1,2)|4", projection.Map(Ladder(4)));
     }
@@ -233,7 +233,7 @@ namespace Unrect.Tests.Projections
     {
       Assert.Empty(VerticalRepeat(VerticalFlow(v =>
       {
-        var rangeSlot = v.Next(Range(SizeStrategies.MinSize(), b => b.Width));
+        var rangeSlot = v.Next(Range(SizeStrategies.MinSize<ICellSpace>(), b => b.Width));
 
         return rangeSlot;
       })).Map(Ladder()));

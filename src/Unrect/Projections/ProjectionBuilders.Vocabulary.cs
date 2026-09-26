@@ -34,7 +34,7 @@ namespace Unrect.Projections
     /// </para>
     /// </summary>
     public static IProjectionDefinition<TSpace, Point<TSpace>> Point()
-      => new PointDefinition<TSpace>(Placement.Of(ExplicitSize(1, 1)));
+      => new PointDefinition<TSpace>(Placement<TSpace>.Of(ExplicitSize<TSpace>(1, 1)));
 
     /// <summary>
     /// One cell, read as what it says — the total canonical leaf. Every space renders every cell, so
@@ -47,7 +47,7 @@ namespace Unrect.Projections
     /// </para>
     /// </summary>
     public static IProjectionDefinition<TSpace, string> AsText()
-      => new ReadDefinition<TSpace, string>("AsText", ReadText, Placement.Of(ExplicitSize(1, 1)), blankIsNull: false);
+      => new ReadDefinition<TSpace, string>("AsText", ReadText, Placement<TSpace>.Of(ExplicitSize<TSpace>(1, 1)), blankIsNull: false);
 
     /// <summary>The total reading: every space renders every cell, so the only thing that can go wrong is that the cell does not count as content.</summary>
     private static bool ReadText(Point<TSpace> cell, out string value, out CellProblem? problem)
@@ -67,63 +67,45 @@ namespace Unrect.Projections
 
     /// <summary>One row, as wide as the leading columns that carry values.</summary>
     public static IProjectionDefinition<TSpace, T> Row<T>(Func<CellStrip<TSpace>, T> project)
-      => Strip(Orientation.Horizontal, project, RowStrategies.TakeRows(1).TakeColumnsWhileAnyIsNotBlank(), "Row");
+      => Strip(Orientation.Horizontal, project, RowStrategies.TakeRows<TSpace>(1).TakeColumnsWhileAnyIsNotBlank(), "Row");
 
     /// <summary>One row exactly <paramref name="width"/> columns wide.</summary>
     public static IProjectionDefinition<TSpace, T> Row<T>(int width, Func<CellStrip<TSpace>, T> project)
-      => Strip(Orientation.Horizontal, project, ExplicitSize(width, 1), $"Row({width})");
+      => Strip(Orientation.Horizontal, project, ExplicitSize<TSpace>(width, 1), $"Row({width})");
 
     /// <summary>One row, as wide as <paramref name="columns"/> selects.</summary>
-    public static IProjectionDefinition<TSpace, T> Row<T>(ILineStrategy columns, Func<CellStrip<TSpace>, T> project)
-      => Strip(Orientation.Horizontal, project, RowsThenColumns(RowStrategies.TakeRows(1), LineAxis.Require(columns, Orientation.Horizontal, nameof(columns))), "Row");
-
-    /// <inheritdoc cref="Row{T}(ILineStrategy, Func{CellStrip{TSpace}, T})"/>
-    /// <param name="columns">The columns the row spans. A rule demanding less is accepted as it is.</param>
-    /// <param name="project">The reading applied to the row's cells.</param>
     public static IProjectionDefinition<TSpace, T> Row<T>(ILineStrategy<TSpace> columns, Func<CellStrip<TSpace>, T> project)
-      => Row(Required(columns).Strategy, project);
+      => Strip(Orientation.Horizontal, project, RowsThenColumns(RowStrategies.TakeRows<TSpace>(1), LineAxis.Require(columns, Orientation.Horizontal, nameof(columns))), "Row");
 
     /// <summary>One column, as tall as the leading rows that carry values.</summary>
     public static IProjectionDefinition<TSpace, T> Column<T>(Func<CellStrip<TSpace>, T> project)
-      => Strip(Orientation.Vertical, project, ColumnStrategies.TakeColumns(1).TakeRowsWhileAnyIsNotBlank(), "Column");
+      => Strip(Orientation.Vertical, project, ColumnStrategies.TakeColumns<TSpace>(1).TakeRowsWhileAnyIsNotBlank(), "Column");
 
     /// <summary>One column exactly <paramref name="height"/> rows tall.</summary>
     public static IProjectionDefinition<TSpace, T> Column<T>(int height, Func<CellStrip<TSpace>, T> project)
-      => Strip(Orientation.Vertical, project, ExplicitSize(1, height), $"Column({height})");
+      => Strip(Orientation.Vertical, project, ExplicitSize<TSpace>(1, height), $"Column({height})");
 
     /// <summary>One column, as tall as <paramref name="rows"/> selects.</summary>
-    public static IProjectionDefinition<TSpace, T> Column<T>(ILineStrategy rows, Func<CellStrip<TSpace>, T> project)
-      => Strip(Orientation.Vertical, project, ColumnsThenRows(ColumnStrategies.TakeColumns(1), LineAxis.Require(rows, Orientation.Vertical, nameof(rows))), "Column");
-
-    /// <inheritdoc cref="Column{T}(ILineStrategy, Func{CellStrip{TSpace}, T})"/>
-    /// <param name="rows">The rows the column spans. A rule demanding less is accepted as it is.</param>
-    /// <param name="project">The reading applied to the column's cells.</param>
     public static IProjectionDefinition<TSpace, T> Column<T>(ILineStrategy<TSpace> rows, Func<CellStrip<TSpace>, T> project)
-      => Column(Required(rows).Strategy, project);
+      => Strip(Orientation.Vertical, project, ColumnsThenRows(ColumnStrategies.TakeColumns<TSpace>(1), LineAxis.Require(rows, Orientation.Vertical, nameof(rows))), "Column");
 
     /// <summary>
     /// A rectangular region, read through a <see cref="CellBlock{TSpace}"/>: the maximal leading block of
     /// rows and columns that carry values.
     /// </summary>
     public static IProjectionDefinition<TSpace, T> Range<T>(Func<CellBlock<TSpace>, T> project)
-      => new BlockDefinition<TSpace, T>(project, Placement.Of(DiscoveredBlock()), "Range");
+      => new BlockDefinition<TSpace, T>(project, Placement<TSpace>.Of(DiscoveredBlock()), "Range");
 
     /// <summary>A region of exactly <paramref name="width"/> by <paramref name="height"/> cells.</summary>
     public static IProjectionDefinition<TSpace, T> Range<T>(int width, int height, Func<CellBlock<TSpace>, T> project)
-      => new BlockDefinition<TSpace, T>(project, Placement.Of(ExplicitSize(width, height)), $"Range({width}, {height})");
+      => new BlockDefinition<TSpace, T>(project, Placement<TSpace>.Of(ExplicitSize<TSpace>(width, height)), $"Range({width}, {height})");
 
     /// <summary>A region extending as far as <paramref name="extent"/> declares.</summary>
-    public static IProjectionDefinition<TSpace, T> Range<T>(ISizeStrategy extent, Func<CellBlock<TSpace>, T> project)
+    public static IProjectionDefinition<TSpace, T> Range<T>(ISizeStrategy<TSpace> extent, Func<CellBlock<TSpace>, T> project)
       => new BlockDefinition<TSpace, T>(
         project,
-        Placement.Of(extent ?? throw new ArgumentNullException(nameof(extent))),
+        Placement<TSpace>.Of(extent ?? throw new ArgumentNullException(nameof(extent))),
         "Range");
-
-    /// <inheritdoc cref="Range{T}(ISizeStrategy, Func{CellBlock{TSpace}, T})"/>
-    /// <param name="extent">How far the region extends. A rule demanding less is accepted as it is.</param>
-    /// <param name="project">The reading applied to the region's cells.</param>
-    public static IProjectionDefinition<TSpace, T> Range<T>(ISizeStrategy<TSpace> extent, Func<CellBlock<TSpace>, T> project)
-      => Range(Required(extent).Strategy, project);
 
     /// <summary>
     /// The row that holds <paramref name="text"/>, as declared content: the projection finds that row,
@@ -149,7 +131,7 @@ namespace Unrect.Projections
     public static IProjectionDefinition<TSpace, string> Caption(string text)
       => new CaptionDefinition<TSpace>(
         NotEmpty(text, nameof(text)),
-        new Placement(OffsetStrategies.To(RowLandmarks.RowSaying(text)), FullRow()));
+        new Placement<TSpace>(OffsetStrategies.To(RowLandmarks.RowSaying<TSpace>(text)), FullRow()));
 
     // --- Tables — one mechanism at several degrees of declaredness ------------------------------
     //
@@ -250,7 +232,7 @@ namespace Unrect.Projections
         ColumnLabels(rows).AsScaffolding(),
         labels => eachRow(labels) is { } row ? VerticalBands(1, row, onBlank.IsStop ? null : onBlank, declared).AsScaffolding() : null,
         "the row projection is built from the header's captions; it is known only once a header is read",
-        Placement.Default).AsScaffolding();
+        Placement<TSpace>.Default).AsScaffolding();
 
       return new UnitDefinition<TSpace, IReadOnlyList<T>>(composed, Array.Empty<Child>(), "Table", TablePlacement(onBlank));
     }
@@ -344,7 +326,7 @@ namespace Unrect.Projections
     /// rows it takes are the only thing it decides.
     /// </summary>
     private static IProjectionDefinition<TSpace, IReadOnlyList<T>> UnderColumnLabels<T>(IProjectionDefinition<TSpace, LabelMap> header, IProjectionDefinition<TSpace, IReadOnlyList<T>> body)
-      => new LabelledDefinition<TSpace, IReadOnlyList<T>>(LabelAxis.Column, header, body, Placement.Default);
+      => new LabelledDefinition<TSpace, IReadOnlyList<T>>(LabelAxis.Column, header, body, Placement<TSpace>.Default);
 
     /// <summary>
     /// Every body row as a dictionary keyed by the column captions, with the cells themselves for
@@ -502,7 +484,7 @@ namespace Unrect.Projections
       if (headerRows < 1)
         throw new ArgumentOutOfRangeException(nameof(headerRows), headerRows, "ColumnLabels reads a header, which is at least one row: the captions, under any rows of bands.");
 
-      return new ColumnLabelsDefinition<TSpace>(headerRows, Placement.Default);
+      return new ColumnLabelsDefinition<TSpace>(headerRows, Placement<TSpace>.Default);
     }
 
     /// <summary>
@@ -522,12 +504,12 @@ namespace Unrect.Projections
         LabelAxis.Column,
         map ?? throw new ArgumentNullException(nameof(map)),
         body ?? throw new ArgumentNullException(nameof(body)),
-        Placement.Default);
+        Placement<TSpace>.Default);
 
     /// <summary>
     /// One body row, read by <paramref name="record"/> — the compute-legal binder decoupled from
     /// <c>Table</c>. Its extent is a one-row band at the full width, so under a
-    /// <see cref="VerticalRepeat{T}(IProjectionDefinition{TSpace, T}, IOffsetStrategy, int, string)"/> each occurrence reads one row and the repeat stops past the
+    /// <see cref="VerticalRepeat{T}(IProjectionDefinition{TSpace, T}, IOffsetStrategy{TSpace}, int, string)"/> each occurrence reads one row and the repeat stops past the
     /// last. Columns are resolved by name through whatever <see cref="WithColumnLabels{T}(LabelMap,
     /// IProjectionDefinition{TSpace, T})"/> pushed; used with no labels in scope, a by-name read reports the headerless
     /// message, exactly as a headerless table's row does.
@@ -535,7 +517,7 @@ namespace Unrect.Projections
     /// <typeparam name="T">What one record reads.</typeparam>
     /// <param name="record">The reading applied to one body row.</param>
     public static IProjectionDefinition<TSpace, T> Record<T>(Func<TableRow<TSpace>, T> record)
-      => new RecordDefinition<TSpace, T>(record ?? throw new ArgumentNullException(nameof(record)), Placement.Of(FullRow()));
+      => new RecordDefinition<TSpace, T>(record ?? throw new ArgumentNullException(nameof(record)), Placement<TSpace>.Of(FullRow()));
 
     // --- Labelled pairs -------------------------------------------------------------------------
 
@@ -609,7 +591,7 @@ namespace Unrect.Projections
       var pairs = new IProjectionDefinition<TSpace, Point<TSpace>>[declared.Length];
 
       for (var index = 0; index < declared.Length; index++)
-        pairs[index] = new FieldDefinition<TSpace>(declared[index].Label, Placement.Of(ExplicitSize(2, 1)));
+        pairs[index] = new FieldDefinition<TSpace>(declared[index].Label, Placement<TSpace>.Of(ExplicitSize<TSpace>(2, 1)));
 
       return new FlowDefinition<TSpace, IReadOnlyDictionary<string, Point<TSpace>>>(
         Orientation.Vertical,
@@ -707,52 +689,22 @@ namespace Unrect.Projections
     /// </param>
     public static IProjectionDefinition<TSpace, IReadOnlyList<T>> VerticalRepeat<T>(
       IProjectionDefinition<TSpace, T> item,
-      IOffsetStrategy? separatedBy = null,
+      IOffsetStrategy<TSpace>? separatedBy = null,
       int atLeast = 0,
       [CallerArgumentExpression("item")] string? declared = null)
       => Repeat(Orientation.Vertical, item, separatedBy, atLeast, declared);
 
-    /// <inheritdoc cref="VerticalRepeat{T}(IProjectionDefinition{TSpace, T}, IOffsetStrategy, int, string)"/>
-    /// <typeparam name="T">What one occurrence reads.</typeparam>
-    /// <param name="item">The projection to apply repeatedly.</param>
-    /// <param name="separatedBy">
-    /// The offset between occurrences; never applied before the first. It is required rather than
-    /// optional here because carrying the separator's demand is the whole reason this overload
-    /// exists.
-    /// </param>
-    /// <param name="atLeast">How many occurrences make a well-formed section.</param>
-    /// <param name="declared">Supplied by the compiler as the text of the <paramref name="item"/> argument.</param>
-    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> VerticalRepeat<T>(
-      IProjectionDefinition<TSpace, T> item,
-      IOffsetStrategy<TSpace> separatedBy,
-      int atLeast = 0,
-      [CallerArgumentExpression("item")] string? declared = null)
-      => Repeat(Orientation.Vertical, item, Required(separatedBy).Strategy, atLeast, declared);
-
     /// <summary>
     /// One item stacked rightwards as many times as the space supports; see
-    /// <see cref="VerticalRepeat{T}(IProjectionDefinition{TSpace, T}, IOffsetStrategy, int, string)"/> for <paramref name="separatedBy"/>,
+    /// <see cref="VerticalRepeat{T}(IProjectionDefinition{TSpace, T}, IOffsetStrategy{TSpace}, int, string)"/> for <paramref name="separatedBy"/>,
     /// <paramref name="atLeast"/>, and how the item is named.
     /// </summary>
     public static IProjectionDefinition<TSpace, IReadOnlyList<T>> HorizontalRepeat<T>(
       IProjectionDefinition<TSpace, T> item,
-      IOffsetStrategy? separatedBy = null,
+      IOffsetStrategy<TSpace>? separatedBy = null,
       int atLeast = 0,
       [CallerArgumentExpression("item")] string? declared = null)
       => Repeat(Orientation.Horizontal, item, separatedBy, atLeast, declared);
-
-    /// <summary>
-    /// One item stacked rightwards as many times as the space supports, separated by a rule that
-    /// names the space it reads; see
-    /// <see cref="VerticalRepeat{T}(IProjectionDefinition{TSpace, T}, IOffsetStrategy{TSpace}, int, string)"/>
-    /// for <paramref name="separatedBy"/>, <paramref name="atLeast"/>, and how the item is named.
-    /// </summary>
-    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> HorizontalRepeat<T>(
-      IProjectionDefinition<TSpace, T> item,
-      IOffsetStrategy<TSpace> separatedBy,
-      int atLeast = 0,
-      [CallerArgumentExpression("item")] string? declared = null)
-      => Repeat(Orientation.Horizontal, item, Required(separatedBy).Strategy, atLeast, declared);
 
     /// <summary>
     /// The extent cut into bands <paramref name="rows"/> rows tall, top to bottom, each projected by
@@ -762,7 +714,7 @@ namespace Unrect.Projections
     /// <para>
     /// It declares no extent of its own: how far it runs is whatever places it — a <c>.Sized</c>, a
     /// discovered block, or simply the space it is handed. That is the difference from
-    /// <see cref="VerticalRepeat{T}(IProjectionDefinition{TSpace, T}, IOffsetStrategy, int, string)"/>, which discovers each occurrence's size from the item and
+    /// <see cref="VerticalRepeat{T}(IProjectionDefinition{TSpace, T}, IOffsetStrategy{TSpace}, int, string)"/>, which discovers each occurrence's size from the item and
     /// stops where the item stops fitting.
     /// </para>
     /// </summary>
@@ -836,18 +788,18 @@ namespace Unrect.Projections
         if (alternatives[index] is null)
           throw new ArgumentException($"Alternative {index + 1} is null.", nameof(alternatives));
 
-      return new ChoiceDefinition<TSpace, T>(alternatives, Placement.Default);
+      return new ChoiceDefinition<TSpace, T>(alternatives, Placement<TSpace>.Default);
     }
 
     // --- Shared construction ------------------------------------------------------------------
 
-    private static IProjectionDefinition<TSpace, T> Strip<T>(Orientation orientation, Func<CellStrip<TSpace>, T> project, ISizeStrategy extent, string description)
-      => new StripDefinition<TSpace, T>(orientation, project, Placement.Of(extent), description);
+    private static IProjectionDefinition<TSpace, T> Strip<T>(Orientation orientation, Func<CellStrip<TSpace>, T> project, ISizeStrategy<TSpace> extent, string description)
+      => new StripDefinition<TSpace, T>(orientation, project, Placement<TSpace>.Of(extent), description);
 
     private static IProjectionDefinition<TSpace, IReadOnlyList<T>> Repeat<T>(
       Orientation orientation,
       IProjectionDefinition<TSpace, T> item,
-      IOffsetStrategy? separatedBy,
+      IOffsetStrategy<TSpace>? separatedBy,
       int atLeast,
       string? declared)
     {
@@ -856,7 +808,7 @@ namespace Unrect.Projections
 
       // A repeat has one item rather than an nth child, so there is no ordinal to fall back on: an
       // item that is not a plain identifier keeps its description, exactly as before.
-      return new RepeatDefinition<TSpace, T>(item, separatedBy, orientation, atLeast, UseSite.From(declared, null), Placement.Default);
+      return new RepeatDefinition<TSpace, T>(item, separatedBy, orientation, atLeast, UseSite.From(declared, null), Placement<TSpace>.Default);
     }
 
     private static IProjectionDefinition<TSpace, IReadOnlyList<T>> Bands<T>(
@@ -874,7 +826,7 @@ namespace Unrect.Projections
 
       // A tiler has one band projection rather than an nth child, so there is no ordinal to fall
       // back on: one written inline keeps its description, as a repeat's item does.
-      return new BandsDefinition<TSpace, T>(each, orientation, stride, UseSite.From(declared, null), onBlank, Placement.Default);
+      return new BandsDefinition<TSpace, T>(each, orientation, stride, UseSite.From(declared, null), onBlank, Placement<TSpace>.Default);
     }
 
     private static int AtLeastOneBand(int stride, string parameter)
@@ -898,34 +850,34 @@ namespace Unrect.Projections
     }
 
     /// <summary>One row, at the full available width — a caption row spans the sheet.</summary>
-    private static ISizeStrategy FullRow()
-      => RowsThenColumns(RowStrategies.TakeRows(1), ColumnStrategies.AllColumns());
+    private static ISizeStrategy<TSpace> FullRow()
+      => RowsThenColumns(RowStrategies.TakeRows<TSpace>(1), ColumnStrategies.AllColumns<TSpace>());
 
     private static int NotNegative(int count, string parameter)
       => count >= 0 ? count : throw new ArgumentOutOfRangeException(parameter, count, "An offset cannot be negative.");
 
-    private static Placement TablePlacement() => TablePlacement(BlankRowStrategy.Stop);
+    private static Placement<TSpace> TablePlacement() => TablePlacement(BlankRowStrategy.Stop);
 
     /// <summary>
     /// The table body's placement. It declares no offset, so a table starts where anything else
     /// does — past the blank spans in front of it, at the left edge of what it was handed. The extent
     /// is <see cref="DiscoveredBlock"/> for <c>Stop</c>, otherwise the run-to-edge <see cref="ToEdgeBlock"/>.
     /// </summary>
-    private static Placement TablePlacement(BlankRowStrategy onBlank)
-      => Placement.Of(onBlank.IsStop ? DiscoveredBlock() : ToEdgeBlock());
+    private static Placement<TSpace> TablePlacement(BlankRowStrategy onBlank)
+      => Placement<TSpace>.Of(onBlank.IsStop ? DiscoveredBlock() : ToEdgeBlock());
 
     // Columns the header leaves blank on the way to its first caption are columns with no label:
     // part of the table, bound to nothing.
-    private static ISizeStrategy DiscoveredBlock()
-      => SizeStrategies.RowsThenColumns(RowStrategies.TakeRowsWhileAnyIsNotBlank(), ColumnStrategies.TakeTableColumns());
+    private static ISizeStrategy<TSpace> DiscoveredBlock()
+      => SizeStrategies.RowsThenColumns(RowStrategies.TakeRowsWhileAnyIsNotBlank<TSpace>(), ColumnStrategies.TakeTableColumns<TSpace>());
 
     /// <summary>
     /// The same width rule as <see cref="DiscoveredBlock"/>, but the height runs to the enclosing
     /// edge instead of stopping at the first blank row — the extent a non-self-bounding
     /// <see cref="BlankRowStrategy"/> needs so the walker can see and act on interior blank rows.
     /// </summary>
-    private static ISizeStrategy ToEdgeBlock()
-      => SizeStrategies.RowsThenColumns(RowStrategies.AllRows(), ColumnStrategies.TakeTableColumns());
+    private static ISizeStrategy<TSpace> ToEdgeBlock()
+      => SizeStrategies.RowsThenColumns(RowStrategies.AllRows<TSpace>(), ColumnStrategies.TakeTableColumns<TSpace>());
 
     private static int ValidateHeaderRows(int headerRows)
       => headerRows >= 0

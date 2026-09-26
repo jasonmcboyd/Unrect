@@ -16,7 +16,7 @@ namespace Unrect.Projections
   internal sealed class LabelledDefinition<TSpace, T> : DefinitionNode<TSpace, T>
     where TSpace : class, ISpace
   {
-    public LabelledDefinition(LabelAxis axis, IProjectionDefinition<TSpace, LabelMap> header, IProjectionDefinition<TSpace, T> body, Placement placement, string? description = null)
+    public LabelledDefinition(LabelAxis axis, IProjectionDefinition<TSpace, LabelMap> header, IProjectionDefinition<TSpace, T> body, Placement<TSpace> placement, string? description = null)
       : this(axis, header, placement, description)
     {
       Body = body ?? throw new ArgumentNullException(nameof(body));
@@ -29,7 +29,7 @@ namespace Unrect.Projections
     /// A body built from the header once it is read — the bind rung. The body is not a child the
     /// tree can see, and <paramref name="opacity"/> says so.
     /// </summary>
-    public LabelledDefinition(LabelAxis axis, IProjectionDefinition<TSpace, LabelMap> header, Func<LabelMap, IProjectionDefinition<TSpace, T>?> body, string opacity, Placement placement, string? description = null)
+    public LabelledDefinition(LabelAxis axis, IProjectionDefinition<TSpace, LabelMap> header, Func<LabelMap, IProjectionDefinition<TSpace, T>?> body, string opacity, Placement<TSpace> placement, string? description = null)
       : this(axis, header, placement, description)
     {
       LateBody = body ?? throw new ArgumentNullException(nameof(body));
@@ -37,7 +37,7 @@ namespace Unrect.Projections
       Children = new[] { new Child(header, UseSite.From(null, 1)) };
     }
 
-    private LabelledDefinition(LabelAxis axis, IProjectionDefinition<TSpace, LabelMap> header, Placement placement, string? description)
+    private LabelledDefinition(LabelAxis axis, IProjectionDefinition<TSpace, LabelMap> header, Placement<TSpace> placement, string? description)
       : base(placement)
     {
       if (axis != LabelAxis.Column)
@@ -141,7 +141,7 @@ namespace Unrect.Projections
           ?? _labelled.LateBody!(labels)
           ?? throw _scope.Failure(_labelled, "the row bind returned null; it must return the projection that reads one record", Extent(), null, null, isFault: true);
         var edge = _labelled.Body is null ? new Child(inner, UseSite.From(null, 2)) : _labelled.Children[1];
-        var body = new WithLabelsDefinition<TSpace, T>(_labelled.LabelledAxis, labels, inner, Placement.Default);
+        var body = new WithLabelsDefinition<TSpace, T>(_labelled.LabelledAxis, labels, inner, Placement<TSpace>.Default);
 
         _body = _scope.Start(edge, body, at);
 

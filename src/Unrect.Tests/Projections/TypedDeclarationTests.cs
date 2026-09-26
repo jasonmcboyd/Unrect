@@ -59,18 +59,19 @@ namespace Unrect.Tests.Projections
     }
 
     /// <summary>
-    /// A rule written at the least demanding space there is, for any file at all to use. It asks a
-    /// canonical question, so it names <c>ISpace</c> and demands nothing more.
+    /// A rule for any file at all to use: it asks a canonical question, so it is written generic in
+    /// the space and demands nothing more than <c>ISpace</c> — the file that uses it says which space.
     /// </summary>
-    private static ISizeStrategy<ISpace> Populated()
-      => ProjectionBuilders<ISpace>.RowsWhileAny(cell => !cell.IsBlank());
+    private static ISizeStrategy<TSpace> Populated<TSpace>()
+      where TSpace : class, ISpace
+      => ProjectionBuilders<TSpace>.RowsWhileAny(cell => !cell.IsBlank());
 
     [Fact]
     public void ARuleBuiltAtTheLeastDemandingSpaceFlowsIntoAFileScopedToMore()
     {
-      // Contravariance, doing the work a shared helper needs: an ISizeStrategy<ISpace> IS an
-      // ISizeStrategy<ICellSpace> as far as Sized is concerned, so the helper composes in as it is
-      // — no unwrapping, no cast, nothing annotated at the call site.
+      // A shared helper is generic in the space, and the file instantiates it at its own: the rule
+      // Sized receives is an ISizeStrategy<ICellSpace> built from a predicate that asked only what
+      // every space answers — no unwrapping, no cast.
       var sheet = Mixed(new object?[,]
       {
         { "Header", null },
@@ -78,17 +79,19 @@ namespace Unrect.Tests.Projections
         { "Body", null },
       });
 
-      var header = Sized(Populated()).Row(row => row[0].Text());
+      var header = Sized(Populated<ICellSpace>()).Row(row => row[0].Text());
 
       Assert.Equal("Header", header.Map(sheet));
     }
 
     /// <summary>The matcher and row-rule halves of the same helper, at the same least demanding space.</summary>
-    private static ILineLandmark<ISpace> FirstPopulatedRow()
-      => ProjectionBuilders<ISpace>.RowWithCell(cell => !cell.IsBlank());
+    private static ILineLandmark<TSpace> FirstPopulatedRow<TSpace>()
+      where TSpace : class, ISpace
+      => ProjectionBuilders<TSpace>.RowWithCell(cell => !cell.IsBlank());
 
-    private static ILineStrategy<ISpace> PopulatedRows()
-      => ProjectionBuilders<ISpace>.TakeRowsWhileAny(cell => !cell.IsBlank());
+    private static ILineStrategy<TSpace> PopulatedRows<TSpace>()
+      where TSpace : class, ISpace
+      => ProjectionBuilders<TSpace>.TakeRowsWhileAny(cell => !cell.IsBlank());
 
     [Fact]
     public void AndSoDoAMatcherAndAnAxisRuleBuiltTheSameWay()
@@ -104,8 +107,8 @@ namespace Unrect.Tests.Projections
         { null, null },
       });
 
-      Assert.Equal("Body", On(FirstPopulatedRow()).Of(Row(row => row[0].Text())).Map(sheet));
-      Assert.Equal(2, On(FirstPopulatedRow()).Column(PopulatedRows(), column => column.Count).Map(sheet));
+      Assert.Equal("Body", On(FirstPopulatedRow<ICellSpace>()).Of(Row(row => row[0].Text())).Map(sheet));
+      Assert.Equal(2, On(FirstPopulatedRow<ICellSpace>()).Column(PopulatedRows<ICellSpace>(), column => column.Count).Map(sheet));
     }
 
     [Fact]

@@ -10,7 +10,7 @@ namespace Unrect.Projections
   internal sealed class PointDefinition<TSpace> : CollectorNode<TSpace, Point<TSpace>>
     where TSpace : class, ISpace
   {
-    public PointDefinition(Placement placement)
+    public PointDefinition(Placement<TSpace> placement)
       : base(placement)
     {
     }

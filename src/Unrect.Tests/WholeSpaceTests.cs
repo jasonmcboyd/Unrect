@@ -62,7 +62,7 @@ namespace Unrect.Tests
     public void GetSizeForwards()
     {
       var space = Sheet();
-      var strategy = SizeStrategies.RowsWhileAnyIsNotBlank();
+      var strategy = SizeStrategies.RowsWhileAnyIsNotBlank<ISpace>();
 
       Assert.Equal(strategy.GetSize(Plane<ISpace>.Of(space)).Height, strategy.GetSize(space).Height);
       Assert.Equal(strategy.GetSize(Plane<ISpace>.Of(space)).Width, strategy.GetSize(space).Width);
@@ -78,7 +78,7 @@ namespace Unrect.Tests
     {
       // An offset that has to look at content to resolve, so the region it looks through matters.
       var space = Sheet();
-      var strategy = OffsetStrategies.To(RowLandmarks.RowSaying("Total"));
+      var strategy = OffsetStrategies.To(RowLandmarks.RowSaying<ISpace>("Total"));
 
       Assert.Equal(strategy.GetOffset(Plane<ISpace>.Of(space)), strategy.GetOffset(space));
       Assert.Equal(3, strategy.GetOffset(space).Row);
@@ -88,7 +88,7 @@ namespace Unrect.Tests
     public void SelectRowsForwards()
     {
       var space = Sheet();
-      var strategy = RowStrategies.TakeRowsWhileAnyIsNotBlank();
+      var strategy = RowStrategies.TakeRowsWhileAnyIsNotBlank<ISpace>();
 
       Assert.Equal(strategy.SelectLines(Plane<ISpace>.Of(space)), strategy.SelectLines(space));
       Assert.Equal(2, strategy.SelectLines(space));
@@ -98,7 +98,7 @@ namespace Unrect.Tests
     public void SelectColumnsForwards()
     {
       var space = Sheet();
-      var strategy = ColumnStrategies.TakeColumnsWhileAll(point => !point.IsBlank());
+      var strategy = ColumnStrategies.TakeColumnsWhileAll<ISpace>(point => !point.IsBlank());
 
       Assert.Equal(strategy.SelectLines(Plane<ISpace>.Of(space)), strategy.SelectLines(space));
 
@@ -111,7 +111,7 @@ namespace Unrect.Tests
     public void FindRowForwards()
     {
       var space = Sheet();
-      var landmark = RowLandmarks.RowSaying("Total");
+      var landmark = RowLandmarks.RowSaying<ISpace>("Total");
 
       Assert.Equal(landmark.Find(Plane<ISpace>.Of(space)), landmark.Find(space));
       Assert.Equal(3, landmark.Find(space));
@@ -121,7 +121,7 @@ namespace Unrect.Tests
     public void FindColumnForwards()
     {
       var space = Sheet();
-      var landmark = ColumnLandmarks.ColumnSaying("d");
+      var landmark = ColumnLandmarks.ColumnSaying<ISpace>("d");
 
       Assert.Equal(landmark.Find(Plane<ISpace>.Of(space)), landmark.Find(space));
       Assert.Equal(3, landmark.Find(space));

@@ -2,6 +2,7 @@ using System.Linq;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
 using Xunit;
 
@@ -128,7 +129,7 @@ namespace Unrect.Tests.Machines
       };
 
       Assert.True(CostReport.Of(declared).Lines[0].Streams);
-      Assert.True(declared.Placement.Extent!.Begin(Orientation.Vertical).Incremental);
+      Assert.True(((Placement<ICellSpace>)declared.Placement).Extent!.Begin(Orientation.Vertical).Incremental);
     }
 
     [Fact]

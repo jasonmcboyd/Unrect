@@ -7,7 +7,7 @@ namespace Unrect.Projections
   internal sealed class BlockDefinition<TSpace, T> : CollectorNode<TSpace, T>
     where TSpace : class, ISpace
   {
-    public BlockDefinition(Func<CellBlock<TSpace>, T> project, Placement placement, string description)
+    public BlockDefinition(Func<CellBlock<TSpace>, T> project, Placement<TSpace> placement, string description)
       : base(placement)
     {
       Projection = project ?? throw new ArgumentNullException(nameof(project));

@@ -30,7 +30,7 @@ namespace Unrect.Projections
   internal sealed class ReadDefinition<TSpace, TResult> : CollectorNode<TSpace, TResult>
     where TSpace : class, ISpace
   {
-    internal ReadDefinition(string kind, CellRead<TSpace, TResult> read, Placement placement, bool blankIsNull)
+    internal ReadDefinition(string kind, CellRead<TSpace, TResult> read, Placement<TSpace> placement, bool blankIsNull)
       : base(placement)
     {
       Kind = kind ?? throw new ArgumentNullException(nameof(kind));

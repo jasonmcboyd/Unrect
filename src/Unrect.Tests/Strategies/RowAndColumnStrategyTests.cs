@@ -42,7 +42,7 @@ namespace Unrect.Tests.Strategies
         { 1, 1 },
       });
 
-      Assert.Equal(2, RowStrategies.TakeRowsWhileAll(HasValue).SelectLines(space));
+      Assert.Equal(2, RowStrategies.TakeRowsWhileAll<ISpace>(HasValue).SelectLines(space));
     }
 
     [Fact]
@@ -56,7 +56,7 @@ namespace Unrect.Tests.Strategies
         { 1, 1 },
       });
 
-      Assert.Equal(2, RowStrategies.TakeRowsWhileAny(HasValue).SelectLines(space));
+      Assert.Equal(2, RowStrategies.TakeRowsWhileAny<ISpace>(HasValue).SelectLines(space));
     }
 
     [Fact]
@@ -64,7 +64,7 @@ namespace Unrect.Tests.Strategies
     {
       var space = Grid(new[,] { { 1, 0 }, { 2, 0 }, { 3, 0 }, { 4, 0 } });
 
-      Assert.Equal(2, RowStrategies.TakeRowsWhile((s, row) => s[0, row].AsText() is string number && int.Parse(number, CultureInfo.InvariantCulture) < 3).SelectLines(space));
+      Assert.Equal(2, RowStrategies.TakeRowsWhile<ISpace>((s, row) => s[0, row].AsText() is string number && int.Parse(number, CultureInfo.InvariantCulture) < 3).SelectLines(space));
     }
 
     [Fact]
@@ -72,7 +72,7 @@ namespace Unrect.Tests.Strategies
     {
       var space = Grid(new[,] { { 1, 0 }, { 2, 0 }, { 3, 0 }, { 4, 0 } });
 
-      Assert.Equal(3, RowStrategies.TakeRowsTo((s, row) => s[0, row].AsText() == "3").SelectLines(space));
+      Assert.Equal(3, RowStrategies.TakeRowsTo<ISpace>((s, row) => s[0, row].AsText() == "3").SelectLines(space));
     }
 
     [Fact]
@@ -80,7 +80,7 @@ namespace Unrect.Tests.Strategies
     {
       var space = Grid(new[,] { { 1, 0 }, { 2, 0 } });
 
-      Assert.Equal(2, RowStrategies.TakeRowsTo((s, row) => s[0, row].AsText() == "99").SelectLines(space));
+      Assert.Equal(2, RowStrategies.TakeRowsTo<ISpace>((s, row) => s[0, row].AsText() == "99").SelectLines(space));
     }
 
     // --- TakeRowsToText: the band ends on a LABEL --------------------------------------------------
@@ -105,7 +105,7 @@ namespace Unrect.Tests.Strategies
     {
       // Up to AND including the match, which is the whole of what distinguishes this from a
       // while-rule: the boundary row is content the section reads, not a gap it stops before.
-      Assert.Equal(3, SheetProjectionBuilders<ICellSpace>.TakeRowsToText(0, "Total").Strategy.SelectLines(LabelledRows()));
+      Assert.Equal(3, SheetProjectionBuilders<ICellSpace>.TakeRowsToText(0, "Total").SelectLines(LabelledRows()));
     }
 
     [Fact]
@@ -113,23 +113,23 @@ namespace Unrect.Tests.Strategies
     {
       // The one content rule, which this shares with RowContaining, Caption and Field: the fixture's
       // cell is "  Total  " and the declaration writes "total".
-      Assert.Equal(3, SheetProjectionBuilders<ICellSpace>.TakeRowsToText(0, "total").Strategy.SelectLines(LabelledRows()));
+      Assert.Equal(3, SheetProjectionBuilders<ICellSpace>.TakeRowsToText(0, "total").SelectLines(LabelledRows()));
 
       // ...and whole-cell, not substring: a band must not end on a row that merely mentions the word.
-      Assert.Equal(4, SheetProjectionBuilders<ICellSpace>.TakeRowsToText(0, "Tot").Strategy.SelectLines(LabelledRows()));
+      Assert.Equal(4, SheetProjectionBuilders<ICellSpace>.TakeRowsToText(0, "Tot").SelectLines(LabelledRows()));
     }
 
     [Fact]
     public void TakeRowsToText_ReadsTheColumnItWasGivenAndNoOther()
     {
       // The column argument is the whole of the addressing, so a match in another column is not one.
-      Assert.Equal(4, SheetProjectionBuilders<ICellSpace>.TakeRowsToText(1, "Total").Strategy.SelectLines(LabelledRows()));
+      Assert.Equal(4, SheetProjectionBuilders<ICellSpace>.TakeRowsToText(1, "Total").SelectLines(LabelledRows()));
     }
 
     [Fact]
     public void TakeRowsToText_WhenNothingMatches_TakesEveryRow()
     {
-      Assert.Equal(4, SheetProjectionBuilders<ICellSpace>.TakeRowsToText(0, "no such label").Strategy.SelectLines(LabelledRows()));
+      Assert.Equal(4, SheetProjectionBuilders<ICellSpace>.TakeRowsToText(0, "no such label").SelectLines(LabelledRows()));
     }
 
     [Fact]
@@ -146,7 +146,7 @@ namespace Unrect.Tests.Strategies
       Assert.False(space.IsText(0, 1));
       Assert.True(space.IsText(0, 2));
 
-      Assert.Equal(3, SheetProjectionBuilders<ICellSpace>.TakeRowsToText(0, "42").Strategy.SelectLines(space));
+      Assert.Equal(3, SheetProjectionBuilders<ICellSpace>.TakeRowsToText(0, "42").SelectLines(space));
     }
 
     [Fact]
@@ -160,9 +160,9 @@ namespace Unrect.Tests.Strategies
     {
       var space = Grid(new[,] { { 1 }, { 2 }, { 3 } });
 
-      Assert.Equal(2, RowStrategies.TakeRows(2).SelectLines(space));
-      Assert.Equal(3, RowStrategies.TakeRows(3).SelectLines(space));
-      Assert.Equal(0, RowStrategies.TakeRows(0).SelectLines(space));
+      Assert.Equal(2, RowStrategies.TakeRows<ISpace>(2).SelectLines(space));
+      Assert.Equal(3, RowStrategies.TakeRows<ISpace>(3).SelectLines(space));
+      Assert.Equal(0, RowStrategies.TakeRows<ISpace>(0).SelectLines(space));
     }
 
     [Fact]
@@ -170,13 +170,13 @@ namespace Unrect.Tests.Strategies
     {
       var space = Grid(new[,] { { 1 }, { 2 } });
 
-      Assert.Throws<OutOfBoundsException>(() => RowStrategies.TakeRows(3).SelectLines(space));
+      Assert.Throws<OutOfBoundsException>(() => RowStrategies.TakeRows<ISpace>(3).SelectLines(space));
     }
 
     [Fact]
     public void TakeRows_WithANegativeCount_Throws()
     {
-      Assert.Throws<ArgumentOutOfRangeException>(() => RowStrategies.TakeRows(-1));
+      Assert.Throws<ArgumentOutOfRangeException>(() => RowStrategies.TakeRows<ISpace>(-1));
     }
 
     // --- Column strategies ----------------------------------------------------------------------
@@ -190,7 +190,7 @@ namespace Unrect.Tests.Strategies
         { 1, 1, 0, 1 },   // column 2 has a blank, so counting stops before it
       });
 
-      Assert.Equal(2, ColumnStrategies.TakeColumnsWhileAll(HasValue).SelectLines(space));
+      Assert.Equal(2, ColumnStrategies.TakeColumnsWhileAll<ISpace>(HasValue).SelectLines(space));
     }
 
     [Fact]
@@ -202,7 +202,7 @@ namespace Unrect.Tests.Strategies
         { 0, 1, 0, 1 },   // column 2 is empty in both rows: stop
       });
 
-      Assert.Equal(2, ColumnStrategies.TakeColumnsWhileAny(HasValue).SelectLines(space));
+      Assert.Equal(2, ColumnStrategies.TakeColumnsWhileAny<ISpace>(HasValue).SelectLines(space));
     }
 
     [Fact]
@@ -212,7 +212,7 @@ namespace Unrect.Tests.Strategies
       // computes "take while none match" — the exact opposite of the name.
       var space = Grid(new[,] { { 1, 1, 0, 1 } });
 
-      Assert.Equal(2, ColumnStrategies.TakeColumnsWhileAnyIsNotBlank().SelectLines(space));
+      Assert.Equal(2, ColumnStrategies.TakeColumnsWhileAnyIsNotBlank<ISpace>().SelectLines(space));
     }
 
     [Fact]
@@ -220,7 +220,7 @@ namespace Unrect.Tests.Strategies
     {
       var space = Grid(new[,] { { 1, 2, 3, 4 } });
 
-      Assert.Equal(2, ColumnStrategies.TakeColumnsWhile((s, column) => s[column, 0].AsText() is string number && int.Parse(number, CultureInfo.InvariantCulture) < 3).SelectLines(space));
+      Assert.Equal(2, ColumnStrategies.TakeColumnsWhile<ISpace>((s, column) => s[column, 0].AsText() is string number && int.Parse(number, CultureInfo.InvariantCulture) < 3).SelectLines(space));
     }
 
     [Fact]
@@ -228,9 +228,9 @@ namespace Unrect.Tests.Strategies
     {
       var space = Grid(new[,] { { 1, 2, 3 } });
 
-      Assert.Equal(2, ColumnStrategies.TakeColumns(2).SelectLines(space));
-      Assert.Equal(3, ColumnStrategies.TakeColumns(3).SelectLines(space));
-      Assert.Equal(0, ColumnStrategies.TakeColumns(0).SelectLines(space));
+      Assert.Equal(2, ColumnStrategies.TakeColumns<ISpace>(2).SelectLines(space));
+      Assert.Equal(3, ColumnStrategies.TakeColumns<ISpace>(3).SelectLines(space));
+      Assert.Equal(0, ColumnStrategies.TakeColumns<ISpace>(0).SelectLines(space));
     }
 
     [Fact]
@@ -238,13 +238,13 @@ namespace Unrect.Tests.Strategies
     {
       var space = Grid(new[,] { { 1, 2 } });
 
-      Assert.Throws<OutOfBoundsException>(() => ColumnStrategies.TakeColumns(3).SelectLines(space));
+      Assert.Throws<OutOfBoundsException>(() => ColumnStrategies.TakeColumns<ISpace>(3).SelectLines(space));
     }
 
     [Fact]
     public void TakeColumns_WithANegativeCount_Throws()
     {
-      Assert.Throws<ArgumentOutOfRangeException>(() => ColumnStrategies.TakeColumns(-1));
+      Assert.Throws<ArgumentOutOfRangeException>(() => ColumnStrategies.TakeColumns<ISpace>(-1));
     }
 
     [Fact]
@@ -253,7 +253,7 @@ namespace Unrect.Tests.Strategies
       // The mirror of TakeRowsWhile(column, predicate): read one row, count along it.
       var space = Grid(new[,] { { 1, 2, 3, 4 }, { 0, 0, 0, 0 } });
 
-      Assert.Equal(2, ColumnStrategies.TakeColumnsWhile(0, (cell, column) => cell.AsText() is string number && int.Parse(number, CultureInfo.InvariantCulture) < 3).SelectLines(space));
+      Assert.Equal(2, ColumnStrategies.TakeColumnsWhile<ISpace>(0, (cell, column) => cell.AsText() is string number && int.Parse(number, CultureInfo.InvariantCulture) < 3).SelectLines(space));
     }
 
     [Fact]
@@ -261,7 +261,7 @@ namespace Unrect.Tests.Strategies
     {
       var space = Grid(new[,] { { 1, 2, 3, 4 } });
 
-      Assert.Equal(3, ColumnStrategies.TakeColumnsTo((s, column) => s[column, 0].AsText() == "3").SelectLines(space));
+      Assert.Equal(3, ColumnStrategies.TakeColumnsTo<ISpace>((s, column) => s[column, 0].AsText() == "3").SelectLines(space));
     }
 
     [Fact]
@@ -269,7 +269,7 @@ namespace Unrect.Tests.Strategies
     {
       var space = Grid(new[,] { { 1, 2 } });
 
-      Assert.Equal(2, ColumnStrategies.TakeColumnsTo((s, column) => s[column, 0].AsText() == "99").SelectLines(space));
+      Assert.Equal(2, ColumnStrategies.TakeColumnsTo<ISpace>((s, column) => s[column, 0].AsText() == "99").SelectLines(space));
     }
 
     // --- TakeColumnsToText: the same rule, transposed ------------------------------------------------
@@ -284,26 +284,26 @@ namespace Unrect.Tests.Strategies
     [Fact]
     public void TakeColumnsToText_IncludesTheColumnHoldingTheText()
     {
-      Assert.Equal(3, SheetProjectionBuilders<ICellSpace>.TakeColumnsToText(0, "Total").Strategy.SelectLines(LabelledColumns()));
+      Assert.Equal(3, SheetProjectionBuilders<ICellSpace>.TakeColumnsToText(0, "Total").SelectLines(LabelledColumns()));
     }
 
     [Fact]
     public void TakeColumnsToText_MatchesWholeCellTrimmedAndCaseInsensitively()
     {
-      Assert.Equal(3, SheetProjectionBuilders<ICellSpace>.TakeColumnsToText(0, "total").Strategy.SelectLines(LabelledColumns()));
-      Assert.Equal(4, SheetProjectionBuilders<ICellSpace>.TakeColumnsToText(0, "Tot").Strategy.SelectLines(LabelledColumns()));
+      Assert.Equal(3, SheetProjectionBuilders<ICellSpace>.TakeColumnsToText(0, "total").SelectLines(LabelledColumns()));
+      Assert.Equal(4, SheetProjectionBuilders<ICellSpace>.TakeColumnsToText(0, "Tot").SelectLines(LabelledColumns()));
     }
 
     [Fact]
     public void TakeColumnsToText_ReadsTheRowItWasGivenAndNoOther()
     {
-      Assert.Equal(4, SheetProjectionBuilders<ICellSpace>.TakeColumnsToText(1, "Total").Strategy.SelectLines(LabelledColumns()));
+      Assert.Equal(4, SheetProjectionBuilders<ICellSpace>.TakeColumnsToText(1, "Total").SelectLines(LabelledColumns()));
     }
 
     [Fact]
     public void TakeColumnsToText_WhenNothingMatches_TakesEveryColumn()
     {
-      Assert.Equal(4, SheetProjectionBuilders<ICellSpace>.TakeColumnsToText(0, "no such label").Strategy.SelectLines(LabelledColumns()));
+      Assert.Equal(4, SheetProjectionBuilders<ICellSpace>.TakeColumnsToText(0, "no such label").SelectLines(LabelledColumns()));
     }
 
     [Fact]
@@ -317,7 +317,7 @@ namespace Unrect.Tests.Strategies
       Assert.False(space.IsText(1, 0));
       Assert.True(space.IsText(2, 0));
 
-      Assert.Equal(3, SheetProjectionBuilders<ICellSpace>.TakeColumnsToText(0, "42").Strategy.SelectLines(space));
+      Assert.Equal(3, SheetProjectionBuilders<ICellSpace>.TakeColumnsToText(0, "42").SelectLines(space));
     }
 
     [Fact]
@@ -332,8 +332,8 @@ namespace Unrect.Tests.Strategies
       // What (_, _) => true used to say opaquely at a dozen call sites.
       var space = Grid(new[,] { { 1, 2, 3 }, { 4, 5, 6 } });
 
-      Assert.Equal(2, RowStrategies.AllRows().SelectLines(space));
-      Assert.Equal(3, ColumnStrategies.AllColumns().SelectLines(space));
+      Assert.Equal(2, RowStrategies.AllRows<ISpace>().SelectLines(space));
+      Assert.Equal(3, ColumnStrategies.AllColumns<ISpace>().SelectLines(space));
     }
 
     [Fact]
@@ -342,8 +342,8 @@ namespace Unrect.Tests.Strategies
       // The area-composing forms: one axis chosen, the other taken whole.
       var space = Grid(new[,] { { 1, 2, 3 }, { 4, 5, 6 } });
 
-      var fullWidthRow = RowStrategies.TakeRows(1).AllColumns().GetSize(space);
-      var fullHeightColumn = ColumnStrategies.TakeColumns(1).AllRows().GetSize(space);
+      var fullWidthRow = RowStrategies.TakeRows<ISpace>(1).AllColumns().GetSize(space);
+      var fullHeightColumn = ColumnStrategies.TakeColumns<ISpace>(1).AllRows().GetSize(space);
 
       Assert.Equal(3, fullWidthRow.Width);
       Assert.Equal(1, fullWidthRow.Height);

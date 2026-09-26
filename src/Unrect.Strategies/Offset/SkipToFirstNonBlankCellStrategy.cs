@@ -3,11 +3,12 @@ using Unrect.Core;
 namespace Unrect.Strategies
 {
   /// <summary>The first cell with a value, reading spans in order and each span across: the region starts there. No content anywhere skips past every span.</summary>
-  internal sealed class SkipToFirstNonBlankCellStrategy : IOffsetStrategy
+  internal sealed class SkipToFirstNonBlankCellStrategy<TSpace> : IOffsetStrategy<TSpace>
+    where TSpace : class, ISpace
   {
-    public IOffsetScan Begin(Orientation along) => new Scan(along);
+    public IOffsetScan<TSpace> Begin(Orientation along) => new Scan(along);
 
-    private sealed class Scan : IOffsetScan
+    private sealed class Scan : IOffsetScan<TSpace>
     {
       private readonly Orientation _along;
 
@@ -15,7 +16,7 @@ namespace Unrect.Strategies
 
       public bool Incremental => true;
 
-      public OffsetStep Next(Plane<ISpace> region, int index, out int across)
+      public OffsetStep Next(Plane<TSpace> region, int index, out int across)
       {
         var reach = Spans.Across(region, _along);
 
@@ -27,7 +28,7 @@ namespace Unrect.Strategies
         return OffsetStep.Skip;
       }
 
-      public Offset Settle(Plane<ISpace> region)
+      public Offset Settle(Plane<TSpace> region)
         => _along == Orientation.Vertical ? new Offset(0, region.Height) : new Offset(region.Width, 0);
     }
   }

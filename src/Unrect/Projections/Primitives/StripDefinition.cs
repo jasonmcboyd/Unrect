@@ -7,7 +7,7 @@ namespace Unrect.Projections
   internal sealed class StripDefinition<TSpace, T> : CollectorNode<TSpace, T>
     where TSpace : class, ISpace
   {
-    public StripDefinition(Orientation orientation, Func<CellStrip<TSpace>, T> project, Placement placement, string description)
+    public StripDefinition(Orientation orientation, Func<CellStrip<TSpace>, T> project, Placement<TSpace> placement, string description)
       : base(placement)
     {
       Orientation = orientation;

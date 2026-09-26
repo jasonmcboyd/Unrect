@@ -8,13 +8,14 @@ namespace Unrect.Strategies
   /// <para>
   /// It is exposed rather than kept private because the width and height of a rows-then-columns
   /// extent are decided by one forward walk over the same rows — see
-  /// <see cref="InterleavedRowAndColumnSizeStrategy"/>, which drives an accumulator of its own
-  /// alongside a row scan. It is deliberately NOT the column twin of <see cref="ILineScan"/>: a column
+  /// <see cref="InterleavedRowAndColumnSizeStrategy{TSpace}"/>, which drives an accumulator of its own
+  /// alongside a row scan. It is deliberately NOT the column twin of <see cref="ILineScan{TSpace}"/>: a column
   /// rule cannot be discovered as a projection consumes, because a width must be settled before the
   /// first row is handed out. What it can be is accumulated, and settle early.
   /// </para>
   /// </summary>
-  internal interface IColumnAccumulator
+  internal interface IColumnAccumulator<TSpace>
+    where TSpace : class, ISpace
   {
     /// <summary>How many columns the rows taken into account so far select.</summary>
     int Count { get; }
@@ -27,6 +28,6 @@ namespace Unrect.Strategies
     bool IsSettled { get; }
 
     /// <summary>Takes row <paramref name="row"/> of <paramref name="space"/> into account.</summary>
-    void Include(Plane<ISpace> space, int row);
+    void Include(Plane<TSpace> space, int row);
   }
 }

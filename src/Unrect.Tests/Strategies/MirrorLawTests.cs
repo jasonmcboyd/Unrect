@@ -132,19 +132,19 @@ namespace Unrect.Tests.Strategies
       var ragged = Labels(WithCells[0]);
       var transposed = Labels(Transposed(WithCells[0]));
 
-      Assert.Equal(2, RowStrategies.TakeRowsWhileAnyIsNotBlank().SelectLines(ragged));
-      Assert.Equal(4, ColumnStrategies.TakeColumnsWhileAnyIsNotBlank().SelectLines(ragged));
+      Assert.Equal(2, RowStrategies.TakeRowsWhileAnyIsNotBlank<ISpace>().SelectLines(ragged));
+      Assert.Equal(4, ColumnStrategies.TakeColumnsWhileAnyIsNotBlank<ISpace>().SelectLines(ragged));
 
-      Assert.Equal(4, RowStrategies.TakeRowsWhileAnyIsNotBlank().SelectLines(transposed));
-      Assert.Equal(2, ColumnStrategies.TakeColumnsWhileAnyIsNotBlank().SelectLines(transposed));
+      Assert.Equal(4, RowStrategies.TakeRowsWhileAnyIsNotBlank<ISpace>().SelectLines(transposed));
+      Assert.Equal(2, ColumnStrategies.TakeColumnsWhileAnyIsNotBlank<ISpace>().SelectLines(transposed));
 
       // The same, located: 'o' sits in the last row and the third column, and swaps places under
       // the transpose.
-      Assert.Equal(3, RowLandmarks.RowSaying("o").Find(ragged));
-      Assert.Equal(2, ColumnLandmarks.ColumnSaying("o").Find(ragged));
+      Assert.Equal(3, RowLandmarks.RowSaying<ISpace>("o").Find(ragged));
+      Assert.Equal(2, ColumnLandmarks.ColumnSaying<ISpace>("o").Find(ragged));
 
-      Assert.Equal(2, RowLandmarks.RowSaying("o").Find(transposed));
-      Assert.Equal(3, ColumnLandmarks.ColumnSaying("o").Find(transposed));
+      Assert.Equal(2, RowLandmarks.RowSaying<ISpace>("o").Find(transposed));
+      Assert.Equal(3, ColumnLandmarks.ColumnSaying<ISpace>("o").Find(transposed));
     }
 
     // --- The while families: separate algorithms, one denotation (SRC-59) --------------------------------
@@ -153,24 +153,24 @@ namespace Unrect.Tests.Strategies
     public void TakeRowsWhileAnyIsNotBlank_MirrorsTakeColumnsWhileAnyIsNotBlank()
     {
       Mirrored(
-        RowStrategies.TakeRowsWhileAnyIsNotBlank().SelectLines,
-        ColumnStrategies.TakeColumnsWhileAnyIsNotBlank().SelectLines);
+        RowStrategies.TakeRowsWhileAnyIsNotBlank<ISpace>().SelectLines,
+        ColumnStrategies.TakeColumnsWhileAnyIsNotBlank<ISpace>().SelectLines);
     }
 
     [Fact]
     public void TakeRowsWhileAll_MirrorsTakeColumnsWhileAll()
     {
       Mirrored(
-        RowStrategies.TakeRowsWhileAll(HasValue).SelectLines,
-        ColumnStrategies.TakeColumnsWhileAll(HasValue).SelectLines);
+        RowStrategies.TakeRowsWhileAll<ISpace>(HasValue).SelectLines,
+        ColumnStrategies.TakeColumnsWhileAll<ISpace>(HasValue).SelectLines);
     }
 
     [Fact]
     public void TakeRowsWhileAny_MirrorsTakeColumnsWhileAny()
     {
       Mirrored(
-        RowStrategies.TakeRowsWhileAny(HasValue).SelectLines,
-        ColumnStrategies.TakeColumnsWhileAny(HasValue).SelectLines);
+        RowStrategies.TakeRowsWhileAny<ISpace>(HasValue).SelectLines,
+        ColumnStrategies.TakeColumnsWhileAny<ISpace>(HasValue).SelectLines);
     }
 
     // --- The positional forms: a negated take-to against a dedicated loop (SRC-57) -------------------------
@@ -183,12 +183,12 @@ namespace Unrect.Tests.Strategies
       // grids that have a cell to address. "Take while the leading cell is not m."
       Mirrored(
         WithCells,
-        RowStrategies.TakeRowsWhile((s, row) => s[0, row].AsText() != "m").SelectLines,
-        ColumnStrategies.TakeColumnsWhile((s, column) => s[column, 0].AsText() != "m").SelectLines);
+        RowStrategies.TakeRowsWhile<ISpace>((s, row) => s[0, row].AsText() != "m").SelectLines,
+        ColumnStrategies.TakeColumnsWhile<ISpace>((s, column) => s[column, 0].AsText() != "m").SelectLines);
 
       // AllRows/AllColumns are the same pair with the constant predicate, which needs no cell to
       // address — so they are checked over every grid, degenerate ones included.
-      Mirrored(RowStrategies.AllRows().SelectLines, ColumnStrategies.AllColumns().SelectLines);
+      Mirrored(RowStrategies.AllRows<ISpace>().SelectLines, ColumnStrategies.AllColumns<ISpace>().SelectLines);
     }
 
     [Fact]
@@ -198,14 +198,14 @@ namespace Unrect.Tests.Strategies
       // keep-the-match flag the column class does not, so the shared denotation is this one.
       Mirrored(
         WithCells,
-        RowStrategies.TakeRowsTo((s, row) => s[0, row].AsText() == "m").SelectLines,
-        ColumnStrategies.TakeColumnsTo((s, column) => s[column, 0].AsText() == "m").SelectLines);
+        RowStrategies.TakeRowsTo<ISpace>((s, row) => s[0, row].AsText() == "m").SelectLines,
+        ColumnStrategies.TakeColumnsTo<ISpace>((s, column) => s[column, 0].AsText() == "m").SelectLines);
 
       // ...and the by-text spelling of the same pair, which addresses its own cell.
       Mirrored(
         WithCells,
-        SheetProjectionBuilders<ICellSpace>.TakeRowsToText(0, "m").Strategy.SelectLines,
-        SheetProjectionBuilders<ICellSpace>.TakeColumnsToText(0, "m").Strategy.SelectLines);
+        SheetProjectionBuilders<ICellSpace>.TakeRowsToText(0, "m").SelectLines,
+        SheetProjectionBuilders<ICellSpace>.TakeColumnsToText(0, "m").SelectLines);
     }
 
     // --- Explicit counts ---------------------------------------------------------------------------------
@@ -220,13 +220,13 @@ namespace Unrect.Tests.Strategies
 
         for (var count = 0; count <= space.Extent.Height; count++)
           Assert.Equal(
-            RowStrategies.TakeRows(count).SelectLines(space),
-            ColumnStrategies.TakeColumns(count).SelectLines(transposed));
+            RowStrategies.TakeRows<ISpace>(count).SelectLines(space),
+            ColumnStrategies.TakeColumns<ISpace>(count).SelectLines(transposed));
 
         for (var count = 0; count <= space.Extent.Width; count++)
           Assert.Equal(
-            ColumnStrategies.TakeColumns(count).SelectLines(space),
-            RowStrategies.TakeRows(count).SelectLines(transposed));
+            ColumnStrategies.TakeColumns<ISpace>(count).SelectLines(space),
+            RowStrategies.TakeRows<ISpace>(count).SelectLines(transposed));
       }
     }
 
@@ -244,19 +244,19 @@ namespace Unrect.Tests.Strategies
         var transposed = Labels(Transposed(grid));
 
         Assert.Throws<OutOfBoundsException>(
-          () => RowStrategies.TakeRows(space.Extent.Height + 1).SelectLines(space));
+          () => RowStrategies.TakeRows<ISpace>(space.Extent.Height + 1).SelectLines(space));
 
         Assert.Throws<OutOfBoundsException>(
-          () => ColumnStrategies.TakeColumns(space.Extent.Height + 1).SelectLines(transposed));
+          () => ColumnStrategies.TakeColumns<ISpace>(space.Extent.Height + 1).SelectLines(transposed));
       }
 
       Assert.Equal(
         "count",
-        Assert.Throws<ArgumentOutOfRangeException>(() => RowStrategies.TakeRows(-1)).ParamName);
+        Assert.Throws<ArgumentOutOfRangeException>(() => RowStrategies.TakeRows<ISpace>(-1)).ParamName);
 
       Assert.Equal(
         "count",
-        Assert.Throws<ArgumentOutOfRangeException>(() => ColumnStrategies.TakeColumns(-1)).ParamName);
+        Assert.Throws<ArgumentOutOfRangeException>(() => ColumnStrategies.TakeColumns<ISpace>(-1)).ParamName);
     }
 
     // --- Offsets: the two lifts mirror through (0, rows) and (columns, 0) ----------------------------------
@@ -265,8 +265,8 @@ namespace Unrect.Tests.Strategies
     public void SkipBlankRows_MirrorsSkipBlankColumns()
     {
       Mirrored(
-        space => OffsetStrategies.SkipBlankRows().GetOffset(space).Row,
-        space => OffsetStrategies.SkipBlankColumns().GetOffset(space).Column);
+        space => OffsetStrategies.SkipBlankRows<ISpace>().GetOffset(space).Row,
+        space => OffsetStrategies.SkipBlankColumns<ISpace>().GetOffset(space).Column);
 
       // The other half of the offset mirror: each lift is (0, rows) or (columns, 0), so a skip
       // declared on one axis can never quietly displace the other.
@@ -274,8 +274,8 @@ namespace Unrect.Tests.Strategies
       {
         var space = Labels(grid);
 
-        Assert.Equal(0, OffsetStrategies.SkipBlankRows().GetOffset(space).Column);
-        Assert.Equal(0, OffsetStrategies.SkipBlankColumns().GetOffset(space).Row);
+        Assert.Equal(0, OffsetStrategies.SkipBlankRows<ISpace>().GetOffset(space).Column);
+        Assert.Equal(0, OffsetStrategies.SkipBlankColumns<ISpace>().GetOffset(space).Row);
       }
     }
 
@@ -283,14 +283,14 @@ namespace Unrect.Tests.Strategies
     public void SkipRowsWhile_MirrorsSkipColumnsWhile_OnBothQuantifiers()
     {
       Mirrored(
-        space => OffsetStrategies.SkipRowsWhileAny(HasValue).GetOffset(space).Row,
-        space => OffsetStrategies.SkipColumnsWhileAny(HasValue).GetOffset(space).Column);
+        space => OffsetStrategies.SkipRowsWhileAny<ISpace>(HasValue).GetOffset(space).Row,
+        space => OffsetStrategies.SkipColumnsWhileAny<ISpace>(HasValue).GetOffset(space).Column);
 
       // The two-argument "all" form, which the suite otherwise only exercises through its
       // zero-argument spelling, SkipBlankRows.
       Mirrored(
-        space => OffsetStrategies.SkipRowsWhileAll(HasValue).GetOffset(space).Row,
-        space => OffsetStrategies.SkipColumnsWhileAll(HasValue).GetOffset(space).Column);
+        space => OffsetStrategies.SkipRowsWhileAll<ISpace>(HasValue).GetOffset(space).Row,
+        space => OffsetStrategies.SkipColumnsWhileAll<ISpace>(HasValue).GetOffset(space).Column);
     }
 
     // --- Sizes: the mirror is a transposed rectangle, not a transposed count -------------------------------
@@ -306,14 +306,14 @@ namespace Unrect.Tests.Strategies
         var space = Labels(grid);
         var transposed = Labels(Transposed(grid));
 
-        var byRows = SizeStrategies.RowsWhileAny(HasValue).GetSize(space);
-        var byColumns = SizeStrategies.ColumnsWhileAny(HasValue).GetSize(transposed);
+        var byRows = SizeStrategies.RowsWhileAny<ISpace>(HasValue).GetSize(space);
+        var byColumns = SizeStrategies.ColumnsWhileAny<ISpace>(HasValue).GetSize(transposed);
 
         Assert.Equal(byRows.Height, byColumns.Width);
         Assert.Equal(byRows.Width, byColumns.Height);
 
-        var byValue = SizeStrategies.RowsWhileAnyIsNotBlank().GetSize(space);
-        var byValueColumns = SizeStrategies.ColumnsWhileAnyIsNotBlank().GetSize(transposed);
+        var byValue = SizeStrategies.RowsWhileAnyIsNotBlank<ISpace>().GetSize(space);
+        var byValueColumns = SizeStrategies.ColumnsWhileAnyIsNotBlank<ISpace>().GetSize(transposed);
 
         Assert.Equal(byValue.Height, byValueColumns.Width);
         Assert.Equal(byValue.Width, byValueColumns.Height);
@@ -326,31 +326,31 @@ namespace Unrect.Tests.Strategies
     public void RowContaining_MirrorsColumnContaining()
     {
       Mirrored(
-        RowLandmarks.RowSaying("o").Find,
-        ColumnLandmarks.ColumnSaying("o").Find);
+        RowLandmarks.RowSaying<ISpace>("o").Find,
+        ColumnLandmarks.ColumnSaying<ISpace>("o").Find);
 
       // A miss is null on both axes rather than an empty answer, and the trimmed,
       // case-insensitive, whole-cell rule is the same rule on both — the predicate is shared, the
       // scan around it is not.
       Mirrored(
-        RowLandmarks.RowSaying("nope").Find,
-        ColumnLandmarks.ColumnSaying("nope").Find);
+        RowLandmarks.RowSaying<ISpace>("nope").Find,
+        ColumnLandmarks.ColumnSaying<ISpace>("nope").Find);
 
       Mirrored(
-        RowLandmarks.RowSaying("  O  ").Find,
-        ColumnLandmarks.ColumnSaying("  O  ").Find);
+        RowLandmarks.RowSaying<ISpace>("  O  ").Find,
+        ColumnLandmarks.ColumnSaying<ISpace>("  O  ").Find);
 
       Mirrored(
-        RowLandmarks.RowSaying("").Find,
-        ColumnLandmarks.ColumnSaying("").Find);
+        RowLandmarks.RowSaying<ISpace>("").Find,
+        ColumnLandmarks.ColumnSaying<ISpace>("").Find);
     }
 
     [Fact]
     public void RowWithCell_MirrorsColumnWithCell()
     {
       Mirrored(
-        RowLandmarks.RowWithCell(cell => cell.AsText() == "h").Find,
-        ColumnLandmarks.ColumnWithCell(cell => cell.AsText() == "h").Find);
+        RowLandmarks.RowWithCell<ISpace>(cell => cell.AsText() == "h").Find,
+        ColumnLandmarks.ColumnWithCell<ISpace>(cell => cell.AsText() == "h").Find);
     }
 
     [Fact]
@@ -360,8 +360,8 @@ namespace Unrect.Tests.Strategies
       // leading cell is m" against "the first column whose leading cell is m".
       Mirrored(
         WithCells,
-        RowLandmarks.RowWhere((s, row) => s[0, row].AsText() == "m").Find,
-        ColumnLandmarks.ColumnWhere((s, column) => s[column, 0].AsText() == "m").Find);
+        RowLandmarks.RowWhere<ISpace>((s, row) => s[0, row].AsText() == "m").Find,
+        ColumnLandmarks.ColumnWhere<ISpace>((s, column) => s[column, 0].AsText() == "m").Find);
     }
 
     // --- Where the mirror deliberately stops --------------------------------------------------------------
@@ -372,14 +372,14 @@ namespace Unrect.Tests.Strategies
       // The specific, intended break. Every law above is about a number; this is about the sentence
       // built from it, and the sentence names the axis it is talking about. A mechanized transpose
       // would have made these one string and sent the reader looking down the wrong axis.
-      Assert.Equal("no row saying 'Total'", RowLandmarks.RowSaying("Total").Description);
-      Assert.Equal("no column saying 'Total'", ColumnLandmarks.ColumnSaying("Total").Description);
+      Assert.Equal("no row saying 'Total'", RowLandmarks.RowSaying<ISpace>("Total").Description);
+      Assert.Equal("no column saying 'Total'", ColumnLandmarks.ColumnSaying<ISpace>("Total").Description);
 
-      Assert.Equal("no row with a matching cell", RowLandmarks.RowWithCell(_ => false).Description);
-      Assert.Equal("no column with a matching cell", ColumnLandmarks.ColumnWithCell(_ => false).Description);
+      Assert.Equal("no row with a matching cell", RowLandmarks.RowWithCell<ISpace>(_ => false).Description);
+      Assert.Equal("no column with a matching cell", ColumnLandmarks.ColumnWithCell<ISpace>(_ => false).Description);
 
-      Assert.Equal("no matching row", RowLandmarks.RowWhere((_, _) => false).Description);
-      Assert.Equal("no matching column", ColumnLandmarks.ColumnWhere((_, _) => false).Description);
+      Assert.Equal("no matching row", RowLandmarks.RowWhere<ISpace>((_, _) => false).Description);
+      Assert.Equal("no matching column", ColumnLandmarks.ColumnWhere<ISpace>((_, _) => false).Description);
     }
   }
 }

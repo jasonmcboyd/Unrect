@@ -103,14 +103,14 @@ namespace Unrect.Spreadsheets
     /// <typeparam name="TSpace">The sheet the landmark is declared over.</typeparam>
     public static ILineLandmark<TSpace> RowContaining<TSpace>(string text)
       where TSpace : class, ICellSpace
-      => Demanding.Landmark<TSpace>(RowLandmarks.RowWhere(
+      => (RowLandmarks.RowWhere(
         CellMatching.AnyCellInRow(Holding<TSpace>(NotNull(text))), $"no row containing '{text}'"));
 
     /// <summary>The column twin of <see cref="RowContaining{TSpace}"/>, with the same rule.</summary>
     /// <typeparam name="TSpace">The sheet the landmark is declared over.</typeparam>
     public static ILineLandmark<TSpace> ColumnContaining<TSpace>(string text)
       where TSpace : class, ICellSpace
-      => Demanding.Landmark<TSpace>(ColumnLandmarks.ColumnWhere(
+      => (ColumnLandmarks.ColumnWhere(
         CellMatching.AnyCellInColumn(Holding<TSpace>(NotNull(text))), $"no column containing '{text}'"));
 
     /// <summary>
@@ -123,7 +123,7 @@ namespace Unrect.Spreadsheets
     {
       var matches = Holding<TSpace>(NotNull(text));
 
-      return Demanding.Lines<TSpace>(RowStrategies.TakeRowsTo((space, row) => matches(space[column, row])));
+      return RowStrategies.TakeRowsTo<TSpace>((space, row) => matches(space[column, row]));
     }
 
     /// <summary>The column twin of <see cref="TakeRowsToText{TSpace}"/>: columns up to and including the first whose cell in <paramref name="row"/> holds <paramref name="text"/>.</summary>
@@ -133,19 +133,19 @@ namespace Unrect.Spreadsheets
     {
       var matches = Holding<TSpace>(NotNull(text));
 
-      return Demanding.Lines<TSpace>(ColumnStrategies.TakeColumnsTo((space, column) => matches(space[column, row])));
+      return ColumnStrategies.TakeColumnsTo<TSpace>((space, column) => matches(space[column, row]));
     }
 
     /// <summary>A cell holding <paramref name="text"/>, lowered to the calculus: the value's own text, compared by the shared rule.</summary>
-    private static Func<Point<ISpace>, bool> Holding<TSpace>(string text)
+    private static Func<Point<TSpace>, bool> Holding<TSpace>(string text)
       where TSpace : class, ICellSpace
-      => TypedPredicates.Lower<TSpace>(point => point.TryGetText(out var held) && CellMatching.TextComparer.Equals(held, text));
+      => point => point.TryGetText(out var held) && CellMatching.TextComparer.Equals(held, text);
 
     private static string NotNull(string text) => text ?? throw new ArgumentNullException(nameof(text));
 
     internal static IProjectionDefinition<TSpace, T> Kinded<TSpace, T>(string kind, CellRead<TSpace, T> read)
       where TSpace : class, ICellSpace
-      => new ReadDefinition<TSpace, T>(kind, read, Placement.Of(ProjectionBuilders<TSpace>.Extent(1, 1)), blankIsNull: false);
+      => new ReadDefinition<TSpace, T>(kind, read, Placement<TSpace>.Of(ProjectionBuilders<TSpace>.Extent(1, 1)), blankIsNull: false);
 
     /// <summary>
     /// One cell, read as the formula behind it: the file's own expression without the leading
@@ -185,7 +185,9 @@ namespace Unrect.Spreadsheets
     /// <c>Landmark</c>.
     /// </para>
     /// </summary>
-    public static ILineLandmark<IFormulaSpace> RowWithFormula() => new FormulaRowLandmark(null);
+    public static ILineLandmark<TSpace> RowWithFormula<TSpace>()
+      where TSpace : class, IFormulaSpace
+      => new FormulaRowLandmark<TSpace>(null);
 
     /// <summary>
     /// The first row holding a formula that mentions <paramref name="containing"/> —
@@ -198,16 +200,20 @@ namespace Unrect.Spreadsheets
     /// </para>
     /// </summary>
     /// <param name="containing">The text the formula must mention.</param>
-    public static ILineLandmark<IFormulaSpace> RowWithFormula(string containing)
-      => new FormulaRowLandmark(NotEmpty(containing));
+    public static ILineLandmark<TSpace> RowWithFormula<TSpace>(string containing)
+      where TSpace : class, IFormulaSpace
+      => new FormulaRowLandmark<TSpace>(NotEmpty(containing));
 
     /// <inheritdoc cref="RowWithFormula()"/>
-    public static ILineLandmark<IFormulaSpace> ColumnWithFormula() => new FormulaColumnLandmark(null);
+    public static ILineLandmark<TSpace> ColumnWithFormula<TSpace>()
+      where TSpace : class, IFormulaSpace
+      => new FormulaColumnLandmark<TSpace>(null);
 
     /// <inheritdoc cref="RowWithFormula(string)"/>
     /// <param name="containing">The text the formula must mention.</param>
-    public static ILineLandmark<IFormulaSpace> ColumnWithFormula(string containing)
-      => new FormulaColumnLandmark(NotEmpty(containing));
+    public static ILineLandmark<TSpace> ColumnWithFormula<TSpace>(string containing)
+      where TSpace : class, IFormulaSpace
+      => new FormulaColumnLandmark<TSpace>(NotEmpty(containing));
 
     private static string NotEmpty(string containing)
       => string.IsNullOrEmpty(containing)
@@ -240,14 +246,13 @@ namespace Unrect.Spreadsheets
       /// boundary that could not look must not answer "not there". The failure is an
       /// <see cref="InvalidCastException"/>, which no tolerance boundary absorbs.
       /// </summary>
-      protected IFormulaSpace Formulas(ISpace space) => (IFormulaSpace)space;
-
       protected bool Matches(string? formula)
         => formula is not null
           && (_containing is null || formula.IndexOf(_containing, StringComparison.OrdinalIgnoreCase) >= 0);
     }
 
-    private sealed class FormulaRowLandmark : FormulaLandmark, ILineLandmark<IFormulaSpace>, ILineLandmark
+    private sealed class FormulaRowLandmark<TSpace> : FormulaLandmark, ILineLandmark<TSpace>
+      where TSpace : class, IFormulaSpace
     {
       internal FormulaRowLandmark(string? containing)
         : base("Row", containing)
@@ -256,11 +261,9 @@ namespace Unrect.Spreadsheets
 
       public Orientation Along => Orientation.Vertical;
 
-      ILineLandmark ILineLandmark<IFormulaSpace>.Landmark => this;
-
-      public int? Find(Plane<ISpace> space)
+      public int? Find(Plane<TSpace> space)
       {
-        var formulas = Formulas(space.Space);
+        var formulas = space.Space;
 
         // Through the region's own points, because a capability answers in the SPACE's coordinates
         // and a region may name a rectangle part-way into it. The point carries the translation the
@@ -278,7 +281,8 @@ namespace Unrect.Spreadsheets
       }
     }
 
-    private sealed class FormulaColumnLandmark : FormulaLandmark, ILineLandmark<IFormulaSpace>, ILineLandmark
+    private sealed class FormulaColumnLandmark<TSpace> : FormulaLandmark, ILineLandmark<TSpace>
+      where TSpace : class, IFormulaSpace
     {
       internal FormulaColumnLandmark(string? containing)
         : base("Column", containing)
@@ -287,11 +291,9 @@ namespace Unrect.Spreadsheets
 
       public Orientation Along => Orientation.Horizontal;
 
-      ILineLandmark ILineLandmark<IFormulaSpace>.Landmark => this;
-
-      public int? Find(Plane<ISpace> space)
+      public int? Find(Plane<TSpace> space)
       {
-        var formulas = Formulas(space.Space);
+        var formulas = space.Space;
 
         for (var column = 0; column < space.Width; column++)
           for (var row = 0; row < space.Height; row++)

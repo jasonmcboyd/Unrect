@@ -9,20 +9,21 @@ namespace Unrect.Strategies
   /// reads the column; asked a row at a time, as a discovered block's width is under a row driver,
   /// it accumulates: a failing cell in column c rules out c and every column after it.
   /// </summary>
-  internal sealed class TakeWhileAllColumnStrategy : IRowMajorColumnStrategy
+  internal sealed class TakeWhileAllColumnStrategy<TSpace> : IRowMajorColumnStrategy<TSpace>
+    where TSpace : class, ISpace
   {
     public Orientation Along => Orientation.Horizontal;
 
-    public TakeWhileAllColumnStrategy(Func<Point<ISpace>, bool> predicate)
+    public TakeWhileAllColumnStrategy(Func<Point<TSpace>, bool> predicate)
     {
       Predicate = predicate;
     }
 
-    internal Func<Point<ISpace>, bool> Predicate { get; }
+    internal Func<Point<TSpace>, bool> Predicate { get; }
 
-    public IColumnAccumulator BeginColumns(int width) => new Accumulator(Predicate, width);
+    public IColumnAccumulator<TSpace> BeginColumns(int width) => new Accumulator(Predicate, width);
 
-    public ILineScan Begin() => new Scanning.RowMajorColumns(this, (space, column) =>
+    public ILineScan<TSpace> Begin() => new Scanning.RowMajorColumns<TSpace>(this, (space, column) =>
     {
       for (var row = 0; space.HasRow(row); row++)
         if (!Predicate(space[column, row]))
@@ -31,9 +32,9 @@ namespace Unrect.Strategies
       return true;
     });
 
-    private sealed class Accumulator : IColumnAccumulator
+    private sealed class Accumulator : IColumnAccumulator<TSpace>
     {
-      public Accumulator(Func<Point<ISpace>, bool> predicate, int width)
+      public Accumulator(Func<Point<TSpace>, bool> predicate, int width)
       {
         Predicate = predicate;
         Count = width;
@@ -43,9 +44,9 @@ namespace Unrect.Strategies
 
       public bool IsSettled => Count == 0;
 
-      private Func<Point<ISpace>, bool> Predicate { get; }
+      private Func<Point<TSpace>, bool> Predicate { get; }
 
-      public void Include(Plane<ISpace> space, int row)
+      public void Include(Plane<TSpace> space, int row)
       {
         for (var column = 0; column < Count; column++)
         {

@@ -133,23 +133,23 @@ namespace Unrect.Tests.Spreadsheets
 
       var rowThroughBuilders = containing is null ? RowWithFormula() : RowWithFormula(containing);
       var rowPlain = containing is null
-        ? SpreadsheetProjections.RowWithFormula()
-        : SpreadsheetProjections.RowWithFormula(containing);
+        ? SpreadsheetProjections.RowWithFormula<ISpreadsheetSpace>()
+        : SpreadsheetProjections.RowWithFormula<ISpreadsheetSpace>(containing);
 
       var columnThroughBuilders = containing is null ? ColumnWithFormula() : ColumnWithFormula(containing);
       var columnPlain = containing is null
-        ? SpreadsheetProjections.ColumnWithFormula()
-        : SpreadsheetProjections.ColumnWithFormula(containing);
+        ? SpreadsheetProjections.ColumnWithFormula<ISpreadsheetSpace>()
+        : SpreadsheetProjections.ColumnWithFormula<ISpreadsheetSpace>(containing);
 
-      var region = Plane<ISpace>.Of(sheet);
+      var region = Plane<ISpreadsheetSpace>.Of(sheet);
 
-      Assert.Equal(rowPlain.Landmark.Find(region), rowThroughBuilders.Landmark.Find(region));
-      Assert.Equal(columnPlain.Landmark.Find(region), columnThroughBuilders.Landmark.Find(region));
+      Assert.Equal(rowPlain.Find(region), rowThroughBuilders.Find(region));
+      Assert.Equal(columnPlain.Find(region), columnThroughBuilders.Find(region));
 
       // Non-vacuity: the first two cases find something and the third finds nothing, so the equality
       // above is not two nulls agreeing.
-      Assert.Equal(containing == "PRODUCT" ? null : (int?)1, rowThroughBuilders.Landmark.Find(region));
-      Assert.Equal(containing == "PRODUCT" ? null : (int?)0, columnThroughBuilders.Landmark.Find(region));
+      Assert.Equal(containing == "PRODUCT" ? null : (int?)1, rowThroughBuilders.Find(region));
+      Assert.Equal(containing == "PRODUCT" ? null : (int?)0, columnThroughBuilders.Find(region));
     }
 
     // --- 2. The two rules that make the pair usable ---------------------------------------------------

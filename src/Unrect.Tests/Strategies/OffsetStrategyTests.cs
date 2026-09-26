@@ -28,7 +28,7 @@ namespace Unrect.Tests.Strategies
         { 1, 0 },
       });
 
-      var offset = SkipBlankRows().GetOffset(space);
+      var offset = SkipBlankRows<ISpace>().GetOffset(space);
 
       Assert.Equal(0, offset.Column);
       Assert.Equal(2, offset.Row);
@@ -39,7 +39,7 @@ namespace Unrect.Tests.Strategies
     {
       var space = Grid(new[,] { { 1, 0 }, { 0, 0 } });
 
-      Assert.Equal(0, SkipBlankRows().GetOffset(space).Row);
+      Assert.Equal(0, SkipBlankRows<ISpace>().GetOffset(space).Row);
     }
 
     [Fact]
@@ -47,7 +47,7 @@ namespace Unrect.Tests.Strategies
     {
       var space = Grid(new[,] { { 0, 0 }, { 0, 0 } });
 
-      Assert.Equal(2, SkipBlankRows().GetOffset(space).Row);
+      Assert.Equal(2, SkipBlankRows<ISpace>().GetOffset(space).Row);
     }
 
     [Fact]
@@ -59,7 +59,7 @@ namespace Unrect.Tests.Strategies
         { 0, 0, 0 },
       });
 
-      var offset = SkipBlankColumns().GetOffset(space);
+      var offset = SkipBlankColumns<ISpace>().GetOffset(space);
 
       Assert.Equal(2, offset.Column);
       Assert.Equal(0, offset.Row);
@@ -75,7 +75,7 @@ namespace Unrect.Tests.Strategies
         { 2, 3 },   // no cell is blank or 1: stop
       });
 
-      var offset = SkipRowsWhileAny(v => v.IsBlank() || v.AsText() == "1").GetOffset(space);
+      var offset = SkipRowsWhileAny<ISpace>(v => v.IsBlank() || v.AsText() == "1").GetOffset(space);
 
       Assert.Equal(2, offset.Row);
     }
@@ -89,7 +89,7 @@ namespace Unrect.Tests.Strategies
         { 0, 1, 2 },
       });
 
-      var offset = SkipColumnsWhileAny(v => v.AsText() == "1").GetOffset(space);
+      var offset = SkipColumnsWhileAny<ISpace>(v => v.AsText() == "1").GetOffset(space);
 
       Assert.Equal(2, offset.Column);
       Assert.Equal(0, offset.Row);
@@ -109,7 +109,7 @@ namespace Unrect.Tests.Strategies
         { 0, 0 },
       });
 
-      var offset = SkipToFirstNonBlankCell().GetOffset(space);
+      var offset = SkipToFirstNonBlankCell<ISpace>().GetOffset(space);
 
       Assert.Equal(0, offset.Column);
       Assert.Equal(0, offset.Row);
@@ -124,7 +124,7 @@ namespace Unrect.Tests.Strategies
         { 0, 0, 0 },
       });
 
-      var offset = SkipToFirstNonBlankCell().GetOffset(space);
+      var offset = SkipToFirstNonBlankCell<ISpace>().GetOffset(space);
 
       Assert.Equal(2, offset.Column);
       Assert.Equal(0, offset.Row);
@@ -140,7 +140,7 @@ namespace Unrect.Tests.Strategies
         { 1, 0 },
       });
 
-      var offset = SkipToFirstNonBlankCell().GetOffset(space);
+      var offset = SkipToFirstNonBlankCell<ISpace>().GetOffset(space);
 
       Assert.Equal(0, offset.Column);
       Assert.Equal(2, offset.Row);
@@ -156,7 +156,7 @@ namespace Unrect.Tests.Strategies
         { 0, 0, 0 },
       });
 
-      var offset = SkipToFirstNonBlankCell().GetOffset(space);
+      var offset = SkipToFirstNonBlankCell<ISpace>().GetOffset(space);
 
       Assert.Equal(1, offset.Column);
       Assert.Equal(1, offset.Row);
@@ -177,7 +177,7 @@ namespace Unrect.Tests.Strategies
         { 1, 0, 0 },
       });
 
-      var offset = SkipToFirstNonBlankCell().GetOffset(space);
+      var offset = SkipToFirstNonBlankCell<ISpace>().GetOffset(space);
 
       Assert.Equal(2, offset.Column);
       Assert.Equal(0, offset.Row);
@@ -196,8 +196,8 @@ namespace Unrect.Tests.Strategies
         { 0, 0 },
       });
 
-      var skipToCell = SkipToFirstNonBlankCell().GetOffset(space);
-      var skipRows = SkipBlankRows().GetOffset(space);
+      var skipToCell = SkipToFirstNonBlankCell<ISpace>().GetOffset(space);
+      var skipRows = SkipBlankRows<ISpace>().GetOffset(space);
 
       Assert.Equal(3, skipToCell.Row);
       Assert.Equal(skipRows.Row, skipToCell.Row);
@@ -217,7 +217,7 @@ namespace Unrect.Tests.Strategies
         { 0, 0 },
       }));
 
-      SkipToFirstNonBlankCell().GetOffset(space);
+      SkipToFirstNonBlankCell<ISpace>().GetOffset(space);
 
       Assert.Equal(1, space.RowsTouched);
       Assert.Equal(2, space.CellReads);
@@ -236,7 +236,7 @@ namespace Unrect.Tests.Strategies
         { 1, 0 },
       }));
 
-      SkipToFirstNonBlankCell().GetOffset(space);
+      SkipToFirstNonBlankCell<ISpace>().GetOffset(space);
 
       Assert.Equal(3, space.RowsTouched);
     }
@@ -248,7 +248,7 @@ namespace Unrect.Tests.Strategies
     {
       var space = Grid(new[,] { { 1, 2, 3, 4 }, { 11, 12, 13, 14 }, { 21, 22, 23, 24 } });
 
-      var offset = FromRight(2).GetOffset(space);
+      var offset = FromRight<ISpace>(2).GetOffset(space);
 
       Assert.Equal(2, offset.Column);
       Assert.Equal(0, offset.Row);
@@ -259,7 +259,7 @@ namespace Unrect.Tests.Strategies
     {
       var space = Grid(new[,] { { 1, 2, 3, 4 }, { 11, 12, 13, 14 }, { 21, 22, 23, 24 } });
 
-      var offset = FromBottom(1).GetOffset(space);
+      var offset = FromBottom<ISpace>(1).GetOffset(space);
 
       Assert.Equal(0, offset.Column);
       Assert.Equal(2, offset.Row);
@@ -270,8 +270,8 @@ namespace Unrect.Tests.Strategies
     {
       var space = Grid(new[,] { { 1, 2, 3, 4 }, { 11, 12, 13, 14 }, { 21, 22, 23, 24 } });
 
-      Assert.Equal(0, FromRight(4).GetOffset(space).Column);
-      Assert.Equal(0, FromBottom(3).GetOffset(space).Row);
+      Assert.Equal(0, FromRight<ISpace>(4).GetOffset(space).Column);
+      Assert.Equal(0, FromBottom<ISpace>(3).GetOffset(space).Row);
     }
 
     [Fact]
@@ -279,8 +279,8 @@ namespace Unrect.Tests.Strategies
     {
       var space = Grid(new[,] { { 1, 2, 3, 4 }, { 11, 12, 13, 14 }, { 21, 22, 23, 24 } });
 
-      Assert.ThrowsAny<OutOfBoundsException>(() => FromRight(5).GetOffset(space));
-      Assert.ThrowsAny<OutOfBoundsException>(() => FromBottom(4).GetOffset(space));
+      Assert.ThrowsAny<OutOfBoundsException>(() => FromRight<ISpace>(5).GetOffset(space));
+      Assert.ThrowsAny<OutOfBoundsException>(() => FromBottom<ISpace>(4).GetOffset(space));
     }
 
     [Fact]
@@ -288,8 +288,8 @@ namespace Unrect.Tests.Strategies
     {
       // Checked at the factory rather than at resolution time: a negative extent is a broken
       // declaration, and there is no space it could ever make sense against.
-      Assert.Equal("width", Assert.Throws<ArgumentOutOfRangeException>(() => FromRight(-1)).ParamName);
-      Assert.Equal("height", Assert.Throws<ArgumentOutOfRangeException>(() => FromBottom(-1)).ParamName);
+      Assert.Equal("width", Assert.Throws<ArgumentOutOfRangeException>(() => FromRight<ISpace>(-1)).ParamName);
+      Assert.Equal("height", Assert.Throws<ArgumentOutOfRangeException>(() => FromBottom<ISpace>(-1)).ParamName);
     }
   }
 }

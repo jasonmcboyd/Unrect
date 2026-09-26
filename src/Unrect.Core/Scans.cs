@@ -10,24 +10,28 @@ namespace Unrect.Core
   {
     /// <summary>Where <paramref name="strategy"/> starts a region inside <paramref name="region"/>, its scan shown the rows in order.</summary>
     /// <exception cref="OutOfBoundsException">The space has no such place.</exception>
-    public static Offset GetOffset(this IOffsetStrategy strategy, Plane<ISpace> region)
+    public static Offset GetOffset<TSpace>(this IOffsetStrategy<TSpace> strategy, Plane<TSpace> region)
+      where TSpace : class, ISpace
       => FoldOffset(strategy.Begin(Orientation.Vertical), region, Orientation.Vertical);
 
     /// <summary>How big a region <paramref name="strategy"/> finds inside <paramref name="region"/>, its scan shown the rows in order.</summary>
     /// <exception cref="OutOfBoundsException">The scan was owed more than the space holds.</exception>
-    public static Size GetSize(this ISizeStrategy strategy, Plane<ISpace> region)
+    public static Size GetSize<TSpace>(this ISizeStrategy<TSpace> strategy, Plane<TSpace> region)
+      where TSpace : class, ISpace
       => FoldSize(strategy.Begin(Orientation.Vertical), region, Orientation.Vertical);
 
     /// <summary>How many leading lines of <paramref name="region"/> <paramref name="strategy"/> takes, along the axis it names.</summary>
     /// <exception cref="OutOfBoundsException">The scan was owed more lines than the region holds.</exception>
-    public static int SelectLines(this ILineStrategy strategy, Plane<ISpace> region) => FoldLines(strategy.Begin(), region, strategy.Along);
+    public static int SelectLines<TSpace>(this ILineStrategy<TSpace> strategy, Plane<TSpace> region)
+      where TSpace : class, ISpace => FoldLines(strategy.Begin(), region, strategy.Along);
 
     /// <summary>
     /// The lines <paramref name="scan"/> includes along <paramref name="along"/>, asked one at a
     /// time from the first until it says no or the lines run out.
     /// </summary>
     /// <exception cref="OutOfBoundsException">The scan was owed more lines than there are.</exception>
-    public static int FoldLines(ILineScan scan, Plane<ISpace> region, Orientation along)
+    public static int FoldLines<TSpace>(ILineScan<TSpace> scan, Plane<TSpace> region, Orientation along)
+      where TSpace : class, ISpace
     {
       var count = 0;
       var lines = Spans.Along(region, along);
@@ -41,10 +45,11 @@ namespace Unrect.Core
     /// <summary>
     /// The offset <paramref name="scan"/> settles on over <paramref name="region"/>: the spans
     /// along <paramref name="along"/> shown one at a time until it starts, and its
-    /// <see cref="IOffsetScan.Settle"/> when it never does.
+    /// <see cref="IOffsetScan{TSpace}.Settle"/> when it never does.
     /// </summary>
     /// <exception cref="OutOfBoundsException">The region has no such place.</exception>
-    public static Offset FoldOffset(IOffsetScan scan, Plane<ISpace> region, Orientation along)
+    public static Offset FoldOffset<TSpace>(IOffsetScan<TSpace> scan, Plane<TSpace> region, Orientation along)
+      where TSpace : class, ISpace
     {
       var count = Spans.Along(region, along);
 
@@ -66,11 +71,12 @@ namespace Unrect.Core
     /// The size <paramref name="scan"/> settles on over <paramref name="region"/>: the spans along
     /// <paramref name="along"/> shown one at a time until it refuses one or they run out, then what
     /// it keeps and how far across it reaches. The answer may exceed the region — a scan that is
-    /// owed an extent (<see cref="ISizeScan.Required"/>) answers what it is owed, shown enough or
+    /// owed an extent (<see cref="ISizeScan{TSpace}.Required"/>) answers what it is owed, shown enough or
     /// not — and it is the caller's to compare with the region.
     /// </summary>
     /// <exception cref="ScanContractException">The scan broke its contract: asked at the end, it did not say how far across it reaches.</exception>
-    public static Size FoldSize(ISizeScan scan, Plane<ISpace> region, Orientation along)
+    public static Size FoldSize<TSpace>(ISizeScan<TSpace> scan, Plane<TSpace> region, Orientation along)
+      where TSpace : class, ISpace
     {
       var count = Spans.Along(region, along);
       var taken = 0;

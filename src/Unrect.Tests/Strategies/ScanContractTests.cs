@@ -19,17 +19,17 @@ namespace Unrect.Tests.Strategies
     private static ICellSpace TwoRows() => Grid(new[,] { { 1, 1 }, { 1, 1 } });
 
     /// <summary>A scan that takes every span and then, asked at the end, refuses to say how far across it reaches.</summary>
-    private sealed class Mute : ISizeStrategy, ISizeScan
+    private sealed class Mute : ISizeStrategy<ICellSpace>, ISizeScan<ICellSpace>
     {
-      public ISizeScan Begin(Orientation along) => this;
+      public ISizeScan<ICellSpace> Begin(Orientation along) => this;
 
       public bool Incremental => true;
 
-      public bool Take(Plane<ISpace> region, int taken) => true;
+      public bool Take(Plane<ICellSpace> region, int taken) => true;
 
-      public int? Across(Plane<ISpace> region, int taken, bool final) => null;
+      public int? Across(Plane<ICellSpace> region, int taken, bool final) => null;
 
-      public int Along(Plane<ISpace> region, int taken) => taken;
+      public int Along(Plane<ICellSpace> region, int taken) => taken;
 
       public Size? Required => null;
     }
@@ -39,7 +39,7 @@ namespace Unrect.Tests.Strategies
     {
       // Not a bounds condition: the region was there and the scan took all of it. The fold names
       // the breach, and names it as the scan's rather than the data's.
-      var failure = Assert.Throws<ScanContractException>(() => new Mute().GetSize(Plane<ISpace>.Of(TwoRows())));
+      var failure = Assert.Throws<ScanContractException>(() => new Mute().GetSize(Plane<ICellSpace>.Of(TwoRows())));
 
       Assert.Contains("how far across", failure.Message);
     }
@@ -63,12 +63,12 @@ namespace Unrect.Tests.Strategies
       // The fold's contract is uniform across the family: what a scan is owed is what it answers,
       // shown enough spans or not, exactly as an explicit extent does. The caller compares with the
       // region — which is how a placement can say what did not fit rather than only that something did.
-      var owed = SizeStrategies.RowsThenColumns(RowStrategies.TakeRows(5), ColumnStrategies.TakeColumnsWhileAnyIsNotBlank());
+      var owed = SizeStrategies.RowsThenColumns(RowStrategies.TakeRows<ICellSpace>(5), ColumnStrategies.TakeColumnsWhileAnyIsNotBlank<ICellSpace>());
 
       var scan = owed.Begin(Orientation.Vertical);
 
       Assert.Equal(new Size(0, 5), scan.Required);
-      Assert.Equal(5, owed.GetSize(Plane<ISpace>.Of(TwoRows())).Height);
+      Assert.Equal(5, owed.GetSize(Plane<ICellSpace>.Of(TwoRows())).Height);
     }
 
     [Fact]
@@ -77,7 +77,7 @@ namespace Unrect.Tests.Strategies
       // The message quotes what was required on the axis that was required, and nothing on the
       // axis that was discovered: 0x5, never 0x0. Pinned because the interleaved rows-and-columns
       // scan used to declare nothing while still requiring five.
-      var owed = SizeStrategies.RowsThenColumns(RowStrategies.TakeRows(5), ColumnStrategies.TakeColumnsWhileAnyIsNotBlank());
+      var owed = SizeStrategies.RowsThenColumns(RowStrategies.TakeRows<ICellSpace>(5), ColumnStrategies.TakeColumnsWhileAnyIsNotBlank<ICellSpace>());
 
       var failure = Assert.Throws<ProjectionException>(() => Sized(owed).Of(Point()).Map(TwoRows()));
 

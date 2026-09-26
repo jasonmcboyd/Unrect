@@ -24,10 +24,10 @@ namespace Unrect.Tests.Strategies
     [Fact]
     public void ARuleAndALandmarkSayWhichAxisTheyAreAbout()
     {
-      Assert.Equal(Orientation.Vertical, RowStrategies.TakeRows(1).Along);
-      Assert.Equal(Orientation.Horizontal, ColumnStrategies.TakeColumns(1).Along);
-      Assert.Equal(Orientation.Vertical, RowLandmarks.RowSaying("x").Along);
-      Assert.Equal(Orientation.Horizontal, ColumnLandmarks.ColumnSaying("x").Along);
+      Assert.Equal(Orientation.Vertical, RowStrategies.TakeRows<ICellSpace>(1).Along);
+      Assert.Equal(Orientation.Horizontal, ColumnStrategies.TakeColumns<ICellSpace>(1).Along);
+      Assert.Equal(Orientation.Vertical, RowLandmarks.RowSaying<ICellSpace>("x").Along);
+      Assert.Equal(Orientation.Horizontal, ColumnLandmarks.ColumnSaying<ICellSpace>("x").Along);
     }
 
     [Fact]

@@ -125,26 +125,6 @@ namespace Unrect.Core
     /// <exception cref="OutOfBoundsException"><paramref name="extent"/> does not fit inside this region.</exception>
     public Plane<TSpace> Slice(Size extent) => Slice(default, extent);
 
-    /// <summary>
-    /// The same region, named over the canonical surface alone — how a region reaches the strategy
-    /// calculus, which asks only the questions every space answers. A copy of three fields
-    /// and a reference: nothing is read, and the space is the same object, so a read through the
-    /// result is the read it would have been.
-    /// </summary>
-    internal Plane<ISpace> Erased() => new Plane<ISpace>(Space, Origin, _extent, known: true);
-
-    /// <summary>
-    /// The same region, named over <typeparamref name="TOther"/> — the way back from the canonical
-    /// surface for a caller that knows which space it erased. The mirror of <see cref="Erased"/>,
-    /// and the same cost; a space that is not a <typeparamref name="TOther"/> throws
-    /// <see cref="InvalidCastException"/>.
-    /// </summary>
-    /// <typeparam name="TOther">The space to name this region over.</typeparam>
-    /// <exception cref="InvalidCastException">This region's space is not a <typeparamref name="TOther"/>.</exception>
-    internal Plane<TOther> Retyped<TOther>()
-      where TOther : class, ISpace
-      => new Plane<TOther>((TOther)(object)Space, Origin, _extent, known: true);
-
     /// <summary>The cell at <paramref name="column"/>, <paramref name="row"/>, counted from this plane's own corner.</summary>
     /// <exception cref="OutOfBoundsException">The coordinate lies outside this region.</exception>
     public Point<TSpace> this[int column, int row]

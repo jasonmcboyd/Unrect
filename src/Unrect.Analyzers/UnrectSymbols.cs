@@ -16,15 +16,15 @@ namespace Unrect.Analyzers
   {
     /// <summary>
     /// The generic types that carry a demand in their first type argument, in the order
-    /// <see cref="DemandOf"/> asks them: the projection itself, then the phantoms — the matcher
-    /// and the three strategies.
+    /// <see cref="DemandOf"/> asks them: the projection itself, then the rule contracts — the
+    /// landmark and the three strategies, each written over the space it reads.
     /// </summary>
-    private static readonly string[] PhantomNames =
+    private static readonly string[] DemandingNames =
     {
-      "Unrect.Projections.ILineLandmark`1",
-      "Unrect.Projections.ISizeStrategy`1",
-      "Unrect.Projections.IOffsetStrategy`1",
-      "Unrect.Projections.ILineStrategy`1",
+      "Unrect.Core.ILineLandmark`1",
+      "Unrect.Core.ISizeStrategy`1",
+      "Unrect.Core.IOffsetStrategy`1",
+      "Unrect.Core.ILineStrategy`1",
     };
 
     private readonly IReadOnlyList<INamedTypeSymbol> _demanding;
@@ -78,14 +78,14 @@ namespace Unrect.Analyzers
       if (space is null || projection is null || builders is null || stage is null)
         return null;
 
-      // A phantom the referenced Unrect predates is simply absent: the list is what this
+      // A contract the referenced Unrect predates is simply absent: the list is what this
       // compilation has, and a demand nothing can express is a demand nothing can fail.
       var demanding = new List<INamedTypeSymbol> { projection };
 
-      foreach (var name in PhantomNames)
+      foreach (var name in DemandingNames)
       {
-        if (compilation.GetTypeByMetadataName(name) is INamedTypeSymbol phantom)
-          demanding.Add(phantom);
+        if (compilation.GetTypeByMetadataName(name) is INamedTypeSymbol contract)
+          demanding.Add(contract);
       }
 
       return new UnrectSymbols(

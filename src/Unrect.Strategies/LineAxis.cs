@@ -11,7 +11,8 @@ namespace Unrect.Strategies
   /// </summary>
   internal static class LineAxis
   {
-    internal static ILineStrategy Require(ILineStrategy strategy, Orientation along, string parameter)
+    internal static ILineStrategy<TSpace> Require<TSpace>(ILineStrategy<TSpace> strategy, Orientation along, string parameter)
+      where TSpace : class, ISpace
     {
       if (strategy is null)
         throw new ArgumentNullException(parameter);
@@ -22,7 +23,8 @@ namespace Unrect.Strategies
       return strategy;
     }
 
-    internal static ILineLandmark Require(ILineLandmark landmark, Orientation along, string parameter)
+    internal static ILineLandmark<TSpace> Require<TSpace>(ILineLandmark<TSpace> landmark, Orientation along, string parameter)
+      where TSpace : class, ISpace
     {
       if (landmark is null)
         throw new ArgumentNullException(parameter);

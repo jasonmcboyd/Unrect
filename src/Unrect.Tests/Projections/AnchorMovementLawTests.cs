@@ -54,9 +54,9 @@ namespace Unrect.Tests.Projections
       return Mixed(values);
     }
 
-    private static ILineLandmark Detail() => RowContaining("Detail").Landmark;
+    private static ILineLandmark<ICellSpace> Detail() => RowContaining("Detail");
 
-    private static ILineLandmark DetailColumn() => ColumnContaining("Detail").Landmark;
+    private static ILineLandmark<ICellSpace> DetailColumn() => ColumnContaining("Detail");
 
     // --- The law, wherever the landmark sits ---------------------------------------------------------
 

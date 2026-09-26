@@ -17,7 +17,7 @@ namespace Unrect.Projections
   internal sealed class BoundedDefinition<TSpace, TResult> : DefinitionNode<TSpace, TResult>
     where TSpace : class, ISpace
   {
-    public BoundedDefinition(IProjectionDefinition<TSpace, TResult> inner, ILineLandmark landmark, bool orEnd, Placement placement)
+    public BoundedDefinition(IProjectionDefinition<TSpace, TResult> inner, ILineLandmark<TSpace> landmark, bool orEnd, Placement<TSpace> placement)
       : base(placement)
     {
       Inner = inner ?? throw new ArgumentNullException(nameof(inner));
@@ -27,7 +27,7 @@ namespace Unrect.Projections
     }
 
     private IProjectionDefinition<TSpace, TResult> Inner { get; }
-    private ILineLandmark Landmark { get; }
+    private ILineLandmark<TSpace> Landmark { get; }
     private bool OrEnd { get; }
 
     private bool IsVertical => Landmark.Along == Orientation.Vertical;
@@ -45,7 +45,7 @@ namespace Unrect.Projections
     /// would replace the end already declared, and the landmark it replaced would never be looked
     /// for: the erasure is silent and total.
     /// </summary>
-    public ArgumentException AlreadyEnded(ILineLandmark landmark)
+    public ArgumentException AlreadyEnded(ILineLandmark<TSpace> landmark)
       => new ArgumentException(
         $"{PathRenderer.DescribeThrough(this)} already ends at a landmark, and {Spelling(landmark)} would "
         + "replace that end rather than bound what is inside it — a projection has one end, and the replaced "
@@ -92,7 +92,7 @@ namespace Unrect.Projections
         // on the newest span, since nothing earlier did.
         var searched = _first is Plane<TSpace> first ? Spans.Region(first, _offered + 1, Along) : span;
 
-        if (_bounded.Landmark.Find(searched.Erased()) is not null)
+        if (_bounded.Landmark.Find(searched) is not null)
         {
           _found = true;
           _finished = true;
@@ -130,7 +130,7 @@ namespace Unrect.Projections
     internal override Reach Retains => Reach.Extent;
 
     /// <summary>The word a reader wrote for a bound on this axis, which is also how it describes itself.</summary>
-    private static string Spelling(ILineLandmark landmark)
+    private static string Spelling(ILineLandmark<TSpace> landmark)
       => "Until";
 
     private Size Consumed(int limit, Size advance)

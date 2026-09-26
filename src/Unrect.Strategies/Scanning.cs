@@ -15,14 +15,15 @@ namespace Unrect.Strategies
     /// the end with the size of everything it was shown. What a strategy builds
     /// along an axis it cannot stream.
     /// </summary>
-    internal sealed class WholeSize : ISizeScan
+    internal sealed class WholeSize<TSpace> : ISizeScan<TSpace>
+      where TSpace : class, ISpace
     {
-      private readonly Func<Plane<ISpace>, Size> _size;
+      private readonly Func<Plane<TSpace>, Size> _size;
       private readonly Orientation _along;
-      private Plane<ISpace>? _asked;
+      private Plane<TSpace>? _asked;
       private Size _answer;
 
-      internal WholeSize(Func<Plane<ISpace>, Size> size, Orientation along)
+      internal WholeSize(Func<Plane<TSpace>, Size> size, Orientation along)
       {
         _size = size;
         _along = along;
@@ -30,16 +31,16 @@ namespace Unrect.Strategies
 
       public bool Incremental => false;
 
-      public bool Take(Plane<ISpace> region, int taken) => true;
+      public bool Take(Plane<TSpace> region, int taken) => true;
 
-      public int? Across(Plane<ISpace> region, int taken, bool final) => final ? Spans.Across(Of(region), _along) : (int?)null;
+      public int? Across(Plane<TSpace> region, int taken, bool final) => final ? Spans.Across(Of(region), _along) : (int?)null;
 
-      public int Along(Plane<ISpace> region, int taken) => Spans.Along(Of(region), _along);
+      public int Along(Plane<TSpace> region, int taken) => Spans.Along(Of(region), _along);
 
       /// <summary>The size of <paramref name="region"/>, read once: the length and the width are two questions about one answer.</summary>
-      private Size Of(Plane<ISpace> region)
+      private Size Of(Plane<TSpace> region)
       {
-        if (_asked is not Plane<ISpace> asked || !asked.Equals(region))
+        if (_asked is not Plane<TSpace> asked || !asked.Equals(region))
         {
           _answer = _size(region);
           _asked = region;
@@ -52,21 +53,22 @@ namespace Unrect.Strategies
     }
 
     /// <summary>An offset scan that answers only over the whole region: it skips every span and settles at the end with the offset of everything.</summary>
-    internal sealed class WholeOffset : IOffsetScan
+    internal sealed class WholeOffset<TSpace> : IOffsetScan<TSpace>
+      where TSpace : class, ISpace
     {
-      private readonly Func<Plane<ISpace>, Offset> _offset;
+      private readonly Func<Plane<TSpace>, Offset> _offset;
 
-      internal WholeOffset(Func<Plane<ISpace>, Offset> offset) => _offset = offset;
+      internal WholeOffset(Func<Plane<TSpace>, Offset> offset) => _offset = offset;
 
       public bool Incremental => false;
 
-      public OffsetStep Next(Plane<ISpace> region, int index, out int across)
+      public OffsetStep Next(Plane<TSpace> region, int index, out int across)
       {
         across = 0;
         return OffsetStep.Skip;
       }
 
-      public Offset Settle(Plane<ISpace> region) => _offset(region);
+      public Offset Settle(Plane<TSpace> region) => _offset(region);
     }
 
     /// <summary>
@@ -74,12 +76,13 @@ namespace Unrect.Strategies
     /// it reaches. An explicit 2x3 skips three spans and starts two cells in; a rows-while-blank
     /// skips the blank rows.
     /// </summary>
-    internal sealed class SizeAsOffset : IOffsetScan
+    internal sealed class SizeAsOffset<TSpace> : IOffsetScan<TSpace>
+      where TSpace : class, ISpace
     {
-      private readonly ISizeScan _size;
+      private readonly ISizeScan<TSpace> _size;
       private readonly Orientation _along;
 
-      internal SizeAsOffset(ISizeScan size, Orientation along)
+      internal SizeAsOffset(ISizeScan<TSpace> size, Orientation along)
       {
         _size = size;
         _along = along;
@@ -87,7 +90,7 @@ namespace Unrect.Strategies
 
       public bool Incremental => _size.Incremental;
 
-      public OffsetStep Next(Plane<ISpace> region, int index, out int across)
+      public OffsetStep Next(Plane<TSpace> region, int index, out int across)
       {
         if (_size.Take(region, index))
         {
@@ -102,7 +105,7 @@ namespace Unrect.Strategies
       // The size, wherever it lands, read as the displacement it measures — this lift is the one
       // place an extent becomes an offset. A skip past the end is the placement's to report as not
       // fitting, with what was asked and what was there.
-      public Offset Settle(Plane<ISpace> region)
+      public Offset Settle(Plane<TSpace> region)
       {
         var size = Scans.FoldSize(_size, region, _along);
 
@@ -116,14 +119,15 @@ namespace Unrect.Strategies
     /// from the count, reading no column it has ruled out; asked about the newest column of a
     /// region that stops there — a column driver — it reads that column.
     /// </summary>
-    internal sealed class RowMajorColumns : ILineScan
+    internal sealed class RowMajorColumns<TSpace> : ILineScan<TSpace>
+      where TSpace : class, ISpace
     {
-      private readonly IRowMajorColumnStrategy _strategy;
-      private readonly Func<Plane<ISpace>, int, bool> _column;
-      private Plane<ISpace>? _folded;
+      private readonly IRowMajorColumnStrategy<TSpace> _strategy;
+      private readonly Func<Plane<TSpace>, int, bool> _column;
+      private Plane<TSpace>? _folded;
       private int _count;
 
-      internal RowMajorColumns(IRowMajorColumnStrategy strategy, Func<Plane<ISpace>, int, bool> column)
+      internal RowMajorColumns(IRowMajorColumnStrategy<TSpace> strategy, Func<Plane<TSpace>, int, bool> column)
       {
         _strategy = strategy;
         _column = column;
@@ -131,11 +135,11 @@ namespace Unrect.Strategies
 
       public int? Required => null;
 
-      public bool Includes(Plane<ISpace> space, int column)
+      public bool Includes(Plane<TSpace> space, int column)
       {
         // Already folded over this region: every column of it is answered from the count, the last
         // one included, so no column is read a second time on the way to it.
-        if (_folded is Plane<ISpace> folded && folded.Equals(space))
+        if (_folded is Plane<TSpace> folded && folded.Equals(space))
           return column < _count;
 
         if (space.Width == column + 1)
@@ -149,13 +153,14 @@ namespace Unrect.Strategies
     }
 
     /// <summary>A column scan driven by a predicate over the whole column, with no columns owed.</summary>
-    internal sealed class ColumnPredicate : ILineScan
+    internal sealed class ColumnPredicate<TSpace> : ILineScan<TSpace>
+      where TSpace : class, ISpace
     {
-      private readonly Func<Plane<ISpace>, int, bool> _predicate;
+      private readonly Func<Plane<TSpace>, int, bool> _predicate;
 
-      internal ColumnPredicate(Func<Plane<ISpace>, int, bool> predicate) => _predicate = predicate;
+      internal ColumnPredicate(Func<Plane<TSpace>, int, bool> predicate) => _predicate = predicate;
 
-      public bool Includes(Plane<ISpace> space, int column) => _predicate(space, column);
+      public bool Includes(Plane<TSpace> space, int column) => _predicate(space, column);
 
       public int? Required => null;
     }

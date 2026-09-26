@@ -12,7 +12,7 @@ namespace Unrect.Projections
   internal sealed class OverlayDefinition<TSpace, T> : LayoutDefinition<TSpace, T>
     where TSpace : class, ISpace
   {
-    public OverlayDefinition(Layout<TSpace, T> layout, Placement placement)
+    public OverlayDefinition(Layout<TSpace, T> layout, Placement<TSpace> placement)
       : base(layout, placement)
     {
     }

@@ -209,7 +209,7 @@ namespace Unrect.Projections
         }
         else
         {
-          var region = Spans.Region(_offered[0], index + 1, _driver).Erased();
+          var region = Spans.Region(_offered[0], index + 1, _driver);
           var step = _placement.Advance(region, index, Spans.Across(span.Extent, _driver), _parent);
 
           if (_placement.Failed)
@@ -307,7 +307,7 @@ namespace Unrect.Projections
     }
 
     /// <summary>Asks the placement for its width, and once it has one feeds the inner every span that waited for it.</summary>
-    private void SettleWidth(Plane<ISpace> region, bool rowsSettled)
+    private void SettleWidth(Plane<TSpace> region, bool rowsSettled)
     {
       if (!_placement.TrySettleWidth(region, _taken, rowsSettled, _child))
       {
@@ -395,7 +395,7 @@ namespace Unrect.Projections
       {
         var region = _offered.Count == 0 ? Spans.Empty(_anchor, _driver) : Spans.Region(_offered[0], _offered.Count, _driver);
 
-        if (!_placement.SettleOffset(region.Erased(), _parent))
+        if (!_placement.SettleOffset(region, _parent))
         {
           PlacementFailed = true;
         }
@@ -568,10 +568,10 @@ namespace Unrect.Projections
     // --- Regions -------------------------------------------------------------------------------
 
     /// <summary>The inner region <paramref name="rows"/> spans tall, from where the inner started, erased for a rule.</summary>
-    private Plane<ISpace> InnerRegion(int rows)
+    private Plane<TSpace> InnerRegion(int rows)
       => (rows == 0 ? Spans.Empty(InnerOrigin(), _driver) : Spans.Region(_offered[_innerStart], rows, _driver))
         .Slice(Spans.ToOffset(0, _column, _driver))
-        .Erased();
+        ;
 
     /// <summary>The same region as a plane over the space, clamped to what was offered, for a message or a machine.</summary>
     private Plane<TSpace> InnerPlane(int rows)

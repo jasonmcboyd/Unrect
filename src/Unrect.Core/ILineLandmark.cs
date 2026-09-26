@@ -7,7 +7,9 @@ namespace Unrect.Core
   /// throws when there is none, a landmark only reports what it found, so a caller may decide for
   /// itself what an absent one means.
   /// </summary>
-  public interface ILineLandmark
+  /// <typeparam name="TSpace">The space this landmark reads.</typeparam>
+  public interface ILineLandmark<TSpace>
+    where TSpace : class, ISpace
   {
     /// <summary>The axis the index it finds counts along: rows down a column, or columns along a row.</summary>
     Orientation Along { get; }
@@ -19,6 +21,6 @@ namespace Unrect.Core
     string Description { get; }
 
     /// <summary>The index of the first line of <paramref name="region"/> that is the landmark, or null when there is none.</summary>
-    int? Find(Plane<ISpace> region);
+    int? Find(Plane<TSpace> region);
   }
 }

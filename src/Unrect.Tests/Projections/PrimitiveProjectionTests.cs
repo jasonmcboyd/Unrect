@@ -53,7 +53,7 @@ namespace Unrect.Tests.Projections
       // oversized region never reaches the leaf. Which is the honest shape of the rule — a leaf
       // validates the extent IT was given — and the reason this spelling is the one that tests it.
       var failure = Assert.Throws<ProjectionException>(() =>
-        Sized(SizeStrategies.ExplicitSize(2, 1)).Of(Point()).Map(space));
+        Sized(SizeStrategies.ExplicitSize<ICellSpace>(2, 1)).Of(Point()).Map(space));
 
       Assert.Contains("a Point must be exactly one cell; this one is 2x1", failure.Message);
     }
@@ -91,7 +91,7 @@ namespace Unrect.Tests.Projections
         { 0, 0, 0 },
       });
 
-      var projection = Row(ColumnStrategies.TakeColumnsWhileAll(v => !v.IsBlank()), s => s.Count);
+      var projection = Row(ColumnStrategies.TakeColumnsWhileAll<ICellSpace>(v => !v.IsBlank()), s => s.Count);
 
       Assert.Equal(3, projection.Map(space));
     }
@@ -102,7 +102,7 @@ namespace Unrect.Tests.Projections
       var space = Grid(new[,] { { 1, 2 }, { 3, 4 } });
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        Sized(SizeStrategies.ExplicitSize(2, 2)).Of(Row(s => s.Count)).Map(space));
+        Sized(SizeStrategies.ExplicitSize<ICellSpace>(2, 2)).Of(Row(s => s.Count)).Map(space));
 
       Assert.Contains("a Row must be exactly one row tall; this one is 2 rows tall", failure.Message);
     }
@@ -140,7 +140,7 @@ namespace Unrect.Tests.Projections
         { 3, 0 },
       });
 
-      var projection = Column(RowStrategies.TakeRowsWhileAll(v => !v.IsBlank()), s => s.Count);
+      var projection = Column(RowStrategies.TakeRowsWhileAll<ICellSpace>(v => !v.IsBlank()), s => s.Count);
 
       Assert.Equal(3, projection.Map(space));
     }
@@ -151,7 +151,7 @@ namespace Unrect.Tests.Projections
       var space = Grid(new[,] { { 1, 2 } });
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        Sized(SizeStrategies.ExplicitSize(2, 1)).Of(Column(s => s.Count)).Map(space));
+        Sized(SizeStrategies.ExplicitSize<ICellSpace>(2, 1)).Of(Column(s => s.Count)).Map(space));
 
       Assert.Contains("a Column must be exactly one column wide; this one is 2 columns wide", failure.Message);
     }
@@ -187,7 +187,7 @@ namespace Unrect.Tests.Projections
     {
       var space = Grid(new[,] { { 1, 2, 3 }, { 4, 5, 6 } });
 
-      var projection = Range(SizeStrategies.ExplicitSize(3, 1), b => (b.Width, b.Height));
+      var projection = Range(SizeStrategies.ExplicitSize<ICellSpace>(3, 1), b => (b.Width, b.Height));
 
       Assert.Equal((3, 1), projection.Map(space));
     }
@@ -296,7 +296,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void Cells_RejectsANullExtentStrategy()
     {
-      var failure = Assert.Throws<ArgumentNullException>(() => Range((ISizeStrategy)null!, b => b.Width));
+      var failure = Assert.Throws<ArgumentNullException>(() => Range((ISizeStrategy<ICellSpace>)null!, b => b.Width));
 
       Assert.Equal("extent", failure.ParamName);
     }

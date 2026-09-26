@@ -11,13 +11,14 @@ namespace Unrect.Strategies
   /// convention rather than an inherited body for the reason given on
   /// <c>ILineStrategy</c>: netstandard2.0 has no default interface members.
   /// </summary>
-  internal interface IRowMajorColumnStrategy : ILineStrategy
+  internal interface IRowMajorColumnStrategy<TSpace> : ILineStrategy<TSpace>
+    where TSpace : class, ISpace
   {
     /// <summary>
     /// An accumulator over an extent <paramref name="width"/> columns wide, positioned before row 0.
     /// The width is given rather than read from a space because the caller may be discovering the
     /// height of the very extent being measured, and an <see cref="Size"/> is one struct.
     /// </summary>
-    IColumnAccumulator BeginColumns(int width);
+    IColumnAccumulator<TSpace> BeginColumns(int width);
   }
 }

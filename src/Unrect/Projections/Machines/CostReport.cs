@@ -48,7 +48,7 @@ namespace Unrect.Projections
 
     private static void Visit(IProjectionDefinition definition, UseSite site, int depth, Orientation driver, Orientation session, Orientation? lead, Orientation? shown, List<CostLine> lines)
     {
-      var streams = PlacementRules.Streams(definition, driver, out _, out _, out _, out var hold, lead);
+      var streams = PlacementRules.Streams(definition, driver, out var hold, lead);
       var starts = PlacementRules.DeclaresOffset(definition) ? Start.Declared
         : shown is null ? Start.WhereItIsPut
         : shown == Orientation.Vertical ? Start.AfterBlankRows

@@ -10,8 +10,9 @@ namespace Unrect.Projections
   /// </summary>
   public sealed class Annotations
   {
-    /// <summary>Unnamed, unlabelled, not scaffolding, placed by <see cref="Placement.Default"/>.</summary>
-    public static Annotations Default { get; } = new Annotations(null, null, false, Placement.Default);
+    /// <summary>Unnamed, unlabelled, not scaffolding, placed by <see cref="Placement{TSpace}.Default"/>.</summary>
+    /// <summary>Nothing annotated but <paramref name="placement"/>, which every node has.</summary>
+    public static Annotations Placed(Placement placement) => new Annotations(null, null, false, placement ?? throw new ArgumentNullException(nameof(placement)));
 
     private Annotations(string? name, string? unitName, bool isScaffolding, Placement placement)
     {

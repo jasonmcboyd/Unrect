@@ -4,23 +4,24 @@ using Unrect.Core;
 
 namespace Unrect.Strategies
 {
-  internal sealed class TakeWhileAnyRowStrategy : ILineStrategy, ILineScan
+  internal sealed class TakeWhileAnyRowStrategy<TSpace> : ILineStrategy<TSpace>, ILineScan<TSpace>
+    where TSpace : class, ISpace
   {
     public Orientation Along => Orientation.Vertical;
 
-    public TakeWhileAnyRowStrategy(Func<Point<ISpace>, bool> predicate)
+    public TakeWhileAnyRowStrategy(Func<Point<TSpace>, bool> predicate)
     {
       Predicate = predicate;
     }
 
-    private Func<Point<ISpace>, bool> Predicate { get; }
+    private Func<Point<TSpace>, bool> Predicate { get; }
 
     // The rule carries nothing from row to row, so one instance is every scan of it.
-    public ILineScan Begin() => this;
+    public ILineScan<TSpace> Begin() => this;
 
     public int? Required => null;
 
-    public bool Includes(Plane<ISpace> space, int row)
+    public bool Includes(Plane<TSpace> space, int row)
     {
       for (int i = 0; i < space.Width; i++)
       {

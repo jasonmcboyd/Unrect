@@ -14,7 +14,7 @@ namespace Unrect.Projections
   internal sealed class UnitDefinition<TSpace, T> : DefinitionNode<TSpace, T>
     where TSpace : class, ISpace
   {
-    public UnitDefinition(IProjectionDefinition<TSpace, T> body, IReadOnlyList<Child> children, string description, Placement placement)
+    public UnitDefinition(IProjectionDefinition<TSpace, T> body, IReadOnlyList<Child> children, string description, Placement<TSpace> placement)
       : base(placement)
     {
       Body = body ?? throw new ArgumentNullException(nameof(body));

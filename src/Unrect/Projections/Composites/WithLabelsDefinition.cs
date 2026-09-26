@@ -9,14 +9,14 @@ namespace Unrect.Projections
   /// The "provide a map to subspaces" primitive: a transparent single-child wrapper that pushes a
   /// <see cref="LabelMap"/> as the ambient labels along an axis for the body's whole subtree, then
   /// forwards the body's reading unchanged. Modelled on <c>Select</c>'s wrapper — its own placement
-  /// is <see cref="Placement.Default"/> (it forces nothing) and the engine advances it as a
+  /// is <see cref="Placement{TSpace}.Default"/> (it forces nothing) and the engine advances it as a
   /// transparent node, so the body reads at the wrapper's own frame and column translation is the
   /// identity in the canonical table composition.
   /// </summary>
   internal sealed class WithLabelsDefinition<TSpace, T> : DefinitionNode<TSpace, T>
     where TSpace : class, ISpace
   {
-    public WithLabelsDefinition(LabelAxis axis, LabelMap map, IProjectionDefinition<TSpace, T> body, Placement placement)
+    public WithLabelsDefinition(LabelAxis axis, LabelMap map, IProjectionDefinition<TSpace, T> body, Placement<TSpace> placement)
       : base(placement)
     {
       LabelledAxis = axis;

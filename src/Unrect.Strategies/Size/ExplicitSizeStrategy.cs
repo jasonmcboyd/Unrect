@@ -4,7 +4,8 @@ using Unrect.Core;
 
 namespace Unrect.Strategies
 {
-  internal sealed class ExplicitSizeStrategy : ISizeStrategy
+  internal sealed class ExplicitSizeStrategy<TSpace> : ISizeStrategy<TSpace>
+    where TSpace : class, ISpace
   {
     public ExplicitSizeStrategy(int width, int height)
     {
@@ -19,10 +20,10 @@ namespace Unrect.Strategies
 
     internal int Height { get; }
 
-    public ISizeScan Begin(Orientation along) => new Scan(new Size(Width, Height), along);
+    public ISizeScan<TSpace> Begin(Orientation along) => new Scan(new Size(Width, Height), along);
 
     /// <summary>Takes exactly the spans declared and is as wide as declared, whatever the region holds: what does not fit is the caller's to report.</summary>
-    private sealed class Scan : ISizeScan
+    private sealed class Scan : ISizeScan<TSpace>
     {
       private readonly Size _declared;
       private readonly Orientation _along;
@@ -35,11 +36,11 @@ namespace Unrect.Strategies
 
       public bool Incremental => true;
 
-      public bool Take(Plane<ISpace> region, int taken) => taken < Spans.Along(_declared, _along);
+      public bool Take(Plane<TSpace> region, int taken) => taken < Spans.Along(_declared, _along);
 
-      public int? Across(Plane<ISpace> region, int taken, bool final) => Spans.Across(_declared, _along);
+      public int? Across(Plane<TSpace> region, int taken, bool final) => Spans.Across(_declared, _along);
 
-      public int Along(Plane<ISpace> region, int taken) => Spans.Along(_declared, _along);
+      public int Along(Plane<TSpace> region, int taken) => Spans.Along(_declared, _along);
 
       public Size? Required => _declared;
     }

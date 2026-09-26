@@ -4,36 +4,37 @@ using Unrect.Core;
 
 namespace Unrect.Strategies
 {
-  internal sealed class TakeToRowStrategy : ILineStrategy
+  internal sealed class TakeToRowStrategy<TSpace> : ILineStrategy<TSpace>
+    where TSpace : class, ISpace
   {
     public Orientation Along => Orientation.Vertical;
 
-    public TakeToRowStrategy(Func<Plane<ISpace>, int, bool> predicate, bool keepMatchingRow)
+    public TakeToRowStrategy(Func<Plane<TSpace>, int, bool> predicate, bool keepMatchingRow)
     {
       Predicate = predicate;
       KeepMatchingRow = keepMatchingRow;
     }
 
-    private Func<Plane<ISpace>, int, bool> Predicate { get; }
+    private Func<Plane<TSpace>, int, bool> Predicate { get; }
 
     private bool KeepMatchingRow { get; }
 
-    public ILineScan Begin() => new Scan(this);
+    public ILineScan<TSpace> Begin() => new Scan(this);
 
-    private sealed class Scan : ILineScan
+    private sealed class Scan : ILineScan<TSpace>
     {
-      public Scan(TakeToRowStrategy strategy)
+      public Scan(TakeToRowStrategy<TSpace> strategy)
       {
         Strategy = strategy;
       }
 
-      private TakeToRowStrategy Strategy { get; }
+      private TakeToRowStrategy<TSpace> Strategy { get; }
 
       private bool Matched { get; set; }
 
       public int? Required => null;
 
-      public bool Includes(Plane<ISpace> space, int row)
+      public bool Includes(Plane<TSpace> space, int row)
       {
         // Only reachable when the match was kept — an unkept match ends the extent by returning
         // false, and nothing is asked after that.

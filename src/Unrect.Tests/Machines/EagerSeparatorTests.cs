@@ -38,9 +38,6 @@ namespace Unrect.Tests.Machines
     private static IProjectionDefinition<ICellSpace, IReadOnlyList<IReadOnlyList<string>>> Repeat(IOffsetStrategy<ICellSpace> separator)
       => VerticalRepeat(Block(), separatedBy: separator);
 
-    private static IProjectionDefinition<ICellSpace, IReadOnlyList<IReadOnlyList<string>>> Repeat(IOffsetStrategy separator)
-      => VerticalRepeat(Block(), separatedBy: separator);
-
     /// <summary>The gap is however many leading rows are wholly blank — spelled as a lambda, so it has no per-span form.</summary>
     private static IOffsetStrategy<ICellSpace> BlankGap()
       => SelectOffset(plane =>

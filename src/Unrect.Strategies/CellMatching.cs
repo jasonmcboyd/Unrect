@@ -37,7 +37,8 @@ namespace Unrect.Strategies
   /// </summary>
   internal static class CellMatching
   {
-    public static Func<Plane<ISpace>, int, bool> AnyCellInRow(Func<Point<ISpace>, bool> cell)
+    public static Func<Plane<TSpace>, int, bool> AnyCellInRow<TSpace>(Func<Point<TSpace>, bool> cell)
+      where TSpace : class, ISpace
       => (space, row) =>
       {
         for (var column = 0; column < space.Width; column++)
@@ -47,7 +48,8 @@ namespace Unrect.Strategies
         return false;
       };
 
-    public static Func<Plane<ISpace>, int, bool> AnyCellInColumn(Func<Point<ISpace>, bool> cell)
+    public static Func<Plane<TSpace>, int, bool> AnyCellInColumn<TSpace>(Func<Point<TSpace>, bool> cell)
+      where TSpace : class, ISpace
       => (space, column) =>
       {
         for (var row = 0; space.HasRow(row); row++)
@@ -67,7 +69,8 @@ namespace Unrect.Strategies
     /// is a character a label may no longer contain.
     /// </para>
     /// </summary>
-    public static Func<Point<ISpace>, bool> LabelEquals(string label)
+    public static Func<Point<TSpace>, bool> LabelEquals<TSpace>(string label)
+      where TSpace : class, ISpace
     {
       var needle = TrimLabel(label);
 
@@ -101,7 +104,8 @@ namespace Unrect.Strategies
     /// rule the generic layer has; held-text matching is the value vocabulary's. Nothing is widened to reach it.
     /// </para>
     /// </summary>
-    public static Func<Point<ISpace>, bool> SaysEquals(string text)
+    public static Func<Point<TSpace>, bool> SaysEquals<TSpace>(string text)
+      where TSpace : class, ISpace
     {
       var needle = Trimmed(text);
 

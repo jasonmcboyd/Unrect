@@ -17,7 +17,7 @@ namespace Unrect.Projections
   internal sealed class ColumnLabelsDefinition<TSpace> : CollectorNode<TSpace, LabelMap>
     where TSpace : class, ISpace
   {
-    public ColumnLabelsDefinition(int headerRows, Placement placement)
+    public ColumnLabelsDefinition(int headerRows, Placement<TSpace> placement)
       : base(placement)
       => HeaderRows = headerRows;
 

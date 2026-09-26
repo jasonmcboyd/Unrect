@@ -453,7 +453,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void Table_WithAnExplicitExtent_UsesItInsteadOfDiscovering()
     {
-      var applied = Sized(SizeStrategies.ExplicitSize(1, 2)).Of(Table(t => (t.ColumnCount, t.RowCount)))
+      var applied = Sized(SizeStrategies.ExplicitSize<ICellSpace>(1, 2)).Of(Table(t => (t.ColumnCount, t.RowCount)))
         .Apply(SimpleTable());
 
       Assert.Equal((1, 1), applied.Value);

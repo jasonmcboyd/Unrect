@@ -37,8 +37,9 @@ namespace Unrect.Benchmarks
     private ICellSpace _mixed = default!;
     private Plane<ICellSpace> _plane;
     private Plane<ISpace> _numericPlane;
-    private ILineStrategy _erasedRule = default!;
-    private ILineStrategy _typedRule = default!;
+    private Plane<ICellSpace> _typedNumericPlane;
+    private ILineStrategy<ISpace> _erasedRule = default!;
+    private ILineStrategy<ICellSpace> _typedRule = default!;
 
     [GlobalSetup]
     public void Setup()
@@ -50,12 +51,14 @@ namespace Unrect.Benchmarks
       _mixed = CanonicalSpaces.MegaDenseMixed;
       _plane = Plane<ICellSpace>.Of(_mixed);
       _numericPlane = Plane<ISpace>.Of(_numbers);
+      _typedNumericPlane = Plane<ICellSpace>.Of(_numbers);
 
-      // Built once: lowering happens where a declaration is written, so what the two predicate rows
-      // measure is evaluation. Both rules run to the bottom of the dense numeric grid, asking every
-      // one of its million cells, which is the output to check when this fixture changes.
-      _erasedRule = RowStrategies.TakeRowsWhileAll(cell => !cell.IsBlank());
-      _typedRule = ProjectionBuilders<ICellSpace>.TakeRowsWhileAll(cell => !cell.IsBlank()).Strategy;
+      // Built once, so what the two predicate rows measure is evaluation: the same rule written at
+      // the canonical space and at the sheet's own, each run over a plane of its space. Both run to
+      // the bottom of the dense numeric grid, asking every one of its million cells, which is the
+      // output to check when this fixture changes.
+      _erasedRule = RowStrategies.TakeRowsWhileAll<ISpace>(cell => !cell.IsBlank());
+      _typedRule = ProjectionBuilders<ICellSpace>.TakeRowsWhileAll(cell => !cell.IsBlank());
     }
 
     /// <summary>Adapting a million numbers: the allocation floor for a canonical grid this size.</summary>
@@ -170,7 +173,7 @@ namespace Unrect.Benchmarks
     /// same work.</para>
     /// </summary>
     [Benchmark]
-    public int TypedPredicate_Million() => _typedRule.SelectLines(_numericPlane);
+    public int TypedPredicate_Million() => _typedRule.SelectLines(_typedNumericPlane);
 
     /// <summary>
     /// A million slices: the arithmetic a composite does where it used to allocate a subspace. One

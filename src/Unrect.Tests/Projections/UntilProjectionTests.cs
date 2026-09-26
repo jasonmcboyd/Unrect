@@ -231,7 +231,7 @@ namespace Unrect.Tests.Projections
       // The extent written OUTSIDE the bound is what the parent consumes: the wrapper has a declared
       // area, so the engine consumes it in full and the landmark search happens inside it. Spelled by
       // nesting, because a size applied after the bound lands on the bound wrapper.
-      var applied = Sized(SizeStrategies.ExplicitSize(1, 4)).Of(Until(RowContaining("Total")).Of(Lines())).Apply(Sections());
+      var applied = Sized(SizeStrategies.ExplicitSize<ICellSpace>(1, 4)).Of(Until(RowContaining("Total")).Of(Lines())).Apply(Sections());
 
       Assert.Equal(new[] { "A", "B" }, applied.Value);
       Assert.Equal(4, applied.Consumed.Height);
@@ -240,7 +240,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void UntilAfterSized_BoundsTheDeclaredExtent()
     {
-      var applied = Sized(SizeStrategies.ExplicitSize(1, 2)).Until(RowContaining("Total")).Of(Lines()).Apply(Sections());
+      var applied = Sized(SizeStrategies.ExplicitSize<ICellSpace>(1, 2)).Until(RowContaining("Total")).Of(Lines()).Apply(Sections());
 
       Assert.Equal(new[] { "A", "B" }, applied.Value);
       Assert.Equal(2, applied.Consumed.Height);
@@ -253,7 +253,7 @@ namespace Unrect.Tests.Projections
       // its own four-row extent no longer fits. Two halves of one declaration disagreeing is an
       // error.
       var failure = Assert.Throws<ProjectionException>(() =>
-        Sized(SizeStrategies.ExplicitSize(1, 4)).Until(RowContaining("Total")).Of(Lines()).Map(Sections()));
+        Sized(SizeStrategies.ExplicitSize<ICellSpace>(1, 4)).Until(RowContaining("Total")).Of(Lines()).Map(Sections()));
 
       Assert.Contains("an extent of 1x4 does not fit here", failure.Message);
     }
@@ -460,8 +460,8 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ABoundRejectsANullLandmark()
     {
-      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => Until((ILineLandmark)null!).Of(Lines())).ParamName);
-      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => Until((ILineLandmark)null!).Of(Lines())).ParamName);
+      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => Until((ILineLandmark<ICellSpace>)null!).Of(Lines())).ParamName);
+      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => Until((ILineLandmark<ICellSpace>)null!).Of(Lines())).ParamName);
     }
   }
 }

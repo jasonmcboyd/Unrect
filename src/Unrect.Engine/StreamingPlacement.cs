@@ -13,14 +13,14 @@ namespace Unrect.Projections
   internal sealed class StreamingPlacement<TSpace>
     where TSpace : class, ISpace
   {
-    private readonly IOffsetScan _offset;
-    private readonly ISizeScan? _size;
+    private readonly IOffsetScan<TSpace> _offset;
+    private readonly ISizeScan<TSpace>? _size;
     private readonly IProjectionDefinition _definition;
     private readonly Orientation _driver;
     private readonly bool _strict;
     private int _skipped;
 
-    internal StreamingPlacement(IOffsetScan offset, ISizeScan? size, bool derived, IProjectionDefinition definition, Orientation driver, bool strict)
+    internal StreamingPlacement(IOffsetScan<TSpace> offset, ISizeScan<TSpace>? size, bool derived, IProjectionDefinition definition, Orientation driver, bool strict)
     {
       _offset = offset;
       _size = size;
@@ -54,7 +54,7 @@ namespace Unrect.Projections
     /// so far; <paramref name="across"/> is how far the newest one reaches across the driver's
     /// axis, which a column offset must fit inside.
     /// </summary>
-    internal OffsetStep Advance(Plane<ISpace> region, int index, int across, ProjectorScope<TSpace> parent)
+    internal OffsetStep Advance(Plane<TSpace> region, int index, int across, ProjectorScope<TSpace> parent)
     {
       OffsetStep step;
       int column;
@@ -99,7 +99,7 @@ namespace Unrect.Projections
     }
 
     /// <summary>Whether the size rule takes the newest span of <paramref name="region"/>, the <paramref name="taken"/>th; false with <see cref="Failed"/> set is a refusal.</summary>
-    internal bool Take(Plane<ISpace> region, int taken, ProjectorScope<TSpace> child)
+    internal bool Take(Plane<TSpace> region, int taken, ProjectorScope<TSpace> child)
     {
       try
       {
@@ -125,7 +125,7 @@ namespace Unrect.Projections
     /// so a declared 3x3 on a 2x2 space says "2x2 available" rather than the one row it had seen
     /// when the width came in.
     /// </summary>
-    internal bool TrySettleWidth(Plane<ISpace> region, int taken, bool rowsSettled, ProjectorScope<TSpace> child)
+    internal bool TrySettleWidth(Plane<TSpace> region, int taken, bool rowsSettled, ProjectorScope<TSpace> child)
     {
       int? width;
 
@@ -182,7 +182,7 @@ namespace Unrect.Projections
     /// every one for a scan that decided as it went, and the settled length for one that decides
     /// here. A scan owed more than it was shown is a refusal, or a failure when strict.
     /// </summary>
-    internal int? Along(Plane<ISpace> region, int taken, ProjectorScope<TSpace> child)
+    internal int? Along(Plane<TSpace> region, int taken, ProjectorScope<TSpace> child)
     {
       try
       {
@@ -207,7 +207,7 @@ namespace Unrect.Projections
     /// over the whole <paramref name="region"/>, which must fit inside it. A place the region does
     /// not have is a missing anchor, or a refusal when the child was started non-strictly.
     /// </summary>
-    internal bool SettleOffset(Plane<ISpace> region, ProjectorScope<TSpace> parent)
+    internal bool SettleOffset(Plane<TSpace> region, ProjectorScope<TSpace> parent)
     {
       Offset offset;
 

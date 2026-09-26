@@ -65,10 +65,10 @@ namespace Unrect.Tests.Projections
     /// discovered block. The block is what bounds the body: the tiler declares no extent of its own
     /// and runs exactly as far as what places it, so the block is the composition's own terminator.
     /// </summary>
-    private static Placement TablePlacementReplica()
-      => new Placement(
-        OffsetStrategies.SkipToFirstNonBlankCell(),
-        RowStrategies.TakeRowsWhileAnyIsNotBlank().TakeColumnsWhileAnyIsNotBlank());
+    private static Placement<ICellSpace> TablePlacementReplica()
+      => new Placement<ICellSpace>(
+        OffsetStrategies.SkipToFirstNonBlankCell<ICellSpace>(),
+        RowStrategies.TakeRowsWhileAnyIsNotBlank<ICellSpace>().TakeColumnsWhileAnyIsNotBlank());
 
     // --- The record read, shared by both spellings -------------------------------------------------
     //
@@ -357,14 +357,14 @@ namespace Unrect.Tests.Projections
       => new FlowDefinition<ICellSpace, decimal>(
         Orientation.Vertical,
         SingleChild(Decimal().Named("allocation")),
-        Placement.Default,
+        Placement<ICellSpace>.Default,
         "Row").AsUnit("Inner");
 
     private static IProjectionDefinition<ICellSpace, IReadOnlyList<decimal>> OuterUnit()
       => new FlowDefinition<ICellSpace, IReadOnlyList<decimal>>(
         Orientation.Vertical,
         SingleChild(VerticalRepeat(InnerUnit()).AsScaffolding()),
-        Placement.Default,
+        Placement<ICellSpace>.Default,
         "Body").AsUnit("Outer");
 
     /// <summary>A layout of exactly one child, declared with no use-site text — as a factory declares the parts it assembles.</summary>
@@ -398,7 +398,7 @@ namespace Unrect.Tests.Projections
       => new FlowDefinition<ICellSpace, IReadOnlyList<int>>(
         Orientation.Vertical,
         SingleChild(VerticalBands(1, Record((TableRow<ICellSpace> row) => row.Index), onBlank: BlankRowStrategy.Tolerate).AsScaffolding()),
-        Placement.Default,
+        Placement<ICellSpace>.Default,
         "Body").AsUnit("Table");
 
     [Fact]
@@ -491,7 +491,7 @@ namespace Unrect.Tests.Projections
       => new FlowDefinition<ICellSpace, IReadOnlyList<string>>(
         Orientation.Vertical,
         SingleChild(Mark(VerticalRepeat(Text().Named("investor")), marked)),
-        Placement.Default,
+        Placement<ICellSpace>.Default,
         "Body").AsUnit("Card");
 
     [Fact]

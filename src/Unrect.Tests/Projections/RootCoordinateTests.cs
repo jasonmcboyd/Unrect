@@ -43,7 +43,7 @@ namespace Unrect.Tests.Projections
     {
       var seen = new List<string>();
 
-      var found = RowLandmarks.RowWithCell(point =>
+      var found = RowLandmarks.RowWithCell<ISpace>(point =>
       {
         seen.Add($"{point.Column},{point.Row}");
 
@@ -142,7 +142,7 @@ namespace Unrect.Tests.Projections
         {
           for (var row = 0; row < block.Height; row++)
             for (var column = 0; column < block.Width; column++)
-              seen.Add($"{block.Space.Erased()[column, row].Column},{block.Space.Erased()[column, row].Row}");
+              seen.Add($"{block.Space[column, row].Column},{block.Space[column, row].Row}");
 
           return 0;
         }));
@@ -172,17 +172,17 @@ namespace Unrect.Tests.Projections
       // sheet's row 8, which is row 2 of the band. A landmark that asked FormulaAt(column, row) with
       // the band's own indices would look at A1:C4 instead — where there is no formula at all — and
       // report an honest, wrong "not found".
-      var band = Plane<ISpace>.Of(FormulaSheet()).Slice(new Offset(1, 6), new Size(3, 4));
+      var band = Plane<ISpreadsheetSpace>.Of(FormulaSheet()).Slice(new Offset(1, 6), new Size(3, 4));
 
-      Assert.Equal(2, RowWithFormula("LOG10").Landmark.Find(band));
+      Assert.Equal(2, RowWithFormula<ISpreadsheetSpace>("LOG10").Find(band));
 
       // Non-vacuity, twice over. The whole sheet puts the same formula at row 8, so the band's
       // answer is the same cell reached from a different corner...
-      Assert.Equal(8, RowWithFormula("LOG10").Landmark.Find(Plane<ISpace>.Of(FormulaSheet())));
+      Assert.Equal(8, RowWithFormula<ISpreadsheetSpace>("LOG10").Find(Plane<ISpreadsheetSpace>.Of(FormulaSheet())));
 
       // ...and the coordinates the untranslated reading would have used hold a formula too, so the
       // wrong answer would not have been an obvious zero: D7's SUM sits at the band's own (2, 0).
-      Assert.Equal(0, RowWithFormula("SUM(D2:D5)").Landmark.Find(band));
+      Assert.Equal(0, RowWithFormula<ISpreadsheetSpace>("SUM(D2:D5)").Find(band));
     }
 
     [Fact]
@@ -190,13 +190,13 @@ namespace Unrect.Tests.Projections
     {
       // The transpose, over the same band: LOG10 appears in B9, C9 and D9, so the first column of the
       // band that carries one is the band's column 0 — which is the sheet's column 1.
-      var band = Plane<ISpace>.Of(FormulaSheet()).Slice(new Offset(1, 6), new Size(3, 4));
+      var band = Plane<ISpreadsheetSpace>.Of(FormulaSheet()).Slice(new Offset(1, 6), new Size(3, 4));
 
-      Assert.Equal(0, ColumnWithFormula("LOG10").Landmark.Find(band));
+      Assert.Equal(0, ColumnWithFormula<ISpreadsheetSpace>("LOG10").Find(band));
 
       // And a needle that only column 2 of the band carries, so the answer is not the corner by
       // accident: C9's formula mentions C8 and no other does.
-      Assert.Equal(1, ColumnWithFormula("LOG10(C8)").Landmark.Find(band));
+      Assert.Equal(1, ColumnWithFormula<ISpreadsheetSpace>("LOG10(C8)").Find(band));
     }
 
     [Fact]

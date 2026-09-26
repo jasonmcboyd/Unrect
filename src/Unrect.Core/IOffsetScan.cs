@@ -7,7 +7,9 @@ namespace Unrect.Core
   /// answers over the whole region at <see cref="Settle"/>, which is what the engine holds a child
   /// for. Either way <see cref="Settle"/> is the answer when the spans ran out first.
   /// </summary>
-  public interface IOffsetScan
+  /// <typeparam name="TSpace">The space this scan reads.</typeparam>
+  public interface IOffsetScan<TSpace>
+    where TSpace : class, ISpace
   {
     /// <summary>Whether this scan can answer span by span. False means it needs the whole region, and the engine holds the child until it has it.</summary>
     bool Incremental { get; }
@@ -17,13 +19,13 @@ namespace Unrect.Core
     /// far, the newest at <paramref name="index"/>, and <paramref name="across"/> is how far into
     /// that span the region starts when it starts.
     /// </summary>
-    OffsetStep Next(Plane<ISpace> region, int index, out int across);
+    OffsetStep Next(Plane<TSpace> region, int index, out int across);
 
     /// <summary>
     /// The offset over the whole of <paramref name="region"/>, asked when every span was shown and
     /// none started — or, for a scan that is not incremental, the only question asked. Throws
     /// <see cref="OutOfBoundsException"/> when the region has no such place.
     /// </summary>
-    Offset Settle(Plane<ISpace> region);
+    Offset Settle(Plane<TSpace> region);
   }
 }

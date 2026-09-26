@@ -12,7 +12,7 @@ namespace Unrect.Projections
   internal sealed class SelectDefinition<TSpace, TSource, TResult> : DefinitionNode<TSpace, TResult>
     where TSpace : class, ISpace
   {
-    public SelectDefinition(IProjectionDefinition<TSpace, TSource> inner, Func<TSource, TResult> selector, Placement placement)
+    public SelectDefinition(IProjectionDefinition<TSpace, TSource> inner, Func<TSource, TResult> selector, Placement<TSpace> placement)
       : base(placement)
     {
       Inner = inner ?? throw new ArgumentNullException(nameof(inner));
