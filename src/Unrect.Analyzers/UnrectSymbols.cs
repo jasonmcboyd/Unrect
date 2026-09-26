@@ -25,7 +25,7 @@ namespace Unrect.Analyzers
       "Unrect.Projections.IColumnLandmark`1",
       "Unrect.Projections.ISizeStrategy`1",
       "Unrect.Projections.IOffsetStrategy`1",
-      "Unrect.Projections.IAreaStrategy`1",
+      "Unrect.Projections.ISizeStrategy`1",
       "Unrect.Projections.IRowStrategy`1",
       "Unrect.Projections.IColumnStrategy`1",
     };

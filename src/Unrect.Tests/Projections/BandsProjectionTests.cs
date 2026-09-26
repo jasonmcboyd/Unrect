@@ -66,7 +66,7 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void ABandProjectionWithADeclaredAreaSeesTheBandWithoutForcingADiscoveredBound()
+    public void ABandProjectionWithADeclaredExtentSeesTheBandWithoutForcingADiscoveredBound()
     {
       // The band is measured, so a declared area resolves against it rather than against the bound
       // the tiler is walking: the first band projects having read only the row the walk has reached.

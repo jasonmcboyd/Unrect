@@ -35,15 +35,6 @@ namespace Unrect.Projections
     IOffsetStrategy Strategy { get; }
   }
 
-  /// <summary>The area twin of <see cref="ISizeStrategy{TSpace}"/>.</summary>
-  /// <typeparam name="TSpace">The space this rule must be able to look at.</typeparam>
-  public interface IAreaStrategy<in TSpace>
-    where TSpace : class, ISpace
-  {
-    /// <summary>The rule as the strategy calculus takes it, its demand discharged by the lift.</summary>
-    IAreaStrategy Strategy { get; }
-  }
-
   /// <summary>The row-count twin of <see cref="ISizeStrategy{TSpace}"/>.</summary>
   /// <typeparam name="TSpace">The space this rule must be able to look at.</typeparam>
   public interface IRowStrategy<in TSpace>
@@ -77,10 +68,6 @@ namespace Unrect.Projections
       where TSpace : class, ISpace
       => new DemandedOffset<TSpace>(strategy);
 
-    internal static IAreaStrategy<TSpace> Area<TSpace>(IAreaStrategy strategy)
-      where TSpace : class, ISpace
-      => new DemandedArea<TSpace>(strategy);
-
     internal static IRowStrategy<TSpace> Rows<TSpace>(IRowStrategy strategy)
       where TSpace : class, ISpace
       => new DemandedRows<TSpace>(strategy);
@@ -103,14 +90,6 @@ namespace Unrect.Projections
       internal DemandedOffset(IOffsetStrategy strategy) => Strategy = strategy;
 
       public IOffsetStrategy Strategy { get; }
-    }
-
-    private sealed class DemandedArea<TSpace> : IAreaStrategy<TSpace>
-      where TSpace : class, ISpace
-    {
-      internal DemandedArea(IAreaStrategy strategy) => Strategy = strategy;
-
-      public IAreaStrategy Strategy { get; }
     }
 
     private sealed class DemandedRows<TSpace> : IRowStrategy<TSpace>

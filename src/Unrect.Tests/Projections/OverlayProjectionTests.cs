@@ -102,7 +102,7 @@ namespace Unrect.Tests.Projections
     public void Sized_OverridesTheBoundingBox()
     {
       // Common for a header region, whose footprint on the sheet exceeds its sparse content.
-      var band = Sized(AreaStrategies.ExplicitArea(4, 2)).Of(Overlay(o => $"{o.Next(IntCell())}|{o.Next(Right(2).Of(IntCell()))}"));
+      var band = Sized(SizeStrategies.ExplicitSize(4, 2)).Of(Overlay(o => $"{o.Next(IntCell())}|{o.Next(Right(2).Of(IntCell()))}"));
 
       var applied = band.Apply(CoordinateGrid());
 
@@ -182,7 +182,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AnOverlayDerivesItsExtent()
     {
-      Assert.Null(Overlay(o => $"{o.Next(IntCell())}|{o.Next(IntCell())}").Placement.Area);
+      Assert.Null(Overlay(o => $"{o.Next(IntCell())}|{o.Next(IntCell())}").Placement.Extent);
     }
 
     [Fact]

@@ -110,7 +110,7 @@ namespace Unrect.Projections
 
     internal static Step SkipToFirstNonBlankCell() => new Step(StepKind.SkipToFirstNonBlankCell);
 
-    internal static Step Sized(IAreaStrategy area) => new Step(StepKind.Sized, NotNull(area, "area"));
+    internal static Step Sized(ISizeStrategy extent) => new Step(StepKind.Sized, NotNull(extent, "extent"));
 
     internal static Step UntilRow(IRowLandmark landmark, bool orEnd) => new Step(StepKind.UntilRow, NotNull(landmark), orEnd: orEnd);
 
@@ -123,7 +123,7 @@ namespace Unrect.Projections
     internal static Step Headings(IProjectionDefinition[] captions) => new Step(StepKind.Headings, captions);
 
     /// <summary>
-    /// Writes this step's offset/area/bound operation onto <paramref name="projection"/>'s
+    /// Writes this step's offset/extent/bound operation onto <paramref name="projection"/>'s
     /// <see cref="Placement"/>.
     /// </summary>
     internal IProjectionDefinition<TSpace, T> ApplyTo<TSpace, T>(IProjectionDefinition<TSpace, T> projection)
@@ -144,7 +144,7 @@ namespace Unrect.Projections
         StepKind.SkipToFirstNonBlankCell => Offset(projection, OffsetStrategies.SkipToFirstNonBlankCell()),
 
         // An extent replaces the projection's derived one.
-        StepKind.Sized => projection.With(projection.Annotations.WithPlacement(projection.Placement.WithArea((IAreaStrategy)_subject!))),
+        StepKind.Sized => projection.With(projection.Annotations.WithPlacement(projection.Placement.WithExtent((ISizeStrategy)_subject!))),
 
         // Bounds and headings wrap rather than reposition.
         StepKind.UntilRow => Bounded(projection, Landmark.Of((IRowLandmark)_subject!), _orEnd),

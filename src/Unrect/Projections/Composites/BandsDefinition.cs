@@ -163,10 +163,10 @@ namespace Unrect.Projections
     /// <summary>Whether every cell of a cut band is blank. The band is measured, so its extent is free.</summary>
     private static bool IsBlank(Plane<TSpace> band)
     {
-      var area = band.Extent;
+      var extent = band.Extent;
 
-      for (var row = 0; row < area.Height; row++)
-        for (var column = 0; column < area.Width; column++)
+      for (var row = 0; row < extent.Height; row++)
+        for (var column = 0; column < extent.Width; column++)
           if (!band[column, row].IsBlank())
             return false;
 

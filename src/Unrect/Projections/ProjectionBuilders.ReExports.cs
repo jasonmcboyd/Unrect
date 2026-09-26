@@ -109,37 +109,37 @@ namespace Unrect.Projections
     //
     // What `.Sized` takes, re-exported here for the same reason the offset vocabulary above is: a
     // projection declaration should need one import. Everything here returns an extent the modifier
-    // takes as it is — the fixed ones an IAreaStrategy, the predicate-driven ones the same wearing
+    // takes as it is — the fixed ones an ISizeStrategy, the predicate-driven ones the same wearing
     // this file's space — so nothing is lifted at the call site either way.
 
     /// <summary>The whole of the available space.</summary>
-    public static IAreaStrategy WholeExtent() => AreaStrategies.MaxArea();
+    public static ISizeStrategy WholeExtent() => SizeStrategies.MaxSize();
 
     /// <summary>Nothing — the identity extent, which a projection declares when it consumes no space.</summary>
-    public static IAreaStrategy NoExtent() => AreaStrategies.MinArea();
+    public static ISizeStrategy NoExtent() => SizeStrategies.MinSize();
 
     /// <summary>Exactly <paramref name="width"/> by <paramref name="height"/> cells.</summary>
-    public static IAreaStrategy Extent(int width, int height) => AreaStrategies.ExplicitArea(width, height);
+    public static ISizeStrategy Extent(int width, int height) => SizeStrategies.ExplicitSize(width, height);
 
     /// <summary>Full available width, and the leading rows that carry values.</summary>
-    public static IAreaStrategy RowsWhileAnyIsNotBlank() => SizeStrategies.RowsWhileAnyIsNotBlank().ToAreaStrategy();
+    public static ISizeStrategy RowsWhileAnyIsNotBlank() => SizeStrategies.RowsWhileAnyIsNotBlank();
 
     /// <summary>
     /// Full available width, and as many leading rows as have at least one cell satisfying
     /// <paramref name="anyCell"/>.
     /// </summary>
-    public static IAreaStrategy<TSpace> RowsWhileAny(Func<Point<TSpace>, bool> anyCell)
-      => Demanding.Area<TSpace>(SizeStrategies.RowsWhileAny(TypedPredicates.Lower(anyCell)).ToAreaStrategy());
+    public static ISizeStrategy<TSpace> RowsWhileAny(Func<Point<TSpace>, bool> anyCell)
+      => Demanding.Size<TSpace>(SizeStrategies.RowsWhileAny(TypedPredicates.Lower(anyCell)));
 
     /// <summary>Full available height, and the leading columns that carry values.</summary>
-    public static IAreaStrategy ColumnsWhileAnyIsNotBlank() => SizeStrategies.ColumnsWhileAnyIsNotBlank().ToAreaStrategy();
+    public static ISizeStrategy ColumnsWhileAnyIsNotBlank() => SizeStrategies.ColumnsWhileAnyIsNotBlank();
 
     /// <summary>
     /// Full available height, and as many leading columns as have at least one cell satisfying
     /// <paramref name="anyCell"/>.
     /// </summary>
-    public static IAreaStrategy<TSpace> ColumnsWhileAny(Func<Point<TSpace>, bool> anyCell)
-      => Demanding.Area<TSpace>(SizeStrategies.ColumnsWhileAny(TypedPredicates.Lower(anyCell)).ToAreaStrategy());
+    public static ISizeStrategy<TSpace> ColumnsWhileAny(Func<Point<TSpace>, bool> anyCell)
+      => Demanding.Size<TSpace>(SizeStrategies.ColumnsWhileAny(TypedPredicates.Lower(anyCell)));
 
     // The row/column selectors, for composing an extent from its two axes and for the leaf
     // overloads that take one — Row(AllColumns(), ...) is a full-width row.
@@ -241,10 +241,6 @@ namespace Unrect.Projections
     public static ISizeStrategy<TSpace> SelectSize(Func<Plane<TSpace>, Size> selector)
       => Demanding.Size<TSpace>(SizeStrategies.SelectSize(TypedPredicates.Lower(selector)));
 
-    /// <summary>The rectangle <paramref name="selector"/> measures for itself.</summary>
-    public static IAreaStrategy<TSpace> SelectArea(Func<Plane<TSpace>, Size> selector)
-      => Demanding.Area<TSpace>(AreaStrategies.SelectArea(TypedPredicates.Lower(selector)));
-
     /// <summary>The origin <paramref name="selector"/> measures for itself.</summary>
     public static IOffsetStrategy<TSpace> SelectOffset(Func<Plane<TSpace>, Size> selector)
       => Demanding.Offset<TSpace>(OffsetStrategies.SelectOffset(TypedPredicates.Lower(selector)));
@@ -259,39 +255,39 @@ namespace Unrect.Projections
     /// too.
     /// </para>
     /// </summary>
-    public static IAreaStrategy RowsThenColumns(IRowStrategy rows, IColumnStrategy columns)
-      => AreaStrategies.RowsThenColumns(rows, columns);
+    public static ISizeStrategy RowsThenColumns(IRowStrategy rows, IColumnStrategy columns)
+      => SizeStrategies.RowsThenColumns(rows, columns);
 
     /// <inheritdoc cref="RowsThenColumns(IRowStrategy, IColumnStrategy)"/>
-    public static IAreaStrategy<TSpace> RowsThenColumns(IRowStrategy<TSpace> rows, IColumnStrategy<TSpace> columns)
-      => Demanding.Area<TSpace>(AreaStrategies.RowsThenColumns(Required(rows).Strategy, Required(columns).Strategy));
+    public static ISizeStrategy<TSpace> RowsThenColumns(IRowStrategy<TSpace> rows, IColumnStrategy<TSpace> columns)
+      => Demanding.Size<TSpace>(SizeStrategies.RowsThenColumns(Required(rows).Strategy, Required(columns).Strategy));
 
     /// <inheritdoc cref="RowsThenColumns(IRowStrategy, IColumnStrategy)"/>
-    public static IAreaStrategy<TSpace> RowsThenColumns(IRowStrategy<TSpace> rows, IColumnStrategy columns)
-      => Demanding.Area<TSpace>(AreaStrategies.RowsThenColumns(Required(rows).Strategy, columns));
+    public static ISizeStrategy<TSpace> RowsThenColumns(IRowStrategy<TSpace> rows, IColumnStrategy columns)
+      => Demanding.Size<TSpace>(SizeStrategies.RowsThenColumns(Required(rows).Strategy, columns));
 
     /// <inheritdoc cref="RowsThenColumns(IRowStrategy, IColumnStrategy)"/>
-    public static IAreaStrategy<TSpace> RowsThenColumns(IRowStrategy rows, IColumnStrategy<TSpace> columns)
-      => Demanding.Area<TSpace>(AreaStrategies.RowsThenColumns(rows, Required(columns).Strategy));
+    public static ISizeStrategy<TSpace> RowsThenColumns(IRowStrategy rows, IColumnStrategy<TSpace> columns)
+      => Demanding.Size<TSpace>(SizeStrategies.RowsThenColumns(rows, Required(columns).Strategy));
 
     /// <summary>
     /// <paramref name="columns"/> measured first, then <paramref name="rows"/> within them — the
     /// other order, and the one a column-led region wants. It pairs the two axes exactly as
     /// <see cref="RowsThenColumns(IRowStrategy, IColumnStrategy)"/> does.
     /// </summary>
-    public static IAreaStrategy ColumnsThenRows(IColumnStrategy columns, IRowStrategy rows)
-      => AreaStrategies.ColumnsThenRows(columns, rows);
+    public static ISizeStrategy ColumnsThenRows(IColumnStrategy columns, IRowStrategy rows)
+      => SizeStrategies.ColumnsThenRows(columns, rows);
 
     /// <inheritdoc cref="ColumnsThenRows(IColumnStrategy, IRowStrategy)"/>
-    public static IAreaStrategy<TSpace> ColumnsThenRows(IColumnStrategy<TSpace> columns, IRowStrategy<TSpace> rows)
-      => Demanding.Area<TSpace>(AreaStrategies.ColumnsThenRows(Required(columns).Strategy, Required(rows).Strategy));
+    public static ISizeStrategy<TSpace> ColumnsThenRows(IColumnStrategy<TSpace> columns, IRowStrategy<TSpace> rows)
+      => Demanding.Size<TSpace>(SizeStrategies.ColumnsThenRows(Required(columns).Strategy, Required(rows).Strategy));
 
     /// <inheritdoc cref="ColumnsThenRows(IColumnStrategy, IRowStrategy)"/>
-    public static IAreaStrategy<TSpace> ColumnsThenRows(IColumnStrategy<TSpace> columns, IRowStrategy rows)
-      => Demanding.Area<TSpace>(AreaStrategies.ColumnsThenRows(Required(columns).Strategy, rows));
+    public static ISizeStrategy<TSpace> ColumnsThenRows(IColumnStrategy<TSpace> columns, IRowStrategy rows)
+      => Demanding.Size<TSpace>(SizeStrategies.ColumnsThenRows(Required(columns).Strategy, rows));
 
     /// <inheritdoc cref="ColumnsThenRows(IColumnStrategy, IRowStrategy)"/>
-    public static IAreaStrategy<TSpace> ColumnsThenRows(IColumnStrategy columns, IRowStrategy<TSpace> rows)
-      => Demanding.Area<TSpace>(AreaStrategies.ColumnsThenRows(columns, Required(rows).Strategy));
+    public static ISizeStrategy<TSpace> ColumnsThenRows(IColumnStrategy columns, IRowStrategy<TSpace> rows)
+      => Demanding.Size<TSpace>(SizeStrategies.ColumnsThenRows(columns, Required(rows).Strategy));
   }
 }

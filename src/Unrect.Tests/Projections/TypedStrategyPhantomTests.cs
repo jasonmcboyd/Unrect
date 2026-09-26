@@ -28,9 +28,9 @@ namespace Unrect.Tests.Projections
   public class TypedStrategyPhantomTests
   {
     /// <summary>Rows while any cell in them carries a value, demanding a sheet.</summary>
-    private sealed class ValueRows : IAreaStrategy<ICellSpace>
+    private sealed class ValueRows : ISizeStrategy<ICellSpace>
     {
-      public Unrect.Core.IAreaStrategy Strategy { get; } = SizeStrategies.RowsWhileAnyIsNotBlank().ToAreaStrategy();
+      public Unrect.Core.ISizeStrategy Strategy { get; } = SizeStrategies.RowsWhileAnyIsNotBlank();
     }
 
     /// <summary>Leading columns that carry values, demanding a sheet.</summary>
@@ -157,7 +157,7 @@ namespace Unrect.Tests.Projections
     // --- The guards blame the parameter the caller wrote -------------------------------------------
 
     [Theory]
-    [InlineData("area")]
+    [InlineData("extent")]
     [InlineData("offset")]
     [InlineData("columns")]
     [InlineData("rows")]
@@ -166,7 +166,7 @@ namespace Unrect.Tests.Projections
     {
       Action call = parameter switch
       {
-        "area" => () => Sized((IAreaStrategy<ICellSpace>)null!).Of(Point()),
+        "extent" => () => Sized((ISizeStrategy<ICellSpace>)null!).Of(Point()),
         "offset" => () => OffsetBy((IOffsetStrategy<ICellSpace>)null!).Of(Point()),
         "columns" => () => Row((IColumnStrategy<ICellSpace>)null!, strip => strip.Count),
         "rows" => () => Column((IRowStrategy<ICellSpace>)null!, strip => strip.Count),
@@ -210,12 +210,12 @@ namespace Unrect.Tests.Projections
     /// <summary>Every other public overload that unwraps a phantom, and the argument it blames.</summary>
     public static TheoryData<string> TheUnwrappingMembers => new TheoryData<string>
     {
-      "Sized(area)", "OffsetBy(offset)", "Range(area)", "Row(columns)", "Column(rows)",
+      "Sized(extent)", "OffsetBy(offset)", "Range(extent)", "Row(columns)", "Column(rows)",
       "RowsThenColumns(rows)", "RowsThenColumns(columns)", "ColumnsThenRows(columns)", "ColumnsThenRows(rows)",
       "VerticalRepeat(separatedBy)", "HorizontalRepeat(separatedBy)",
       "On(row)", "On(column)", "Below(landmark)", "RightOf(landmark)",
       "Until(landmark)", "UntilColumn(landmark)",
-      "stage Sized(area)", "stage Range(area)", "stage Row(columns)", "stage Column(rows)",
+      "stage Sized(extent)", "stage Range(extent)", "stage Row(columns)", "stage Column(rows)",
       "stage VerticalRepeat(separatedBy)", "stage HorizontalRepeat(separatedBy)",
       "stage Until(landmark)", "stage UntilColumn(landmark)",
     };
@@ -230,9 +230,9 @@ namespace Unrect.Tests.Projections
       // line of a pipeline whose members all take one rule each.
       Action call = member switch
       {
-        "Sized(area)" => () => Sized((IAreaStrategy<ICellSpace>)null!),
+        "Sized(extent)" => () => Sized((ISizeStrategy<ICellSpace>)null!),
         "OffsetBy(offset)" => () => OffsetBy((IOffsetStrategy<ICellSpace>)null!),
-        "Range(area)" => () => Range((IAreaStrategy<ICellSpace>)null!, block => block.Height),
+        "Range(extent)" => () => Range((ISizeStrategy<ICellSpace>)null!, block => block.Height),
         "Row(columns)" => () => Row((IColumnStrategy<ICellSpace>)null!, strip => strip.Count),
         "Column(rows)" => () => Column((IRowStrategy<ICellSpace>)null!, strip => strip.Count),
         "RowsThenColumns(rows)" => () => RowsThenColumns((IRowStrategy<ICellSpace>)null!, new ValueColumns()),
@@ -247,8 +247,8 @@ namespace Unrect.Tests.Projections
         "RightOf(landmark)" => () => RightOf((IColumnLandmark<ICellSpace>)null!),
         "Until(landmark)" => () => Until((IRowLandmark<ICellSpace>)null!),
         "UntilColumn(landmark)" => () => UntilColumn((IColumnLandmark<ICellSpace>)null!),
-        "stage Sized(area)" => () => Down(1).Sized((IAreaStrategy<ICellSpace>)null!),
-        "stage Range(area)" => () => Down(1).Range((IAreaStrategy<ICellSpace>)null!, block => block.Height),
+        "stage Sized(extent)" => () => Down(1).Sized((ISizeStrategy<ICellSpace>)null!),
+        "stage Range(extent)" => () => Down(1).Range((ISizeStrategy<ICellSpace>)null!, block => block.Height),
         "stage Row(columns)" => () => Down(1).Row((IColumnStrategy<ICellSpace>)null!, strip => strip.Count),
         "stage Column(rows)" => () => Down(1).Column((IRowStrategy<ICellSpace>)null!, strip => strip.Count),
         "stage VerticalRepeat(separatedBy)" => () => Down(1).VerticalRepeat(Point(), (IOffsetStrategy<ICellSpace>)null!),

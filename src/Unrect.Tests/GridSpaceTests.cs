@@ -43,7 +43,7 @@ namespace Unrect.Tests
     // --- Orientation ----------------------------------------------------------------------------
 
     [Fact]
-    public void Area_TakesWidthFromTheSecondArrayDimensionAndHeightFromTheFirst()
+    public void Extent_TakesWidthFromTheSecondArrayDimensionAndHeightFromTheFirst()
     {
       var space = TextGrid();
 
@@ -73,7 +73,7 @@ namespace Unrect.Tests
     [InlineData(3, 0)]
     [InlineData(0, -1)]
     [InlineData(0, 2)]
-    public void Reads_OutsideTheArea_Throw(int column, int row)
+    public void Reads_OutsideTheExtent_Throw(int column, int row)
     {
       var space = TextGrid();
 

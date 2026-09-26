@@ -47,7 +47,7 @@ namespace Unrect.Tests.Projections
 
       Assert.Equal("Heading", section.Description);
       Assert.False(section.IsWrapper);
-      Assert.Null(section.Placement.Area);
+      Assert.Null(section.Placement.Extent);
     }
 
     [Fact]

@@ -41,7 +41,7 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void Map_AppliesTheProjectionsOwnAreaAtTheTopLevel()
+    public void Map_AppliesTheProjectionsOwnExtentAtTheTopLevel()
     {
       var block = Range(2, 3, b => (b.Width, b.Height)).Map(CoordinateGrid());
 
@@ -452,12 +452,12 @@ namespace Unrect.Tests.Projections
       Assert.Equal((3, 1), Range(3, 1, b => (b.Width, b.Height)).Map(CoordinateGrid()));
       Assert.Equal(
         (1, 2),
-        Sized(AreaStrategies.ExplicitArea(1, 2)).Of(Range(3, 1, b => (b.Width, b.Height))).Map(CoordinateGrid()));
+        Sized(SizeStrategies.ExplicitSize(1, 2)).Of(Range(3, 1, b => (b.Width, b.Height))).Map(CoordinateGrid()));
 
       // ...and a derived extent likewise: FlowProjectionTests.Sized_OverridesWhatTheFlowDerived and
       // OverlayProjectionTests.Sized_OverridesTheBoundingBox are the composite half of the same
       // claim.
-      Assert.Equal((2, 1), Sized(AreaStrategies.ExplicitArea(2, 1)).Of(Range(b => (b.Width, b.Height))).Map(CoordinateGrid()));
+      Assert.Equal((2, 1), Sized(SizeStrategies.ExplicitSize(2, 1)).Of(Range(b => (b.Width, b.Height))).Map(CoordinateGrid()));
     }
 
     [Fact]
@@ -507,10 +507,10 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void Sized_ReturnsANewProjectionAndLeavesTheOriginalArea()
+    public void Sized_ReturnsANewProjectionAndLeavesTheOriginalExtent()
     {
       var original = Range(b => (b.Width, b.Height));
-      var resized = Sized(AreaStrategies.ExplicitArea(1, 1)).Of(original);
+      var resized = Sized(SizeStrategies.ExplicitSize(1, 1)).Of(original);
 
       Assert.Equal((3, 4), original.Map(CoordinateGrid()));
       Assert.Equal((1, 1), resized.Map(CoordinateGrid()));
@@ -533,7 +533,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AnnotationsAreOneRecordReadThroughTheFace()
     {
-      var projection = Sized(AreaStrategies.ExplicitArea(1, 1)).Of(IntCell()).Named("cell").AsUnit("Unit").AsScaffolding();
+      var projection = Sized(SizeStrategies.ExplicitSize(1, 1)).Of(IntCell()).Named("cell").AsUnit("Unit").AsScaffolding();
 
       Assert.Same(projection.Annotations.Placement, projection.Placement);
       Assert.Equal("cell", projection.Annotations.Name);
@@ -545,35 +545,35 @@ namespace Unrect.Tests.Projections
     // --- Placement itself ---------------------------------------------------------------------------
 
     [Fact]
-    public void PlacementDefault_HasNoDeclaredArea()
+    public void PlacementDefault_HasNoDeclaredExtent()
     {
-      Assert.Null(Placement.Default.Area);
+      Assert.Null(Placement.Default.Extent);
       Assert.NotNull(Placement.Default.Offset);
     }
 
     [Fact]
-    public void PlacementOf_DeclaresAnAreaAtTheOrigin()
+    public void PlacementOf_DeclaresAnExtentAtTheOrigin()
     {
-      var area = AreaStrategies.ExplicitArea(2, 2);
+      var area = SizeStrategies.ExplicitSize(2, 2);
       var placement = Placement.Of(area);
 
-      Assert.Same(area, placement.Area);
+      Assert.Same(area, placement.Extent);
     }
 
     [Fact]
     public void PlacementModifiers_ReturnNewInstances()
     {
       var offset = OffsetStrategies.ExplicitOffset(1, 1);
-      var area = AreaStrategies.ExplicitArea(2, 2);
+      var area = SizeStrategies.ExplicitSize(2, 2);
 
       var withOffset = Placement.Default.WithOffset(offset);
-      var withArea = withOffset.WithArea(area);
+      var withExtent = withOffset.WithExtent(area);
 
       Assert.Same(offset, withOffset.Offset);
-      Assert.Null(withOffset.Area);
-      Assert.Same(offset, withArea.Offset);
-      Assert.Same(area, withArea.Area);
-      Assert.Null(Placement.Default.Area);
+      Assert.Null(withOffset.Extent);
+      Assert.Same(offset, withExtent.Offset);
+      Assert.Same(area, withExtent.Extent);
+      Assert.Null(Placement.Default.Extent);
     }
 
     [Fact]
@@ -585,13 +585,13 @@ namespace Unrect.Tests.Projections
     // --- Argument guards blame the parameter the caller wrote --------------------------------------------
 
     [Fact]
-    public void Sized_RejectsANullArea()
+    public void Sized_RejectsANullExtent()
     {
-      // Only the constructor may take a null area, where it means "derive the extent". Anywhere
+      // Only the constructor may take a null extent, where it means "derive the extent". Anywhere
       // else a null would quietly turn a declared extent into a derived one.
-      Assert.Equal("area", Assert.Throws<ArgumentNullException>(() => Sized((Unrect.Core.IAreaStrategy)null!).Of(IntCell())).ParamName);
-      Assert.Equal("area", Assert.Throws<ArgumentNullException>(() => Placement.Default.WithArea(null!)).ParamName);
-      Assert.Equal("area", Assert.Throws<ArgumentNullException>(() => Placement.Of(null!)).ParamName);
+      Assert.Equal("extent", Assert.Throws<ArgumentNullException>(() => Sized((Unrect.Core.ISizeStrategy)null!).Of(IntCell())).ParamName);
+      Assert.Equal("extent", Assert.Throws<ArgumentNullException>(() => Placement.Default.WithExtent(null!)).ParamName);
+      Assert.Equal("extent", Assert.Throws<ArgumentNullException>(() => Placement.Of(null!)).ParamName);
     }
 
     [Fact]
@@ -608,7 +608,7 @@ namespace Unrect.Tests.Projections
         Assert.Throws<ArgumentNullException>(() => OffsetBy(SkipRows(1)).Of<int>(null!)).ParamName);
       Assert.Equal(
         "projection",
-        Assert.Throws<ArgumentNullException>(() => Sized(AreaStrategies.ExplicitArea(1, 1)).Of<int>(null!)).ParamName);
+        Assert.Throws<ArgumentNullException>(() => Sized(SizeStrategies.ExplicitSize(1, 1)).Of<int>(null!)).ParamName);
     }
 
     [Fact]
@@ -623,11 +623,11 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void FlowsAndRepeatsDeriveTheirExtent()
     {
-      // A null Area is what lets a flow size itself from its children — and therefore what lets a
+      // A null Extent is what lets a flow size itself from its children — and therefore what lets a
       // Repeat item be declared without any placement at all.
-      Assert.Null(VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(IntCell())}").Placement.Area);
-      Assert.Null(VerticalRepeat(IntCell()).Placement.Area);
-      Assert.NotNull(IntCell().Placement.Area);
+      Assert.Null(VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(IntCell())}").Placement.Extent);
+      Assert.Null(VerticalRepeat(IntCell()).Placement.Extent);
+      Assert.NotNull(IntCell().Placement.Extent);
     }
   }
 }

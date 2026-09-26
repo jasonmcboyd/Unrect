@@ -267,19 +267,19 @@ namespace Unrect.Projections
     public IProjectionDefinition<TSpace, T> Range<T>(int width, int height, Func<CellBlock<TSpace>, T> project)
       => Close<T>(ProjectionBuilders<TSpace>.Range(width, height, project));
 
-    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Range{T}(IAreaStrategy, Func{CellBlock{TSpace}, T})"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Range{T}(ISizeStrategy, Func{CellBlock{TSpace}, T})"/>
     /// <typeparam name="T">What the region reads.</typeparam>
-    /// <param name="area">How far the region extends.</param>
+    /// <param name="extent">How far the region extends.</param>
     /// <param name="project">The reading applied to the region's cells.</param>
-    public IProjectionDefinition<TSpace, T> Range<T>(IAreaStrategy area, Func<CellBlock<TSpace>, T> project)
-      => Close<T>(ProjectionBuilders<TSpace>.Range(area, project));
+    public IProjectionDefinition<TSpace, T> Range<T>(ISizeStrategy extent, Func<CellBlock<TSpace>, T> project)
+      => Close<T>(ProjectionBuilders<TSpace>.Range(extent, project));
 
-    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Range{T}(IAreaStrategy{TSpace}, Func{CellBlock{TSpace}, T})"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Range{T}(ISizeStrategy{TSpace}, Func{CellBlock{TSpace}, T})"/>
     /// <typeparam name="T">What the region reads.</typeparam>
-    /// <param name="area">How far the region extends. A rule demanding less is accepted as it is.</param>
+    /// <param name="extent">How far the region extends. A rule demanding less is accepted as it is.</param>
     /// <param name="project">The reading applied to the region's cells.</param>
-    public IProjectionDefinition<TSpace, T> Range<T>(IAreaStrategy<TSpace> area, Func<CellBlock<TSpace>, T> project)
-      => Close<T>(ProjectionBuilders<TSpace>.Range(area, project));
+    public IProjectionDefinition<TSpace, T> Range<T>(ISizeStrategy<TSpace> extent, Func<CellBlock<TSpace>, T> project)
+      => Close<T>(ProjectionBuilders<TSpace>.Range(extent, project));
 
     /// <inheritdoc cref="ProjectionBuilders{TSpace}.Fields(Field[])"/>
     /// <param name="fields">The labelled pairs, in the order they sit on the sheet.</param>
@@ -451,15 +451,15 @@ namespace Unrect.Projections
     /// <c>Sized</c> is refused: the pipeline goes on to <see cref="OffsetAndSizeStage{TSpace}"/>,
     /// where <c>Sized</c> is an <c>[Obsolete(error)]</c> stub.
     /// </summary>
-    /// <param name="area">The extent.</param>
-    public OffsetAndSizeStage<TSpace> Sized(IAreaStrategy area)
-      => new OffsetAndSizeStage<TSpace>(Steps.Then(Step.Sized(area)));
+    /// <param name="extent">The extent.</param>
+    public OffsetAndSizeStage<TSpace> Sized(ISizeStrategy extent)
+      => new OffsetAndSizeStage<TSpace>(Steps.Then(Step.Sized(extent)));
 
-    /// <inheritdoc cref="Sized(IAreaStrategy)"/>
-    /// <param name="area">The extent. A rule demanding less is accepted as it is.</param>
-    public OffsetAndSizeStage<TSpace> Sized(IAreaStrategy<TSpace> area)
+    /// <inheritdoc cref="Sized(ISizeStrategy)"/>
+    /// <param name="extent">The extent. A rule demanding less is accepted as it is.</param>
+    public OffsetAndSizeStage<TSpace> Sized(ISizeStrategy<TSpace> extent)
       => new OffsetAndSizeStage<TSpace>(Steps.Then(Step.Sized(
-        (area ?? throw new ArgumentNullException(nameof(area))).Strategy)));
+        (extent ?? throw new ArgumentNullException(nameof(extent))).Strategy)));
 
     /// <summary>
     /// The extent stated and left as it is — optional explicitness, never ceremony: the terminal
@@ -481,15 +481,15 @@ namespace Unrect.Projections
     }
 
     /// <summary>Refused: extents do not stack, so a second one erases the first rather than narrowing it.</summary>
-    /// <param name="area">The extent that would replace the pipeline's.</param>
+    /// <param name="extent">The extent that would replace the pipeline's.</param>
     [Obsolete(PipelineRefusals.ExtentsDoNotStack, error: true)]
-    public OffsetAndSizeStage<TSpace> Sized(IAreaStrategy area)
+    public OffsetAndSizeStage<TSpace> Sized(ISizeStrategy extent)
       => throw new NotSupportedException(PipelineRefusals.ExtentsDoNotStack);
 
-    /// <inheritdoc cref="Sized(IAreaStrategy)"/>
-    /// <param name="area">The extent that would replace the pipeline's, demanding a space of its own.</param>
+    /// <inheritdoc cref="Sized(ISizeStrategy)"/>
+    /// <param name="extent">The extent that would replace the pipeline's, demanding a space of its own.</param>
     [Obsolete(PipelineRefusals.ExtentsDoNotStack, error: true)]
-    public OffsetAndSizeStage<TSpace> Sized(IAreaStrategy<TSpace> area)
+    public OffsetAndSizeStage<TSpace> Sized(ISizeStrategy<TSpace> extent)
       => throw new NotSupportedException(PipelineRefusals.ExtentsDoNotStack);
 
     /// <summary>Refused: a movement belongs with the offset, ahead of the extent.</summary>
@@ -566,15 +566,15 @@ namespace Unrect.Projections
       => throw new NotSupportedException(PipelineRefusals.ProjectionHasOneEnd);
 
     /// <summary>Refused: an extent declared after a bound frames the search rather than narrowing it.</summary>
-    /// <param name="area">The extent that would frame the search.</param>
+    /// <param name="extent">The extent that would frame the search.</param>
     [Obsolete(PipelineRefusals.BoundFramesTheExtent, error: true)]
-    public BoundStage<TSpace> Sized(IAreaStrategy area)
+    public BoundStage<TSpace> Sized(ISizeStrategy extent)
       => throw new NotSupportedException(PipelineRefusals.BoundFramesTheExtent);
 
-    /// <inheritdoc cref="Sized(IAreaStrategy)"/>
-    /// <param name="area">The extent that would frame the search, demanding a space of its own.</param>
+    /// <inheritdoc cref="Sized(ISizeStrategy)"/>
+    /// <param name="extent">The extent that would frame the search, demanding a space of its own.</param>
     [Obsolete(PipelineRefusals.BoundFramesTheExtent, error: true)]
-    public BoundStage<TSpace> Sized(IAreaStrategy<TSpace> area)
+    public BoundStage<TSpace> Sized(ISizeStrategy<TSpace> extent)
       => throw new NotSupportedException(PipelineRefusals.BoundFramesTheExtent);
 
     /// <summary>Refused: a movement belongs with the offset, ahead of the bound.</summary>

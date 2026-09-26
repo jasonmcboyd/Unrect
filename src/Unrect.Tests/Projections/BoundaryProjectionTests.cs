@@ -475,7 +475,7 @@ namespace Unrect.Tests.Projections
       // Any sibling that consumed nothing leaves the next one in the same position; a boundary is
       // simply the usual way that happens.
       var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v => $"{v.Next(Range(AreaStrategies.ExplicitArea(1, 0), b => b.Height))}|{v.Next(IntCell())}")
+        VerticalFlow(v => $"{v.Next(Range(SizeStrategies.ExplicitSize(1, 0), b => b.Height))}|{v.Next(IntCell())}")
           .Map(TextOverNumber()));
 
       Assert.Contains("note: the preceding sibling consumed nothing at this position", failure.Message);

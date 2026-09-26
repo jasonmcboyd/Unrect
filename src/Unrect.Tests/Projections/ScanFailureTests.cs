@@ -53,14 +53,14 @@ namespace Unrect.Tests.Projections
     // --- A broken scan is the placement's failure --------------------------------------------------
 
     [Fact]
-    public void AScanThatBreaksIsReportedAsTheAreaStrategysFailure_NotTheProjections()
+    public void AScanThatBreaksIsReportedAsTheExtentStrategysFailure_NotTheProjections()
     {
       // The sentence names the area strategy, even though the break surfaced while the projection's
       // region was being placed. If this ever read "the projection threw", a declaration would be
       // blamed for its data source's rule.
       var failure = Failure(Range(RowsWhileAny(BreaksOn(LateMarker)), _ => 0));
 
-      Assert.Equal("its area strategy threw InvalidOperationException: no", Problem(failure));
+      Assert.Equal("its extent strategy threw InvalidOperationException: no", Problem(failure));
       Assert.Equal("Range", failure.Path);
       Assert.Equal("A1", failure.Location.A1);
     }
@@ -114,7 +114,7 @@ namespace Unrect.Tests.Projections
       var warning = Assert.Single(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Warning);
 
       Assert.Equal(boundary == "Optional" ? 0 : -1, result.Value);
-      Assert.Equal("its area strategy threw InvalidOperationException: no", warning.Message);
+      Assert.Equal("its extent strategy threw InvalidOperationException: no", warning.Message);
       Assert.Equal("Range", warning.Path);
     }
 
@@ -135,7 +135,7 @@ namespace Unrect.Tests.Projections
       var note = Assert.Single(result.Diagnostics);
       Assert.Equal(DiagnosticSeverity.Info, note.Severity);
       Assert.Contains("alternative 1", note.Message);
-      Assert.Contains("its area strategy threw InvalidOperationException: no", note.Message);
+      Assert.Contains("its extent strategy threw InvalidOperationException: no", note.Message);
     }
 
     // --- A repeat's item that runs out of room is a stop, not a failure ----------------------------

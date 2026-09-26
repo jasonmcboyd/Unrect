@@ -141,7 +141,7 @@ namespace Unrect.Tests.Projections
       // rather than through a Select, because a Select is placed by the engine like any other
       // projection and would re-place its inner leaf at the leaf's own 1x1 default.
       var failure = Assert.Throws<ProjectionException>(() =>
-        Sized(Unrect.Strategies.AreaStrategies.ExplicitArea(2, 1)).Of(AsText()).Map(CoordinateGrid(4, 4)));
+        Sized(Unrect.Strategies.SizeStrategies.ExplicitSize(2, 1)).Of(AsText()).Map(CoordinateGrid(4, 4)));
 
       Assert.Contains("an AsText must be exactly one cell; this one is 2x1", failure.Message);
     }

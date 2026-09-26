@@ -197,7 +197,7 @@ namespace Unrect.Tests.Streaming
       Assert.Equal(6, detail.Extent.Height);
 
       // Not just vended — read. A catalogue entry with the wrong index would hand back a view over
-      // the wrong sheet, which an Area alone would not catch.
+      // the wrong sheet, which an extent alone would not catch.
       Assert.Equal("Alpha Fund", summary.AsTextAt(0, 1));
       Assert.Equal("Fund", detail.AsTextAt(0, 0));
       Assert.Equal(1500d, Plane<ICellSpace>.Of(detail)[2, 5].Double());

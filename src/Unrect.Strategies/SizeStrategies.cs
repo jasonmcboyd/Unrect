@@ -40,5 +40,18 @@ namespace Unrect.Strategies
     /// <summary>Whatever <paramref name="selector"/> computes from the available space — the escape hatch when no other strategy fits.</summary>
     public static ISizeStrategy SelectSize(Func<Plane<ISpace>, Size> selector)
       => new SelectSizeStrategy(selector);
+
+    /// <summary>
+    /// Rows first, then columns measured inside them — the order that matters when a table's width
+    /// should be judged from the rows it actually occupies. Where both halves are per-row rules the
+    /// two are read as one forward walk, which leaves the height discoverable as a projection
+    /// consumes it; otherwise the extent is measured up front.
+    /// </summary>
+    public static ISizeStrategy RowsThenColumns(IRowStrategy rows, IColumnStrategy columns)
+      => RowAndColumnSizeStrategy.RowsThenColumns(rows, columns);
+
+    /// <summary>Columns first, then rows measured inside them; the transpose of <see cref="RowsThenColumns"/>, and always measured up front.</summary>
+    public static ISizeStrategy ColumnsThenRows(IColumnStrategy columns, IRowStrategy rows)
+      => RowAndColumnSizeStrategy.ColumnsThenRows(columns, rows);
   }
 }

@@ -342,8 +342,8 @@ namespace Unrect.Tests.Strategies
       // The area-composing forms: one axis chosen, the other taken whole.
       var space = Grid(new[,] { { 1, 2, 3 }, { 4, 5, 6 } });
 
-      var fullWidthRow = RowStrategies.TakeRows(1).AllColumns().GetArea(space);
-      var fullHeightColumn = ColumnStrategies.TakeColumns(1).AllRows().GetArea(space);
+      var fullWidthRow = RowStrategies.TakeRows(1).AllColumns().GetSize(space);
+      var fullHeightColumn = ColumnStrategies.TakeColumns(1).AllRows().GetSize(space);
 
       Assert.Equal(3, fullWidthRow.Width);
       Assert.Equal(1, fullWidthRow.Height);

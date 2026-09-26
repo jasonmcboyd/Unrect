@@ -43,9 +43,9 @@ namespace Unrect.Tests.Projections
     private static ICellSpace Block() => Grid(new[,] { { 1, 2, 3 }, { 4, 5, 6 } });
 
     /// <summary>The extent a strategy resolves to on the patchy grid, as "WxH".</summary>
-    private static string Measure(IAreaStrategy area)
+    private static string Measure(ISizeStrategy area)
     {
-      var size = area.GetArea(Patchy());
+      var size = area.GetSize(Patchy());
 
       return $"{size.Width}x{size.Height}";
     }
@@ -55,16 +55,16 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void TheExtentReExportsForwardToTheirStrategies()
     {
-      Assert.Equal(Measure(AreaStrategies.MaxArea()), Measure(WholeExtent()));
-      Assert.Equal(Measure(AreaStrategies.MinArea()), Measure(NoExtent()));
-      Assert.Equal(Measure(AreaStrategies.ExplicitArea(2, 1)), Measure(Extent(2, 1)));
+      Assert.Equal(Measure(SizeStrategies.MaxSize()), Measure(WholeExtent()));
+      Assert.Equal(Measure(SizeStrategies.MinSize()), Measure(NoExtent()));
+      Assert.Equal(Measure(SizeStrategies.ExplicitSize(2, 1)), Measure(Extent(2, 1)));
     }
 
     [Fact]
     public void TheRowExtentReExportsForwardToTheirStrategies()
     {
       Assert.Equal(
-        Measure(SizeStrategies.RowsWhileAnyIsNotBlank().ToAreaStrategy()),
+        Measure(SizeStrategies.RowsWhileAnyIsNotBlank()),
         Measure(RowsWhileAnyIsNotBlank()));
     }
 
@@ -72,7 +72,7 @@ namespace Unrect.Tests.Projections
     public void TheColumnExtentReExportsForwardToTheirStrategies()
     {
       Assert.Equal(
-        Measure(SizeStrategies.ColumnsWhileAnyIsNotBlank().ToAreaStrategy()),
+        Measure(SizeStrategies.ColumnsWhileAnyIsNotBlank()),
         Measure(ColumnsWhileAnyIsNotBlank()));
     }
 
@@ -112,25 +112,22 @@ namespace Unrect.Tests.Projections
     /// <summary>The two objects are the same thing: the same runtime type, so the same scan when asked.</summary>
     private static void AssertTransparent(object typed, object erased) => Assert.IsType(erased.GetType(), typed);
 
-    private static (IAreaStrategy Typed, IAreaStrategy Erased) Extents(string name) => name switch
+    private static (ISizeStrategy Typed, ISizeStrategy Erased) Extents(string name) => name switch
     {
       "RowsWhileAny" => (
         RowsWhileAny(cell => !cell.IsBlank()).Strategy,
-        SizeStrategies.RowsWhileAny(Valued).ToAreaStrategy()),
+        SizeStrategies.RowsWhileAny(Valued)),
       "ColumnsWhileAny" => (
         ColumnsWhileAny(cell => !cell.IsBlank()).Strategy,
-        SizeStrategies.ColumnsWhileAny(Valued).ToAreaStrategy()),
-      "SelectArea" => (
-        SelectArea(region => new Size(region.Width, 1)).Strategy,
-        AreaStrategies.SelectArea(region => new Size(region.Width, 1))),
+        SizeStrategies.ColumnsWhileAny(Valued)),
       "RowsThenColumns" => (
         RowsThenColumns(TakeRowsWhileAny(cell => !cell.IsBlank()), TakeColumnsWhileAny(cell => !cell.IsBlank())).Strategy,
-        AreaStrategies.RowsThenColumns(
+        SizeStrategies.RowsThenColumns(
           RowStrategies.TakeRowsWhileAny(Valued),
           ColumnStrategies.TakeColumnsWhileAny(Valued))),
       "ColumnsThenRows" => (
         ColumnsThenRows(TakeColumnsWhileAny(cell => !cell.IsBlank()), TakeRowsWhileAny(cell => !cell.IsBlank())).Strategy,
-        AreaStrategies.ColumnsThenRows(
+        SizeStrategies.ColumnsThenRows(
           ColumnStrategies.TakeColumnsWhileAny(Valued),
           RowStrategies.TakeRowsWhileAny(Valued))),
 
@@ -139,7 +136,7 @@ namespace Unrect.Tests.Projections
 
     /// <summary>The extent rules the law below covers, named so the census can count them.</summary>
     private static readonly string[] TheExtents =
-      { "RowsWhileAny", "ColumnsWhileAny", "SelectArea", "RowsThenColumns", "ColumnsThenRows" };
+      { "RowsWhileAny", "ColumnsWhileAny", "RowsThenColumns", "ColumnsThenRows" };
 
     public static TheoryData<string> Extent => Data(TheExtents);
 
@@ -319,7 +316,7 @@ namespace Unrect.Tests.Projections
           typeof(IColumnLandmark<>),
           typeof(Unrect.Projections.ISizeStrategy<>),
           typeof(Unrect.Projections.IOffsetStrategy<>),
-          typeof(Unrect.Projections.IAreaStrategy<>),
+          typeof(Unrect.Projections.ISizeStrategy<>),
           typeof(Unrect.Projections.IRowStrategy<>),
           typeof(Unrect.Projections.IColumnStrategy<>),
         }.Contains(type.GetGenericTypeDefinition());
@@ -352,11 +349,12 @@ namespace Unrect.Tests.Projections
       Assert.Equal(pinned, declared.Select(member => member.Name).Distinct(StringComparer.Ordinal).OrderBy(name => name, StringComparer.Ordinal));
 
       // ...and the families that carry more than one overload, so an overload cannot be added
-      // without a pin either. Nineteen families, twenty-nine demanding overloads: TakeRowsWhile and
+      // without a pin either. Eighteen families, twenty-eight demanding overloads: TakeRowsWhile and
       // TakeColumnsWhile have two each (a region rule and a one-cell-per-line rule), and each
       // combinator has three (both axes demanding, and either one of them alone — the fourth
-      // spelling, both axes erased, demands nothing and is not counted here).
-      Assert.Equal(29, declared.Count);
+      // spelling, both axes erased, demands nothing and is not counted here). SelectArea was the
+      // nineteenth, and went when the area strategy became the size strategy it always was.
+      Assert.Equal(28, declared.Count);
     }
 
     [Fact]
@@ -480,7 +478,7 @@ namespace Unrect.Tests.Projections
     public void AReExportedExtentResolvesInsideSized()
     {
       // The single-import claim where it is most load-bearing: the Sized entry taking an
-      // IAreaStrategy, handed a re-export, with no strategies import in scope at the call site.
+      // ISizeStrategy, handed a re-export, with no strategies import in scope at the call site.
       var projection = Sized(ColumnsWhileAnyIsNotBlank()).Of(Range(b => $"{b.Width}x{b.Height}"));
 
       Assert.Equal("1x2", projection.Map(Patchy()));

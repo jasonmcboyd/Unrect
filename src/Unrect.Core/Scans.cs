@@ -18,11 +18,6 @@ namespace Unrect.Core
     public static Size GetSize(this ISizeStrategy strategy, Plane<ISpace> region)
       => FoldSize(strategy.Begin(Orientation.Vertical), region, Orientation.Vertical);
 
-    /// <summary>The extent <paramref name="strategy"/> finds inside <paramref name="region"/>, its scan shown the rows in order.</summary>
-    /// <exception cref="OutOfBoundsException">The scan was owed more than the space holds.</exception>
-    public static Size GetArea(this IAreaStrategy strategy, Plane<ISpace> region)
-      => FoldSize(strategy.Begin(Orientation.Vertical), region, Orientation.Vertical);
-
     /// <summary>How many leading rows of <paramref name="region"/> <paramref name="strategy"/> takes.</summary>
     /// <exception cref="OutOfBoundsException">The scan was owed more rows than the space holds.</exception>
     public static int SelectRows(this IRowStrategy strategy, Plane<ISpace> region) => FoldRows(strategy.Begin(), region);

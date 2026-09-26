@@ -56,29 +56,29 @@ namespace Unrect.Strategies
       => new TakeWhileAnyColumnStrategy(v => !v.IsBlank(), afterLead: true);
 
     /// <summary>Combines <paramref name="strategy"/>'s rows with columns selected by <see cref="TakeColumnsWhile(Func{Plane{ISpace}, int, bool})"/>, rows measured first.</summary>
-    public static IAreaStrategy TakeColumnsWhile(
+    public static ISizeStrategy TakeColumnsWhile(
       this IRowStrategy strategy,
       Func<Plane<ISpace>, int, bool> predicate)
-      => AreaStrategies.RowsThenColumns(strategy, TakeColumnsWhile(predicate));
+      => SizeStrategies.RowsThenColumns(strategy, TakeColumnsWhile(predicate));
 
     /// <summary>Combines <paramref name="strategy"/>'s rows with columns selected by <see cref="TakeColumnsWhileAll(Func{Point{ISpace}, bool})"/>, rows measured first.</summary>
-    public static IAreaStrategy TakeColumnsWhileAll(
+    public static ISizeStrategy TakeColumnsWhileAll(
       this IRowStrategy strategy,
       Func<Point<ISpace>, bool> predicate)
-      => AreaStrategies.RowsThenColumns(strategy, TakeColumnsWhileAll(predicate));
+      => SizeStrategies.RowsThenColumns(strategy, TakeColumnsWhileAll(predicate));
 
     /// <summary>Combines <paramref name="strategy"/>'s rows with columns selected by <see cref="TakeColumnsWhileAny(Func{Point{ISpace}, bool})"/>, rows measured first.</summary>
-    public static IAreaStrategy TakeColumnsWhileAny(
+    public static ISizeStrategy TakeColumnsWhileAny(
       this IRowStrategy strategy,
       Func<Point<ISpace>, bool> predicate)
-      => AreaStrategies.RowsThenColumns(strategy, TakeColumnsWhileAny(predicate));
+      => SizeStrategies.RowsThenColumns(strategy, TakeColumnsWhileAny(predicate));
 
     /// <summary>Those rows, at the columns that carry values — <see cref="TakeColumnsWhileAny(Func{Point{ISpace}, bool})"/> with <c>HasValue</c> as the predicate.</summary>
-    public static IAreaStrategy TakeColumnsWhileAnyIsNotBlank(this IRowStrategy strategy)
+    public static ISizeStrategy TakeColumnsWhileAnyIsNotBlank(this IRowStrategy strategy)
       => strategy.TakeColumnsWhileAny(v => !v.IsBlank());
 
     /// <summary>Those rows, at the full available width.</summary>
-    public static IAreaStrategy AllColumns(this IRowStrategy strategy)
+    public static ISizeStrategy AllColumns(this IRowStrategy strategy)
       => strategy.TakeColumnsWhile((_, _) => true);
   }
 }

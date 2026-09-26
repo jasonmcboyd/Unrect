@@ -74,16 +74,6 @@ namespace Unrect.Tests
     }
 
     [Fact]
-    public void GetAreaForwards()
-    {
-      var space = Sheet();
-      var strategy = SizeStrategies.RowsWhileAnyIsNotBlank().ToAreaStrategy();
-
-      Assert.Equal(strategy.GetArea(Plane<ISpace>.Of(space)), strategy.GetArea(space));
-      Assert.Equal(2, strategy.GetArea(space).Height);
-    }
-
-    [Fact]
     public void GetOffsetForwards()
     {
       // An offset that has to look at content to resolve, so the region it looks through matters.

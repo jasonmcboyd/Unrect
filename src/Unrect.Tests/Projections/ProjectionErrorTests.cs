@@ -105,7 +105,7 @@ namespace Unrect.Tests.Projections
     // --- Case B: the area does not fit ------------------------------------------------------------------
 
     [Fact]
-    public void AnAreaThatDoesNotFit_ReportsWhatWasRequestedAndWhatWasAvailable()
+    public void AnExtentThatDoesNotFit_ReportsWhatWasRequestedAndWhatWasAvailable()
     {
       var failure = Assert.Throws<ProjectionException>(() => Range(3, 3, b => b.Width).Map(Square()));
 
@@ -116,12 +116,12 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void AnAreaStrategyThatThrows_IsReportedAsAnAreaFailure()
+    public void AnExtentStrategyThatThrows_IsReportedAsAnExtentFailure()
     {
       var failure = Assert.Throws<ProjectionException>(() =>
         Row(ColumnStrategies.TakeColumns(9), s => s.Count).Map(Square()));
 
-      Assert.Contains("its area ran past the space available here", failure.Message);
+      Assert.Contains("its extent ran past the space available here", failure.Message);
       Assert.IsType<OutOfBoundsException>(failure.InnerException);
     }
 
@@ -132,12 +132,12 @@ namespace Unrect.Tests.Projections
     // strategy it was — not as a bare exception from somewhere in the strategy calculus.
 
     [Fact]
-    public void AnAreaStrategyThatThrows_IsReportedAgainstTheProjectionThatDeclaredIt()
+    public void AnExtentStrategyThatThrows_IsReportedAgainstTheProjectionThatDeclaredIt()
     {
       var failure = Assert.Throws<ProjectionException>(() =>
-        Range(AreaStrategies.SelectArea(_ => throw new InvalidOperationException("boom")), b => b.Width).Map(Square()));
+        Range(SizeStrategies.SelectSize(_ => throw new InvalidOperationException("boom")), b => b.Width).Map(Square()));
 
-      Assert.Contains("its area strategy threw InvalidOperationException: boom", failure.Message);
+      Assert.Contains("its extent strategy threw InvalidOperationException: boom", failure.Message);
       Assert.IsType<InvalidOperationException>(failure.InnerException);
       Assert.Equal("Range", failure.Subject);
     }
@@ -157,9 +157,9 @@ namespace Unrect.Tests.Projections
     {
       // Size rejects the negative itself; the engine's job is to say which strategy produced it.
       var failure = Assert.Throws<ProjectionException>(() =>
-        Range(AreaStrategies.SelectArea(_ => new Size(-1, 1)), b => b.Width).Map(Square()));
+        Range(SizeStrategies.SelectSize(_ => new Size(-1, 1)), b => b.Width).Map(Square()));
 
-      Assert.Contains("its area strategy threw ArgumentOutOfRangeException", failure.Message);
+      Assert.Contains("its extent strategy threw ArgumentOutOfRangeException", failure.Message);
       Assert.IsType<ArgumentOutOfRangeException>(failure.InnerException);
     }
 

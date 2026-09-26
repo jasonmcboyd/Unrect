@@ -188,7 +188,7 @@ namespace Unrect.Tests.Spreadsheets
       // the half that says blankness reaches the declaration and not merely the calculus. The first
       // four columns are named here because the fifth carries "x" on the whitespace row under every
       // rule, and a region that included it could not tell the two apart.
-      var fourColumns = AreaStrategies.ColumnsThenRows(
+      var fourColumns = SizeStrategies.ColumnsThenRows(
         ColumnStrategies.TakeColumns(4),
         RowStrategies.TakeRowsWhileAnyIsNotBlank());
 

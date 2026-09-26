@@ -205,7 +205,7 @@ under Matchers, below.
 | `TakeRows(n)` `TakeColumns(n)` `AllRows()` `AllColumns()` | Axis selectors, not area strategies — for `Row(AllColumns(), ...)` and for composing an extent from its two axes |
 | `TakeRowsWhile(p)` `TakeRowsTo(p)` `TakeRowsWhileAll(p)` `TakeRowsWhileAny(p)` and the four `TakeColumns…` twins | Predicate-driven axis selectors, over the file's space |
 | `RowsThenColumns(rows, columns)` / `ColumnsThenRows(columns, rows)` | The two axes as one extent; each axis is taken as it comes, demanding or not |
-| `SelectSize(f)` `SelectArea(f)` `SelectOffset(f)` | Measured by hand, `f` being `Func<Plane<TSpace>, Size>` |
+| `SelectSize(f)` `SelectOffset(f)` | Measured by hand, `f` being `Func<Plane<TSpace>, Size>` |
 | `SkipRowsWhileAll(p)` `SkipRowsWhileAny(p)` and the column twins | Offsets past a leading band, over the file's space |
 
 ## Matchers — one family, four rules, four modifiers
@@ -253,7 +253,6 @@ public interface IColumnLandmark<in TSpace> where TSpace : class, ISpace { IColu
 
 public interface ISizeStrategy<in TSpace>   where TSpace : class, ISpace { ISizeStrategy   Strategy { get; } }
 public interface IOffsetStrategy<in TSpace> where TSpace : class, ISpace { IOffsetStrategy Strategy { get; } }
-public interface IAreaStrategy<in TSpace>   where TSpace : class, ISpace { IAreaStrategy   Strategy { get; } }
 public interface IRowStrategy<in TSpace>    where TSpace : class, ISpace { IRowStrategy    Strategy { get; } }
 public interface IColumnStrategy<in TSpace> where TSpace : class, ISpace { IColumnStrategy Strategy { get; } }
 ```
@@ -267,12 +266,12 @@ construction — the object the engine receives is the calculus's own, so the sc
 one the rule would build unwrapped.
 
 The vocabulary's own factories build them: `RowsWhileAny(p => p.IsDouble())` over
-`ProjectionBuilders<ICellSpace>` lowers the predicate and hands back an `IAreaStrategy<ICellSpace>`.
+`ProjectionBuilders<ICellSpace>` lowers the predicate and hands back an `ISizeStrategy<ICellSpace>`.
 `in TSpace` is what makes a shared helper work — a rule built at `ProjectionBuilders<ISpace>` flows
 into every file:
 
 ```csharp
-static IAreaStrategy<ISpace> Populated() => ProjectionBuilders<ISpace>.RowsWhileAny(p => !p.IsBlank());
+static ISizeStrategy<ISpace> Populated() => ProjectionBuilders<ISpace>.RowsWhileAny(p => !p.IsBlank());
 
 var header = Sized(Populated()).Row(r => r[0].Text());   // in an ICellSpace file, nothing annotated
 ```

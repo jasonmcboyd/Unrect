@@ -7,13 +7,13 @@ namespace Unrect.Strategies
   /// <summary>A size that is a function of the whole region: answered at the end, along either axis.</summary>
   internal sealed class SelectSizeStrategy : ISizeStrategy
   {
-    public SelectSizeStrategy(Func<Plane<ISpace>, Size> areaSelector)
+    public SelectSizeStrategy(Func<Plane<ISpace>, Size> selector)
     {
-      AreaSelector = areaSelector;
+      Selector = selector;
     }
 
-    private Func<Plane<ISpace>, Size> AreaSelector { get; }
+    private Func<Plane<ISpace>, Size> Selector { get; }
 
-    public ISizeScan Begin(Orientation along) => new Scanning.WholeSize(AreaSelector, along);
+    public ISizeScan Begin(Orientation along) => new Scanning.WholeSize(Selector, along);
   }
 }

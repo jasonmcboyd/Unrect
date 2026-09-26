@@ -451,9 +451,9 @@ namespace Unrect.Tests.Projections
     // --- Explicit placement --------------------------------------------------------------------------------------
 
     [Fact]
-    public void Table_WithAnExplicitArea_UsesItInsteadOfDiscovering()
+    public void Table_WithAnExplicitExtent_UsesItInsteadOfDiscovering()
     {
-      var applied = Sized(AreaStrategies.ExplicitArea(1, 2)).Of(Table(t => (t.ColumnCount, t.RowCount)))
+      var applied = Sized(SizeStrategies.ExplicitSize(1, 2)).Of(Table(t => (t.ColumnCount, t.RowCount)))
         .Apply(SimpleTable());
 
       Assert.Equal((1, 1), applied.Value);

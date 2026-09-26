@@ -62,7 +62,7 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void AChildWithADeclaredArea_IsConsumedInFull()
+    public void AChildWithADeclaredExtent_IsConsumedInFull()
     {
       // The block only reads two rows because it was told to; the next child starts after them.
       Assert.Equal("2|3", VerticalFlow(v => $"{v.Next(Range(1, 2, b => b.Height))}|{v.Next(IntCell())}").Map(Ladder()));
@@ -71,7 +71,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void Sized_OverridesWhatTheFlowDerived()
     {
-      var applied = Sized(AreaStrategies.ExplicitArea(1, 3)).Of(VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(IntCell())}"))
+      var applied = Sized(SizeStrategies.ExplicitSize(1, 3)).Of(VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(IntCell())}"))
         .Apply(Ladder());
 
       Assert.Equal(1, applied.Consumed.Width);
@@ -132,7 +132,7 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void AChildWithoutADeclaredArea_ConsumesOnlyWhatItsContentUsed()
+    public void AChildWithoutADeclaredExtent_ConsumesOnlyWhatItsContentUsed()
     {
       // The contrast to the .Sized case above: an inner flow with no declared extent takes the two
       // rows it read, so the next child starts on the third rather than the fourth.
@@ -142,10 +142,10 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void ANestedFlowWithADeclaredArea_IsConsumedInFull()
+    public void ANestedFlowWithADeclaredExtent_IsConsumedInFull()
     {
       // Declared three rows tall while reading only two, so the next child starts after the third.
-      var projection = VerticalFlow(v => $"{v.Next(Sized(AreaStrategies.ExplicitArea(1, 3)).Of(VerticalFlow(w => $"({w.Next(IntCell())},{w.Next(IntCell())})")))}|{v.Next(IntCell())}");
+      var projection = VerticalFlow(v => $"{v.Next(Sized(SizeStrategies.ExplicitSize(1, 3)).Of(VerticalFlow(w => $"({w.Next(IntCell())},{w.Next(IntCell())})")))}|{v.Next(IntCell())}");
 
       Assert.Equal("(1,2)|4", projection.Map(Ladder(4)));
     }
@@ -233,7 +233,7 @@ namespace Unrect.Tests.Projections
     {
       Assert.Empty(VerticalRepeat(VerticalFlow(v =>
       {
-        var rangeSlot = v.Next(Range(AreaStrategies.MinArea(), b => b.Width));
+        var rangeSlot = v.Next(Range(SizeStrategies.MinSize(), b => b.Width));
 
         return rangeSlot;
       })).Map(Ladder()));
@@ -504,7 +504,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal("1|2", projection.Map(space));
       Assert.Equal("block", projection.Name);
       Assert.False(projection.IsWrapper);
-      Assert.Null(projection.Placement.Area);
+      Assert.Null(projection.Placement.Extent);
     }
 
     [Fact]

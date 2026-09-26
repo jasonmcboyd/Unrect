@@ -548,7 +548,7 @@ namespace Unrect.Tests.Projections
       // refuses everything but another heading (13, gaining the same new offset entry).
       //
       // Every member that takes a landmark or a strategy is DOUBLED, taking the canonical form or
-      // the typed phantom (`IRowLandmark<TSpace>`, `IAreaStrategy<TSpace>`, ...) that carries a
+      // the typed phantom (`IRowLandmark<TSpace>`, `ISizeStrategy<TSpace>`, ...) that carries a
       // demand across the erased seam. A stage that refused only the canonical half of a doubled
       // member would refuse in the library's words down one overload and in the compiler's down the
       // other, for the same contradiction; so each refusal is spelled twice, once per twin. Nothing
@@ -585,8 +585,8 @@ namespace Unrect.Tests.Projections
       if (demanding == typeof(IColumnLandmark<>))
         return typeof(IColumnLandmark);
 
-      if (demanding == typeof(Unrect.Projections.IAreaStrategy<>))
-        return typeof(IAreaStrategy);
+      if (demanding == typeof(Unrect.Projections.ISizeStrategy<>))
+        return typeof(ISizeStrategy);
 
       if (demanding == typeof(Unrect.Projections.IOffsetStrategy<>))
         return typeof(IOffsetStrategy);

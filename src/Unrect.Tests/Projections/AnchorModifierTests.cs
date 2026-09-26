@@ -185,7 +185,7 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void ADeclaredAreaSurvivesAnAnchor()
+    public void ADeclaredExtentSurvivesAnAnchor()
     {
       // An anchor replaces the OFFSET and nothing else. Placement is two independent halves, and
       // .Sized is the other half's own replace — so an extent the projection declared is still its

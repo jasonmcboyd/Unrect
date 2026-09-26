@@ -133,15 +133,15 @@ namespace Unrect.Projections
       => throw new NotSupportedException(PipelineRefusals.GeometryComesBeforeTheHeadings);
 
     /// <inheritdoc cref="Until(IRowLandmark, bool)"/>
-    /// <param name="area">The extent that would be declared.</param>
+    /// <param name="extent">The extent that would be declared.</param>
     [Obsolete(PipelineRefusals.GeometryComesBeforeTheHeadings, error: true)]
-    public HeadingStage<TSpace> Sized(IAreaStrategy area)
+    public HeadingStage<TSpace> Sized(ISizeStrategy extent)
       => throw new NotSupportedException(PipelineRefusals.GeometryComesBeforeTheHeadings);
 
     /// <inheritdoc cref="Until(IRowLandmark, bool)"/>
-    /// <param name="area">The extent that would be declared, demanding a space of its own.</param>
+    /// <param name="extent">The extent that would be declared, demanding a space of its own.</param>
     [Obsolete(PipelineRefusals.GeometryComesBeforeTheHeadings, error: true)]
-    public HeadingStage<TSpace> Sized(IAreaStrategy<TSpace> area)
+    public HeadingStage<TSpace> Sized(ISizeStrategy<TSpace> extent)
       => throw new NotSupportedException(PipelineRefusals.GeometryComesBeforeTheHeadings);
 
     /// <summary>Refused: a movement belongs with the offset, ahead of the headings.</summary>

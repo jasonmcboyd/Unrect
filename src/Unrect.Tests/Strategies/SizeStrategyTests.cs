@@ -5,7 +5,6 @@ using Xunit;
 
 using static Unrect.Tests.ProjectionTestSpaces;
 
-using static Unrect.Strategies.AreaStrategies;
 using static Unrect.Strategies.OffsetStrategies;
 using static Unrect.Strategies.SizeStrategies;
 
@@ -181,21 +180,12 @@ namespace Unrect.Tests.Strategies
     }
 
     [Fact]
-    public void ExplicitArea_IsTheDeclaredArea()
+    public void ExplicitSize_IsTheDeclaredExtent()
     {
-      var area = ExplicitArea(3, 1).GetArea(Grid(new[,] { { 1, 1, 1 }, { 1, 1, 1 } }));
+      var extent = ExplicitSize(3, 1).GetSize(Grid(new[,] { { 1, 1, 1 }, { 1, 1, 1 } }));
 
-      Assert.Equal(3, area.Width);
-      Assert.Equal(1, area.Height);
-    }
-
-    [Fact]
-    public void MaxArea_IsTheWholeAvailableSpace()
-    {
-      var area = MaxArea().GetArea(Grid(new[,] { { 1, 1, 1 }, { 1, 1, 1 } }));
-
-      Assert.Equal(3, area.Width);
-      Assert.Equal(2, area.Height);
+      Assert.Equal(3, extent.Width);
+      Assert.Equal(1, extent.Height);
     }
 
     [Fact]
@@ -222,7 +212,7 @@ namespace Unrect.Tests.Strategies
       });
 
       // Rows first (one row), then columns within that row.
-      var area = RowStrategies.TakeRows(1).TakeColumnsWhileAnyIsNotBlank().GetArea(space);
+      var area = RowStrategies.TakeRows(1).TakeColumnsWhileAnyIsNotBlank().GetSize(space);
 
       Assert.Equal(2, area.Width);
       Assert.Equal(1, area.Height);
@@ -239,7 +229,7 @@ namespace Unrect.Tests.Strategies
       });
 
       // Columns first (two columns), then rows within those columns.
-      var area = ColumnStrategies.TakeColumns(2).TakeRowsWhileAnyIsNotBlank().GetArea(space);
+      var area = ColumnStrategies.TakeColumns(2).TakeRowsWhileAnyIsNotBlank().GetSize(space);
 
       Assert.Equal(2, area.Width);
       Assert.Equal(1, area.Height);
@@ -256,8 +246,8 @@ namespace Unrect.Tests.Strategies
         { 0, 0, 1 },
       });
 
-      var rowsFirst = RowStrategies.TakeRows(1).TakeColumnsWhileAnyIsNotBlank().GetArea(space);
-      var columnsFirst = ColumnStrategies.TakeColumnsWhileAnyIsNotBlank().TakeRowsWhileAnyIsNotBlank().GetArea(space);
+      var rowsFirst = RowStrategies.TakeRows(1).TakeColumnsWhileAnyIsNotBlank().GetSize(space);
+      var columnsFirst = ColumnStrategies.TakeColumnsWhileAnyIsNotBlank().TakeRowsWhileAnyIsNotBlank().GetSize(space);
 
       Assert.Equal(2, rowsFirst.Width);
       Assert.Equal(1, rowsFirst.Height);
@@ -275,7 +265,7 @@ namespace Unrect.Tests.Strategies
         { 0, 0, 0, 1 },
       });
 
-      var area = RowStrategies.TakeRows(1).TakeColumnsWhileAll(HasValue).GetArea(space);
+      var area = RowStrategies.TakeRows(1).TakeColumnsWhileAll(HasValue).GetSize(space);
 
       Assert.Equal(3, area.Width);
       Assert.Equal(1, area.Height);

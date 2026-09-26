@@ -192,7 +192,7 @@ namespace Unrect.Tests
     public void APlaneAnswersItsHeightAndWhetherItHasAColumnBesideItsWidthAndRows()
     {
       // Width and Height, HasColumn and HasRow: the two axes ask the same questions in the same
-      // shape, so a caller never reaches through Area for one and reads the other off the plane.
+      // shape, so a caller never reaches through Extent for one and reads the other off the plane.
       var band = Whole().Slice(new Offset(1, 0), new Size(2, 2));   // three wide, two tall in all
 
       Assert.Equal(2, band.Width);

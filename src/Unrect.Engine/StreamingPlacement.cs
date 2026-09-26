@@ -108,14 +108,14 @@ namespace Unrect.Projections
       catch (OutOfBoundsException exception)
       {
         if (_strict)
-          throw EngineRules.AreaFailure(child, _definition, region, exception);
+          throw EngineRules.ExtentFailure(child, _definition, region, exception);
 
         Failed = true;
         return false;
       }
       catch (Exception exception) when (exception is not ProjectionException)
       {
-        throw EngineRules.AreaFailure(child, _definition, region, exception);
+        throw EngineRules.ExtentFailure(child, _definition, region, exception);
       }
     }
 
@@ -136,14 +136,14 @@ namespace Unrect.Projections
       catch (OutOfBoundsException exception)
       {
         if (_strict)
-          throw EngineRules.AreaFailure(child, _definition, region, exception);
+          throw EngineRules.ExtentFailure(child, _definition, region, exception);
 
         Failed = true;
         return false;
       }
       catch (Exception exception) when (exception is not ProjectionException)
       {
-        throw EngineRules.AreaFailure(child, _definition, region, exception);
+        throw EngineRules.ExtentFailure(child, _definition, region, exception);
       }
 
       if (width is not int settled)
@@ -184,14 +184,14 @@ namespace Unrect.Projections
       catch (OutOfBoundsException exception)
       {
         if (_strict)
-          throw EngineRules.AreaFailure(child, _definition, region, exception);
+          throw EngineRules.ExtentFailure(child, _definition, region, exception);
 
         Failed = true;
         return null;
       }
       catch (Exception exception) when (exception is not ProjectionException)
       {
-        throw EngineRules.AreaFailure(child, _definition, region, exception);
+        throw EngineRules.ExtentFailure(child, _definition, region, exception);
       }
     }
 

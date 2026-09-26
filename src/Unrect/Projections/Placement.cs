@@ -7,7 +7,7 @@ namespace Unrect.Projections
 {
   /// <summary>
   /// Where a projection sits inside the space it is handed: an offset to its origin and,
-  /// optionally, an area. A null <see cref="Size"/> means the extent is derived from the
+  /// optionally, an extent. A null <see cref="Extent"/> means the extent is derived from the
   /// projection's own content or children rather than declared.
   /// </summary>
   public sealed class Placement
@@ -19,45 +19,45 @@ namespace Unrect.Projections
     private static readonly IOffsetStrategy NoOffset = OffsetStrategies.MinOffset();
 
     /// <summary>
-    /// Creates a placement from an explicit offset and area; <paramref name="area"/> may be null
+    /// Creates a placement from an explicit offset and extent; <paramref name="extent"/> may be null
     /// (derived extent). This is how a projection states its <em>own</em> placement — a
     /// <c>Table</c>'s "past the blank rows in front of me", a leaf's one cell — which a modifier is
     /// free to replace.
     /// </summary>
-    public Placement(IOffsetStrategy offset, IAreaStrategy? area)
-      : this(offset, area, offsetWasDeclared: false)
+    public Placement(IOffsetStrategy offset, ISizeStrategy? extent)
+      : this(offset, extent, offsetWasDeclared: false)
     {
     }
 
-    private Placement(IOffsetStrategy offset, IAreaStrategy? area, bool offsetWasDeclared)
+    private Placement(IOffsetStrategy offset, ISizeStrategy? extent, bool offsetWasDeclared)
     {
       Offset = offset ?? throw new ArgumentNullException(nameof(offset));
-      Area = area;
+      Extent = extent;
       OffsetWasDeclared = offsetWasDeclared;
     }
 
-    /// <summary>No offset declared, no area declared — a projection that sits where it is handed and derives its own extent.</summary>
+    /// <summary>No offset declared, no extent declared — a projection that sits where it is handed and derives its own extent.</summary>
     public static Placement Default { get; } = new Placement(NoOffset, null);
 
-    /// <summary>No offset declared, but <paramref name="area"/> is — a projection that sits where it is handed with a declared extent.</summary>
-    public static Placement Of(IAreaStrategy area) => new Placement(NoOffset, NotNull(area));
+    /// <summary>No offset declared, but <paramref name="extent"/> is — a projection that sits where it is handed with a declared extent.</summary>
+    public static Placement Of(ISizeStrategy extent) => new Placement(NoOffset, NotNull(extent));
 
     /// <summary>How the projection's origin is found within the space it is handed.</summary>
     public IOffsetStrategy Offset { get; }
 
     /// <summary>How the projection's extent is found, once its origin is known; null means the extent is derived, not declared.</summary>
-    public IAreaStrategy? Area { get; }
+    public ISizeStrategy? Extent { get; }
 
     /// <summary>
-    /// A copy with <paramref name="offset"/> in place of this placement's own — the area is
+    /// A copy with <paramref name="offset"/> in place of this placement's own — the extent is
     /// untouched, and the copy records that the offset was declared rather than defaulted.
     /// </summary>
     public Placement WithOffset(IOffsetStrategy offset)
-      => new Placement(offset, Area, offsetWasDeclared: true);
+      => new Placement(offset, Extent, offsetWasDeclared: true);
 
-    /// <summary>A copy with <paramref name="area"/> in place of this placement's own — the offset is untouched.</summary>
-    public Placement WithArea(IAreaStrategy area)
-      => new Placement(Offset, NotNull(area), offsetWasDeclared: OffsetWasDeclared);
+    /// <summary>A copy with <paramref name="extent"/> in place of this placement's own — the offset is untouched.</summary>
+    public Placement WithExtent(ISizeStrategy extent)
+      => new Placement(Offset, NotNull(extent), offsetWasDeclared: OffsetWasDeclared);
 
     /// <summary>
     /// False while the projection simply sits where it is handed. Offset modifiers compose onto an
@@ -78,8 +78,8 @@ namespace Unrect.Projections
     /// </summary>
     internal bool OffsetWasDeclared { get; }
 
-    // Only the constructor takes a null area, where it deliberately means "derive the extent".
+    // Only the constructor takes a null extent, where it deliberately means "derive the extent".
     // Everywhere else a null would silently turn a declared extent into a derived one.
-    private static IAreaStrategy NotNull(IAreaStrategy area) => area ?? throw new ArgumentNullException(nameof(area));
+    private static ISizeStrategy NotNull(ISizeStrategy extent) => extent ?? throw new ArgumentNullException(nameof(extent));
   }
 }

@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 using Unrect.Core;
 using Unrect.Strategies;
 
-using static Unrect.Strategies.AreaStrategies;
+using static Unrect.Strategies.SizeStrategies;
 
 namespace Unrect.Projections
 {
@@ -34,7 +34,7 @@ namespace Unrect.Projections
     /// </para>
     /// </summary>
     public static IProjectionDefinition<TSpace, Point<TSpace>> Point()
-      => new PointDefinition<TSpace>(Placement.Of(ExplicitArea(1, 1)));
+      => new PointDefinition<TSpace>(Placement.Of(ExplicitSize(1, 1)));
 
     /// <summary>
     /// One cell, read as what it says — the total canonical leaf. Every space renders every cell, so
@@ -47,7 +47,7 @@ namespace Unrect.Projections
     /// </para>
     /// </summary>
     public static IProjectionDefinition<TSpace, string> AsText()
-      => new ReadDefinition<TSpace, string>("AsText", ReadText, Placement.Of(ExplicitArea(1, 1)), blankIsNull: false);
+      => new ReadDefinition<TSpace, string>("AsText", ReadText, Placement.Of(ExplicitSize(1, 1)), blankIsNull: false);
 
     /// <summary>The total reading: every space renders every cell, so the only thing that can go wrong is that there is nothing there.</summary>
     private static bool ReadText(Point<TSpace> cell, out string value, out CellProblem? problem)
@@ -70,7 +70,7 @@ namespace Unrect.Projections
 
     /// <summary>One row exactly <paramref name="width"/> columns wide.</summary>
     public static IProjectionDefinition<TSpace, T> Row<T>(int width, Func<CellStrip<TSpace>, T> project)
-      => Strip(Orientation.Horizontal, project, ExplicitArea(width, 1), $"Row({width})");
+      => Strip(Orientation.Horizontal, project, ExplicitSize(width, 1), $"Row({width})");
 
     /// <summary>One row, as wide as <paramref name="columns"/> selects.</summary>
     public static IProjectionDefinition<TSpace, T> Row<T>(IColumnStrategy columns, Func<CellStrip<TSpace>, T> project)
@@ -88,7 +88,7 @@ namespace Unrect.Projections
 
     /// <summary>One column exactly <paramref name="height"/> rows tall.</summary>
     public static IProjectionDefinition<TSpace, T> Column<T>(int height, Func<CellStrip<TSpace>, T> project)
-      => Strip(Orientation.Vertical, project, ExplicitArea(1, height), $"Column({height})");
+      => Strip(Orientation.Vertical, project, ExplicitSize(1, height), $"Column({height})");
 
     /// <summary>One column, as tall as <paramref name="rows"/> selects.</summary>
     public static IProjectionDefinition<TSpace, T> Column<T>(IRowStrategy rows, Func<CellStrip<TSpace>, T> project)
@@ -109,20 +109,20 @@ namespace Unrect.Projections
 
     /// <summary>A region of exactly <paramref name="width"/> by <paramref name="height"/> cells.</summary>
     public static IProjectionDefinition<TSpace, T> Range<T>(int width, int height, Func<CellBlock<TSpace>, T> project)
-      => new BlockDefinition<TSpace, T>(project, Placement.Of(ExplicitArea(width, height)), $"Range({width}, {height})");
+      => new BlockDefinition<TSpace, T>(project, Placement.Of(ExplicitSize(width, height)), $"Range({width}, {height})");
 
-    /// <summary>A region extending as far as <paramref name="area"/> declares.</summary>
-    public static IProjectionDefinition<TSpace, T> Range<T>(IAreaStrategy area, Func<CellBlock<TSpace>, T> project)
+    /// <summary>A region extending as far as <paramref name="extent"/> declares.</summary>
+    public static IProjectionDefinition<TSpace, T> Range<T>(ISizeStrategy extent, Func<CellBlock<TSpace>, T> project)
       => new BlockDefinition<TSpace, T>(
         project,
-        Placement.Of(area ?? throw new ArgumentNullException(nameof(area))),
+        Placement.Of(extent ?? throw new ArgumentNullException(nameof(extent))),
         "Range");
 
-    /// <inheritdoc cref="Range{T}(IAreaStrategy, Func{CellBlock{TSpace}, T})"/>
-    /// <param name="area">How far the region extends. A rule demanding less is accepted as it is.</param>
+    /// <inheritdoc cref="Range{T}(ISizeStrategy, Func{CellBlock{TSpace}, T})"/>
+    /// <param name="extent">How far the region extends. A rule demanding less is accepted as it is.</param>
     /// <param name="project">The reading applied to the region's cells.</param>
-    public static IProjectionDefinition<TSpace, T> Range<T>(IAreaStrategy<TSpace> area, Func<CellBlock<TSpace>, T> project)
-      => Range(Required(area).Strategy, project);
+    public static IProjectionDefinition<TSpace, T> Range<T>(ISizeStrategy<TSpace> extent, Func<CellBlock<TSpace>, T> project)
+      => Range(Required(extent).Strategy, project);
 
     /// <summary>
     /// The row that holds <paramref name="text"/>, as declared content: the projection finds that row,
@@ -608,7 +608,7 @@ namespace Unrect.Projections
       var pairs = new IProjectionDefinition<TSpace, Point<TSpace>>[declared.Length];
 
       for (var index = 0; index < declared.Length; index++)
-        pairs[index] = new FieldDefinition<TSpace>(declared[index].Label, Placement.Of(ExplicitArea(2, 1)));
+        pairs[index] = new FieldDefinition<TSpace>(declared[index].Label, Placement.Of(ExplicitSize(2, 1)));
 
       return new FlowDefinition<TSpace, IReadOnlyDictionary<string, Point<TSpace>>>(
         Orientation.Vertical,
@@ -840,8 +840,8 @@ namespace Unrect.Projections
 
     // --- Shared construction ------------------------------------------------------------------
 
-    private static IProjectionDefinition<TSpace, T> Strip<T>(Orientation orientation, Func<CellStrip<TSpace>, T> project, IAreaStrategy area, string description)
-      => new StripDefinition<TSpace, T>(orientation, project, Placement.Of(area), description);
+    private static IProjectionDefinition<TSpace, T> Strip<T>(Orientation orientation, Func<CellStrip<TSpace>, T> project, ISizeStrategy extent, string description)
+      => new StripDefinition<TSpace, T>(orientation, project, Placement.Of(extent), description);
 
     private static IProjectionDefinition<TSpace, IReadOnlyList<T>> Repeat<T>(
       Orientation orientation,
@@ -897,7 +897,7 @@ namespace Unrect.Projections
     }
 
     /// <summary>One row, at the full available width — a caption row spans the sheet.</summary>
-    private static IAreaStrategy FullRow()
+    private static ISizeStrategy FullRow()
       => RowsThenColumns(RowStrategies.TakeRows(1), ColumnStrategies.AllColumns());
 
     private static int NotNegative(int count, string parameter)
@@ -907,7 +907,7 @@ namespace Unrect.Projections
 
     /// <summary>
     /// The table body's placement. It declares no offset, so a table starts where anything else
-    /// does — past the blank spans in front of it, at the left edge of what it was handed. The area
+    /// does — past the blank spans in front of it, at the left edge of what it was handed. The extent
     /// is <see cref="DiscoveredBlock"/> for <c>Stop</c>, otherwise the run-to-edge <see cref="ToEdgeBlock"/>.
     /// </summary>
     private static Placement TablePlacement(BlankRowStrategy onBlank)
@@ -915,16 +915,16 @@ namespace Unrect.Projections
 
     // Columns the header leaves blank on the way to its first caption are columns with no label:
     // part of the table, bound to nothing.
-    private static IAreaStrategy DiscoveredBlock()
-      => AreaStrategies.RowsThenColumns(RowStrategies.TakeRowsWhileAnyIsNotBlank(), ColumnStrategies.TakeTableColumns());
+    private static ISizeStrategy DiscoveredBlock()
+      => SizeStrategies.RowsThenColumns(RowStrategies.TakeRowsWhileAnyIsNotBlank(), ColumnStrategies.TakeTableColumns());
 
     /// <summary>
     /// The same width rule as <see cref="DiscoveredBlock"/>, but the height runs to the enclosing
     /// edge instead of stopping at the first blank row — the extent a non-self-bounding
     /// <see cref="BlankRowStrategy"/> needs so the walker can see and act on interior blank rows.
     /// </summary>
-    private static IAreaStrategy ToEdgeBlock()
-      => AreaStrategies.RowsThenColumns(RowStrategies.AllRows(), ColumnStrategies.TakeTableColumns());
+    private static ISizeStrategy ToEdgeBlock()
+      => SizeStrategies.RowsThenColumns(RowStrategies.AllRows(), ColumnStrategies.TakeTableColumns());
 
     private static int ValidateHeaderRows(int headerRows)
       => headerRows >= 0

@@ -13,12 +13,12 @@ namespace Unrect.Projections
   /// </summary>
   internal static class EngineRules
   {
-    internal static ProjectionException AreaFailure<TSpace, TOther>(ProjectorScope<TSpace> scope, IProjectionDefinition projection, Plane<TOther> inner, Exception exception)
+    internal static ProjectionException ExtentFailure<TSpace, TOther>(ProjectorScope<TSpace> scope, IProjectionDefinition projection, Plane<TOther> inner, Exception exception)
       where TSpace : class, ISpace
       where TOther : class, ISpace
       => exception is OutOfBoundsException
-        ? scope.Failure(projection, "its area ran past the space available here", inner, null, exception)
-        : scope.Failure(projection, Threw("area", exception), inner, null, exception, IsFault(exception));
+        ? scope.Failure(projection, "its extent ran past the space available here", inner, null, exception)
+        : scope.Failure(projection, Threw("extent", exception), inner, null, exception, IsFault(exception));
 
     /// <summary>
     /// An exception that says something about this library or the machine, never about the data:

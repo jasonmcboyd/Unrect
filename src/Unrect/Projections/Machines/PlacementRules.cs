@@ -44,7 +44,7 @@ namespace Unrect.Projections
       offset = leadingBlanks is Orientation session && !DeclaresOffset(definition)
         ? (session == Orientation.Vertical ? OffsetStrategies.SkipBlankRows() : OffsetStrategies.SkipBlankColumns()).Begin(driver)
         : definition.Placement.Offset.Begin(driver);
-      size = definition.Placement.Area?.Begin(driver);
+      size = definition.Placement.Extent?.Begin(driver);
       derived = size is null;
 
       if (!offset.Incremental || (size is ISizeScan scan && !scan.Incremental))

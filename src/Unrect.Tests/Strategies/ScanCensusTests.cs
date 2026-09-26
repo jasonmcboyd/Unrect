@@ -31,16 +31,16 @@ namespace Unrect.Tests.Strategies
     [InlineData("discovered block", true, false)]
     public void ASizeStrategyStreamsAlongTheAxisItWasWrittenFor(string strategy, bool alongRows, bool alongColumns)
     {
-      IAreaStrategy size = strategy switch
+      ISizeStrategy size = strategy switch
       {
-        "rows while any value" => SizeStrategies.RowsWhileAnyIsNotBlank().ToAreaStrategy(),
-        "columns while any value" => SizeStrategies.ColumnsWhileAnyIsNotBlank().ToAreaStrategy(),
-        "explicit size" => AreaStrategies.ExplicitArea(2, 3),
-        "max size" => AreaStrategies.MaxArea(),
-        "select size" => AreaStrategies.SelectArea(plane => new Size(1, 1)),
-        "rows then columns" => AreaStrategies.RowsThenColumns(RowStrategies.TakeRows(2), ColumnStrategies.TakeColumnsTo((_, column) => column == 1)),
-        "columns then rows" => AreaStrategies.ColumnsThenRows(ColumnStrategies.TakeColumns(2), RowStrategies.TakeRowsWhileAnyIsNotBlank()),
-        "discovered block" => AreaStrategies.RowsThenColumns(RowStrategies.TakeRowsWhileAnyIsNotBlank(), ColumnStrategies.TakeColumnsWhileAnyIsNotBlank()),
+        "rows while any value" => SizeStrategies.RowsWhileAnyIsNotBlank(),
+        "columns while any value" => SizeStrategies.ColumnsWhileAnyIsNotBlank(),
+        "explicit size" => SizeStrategies.ExplicitSize(2, 3),
+        "max size" => SizeStrategies.MaxSize(),
+        "select size" => SizeStrategies.SelectSize(plane => new Size(1, 1)),
+        "rows then columns" => SizeStrategies.RowsThenColumns(RowStrategies.TakeRows(2), ColumnStrategies.TakeColumnsTo((_, column) => column == 1)),
+        "columns then rows" => SizeStrategies.ColumnsThenRows(ColumnStrategies.TakeColumns(2), RowStrategies.TakeRowsWhileAnyIsNotBlank()),
+        "discovered block" => SizeStrategies.RowsThenColumns(RowStrategies.TakeRowsWhileAnyIsNotBlank(), ColumnStrategies.TakeColumnsWhileAnyIsNotBlank()),
         _ => throw new System.ArgumentOutOfRangeException(nameof(strategy)),
       };
 

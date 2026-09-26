@@ -51,7 +51,7 @@ namespace Unrect.Tests.Projections
     private static T Read<T>(IProjectionDefinition<ICellSpace, T> declaration) => declaration.Map(Disagreeing());
 
     /// <summary>The outer rule: rows while any cell of them is a number, which stops after row 2.</summary>
-    private static IAreaStrategy<ICellSpace> NumericRowsOnly()
+    private static ISizeStrategy<ICellSpace> NumericRowsOnly()
       => RowsWhileAny(cell => cell.IsDouble());
 
     /// <summary>
@@ -59,7 +59,7 @@ namespace Unrect.Tests.Projections
     /// whose scan carries replay state, and therefore the one that reads the space it was begun with
     /// rather than the space it is handed per row.
     /// </summary>
-    private static IAreaStrategy<ICellSpace> NumericRowsAndValuedColumns()
+    private static ISizeStrategy<ICellSpace> NumericRowsAndValuedColumns()
       => RowsThenColumns(
         TakeRowsWhileAny(cell => cell.IsDouble()),
         TakeColumnsWhileAny(cell => !cell.IsBlank()));

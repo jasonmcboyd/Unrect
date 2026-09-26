@@ -154,7 +154,7 @@ namespace Unrect.Analyzers.Tests
         """
         class Report
         {
-          static object Header(IAreaStrategy<ISpreadsheetSpace> rule) => Sized({|CS1503:rule|}).Of(AsText());
+          static object Header(ISizeStrategy<ISpreadsheetSpace> rule) => Sized({|CS1503:rule|}).Of(AsText());
         }
         """);
   }

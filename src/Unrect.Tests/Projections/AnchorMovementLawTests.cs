@@ -129,7 +129,7 @@ namespace Unrect.Tests.Projections
     // --- The other half of the placement ---------------------------------------------------------------
 
     [Fact]
-    public void ADeclaredAreaSurvivesEitherSpellingIdentically()
+    public void ADeclaredExtentSurvivesEitherSpellingIdentically()
     {
       // Placement is two independent halves. Both spellings touch only the offset, so a projection
       // that declared its own extent keeps it — and keeps the same one — wherever the landmark puts

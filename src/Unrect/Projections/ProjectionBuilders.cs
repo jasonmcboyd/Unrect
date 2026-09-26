@@ -181,19 +181,19 @@ namespace Unrect.Projections
     // --- The extent -------------------------------------------------------------------------------
 
     /// <summary>
-    /// Opens a pipeline sized to <paramref name="area"/> and placed at adjacency — the size-only
+    /// Opens a pipeline sized to <paramref name="extent"/> and placed at adjacency — the size-only
     /// pipeline start, for a region sized to its content but not moved
     /// (<c>Sized(RowsWhileAnyIsNotBlank()).Of(header)</c>). To also move it, lead with an offset entry:
-    /// <c>On(mark).Sized(area)</c>, <c>Down(1).Sized(area)</c>.
+    /// <c>On(mark).Sized(extent)</c>, <c>Down(1).Sized(extent)</c>.
     /// </summary>
-    /// <param name="area">The extent.</param>
-    public static OffsetAndSizeStage<TSpace> Sized(IAreaStrategy area)
-      => new OffsetAndSizeStage<TSpace>(Steps.None.Then(Step.Sized(area)));
+    /// <param name="extent">The extent.</param>
+    public static OffsetAndSizeStage<TSpace> Sized(ISizeStrategy extent)
+      => new OffsetAndSizeStage<TSpace>(Steps.None.Then(Step.Sized(extent)));
 
-    /// <inheritdoc cref="Sized(IAreaStrategy)"/>
-    /// <param name="area">The extent. A rule demanding less is accepted as it is.</param>
-    public static OffsetAndSizeStage<TSpace> Sized(IAreaStrategy<TSpace> area)
-      => new OffsetAndSizeStage<TSpace>(Steps.None.Then(Step.Sized(Required(area).Strategy)));
+    /// <inheritdoc cref="Sized(ISizeStrategy)"/>
+    /// <param name="extent">The extent. A rule demanding less is accepted as it is.</param>
+    public static OffsetAndSizeStage<TSpace> Sized(ISizeStrategy<TSpace> extent)
+      => new OffsetAndSizeStage<TSpace>(Steps.None.Then(Step.Sized(Required(extent).Strategy)));
 
     // --- Bounds -----------------------------------------------------------------------------------
 

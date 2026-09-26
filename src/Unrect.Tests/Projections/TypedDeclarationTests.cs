@@ -62,14 +62,14 @@ namespace Unrect.Tests.Projections
     /// A rule written at the least demanding space there is, for any file at all to use. It asks a
     /// canonical question, so it names <c>ISpace</c> and demands nothing more.
     /// </summary>
-    private static IAreaStrategy<ISpace> Populated()
+    private static ISizeStrategy<ISpace> Populated()
       => ProjectionBuilders<ISpace>.RowsWhileAny(cell => !cell.IsBlank());
 
     [Fact]
     public void ARuleBuiltAtTheLeastDemandingSpaceFlowsIntoAFileScopedToMore()
     {
-      // Contravariance, doing the work a shared helper needs: an IAreaStrategy<ISpace> IS an
-      // IAreaStrategy<ICellSpace> as far as Sized is concerned, so the helper composes in as it is
+      // Contravariance, doing the work a shared helper needs: an ISizeStrategy<ISpace> IS an
+      // ISizeStrategy<ICellSpace> as far as Sized is concerned, so the helper composes in as it is
       // — no unwrapping, no cast, nothing annotated at the call site.
       var sheet = Mixed(new object?[,]
       {
