@@ -85,10 +85,10 @@ namespace Unrect.Tests.Streaming
     [MemberData(nameof(Faults))]
     public void AFailureInAnExtentStrategyIsAFault(string fault)
     {
-      // The site the old code got wrong. RowsWhileAnyValue scans rows to decide how tall the region
+      // The site the old code got wrong. RowsWhileAnyIsNotBlank scans rows to decide how tall the region
       // is — reading cells to make a PLACEMENT decision, which the fault flag did not used to
       // cover.
-      AssertSurfacedAsAFault(fault, space => Sized(RowsWhileAnyValue()).Of(Range(block => block.Height)).Map(space));
+      AssertSurfacedAsAFault(fault, space => Sized(RowsWhileAnyIsNotBlank()).Of(Range(block => block.Height)).Map(space));
     }
 
     [Theory]
@@ -180,7 +180,7 @@ namespace Unrect.Tests.Streaming
       // wrong answer.
       AssertSurfacedAsAFault(
         fault,
-        space => Sized(RowsWhileAnyValue()).Of(Range(block => block.Height)).Optional().Map(space));
+        space => Sized(RowsWhileAnyIsNotBlank()).Of(Range(block => block.Height)).Optional().Map(space));
 
       AssertSurfacedAsAFault(
         fault,

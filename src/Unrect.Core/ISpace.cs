@@ -1,12 +1,14 @@
 namespace Unrect.Core
 {
   /// <summary>
-  /// The canonical surface of a grid: its extent, and the three questions anything may ask of a cell
-  /// without knowing what kind of data lies behind it — whether the cell is empty, what it says, and
-  /// the text it holds, if it holds any.
+  /// The canonical surface of a grid: its extent, and the two questions anything may ask of a cell
+  /// without knowing what kind of data lies behind it — whether the cell is empty, and what it says.
+  /// The text facet, which every space has because every space can render its cells, and which
+  /// carries nothing about kind: a plain CSV is an <see cref="ISpace"/> and nothing more.
   /// <para>
   /// One canonical surface, not one per capability: a backend that can do more says so by adding an
-  /// interface of its own, never by answering these four differently.
+  /// interface of its own — the value facet, <see cref="IValueSpace{TValue}"/>, first among them —
+  /// never by answering these differently.
   /// </para>
   /// <para>
   /// Every member is bounds-checked on the same terms: a coordinate outside <see cref="Area"/> is an
@@ -30,36 +32,21 @@ namespace Unrect.Core
     Area Area { get; }
 
     /// <summary>
-    /// Whether the cell at <paramref name="column"/>, <paramref name="row"/> carries no value at
-    /// all. Blankness is decided where the data is adapted, not here.
+    /// Whether the cell at <paramref name="column"/>, <paramref name="row"/> says nothing. Each
+    /// space decides what blank means, by a rule its adapter is given; a blank cell may still carry
+    /// a formula or a fill, which are other facets.
     /// </summary>
     /// <exception cref="OutOfBoundsException">The coordinate lies outside <see cref="Area"/>.</exception>
-    bool IsBlank(int column, int row);
+    bool IsBlankAt(int column, int row);
 
     /// <summary>
     /// What the cell says, whatever it holds: a word says itself, and anything else says the
     /// rendering the backend chose for it. Total — every cell that is not blank says something — and
-    /// null exactly where <see cref="IsBlank"/> is true. It is a rendering and never a reading: that
-    /// a cell says "42" does not mean it holds the text "42".
+    /// null exactly where <see cref="IsBlankAt"/> is true. It is a rendering and never a reading: that
+    /// a cell says "42" does not mean it holds the text "42", and whether it does is the value
+    /// facet's question.
     /// </summary>
     /// <exception cref="OutOfBoundsException">The coordinate lies outside <see cref="Area"/>.</exception>
-    string? AsText(int column, int row);
-
-    /// <summary>
-    /// The text the cell holds, if text is what it holds: true with the cell's own string for a cell
-    /// holding words, false for a blank and for every cell <see cref="AsText"/> has to render. Text
-    /// matching asks this, which is why a numeric 42 is not a cell holding "42".
-    /// <para>
-    /// A refusal may say why in <paramref name="problem"/>, in the vocabulary of the store the space
-    /// reads; a space with nothing particular to say leaves it null, and the reader is told what was
-    /// expected and what the cell says instead (<see cref="CellProblem.Expected"/>).
-    /// </para>
-    /// </summary>
-    /// <param name="column">The cell's column.</param>
-    /// <param name="row">The cell's row.</param>
-    /// <param name="value">The cell's own text, when the answer is true.</param>
-    /// <param name="problem">Why not, when the answer is false and the space has a reason to give.</param>
-    /// <exception cref="OutOfBoundsException">The coordinate lies outside <see cref="Area"/>.</exception>
-    bool TryGetTextAt(int column, int row, out string value, out CellProblem? problem);
+    string? AsTextAt(int column, int row);
   }
 }

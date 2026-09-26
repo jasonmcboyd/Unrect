@@ -27,7 +27,7 @@ namespace Unrect.Tests
     private readonly ICellSpace _values;
     private readonly string?[,] _formulas;
 
-    internal FormulaGridSpace(Cell[,] values, string?[,] formulas)
+    internal FormulaGridSpace(CellValue[,] values, string?[,] formulas)
     {
       if (formulas.GetLength(0) != values.GetLength(0) || formulas.GetLength(1) != values.GetLength(1))
         throw new ArgumentException("The formula grid must be the same shape as the value grid.", nameof(formulas));
@@ -40,29 +40,12 @@ namespace Unrect.Tests
     public Area Area => _values.Area;
 
     /// <inheritdoc/>
-    public bool IsBlank(int column, int row) => _values.IsBlank(column, row);
+    public bool IsBlankAt(int column, int row) => _values.IsBlankAt(column, row);
 
     /// <inheritdoc/>
-    public string? AsText(int column, int row) => _values.AsText(column, row);
+    public string? AsTextAt(int column, int row) => _values.AsTextAt(column, row);
 
-    /// <inheritdoc/>
-    public bool TryGetTextAt(int column, int row, out string value, out CellProblem? problem)
-      => _values.TryGetTextAt(column, row, out value, out problem);
-
-    /// <inheritdoc/>
-    public bool TryGetDoubleAt(int column, int row, out double value, out CellProblem? problem)
-      => _values.TryGetDoubleAt(column, row, out value, out problem);
-
-    /// <inheritdoc/>
-    public bool TryGetDateTimeAt(int column, int row, out DateTime value, out CellProblem? problem)
-      => _values.TryGetDateTimeAt(column, row, out value, out problem);
-
-    /// <inheritdoc/>
-    public bool TryGetBooleanAt(int column, int row, out bool value, out CellProblem? problem)
-      => _values.TryGetBooleanAt(column, row, out value, out problem);
-
-    /// <inheritdoc/>
-    public bool TryGetErrorAt(int column, int row, out string error) => _values.TryGetErrorAt(column, row, out error);
+    public CellValue ValueAt(int column, int row) => _values.ValueAt(column, row);
 
     /// <inheritdoc/>
     public bool TryGetFormulaAt(int column, int row, out string formula)

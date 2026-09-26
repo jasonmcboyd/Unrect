@@ -120,7 +120,7 @@ namespace Unrect.Projections
     private static bool IsBlankRow(TableRow<TSpace> row)
     {
       for (var column = 0; column < row.Count; column++)
-        if (row[column].HasValue)
+        if (!row[column].IsBlank())
           return false;
 
       return true;

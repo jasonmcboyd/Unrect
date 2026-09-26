@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
+using Unrect.Core;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
 using Unrect.Tests.Streaming;
@@ -31,15 +32,15 @@ namespace Unrect.Tests.Machines
         var withinBlock = row % (blockRows + 1);
 
         if (withinBlock == blockRows)
-          return Cell.Blank;
+          return CellValue.Blank;
 
-        return column == 0 ? Cell.Of($"block {row / (blockRows + 1)}") : Cell.Of((decimal)row);
+        return column == 0 ? CellValue.Of($"block {row / (blockRows + 1)}") : CellValue.Of(row);
       });
     }
 
     private static ICellSpace Eagerly(FakeSheet sheet)
     {
-      var cells = new Cell[sheet.RowCount, sheet.ColumnCount];
+      var cells = new CellValue[sheet.RowCount, sheet.ColumnCount];
 
       for (var row = 0; row < sheet.RowCount; row++)
         for (var column = 0; column < sheet.ColumnCount; column++)
@@ -50,7 +51,7 @@ namespace Unrect.Tests.Machines
 
     private static IProjectionDefinition<ICellSpace, IReadOnlyList<IReadOnlyList<decimal>>> BlockTotals()
       => VerticalRepeat(
-        Sized(RowsWhileAnyValue()).Of(Range(block => (IReadOnlyList<decimal>)block.Rows.Select(row => row[1].Decimal()).ToList())),
+        Sized(RowsWhileAnyIsNotBlank()).Of(Range(block => (IReadOnlyList<decimal>)block.Rows.Select(row => row[1].Decimal()).ToList())),
         separatedBy: BlankRows());
 
     [Fact]

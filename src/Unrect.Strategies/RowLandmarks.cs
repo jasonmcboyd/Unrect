@@ -46,18 +46,8 @@ namespace Unrect.Strategies
         "no row with a matching cell");
 
     /// <summary>
-    /// The first row holding <paramref name="text"/> as a whole cell value, trimmed and
-    /// case-insensitively — whole-cell, because labels are cell values and substring matching
-    /// invites false anchors.
-    /// </summary>
-    public static IRowLandmark RowContaining(string text)
-      => new PredicateRowLandmark(
-        CellMatching.AnyCellInRow(CellMatching.TextEquals(NotNull(text, nameof(text)))),
-        $"no row containing '{text}'");
-
-    /// <summary>
     /// The first row in which some cell <em>says</em> <paramref name="text"/> — the same whole-cell
-    /// comparison as <see cref="RowContaining"/>, trimmed and case-insensitive, against every cell's
+    /// comparison as a value vocabulary's <c>RowContaining</c>, trimmed and case-insensitive, against every cell's
     /// rendering rather than against text cells alone.
     /// <para>
     /// This is the opt-in one. A numeric 42 says "42", a date says its ISO form, a boolean says

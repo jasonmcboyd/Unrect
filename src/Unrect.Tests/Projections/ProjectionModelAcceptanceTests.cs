@@ -71,7 +71,7 @@ namespace Unrect.Tests.Projections
     /// r6  Total   |        | 1.00     &lt;- SUM(C4:C5)
     /// </code>
     /// </summary>
-    private static Cell[,] AllocationValues()
+    private static CellValue[,] AllocationValues()
     {
       var cells = new object?[,]
       {
@@ -84,7 +84,7 @@ namespace Unrect.Tests.Projections
         { "Total", null, 1.00m },
       };
 
-      var values = new Cell[cells.GetLength(0), cells.GetLength(1)];
+      var values = new CellValue[cells.GetLength(0), cells.GetLength(1)];
 
       for (var row = 0; row < cells.GetLength(0); row++)
         for (var column = 0; column < cells.GetLength(1); column++)
@@ -233,7 +233,7 @@ namespace Unrect.Tests.Projections
     /// <summary>A hoisted demanding helper: its space says what it requires, and it says so once.</summary>
     private static IProjectionDefinition<ISpreadsheetSpace, SourcedAllocation> SourcedRow()
       => ProjectionBuilders<ISpreadsheetSpace>.Overlay(o => new SourcedAllocation(
-        Account: o.Next(ProjectionBuilders<ISpreadsheetSpace>.Text()),
+        Account: o.Next(SpreadsheetProjectionBuilders<ISpreadsheetSpace>.Text()),
         Formula: o.Next(ProjectionBuilders<ISpreadsheetSpace>.Right(2)
           .Of(SpreadsheetProjections.Formula<ISpreadsheetSpace>()))));
 
@@ -259,7 +259,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal("VerticalRepeat", plainSections.Description);
       Assert.Equal("VerticalRepeat", demandingSections.Description);
 
-      var sourced = ProjectionBuilders<ISpreadsheetSpace>.On(ProjectionBuilders<ISpreadsheetSpace>.RowContaining("A-1"))
+      var sourced = ProjectionBuilders<ISpreadsheetSpace>.On(SpreadsheetProjectionBuilders<ISpreadsheetSpace>.RowContaining("A-1"))
         .Of(SourcedRow())
         .Map(CapableAllocations());
 
@@ -329,7 +329,7 @@ namespace Unrect.Tests.Projections
         Primary: o.Next(Right(6).Of(Decimal().OrBlank())),
         Fep: o.Next(Right(9).Of(Decimal().OrBlank()))));
 
-      var allocations = Below(RowContaining("ACCOUNT")).Sized(RowsWhileAnyValue()).Of(Table(headerRows: 0, eachRow: allocation));
+      var allocations = Below(RowContaining("ACCOUNT")).Sized(RowsWhileAnyIsNotBlank()).Of(Table(headerRows: 0, eachRow: allocation));
 
       return VerticalFlow(v => new BuyingPowerAllocation(
         Title: v.Next(Text()),

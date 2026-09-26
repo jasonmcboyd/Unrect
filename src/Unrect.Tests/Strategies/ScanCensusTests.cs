@@ -33,14 +33,14 @@ namespace Unrect.Tests.Strategies
     {
       IAreaStrategy size = strategy switch
       {
-        "rows while any value" => SizeStrategies.RowsWhileAnyValue().ToAreaStrategy(),
-        "columns while any value" => SizeStrategies.ColumnsWhileAnyValue().ToAreaStrategy(),
+        "rows while any value" => SizeStrategies.RowsWhileAnyIsNotBlank().ToAreaStrategy(),
+        "columns while any value" => SizeStrategies.ColumnsWhileAnyIsNotBlank().ToAreaStrategy(),
         "explicit size" => AreaStrategies.ExplicitArea(2, 3),
         "max size" => AreaStrategies.MaxArea(),
         "select size" => AreaStrategies.SelectArea(plane => new Size(1, 1)),
         "rows then columns" => AreaStrategies.RowsThenColumns(RowStrategies.TakeRows(2), ColumnStrategies.TakeColumnsTo((_, column) => column == 1)),
-        "columns then rows" => AreaStrategies.ColumnsThenRows(ColumnStrategies.TakeColumns(2), RowStrategies.TakeRowsWhileAnyValue()),
-        "discovered block" => AreaStrategies.RowsThenColumns(RowStrategies.TakeRowsWhileAnyValue(), ColumnStrategies.TakeColumnsWhileAnyValue()),
+        "columns then rows" => AreaStrategies.ColumnsThenRows(ColumnStrategies.TakeColumns(2), RowStrategies.TakeRowsWhileAnyIsNotBlank()),
+        "discovered block" => AreaStrategies.RowsThenColumns(RowStrategies.TakeRowsWhileAnyIsNotBlank(), ColumnStrategies.TakeColumnsWhileAnyIsNotBlank()),
         _ => throw new System.ArgumentOutOfRangeException(nameof(strategy)),
       };
 
@@ -67,8 +67,8 @@ namespace Unrect.Tests.Strategies
         "explicit offset" => OffsetStrategies.ExplicitOffset(1, 1),
         "first non-blank cell" => OffsetStrategies.SkipToFirstNonBlankCell(),
         "select offset" => OffsetStrategies.SelectOffset(plane => new Size(0, 1)),
-        "to a row landmark" => OffsetStrategies.To(RowLandmarks.RowContaining("x")),
-        "to a column landmark" => OffsetStrategies.To(ColumnLandmarks.ColumnContaining("x")),
+        "to a row landmark" => OffsetStrategies.To(RowLandmarks.RowSaying("x")),
+        "to a column landmark" => OffsetStrategies.To(ColumnLandmarks.ColumnSaying("x")),
         "a chain of row skips" => OffsetStrategies.Then(OffsetStrategies.SkipBlankRows(), OffsetStrategies.ExplicitOffset(0, 1)),
         "a chain with a lambda in it" => OffsetStrategies.Then(OffsetStrategies.SkipBlankRows(), OffsetStrategies.SelectOffset(plane => new Size(0, 1))),
         _ => throw new System.ArgumentOutOfRangeException(nameof(strategy)),
@@ -89,7 +89,7 @@ namespace Unrect.Tests.Strategies
         { 3, 4, 0 },
         { 0, 0, 0 },
       });
-      var strategy = SizeStrategies.RowsWhileAnyValue();
+      var strategy = SizeStrategies.RowsWhileAnyIsNotBlank();
 
       var byRows = Scans.FoldSize(strategy.Begin(Orientation.Vertical), Plane<ISpace>.Of(space), Orientation.Vertical);
       var byColumns = Scans.FoldSize(strategy.Begin(Orientation.Horizontal), Plane<ISpace>.Of(space), Orientation.Horizontal);

@@ -15,13 +15,13 @@ namespace Unrect
     /// <summary>
     /// The value in the cell this point addresses.
     /// <para>
-    /// The receiver is a point over <see cref="IValueCells{T}"/> itself, which is what a declaration
+    /// The receiver is a point over <see cref="IValueSpace{T}"/> itself, which is what a declaration
     /// written over a grid of values is handed: name the space as
-    /// <c>IValueCells&lt;int&gt;</c> at the top of the file and every point below it answers.
+    /// <c>IValueSpace&lt;int&gt;</c> at the top of the file and every point below it answers.
     /// </para>
     /// </summary>
     /// <typeparam name="T">What the grid's cells hold.</typeparam>
     /// <param name="point">The cell.</param>
-    public static T Value<T>(this Point<IValueCells<T>> point) => point.Space.ValueAt(point.Column, point.Row);
+    public static T Value<T>(this Point<IValueSpace<T>> point) => point.Space.ValueAt(point.Column, point.Row);
   }
 }

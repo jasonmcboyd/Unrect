@@ -486,7 +486,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void TheRowLambda_WithoutAHeader_ProjectsEveryRow()
     {
-      var values = Table(0, r => r[0].IsText ? r[0].Text() : "-").Map(SimpleTable());
+      var values = Table(0, r => r[0].IsText() ? r[0].Text() : "-").Map(SimpleTable());
 
       Assert.Equal(new[] { "Investor", "Acme", "Beta", "Gamma" }, values);
     }

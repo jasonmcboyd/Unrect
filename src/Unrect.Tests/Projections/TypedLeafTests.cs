@@ -92,7 +92,7 @@ namespace Unrect.Tests.Projections
     public void AnErrorCellIsNamedAsTheErrorItIs()
     {
       var failure = Assert.Throws<ProjectionException>(() =>
-        Decimal().Map(One(Cell.OfError(CellError.DivisionByZero))));
+        Decimal().Map(One(CellValue.OfError(CellError.DivisionByZero))));
 
       Assert.Equal("expected Number at A1, found Error(#DIV/0!)", Problem(failure));
     }
@@ -141,13 +141,13 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void AConversionFailureShowsTheValueAsTheCellHoldsIt()
+    public void AConversionFailureShowsTheValueAsTheCellSaysIt()
     {
-      // A number that arrived as a decimal keeps its scale in the message: the cell says 1.50, so
-      // the failure says 1.50. Rendering it through a double would print 1.5 and quietly disagree
-      // with the sheet the reader is looking at.
+      // A fixture written with a decimal literal holds the double it converts to, because a sheet
+      // holds nothing else: the cell says 1.5, so the failure says 1.5 — the same digits the sheet
+      // the reader is looking at would show under a General format.
       Assert.Equal(
-        "the Number at A1 (1.50) is not a whole number",
+        "the Number at A1 (1.5) is not a whole number",
         Problem(Assert.Throws<ProjectionException>(() => Integer().Map(One(1.50m)))));
 
       // ...and one that arrived as a double is rendered as a double.

@@ -11,9 +11,9 @@ namespace Unrect.Spreadsheets
   /// </summary>
   internal sealed class SpreadsheetRowSource : IRowSource
   {
-    private readonly Func<Cell, bool> _isBlank;
+    private readonly Func<string, bool> _isBlank;
 
-    internal SpreadsheetRowSource(string path, Func<Cell, bool> isBlank)
+    internal SpreadsheetRowSource(string path, Func<string, bool> isBlank)
     {
       Name = path ?? throw new ArgumentNullException(nameof(path));
       _isBlank = isBlank ?? throw new ArgumentNullException(nameof(isBlank));
@@ -34,9 +34,9 @@ namespace Unrect.Spreadsheets
   {
     private readonly FileStream _stream;
     private readonly IExcelDataReader _reader;
-    private readonly Func<Cell, bool> _isBlank;
+    private readonly Func<string, bool> _isBlank;
 
-    internal SpreadsheetRowCursor(string path, Func<Cell, bool> isBlank)
+    internal SpreadsheetRowCursor(string path, Func<string, bool> isBlank)
     {
       _isBlank = isBlank;
       SpreadsheetEncodings.Register();
@@ -87,7 +87,7 @@ namespace Unrect.Spreadsheets
     public bool Read() => _reader.Read();
 
     /// <inheritdoc/>
-    public Cell this[int column]
+    public CellValue this[int column]
     {
       get
       {
@@ -95,11 +95,11 @@ namespace Unrect.Spreadsheets
         // rather than letting the reader throw. The eager path expresses the same rule as a
         // Math.Min over the row's field count.
         if (column < 0 || column >= _reader.FieldCount)
-          return Cell.Blank;
+          return CellValue.Blank;
 
         var value = _reader.GetCellValue(column);
 
-        return _isBlank(value) ? Cell.Blank : value;
+        return value.TryGetText(out var text) && _isBlank(text) ? CellValue.Blank : value;
       }
     }
 

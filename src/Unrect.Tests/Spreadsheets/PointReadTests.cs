@@ -46,7 +46,7 @@ namespace Unrect.Tests.Spreadsheets
     public void EachReadHandsBackTheCellsValueAsTheKindItAsksFor()
     {
       Assert.Equal("hello", Of("hello").Text());
-      Assert.Equal(1.5m, Of(1.5m).Decimal());
+      Assert.Equal(1.5m, Of(1.5).Decimal());
       Assert.Equal(42, Of(42).Integer());
       Assert.Equal(0.25, Of(0.25).Double());
       Assert.Equal(Moment, Of(Moment).Date());
@@ -64,7 +64,7 @@ namespace Unrect.Tests.Spreadsheets
       // makes a bare CellReadException readable on its own.
       var failure = Assert.Throws<CellReadException>(() => Of(value).Date());
 
-      Assert.Equal($"expected Temporal at A1, found {found}", failure.Message);
+      Assert.Equal($"expected Date at A1, found {found}", failure.Message);
     }
 
     [Fact]
@@ -106,7 +106,7 @@ namespace Unrect.Tests.Spreadsheets
     {
       // Non-vacuity for the six above: tolerating a blank is not answering null to everything.
       Assert.Equal("hello", Of("hello").TextOrBlank());
-      Assert.Equal(1.5m, Of(1.5m).DecimalOrBlank());
+      Assert.Equal(1.5m, Of(1.5).DecimalOrBlank());
       Assert.Equal(42, Of(42).IntegerOrBlank());
       Assert.Equal(0.25, Of(0.25).DoubleOrBlank());
       Assert.Equal(Moment, Of(Moment).DateOrBlank());
@@ -119,9 +119,9 @@ namespace Unrect.Tests.Spreadsheets
       // Blank tolerance is not kind tolerance — the law this family exists to state. The sentence is
       // the strict read's, word for word, because it is the same reading with one condition moved.
       Assert.Equal("expected Number at A1, found Text", Assert.Throws<CellReadException>(() => Of("x").DecimalOrBlank()).Message);
-      Assert.Equal("expected Text at A1, found Number", Assert.Throws<CellReadException>(() => Of(5m).TextOrBlank()).Message);
-      Assert.Equal("expected Temporal at A1, found Number", Assert.Throws<CellReadException>(() => Of(5m).DateOrBlank()).Message);
-      Assert.Equal("expected Boolean at A1, found Number", Assert.Throws<CellReadException>(() => Of(1m).BooleanOrBlank()).Message);
+      Assert.Equal("expected Text at A1, found Number", Assert.Throws<CellReadException>(() => Of(5).TextOrBlank()).Message);
+      Assert.Equal("expected Date at A1, found Number", Assert.Throws<CellReadException>(() => Of(5).DateOrBlank()).Message);
+      Assert.Equal("expected Boolean at A1, found Number", Assert.Throws<CellReadException>(() => Of(1).BooleanOrBlank()).Message);
       Assert.Equal("expected Number at A1, found Text", Assert.Throws<CellReadException>(() => Of("x").IntegerOrBlank()).Message);
       Assert.Equal("expected Number at A1, found Text", Assert.Throws<CellReadException>(() => Of("x").DoubleOrBlank()).Message);
     }
@@ -144,11 +144,11 @@ namespace Unrect.Tests.Spreadsheets
       // What is underneath the kinded reads, and what a declaration over a plain grid is left with.
       // Nothing here can fail: a blank cell has an address, an error cell has an address, and both
       // render.
-      Assert.True(Of(null).IsBlank);
-      Assert.False(Of("hello").IsBlank);
-      Assert.True(Of("hello").IsText);
-      Assert.False(Of(1.5m).IsText);
-      Assert.Equal("1.5", Of(1.5m).AsText());
+      Assert.True(Of(null).IsBlank());
+      Assert.False(Of("hello").IsBlank());
+      Assert.True(Of("hello").IsText());
+      Assert.False(Of(1.5).IsText());
+      Assert.Equal("1.5", Of(1.5).AsText());
       Assert.Null(Of(null).AsText());
     }
 
@@ -159,14 +159,14 @@ namespace Unrect.Tests.Spreadsheets
     {
       // What a predicate puts to a cell before deciding anything about it. None of these throws on
       // any cell: a rule that had to guard its question with a try would not be a rule.
-      var cells = new[] { Of(null), Of("hello"), Of(1.5m), Of(Moment), Of(true), Of(Cell.OfError(CellError.DivisionByZero)) };
+      var cells = new[] { Of(null), Of("hello"), Of(1.5), Of(Moment), Of(true), Of(CellValue.OfError(CellError.DivisionByZero)) };
 
-      Assert.Equal(new[] { false, true, false, false, false, false }, cells.Select(c => c.IsText).ToArray());
+      Assert.Equal(new[] { false, true, false, false, false, false }, cells.Select(c => c.IsText()).ToArray());
       Assert.Equal(new[] { false, false, true, false, false, false }, cells.Select(c => c.IsDouble()).ToArray());
       Assert.Equal(new[] { false, false, false, true, false, false }, cells.Select(c => c.IsDate()).ToArray());
       Assert.Equal(new[] { false, false, false, false, true, false }, cells.Select(c => c.IsBoolean()).ToArray());
       Assert.Equal(new[] { false, false, false, false, false, true }, cells.Select(c => c.IsError()).ToArray());
-      Assert.Equal(new[] { true, false, false, false, false, false }, cells.Select(c => c.IsBlank).ToArray());
+      Assert.Equal(new[] { true, false, false, false, false, false }, cells.Select(c => c.IsBlank()).ToArray());
     }
 
     [Fact]
@@ -174,9 +174,9 @@ namespace Unrect.Tests.Spreadsheets
     {
       // Is… is the read with its value thrown away, so a predicate that ruled a cell in and a leaf
       // that then refused it — two readings of one cell — cannot happen.
-      foreach (var cell in new[] { Of(null), Of("x"), Of(1.5m), Of(2m), Of(1e30), Of(Moment), Of(true) })
+      foreach (var cell in new[] { Of(null), Of("x"), Of(1.5), Of(2), Of(1e30), Of(Moment), Of(true) })
       {
-        Assert.Equal(cell.IsText, Succeeds(() => cell.Text()));
+        Assert.Equal(cell.IsText(), Succeeds(() => cell.Text()));
         Assert.Equal(cell.IsDouble(), Succeeds(() => cell.Double()));
         Assert.Equal(cell.IsDecimal(), Succeeds(() => cell.Decimal()));
         Assert.Equal(cell.IsInteger(), Succeeds(() => cell.Integer()));
@@ -203,15 +203,15 @@ namespace Unrect.Tests.Spreadsheets
     {
       // There is no "which one is it": 2 is a double, a decimal and an integer at once, 1.5 is two
       // of those, and 1e30 is one. Which is why nothing here hands back a single kind.
-      Assert.True(Of(2m).IsDouble() && Of(2m).IsDecimal() && Of(2m).IsInteger());
-      Assert.True(Of(1.5m).IsDouble() && Of(1.5m).IsDecimal() && !Of(1.5m).IsInteger());
+      Assert.True(Of(2).IsDouble() && Of(2).IsDecimal() && Of(2).IsInteger());
+      Assert.True(Of(1.5).IsDouble() && Of(1.5).IsDecimal() && !Of(1.5).IsInteger());
       Assert.True(Of(1e30).IsDouble() && !Of(1e30).IsDecimal() && !Of(1e30).IsInteger());
     }
 
     [Fact]
     public void TheTryFormsHandBackTheValueAndSayNothingOnARefusal()
     {
-      Assert.True(Of(1.5m).TryGetDouble(out var number));
+      Assert.True(Of(1.5).TryGetDouble(out var number));
       Assert.Equal(1.5, number);
       Assert.False(Of("x").TryGetDouble(out _));
 

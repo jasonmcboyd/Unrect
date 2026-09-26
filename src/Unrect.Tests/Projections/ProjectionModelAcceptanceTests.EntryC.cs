@@ -147,12 +147,12 @@ namespace Unrect.Tests.Projections
     private static IProjectionDefinition<ICellSpace, BuyingPowerAllocation> BuyingPowerParserThroughThePipeline()
     {
       var allocation = Overlay(o => new BuyingPowerRow(
-        FundCode: o.Next(Right(1).Text()),
+        FundCode: o.Next(Right(1).Of(Text())),
         Primary: o.Next(Right(6).Of(Decimal().OrBlank())),
         Fep: o.Next(Right(9).Of(Decimal().OrBlank()))));
 
       var allocations = Below(RowContaining("ACCOUNT"))
-        .Sized(RowsWhileAnyValue())
+        .Sized(RowsWhileAnyIsNotBlank())
         .Table(headerRows: 0, eachRow: allocation);
 
       return VerticalFlow(v => new BuyingPowerAllocation(

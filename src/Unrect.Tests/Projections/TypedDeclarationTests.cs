@@ -63,7 +63,7 @@ namespace Unrect.Tests.Projections
     /// canonical question, so it names <c>ISpace</c> and demands nothing more.
     /// </summary>
     private static IAreaStrategy<ISpace> Populated()
-      => ProjectionBuilders<ISpace>.RowsWhileAny(cell => !cell.IsBlank);
+      => ProjectionBuilders<ISpace>.RowsWhileAny(cell => !cell.IsBlank());
 
     [Fact]
     public void ARuleBuiltAtTheLeastDemandingSpaceFlowsIntoAFileScopedToMore()
@@ -85,10 +85,10 @@ namespace Unrect.Tests.Projections
 
     /// <summary>The matcher and row-rule halves of the same helper, at the same least demanding space.</summary>
     private static IRowLandmark<ISpace> FirstPopulatedRow()
-      => ProjectionBuilders<ISpace>.RowWithCell(cell => !cell.IsBlank);
+      => ProjectionBuilders<ISpace>.RowWithCell(cell => !cell.IsBlank());
 
     private static IRowStrategy<ISpace> PopulatedRows()
-      => ProjectionBuilders<ISpace>.TakeRowsWhileAny(cell => !cell.IsBlank);
+      => ProjectionBuilders<ISpace>.TakeRowsWhileAny(cell => !cell.IsBlank());
 
     [Fact]
     public void AndSoDoAMatcherAndAnAxisRuleBuiltTheSameWay()

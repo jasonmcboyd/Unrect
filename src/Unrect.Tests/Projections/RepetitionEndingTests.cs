@@ -32,7 +32,7 @@ namespace Unrect.Tests.Projections
 
 
     /// <summary>The discovered extent: full width, and as many leading rows as hold anything.</summary>
-    private static IProjectionDefinition<ICellSpace, int> Rows() => Range(RowsWhileAnyValue(), b => b.Height);
+    private static IProjectionDefinition<ICellSpace, int> Rows() => Range(RowsWhileAnyIsNotBlank(), b => b.Height);
 
     /// <summary>A cell read as text — which is a failure over <see cref="Numbers"/>, and an absorbable one.</summary>
     private static IProjectionDefinition<ICellSpace, string> Title() => TextCell();
@@ -104,7 +104,7 @@ namespace Unrect.Tests.Projections
       // item is attempted. Without the guard the item runs against a zero-across slice, its Optional
       // absorbs the failure, the productivity guard trips on the standstill, and a spurious Info
       // fires — an item nobody could have read is reported as a tolerated ending.
-      var band = SheetGrid.Of(new Cell[0, 3]);
+      var band = SheetGrid.Of(new CellValue[0, 3]);
 
       var horizontal = HorizontalRepeat(Text().Optional()).MapWithDiagnostics(band);
 
@@ -113,7 +113,7 @@ namespace Unrect.Tests.Projections
 
       // The mirror across the axis is unaffected and stays so: a vertical repeat over a zero-HEIGHT
       // band ends the same quiet way, so the guard reads the same on both axes.
-      var column = SheetGrid.Of(new Cell[0, 1]);
+      var column = SheetGrid.Of(new CellValue[0, 1]);
 
       var vertical = VerticalRepeat(Text().Optional()).MapWithDiagnostics(column);
 

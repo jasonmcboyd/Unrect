@@ -54,7 +54,7 @@ namespace Unrect.Tests.Spreadsheets
         { "Beta", 250m, 0.5m, 125m },
       };
 
-      var values = new Cell[cells.GetLength(0), cells.GetLength(1)];
+      var values = new CellValue[cells.GetLength(0), cells.GetLength(1)];
 
       for (var row = 0; row < cells.GetLength(0); row++)
         for (var column = 0; column < cells.GetLength(1); column++)
@@ -78,7 +78,7 @@ namespace Unrect.Tests.Spreadsheets
     /// matcher's absence noun, since over <see cref="Sheet"/> the bare matcher always finds one.
     /// </summary>
     private static ISpreadsheetSpace Barren()
-      => new FormulaGridSpace(new Cell[1, 2] { { Adapt("a"), Adapt("b") } }, new string?[1, 2]);
+      => new FormulaGridSpace(new CellValue[1, 2] { { Adapt("a"), Adapt("b") } }, new string?[1, 2]);
 
     // --- The matcher locates ------------------------------------------------------------------------
 
@@ -139,7 +139,7 @@ namespace Unrect.Tests.Spreadsheets
     {
       // Reached the only way it can be: through Landmark, the plain lift, where the typed layer has
       // handed the demand off and the mismatch survives to run time.
-      var cannotLook = PlainLift().Of(ProjectionBuilders<ICellSpace>.Text());
+      var cannotLook = PlainLift().Of(SheetProjectionBuilders<ICellSpace>.Text());
 
       var failure = Assert.Throws<ProjectionException>(() => cannotLook.Map(Plain()));
 
@@ -152,7 +152,7 @@ namespace Unrect.Tests.Spreadsheets
       Assert.Throws<ProjectionException>(() => cannotLook.Optional().Map(Plain()));
       Assert.Throws<ProjectionException>(() => cannotLook.Else("fallback").Map(Plain()));
       Assert.Throws<ProjectionException>(
-        () => ProjectionBuilders<ICellSpace>.Choice(cannotLook, ProjectionBuilders<ICellSpace>.Text()).Map(Plain()));
+        () => ProjectionBuilders<ICellSpace>.Choice(cannotLook, SheetProjectionBuilders<ICellSpace>.Text()).Map(Plain()));
     }
 
     [Fact]
@@ -165,7 +165,7 @@ namespace Unrect.Tests.Spreadsheets
         .UntilColumn(SpreadsheetProjections.ColumnWithFormula().Landmark)
         .Of(ProjectionBuilders<ICellSpace>.HorizontalFlow(h =>
         {
-          var spreadsheetProjections = h.Next(ProjectionBuilders<ICellSpace>.Text());
+          var spreadsheetProjections = h.Next(SheetProjectionBuilders<ICellSpace>.Text());
 
           return spreadsheetProjections;
         }))

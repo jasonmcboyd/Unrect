@@ -69,7 +69,8 @@ Cash Flows using inception date
 
 ```csharp
 using Unrect.Spreadsheets;
-using static Unrect.Projections.Projection;
+using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 
 var header = VerticalFlow(v => new
 {

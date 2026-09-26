@@ -125,7 +125,7 @@ namespace Unrect.Tests.Spreadsheets
       // Sizing by a strategy hands the projection a region whose height is not yet settled. Its
       // points are still the SHEET's cells at the sheet's own coordinates, so reading a formula off
       // one needs nothing looked up and nothing unwrapped — which is what replaced the seam.
-      var scaled = On(RowContaining("Scaled")).Of(Range(RowsWhileAnyValue(), block => FormulaOf(block[1, 0])));
+      var scaled = On(RowContaining("Scaled")).Of(Range(RowsWhileAnyIsNotBlank(), block => FormulaOf(block[1, 0])));
 
       Assert.Equal("LOG10(B8)+B8", scaled.Map(Sheet()));
     }
@@ -142,7 +142,7 @@ namespace Unrect.Tests.Spreadsheets
       // tail whose coordinates had shifted would find the capability and answer about the wrong
       // cell. Rows 2 and 3 of this file carry the same shared expression one row apart, so a
       // one-row slip has a plausible-looking answer waiting for it.
-      var lines = Sized(RowsWhileAnyValue()).Of(VerticalFlow(v =>
+      var lines = Sized(RowsWhileAnyIsNotBlank()).Of(VerticalFlow(v =>
       {
         v.Next(Row(cells => cells.Count));
 
@@ -171,7 +171,7 @@ return (
       // The boundary site's door through the same two charts: the matcher demands the capability of
       // the space it is handed, which by then is a tail of a discovered bound. The first computed row
       // past the consumed header is row 2, whose first cell says which one it found.
-      var firstComputed = Sized(RowsWhileAnyValue()).Of(VerticalFlow(v =>
+      var firstComputed = Sized(RowsWhileAnyIsNotBlank()).Of(VerticalFlow(v =>
       {
         v.Next(Row(cells => cells.Count));
 
@@ -194,7 +194,7 @@ return (
       // A cast this library owes itself, failing: that says the reader is wrong, never that a
       // section is missing, so it arrives as a fault and NO tolerance boundary absorbs it.
       var plain = ProjectionBuilders<ICellSpace>.On(SpreadsheetProjections.RowWithFormula().Landmark)
-        .Of(ProjectionBuilders<ICellSpace>.Text());
+        .Of(SheetProjectionBuilders<ICellSpace>.Text());
 
       ICellSpace sheet = SheetGrid.Of(new object?[,] { { "a" } });
 

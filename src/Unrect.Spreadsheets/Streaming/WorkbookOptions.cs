@@ -6,10 +6,12 @@ namespace Unrect.Spreadsheets
   public sealed class WorkbookOptions
   {
     /// <summary>
-    /// What counts as a blank cell, decided where data enters the system. Null means the default:
-    /// a cell that is empty or holds only whitespace — the same rule the eager door applies.
+    /// What counts as a blank cell, decided where data enters the system: a rule over the text a
+    /// cell holds, asked of text cells alone (a number, a date, a boolean and an error are never
+    /// blank). Null means the default: a cell that is empty or holds only whitespace — the same
+    /// rule the eager door applies.
     /// </summary>
-    public Func<Cell, bool>? IsBlank { get; init; }
+    public Func<string, bool>? IsBlank { get; init; }
 
     /// <summary>
     /// The most rows a sheet read through <see cref="Workbook.Sheet"/> may hold at once, or null

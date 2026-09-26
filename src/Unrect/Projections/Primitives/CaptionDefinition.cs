@@ -24,7 +24,7 @@ namespace Unrect.Projections
       : base(placement)
     {
       Text = text;
-      Match = CellMatching.TextEquals(text);
+      Match = CellMatching.SaysEquals(text);
     }
 
     private string Text { get; }
@@ -49,11 +49,11 @@ namespace Unrect.Projections
       for (var column = 0; column < size.Width; column++)
         if (Match(cells[column, 0]))
           // The file's text, not the declaration's: the literal is the matcher, the cell is the
-          // datum, and untrimmed because trimming is the matcher's business. Non-null because the
-          // match is a text match, and a blank cell never matches one.
+          // datum, and untrimmed because trimming is the matcher's business. Non-null because a
+          // blank cell says nothing and so never matches.
           return new Settlement<string>(extent[column, 0].AsText()!, size);
 
-      throw scope.Failure($"expected a row containing '{Text}' here", extent);
+      throw scope.Failure($"expected a row saying '{Text}' here", extent);
     }
   }
 }

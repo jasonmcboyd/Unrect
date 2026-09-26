@@ -183,7 +183,7 @@ namespace Unrect.Projections
     /// <summary>
     /// Opens a pipeline sized to <paramref name="area"/> and placed at adjacency — the size-only
     /// pipeline start, for a region sized to its content but not moved
-    /// (<c>Sized(RowsWhileAnyValue()).Of(header)</c>). To also move it, lead with an offset entry:
+    /// (<c>Sized(RowsWhileAnyIsNotBlank()).Of(header)</c>). To also move it, lead with an offset entry:
     /// <c>On(mark).Sized(area)</c>, <c>Down(1).Sized(area)</c>.
     /// </summary>
     /// <param name="area">The extent.</param>

@@ -65,7 +65,7 @@ namespace Unrect.Tests.Streaming
       // The receiver is IProjectionDefinition<ICellSpace, T> on one overload and IProjectionDefinition<ISpace, T> on the
       // other, and IProjectionDefinition is INVARIANT in its space (phase-6 ruling (i): `in TSpace` and a real
       // Project(Plane<TSpace>, …) are mutually exclusive), so a declaration over IFormulaSpace,
-      // ISpreadsheetSpace or IValueCells<T> matches neither. That is the whole guard: the alternative
+      // ISpreadsheetSpace or IValueSpace<T> matches neither. That is the whole guard: the alternative
       // to a compile error here is a file's formulas quietly reading as absent, which is the failure
       // mode the capability seam exists to make unspellable.
       //
@@ -196,7 +196,7 @@ namespace Unrect.Tests.Streaming
       // Blankness belongs to the adapter, and through this door the adapter is configured by the
       // options argument: the same cell reads as an absence under the default and as its own two
       // spaces under strict fidelity.
-      var cell = Down(2).Of(Point().Select(point => point.IsText ? point.Text() : "<blank>"));
+      var cell = Down(2).Of(Point().Select(point => point.IsText() ? point.Text() : "<blank>"));
 
       Assert.Equal("<blank>", cell.MapWorkbook(Path("edge-cases.xlsx"), "Edges"));
       Assert.Equal(

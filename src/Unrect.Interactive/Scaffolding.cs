@@ -364,13 +364,13 @@ namespace Unrect.Interactive
 
       private int Row(int line, int position) => _region.Row + (_rows ? line : position);
 
-      public bool IsBlank(int line, int position) => _sheet.IsBlank(Column(line, position), Row(line, position));
+      public bool IsBlank(int line, int position) => _sheet.IsBlankAt(Column(line, position), Row(line, position));
 
-      public bool IsText(int line, int position) => _sheet.TryGetTextAt(Column(line, position), Row(line, position), out _, out _);
+      public bool IsText(int line, int position) => _sheet.ValueAt(Column(line, position), Row(line, position)).Kind == CellKind.Text;
 
-      public bool IsError(int line, int position) => _sheet.TryGetErrorAt(Column(line, position), Row(line, position), out _);
+      public bool IsError(int line, int position) => _sheet.ValueAt(Column(line, position), Row(line, position)).Kind == CellKind.Error;
 
-      public bool Text(int line, int position, out string text) => _sheet.TryGetTextAt(Column(line, position), Row(line, position), out text, out _);
+      public bool Text(int line, int position, out string text) => _sheet.ValueAt(Column(line, position), Row(line, position)).TryGetText(out text);
 
       private static bool IsWhole(double number)
         => number >= int.MinValue && number <= int.MaxValue && Math.Floor(number) == number;
@@ -378,12 +378,15 @@ namespace Unrect.Interactive
       /// <summary>The type one cell reads as, narrowest first — a whole number is an <c>int</c> until another sample says otherwise.</summary>
       public string Reads(int line, int position)
       {
-        var (column, row) = (Column(line, position), Row(line, position));
+        var value = _sheet.ValueAt(Column(line, position), Row(line, position));
 
-        return _sheet.TryGetDoubleAt(column, row, out var number, out _) ? (IsWhole(number) ? "int" : "decimal")
-          : _sheet.TryGetDateTimeAt(column, row, out _, out _) ? "DateTime"
-          : _sheet.TryGetBooleanAt(column, row, out _, out _) ? "bool"
-          : "string";
+        return value.Kind switch
+        {
+          CellKind.Number => value.TryGetNumber(out var number) && IsWhole(number) ? "int" : "decimal",
+          CellKind.Date => "DateTime",
+          CellKind.Boolean => "bool",
+          _ => "string",
+        };
       }
     }
 

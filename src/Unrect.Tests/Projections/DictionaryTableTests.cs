@@ -19,7 +19,7 @@ namespace Unrect.Tests.Projections
   /// header's captions. It is the exploratory spelling — what a script reaches for before the
   /// record exists — and its one promise is that it reads the sheet without deciding anything.
   /// <para>
-  /// Nothing is stringified. A date column stays <c>Temporal</c>, a blank stays <c>Blank</c>, an
+  /// Nothing is stringified. A date column stays <c>Date</c>, a blank stays <c>Blank</c>, an
   /// error stays <c>Error</c>; interpreting them is the caller's job, at the point where the
   /// meaning is known.
   /// </para>
@@ -53,7 +53,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal(10m, rows[0]["Amount"].Decimal());
 
       // A blank cell is a blank cell rather than an absent key or an empty string.
-      Assert.True(rows[1]["Transaction Date"].IsBlank);
+      Assert.True(rows[1]["Transaction Date"].IsBlank());
       Assert.Null(rows[1]["Transaction Date"].AsText());
       Assert.True(rows[1].ContainsKey("Transaction Date"));
     }
@@ -64,7 +64,7 @@ namespace Unrect.Tests.Projections
       var space = Mixed(new object?[,]
       {
         { "Amount" },
-        { Cell.OfError(CellError.DivisionByZero) },
+        { CellValue.OfError(CellError.DivisionByZero) },
       });
 
       var cell = Table().Map(space)[0]["Amount"];

@@ -4,6 +4,7 @@ using Unrect.Projections;
 using Unrect.Spreadsheets;
 
 using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 
 namespace Unrect.Benchmarks
 {
@@ -22,7 +23,7 @@ namespace Unrect.Benchmarks
   [BenchmarkCategory("Strategies")]
   public class Strategies
   {
-    private static readonly IProjectionDefinition<ICellSpace, int> WholeHeight = Range(RowsWhileAnyValue(), b => b.Height);
+    private static readonly IProjectionDefinition<ICellSpace, int> WholeHeight = Range(RowsWhileAnyIsNotBlank(), b => b.Height);
 
     private static readonly IProjectionDefinition<ICellSpace, int> Seek =
       On(RowContaining(CanonicalSpaces.Landmark)).Row(r => r.Count);
@@ -31,7 +32,7 @@ namespace Unrect.Benchmarks
     private static readonly IProjectionDefinition<ICellSpace, int> SeekMiss = Seek.Optional();
 
     private static readonly IProjectionDefinition<ICellSpace, int> Bounded =
-      Until(RowContaining(CanonicalSpaces.Landmark)).Range(RowsWhileAnyValue(), b => b.Height);
+      Until(RowContaining(CanonicalSpaces.Landmark)).Range(RowsWhileAnyIsNotBlank(), b => b.Height);
 
     private static readonly IProjectionDefinition<ICellSpace, int> SkipBlanks = OffsetBy(BlankRows()).Row(r => r.Count);
 
@@ -55,7 +56,7 @@ namespace Unrect.Benchmarks
 
     /// <summary>"Rows while any cell has a value" over a grid where the answer is every row.</summary>
     [Benchmark]
-    public int RowsWhileAnyValue_FullHeight() => WholeHeight.Map(_dense);
+    public int RowsWhileAnyIsNotBlank_FullHeight() => WholeHeight.Map(_dense);
 
     /// <summary>
     /// The same scan over the K-1 shape: same extent, same height, three quarters of the cells
@@ -64,7 +65,7 @@ namespace Unrect.Benchmarks
     /// number that moves if the value model changes.
     /// </summary>
     [Benchmark]
-    public int RowsWhileAnyValue_Sparse() => WholeHeight.Map(_sparse);
+    public int RowsWhileAnyIsNotBlank_Sparse() => WholeHeight.Map(_sparse);
 
     /// <summary>A content seek answered a tenth of the way down.</summary>
     [Benchmark]

@@ -93,7 +93,7 @@ namespace Unrect.Tests.Projections
 
     /// <summary>One investor's run of rows, read as its name and its height.</summary>
     private static IProjectionDefinition<ICellSpace, string> InvestorBlock()
-      => Range(RowsWhileAnyValue(), block => $"{block[0, 0].Text()}x{block.Height}");
+      => Range(RowsWhileAnyIsNotBlank(), block => $"{block[0, 0].Text()}x{block.Height}");
 
     /// <summary>The repeated series both headings announce — hoisted, because it is declared once.</summary>
     private static IProjectionDefinition<ICellSpace, IReadOnlyList<string>> Series()
@@ -311,7 +311,7 @@ namespace Unrect.Tests.Projections
       { "Beta", 250m },
     });
 
-    private static IRowLandmark Header() => RowContaining("Fund");
+    private static IRowLandmark Header() => RowContaining("Fund").Landmark;
 
     /// <summary>A bind pointed at the column of fund names, so every record fails.</summary>
     private static IProjectionDefinition<ICellSpace, decimal> FundColumnAsANumber(LabelMap captions) => Right(captions["Fund"]).Of(Decimal());
@@ -378,7 +378,7 @@ namespace Unrect.Tests.Projections
 
       Assert.Equal("Heading -> Caption(\"Nope\")#1", failure.Path);
       Assert.Equal("Caption(\"Nope\")#1", failure.Subject);
-      Assert.Contains("no row containing 'Nope' exists", failure.Message);
+      Assert.Contains("no row saying 'Nope' exists", failure.Message);
       Assert.False(failure.IsFault);
     }
 

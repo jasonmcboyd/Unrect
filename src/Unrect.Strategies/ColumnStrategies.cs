@@ -31,18 +31,6 @@ namespace Unrect.Strategies
       => new TakeToColumnStrategy(predicate);
 
     /// <summary>
-    /// Columns up to and including the first whose cell in <paramref name="row"/> is the text
-    /// <paramref name="text"/> — the transpose of <see cref="RowStrategies.TakeRowsToText"/>, and
-    /// a text cell only, for the same reason.
-    /// </summary>
-    public static IColumnStrategy TakeColumnsToText(int row, string text)
-    {
-      var matches = CellMatching.TextEquals(text ?? throw new ArgumentNullException(nameof(text)));
-
-      return TakeColumnsTo((space, column) => matches(space[column, row]));
-    }
-
-    /// <summary>
     /// Every column of the available space. The declared spelling of "the full width", which
     /// otherwise has to be written as the opaque constant predicate <c>(s, c) =&gt; true</c>.
     /// </summary>
@@ -57,15 +45,15 @@ namespace Unrect.Strategies
       => new TakeWhileAnyColumnStrategy(predicate);
 
     /// <summary>Leading columns that carry a value — <see cref="TakeColumnsWhileAny(Func{Point{ISpace}, bool})"/> with <c>HasValue</c> as the predicate.</summary>
-    public static IColumnStrategy TakeColumnsWhileAnyValue()
-      => TakeColumnsWhileAny(v => v.HasValue);
+    public static IColumnStrategy TakeColumnsWhileAnyIsNotBlank()
+      => TakeColumnsWhileAny(v => !v.IsBlank());
 
     /// <summary>
     /// A table's columns: any leading columns the first row leaves blank — columns with no caption,
     /// which nothing binds to — and then the columns that carry a value.
     /// </summary>
     internal static IColumnStrategy TakeTableColumns()
-      => new TakeWhileAnyColumnStrategy(v => v.HasValue, afterLead: true);
+      => new TakeWhileAnyColumnStrategy(v => !v.IsBlank(), afterLead: true);
 
     /// <summary>Combines <paramref name="strategy"/>'s rows with columns selected by <see cref="TakeColumnsWhile(Func{Plane{ISpace}, int, bool})"/>, rows measured first.</summary>
     public static IAreaStrategy TakeColumnsWhile(
@@ -86,8 +74,8 @@ namespace Unrect.Strategies
       => AreaStrategies.RowsThenColumns(strategy, TakeColumnsWhileAny(predicate));
 
     /// <summary>Those rows, at the columns that carry values — <see cref="TakeColumnsWhileAny(Func{Point{ISpace}, bool})"/> with <c>HasValue</c> as the predicate.</summary>
-    public static IAreaStrategy TakeColumnsWhileAnyValue(this IRowStrategy strategy)
-      => strategy.TakeColumnsWhileAny(v => v.HasValue);
+    public static IAreaStrategy TakeColumnsWhileAnyIsNotBlank(this IRowStrategy strategy)
+      => strategy.TakeColumnsWhileAny(v => !v.IsBlank());
 
     /// <summary>Those rows, at the full available width.</summary>
     public static IAreaStrategy AllColumns(this IRowStrategy strategy)

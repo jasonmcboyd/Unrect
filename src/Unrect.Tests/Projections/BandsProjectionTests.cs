@@ -80,7 +80,7 @@ namespace Unrect.Tests.Projections
 
       var observations = new List<int>();
 
-      IReadOnlyList<string> bands = Sized(RowsWhileAnyValue()).Of(VerticalBands(1, Range(WholeExtent(), block =>
+      IReadOnlyList<string> bands = Sized(RowsWhileAnyIsNotBlank()).Of(VerticalBands(1, Range(WholeExtent(), block =>
       {
         observations.Add(counter.RowsTouched);
 

@@ -5,6 +5,7 @@ using Unrect.Spreadsheets;
 using Xunit;
 
 using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.Observations;
 using static Unrect.Tests.ProjectionTestSpaces;
 
@@ -53,9 +54,9 @@ namespace Unrect.Tests.Projections
       return Mixed(values);
     }
 
-    private static IRowLandmark Detail() => RowContaining("Detail");
+    private static IRowLandmark Detail() => RowContaining("Detail").Landmark;
 
-    private static IColumnLandmark DetailColumn() => ColumnContaining("Detail");
+    private static IColumnLandmark DetailColumn() => ColumnContaining("Detail").Landmark;
 
     // --- The law, wherever the landmark sits ---------------------------------------------------------
 

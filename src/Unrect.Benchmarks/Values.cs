@@ -54,8 +54,8 @@ namespace Unrect.Benchmarks
       // Built once: lowering happens where a declaration is written, so what the two predicate rows
       // measure is evaluation. Both rules run to the bottom of the dense numeric grid, asking every
       // one of its million cells, which is the output to check when this fixture changes.
-      _erasedRule = RowStrategies.TakeRowsWhileAll(cell => !cell.IsBlank);
-      _typedRule = ProjectionBuilders<ICellSpace>.TakeRowsWhileAll(cell => !cell.IsBlank).Strategy;
+      _erasedRule = RowStrategies.TakeRowsWhileAll(cell => !cell.IsBlank());
+      _typedRule = ProjectionBuilders<ICellSpace>.TakeRowsWhileAll(cell => !cell.IsBlank()).Strategy;
     }
 
     /// <summary>Adapting a million numbers: the allocation floor for a canonical grid this size.</summary>
@@ -80,7 +80,7 @@ namespace Unrect.Benchmarks
 
       for (var row = 0; row < CanonicalSpaces.MegaRows; row++)
         for (var column = 0; column < CanonicalSpaces.Columns; column++)
-          if (_mixed.IsBlank(column, row))
+          if (_mixed.IsBlankAt(column, row))
             blank++;
 
       return blank;
@@ -97,7 +97,7 @@ namespace Unrect.Benchmarks
 
       for (var row = 0; row < CanonicalSpaces.MegaRows; row++)
         for (var column = 0; column < CanonicalSpaces.Columns; column++)
-          if (_mixed.TryGetTextAt(column, row, out _, out _))
+          if (_mixed.ValueAt(column, row).Kind == CellKind.Text)
             text++;
 
       return text;
@@ -111,7 +111,7 @@ namespace Unrect.Benchmarks
 
       for (var row = 0; row < CanonicalSpaces.MegaRows; row++)
         for (var column = 0; column < CanonicalSpaces.Columns; column++)
-          total += _text.AsText(column, row)!.Length;
+          total += _text.AsTextAt(column, row)!.Length;
 
       return total;
     }
@@ -127,7 +127,7 @@ namespace Unrect.Benchmarks
 
       for (var row = 0; row < CanonicalSpaces.MegaRows; row++)
         for (var column = 0; column < CanonicalSpaces.Columns; column++)
-          if (_numbers.TryGetDoubleAt(column, row, out var value, out _))
+          if (_numbers.ValueAt(column, row).TryGetNumber(out var value))
             total += (decimal)value;
 
       return total;
@@ -159,7 +159,7 @@ namespace Unrect.Benchmarks
 
     /// <summary>
     /// The same million evaluations of the same question, through the rule a declaration writes
-    /// (<c>TakeRowsWhileAll(p =&gt; !p.IsBlank)</c> over a file scoped to a sheet): the predicate is
+    /// (<c>TakeRowsWhileAll(p =&gt; !p.IsBlank())</c> over a file scoped to a sheet): the predicate is
     /// lowered once at construction, and each evaluation carries a cast back to the space it named.
     ///
     /// <para>Its pair is <see cref="Predicate_Million"/>, which runs the same scan over the same

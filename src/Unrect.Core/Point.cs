@@ -5,8 +5,10 @@ namespace Unrect.Core
 {
   /// <summary>
   /// One cell of one space, as an address rather than as a value: which space, which column, which
-  /// row. Every question asked of it is forwarded to the space — so a point reads whatever its space
-  /// reads, and is only as alive as its space is.
+  /// row. It holds nothing and answers nothing itself: every question asked of it is an extension
+  /// that forwards to the space (<see cref="CanonicalReads"/> for the questions every space answers,
+  /// a backend's own for the rest) — so a point reads whatever its space reads, and is only as alive
+  /// as its space is.
   /// <para>
   /// The coordinates are the space's own <b>root</b> coordinates, never a local frame: a space has
   /// one coordinate system, and a locator that named a cell relative to something else would have to
@@ -21,7 +23,7 @@ namespace Unrect.Core
   /// same space — the same <see cref="Space"/> instance, the same <see cref="Column"/>, the same
   /// <see cref="Row"/> — and never because two cells happen to hold the same value. <c>a == b</c>
   /// asks whether <c>a</c> and <c>b</c> are the same place, not whether they say the same thing; to
-  /// ask the latter, compare what <see cref="AsText"/> gives back.
+  /// ask the latter, compare what <see cref="CanonicalReads.AsText{TSpace}"/> gives back.
   /// </para>
   /// </summary>
   /// <typeparam name="TSpace">The space this point addresses a cell of.</typeparam>
@@ -59,43 +61,6 @@ namespace Unrect.Core
 
     /// <summary>The cell's row, 0-based from <see cref="Space"/>'s own origin.</summary>
     public int Row { get; }
-
-    /// <summary>Whether the cell carries no value at all.</summary>
-    public bool IsBlank => Space.IsBlank(Column, Row);
-
-    /// <summary>The negation of <see cref="IsBlank"/>.</summary>
-    public bool HasValue => !IsBlank;
-
-    /// <summary>
-    /// Whether the cell holds text of its own — true exactly when <see cref="TryGetText(out string)"/>
-    /// would hand it back.
-    /// </summary>
-    public bool IsText => Space.TryGetTextAt(Column, Row, out _, out _);
-
-    /// <summary>The text the cell holds, if text is what it holds — see <see cref="ISpace.TryGetTextAt"/>.</summary>
-    /// <param name="value">The cell's own text, when the answer is true.</param>
-    public bool TryGetText(out string value) => Space.TryGetTextAt(Column, Row, out value, out _);
-
-    /// <summary>
-    /// The text the cell holds, or the reason it holds none — the space's own reason where it gave
-    /// one, otherwise what was expected and what the cell says instead.
-    /// </summary>
-    /// <param name="value">The cell's own text, when the answer is true.</param>
-    /// <param name="problem">Why not, when the answer is false; null when it is true.</param>
-    public bool TryGetText(out string value, out CellProblem? problem)
-    {
-      if (Space.TryGetTextAt(Column, Row, out value, out problem))
-        return true;
-
-      problem ??= CellProblem.Expected("Text", Space, Column, Row);
-      return false;
-    }
-
-    /// <summary>
-    /// What the cell says, or null when it is blank. A method rather than a property because a cell
-    /// that is not text has to be rendered, and rendering may allocate.
-    /// </summary>
-    public string? AsText() => Space.AsText(Column, Row);
 
     /// <summary>
     /// The same cell, named over the canonical surface alone — how a point travels in a value that

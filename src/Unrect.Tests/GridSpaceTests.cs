@@ -20,7 +20,7 @@ namespace Unrect.Tests
   public class GridSpaceTests
   {
     // A 3-wide, 2-tall grid. Backing storage is row-major, so the outer initializer is rows.
-    private static IValueCells<string?> TextGrid() =>
+    private static IValueSpace<string?> TextGrid() =>
       GridSpace.Create(new[,]
       {
         { "a", "b", "c" },
@@ -29,7 +29,7 @@ namespace Unrect.Tests
 
     // A 4-wide, 4-tall grid whose cell value is (row * 10 + column), so a misread coordinate is
     // immediately obvious in the failure message.
-    private static IValueCells<int> CoordinateGrid()
+    private static IValueSpace<int> CoordinateGrid()
     {
       var values = new int[4, 4];
 
@@ -64,8 +64,8 @@ namespace Unrect.Tests
       Assert.Equal("d", space.ValueAt(0, 1));
       Assert.Equal("f", space.ValueAt(2, 1));
 
-      Assert.Equal("b", space.AsText(1, 0));
-      Assert.Equal("d", space.AsText(0, 1));
+      Assert.Equal("b", space.AsTextAt(1, 0));
+      Assert.Equal("d", space.AsTextAt(0, 1));
     }
 
     [Theory]
@@ -78,9 +78,8 @@ namespace Unrect.Tests
       var space = TextGrid();
 
       Assert.Throws<OutOfBoundsException>(() => { _ = space.ValueAt(column, row); });
-      Assert.Throws<OutOfBoundsException>(() => { _ = space.IsBlank(column, row); });
-      Assert.Throws<OutOfBoundsException>(() => { _ = space.IsText(column, row); });
-      Assert.Throws<OutOfBoundsException>(() => { _ = space.AsText(column, row); });
+      Assert.Throws<OutOfBoundsException>(() => { _ = space.IsBlankAt(column, row); });
+      Assert.Throws<OutOfBoundsException>(() => { _ = space.AsTextAt(column, row); });
     }
 
     // --- Adaptation and blankness ---------------------------------------------------------------
@@ -91,8 +90,8 @@ namespace Unrect.Tests
       var space = GridSpace.Create(new[,] { { 1, 0 }, { 0, 2 } }, isBlank: v => v == 0);
 
       Assert.Equal(1, space.ValueAt(0, 0));
-      Assert.True(space.IsBlank(1, 0));
-      Assert.True(space.IsBlank(0, 1));
+      Assert.True(space.IsBlankAt(1, 0));
+      Assert.True(space.IsBlankAt(0, 1));
       Assert.Equal(2, space.ValueAt(1, 1));
     }
 
@@ -105,9 +104,8 @@ namespace Unrect.Tests
       // "is there anything in this cell" a question with two answers.
       var space = GridSpace.Create(new[,] { { 0 } }, isBlank: v => v == 0);
 
-      Assert.True(space.IsBlank(0, 0));
-      Assert.False(space.IsText(0, 0));
-      Assert.Null(space.AsText(0, 0));
+      Assert.True(space.IsBlankAt(0, 0));
+      Assert.Null(space.AsTextAt(0, 0));
       Assert.Equal(0, space.ValueAt(0, 0));
     }
 
@@ -116,9 +114,9 @@ namespace Unrect.Tests
     {
       var space = GridSpace.Create(new[,] { { 0, 1 } });
 
-      Assert.False(space.IsBlank(0, 0));
+      Assert.False(space.IsBlankAt(0, 0));
       Assert.Equal(0, space.ValueAt(0, 0));
-      Assert.Equal("0", space.AsText(0, 0));
+      Assert.Equal("0", space.AsTextAt(0, 0));
     }
 
     [Fact]
@@ -127,7 +125,7 @@ namespace Unrect.Tests
       var space = GridSpace.Create(new[,] { { 1.5, double.NaN } }, isBlank: double.IsNaN);
 
       Assert.Equal(1.5, space.ValueAt(0, 0));
-      Assert.True(space.IsBlank(1, 0));
+      Assert.True(space.IsBlankAt(1, 0));
     }
 
     [Fact]
@@ -135,52 +133,46 @@ namespace Unrect.Tests
     {
       var space = GridSpace.Create(new string?[,] { { "x", "", null } });
 
-      Assert.Equal("x", space.AsText(0, 0));
-      Assert.True(space.IsText(0, 0));
-      Assert.True(space.IsBlank(1, 0));
-      Assert.True(space.IsBlank(2, 0));
+      Assert.Equal("x", space.AsTextAt(0, 0));
+      Assert.True(space.IsBlankAt(1, 0));
+      Assert.True(space.IsBlankAt(2, 0));
     }
 
     [Fact]
-    public void Create_WithTheThreeRules_AdaptsArbitraryValues()
+    public void Create_WithBothRules_AdaptsArbitraryValues()
     {
       // The general door, and the whole of what a source has to decide: which values are empty
-      // cells, which say a word of their own, and what the rest render as. A "-" is an empty cell, a
-      // word is its own text, and a flag renders the way a sheet's would.
+      // cells, and what the rest say. A "-" is an empty cell, and a flag says what a sheet's would.
       var space = GridSpace.Create(
         new[,] { { "yes", "-", "no" } },
         isBlank: v => v == "-",
-        isText: v => v != "yes" && v != "no",
         asText: v => v == "yes" ? "TRUE" : "FALSE");
 
-      Assert.Equal("TRUE", space.AsText(0, 0));
-      Assert.False(space.IsText(0, 0));
-      Assert.True(space.IsBlank(1, 0));
-      Assert.Equal("FALSE", space.AsText(2, 0));
+      Assert.Equal("TRUE", space.AsTextAt(0, 0));
+      Assert.True(space.IsBlankAt(1, 0));
+      Assert.Equal("FALSE", space.AsTextAt(2, 0));
     }
 
     [Fact]
     public void Create_WithValuesOfAnyType_RendersEachAsItsOwnKindImplies()
     {
       // The heterogeneous door, which is what lets a fixture be written as a literal: null and ""
-      // are blank, a string is its own text, and everything else renders the way a spreadsheet's
+      // are blank, a string says itself, and everything else renders the way a spreadsheet's
       // does rather than the way its CLR type's ToString happens to.
       var space = GridSpace.Create(new object?[,]
       {
         { "word", 42, 3.5, new DateTime(2026, 1, 15), true, null, "" },
       });
 
-      Assert.True(space.IsText(0, 0));
-      Assert.Equal("word", space.AsText(0, 0));
+      Assert.Equal("word", space.AsTextAt(0, 0));
 
-      Assert.False(space.IsText(1, 0));
-      Assert.Equal("42", space.AsText(1, 0));
-      Assert.Equal("3.5", space.AsText(2, 0));
-      Assert.Equal("2026-01-15", space.AsText(3, 0));
-      Assert.Equal("TRUE", space.AsText(4, 0));
+      Assert.Equal("42", space.AsTextAt(1, 0));
+      Assert.Equal("3.5", space.AsTextAt(2, 0));
+      Assert.Equal("2026-01-15", space.AsTextAt(3, 0));
+      Assert.Equal("TRUE", space.AsTextAt(4, 0));
 
-      Assert.True(space.IsBlank(5, 0));
-      Assert.True(space.IsBlank(6, 0));
+      Assert.True(space.IsBlankAt(5, 0));
+      Assert.True(space.IsBlankAt(6, 0));
     }
 
     // --- The value surface: what a homogeneous grid knows that a space does not ---------------------
@@ -188,18 +180,18 @@ namespace Unrect.Tests
     [Fact]
     public void AGridIsAValueSpaceAndItsPointsHandBackTheValueUnrendered()
     {
-      // IValueCells<T> is one member wide, and this is why it is worth having: the canonical four
+      // IValueSpace<T> is one member wide, and this is why it is worth having: the canonical four
       // answer ABOUT a cell, and this answers WITH it — the int, not "42". A declaration that wants
-      // the value says so in its own type, and then Point<IValueCells<T>>.Value() is there.
-      IValueCells<int> grid = GridSpace.Create(new[,] { { 1, 2 }, { 3, 0 } }, isBlank: v => v == 0);
+      // the value says so in its own type, and then Point<IValueSpace<T>>.Value() is there.
+      IValueSpace<int> grid = GridSpace.Create(new[,] { { 1, 2 }, { 3, 0 } }, isBlank: v => v == 0);
 
-      Assert.Equal(3, Plane<IValueCells<int>>.Of(grid)[0, 1].Value());
+      Assert.Equal(3, Plane<IValueSpace<int>>.Of(grid)[0, 1].Value());
       Assert.Equal(2, grid.ValueAt(1, 0));
 
       // A blank cell still HAS a value — blankness is the space's question, not this one's — so the
       // zero comes back rather than a null the type could not hold anyway.
-      Assert.True(grid.IsBlank(1, 1));
-      Assert.Equal(0, Plane<IValueCells<int>>.Of(grid)[1, 1].Value());
+      Assert.True(grid.IsBlankAt(1, 1));
+      Assert.Equal(0, Plane<IValueSpace<int>>.Of(grid)[1, 1].Value());
     }
 
     [Fact]
@@ -208,7 +200,7 @@ namespace Unrect.Tests
       // OutOfBoundsException and not IndexOutOfRangeException: running off the edge of a space is a
       // statement about the data that a declaration may recover from, where an index bug is on the
       // engine's fault list and would make the overrun unrecoverable.
-      IValueCells<int> grid = GridSpace.Create(new[,] { { 1, 2 } }, isBlank: v => v == 0);
+      IValueSpace<int> grid = GridSpace.Create(new[,] { { 1, 2 } }, isBlank: v => v == 0);
 
       Assert.Throws<OutOfBoundsException>(() => grid.ValueAt(2, 0));
       Assert.Throws<OutOfBoundsException>(() => grid.ValueAt(0, 1));
@@ -228,20 +220,7 @@ namespace Unrect.Tests
       // against this, so it is pinned per type rather than left to the default overload's judgement.
       var space = GridSpace.Create(new object?[,] { { value } });
 
-      Assert.Equal(rendered, space.AsText(0, 0));
-    }
-
-    [Fact]
-    public void AndOnlyAStringIsItsOwnText()
-    {
-      // IsText is the question "is this cell's canonical text its own value" — true for a string,
-      // false for everything that RENDERS, and false for a blank. It is what the matchers are closed
-      // over, so getting it wrong makes RowContaining match numbers by their rendering.
-      var space = GridSpace.Create(new object?[,] { { "word", 42, null } });
-
-      Assert.True(space.IsText(0, 0));
-      Assert.False(space.IsText(1, 0));
-      Assert.False(space.IsText(2, 0));
+      Assert.Equal(rendered, space.AsTextAt(0, 0));
     }
 
     [Fact]
@@ -252,11 +231,9 @@ namespace Unrect.Tests
       var values = new[,] { { 1 } };
 
       Assert.Throws<ArgumentNullException>(
-        () => GridSpace.Create(values, isBlank: null!, isText: _ => false, asText: v => v.ToString(CultureInfo.InvariantCulture)));
+        () => GridSpace.Create(values, isBlank: null!, asText: v => v.ToString(CultureInfo.InvariantCulture)));
       Assert.Throws<ArgumentNullException>(
-        () => GridSpace.Create(values, isBlank: _ => false, isText: null!, asText: v => v.ToString(CultureInfo.InvariantCulture)));
-      Assert.Throws<ArgumentNullException>(
-        () => GridSpace.Create(values, isBlank: _ => false, isText: _ => false, asText: null!));
+        () => GridSpace.Create(values, isBlank: _ => false, asText: null!));
       Assert.Throws<ArgumentNullException>(() => GridSpace.Create((int[,])null!));
     }
   }

@@ -64,20 +64,9 @@ namespace Unrect.Projections
       return true;
     }
 
-    /// <summary>
-    /// One cell holding text — the one assertion every space can answer. Where <see cref="AsText"/>
-    /// takes whatever the cell says, this refuses a cell that holds anything else: a numeric 42 says
-    /// "42" and holds no text. The space words the refusal in the vocabulary of its own store.
-    /// </summary>
-    public static IProjectionDefinition<TSpace, string> Text()
-      => new ReadDefinition<TSpace, string>("Text", ReadHeldText, Placement.Of(ExplicitArea(1, 1)), blankIsNull: false);
-
-    private static bool ReadHeldText(Point<TSpace> cell, out string value, out CellProblem? problem)
-      => cell.TryGetText(out value, out problem);
-
     /// <summary>One row, as wide as the leading columns that carry values.</summary>
     public static IProjectionDefinition<TSpace, T> Row<T>(Func<CellStrip<TSpace>, T> project)
-      => Strip(Orientation.Horizontal, project, RowStrategies.TakeRows(1).TakeColumnsWhileAnyValue(), "Row");
+      => Strip(Orientation.Horizontal, project, RowStrategies.TakeRows(1).TakeColumnsWhileAnyIsNotBlank(), "Row");
 
     /// <summary>One row exactly <paramref name="width"/> columns wide.</summary>
     public static IProjectionDefinition<TSpace, T> Row<T>(int width, Func<CellStrip<TSpace>, T> project)
@@ -95,7 +84,7 @@ namespace Unrect.Projections
 
     /// <summary>One column, as tall as the leading rows that carry values.</summary>
     public static IProjectionDefinition<TSpace, T> Column<T>(Func<CellStrip<TSpace>, T> project)
-      => Strip(Orientation.Vertical, project, ColumnStrategies.TakeColumns(1).TakeRowsWhileAnyValue(), "Column");
+      => Strip(Orientation.Vertical, project, ColumnStrategies.TakeColumns(1).TakeRowsWhileAnyIsNotBlank(), "Column");
 
     /// <summary>One column exactly <paramref name="height"/> rows tall.</summary>
     public static IProjectionDefinition<TSpace, T> Column<T>(int height, Func<CellStrip<TSpace>, T> project)
@@ -144,21 +133,22 @@ namespace Unrect.Projections
     /// consumed once, and rendered into failure paths like anything else. Put a section under one
     /// with <c>Under</c>:
     /// <code>
-    /// var lines   = Range(RowsWhileAnyValue(), b =&gt; b.Rows);
+    /// var lines   = Range(RowsWhileAnyIsNotBlank(), b =&gt; b.Rows);
     /// var section = lines.Under(Caption("K-1 Lines 1-21"))
     ///                    .Until(RowContaining("Portfolio Income"), orEnd: true);
     /// </code>
     /// </para>
     /// <para>
-    /// Matching is whole-cell, trimmed and case-insensitive — the same rule
-    /// <see cref="RowContaining"/> uses, so a caption and a bound written from the same literal
-    /// cannot disagree. Share the literal with a <c>const</c> when both are needed.
+    /// Matching is on what the cell SAYS, whole-cell, trimmed and case-insensitive, whatever the
+    /// cell's kind — a caption that is a year matches "2024" — and it is the same rule
+    /// <see cref="RowSaying"/> uses, so a caption and a bound written from the same literal cannot
+    /// disagree. Share the literal with a <c>const</c> when both are needed.
     /// </para>
     /// </summary>
     public static IProjectionDefinition<TSpace, string> Caption(string text)
       => new CaptionDefinition<TSpace>(
         NotEmpty(text, nameof(text)),
-        new Placement(OffsetStrategies.To(RowLandmarks.RowContaining(text)), FullRow()));
+        new Placement(OffsetStrategies.To(RowLandmarks.RowSaying(text)), FullRow()));
 
     // --- Tables — one mechanism at several degrees of declaredness ------------------------------
     //
@@ -292,7 +282,7 @@ namespace Unrect.Projections
     ///   return o.Build(read =&gt; new Allocation(Fund: read.Of(fund), Primary: read.Of(primary)));
     /// }))
     ///   .Below(RowContaining("ACCOUNT"))
-    ///   .Sized(RowsWhileAnyValue())
+    ///   .Sized(RowsWhileAnyIsNotBlank())
     /// </code>
     /// A flow full of <c>Right(n)</c>, or an overlay with none, is worth a second look: flows are
     /// relative and overlays are grid-absolute, and reading both value and formula out of one cell
@@ -552,10 +542,10 @@ namespace Unrect.Projections
     /// One labelled pair for a <see cref="Fields"/> block: the cell reading <paramref
     /// name="label"/>, and the value cell immediately to its right.
     /// <para>
-    /// A label is matched whole-cell, trimmed, case-insensitively, and <em>with a trailing colon
-    /// ignored on both sides</em> — a colon is presentation of a label, not part of it, and an
-    /// export that drops it next year should not break the declaration. That rule applies here and
-    /// nowhere else.
+    /// A label is what a cell SAYS, whatever its kind, matched whole-cell, trimmed,
+    /// case-insensitively, and <em>with a trailing colon ignored on both sides</em> — a colon is
+    /// presentation of a label, not part of it, and an export that drops it next year should not
+    /// break the declaration. That rule applies here and nowhere else.
     /// </para>
     /// </summary>
     public static Field Field(string label) => new Field(NotEmptyLabel(label));
@@ -926,7 +916,7 @@ namespace Unrect.Projections
     // Columns the header leaves blank on the way to its first caption are columns with no label:
     // part of the table, bound to nothing.
     private static IAreaStrategy DiscoveredBlock()
-      => AreaStrategies.RowsThenColumns(RowStrategies.TakeRowsWhileAnyValue(), ColumnStrategies.TakeTableColumns());
+      => AreaStrategies.RowsThenColumns(RowStrategies.TakeRowsWhileAnyIsNotBlank(), ColumnStrategies.TakeTableColumns());
 
     /// <summary>
     /// The same width rule as <see cref="DiscoveredBlock"/>, but the height runs to the enclosing

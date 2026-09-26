@@ -16,7 +16,7 @@ namespace Unrect.Spreadsheets
   /// <c>using static</c> lines name <see cref="ICellSpace"/>. A declaration's space is fixed by
   /// those imports, not by how the workbook is opened: name <see cref="ISpreadsheetSpace"/> in both,
   /// taking the second from <see cref="SpreadsheetProjectionBuilders{TSpace}"/>, and open the sheet
-  /// with <see cref="SpreadsheetSpace.CreateWithFormulas(string, string, bool, System.Func{Cell, bool})"/>.
+  /// with <see cref="SpreadsheetSpace.CreateWithFormulas(string, string, bool, System.Func{string, bool})"/>.
   /// </para>
   /// </summary>
   public static class StyleReads

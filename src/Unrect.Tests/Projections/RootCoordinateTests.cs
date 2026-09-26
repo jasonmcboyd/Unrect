@@ -109,7 +109,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal(2, corner.Column);
       Assert.Equal(3, corner.Row);
       Assert.Equal("33", corner.AsText());
-      Assert.Equal(corner.AsText(), Sheet(door).AsText(2, 3));
+      Assert.Equal(corner.AsText(), Sheet(door).AsTextAt(2, 3));
     }
 
     [Theory]

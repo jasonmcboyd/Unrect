@@ -92,7 +92,7 @@ namespace Unrect.Interactive
       // card's — the full width, for as many rows as carry a value.
       var leaf = labels == LabelsIn.Row
         ? ProjectionBuilders<TSpace>.Table(headerRows, (TableView<TSpace> view) => Source(view.Space, view.ColumnPaths))
-        : ProjectionBuilders<TSpace>.AfterBlankRows().Range(ProjectionBuilders<TSpace>.RowsWhileAnyValue(), block => Source(block.Space));
+        : ProjectionBuilders<TSpace>.AfterBlankRows().Range(ProjectionBuilders<TSpace>.RowsWhileAnyIsNotBlank(), block => Source(block.Space));
 
       return leaf.AsUnit($"{noun}(\"{typeName}\")");
     }

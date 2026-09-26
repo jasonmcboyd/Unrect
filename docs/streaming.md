@@ -82,7 +82,7 @@ var result = projection.Map(book.Sheet("Data"));    // Sheet(name) is one forwar
   disk error: it says nothing about the data, so `.Optional()`, `.Else()` and `Choice` let it
   through and never report it as an absent section.
 - **A cell read directly is loaded on the way to it.** Outside the engine nothing is
-  released, so a sheet can be walked forward by hand — `sheet.AsText(0, 0)`, then row 1, then
+  released, so a sheet can be walked forward by hand — `sheet.AsTextAt(0, 0)`, then row 1, then
   row 40 — and every row up to the one asked for is loaded and held. Walking backwards over
   rows a *map* has released is the failure above.
 - **One consumer per pass.** A pass is not shared between threads. Many threads over one

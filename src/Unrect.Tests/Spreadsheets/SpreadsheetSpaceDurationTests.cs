@@ -16,7 +16,7 @@ namespace Unrect.Tests.Spreadsheets
   /// <para>
   /// A cell formatted as a duration ([h]:mm:ss and friends) is handed to us by the reader as a
   /// <c>TimeSpan</c>, not a number — the one backend type whose canonical form is not obvious. A
-  /// duration is not an instant, so it cannot honestly lex to Temporal; it lexes to a Number of
+  /// duration is not an instant, so it cannot honestly lex to Date; it lexes to a Number of
   /// days, the unit the serial format already uses. Before that was handled, such a cell threw
   /// "Unsupported cell type System.TimeSpan" and took the whole workbook with it.
   /// </para>
@@ -76,18 +76,18 @@ namespace Unrect.Tests.Spreadsheets
       Assert.Equal(cells[1, 1].Double(), cells[0, 1].Double());
       Assert.Equal(cells[1, 2].Double(), cells[0, 2].Double());
       Assert.Equal(space.Describe(1, 1), space.Describe(0, 1));
-      Assert.Equal(space.AsText(1, 1), space.AsText(0, 1));
+      Assert.Equal(space.AsTextAt(1, 1), space.AsTextAt(0, 1));
     }
 
     [Fact]
     public void ADurationCellIsNotATemporal()
     {
-      // 36 hours is not a moment in time. Lexing it to Temporal would make it a date in January
+      // 36 hours is not a moment in time. Lexing it to Date would make it a date in January
       // 1900 — a real number that means nothing.
       var space = Durations();
 
-      Assert.False(space.TryGetDateTimeAt(0, 1, out _, out var problem));
-      Assert.Equal("expected Temporal at A2, found Number", problem!.Value.Render("A2"));
+      Assert.False(Plane<ICellSpace>.Of(space)[0, 1].TryGetDate(out _, out var problem));
+      Assert.Equal("expected Date at A2, found Number", problem!.Value.Render("A2"));
       Assert.Throws<CellReadException>(() => Plane<ICellSpace>.Of(space)[0, 1].Date());
     }
 
@@ -98,8 +98,8 @@ namespace Unrect.Tests.Spreadsheets
       // duration would end a region early and the failure would be a silently short table.
       var space = Durations();
 
-      Assert.False(space.IsBlank(0, 1));
-      Assert.True(Plane<ICellSpace>.Of(space)[0, 1].HasValue);
+      Assert.False(space.IsBlankAt(0, 1));
+      Assert.False(Plane<ICellSpace>.Of(space)[0, 1].IsBlank());
     }
 
     // --- The fixture ----------------------------------------------------------------------------

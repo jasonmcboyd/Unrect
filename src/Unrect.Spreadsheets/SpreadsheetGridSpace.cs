@@ -54,6 +54,7 @@ namespace Unrect.Spreadsheets
       return _styles[row, column];
     }
 
-    private protected override Cell CellAt(int column, int row) => _values.At(column, row);
+    /// <inheritdoc/>
+    public override CellValue ValueAt(int column, int row) => _values.ValueAt(column, row);
   }
 }

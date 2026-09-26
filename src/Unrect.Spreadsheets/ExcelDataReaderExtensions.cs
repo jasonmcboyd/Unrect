@@ -10,7 +10,7 @@ namespace Unrect.Spreadsheets
   internal static class ExcelDataReaderExtensions
   {
     // This adapter's blankness default: a null or empty cell is an empty cell.
-    internal static Cell GetCellValue(this IExcelDataReader dataReader, int index)
+    internal static CellValue GetCellValue(this IExcelDataReader dataReader, int index)
     {
       // Errors first: an error cell has no value to read, so GetValue reports it as null and it
       // would otherwise be adapted into a Blank — a missing cell, which is not what it is.
@@ -19,22 +19,22 @@ namespace Unrect.Spreadsheets
 
       return dataReader.GetValue(index) switch
       {
-        null => Cell.Blank,
-        double value => Cell.Of(value),
-        DateTime value => Cell.Of(value),
-        bool value => Cell.Of(value),
-        int value => Cell.Of(value),
-        long value => Cell.Of(value),
-        float value => Cell.Of((double)value),
-        string value => string.IsNullOrEmpty(value) ? Cell.Blank : Cell.Of(value),
+        null => CellValue.Blank,
+        double value => CellValue.Of(value),
+        DateTime value => CellValue.Of(value),
+        bool value => CellValue.Of(value),
+        int value => CellValue.Of(value),
+        long value => CellValue.Of(value),
+        float value => CellValue.Of((double)value),
+        string value => string.IsNullOrEmpty(value) ? CellValue.Blank : CellValue.Of(value),
         // An elapsed-time cell — built-in number format 46 ([h]:mm:ss), 79, or any custom [h]/[m]/[s]
-        // format. A duration is not an instant, so it cannot honestly lex to Temporal; it lexes to a
+        // format. A duration is not an instant, so it cannot honestly lex to Date; it lexes to a
         // Number of days, the unit every serial-based format already agrees on. Lossless by
         // construction: the reader produced this TimeSpan as TimeSpan.FromDays(serial), so TotalDays
         // hands back the serial it started from. (FromDays rounds to the nearest millisecond, so the
         // round trip is not bit-exact; that loss is the reader's and is one more argument for a
         // first-party OOXML reader behind the native-payload seam.)
-        TimeSpan value => Cell.Of(value.TotalDays),
+        TimeSpan value => CellValue.Of(value.TotalDays),
         var value => throw new InvalidOperationException($"Unsupported cell type {value.GetType()}.")
       };
     }
@@ -50,18 +50,18 @@ namespace Unrect.Spreadsheets
     /// <see cref="SpreadsheetSpace"/> for that limitation and what it costs.
     /// </para>
     /// </summary>
-    private static Cell Adapt(ExcelError error) =>
+    private static CellValue Adapt(ExcelError error) =>
       error switch
       {
-        ExcelError.NULL => Cell.OfError(CellError.Null),
-        ExcelError.DIV0 => Cell.OfError(CellError.DivisionByZero),
-        ExcelError.VALUE => Cell.OfError(CellError.Value),
-        ExcelError.REF => Cell.OfError(CellError.Reference),
-        ExcelError.NAME => Cell.OfError(CellError.Name),
-        ExcelError.NUM => Cell.OfError(CellError.Number),
-        ExcelError.NA => Cell.OfError(CellError.NotAvailable),
-        ExcelError.GETTING_DATA => Cell.OfError(CellError.GettingData),
-        _ => Cell.OfError(CellError.Other, error.ToString())
+        ExcelError.NULL => CellValue.OfError(CellError.Null),
+        ExcelError.DIV0 => CellValue.OfError(CellError.DivisionByZero),
+        ExcelError.VALUE => CellValue.OfError(CellError.Value),
+        ExcelError.REF => CellValue.OfError(CellError.Reference),
+        ExcelError.NAME => CellValue.OfError(CellError.Name),
+        ExcelError.NUM => CellValue.OfError(CellError.Number),
+        ExcelError.NA => CellValue.OfError(CellError.NotAvailable),
+        ExcelError.GETTING_DATA => CellValue.OfError(CellError.GettingData),
+        _ => CellValue.OfError(CellError.Other, error.ToString())
       };
   }
 }

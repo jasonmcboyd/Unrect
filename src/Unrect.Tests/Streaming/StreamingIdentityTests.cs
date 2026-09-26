@@ -115,7 +115,7 @@ namespace Unrect.Tests.Streaming
       for (var row = 0; row < space.Area.Size.Height; row++)
         for (var column = 0; column < space.Area.Size.Width; column++)
         {
-          if (!space.IsText(column, row) || space.AsText(column, row) is not string text)
+          if (!space.IsText(column, row) || space.AsTextAt(column, row) is not string text)
           {
             pattern.Add(-1);
             continue;
@@ -335,10 +335,10 @@ namespace Unrect.Tests.Streaming
       using var book = Workbook.Open(Path("edge-cases.xlsx"), new WorkbookOptions());
       var streamed = book.Sheet("Edges");
 
-      Assert.True(streamed.IsErrorAt(0, 1));
-      Assert.Equal("#VALUE!", streamed.AsText(0, 1));
+      Assert.True(streamed.ValueAt(0, 1).Kind == CellKind.Error);
+      Assert.Equal("#VALUE!", streamed.AsTextAt(0, 1));
       Assert.Equal("Error(#VALUE!)", streamed.Describe(0, 1));
-      Assert.False(streamed.IsBlank(0, 1));
+      Assert.False(streamed.IsBlankAt(0, 1));
     }
 
     /// <summary>
@@ -364,15 +364,15 @@ namespace Unrect.Tests.Streaming
         for (var column = 0; column < eager.Area.Size.Width; column++)
         {
           Assert.Equal(eager.Describe(column, row), streamed.Describe(column, row));
-          Assert.Equal(eager.IsBlank(column, row), streamed.IsBlank(column, row));
+          Assert.Equal(eager.IsBlankAt(column, row), streamed.IsBlankAt(column, row));
           Assert.Equal(eager.IsText(column, row), streamed.IsText(column, row));
-          Assert.Equal(eager.AsText(column, row), streamed.AsText(column, row));
+          Assert.Equal(eager.AsTextAt(column, row), streamed.AsTextAt(column, row));
 
-          // The error queries, which are the two ICellSpace members no leaf reads: IsErrorAt asks
-          // whether the cell IS one, and ErrorTextAt hands back the file's own spelling where it
-          // differs from the canonical one. A door that lost the literal would answer null here for
-          // two different reasons, and the contract has one.
-          Assert.Equal(eager.IsErrorAt(column, row), streamed.IsErrorAt(column, row));
+          // The error questions, which no leaf reads: whether the cell IS one (the value's Kind),
+          // and ErrorTextAt, the file's own spelling where it differs from the canonical one. A
+          // door that lost the literal would answer null here for two different reasons, and the
+          // contract has one.
+          Assert.Equal(eager.ValueAt(column, row).Kind == CellKind.Error, streamed.ValueAt(column, row).Kind == CellKind.Error);
           Assert.Equal(eager.ErrorTextAt(column, row), streamed.ErrorTextAt(column, row));
 
           Assert.Equal(Read(eager, column, row), Read(streamed, column, row));
@@ -396,10 +396,10 @@ namespace Unrect.Tests.Streaming
 
       return string.Join(
         " | ",
-        Of<string>((c, r) => (space.TryGetTextAt(c, r, out var v, out var p), v, p)),
-        Of<double>((c, r) => (space.TryGetDoubleAt(c, r, out var v, out var p), v, p)),
-        Of<DateTime>((c, r) => (space.TryGetDateTimeAt(c, r, out var v, out var p), v, p)),
-        Of<bool>((c, r) => (space.TryGetBooleanAt(c, r, out var v, out var p), v, p)));
+        Of<string>((c, r) => (Plane<ICellSpace>.Of(space)[c, r].TryGetText(out var v, out var p), v, p)),
+        Of<double>((c, r) => (Plane<ICellSpace>.Of(space)[c, r].TryGetDouble(out var v, out var p), v, p)),
+        Of<DateTime>((c, r) => (Plane<ICellSpace>.Of(space)[c, r].TryGetDate(out var v, out var p), v, p)),
+        Of<bool>((c, r) => (Plane<ICellSpace>.Of(space)[c, r].TryGetBoolean(out var v, out var p), v, p)));
     }
 
     private static string Describe(IReadOnlyList<ProjectionDiagnostic> diagnostics) =>

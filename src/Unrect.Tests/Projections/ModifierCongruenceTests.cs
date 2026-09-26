@@ -110,9 +110,9 @@ namespace Unrect.Tests.Projections
       { 4, "c1" },
     });
 
-    private static IRowLandmark Mark() => RowContaining("Mark");
+    private static IRowLandmark Mark() => RowContaining("Mark").Landmark;
 
-    private static IRowLandmark Missing() => RowContaining("Nope");
+    private static IRowLandmark Missing() => RowContaining("Nope").Landmark;
 
     /// <summary>A region that renders its own extent and contents, so every geometric difference shows.</summary>
     private static IProjectionDefinition<ICellSpace, string> Block() => Range(block =>
@@ -127,7 +127,7 @@ namespace Unrect.Tests.Projections
     });
 
     private static string Describe(Point<ICellSpace> cell)
-      => cell.IsBlank ? "_" : cell.IsText ? cell.Text() : cell.Describe();
+      => cell.IsBlank() ? "_" : cell.IsText() ? cell.Text() : cell.Describe();
 
     /// <summary>
     /// One modifier, by name — so a theory can name a pair rather than carry two lambdas. The
@@ -434,7 +434,7 @@ namespace Unrect.Tests.Projections
 
       var failure = Assert.Throws<ProjectionException>(() => Sized(Extent(2, 1)).Of(Heading("Mark").Of(Block())).Map(space));
 
-      Assert.Contains("no row containing 'Mark' exists in the available space", failure.Message);
+      Assert.Contains("no row saying 'Mark' exists in the available space", failure.Message);
     }
 
     [Theory]
@@ -542,7 +542,7 @@ namespace Unrect.Tests.Projections
 
       var failure = Assert.Throws<ProjectionException>(() => Heading("Nope").Of(Text().Optional()).Map(space));
 
-      Assert.Contains("no row containing 'Nope' exists in the available space", failure.Message);
+      Assert.Contains("no row saying 'Nope' exists in the available space", failure.Message);
     }
 
     [Fact]

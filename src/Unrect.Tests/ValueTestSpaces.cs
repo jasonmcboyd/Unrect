@@ -10,16 +10,16 @@ namespace Unrect.Tests
   internal static class ValueTestSpaces
   {
     /// <summary>A grid of numbers in which zero means an empty cell.</summary>
-    public static IValueCells<int> Numbers(int[,] values) => GridSpace.Create(values, isBlank: value => value == 0);
+    public static IValueSpace<int> Numbers(int[,] values) => GridSpace.Create(values, isBlank: value => value == 0);
 
     /// <summary>A grid of labels; the array adapter treats null and "" as empty cells.</summary>
-    public static IValueCells<string?> Labels(string?[,] values) => GridSpace.Create(values);
+    public static IValueSpace<string?> Labels(string?[,] values) => GridSpace.Create(values);
 
     /// <summary>
     /// A grid of heterogeneous values, each rendering as the kind its CLR type implies — the
     /// canonical twin of <see cref="ProjectionTestSpaces.Mixed"/>, which reads the same literals as
     /// a sheet.
     /// </summary>
-    public static IValueCells<object?> Values(object?[,] values) => GridSpace.Create(values);
+    public static IValueSpace<object?> Values(object?[,] values) => GridSpace.Create(values);
   }
 }

@@ -5,6 +5,7 @@
   <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll</Reference>
   <Reference Relative="..\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll</Reference>
   <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;</Namespace>
+  <Namespace>static Unrect.Spreadsheets.SpreadsheetProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;</Namespace>
   <Namespace>Unrect.Core</Namespace>
   <Namespace>Unrect.Projections</Namespace>
   <Namespace>Unrect.Spreadsheets</Namespace>
@@ -35,10 +36,10 @@ var space = SpreadsheetSpace.CreateWithFormulas(path, "Sheet1");
 
 // A cell comes back as a place, and the reading is written at it: an ATAX code is either the words
 // in a text cell or a whole number, and the cell's own kind says which.
-string Code(Point<ISpreadsheetSpace> cell) => cell.IsText ? cell.Text() : cell.IntegerOrBlank()?.ToString() ?? "";
+string Code(Point<ISpreadsheetSpace> cell) => cell.IsText() ? cell.Text() : cell.IntegerOrBlank()?.ToString() ?? "";
 
 int Find(Point<ISpreadsheetSpace>[] row, string caption) => Array.FindIndex(row,
-	cell => cell.IsText && string.Equals(cell.Text().Trim(), caption, StringComparison.OrdinalIgnoreCase));
+	cell => cell.IsText() && string.Equals(cell.Text().Trim(), caption, StringComparison.OrdinalIgnoreCase));
 
 // A full-width single row anchored by a content seek. AllColumns() is the declared spelling of
 // "the whole width" — Row's default discovers its width and would stop at the first gap, and a
@@ -71,7 +72,7 @@ var ownershipRow = Down(4).Of(FullRow("Fund Short Name"));
 // column layout from them, so what leaves here is the answer, not the evidence. It is bounded, so
 // every seek inside stays unambiguous — and the bound is declared where all geometry is, ahead of
 // the shape it places: Sized is the entry for an extent with no movement to its left.
-var header = Sized(RowsWhileAnyValue()).Of(Overlay(o =>
+var header = Sized(RowsWhileAnyIsNotBlank()).Of(Overlay(o =>
 {
 	// Fields hands back each label's cell as a place; AsText is the total reading, so the card
 	// leaves here as what it says rather than as five addresses for someone else to read.
@@ -86,7 +87,7 @@ var header = Sized(RowsWhileAnyValue()).Of(Overlay(o =>
 	var columns = new[] { (Code: "FEDERAL", Percent: 1.0, Column: Find(captions, "Federal")) }
 		.Concat(fundNames
 			.Select((cell, i) => (Cell: cell, Index: i))
-			.Where(x => x.Index > label && x.Cell.HasValue)
+			.Where(x => x.Index > label && !x.Cell.IsBlank())
 			.Select(x => (Code: x.Cell.Text(), Percent: ownership[x.Index].Double(), Column: x.Index)))
 		.ToArray();
 
@@ -94,7 +95,7 @@ var header = Sized(RowsWhileAnyValue()).Of(Overlay(o =>
 }));
 
 // One section projection: rows while any value, wherever it is anchored.
-var section = Range(RowsWhileAnyValue(), b => b.Rows.Select(r => r.ToArray()).ToArray());
+var section = Range(RowsWhileAnyIsNotBlank(), b => b.Rows.Select(r => r.ToArray()).ToArray());
 
 var k1Lines = Heading("K-1 Lines 1-21").Of(section);
 
@@ -117,7 +118,7 @@ var report = VerticalFlow(v => new
 
 	// Every coded row across both sections, pivot-neutral.
 	var allRows = r.K1Rows.Concat(r.PortfolioRows ?? Array.Empty<Point<ISpreadsheetSpace>[]>())
-		.Where(row => row[head.AtaxColumn].HasValue)
+		.Where(row => !row[head.AtaxColumn].IsBlank())
 		.ToArray();
 
 	// Fund-centric pivot, legacy-import-style: each fund carries only its non-empty, non-zero

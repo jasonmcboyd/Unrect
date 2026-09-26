@@ -23,18 +23,6 @@ namespace Unrect.Strategies
     public static IRowStrategy TakeRowsTo(Func<Plane<ISpace>, int, bool> predicate)
       => new TakeToRowStrategy(predicate, true);
 
-    /// <summary>
-    /// Rows up to and including the first whose cell in <paramref name="column"/> is the text
-    /// <paramref name="text"/> — whole-cell, trimmed and case-insensitive, and a text cell only, so
-    /// a numeric cell rendering the same digits does not end the band.
-    /// </summary>
-    public static IRowStrategy TakeRowsToText(int column, string text)
-    {
-      var matches = CellMatching.TextEquals(text ?? throw new ArgumentNullException(nameof(text)));
-
-      return TakeRowsTo((space, row) => matches(space[column, row]));
-    }
-
     /// <summary>Leading rows in which every cell satisfies <paramref name="predicate"/>.</summary>
     public static IRowStrategy TakeRowsWhileAll(Func<Point<ISpace>, bool> predicate)
       => new TakeWhileAllRowStrategy(predicate);
@@ -44,8 +32,8 @@ namespace Unrect.Strategies
       => new TakeWhileAnyRowStrategy(predicate);
 
     /// <summary>Leading rows that carry a value — <see cref="TakeRowsWhileAny(Func{Point{ISpace}, bool})"/> with <c>HasValue</c> as the predicate.</summary>
-    public static IRowStrategy TakeRowsWhileAnyValue()
-      => TakeRowsWhileAny(v => v.HasValue);
+    public static IRowStrategy TakeRowsWhileAnyIsNotBlank()
+      => TakeRowsWhileAny(v => !v.IsBlank());
 
     /// <summary>
     /// Every row of the available space. The declared spelling of "the full height", which
@@ -72,8 +60,8 @@ namespace Unrect.Strategies
       => AreaStrategies.ColumnsThenRows(strategy, TakeRowsWhileAny(predicate));
 
     /// <summary>Those columns, at the rows that carry values — <see cref="TakeRowsWhileAny(Func{Point{ISpace}, bool})"/> with <c>HasValue</c> as the predicate.</summary>
-    public static IAreaStrategy TakeRowsWhileAnyValue(this IColumnStrategy strategy)
-      => strategy.TakeRowsWhileAny(v => v.HasValue);
+    public static IAreaStrategy TakeRowsWhileAnyIsNotBlank(this IColumnStrategy strategy)
+      => strategy.TakeRowsWhileAny(v => !v.IsBlank());
 
     /// <summary>Those columns, at the full available height.</summary>
     public static IAreaStrategy AllRows(this IColumnStrategy strategy)

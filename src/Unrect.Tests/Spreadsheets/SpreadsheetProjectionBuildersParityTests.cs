@@ -45,8 +45,8 @@ namespace Unrect.Tests.Spreadsheets
     private static ISpreadsheetSpace Sheet() => new FormulaGridSpace(
       new[,]
       {
-        { Cell.Of("Amount"), Cell.Blank },
-        { Cell.Of(100m), Cell.Of(250m) },
+        { CellValue.Of("Amount"), CellValue.Blank },
+        { CellValue.Of(100), CellValue.Of(250) },
       },
       new string?[,]
       {

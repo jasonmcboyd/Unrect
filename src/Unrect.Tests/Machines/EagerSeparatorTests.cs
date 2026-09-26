@@ -33,7 +33,7 @@ namespace Unrect.Tests.Machines
     };
 
     private static IProjectionDefinition<ICellSpace, IReadOnlyList<string>> Block()
-      => Sized(RowsWhileAnyValue()).Of(Range(block => (IReadOnlyList<string>)block.Rows.Select(row => row[0].AsText()!).ToList()));
+      => Sized(RowsWhileAnyIsNotBlank()).Of(Range(block => (IReadOnlyList<string>)block.Rows.Select(row => row[0].AsText()!).ToList()));
 
     private static IProjectionDefinition<ICellSpace, IReadOnlyList<IReadOnlyList<string>>> Repeat(IOffsetStrategy<ICellSpace> separator)
       => VerticalRepeat(Block(), separatedBy: separator);
@@ -47,7 +47,7 @@ namespace Unrect.Tests.Machines
       {
         var rows = 0;
 
-        while (rows < plane.Area.Height && Enumerable.Range(0, plane.Width).All(column => plane[column, rows].IsBlank))
+        while (rows < plane.Area.Height && Enumerable.Range(0, plane.Width).All(column => plane[column, rows].IsBlank()))
           rows++;
 
         return new Size(0, rows);

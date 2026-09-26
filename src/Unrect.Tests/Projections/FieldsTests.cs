@@ -85,7 +85,7 @@ namespace Unrect.Tests.Projections
 
       // A blank value cell is a blank cell, not a failure: the label was there, which is what the
       // block asserted.
-      Assert.True(entity["Note"].IsBlank);
+      Assert.True(entity["Note"].IsBlank());
       Assert.Null(entity["Note"].AsText());
     }
 
@@ -243,7 +243,7 @@ namespace Unrect.Tests.Projections
         Fields(Field("EIN"), Field("Deal Type")).Map(Card()));
 
       Assert.Equal(
-        "expected a label reading 'Deal Type' here, but this cell reads 'Entity Type'",
+        "expected a label reading 'Deal Type' here, but this cell says 'Entity Type'",
         Problem(failure));
       Assert.Equal("Field(\"Deal Type\")#2", failure.Subject);
     }

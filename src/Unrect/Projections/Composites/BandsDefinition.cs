@@ -167,7 +167,7 @@ namespace Unrect.Projections
 
       for (var row = 0; row < area.Height; row++)
         for (var column = 0; column < area.Width; column++)
-          if (!band[column, row].IsBlank)
+          if (!band[column, row].IsBlank())
             return false;
 
       return true;

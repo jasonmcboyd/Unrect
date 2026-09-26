@@ -174,7 +174,7 @@ namespace Unrect.Tests.Projections
 
       // The point member is the address, so the assertion is about the cell it names rather than
       // about a kind carried in the value — Raw.Kind until phase 6, when the member was a Cell.
-      Assert.True(row.Raw.IsText);
+      Assert.True(row.Raw.IsText());
       Assert.Equal("anything", row.Raw.AsText());
     }
 
@@ -201,7 +201,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal(2, rows[1].Any.Row);
 
       // And the readings the two cells do answer to, asked of the point after the fact.
-      Assert.True(rows[0].Any.IsText);
+      Assert.True(rows[0].Any.IsText());
       Assert.Equal("n/a", rows[0].Any.AsText());
       Assert.Equal(5m, rows[1].Any.Decimal());
     }

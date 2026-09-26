@@ -1,4 +1,3 @@
-using System;
 
 using Unrect.Core;
 using Unrect.Spreadsheets;
@@ -38,29 +37,12 @@ namespace Unrect.Tests
     public Area Area => _inner.Area;
 
     /// <inheritdoc/>
-    public bool IsBlank(int column, int row) => _inner.IsBlank(column, Read(row));
+    public bool IsBlankAt(int column, int row) => _inner.IsBlankAt(column, Read(row));
 
     /// <inheritdoc/>
-    public string? AsText(int column, int row) => _inner.AsText(column, Read(row));
+    public string? AsTextAt(int column, int row) => _inner.AsTextAt(column, Read(row));
 
-    /// <inheritdoc/>
-    public bool TryGetTextAt(int column, int row, out string value, out CellProblem? problem)
-      => _inner.TryGetTextAt(column, Read(row), out value, out problem);
-
-    /// <inheritdoc/>
-    public bool TryGetDoubleAt(int column, int row, out double value, out CellProblem? problem)
-      => _inner.TryGetDoubleAt(column, Read(row), out value, out problem);
-
-    /// <inheritdoc/>
-    public bool TryGetDateTimeAt(int column, int row, out DateTime value, out CellProblem? problem)
-      => _inner.TryGetDateTimeAt(column, Read(row), out value, out problem);
-
-    /// <inheritdoc/>
-    public bool TryGetBooleanAt(int column, int row, out bool value, out CellProblem? problem)
-      => _inner.TryGetBooleanAt(column, Read(row), out value, out problem);
-
-    /// <inheritdoc/>
-    public bool TryGetErrorAt(int column, int row, out string error) => _inner.TryGetErrorAt(column, Read(row), out error);
+    public CellValue ValueAt(int column, int row) => _inner.ValueAt(column, Read(row));
 
     /// <summary>
     /// Records one row touched and hands it straight back, so every member traces by using its

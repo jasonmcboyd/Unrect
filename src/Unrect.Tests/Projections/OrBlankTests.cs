@@ -115,7 +115,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal(
         "expected Number at A1, found Error(#DIV/0!)",
         Problem(Assert.Throws<ProjectionException>(() =>
-          Decimal().OrBlank().Map(One(Cell.OfError(CellError.DivisionByZero))))));
+          Decimal().OrBlank().Map(One(CellValue.OfError(CellError.DivisionByZero))))));
     }
 
     [Fact]

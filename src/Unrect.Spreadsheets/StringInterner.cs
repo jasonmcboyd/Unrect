@@ -15,7 +15,7 @@ namespace Unrect.Spreadsheets
   /// held grid or a held projection will.</para>
   ///
   /// <para><b>Strings only.</b> Every other kind is inline in the 24-byte
-  /// <see cref="Cell"/> — a number, a date, a boolean and a blank hold no heap object to
+  /// <see cref="CellValue"/> — a number, a date, a boolean and a blank hold no heap object to
   /// share — and the two that could (a number's exact decimal, an error's literal) are unreachable
   /// through the spreadsheet door: a reader hands the adapter a <c>double</c> for every numeric cell,
   /// and an error's literal is kept only when it is one the canonical spelling does not already
@@ -91,9 +91,9 @@ namespace Unrect.Spreadsheets
     /// before, and a <c>Text</c> either guard declined. The returned cell is equal to the one passed
     /// in by every measure a caller has; only its identity differs.
     /// </summary>
-    internal Cell Share(Cell value)
+    internal CellValue Share(CellValue value)
     {
-      if (value.TryGetString() is not string text || text.Length > MaximumLength)
+      if (!value.TryGetText(out var text) || text.Length > MaximumLength)
         return value;
 
       if (_entries.TryGetValue(text, out var canonical))
@@ -101,7 +101,7 @@ namespace Unrect.Spreadsheets
         Interlocked.Increment(ref _hits);
         Interlocked.Add(ref _bytesSaved, Bytes(text.Length));
 
-        return Cell.Of(canonical);
+        return CellValue.Of(canonical);
       }
 
       // Two threads entering the same new value is the one race here, and it is harmless: the loser

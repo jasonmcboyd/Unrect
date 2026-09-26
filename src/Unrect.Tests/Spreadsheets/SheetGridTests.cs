@@ -16,18 +16,18 @@ namespace Unrect.Tests.Spreadsheets
     [Fact]
     public void ACellNobodyFilledInIsBlank()
     {
-      // A Cell is a value type whose default IS blank, so an array with a gap in it holds an empty
+      // A CellValue is a value type whose default IS blank, so an array with a gap in it holds an empty
       // cell rather than something broken — the state is unrepresentable rather than merely
       // rejected, and this is where that structural fact is pinned.
-      var values = new Cell[1, 2];
-      values[0, 0] = Cell.Of(1);
+      var values = new CellValue[1, 2];
+      values[0, 0] = CellValue.Of(1);
 
       var grid = SheetGrid.Of(values);
 
-      Assert.False(grid.IsBlank(0, 0));
-      Assert.Equal("1", grid.AsText(0, 0));
-      Assert.True(grid.IsBlank(1, 0));
-      Assert.Null(grid.AsText(1, 0));
+      Assert.False(grid.IsBlankAt(0, 0));
+      Assert.Equal("1", grid.AsTextAt(0, 0));
+      Assert.True(grid.IsBlankAt(1, 0));
+      Assert.Null(grid.AsTextAt(1, 0));
     }
 
     [Fact]
@@ -43,23 +43,23 @@ namespace Unrect.Tests.Spreadsheets
 
       Assert.Equal(3, grid.Area.Size.Width);
       Assert.Equal(2, grid.Area.Size.Height);
-      Assert.Equal("c", grid.AsText(2, 0));
-      Assert.Equal("d", grid.AsText(0, 1));
+      Assert.Equal("c", grid.AsTextAt(2, 0));
+      Assert.Equal("d", grid.AsTextAt(0, 1));
     }
 
     [Fact]
     public void Of_AdaptsEachValueToTheKindItsClrTypeImplies()
     {
-      // The adaptation table, which is what lets a fixture be written as a literal. A Cell passes
+      // The adaptation table, which is what lets a fixture be written as a literal. A CellValue passes
       // straight through, because an error is the one kind with no CLR literal to write it as.
       var grid = SheetGrid.Of(new object?[,]
       {
-        { "word", 42, 3.5m, new DateTime(2026, 1, 15), true, null, "", Cell.OfError(CellError.Value) },
+        { "word", 42, 3.5m, new DateTime(2026, 1, 15), true, null, "", CellValue.OfError(CellError.Value) },
       });
 
       var cells = Plane<SheetGrid>.Of(grid);
 
-      Assert.Equal("word", grid.AsText(0, 0));
+      Assert.Equal("word", grid.AsTextAt(0, 0));
       Assert.True(grid.IsText(0, 0));
 
       Assert.Equal(42, cells[1, 0].Integer());
@@ -67,11 +67,11 @@ namespace Unrect.Tests.Spreadsheets
       Assert.Equal(new DateTime(2026, 1, 15), cells[3, 0].Date());
       Assert.True(cells[4, 0].Boolean());
 
-      Assert.True(grid.IsBlank(5, 0));
-      Assert.True(grid.IsBlank(6, 0));
+      Assert.True(grid.IsBlankAt(5, 0));
+      Assert.True(grid.IsBlankAt(6, 0));
 
-      Assert.True(grid.IsErrorAt(7, 0));
-      Assert.Equal("#VALUE!", grid.AsText(7, 0));
+      Assert.True(grid.ValueAt(7, 0).Kind == CellKind.Error);
+      Assert.Equal("#VALUE!", grid.AsTextAt(7, 0));
       Assert.Equal("Error(#VALUE!)", grid.Describe(7, 0));
     }
 
@@ -94,9 +94,8 @@ namespace Unrect.Tests.Spreadsheets
 
       for (var column = 0; column < 7; column++)
       {
-        Assert.Equal(kinded.IsBlank(column, 0), canonical.IsBlank(column, 0));
-        Assert.Equal(kinded.IsText(column, 0), canonical.IsText(column, 0));
-        Assert.Equal(kinded.AsText(column, 0), canonical.AsText(column, 0));
+        Assert.Equal(kinded.IsBlankAt(column, 0), canonical.IsBlankAt(column, 0));
+        Assert.Equal(kinded.AsTextAt(column, 0), canonical.AsTextAt(column, 0));
       }
     }
 
@@ -113,19 +112,22 @@ namespace Unrect.Tests.Spreadsheets
       Assert.Equal(3.5m, Plane<SheetGrid>.Of(SheetGrid.Of(values))[0, 0].Decimal());
 
       // What the canonical door has instead: the rendering, which is the same string either way.
-      Assert.Equal("3.5", GridSpace.Create(values).AsText(0, 0));
-      Assert.Equal("3.5", SheetGrid.Of(values).AsText(0, 0));
+      Assert.Equal("3.5", GridSpace.Create(values).AsTextAt(0, 0));
+      Assert.Equal("3.5", SheetGrid.Of(values).AsTextAt(0, 0));
     }
 
     [Fact]
     public void AnErrorCellIsTheOneLiteralOnlyTheKindedDoorTakes()
     {
-      // A Cell passes through SheetGrid.Of because an error is the one kind with no CLR literal to
-      // write it as — and the canonical door has no vocabulary for one, so it refuses the value
-      // rather than rendering something. Where the two doors differ, they differ loudly.
-      var values = new object?[,] { { Cell.OfError(CellError.Value) } };
+      // A CellError is the one kind with no CLR literal to write it as, so the kinded door takes the
+      // error itself (and a CellValue passes straight through) — and the canonical door has no
+      // vocabulary for one, so it refuses the value rather than rendering something. Where the two
+      // doors differ, they differ loudly.
+      var values = new object?[,] { { CellError.Value } };
 
-      Assert.Equal("#VALUE!", SheetGrid.Of(values).AsText(0, 0));
+      Assert.Equal("#VALUE!", SheetGrid.Of(values).AsTextAt(0, 0));
+      Assert.Equal(CellValue.OfError(CellError.Value), SheetGrid.Of(values).ValueAt(0, 0));
+      Assert.Equal("#VALUE!", SheetGrid.Of(new object?[,] { { CellValue.OfError(CellError.Value) } }).AsTextAt(0, 0));
 
       // And they refuse at different moments, which is the other half of the difference: the kinded
       // door decides every cell's kind when the grid is made, so a value it has no kind for is an
@@ -134,7 +136,7 @@ namespace Unrect.Tests.Spreadsheets
       // bug either way, never a bounds condition a declaration could recover from.
       var canonical = GridSpace.Create(values);
 
-      Assert.Throws<ArgumentException>(() => canonical.AsText(0, 0));
+      Assert.Throws<ArgumentException>(() => canonical.AsTextAt(0, 0));
     }
 
     [Fact]
@@ -143,7 +145,7 @@ namespace Unrect.Tests.Spreadsheets
       // An error where the grid is built, not a cell that reads as something surprising.
       Assert.Throws<ArgumentException>(() => SheetGrid.Of(new object?[,] { { new object() } }));
       Assert.Throws<ArgumentNullException>(() => SheetGrid.Of((object?[,])null!));
-      Assert.Throws<ArgumentNullException>(() => SheetGrid.Of((Cell[,])null!));
+      Assert.Throws<ArgumentNullException>(() => SheetGrid.Of((CellValue[,])null!));
     }
   }
 }

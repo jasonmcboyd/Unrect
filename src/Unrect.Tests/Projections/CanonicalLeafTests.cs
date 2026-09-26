@@ -69,8 +69,8 @@ namespace Unrect.Tests.Projections
       // The total-est leaf there is: a blank cell and an error cell both have addresses, so both are
       // projected without a word. This is what makes Point() the escape hatch for a column of no one
       // kind — there is no reading to disagree with the data.
-      Assert.True(Point().Map(BlankCell()).IsBlank);
-      Assert.False(Point().Map(One(Cell.OfError(CellError.DivisionByZero))).IsBlank);
+      Assert.True(Point().Map(BlankCell()).IsBlank());
+      Assert.False(Point().Map(One(CellValue.OfError(CellError.DivisionByZero))).IsBlank());
     }
 
     [Fact]
@@ -90,7 +90,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal("hello", AsText().Map(One("hello")));
       Assert.Equal("1.5", AsText().Map(One(1.5m)));
       Assert.Equal("TRUE", AsText().Map(One(true)));
-      Assert.Equal("#DIV/0!", AsText().Map(One(Cell.OfError(CellError.DivisionByZero))));
+      Assert.Equal("#DIV/0!", AsText().Map(One(CellValue.OfError(CellError.DivisionByZero))));
     }
 
     [Fact]
