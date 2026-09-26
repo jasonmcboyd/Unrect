@@ -160,7 +160,7 @@ double and says "1.5". The test-only `SpaceQuestions.KindAt`/`Describe` — the 
 
 ## Quibble list
 
-- Names: `CellValue` (or keep `Cell`)? `CellKind.Date` → `Date`? `IValueSpace` vs `ICellSpace`
+- RULED 2026-09-26: `CellValue` stays; `CellKind.Temporal` → `Date`; `CellSpaceBase` stays until the doors, the doors until the reader. Open: `IValueSpace` vs `ICellSpace`
   — is the cell space just `IValueSpace<CellValue>` with no name of its own?
 - RULED 2026-09-26: `IsBlankAt`/`AsTextAt` on the space, following `ValueAt`; the point keeps `IsBlank()`/`AsText()`.
 - RULED 2026-09-26: `HasValue()` is gone (`!p.IsBlank()`), and `…WhileAnyValue` is
