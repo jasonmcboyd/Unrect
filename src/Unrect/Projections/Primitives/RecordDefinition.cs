@@ -37,7 +37,7 @@ namespace Unrect.Projections
 
       try
       {
-        return new Settlement<T>(Record(row), extent.Area.Size);
+        return new Settlement<T>(Record(row), extent.Extent);
       }
       catch (CellReadException failure)
       {

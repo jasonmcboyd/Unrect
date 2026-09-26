@@ -28,7 +28,7 @@ namespace Unrect.Projections
     /// </summary>
     internal static ProjectionLocation At<TSpace>(Point<TSpace> point)
       where TSpace : class, ISpace
-      => At(new Offset(point.Column, point.Row), point.Space.Area.Size);
+      => At(new Offset(point.Column, point.Row), point.Space.Extent);
 
     /// <summary>
     /// Where <paramref name="plane"/> starts, with the plane's own extent as the space available
@@ -36,7 +36,7 @@ namespace Unrect.Projections
     /// </summary>
     internal static ProjectionLocation At<TSpace>(Plane<TSpace> plane)
       where TSpace : class, ISpace
-      => At(plane.Origin, plane.Area.Size);
+      => At(plane.Origin, plane.Extent);
 
     /// <summary>
     /// Whether this is the cell at <paramref name="origin"/>, however much space was available

@@ -29,11 +29,11 @@ namespace Unrect.Spreadsheets
       _fills = fills;
     }
 
-    public override Area Area => _values.Area;
+    public override Size Extent => _values.Extent;
 
     public bool TryGetFormulaAt(int column, int row, out string formula)
     {
-      if (column < 0 || column >= Area.Width || row < 0 || row >= Area.Height)
+      if (column < 0 || column >= Extent.Width || row < 0 || row >= Extent.Height)
         throw new OutOfBoundsException();
 
       formula = _formulas[row, column]!;
@@ -48,7 +48,7 @@ namespace Unrect.Spreadsheets
 
     private int StyleAt(int column, int row)
     {
-      if (column < 0 || column >= Area.Width || row < 0 || row >= Area.Height)
+      if (column < 0 || column >= Extent.Width || row < 0 || row >= Extent.Height)
         throw new OutOfBoundsException();
 
       return _styles[row, column];

@@ -60,14 +60,14 @@ namespace Unrect.Benchmarks
 
     /// <summary>Adapting a million numbers: the allocation floor for a canonical grid this size.</summary>
     [Benchmark]
-    public int Create_FromInts() => GridSpace.Create(_ints, isBlank: v => v == 0).Area.Height;
+    public int Create_FromInts() => GridSpace.Create(_ints, isBlank: v => v == 0).Extent.Height;
 
     /// <summary>
     /// The same from a mixed object array, through the kinded adapter: one cell at a time, each
     /// deciding its own kind. The floor for a sheet a script builds without a file.
     /// </summary>
     [Benchmark]
-    public int Create_FromObjects() => SheetGrid.Of(_objects).Area.Height;
+    public int Create_FromObjects() => SheetGrid.Of(_objects).Extent.Height;
 
     /// <summary>
     /// A million blankness questions. Every size and offset strategy in the library asks one per
@@ -180,7 +180,7 @@ namespace Unrect.Benchmarks
     public int Slice_Million()
     {
       var total = 0;
-      var row = new Area(CanonicalSpaces.Columns, 1);
+      var row = new Size(CanonicalSpaces.Columns, 1);
 
       for (var i = 0; i < CanonicalSpaces.MegaCells; i++)
         total += _plane.Slice(new Offset(0, i % CanonicalSpaces.MegaRows), row).Width;

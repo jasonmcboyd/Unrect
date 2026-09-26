@@ -34,7 +34,7 @@ namespace Unrect.Projections
 
     internal override Settlement<Point<TSpace>> Collect(Plane<TSpace> extent, ProjectorScope<TSpace> scope)
     {
-      var size = extent.Area.Size;
+      var size = extent.Extent;
 
       // Normally unreachable — the factory fixes the extent at 2x1 — but reachable the moment a
       // caller replaces the placement (.Sized, a field inside a declared frame), and it is the half

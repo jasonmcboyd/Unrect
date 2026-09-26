@@ -238,8 +238,8 @@ namespace Unrect.Tests.Projections
     {
       var strip = Capture(Row(2, s => s), Grid(new[,] { { 1, 2, 3 } }));
 
-      Assert.Equal(2, strip.Space.Area.Size.Width);
-      Assert.Equal(1, strip.Space.Area.Size.Height);
+      Assert.Equal(2, strip.Space.Extent.Width);
+      Assert.Equal(1, strip.Space.Extent.Height);
     }
 
     // --- CellBlock ------------------------------------------------------------------------------------

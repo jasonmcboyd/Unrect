@@ -36,10 +36,10 @@ namespace Unrect.Tests.Projections
 
       foreach (var (cut, origin) in new[]
       {
-        (extent.Slice(new Offset(1, 1), new Area(2, 2)), new Offset(1, 1)),
-        (extent.Slice(new Area(2, 2)), default(Offset)),
+        (extent.Slice(new Offset(1, 1), new Size(2, 2)), new Offset(1, 1)),
+        (extent.Slice(new Size(2, 2)), default(Offset)),
         (extent.Slice(new Offset(1, 1)), new Offset(1, 1)),
-        (extent.Slice(new Area(2, extent.Height)), default(Offset)),
+        (extent.Slice(new Size(2, extent.Height)), default(Offset)),
       })
       {
         Assert.Same(extent.Space, cut.Space);
@@ -73,8 +73,8 @@ namespace Unrect.Tests.Projections
       Assert.Same(space, root.Space);
       Assert.Equal(default(Offset).Width, root.Origin.Width);
       Assert.Equal(default(Offset).Height, root.Origin.Height);
-      Assert.Equal(space.Area.Size.Width, root.Area.Size.Width);
-      Assert.Equal(space.Area.Size.Height, root.Area.Size.Height);
+      Assert.Equal(space.Extent.Width, root.Extent.Width);
+      Assert.Equal(space.Extent.Height, root.Extent.Height);
     }
 
     [Fact]

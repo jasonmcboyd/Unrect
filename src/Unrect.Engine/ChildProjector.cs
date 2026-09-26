@@ -210,7 +210,7 @@ namespace Unrect.Projections
         else
         {
           var region = Spans.Region(_offered[0], index + 1, _driver).Erased();
-          var step = _placement.Advance(region, index, Spans.Across(span.Area.Size, _driver), _parent);
+          var step = _placement.Advance(region, index, Spans.Across(span.Extent, _driver), _parent);
 
           if (_placement.Failed)
           {
@@ -494,7 +494,7 @@ namespace Unrect.Projections
         throw Threw(exception, inner);
       }
 
-      var consumed = declared ? inner.Area.Size : settlement.Consumed;
+      var consumed = declared ? inner.Extent : settlement.Consumed;
 
       Settle(settlement.Value, consumed, settlement.Absorbed);
     }
@@ -576,7 +576,7 @@ namespace Unrect.Projections
     private Plane<TSpace> InnerPlane(int rows)
     {
       if (_innerStart >= _offered.Count)
-        return Spans.Empty(InnerOrigin(), _driver).Slice(Spans.ToOffset(0, Math.Min(_column, Spans.Across(InnerOrigin().Area.Size, _driver)), _driver));
+        return Spans.Empty(InnerOrigin(), _driver).Slice(Spans.ToOffset(0, Math.Min(_column, Spans.Across(InnerOrigin().Extent, _driver)), _driver));
 
       var region = rows == 0 ? Spans.Empty(_offered[_innerStart], _driver) : Spans.Region(_offered[_innerStart], Math.Min(rows, _offered.Count - _innerStart), _driver);
 
@@ -592,13 +592,13 @@ namespace Unrect.Projections
     /// <summary>The same region, <paramref name="width"/> wide across the driver's axis.</summary>
     private Plane<TSpace> Narrow(Plane<TSpace> region, int width)
       => _driver == Orientation.Vertical
-        ? region.Slice(new Area(width, region.Height))
-        : region.Slice(new Area(region.Width, width));
+        ? region.Slice(new Size(width, region.Height))
+        : region.Slice(new Size(region.Width, width));
 
     /// <summary>The span from <paramref name="column"/> across the driver's axis, <paramref name="width"/> wide or to its edge.</summary>
     private Plane<TSpace> Cut(Plane<TSpace> span, int column, int? width)
       => _driver == Orientation.Vertical
-        ? span.Slice(new Offset(column, 0), new Area(width ?? span.Width - column, 1))
-        : span.Slice(new Offset(0, column), new Area(1, width ?? span.Height - column));
+        ? span.Slice(new Offset(column, 0), new Size(width ?? span.Width - column, 1))
+        : span.Slice(new Offset(0, column), new Size(1, width ?? span.Height - column));
   }
 }

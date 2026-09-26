@@ -57,7 +57,7 @@ namespace Unrect.Projections
 
     internal override Settlement<TResult> Collect(Plane<TSpace> extent, ProjectorScope<TSpace> scope)
     {
-      var size = extent.Area.Size;
+      var size = extent.Extent;
 
       if (size.Width != 1 || size.Height != 1)
         throw scope.Failure($"{Article(Kind)} {Kind} must be exactly one cell; this one is {size.Width}x{size.Height}", extent);

@@ -51,7 +51,7 @@ namespace Unrect.Tests.Projections
 
       // It is the REGION that refuses, not the space: the sheet underneath has a row 100 and
       // would have handed it over.
-      Assert.Equal(103, TallSheet().Area.Height);
+      Assert.Equal(103, TallSheet().Extent.Height);
       Assert.True(TallSheet().IsBlankAt(0, BoundHeight));
     }
 

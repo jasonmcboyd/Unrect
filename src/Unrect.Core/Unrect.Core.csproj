@@ -14,7 +14,7 @@
       CanonicalReads                                                 ISpace's questions asked of a Point
       Scans                                                          the fold that defines a
                                                                      strategy's whole-region answer
-      Size, Offset, Area, Orientation, OffsetStep                    the strategy signatures
+      Size, Offset, Size, Orientation, OffsetStep                    the strategy signatures
       OutOfBoundsException                                           the throw ISpace mandates
 
     Hashes, Renderings and Spans are internal and exempt: the charter is about what this project's

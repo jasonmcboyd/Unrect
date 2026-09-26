@@ -42,8 +42,8 @@ namespace Unrect.Tests.Streaming
       var streamed = book.Sheet("Report");
       var eager = SpreadsheetSpace.Create(Path("simple-report.xlsx"), "Report");
 
-      Assert.Equal(eager.Area.Size.Width, streamed.Area.Size.Width);
-      Assert.Equal(eager.Area.Size.Height, streamed.Area.Size.Height);
+      Assert.Equal(eager.Extent.Width, streamed.Extent.Width);
+      Assert.Equal(eager.Extent.Height, streamed.Extent.Height);
       Assert.Equal("Capital Activity Report", streamed.AsTextAt(0, 0));
     }
 
@@ -122,12 +122,12 @@ namespace Unrect.Tests.Streaming
       // a hundred regions still reads it once.
       using var book = Workbook.Open(Path("simple-report.xlsx"), Cold());
       var sheet = Plane<ICellSpace>.Of(book.Sheet("Report"));
-      var slice = sheet.Slice(new Offset(0, 5), new Area(4, 5));
+      var slice = sheet.Slice(new Offset(0, 5), new Size(4, 5));
 
       Assert.Equal(sheet[0, 5], slice[0, 0]);
       Assert.Equal(sheet[2, 7], slice[2, 2]);
 
-      var nested = slice.Slice(new Offset(1, 1), new Area(2, 2));
+      var nested = slice.Slice(new Offset(1, 1), new Size(2, 2));
 
       Assert.Equal(sheet[1, 6], nested[0, 0]);
 
@@ -149,10 +149,10 @@ namespace Unrect.Tests.Streaming
       var space = book.Sheet("Report");
 
       Assert.Throws<OutOfBoundsException>(() => space.AsTextAt(-1, 0));
-      Assert.Throws<OutOfBoundsException>(() => space.AsTextAt(space.Area.Size.Width, 0));
-      Assert.Throws<OutOfBoundsException>(() => space.AsTextAt(0, space.Area.Size.Height));
+      Assert.Throws<OutOfBoundsException>(() => space.AsTextAt(space.Extent.Width, 0));
+      Assert.Throws<OutOfBoundsException>(() => space.AsTextAt(0, space.Extent.Height));
       Assert.Throws<OutOfBoundsException>(
-        () => Plane<ICellSpace>.Of(space).Slice(new Offset(0, 0), new Area(99, 99)));
+        () => Plane<ICellSpace>.Of(space).Slice(new Offset(0, 0), new Size(99, 99)));
     }
 
     // --- The catalogue -----------------------------------------------------------------------------
@@ -175,9 +175,9 @@ namespace Unrect.Tests.Streaming
 
       _ = book.SheetNames;
 
-      Assert.Equal(2, book.Sheet("Cover").Area.Size.Height);
-      Assert.Equal(4, book.Sheet("Summary").Area.Size.Height);
-      Assert.Equal(6, book.Sheet("Detail").Area.Size.Height);
+      Assert.Equal(2, book.Sheet("Cover").Extent.Height);
+      Assert.Equal(4, book.Sheet("Summary").Extent.Height);
+      Assert.Equal(6, book.Sheet("Detail").Extent.Height);
       Assert.Equal("Alpha Fund", book.Sheet("Detail").AsTextAt(0, 1));
     }
 
@@ -193,8 +193,8 @@ namespace Unrect.Tests.Streaming
       var summary = book.Sheet("Summary");
       var detail = book.Sheet("Detail");
 
-      Assert.Equal(4, summary.Area.Size.Height);
-      Assert.Equal(6, detail.Area.Size.Height);
+      Assert.Equal(4, summary.Extent.Height);
+      Assert.Equal(6, detail.Extent.Height);
 
       // Not just vended — read. A catalogue entry with the wrong index would hand back a view over
       // the wrong sheet, which an Area alone would not catch.
@@ -215,7 +215,7 @@ namespace Unrect.Tests.Streaming
       // pair reads as one rule — the catalogue grows in whichever direction it is asked to.
       using var book = Workbook.Open(Path("multi-sheet.xlsx"), Cold());
 
-      Assert.Equal(6, book.Sheet("Detail").Area.Size.Height);
+      Assert.Equal(6, book.Sheet("Detail").Extent.Height);
 
       Assert.Equal("Alpha Fund", book.Sheet("Summary").AsTextAt(0, 1));
       Assert.Equal("Quarterly Pack", book.Sheet("Cover").AsTextAt(0, 0));
@@ -235,7 +235,7 @@ namespace Unrect.Tests.Streaming
         using var book = Workbook.Open(Path("multi-sheet.xlsx"), Cold());
 
         foreach (var name in order)
-          Assert.Equal(heights[name], book.Sheet(name).Area.Size.Height);
+          Assert.Equal(heights[name], book.Sheet(name).Extent.Height);
 
         Assert.Equal("Fund", book.Sheet("Detail").AsTextAt(0, 0));
       }
@@ -255,9 +255,9 @@ namespace Unrect.Tests.Streaming
       // sheet first records the ones before it on the way and they cost nothing afterwards.
       using var book = Workbook.Open(Path("multi-sheet.xlsx"), Cold());
 
-      Assert.Equal(6, book.Sheet("Detail").Area.Size.Height);
-      Assert.Equal(4, book.Sheet("Summary").Area.Size.Height);
-      Assert.Equal(2, book.Sheet("Cover").Area.Size.Height);
+      Assert.Equal(6, book.Sheet("Detail").Extent.Height);
+      Assert.Equal(4, book.Sheet("Summary").Extent.Height);
+      Assert.Equal(2, book.Sheet("Cover").Extent.Height);
     }
 
     [Fact]
@@ -280,8 +280,8 @@ namespace Unrect.Tests.Streaming
     {
       using var book = Workbook.Open(Path("multi-sheet.xlsx"), Cold());
 
-      Assert.Equal(6, book.Sheet("detail").Area.Size.Height);
-      Assert.Equal(6, book.Sheet("DETAIL").Area.Size.Height);
+      Assert.Equal(6, book.Sheet("detail").Extent.Height);
+      Assert.Equal(6, book.Sheet("DETAIL").Extent.Height);
     }
 
     [Fact]
@@ -291,7 +291,7 @@ namespace Unrect.Tests.Streaming
         Path("multi-sheet.xlsx"),
         new WorkbookOptions { CaseSensitiveSheetNames = true });
 
-      Assert.Equal(6, book.Sheet("Detail").Area.Size.Height);
+      Assert.Equal(6, book.Sheet("Detail").Extent.Height);
       Assert.Throws<ArgumentException>(() => book.Sheet("detail"));
     }
 

@@ -19,7 +19,7 @@ namespace Unrect.Projections
     internal static void ReportUnconsumed<TSpace>(IProjectionDefinition projection, Plane<TSpace> space, Size gap, Size described, ProjectorScope<TSpace> scope)
       where TSpace : class, ISpace
     {
-      var size = space.Area.Size;
+      var size = space.Extent;
 
       if (described.Width >= size.Width && described.Height >= size.Height)
         return;

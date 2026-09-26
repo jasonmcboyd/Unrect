@@ -383,14 +383,14 @@ namespace Unrect.Tests.Projections
     public void RetypingARegionKeepsItsOriginAndItsExtent()
     {
       var sheet = CoordinateGrid(4, 10);
-      var region = Plane<ICellSpace>.Of(sheet).Slice(new Offset(1, 2)).Slice(new Area(3, 8));
+      var region = Plane<ICellSpace>.Of(sheet).Slice(new Offset(1, 2)).Slice(new Size(3, 8));
 
       var retyped = region.Erased().Retyped<ICellSpace>();
 
       Assert.Same(region.Space, retyped.Space);
       Assert.Equal(region.Origin, retyped.Origin);
       Assert.Equal(region.Width, retyped.Width);
-      Assert.Equal(new Area(3, 8), retyped.Area);
+      Assert.Equal(new Size(3, 8), retyped.Extent);
 
       for (var row = 0; row < 10; row++)
         Assert.Equal(region.HasRow(row), retyped.HasRow(row));

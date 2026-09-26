@@ -34,7 +34,7 @@ namespace Unrect.Tests
     public int RowsTouched => _rows.Count;
 
     /// <inheritdoc/>
-    public Area Area => _inner.Area;
+    public Size Extent => _inner.Extent;
 
     /// <inheritdoc/>
     public bool IsBlankAt(int column, int row) => _inner.IsBlankAt(column, Read(row));

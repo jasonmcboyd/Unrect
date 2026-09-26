@@ -128,18 +128,18 @@ namespace Unrect.Tests.Strategies
     /// </summary>
     private static int LeadingColumnsWhereSomeRowMatches(ICellSpace space, Func<Point<ISpace>, bool> predicate)
     {
-      for (var column = 0; column < space.Area.Width; column++)
+      for (var column = 0; column < space.Extent.Width; column++)
       {
         var matched = false;
 
-        for (var row = 0; row < space.Area.Height; row++)
+        for (var row = 0; row < space.Extent.Height; row++)
           matched |= predicate(space.Region()[column, row]);
 
         if (!matched)
           return column;
       }
 
-      return space.Area.Width;
+      return space.Extent.Width;
     }
 
     /// <summary>
@@ -148,16 +148,16 @@ namespace Unrect.Tests.Strategies
     /// </summary>
     private static int LeadingColumnsWhereEveryRowMatches(ICellSpace space, Func<Point<ISpace>, bool> predicate)
     {
-      for (var column = 0; column < space.Area.Width; column++)
+      for (var column = 0; column < space.Extent.Width; column++)
       {
-        for (var row = 0; row < space.Area.Height; row++)
+        for (var row = 0; row < space.Extent.Height; row++)
         {
           if (!predicate(space.Region()[column, row]))
             return column;
         }
       }
 
-      return space.Area.Width;
+      return space.Extent.Width;
     }
 
     // --- The rewrite agrees with the denotation ----------------------------------------------------

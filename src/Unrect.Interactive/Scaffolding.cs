@@ -329,7 +329,7 @@ namespace Unrect.Interactive
       public static Region Of(ICellSpace sheet)
         => sheet is null
           ? throw new ArgumentNullException(nameof(sheet))
-          : new Region(sheet, 0, 0, sheet.Area.Width, sheet.Area.Height);
+          : new Region(sheet, 0, 0, sheet.Extent.Width, sheet.Extent.Height);
 
       public static Region Of<TSpace>(Plane<TSpace> plane)
         where TSpace : class, ICellSpace

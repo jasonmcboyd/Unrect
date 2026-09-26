@@ -16,7 +16,7 @@ namespace Unrect.Strategies
     /// <summary>
     /// An accumulator over an extent <paramref name="width"/> columns wide, positioned before row 0.
     /// The width is given rather than read from a space because the caller may be discovering the
-    /// height of the very extent being measured, and an <see cref="Area"/> is one struct.
+    /// height of the very extent being measured, and an <see cref="Size"/> is one struct.
     /// </summary>
     IColumnAccumulator BeginColumns(int width);
   }

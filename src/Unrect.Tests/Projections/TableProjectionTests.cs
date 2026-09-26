@@ -114,8 +114,8 @@ namespace Unrect.Tests.Projections
     {
       var view = Table((TableView<ICellSpace> t) => t).Map(SimpleTable());
 
-      Assert.Equal(2, view.Space.Area.Size.Width);
-      Assert.Equal(4, view.Space.Area.Size.Height);
+      Assert.Equal(2, view.Space.Extent.Width);
+      Assert.Equal(4, view.Space.Extent.Height);
     }
 
     [Fact]

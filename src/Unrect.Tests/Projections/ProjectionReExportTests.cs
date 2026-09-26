@@ -45,7 +45,7 @@ namespace Unrect.Tests.Projections
     /// <summary>The extent a strategy resolves to on the patchy grid, as "WxH".</summary>
     private static string Measure(IAreaStrategy area)
     {
-      var size = area.GetArea(Patchy()).Size;
+      var size = area.GetArea(Patchy());
 
       return $"{size.Width}x{size.Height}";
     }
@@ -240,8 +240,8 @@ namespace Unrect.Tests.Projections
         SkipColumnsWhileAny(cell => !cell.IsBlank()).Strategy,
         OffsetStrategies.SkipColumnsWhileAny(Valued)),
       "SelectOffset" => (
-        SelectOffset(region => new Size(1, region.Area.Height)).Strategy,
-        OffsetStrategies.SelectOffset(region => new Size(1, region.Area.Height))),
+        SelectOffset(region => new Size(1, region.Extent.Height)).Strategy,
+        OffsetStrategies.SelectOffset(region => new Size(1, region.Extent.Height))),
 
       _ => throw new ArgumentOutOfRangeException(nameof(name), name, "No such offset."),
     };

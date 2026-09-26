@@ -40,8 +40,8 @@ namespace Unrect.Tests.Spreadsheets
     {
       var space = Edges();
 
-      Assert.Equal(5, space.Area.Size.Width);
-      Assert.Equal(4, space.Area.Size.Height);
+      Assert.Equal(5, space.Extent.Width);
+      Assert.Equal(4, space.Extent.Height);
     }
 
     // --- Ordinary kinds ---------------------------------------------------------------------------
@@ -113,7 +113,7 @@ namespace Unrect.Tests.Spreadsheets
     public void ARowOfNothingButErrorsStillCarriesValues()
     {
       // The consequence that matters downstream: a discovered region does not stop at such a row.
-      var errorsOnly = Edges().Region().Slice(new Offset(0, 1), new Area(5, 1));
+      var errorsOnly = Edges().Region().Slice(new Offset(0, 1), new Size(5, 1));
 
       Assert.Equal(1, SizeStrategies.RowsWhileAnyIsNotBlank().GetSize(errorsOnly).Height);
     }
@@ -179,7 +179,7 @@ namespace Unrect.Tests.Spreadsheets
       var strict = Edges(isBlank: _ => false);
 
       var firstFour = new Offset(0, 0);
-      var block = new Area(4, 4);
+      var block = new Size(4, 4);
 
       Assert.Equal(2, SizeStrategies.RowsWhileAnyIsNotBlank().GetSize(byDefault.Region().Slice(firstFour, block)).Height);
       Assert.Equal(4, SizeStrategies.RowsWhileAnyIsNotBlank().GetSize(strict.Region().Slice(firstFour, block)).Height);
@@ -199,8 +199,8 @@ namespace Unrect.Tests.Spreadsheets
     [Fact]
     public void BlanknessDecidesWhetherThereIsAGapToSkip()
     {
-      var byDefault = Edges().Region().Slice(new Offset(0, 2), new Area(4, 2));
-      var strict = Edges(isBlank: _ => false).Region().Slice(new Offset(0, 2), new Area(4, 2));
+      var byDefault = Edges().Region().Slice(new Offset(0, 2), new Size(4, 2));
+      var strict = Edges(isBlank: _ => false).Region().Slice(new Offset(0, 2), new Size(4, 2));
 
       Assert.Equal(1, OffsetStrategies.SkipBlankRows().GetOffset(byDefault).Size.Height);
       Assert.Equal(0, OffsetStrategies.SkipBlankRows().GetOffset(strict).Size.Height);

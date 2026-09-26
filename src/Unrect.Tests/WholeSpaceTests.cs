@@ -52,8 +52,8 @@ namespace Unrect.Tests
       Assert.Same(space, region.Space);
       Assert.Equal(0, region.Origin.Width);
       Assert.Equal(0, region.Origin.Height);
-      Assert.Equal(space.Area.Width, region.Area.Width);
-      Assert.Equal(space.Area.Height, region.Area.Height);
+      Assert.Equal(space.Extent.Width, region.Extent.Width);
+      Assert.Equal(space.Extent.Height, region.Extent.Height);
 
       Assert.Equal(Plane<ISpace>.Of(space), region);
     }
@@ -79,7 +79,7 @@ namespace Unrect.Tests
       var space = Sheet();
       var strategy = SizeStrategies.RowsWhileAnyIsNotBlank().ToAreaStrategy();
 
-      Assert.Equal(strategy.GetArea(Plane<ISpace>.Of(space)).Size, strategy.GetArea(space).Size);
+      Assert.Equal(strategy.GetArea(Plane<ISpace>.Of(space)), strategy.GetArea(space));
       Assert.Equal(2, strategy.GetArea(space).Height);
     }
 

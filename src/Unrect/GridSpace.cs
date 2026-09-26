@@ -45,11 +45,11 @@ namespace Unrect
       _isBlank = isBlank ?? throw new ArgumentNullException(nameof(isBlank));
       _asText = asText ?? throw new ArgumentNullException(nameof(asText));
 
-      Area = new Area(values.GetLength(1), values.GetLength(0));
+      Extent = new Size(values.GetLength(1), values.GetLength(0));
     }
 
     /// <inheritdoc/>
-    public Area Area { get; }
+    public Size Extent { get; }
 
     /// <inheritdoc/>
     public T ValueAt(int column, int row)
@@ -57,7 +57,7 @@ namespace Unrect
       // OutOfBoundsException and not IndexOutOfRangeException: running off the edge of a space is a
       // statement about the data that a declaration may recover from, where an index bug is on the
       // engine's fault list and would make the overrun unrecoverable.
-      if (column < 0 || column >= Area.Width || row < 0 || row >= Area.Height)
+      if (column < 0 || column >= Extent.Width || row < 0 || row >= Extent.Height)
         throw new OutOfBoundsException();
 
       return _values[row, column];

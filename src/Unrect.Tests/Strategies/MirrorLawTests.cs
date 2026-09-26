@@ -218,12 +218,12 @@ namespace Unrect.Tests.Strategies
         var space = Labels(grid);
         var transposed = Labels(Transposed(grid));
 
-        for (var count = 0; count <= space.Area.Height; count++)
+        for (var count = 0; count <= space.Extent.Height; count++)
           Assert.Equal(
             RowStrategies.TakeRows(count).SelectRows(space),
             ColumnStrategies.TakeColumns(count).SelectColumns(transposed));
 
-        for (var count = 0; count <= space.Area.Width; count++)
+        for (var count = 0; count <= space.Extent.Width; count++)
           Assert.Equal(
             ColumnStrategies.TakeColumns(count).SelectColumns(space),
             RowStrategies.TakeRows(count).SelectRows(transposed));
@@ -244,10 +244,10 @@ namespace Unrect.Tests.Strategies
         var transposed = Labels(Transposed(grid));
 
         Assert.Throws<OutOfBoundsException>(
-          () => RowStrategies.TakeRows(space.Area.Height + 1).SelectRows(space));
+          () => RowStrategies.TakeRows(space.Extent.Height + 1).SelectRows(space));
 
         Assert.Throws<OutOfBoundsException>(
-          () => ColumnStrategies.TakeColumns(space.Area.Height + 1).SelectColumns(transposed));
+          () => ColumnStrategies.TakeColumns(space.Extent.Height + 1).SelectColumns(transposed));
       }
 
       Assert.Equal(

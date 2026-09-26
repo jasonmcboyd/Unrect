@@ -47,8 +47,8 @@ namespace Unrect.Tests
     {
       var space = TextGrid();
 
-      Assert.Equal(3, space.Area.Size.Width);
-      Assert.Equal(2, space.Area.Size.Height);
+      Assert.Equal(3, space.Extent.Width);
+      Assert.Equal(2, space.Extent.Height);
     }
 
     [Fact]

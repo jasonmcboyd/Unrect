@@ -281,8 +281,8 @@ namespace Unrect.Tests.Streaming
 
       Assert.Equal(2, block.Width);
       Assert.Equal(3, block.Height);
-      Assert.Equal(2, block.Space.Area.Width);
-      Assert.Equal(3, block.Space.Area.Height);
+      Assert.Equal(2, block.Space.Extent.Width);
+      Assert.Equal(3, block.Space.Extent.Height);
       Assert.Equal("A1", block.Location.A1);
     }
 

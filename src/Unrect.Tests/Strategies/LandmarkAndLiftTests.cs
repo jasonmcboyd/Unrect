@@ -125,7 +125,7 @@ namespace Unrect.Tests.Strategies
       var space = Labels(new string?[,] { { "a" }, { "TARGET" } });
 
       Assert.Equal(2, Past(RowLandmarks.RowSaying("TARGET")).GetOffset(space).Size.Height);
-      Assert.Equal(2, space.Area.Size.Height);
+      Assert.Equal(2, space.Extent.Height);
     }
 
     // --- Matching rules are the landmark's ------------------------------------------------------------

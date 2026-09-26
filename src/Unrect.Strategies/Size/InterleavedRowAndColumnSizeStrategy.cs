@@ -27,7 +27,7 @@ namespace Unrect.Strategies
     private Size Whole(Plane<ISpace> region)
     {
       var rows = Scans.SelectRows(RowSelectionStrategy, region);
-      var columns = ColumnAccumulators.Fold(ColumnSelectionStrategy.BeginColumns(region.Width), region.Slice(new Area(region.Width, rows)));
+      var columns = ColumnAccumulators.Fold(ColumnSelectionStrategy.BeginColumns(region.Width), region.Slice(new Size(region.Width, rows)));
 
       return new Size(columns, rows);
     }

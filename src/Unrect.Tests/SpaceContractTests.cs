@@ -47,8 +47,8 @@ namespace Unrect.Tests
     {
       var space = Door(door);
 
-      Assert.Equal(3, space.Area.Size.Width);
-      Assert.Equal(2, space.Area.Size.Height);
+      Assert.Equal(3, space.Extent.Width);
+      Assert.Equal(2, space.Extent.Height);
       Assert.Equal("0,0", space.AsTextAt(0, 0));
       Assert.Equal("2,1", space.AsTextAt(2, 1));
     }
@@ -180,8 +180,8 @@ namespace Unrect.Tests
       var text = 0;
       var rendered = 0;
 
-      for (var row = 0; row < cells.Area.Height; row++)
-        for (var column = 0; column < cells.Area.Width; column++)
+      for (var row = 0; row < cells.Extent.Height; row++)
+        for (var column = 0; column < cells.Extent.Width; column++)
         {
           Assert.Equal(cells.IsBlankAt(column, row), cells.AsTextAt(column, row) is null);
 
@@ -209,8 +209,8 @@ namespace Unrect.Tests
       var cells = CanonicalDoor(door);
       var text = 0;
 
-      for (var row = 0; row < cells.Area.Height; row++)
-        for (var column = 0; column < cells.Area.Width; column++)
+      for (var row = 0; row < cells.Extent.Height; row++)
+        for (var column = 0; column < cells.Extent.Width; column++)
           if (cells.IsText(column, row))
           {
             Assert.False(cells.IsBlankAt(column, row));
@@ -231,8 +231,8 @@ namespace Unrect.Tests
       ICellSpace cells = CanonicalDoor(door);
       var plane = Plane<ICellSpace>.Of(cells);
 
-      for (var row = 0; row < cells.Area.Height; row++)
-        for (var column = 0; column < cells.Area.Width; column++)
+      for (var row = 0; row < cells.Extent.Height; row++)
+        for (var column = 0; column < cells.Extent.Width; column++)
         {
           var point = plane[column, row];
 
@@ -347,8 +347,8 @@ namespace Unrect.Tests
       var cells = CanonicalDoor(door);
       var seen = new HashSet<CellKind>();
 
-      for (var row = 0; row < cells.Area.Height; row++)
-        for (var column = 0; column < cells.Area.Width; column++)
+      for (var row = 0; row < cells.Extent.Height; row++)
+        for (var column = 0; column < cells.Extent.Width; column++)
         {
           var kind = cells.ValueAt(column, row).Kind;
 
@@ -376,7 +376,7 @@ namespace Unrect.Tests
       // subspace and read its parent's data without ever hearing about it.
       var cells = CanonicalDoor(door);
 
-      foreach (var (column, row) in new[] { (-1, 0), (cells.Area.Width, 0), (0, -1), (0, cells.Area.Height) })
+      foreach (var (column, row) in new[] { (-1, 0), (cells.Extent.Width, 0), (0, -1), (0, cells.Extent.Height) })
       {
         Assert.Throws<OutOfBoundsException>(() => { _ = cells.IsBlankAt(column, row); });
         Assert.Throws<OutOfBoundsException>(() => { _ = cells.IsText(column, row); });
@@ -408,16 +408,16 @@ namespace Unrect.Tests
       var plane = Plane<ICellSpace>.Of(space);
 
       Assert.Throws<OutOfBoundsException>(() => { _ = space.IsBlankAt(-1, 0); });
-      Assert.Throws<OutOfBoundsException>(() => { _ = space.AsTextAt(space.Area.Size.Width, 0); });
-      Assert.Throws<OutOfBoundsException>(() => { _ = space.IsText(0, space.Area.Size.Height); });
+      Assert.Throws<OutOfBoundsException>(() => { _ = space.AsTextAt(space.Extent.Width, 0); });
+      Assert.Throws<OutOfBoundsException>(() => { _ = space.IsText(0, space.Extent.Height); });
       Assert.Throws<OutOfBoundsException>(() => { _ = plane[-1, 0]; });
       Assert.Throws<OutOfBoundsException>(
-        () => plane.Slice(new Offset(0, 0), new Area(space.Area.Size.Width + 1, 1)));
+        () => plane.Slice(new Offset(0, 0), new Size(space.Extent.Width + 1, 1)));
 
       // ...including through the convenience overloads, which is where the three spellings used to
       // disagree.
-      Assert.Throws<OutOfBoundsException>(() => plane.Slice(new Offset(space.Area.Size.Width + 1, 0)));
-      Assert.Throws<OutOfBoundsException>(() => plane.Slice(new Area(space.Area.Size.Width + 1, 1)));
+      Assert.Throws<OutOfBoundsException>(() => plane.Slice(new Offset(space.Extent.Width + 1, 0)));
+      Assert.Throws<OutOfBoundsException>(() => plane.Slice(new Size(space.Extent.Width + 1, 1)));
     }
 
     [Fact]
@@ -432,10 +432,10 @@ namespace Unrect.Tests
       using var book = Workbook.Over(new FakeRowSource(new FakeSheet("Empty", 10, 0)), new WorkbookOptions());
       var streamed = book.Sheet("Empty");
 
-      Assert.Equal(0, eager.Area.Size.Width);
-      Assert.Equal(eager.Area.Size.Width, streamed.Area.Size.Width);
-      Assert.Equal(eager.Area.Size.Height, streamed.Area.Size.Height);
-      Assert.Equal(10, streamed.Area.Size.Height);
+      Assert.Equal(0, eager.Extent.Width);
+      Assert.Equal(eager.Extent.Width, streamed.Extent.Width);
+      Assert.Equal(eager.Extent.Height, streamed.Extent.Height);
+      Assert.Equal(10, streamed.Extent.Height);
 
       Assert.Throws<OutOfBoundsException>(() => { _ = Plane<ICellSpace>.Of(eager)[0, 0]; });
       Assert.Throws<OutOfBoundsException>(() => { _ = Plane<ICellSpace>.Of(streamed)[0, 0]; });
@@ -486,12 +486,12 @@ namespace Unrect.Tests
     /// formula in both doors, which is what the non-vacuity guard below insists on — a theory that
     /// compared null to null everywhere would pass over a space that had lost its formulas entirely.
     /// </summary>
-    private static readonly (Offset At, Area Of)[] Samples =
+    private static readonly (Offset At, Size Of)[] Samples =
     {
-      (new Offset(0, 0), new Area(4, 10)),
-      (new Offset(3, 1), new Area(1, 4)),
-      (new Offset(1, 6), new Area(3, 3)),
-      (new Offset(1, 1), new Area(3, 8)),
+      (new Offset(0, 0), new Size(4, 10)),
+      (new Offset(3, 1), new Size(1, 4)),
+      (new Offset(1, 6), new Size(3, 3)),
+      (new Offset(1, 1), new Size(3, 8)),
     };
 
     /// <summary>
@@ -536,7 +536,7 @@ namespace Unrect.Tests
       var whole = Plane<ISpreadsheetSpace>.Of(parent);
       var formulasSeen = 0;
 
-      Assert.True(parent.Area.Width >= 4 && parent.Area.Height >= 10, "the samples need a 4x10 space");
+      Assert.True(parent.Extent.Width >= 4 && parent.Extent.Height >= 10, "the samples need a 4x10 space");
 
       foreach (var sample in Samples)
       {
@@ -568,8 +568,8 @@ namespace Unrect.Tests
       // of them — would finally show up.
       var parent = CapableDoor(door);
 
-      var band = Plane<ISpreadsheetSpace>.Of(parent).Slice(new Offset(1, 1), new Area(3, 8));   // B2:D9
-      var corner = band.Slice(new Offset(1, 5), new Area(2, 3));                                // C7:D9
+      var band = Plane<ISpreadsheetSpace>.Of(parent).Slice(new Offset(1, 1), new Size(3, 8));   // B2:D9
+      var corner = band.Slice(new Offset(1, 5), new Size(2, 3));                                // C7:D9
 
       Assert.Equal(parent.FormulaAt(2, 6), Formula(corner[0, 0]));
       Assert.Equal(parent.FormulaAt(3, 6), Formula(corner[1, 0]));
@@ -588,7 +588,7 @@ namespace Unrect.Tests
       // A region addresses the cells it names and no others, so it has its own edges and not its
       // space's — the same bounds contract every read keeps, for the same reason. Without this a
       // declaration could reach a formula off a cell its region does not contain.
-      var slice = Plane<ISpreadsheetSpace>.Of(CapableDoor(door)).Slice(new Offset(3, 1), new Area(1, 4));
+      var slice = Plane<ISpreadsheetSpace>.Of(CapableDoor(door)).Slice(new Offset(3, 1), new Size(1, 4));
 
       Assert.Throws<OutOfBoundsException>(() => { _ = slice[-1, 0]; });
       Assert.Throws<OutOfBoundsException>(() => { _ = slice[1, 0]; });
@@ -629,10 +629,10 @@ namespace Unrect.Tests
       using var book = Workbook.Over(new FakeRowSource(new FakeSheet("Empty", 10, 0)), new WorkbookOptions());
       var streamed = book.Sheet("Empty");
 
-      var slice = Plane<ICellSpace>.Of(streamed).Slice(new Offset(0, 2), new Area(0, 5));
+      var slice = Plane<ICellSpace>.Of(streamed).Slice(new Offset(0, 2), new Size(0, 5));
 
-      Assert.Equal(0, slice.Area.Size.Width);
-      Assert.Equal(5, slice.Area.Size.Height);
+      Assert.Equal(0, slice.Extent.Width);
+      Assert.Equal(5, slice.Extent.Height);
     }
 
     /// <summary>The formula behind the cell a point addresses, read through the point's own space.</summary>

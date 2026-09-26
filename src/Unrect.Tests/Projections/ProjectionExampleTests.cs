@@ -336,8 +336,8 @@ namespace Unrect.Tests.Projections
 
       var result = InvestorIrr().MapWithDiagnostics(space);
 
-      Assert.Equal(6, space.Area.Size.Width);
-      Assert.Equal(45, space.Area.Size.Height);
+      Assert.Equal(6, space.Extent.Width);
+      Assert.Equal(45, space.Extent.Height);
       Assert.Empty(result.Diagnostics);
     }
 

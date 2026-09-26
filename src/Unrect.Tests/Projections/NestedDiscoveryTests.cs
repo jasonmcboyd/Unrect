@@ -129,7 +129,7 @@ namespace Unrect.Tests.Projections
 
       Assert.Equal(NumericRows, Read(outer));
       Assert.Equal(ValuedRows, Read(Range(RowsWhileAnyIsNotBlank(), block => block.Rows.Count)));
-      Assert.Equal(8, Disagreeing().Area.Height);
+      Assert.Equal(8, Disagreeing().Extent.Height);
     }
   }
 }

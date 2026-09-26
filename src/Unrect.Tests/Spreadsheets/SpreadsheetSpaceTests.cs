@@ -32,8 +32,8 @@ namespace Unrect.Tests.Spreadsheets
     {
       var space = SimpleReport();
 
-      Assert.Equal(4, space.Area.Size.Width);
-      Assert.Equal(16, space.Area.Size.Height);
+      Assert.Equal(4, space.Extent.Width);
+      Assert.Equal(16, space.Extent.Height);
     }
 
     [Fact]
@@ -41,7 +41,7 @@ namespace Unrect.Tests.Spreadsheets
     {
       var space = SpreadsheetSpace.Create(WorkbookPath("simple-report.xlsx"), "report");
 
-      Assert.Equal(16, space.Area.Size.Height);
+      Assert.Equal(16, space.Extent.Height);
     }
 
     [Fact]
@@ -68,8 +68,8 @@ namespace Unrect.Tests.Spreadsheets
         .ToArray();
 
       Assert.Single(sheets);
-      Assert.Equal(6, sheets[0].Area.Size.Width);
-      Assert.Equal(18, sheets[0].Area.Size.Height);
+      Assert.Equal(6, sheets[0].Extent.Width);
+      Assert.Equal(18, sheets[0].Extent.Height);
 
       var only = Assert.Single(contexts);
       Assert.Equal(0, only.Index);
@@ -100,7 +100,7 @@ namespace Unrect.Tests.Spreadsheets
       var space = InvestorsByDeal();
 
       Assert.All(
-        Enumerable.Range(0, space.Area.Size.Width),
+        Enumerable.Range(0, space.Extent.Width),
         column => Assert.True(space.IsBlankAt(column, 5)));
     }
 
@@ -145,8 +145,8 @@ namespace Unrect.Tests.Spreadsheets
       // the height was previously 0 for no reason the file gave. Both axes, because the fix is a
       // claim about the whole extent: a width that started reporting something here would mean the
       // adapter had begun inventing columns out of formatting.
-      Assert.Equal(4, space.Area.Size.Height);
-      Assert.Equal(0, space.Area.Size.Width);
+      Assert.Equal(4, space.Extent.Height);
+      Assert.Equal(0, space.Extent.Width);
     }
 
     [Fact]
@@ -169,8 +169,8 @@ namespace Unrect.Tests.Spreadsheets
       // reaches the height.
       var sheet = Plane<ICellSpace>.Of(space);
 
-      Assert.Equal(4, sheet.Slice(new Offset(0, 0), new Area(0, 4)).Area.Size.Height);
-      Assert.Throws<OutOfBoundsException>(() => sheet.Slice(new Offset(0, 0), new Area(0, 5)));
+      Assert.Equal(4, sheet.Slice(new Offset(0, 0), new Size(0, 4)).Extent.Height);
+      Assert.Throws<OutOfBoundsException>(() => sheet.Slice(new Offset(0, 0), new Size(0, 5)));
     }
 
     // --- Repeated text is shared ------------------------------------------------------------------

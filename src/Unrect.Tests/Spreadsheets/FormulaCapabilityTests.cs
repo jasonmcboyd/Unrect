@@ -102,7 +102,7 @@ namespace Unrect.Tests.Spreadsheets
     [Fact]
     public void ARegionOfASheetReadsItsOwnCellsFormula()
     {
-      var band = Plane<ISpreadsheetSpace>.Of(Sheet()).Slice(new Offset(3, 1), new Area(1, 4));    // D2:D5
+      var band = Plane<ISpreadsheetSpace>.Of(Sheet()).Slice(new Offset(3, 1), new Size(1, 4));    // D2:D5
 
       Assert.Equal(@"IF(B4>0,ROUND(B4*$C$2,2)+SUM($B$2:B4),""B2"")", FormulaOf(band[0, 2]));      // D4
     }

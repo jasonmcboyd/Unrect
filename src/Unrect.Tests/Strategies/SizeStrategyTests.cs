@@ -185,8 +185,8 @@ namespace Unrect.Tests.Strategies
     {
       var area = ExplicitArea(3, 1).GetArea(Grid(new[,] { { 1, 1, 1 }, { 1, 1, 1 } }));
 
-      Assert.Equal(3, area.Size.Width);
-      Assert.Equal(1, area.Size.Height);
+      Assert.Equal(3, area.Width);
+      Assert.Equal(1, area.Height);
     }
 
     [Fact]
@@ -194,14 +194,14 @@ namespace Unrect.Tests.Strategies
     {
       var area = MaxArea().GetArea(Grid(new[,] { { 1, 1, 1 }, { 1, 1, 1 } }));
 
-      Assert.Equal(3, area.Size.Width);
-      Assert.Equal(2, area.Size.Height);
+      Assert.Equal(3, area.Width);
+      Assert.Equal(2, area.Height);
     }
 
     [Fact]
     public void SelectSize_UsesTheSuppliedSelector()
     {
-      var size = SelectSize(s => new Size(s.Area.Size.Width - 1, 1)).GetSize(Grid(new[,] { { 1, 1, 1 } }));
+      var size = SelectSize(s => new Size(s.Extent.Width - 1, 1)).GetSize(Grid(new[,] { { 1, 1, 1 } }));
 
       Assert.Equal(2, size.Width);
       Assert.Equal(1, size.Height);
@@ -224,8 +224,8 @@ namespace Unrect.Tests.Strategies
       // Rows first (one row), then columns within that row.
       var area = RowStrategies.TakeRows(1).TakeColumnsWhileAnyIsNotBlank().GetArea(space);
 
-      Assert.Equal(2, area.Size.Width);
-      Assert.Equal(1, area.Size.Height);
+      Assert.Equal(2, area.Width);
+      Assert.Equal(1, area.Height);
     }
 
     [Fact]
@@ -241,8 +241,8 @@ namespace Unrect.Tests.Strategies
       // Columns first (two columns), then rows within those columns.
       var area = ColumnStrategies.TakeColumns(2).TakeRowsWhileAnyIsNotBlank().GetArea(space);
 
-      Assert.Equal(2, area.Size.Width);
-      Assert.Equal(1, area.Size.Height);
+      Assert.Equal(2, area.Width);
+      Assert.Equal(1, area.Height);
     }
 
     [Fact]
@@ -259,11 +259,11 @@ namespace Unrect.Tests.Strategies
       var rowsFirst = RowStrategies.TakeRows(1).TakeColumnsWhileAnyIsNotBlank().GetArea(space);
       var columnsFirst = ColumnStrategies.TakeColumnsWhileAnyIsNotBlank().TakeRowsWhileAnyIsNotBlank().GetArea(space);
 
-      Assert.Equal(2, rowsFirst.Size.Width);
-      Assert.Equal(1, rowsFirst.Size.Height);
+      Assert.Equal(2, rowsFirst.Width);
+      Assert.Equal(1, rowsFirst.Height);
 
-      Assert.Equal(3, columnsFirst.Size.Width);
-      Assert.Equal(2, columnsFirst.Size.Height);
+      Assert.Equal(3, columnsFirst.Width);
+      Assert.Equal(2, columnsFirst.Height);
     }
 
     [Fact]
@@ -277,8 +277,8 @@ namespace Unrect.Tests.Strategies
 
       var area = RowStrategies.TakeRows(1).TakeColumnsWhileAll(HasValue).GetArea(space);
 
-      Assert.Equal(3, area.Size.Width);
-      Assert.Equal(1, area.Size.Height);
+      Assert.Equal(3, area.Width);
+      Assert.Equal(1, area.Height);
     }
   }
 }

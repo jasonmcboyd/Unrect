@@ -176,7 +176,7 @@ namespace Unrect.Tests
     /// <summary>A space with no opinions about its cells and a very strong one about itself.</summary>
     private sealed class AgreeableSpace : ISpace
     {
-      public Area Area => new Area(1, 1);
+      public Size Extent => new Size(1, 1);
 
       public override bool Equals(object? obj) => obj is AgreeableSpace;
 

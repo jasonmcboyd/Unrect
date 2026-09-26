@@ -171,7 +171,7 @@ namespace Unrect.Projections
 
       private Plane<TSpace> Extent()
         => _first is Plane<TSpace> first
-          ? new Plane<TSpace>(first.Space, first.Origin, new Area(Spans.ToSize(_length, Math.Max(_across, first.Width), _along)))
+          ? new Plane<TSpace>(first.Space, first.Origin, Spans.ToSize(_length, Math.Max(_across, first.Width), _along))
           : _scope.Anchor;
     }
   }

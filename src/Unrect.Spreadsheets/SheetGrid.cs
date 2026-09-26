@@ -27,11 +27,11 @@ namespace Unrect.Spreadsheets
     private SheetGrid(CellValue[,] cells)
     {
       _cells = cells;
-      Area = new Area(cells.GetLength(1), cells.GetLength(0));
+      Extent = new Size(cells.GetLength(1), cells.GetLength(0));
     }
 
     /// <inheritdoc/>
-    public override Area Area { get; }
+    public override Size Extent { get; }
 
     /// <summary>
     /// The whole of <paramref name="cells"/>, as a sheet. Everything is already decided: whatever
@@ -76,14 +76,14 @@ namespace Unrect.Spreadsheets
     /// </summary>
     /// <param name="column">The 0-based column.</param>
     /// <param name="row">The 0-based row.</param>
-    /// <exception cref="OutOfBoundsException">The coordinate lies outside <see cref="Area"/>.</exception>
+    /// <exception cref="OutOfBoundsException">The coordinate lies outside <see cref="Size"/>.</exception>
     /// <inheritdoc/>
     public override CellValue ValueAt(int column, int row)
     {
       // OutOfBoundsException and not IndexOutOfRangeException: running off the edge of a space is a
       // statement about the data that a declaration may recover from, where an index bug is on the
       // engine's fault list and would make the overrun unrecoverable.
-      if (column < 0 || column >= Area.Width || row < 0 || row >= Area.Height)
+      if (column < 0 || column >= Extent.Width || row < 0 || row >= Extent.Height)
         throw new OutOfBoundsException();
 
       return _cells[row, column];

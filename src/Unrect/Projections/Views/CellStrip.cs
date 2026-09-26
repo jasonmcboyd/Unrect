@@ -62,7 +62,7 @@ namespace Unrect.Projections
     {
       Validate(index);
 
-      return ProjectionLocation.At(Space.Origin + Step(index), Space.Area.Size);
+      return ProjectionLocation.At(Space.Origin + Step(index), Space.Extent);
     }
 
     /// <summary>The strip's cells, in order.</summary>
@@ -83,7 +83,7 @@ namespace Unrect.Projections
     /// header several rows tall is handed over as one band, and read a row at a time.
     /// </summary>
     internal CellStrip<TSpace> Line(int index)
-      => new CellStrip<TSpace>(Space.Slice(new Offset(0, index), new Area(Space.Width, 1)), Orientation, Scope);
+      => new CellStrip<TSpace>(Space.Slice(new Offset(0, index), new Size(Space.Width, 1)), Orientation, Scope);
 
     internal ProjectionException Failure(string problem) => Scope.Failure(problem, Space);
 

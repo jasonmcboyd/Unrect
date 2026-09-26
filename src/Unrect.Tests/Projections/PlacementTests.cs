@@ -81,7 +81,7 @@ namespace Unrect.Tests.Projections
     // --- Whether a placement fits is asked a row at a time -----------------------------------------
     //
     // The fit test reads the available space through the forward probes (its width, and whether it
-    // has a row at the far edge of what is being asked for) rather than off ICellSpace.Area, so that an
+    // has a row at the far edge of what is being asked for) rather than off ICellSpace.Extent, so that an
     // extent still being discovered is asked for one row instead of for all of them. What it ANSWERS
     // must not depend on which kind of space it was asked about — so every case below is asserted
     // twice, over a measured grid and over a bound the engine is discovering, and the boundary case

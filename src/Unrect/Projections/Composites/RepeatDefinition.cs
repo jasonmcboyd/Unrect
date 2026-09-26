@@ -119,7 +119,7 @@ namespace Unrect.Projections
           _first = span;
           _across = 0;
 
-          if (Spans.Across(span.Area.Size, Along) == 0)
+          if (Spans.Across(span.Extent, Along) == 0)
           {
             _finished = true;
             return false;

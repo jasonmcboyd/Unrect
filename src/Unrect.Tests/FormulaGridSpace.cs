@@ -37,7 +37,7 @@ namespace Unrect.Tests
     }
 
     /// <inheritdoc/>
-    public Area Area => _values.Area;
+    public Size Extent => _values.Extent;
 
     /// <inheritdoc/>
     public bool IsBlankAt(int column, int row) => _values.IsBlankAt(column, row);
@@ -50,7 +50,7 @@ namespace Unrect.Tests
     /// <inheritdoc/>
     public bool TryGetFormulaAt(int column, int row, out string formula)
     {
-      if (column < 0 || column >= Area.Width || row < 0 || row >= Area.Height)
+      if (column < 0 || column >= Extent.Width || row < 0 || row >= Extent.Height)
         throw new OutOfBoundsException();
 
       formula = _formulas[row, column]!;

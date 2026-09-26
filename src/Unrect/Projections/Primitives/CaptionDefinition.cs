@@ -36,7 +36,7 @@ namespace Unrect.Projections
 
     internal override Settlement<string> Collect(Plane<TSpace> extent, ProjectorScope<TSpace> scope)
     {
-      var size = extent.Area.Size;
+      var size = extent.Extent;
 
       // Reachable only when the placement was replaced — Caption("X").OffsetBy(SkipRows(1)), or a
       // caption inside a declared frame. Left in because it is also the half of this leaf that a

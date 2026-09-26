@@ -554,11 +554,11 @@ namespace Unrect.Tests.Streaming
       using var book = Workbook.Open(path, Cold());
       var streamed = book.Sheet(SheetName);
 
-      Assert.Equal(4, eager.Area.Size.Height);
-      Assert.Equal(0, eager.Area.Size.Width);
+      Assert.Equal(4, eager.Extent.Height);
+      Assert.Equal(0, eager.Extent.Width);
 
-      Assert.Equal(eager.Area.Size.Height, streamed.Area.Size.Height);
-      Assert.Equal(eager.Area.Size.Width, streamed.Area.Size.Width);
+      Assert.Equal(eager.Extent.Height, streamed.Extent.Height);
+      Assert.Equal(eager.Extent.Width, streamed.Extent.Width);
 
       // And the streaming door says out loud that it got there by reading, which guards the fixture:
       // a grid that started describing itself again would pass every assertion above by the ordinary

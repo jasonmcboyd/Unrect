@@ -345,11 +345,11 @@ namespace Unrect.Tests.Strategies
       var fullWidthRow = RowStrategies.TakeRows(1).AllColumns().GetArea(space);
       var fullHeightColumn = ColumnStrategies.TakeColumns(1).AllRows().GetArea(space);
 
-      Assert.Equal(3, fullWidthRow.Size.Width);
-      Assert.Equal(1, fullWidthRow.Size.Height);
+      Assert.Equal(3, fullWidthRow.Width);
+      Assert.Equal(1, fullWidthRow.Height);
 
-      Assert.Equal(1, fullHeightColumn.Size.Width);
-      Assert.Equal(2, fullHeightColumn.Size.Height);
+      Assert.Equal(1, fullHeightColumn.Width);
+      Assert.Equal(2, fullHeightColumn.Height);
     }
   }
 }

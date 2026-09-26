@@ -19,7 +19,7 @@ namespace Unrect.Tests
 
     public static Size GetSize(this ISizeStrategy strategy, ICellSpace space) => strategy.GetSize(space.Region());
 
-    public static Area GetArea(this IAreaStrategy strategy, ICellSpace space) => strategy.GetArea(space.Region());
+    public static Size GetArea(this IAreaStrategy strategy, ICellSpace space) => strategy.GetArea(space.Region());
 
     public static Offset GetOffset(this IOffsetStrategy strategy, ICellSpace space) => strategy.GetOffset(space.Region());
 

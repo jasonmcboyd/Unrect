@@ -34,7 +34,7 @@ namespace Unrect.Projections
         throw scope.Reading(failure, extent);
       }
 
-      return new Settlement<T>(value, extent.Area.Size);
+      return new Settlement<T>(value, extent.Extent);
     }
   }
 }

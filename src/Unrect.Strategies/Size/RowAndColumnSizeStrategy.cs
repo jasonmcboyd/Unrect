@@ -51,14 +51,14 @@ namespace Unrect.Strategies
       if (RowFirst)
       {
         var rowCount = Scans.SelectRows(RowSelectionStrategy, region);
-        var columnCount = Scans.SelectColumns(ColumnSelectionStrategy, region.Slice(new Area(region.Width, rowCount)));
+        var columnCount = Scans.SelectColumns(ColumnSelectionStrategy, region.Slice(new Size(region.Width, rowCount)));
 
         return new Size(columnCount, rowCount);
       }
       else
       {
         var columnCount = Scans.SelectColumns(ColumnSelectionStrategy, region);
-        var rowCount = Scans.SelectRows(RowSelectionStrategy, region.Slice(new Area(columnCount, region.Height)));
+        var rowCount = Scans.SelectRows(RowSelectionStrategy, region.Slice(new Size(columnCount, region.Height)));
 
         return new Size(columnCount, rowCount);
       }
@@ -96,7 +96,7 @@ namespace Unrect.Strategies
       {
         var settled = final || _stopped || (_rows.Required is int required && taken >= required);
 
-        return settled ? _columns(region.Slice(new Area(region.Width, taken))) : (int?)null;
+        return settled ? _columns(region.Slice(new Size(region.Width, taken))) : (int?)null;
       }
 
       public int Along(Plane<ISpace> region, int taken)
@@ -139,7 +139,7 @@ namespace Unrect.Strategies
       {
         var settled = final || _stopped || (_columns.Required is int required && taken >= required);
 
-        return settled ? _rows(region.Slice(new Area(taken, region.Height))) : (int?)null;
+        return settled ? _rows(region.Slice(new Size(taken, region.Height))) : (int?)null;
       }
 
       public int Along(Plane<ISpace> region, int taken)

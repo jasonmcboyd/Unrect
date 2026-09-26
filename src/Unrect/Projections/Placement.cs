@@ -7,7 +7,7 @@ namespace Unrect.Projections
 {
   /// <summary>
   /// Where a projection sits inside the space it is handed: an offset to its origin and,
-  /// optionally, an area. A null <see cref="Area"/> means the extent is derived from the
+  /// optionally, an area. A null <see cref="Size"/> means the extent is derived from the
   /// projection's own content or children rather than declared.
   /// </summary>
   public sealed class Placement

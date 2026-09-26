@@ -76,7 +76,7 @@ namespace Unrect.Projections
       {
         var width = _labelled.Map.Labels.Count;
 
-        return span.Width > width ? span.Slice(new Area(width, span.Height)) : span;
+        return span.Width > width ? span.Slice(new Size(width, span.Height)) : span;
       }
 
       private IChildHandle<TSpace, T> StartBody(Plane<TSpace> at)

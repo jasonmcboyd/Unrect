@@ -23,12 +23,12 @@ namespace Unrect.Spreadsheets
     }
 
     /// <inheritdoc/>
-    public abstract Area Area { get; }
+    public abstract Size Extent { get; }
 
     /// <summary>
     /// The value at <paramref name="column"/>, <paramref name="row"/> in this space's own
     /// coordinates — the one read a door writes. Implementations throw
-    /// <see cref="OutOfBoundsException"/> for a coordinate outside <see cref="Area"/>.
+    /// <see cref="OutOfBoundsException"/> for a coordinate outside <see cref="Size"/>.
     /// </summary>
     /// <param name="column">The 0-based column.</param>
     /// <param name="row">The 0-based row.</param>

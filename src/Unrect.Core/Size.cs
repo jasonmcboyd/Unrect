@@ -2,7 +2,7 @@ using System;
 
 namespace Unrect.Core
 {
-  /// <summary>A width and a height, both non-negative. The building block <see cref="Area"/> and <see cref="Offset"/> both wrap.</summary>
+  /// <summary>A width and a height, both non-negative: the extent of a space or a region, and what a size strategy answers.</summary>
   public readonly struct Size : IEquatable<Size>
   {
     /// <summary>A size of <paramref name="width"/> by <paramref name="height"/>; either negative throws <see cref="ArgumentOutOfRangeException"/>.</summary>

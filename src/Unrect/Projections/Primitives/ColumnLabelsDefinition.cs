@@ -38,7 +38,7 @@ namespace Unrect.Projections
       if (width == 0 || extent.Height < HeaderRows)
         throw scope.Failure("a header row was declared but the table's extent is empty", extent);
 
-      var headerBand = extent.Slice(new Offset(0, 0), new Area(width, HeaderRows));
+      var headerBand = extent.Slice(new Offset(0, 0), new Size(width, HeaderRows));
       var header = new CellStrip<TSpace>(headerBand, Orientation.Horizontal, scope);
 
       return new Settlement<LabelMap>(LabelMap.FromHeader(header), new Size(width, HeaderRows));
