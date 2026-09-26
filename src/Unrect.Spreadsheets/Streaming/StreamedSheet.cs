@@ -24,7 +24,8 @@ namespace Unrect.Spreadsheets
     private bool _exhausted;
     private bool _disposed;
 
-    internal StreamedSheet(IRowCursor cursor, StringInterner strings, string name, int rowCount, int columnCount, int? cap, long rowsMeasured)
+    internal StreamedSheet(IRowCursor cursor, StringInterner strings, string name, int rowCount, int columnCount, int? cap, long rowsMeasured, Func<string, bool> textIsBlank)
+      : base(textIsBlank)
     {
       _cursor = cursor;
       _strings = strings;

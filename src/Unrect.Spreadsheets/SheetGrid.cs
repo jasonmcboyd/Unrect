@@ -24,7 +24,8 @@ namespace Unrect.Spreadsheets
   {
     private readonly CellValue[,] _cells;
 
-    private SheetGrid(CellValue[,] cells)
+    private SheetGrid(CellValue[,] cells, Func<string, bool>? textIsBlank)
+      : base(textIsBlank)
     {
       _cells = cells;
       Extent = new Size(cells.GetLength(1), cells.GetLength(0));
@@ -41,7 +42,11 @@ namespace Unrect.Spreadsheets
     /// <param name="cells">The cells, indexed <c>[row, column]</c>.</param>
     /// <exception cref="ArgumentNullException"><paramref name="cells"/> is null.</exception>
     public static SheetGrid Of(CellValue[,] cells)
-      => new SheetGrid(cells ?? throw new ArgumentNullException(nameof(cells)));
+      => new SheetGrid(cells ?? throw new ArgumentNullException(nameof(cells)), null);
+
+    /// <summary>The cells as read by a door, whose text cells are blank when <paramref name="textIsBlank"/> says so.</summary>
+    internal static SheetGrid Of(CellValue[,] cells, Func<string, bool> textIsBlank)
+      => new SheetGrid(cells, textIsBlank);
 
     /// <summary>
     /// Heterogeneous values, each adapting to the kind its CLR type implies — the array-adapter
@@ -67,7 +72,7 @@ namespace Unrect.Spreadsheets
         for (var column = 0; column < values.GetLength(1); column++)
           cells[row, column] = Adapt(values[row, column]);
 
-      return new SheetGrid(cells);
+      return new SheetGrid(cells, null);
     }
 
     /// <summary>

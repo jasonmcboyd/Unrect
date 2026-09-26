@@ -58,7 +58,7 @@ namespace Unrect.Tests
       Assert.True(At(space, 1, 0).IsBlank());
       Assert.False(!At(space, 1, 0).IsBlank());
       Assert.False(At(space, 1, 0).IsText());
-      Assert.Null(At(space, 1, 0).AsText());
+      Assert.Equal("", At(space, 1, 0).AsText());
 
       // A number and an error both say something, and neither says it as text — the distinction
       // every text matcher turns on.
@@ -184,7 +184,7 @@ namespace Unrect.Tests
 
       public bool IsBlankAt(int column, int row) => true;
 
-      public string? AsTextAt(int column, int row) => null;
+      public string AsTextAt(int column, int row) => string.Empty;
     }
 
     [Fact]

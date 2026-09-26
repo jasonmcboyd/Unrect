@@ -521,13 +521,14 @@ namespace Unrect.Tests.Streaming
       Assert.True(eager.IsBlankAt(0, 1));
       Assert.True(streamed.IsBlankAt(0, 1));
 
-      // Not just the verdict: blankness is decided AT ADAPTATION, so a cell the predicate calls
-      // blank arrives as an empty cell and its two spaces are gone. Both doors do the same thing to
-      // it, which is the stronger statement — a door that kept the text would be equal on IsBlank
-      // and different on everything else a declaration could read out of the cell.
+      // Not just the verdict, and not only the verdict: the cell still SAYS its two spaces — what a
+      // cell says and whether it counts as content are two questions — and every kinded read sees
+      // it as blank, so a declaration reads the same cell through either door. A door that dropped
+      // the text would be equal on IsBlank and different on what the cell says.
       Assert.Equal("Blank", eager.Describe(0, 1));
       Assert.Equal(eager.Describe(0, 1), streamed.Describe(0, 1));
-      Assert.Null(streamed.AsTextAt(0, 1));
+      Assert.Equal("  ", eager.AsTextAt(0, 1));
+      Assert.Equal("  ", streamed.AsTextAt(0, 1));
       Assert.False(streamed.IsText(0, 1));
 
       // ...and the same characters through a door that decides nothing about whitespace: text, and

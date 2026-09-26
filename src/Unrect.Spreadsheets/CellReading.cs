@@ -153,6 +153,6 @@ namespace Unrect.Spreadsheets
     /// </summary>
     private static string Said<TSpace>(Point<TSpace> cell, double number)
       where TSpace : class, ICellSpace
-      => cell.AsText() ?? Renderings.ShortestRoundTrip(number);
+      => cell.AsText();
   }
 }

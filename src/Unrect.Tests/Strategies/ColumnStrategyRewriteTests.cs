@@ -43,7 +43,7 @@ namespace Unrect.Tests.Strategies
       // nowhere to hide.
       // Every grid here is built from ints with 0 as blank, and a grid renders an int
       // invariantly, so parsing the rendering is the exact round trip the old TryGetInt was.
-      "even" => value => value.AsText() is string number && int.Parse(number, CultureInfo.InvariantCulture) % 2 == 0,
+      "even" => value => !value.IsBlank() && int.Parse(value.AsText(), CultureInfo.InvariantCulture) % 2 == 0,
 
       _ => throw new ArgumentOutOfRangeException(nameof(name), name, "No such predicate."),
     };

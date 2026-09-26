@@ -96,16 +96,15 @@ namespace Unrect.Tests
     }
 
     [Fact]
-    public void Create_WithBlankPredicate_MakesTheCellSayNothing()
+    public void Create_WithBlankPredicate_CallsTheCellBlankAndStillSaysWhatItHolds()
     {
-      // Blankness is a rule over the value rather than a replacement of it: the canonical surface
-      // reports an empty cell — it says nothing and is not text — while the value the array holds is
-      // still the value the array holds. A grid that answered AsText with "0" here would make
-      // "is there anything in this cell" a question with two answers.
+      // Blankness is a rule over the value rather than a replacement of it: the cell does not count
+      // as content, and it still says "0", because what a cell says and whether it counts are two
+      // questions. A CSV whose NULL marker is blank and still renders as NULL is the same shape.
       var space = GridSpace.Create(new[,] { { 0 } }, isBlank: v => v == 0);
 
       Assert.True(space.IsBlankAt(0, 0));
-      Assert.Null(space.AsTextAt(0, 0));
+      Assert.Equal("0", space.AsTextAt(0, 0));
       Assert.Equal(0, space.ValueAt(0, 0));
     }
 

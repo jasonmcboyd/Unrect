@@ -158,11 +158,20 @@ namespace Unrect.Tests.Strategies
 
     [Theory]
     [InlineData("Nope")]
-    [InlineData("")]
+    [InlineData("no such label")]
     public void ALiftWithNoMatch_Throws(string needle)
     {
       Assert.ThrowsAny<OutOfBoundsException>(() => To(RowLandmarks.RowSaying(needle)).GetOffset(Labelled()));
       Assert.ThrowsAny<OutOfBoundsException>(() => Past(RowLandmarks.RowSaying(needle)).GetOffset(Labelled()));
+    }
+
+    [Fact]
+    public void ASayingMatcherAsksOnlyWhatACellSays_SoTheEmptyNeedleFindsACellThatSaysNothing()
+    {
+      // A blank cell is not invisible to a matcher: it says what it says — nothing, for a cell holding
+      // nothing — and whether it counts as content is a separate question nothing here asks. The
+      // first row of the fixture has such a cell, so the empty needle lands there.
+      Assert.Equal(0, To(RowLandmarks.RowSaying("")).GetOffset(Labelled()).Row);
     }
 
     [Fact]

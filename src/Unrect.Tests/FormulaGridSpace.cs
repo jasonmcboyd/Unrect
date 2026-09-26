@@ -43,7 +43,7 @@ namespace Unrect.Tests
     public bool IsBlankAt(int column, int row) => _values.IsBlankAt(column, row);
 
     /// <inheritdoc/>
-    public string? AsTextAt(int column, int row) => _values.AsTextAt(column, row);
+    public string AsTextAt(int column, int row) => _values.AsTextAt(column, row);
 
     public CellValue ValueAt(int column, int row) => _values.ValueAt(column, row);
 

@@ -67,12 +67,7 @@ namespace Unrect
     public bool IsBlankAt(int column, int row) => _isBlank(ValueAt(column, row));
 
     /// <inheritdoc/>
-    public string? AsTextAt(int column, int row)
-    {
-      var value = ValueAt(column, row);
-
-      return _isBlank(value) ? null : _asText(value);
-    }
+    public string AsTextAt(int column, int row) => _asText(ValueAt(column, row));
   }
 
   /// <summary>
@@ -99,7 +94,7 @@ namespace Unrect
     /// </summary>
     /// <param name="values">The cells, indexed <c>[row, column]</c>.</param>
     public static GridSpace<string?> Create(string?[,] values)
-      => new GridSpace<string?>(values, value => string.IsNullOrEmpty(value), value => value!);
+      => new GridSpace<string?>(values, value => string.IsNullOrEmpty(value), value => value ?? string.Empty);
 
     /// <summary>
     /// Numbers, with <paramref name="isBlank"/> deciding which count as empty cells; each says its
@@ -156,7 +151,7 @@ namespace Unrect
         DateTime moment => moment.ToString(
           moment.TimeOfDay == TimeSpan.Zero ? "yyyy-MM-dd" : "yyyy-MM-ddTHH:mm:ss.FFFFFFF",
           CultureInfo.InvariantCulture),
-        null => throw new ArgumentException("A blank cell has no rendering.", nameof(value)),
+        null => string.Empty,
         _ => throw new ArgumentException($"No rendering for {value.GetType()} in a grid of values.", nameof(value)),
       };
   }

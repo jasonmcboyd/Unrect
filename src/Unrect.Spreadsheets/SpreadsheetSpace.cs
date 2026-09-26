@@ -194,15 +194,16 @@ namespace Unrect.Spreadsheets
         // A sheet that declines to report its extent is measured by reading it — the same answer the
         // streaming door gives, rather than the empty space a grid sized from nothing would be.
         var cells = reader.RowCount > 0
-          ? ReadDeclared(reader, blank, texts)
-          : ReadMeasured(reader, blank, texts);
+          ? ReadDeclared(reader, texts)
+          : ReadMeasured(reader, texts);
 
-        var values = SheetGrid.Of(cells);
+        var values = SheetGrid.Of(cells, blank);
 
         yield return formulas is null || formatting is null
           ? values
           : new SpreadsheetGridSpace(
             values,
+            blank,
             formulas.ReadSheet(reader.Name, sheetIndex, cells.GetLength(1), cells.GetLength(0)),
             formatting.ReadSheet(reader.Name, sheetIndex, cells.GetLength(1), cells.GetLength(0)),
             formatting.Fonts(),
@@ -215,7 +216,7 @@ namespace Unrect.Spreadsheets
     /// The sheet at the size the reader gave, filled row by row. A sheet that yields fewer rows or
     /// narrower ones than it claimed keeps the size it claimed; the cells nothing reached are blank.
     /// </summary>
-    private static CellValue[,] ReadDeclared(IExcelDataReader reader, Func<string, bool> blank, TextTable texts)
+    private static CellValue[,] ReadDeclared(IExcelDataReader reader, TextTable texts)
     {
       var rowCount = reader.RowCount;
       var fieldCount = reader.FieldCount;
@@ -229,7 +230,7 @@ namespace Unrect.Spreadsheets
       {
         var columnCount = Math.Min(fieldCount, reader.FieldCount);
         for (int i = 0; i < columnCount; i++)
-          cells[row, i] = Adapt(reader, i, blank, texts);
+          cells[row, i] = Adapt(reader, i, texts);
 
         row++;
       }
@@ -257,7 +258,7 @@ namespace Unrect.Spreadsheets
     /// door's fakes. The caveat is recorded in full in <c>SpreadsheetSpaceTests</c>.)
     /// </para>
     /// </summary>
-    private static CellValue[,] ReadMeasured(IExcelDataReader reader, Func<string, bool> blank, TextTable texts)
+    private static CellValue[,] ReadMeasured(IExcelDataReader reader, TextTable texts)
     {
       var rows = new List<CellValue[]>();
       var width = 0;
@@ -266,7 +267,7 @@ namespace Unrect.Spreadsheets
       {
         var values = new CellValue[reader.FieldCount];
         for (int i = 0; i < values.Length; i++)
-          values[i] = Adapt(reader, i, blank, texts);
+          values[i] = Adapt(reader, i, texts);
 
         rows.Add(values);
         width = Math.Max(width, values.Length);
@@ -281,16 +282,13 @@ namespace Unrect.Spreadsheets
     }
 
     /// <summary>
-    /// One cell of the reader's current row, canonical — which is where blankness is decided, and
-    /// where repeated text is given one instance to share. Shared by both fill paths, so a sheet that
+    /// One cell of the reader's current row, canonical, with repeated text given one instance to
+    /// share. Faithful to the file: a text cell the blankness rule will call blank is still the text
+    /// it holds, and the rule is the space's to apply. Shared by both fill paths, so a sheet that
     /// reported its extent and one that had to be measured cannot disagree about what a cell is.
     /// </summary>
-    private static CellValue Adapt(IExcelDataReader reader, int column, Func<string, bool> blank, TextTable texts)
-    {
-      var value = reader.GetCellValue(column);
-
-      return value.TryGetText(out var text) && blank(text) ? CellValue.Blank : texts.Share(value);
-    }
+    private static CellValue Adapt(IExcelDataReader reader, int column, TextTable texts)
+      => texts.Share(reader.GetCellValue(column));
 
     /// <summary>
     /// The eager door's find-my-twin table: one canonical instance per distinct string, so equal

@@ -71,7 +71,7 @@ namespace Unrect.Strategies
     {
       var needle = TrimLabel(label);
 
-      return point => point.AsText() is string text && Comparison.Equals(TrimLabel(text), needle);
+      return point => Comparison.Equals(TrimLabel(point.AsText()), needle);
     }
 
     /// <summary>
@@ -105,7 +105,7 @@ namespace Unrect.Strategies
     {
       var needle = Trimmed(text);
 
-      return point => point.AsText() is string said && Comparison.Equals(Trimmed(said), needle);
+      return point => Comparison.Equals(Trimmed(point.AsText()), needle);
     }
 
     /// <summary>The trim every rule here begins with — what a cell's edges are allowed to carry.</summary>

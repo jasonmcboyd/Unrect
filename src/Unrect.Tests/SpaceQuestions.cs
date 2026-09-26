@@ -16,7 +16,7 @@ namespace Unrect.Tests
   {
     /// <summary>Whether the cell holds text of its own.</summary>
     public static bool IsText(this ICellSpace space, int column, int row)
-      => space.ValueAt(column, row).Kind == CellKind.Text;
+      => !space.IsBlankAt(column, row) && space.ValueAt(column, row).Kind == CellKind.Text;
 
     /// <summary>The error's spelling, or null where the cell carries none.</summary>
     public static string? ErrorTextAt(this ICellSpace space, int column, int row)
@@ -28,7 +28,7 @@ namespace Unrect.Tests
 
     /// <summary>The same word as a message says it after "found": an error spells itself out.</summary>
     public static string Describe(this ICellSpace space, int column, int row)
-      => CellReading.Describe(space.ValueAt(column, row));
+      => space.IsBlankAt(column, row) ? "Blank" : CellReading.Describe(space.ValueAt(column, row));
 
     /// <inheritdoc cref="Describe(ICellSpace, int, int)"/>
     public static string Describe(this Point<ICellSpace> point)

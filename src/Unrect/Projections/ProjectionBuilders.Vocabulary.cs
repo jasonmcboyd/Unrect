@@ -49,16 +49,17 @@ namespace Unrect.Projections
     public static IProjectionDefinition<TSpace, string> AsText()
       => new ReadDefinition<TSpace, string>("AsText", ReadText, Placement.Of(ExplicitSize(1, 1)), blankIsNull: false);
 
-    /// <summary>The total reading: every space renders every cell, so the only thing that can go wrong is that there is nothing there.</summary>
+    /// <summary>The total reading: every space renders every cell, so the only thing that can go wrong is that the cell does not count as content.</summary>
     private static bool ReadText(Point<TSpace> cell, out string value, out CellProblem? problem)
     {
-      value = cell.AsText()!;
-
-      if (value is null)
+      if (cell.IsBlank())
       {
+        value = string.Empty;
         problem = new CellProblem("expected a value at ", ", found a blank cell");
         return false;
       }
+
+      value = cell.AsText();
 
       problem = null;
       return true;

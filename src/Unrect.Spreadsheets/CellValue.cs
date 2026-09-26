@@ -149,10 +149,10 @@ namespace Unrect.Spreadsheets
     /// says <c>1E+20</c> rather than its digits.
     /// </para>
     /// </summary>
-    public string? AsText() =>
+    public string AsText() =>
       _kind switch
       {
-        CellKind.Text => _text,
+        CellKind.Text => _text!,   // a Text case always carries its text
         CellKind.Number => Renderings.ShortestRoundTrip(BitConverter.Int64BitsToDouble(_value)),
         // A date says its date; a moment within a day says the time too, rather than silently
         // rendering as the midnight it is not. Sub-second digits are carried only when there are
@@ -162,7 +162,7 @@ namespace Unrect.Spreadsheets
           CultureInfo.InvariantCulture),
         CellKind.Boolean => _value != 0L ? "TRUE" : "FALSE",
         CellKind.Error => _text ?? Display((CellError)_value),
-        _ => null
+        _ => string.Empty
       };
 
     /// <summary>

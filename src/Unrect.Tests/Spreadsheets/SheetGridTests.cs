@@ -27,7 +27,7 @@ namespace Unrect.Tests.Spreadsheets
       Assert.False(grid.IsBlankAt(0, 0));
       Assert.Equal("1", grid.AsTextAt(0, 0));
       Assert.True(grid.IsBlankAt(1, 0));
-      Assert.Null(grid.AsTextAt(1, 0));
+      Assert.Equal("", grid.AsTextAt(1, 0));
     }
 
     [Fact]

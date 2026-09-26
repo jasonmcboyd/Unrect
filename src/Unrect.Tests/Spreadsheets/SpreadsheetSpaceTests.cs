@@ -85,13 +85,12 @@ namespace Unrect.Tests.Spreadsheets
       Assert.False(space.IsBlankAt(0, 0));
       Assert.True(space.IsBlankAt(1, 0));
 
-      // An empty cell in the middle of a grid is the blank cell and nothing else: the kind says so
-      // and it says nothing, where a space that had adapted it to "" would leave every skip-while-
-      // blank strategy walking through content it could not see.
+      // An empty cell in the middle of a grid is the blank cell and nothing else: the kind says so,
+      // and it says the empty string — a skip-while-blank strategy asks IsBlank, never AsText.
       Assert.Equal("Blank", space.Describe(1, 0));
-      Assert.Null(space.AsTextAt(1, 0));
+      Assert.Equal("", space.AsTextAt(1, 0));
       Assert.Equal("Blank", space.Describe(3, 0));
-      Assert.Null(space.AsTextAt(3, 0));
+      Assert.Equal("", space.AsTextAt(3, 0));
     }
 
     [Fact]

@@ -169,11 +169,11 @@ namespace Unrect.Tests
 
     [Theory]
     [MemberData(nameof(CanonicalDoors))]
-    public void ACellSaysNothingExactlyWhenItIsBlank(string door)
+    public void ACellHoldingNothingSaysTheEmptyStringAndACellSayingSomethingMayStillBeBlank(string door)
     {
-      // The equivalence the whole canonical surface rests on, swept over every cell of every door.
-      // A door that rendered a blank as "" would make "is there anything here" a question with two
-      // different answers, and every skip-while-blank strategy would read differently through it.
+      // The two questions of the canonical surface are independent, swept over every cell of every
+      // door: a cell holding nothing says "" and counts as nothing; a cell the door's rule calls
+      // blank still says what it holds. What is not there is null — a rendering is total.
       var cells = CanonicalDoor(door);
 
       var blank = 0;
@@ -183,7 +183,13 @@ namespace Unrect.Tests
       for (var row = 0; row < cells.Extent.Height; row++)
         for (var column = 0; column < cells.Extent.Width; column++)
         {
-          Assert.Equal(cells.IsBlankAt(column, row), cells.AsTextAt(column, row) is null);
+          Assert.NotNull(cells.AsTextAt(column, row));
+
+          if (cells.ValueAt(column, row).Kind == CellKind.Blank)
+          {
+            Assert.True(cells.IsBlankAt(column, row));
+            Assert.Equal("", cells.AsTextAt(column, row));
+          }
 
           if (cells.IsBlankAt(column, row))
             blank++;
@@ -302,14 +308,14 @@ namespace Unrect.Tests
     [Fact]
     public void ACellCalledBlankIsNotTextEvenWhenItHoldsAString()
     {
-      // The defining case, and the reason IsText is not a type test: it means "has a value and it
-      // is text". Blankness is decided by the adapter, so a string payload the adapter or a
-      // predicate calls empty is a cell with NO value — it says nothing, it is not text, and a
-      // matcher must not find it by the characters it happens to be made of.
+      // The defining case: blankness is the adapter's rule about whether a cell counts as content,
+      // and it is applied to the text a cell holds without replacing it. A string the rule calls
+      // blank is a cell that counts as nothing and still says its characters — the two questions
+      // are independent, and a matcher over what a cell says may find it by them.
       ISpace empties = GridSpace.Create(new string?[,] { { "", "kept" } });
 
       Assert.True(empties.IsBlankAt(0, 0));
-      Assert.Null(empties.AsTextAt(0, 0));
+      Assert.Equal("", empties.AsTextAt(0, 0));
 
       // The same string under a rule that says whitespace is empty space, which is the spreadsheet
       // adapter's default and the case a real export produces by the thousand.
@@ -319,7 +325,7 @@ namespace Unrect.Tests
         asText: text => text);
 
       Assert.True(strict.IsBlankAt(0, 0));
-      Assert.Null(strict.AsTextAt(0, 0));
+      Assert.Equal("  ", strict.AsTextAt(0, 0));
 
       // ...and under the array adapter's own default, where only null and "" are empty, the very
       // same two spaces are a cell with a value, and that value is text.
@@ -352,8 +358,12 @@ namespace Unrect.Tests
         {
           var kind = cells.ValueAt(column, row).Kind;
 
-          Assert.Equal(kind == CellKind.Blank, cells.IsBlankAt(column, row));
-          Assert.Equal(kind == CellKind.Text, cells.IsText(column, row));
+          if (kind == CellKind.Blank)
+            Assert.True(cells.IsBlankAt(column, row));
+          else if (kind != CellKind.Text)
+            Assert.False(cells.IsBlankAt(column, row));   // only text is ever blank by rule
+
+          Assert.Equal(kind == CellKind.Text && !cells.IsBlankAt(column, row), cells.IsText(column, row));
           Assert.Equal(kind == CellKind.Error, cells.ValueAt(column, row).Kind == CellKind.Error);
 
           seen.Add(kind);
