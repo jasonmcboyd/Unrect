@@ -177,7 +177,7 @@ namespace Unrect.Projections
         }
         catch (Exception exception) when (exception is not ProjectionException)
         {
-          var at = row < whole.Area.Height ? whole.Slice(new Offset(0, row), new Area(whole.Width, 1)) : whole;
+          var at = row < whole.Height ? whole.Slice(new Offset(0, row), new Area(whole.Width, 1)) : whole;
 
           throw scope.Failure(definition, $"the source threw {exception.GetType().Name}: {exception.Message}", at, null, exception, isFault: true);
         }

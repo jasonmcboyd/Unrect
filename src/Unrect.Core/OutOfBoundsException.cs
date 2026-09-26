@@ -3,10 +3,10 @@ using System;
 namespace Unrect.Core
 {
   /// <summary>
-  /// A strategy asked for more space than it was given, or a subspace request did not fit its
-  /// parent. Carries no diagnostics at this level — the projection layer above catches this and
-  /// wraps it in a <c>ProjectionException</c> with a declaration path and an A1 location; a
-  /// substrate caller working with an <see cref="ISpace"/> directly sees it bare.
+  /// A strategy asked for more space than it was given, a cut did not fit the region it was cut
+  /// from, or a coordinate lay outside a space. Carries no diagnostics at this level: the layer that
+  /// knows a declaration's path and a cell's address adds them; a caller reading an
+  /// <see cref="ISpace"/> directly sees it bare.
   /// </summary>
   public class OutOfBoundsException : Exception
   {

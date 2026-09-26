@@ -127,7 +127,7 @@ namespace Unrect.Strategies
     {
       NotNegative(height, nameof(height));
 
-      return SelectOffset(space => new Size(0, Reserve(space.Area.Height, height)));
+      return SelectOffset(space => new Size(0, Reserve(space.Height, height)));
     }
 
     /// <summary>How far in to start so that <paramref name="extent"/> reaches the far edge.</summary>

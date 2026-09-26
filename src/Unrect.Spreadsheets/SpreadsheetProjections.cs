@@ -263,7 +263,7 @@ namespace Unrect.Spreadsheets
         // Through the region's own points, because a capability answers in the SPACE's coordinates
         // and a region may name a rectangle part-way into it. The point carries the translation the
         // region would otherwise have to do by hand.
-        for (var row = 0; row < space.Area.Height; row++)
+        for (var row = 0; row < space.Height; row++)
           for (var column = 0; column < space.Width; column++)
           {
             var cell = space[column, row];
@@ -290,7 +290,7 @@ namespace Unrect.Spreadsheets
         var formulas = Formulas(space.Space);
 
         for (var column = 0; column < space.Width; column++)
-          for (var row = 0; row < space.Area.Height; row++)
+          for (var row = 0; row < space.Height; row++)
           {
             var cell = space[column, row];
 

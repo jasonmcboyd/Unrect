@@ -39,7 +39,7 @@ namespace Unrect.Projections
     public int Width => Space.Width;
 
     /// <summary>How many rows tall the block is.</summary>
-    public int Height => Space.Area.Height;
+    public int Height => Space.Height;
 
     /// <summary>
     /// The cell at <paramref name="column"/>, <paramref name="row"/>; either index outside the

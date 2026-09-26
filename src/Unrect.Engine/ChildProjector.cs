@@ -592,13 +592,13 @@ namespace Unrect.Projections
     /// <summary>The same region, <paramref name="width"/> wide across the driver's axis.</summary>
     private Plane<TSpace> Narrow(Plane<TSpace> region, int width)
       => _driver == Orientation.Vertical
-        ? region.Slice(new Area(width, region.Area.Height))
+        ? region.Slice(new Area(width, region.Height))
         : region.Slice(new Area(region.Width, width));
 
     /// <summary>The span from <paramref name="column"/> across the driver's axis, <paramref name="width"/> wide or to its edge.</summary>
     private Plane<TSpace> Cut(Plane<TSpace> span, int column, int? width)
       => _driver == Orientation.Vertical
         ? span.Slice(new Offset(column, 0), new Area(width ?? span.Width - column, 1))
-        : span.Slice(new Offset(0, column), new Area(1, width ?? span.Area.Height - column));
+        : span.Slice(new Offset(0, column), new Area(1, width ?? span.Height - column));
   }
 }

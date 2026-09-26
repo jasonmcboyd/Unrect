@@ -48,6 +48,36 @@ namespace Unrect.Tests
     }
 
     [Fact]
+    public void AnOffsetRendersAsAColumnRowPairLikeAPlanesOrigin()
+    {
+      // A displacement is a position, not an extent, so it prints the way a plane prints its origin
+      // and never as WxH: an offset and a size of the same two numbers must not read as one.
+      Assert.Equal("(1,2)", new Offset(1, 2).ToString());
+      Assert.Equal("(0,0)", default(Offset).ToString());
+      Assert.NotEqual(new Size(1, 2).ToString(), new Offset(1, 2).ToString());
+    }
+
+    [Fact]
+    public void SizesAndOffsetsCompareByValue()
+    {
+      // Two sizes are the same extent when their numbers agree; two offsets, the same displacement.
+      // Pinned because a plane's own equality is built from these, and because a plain struct
+      // without them compares by reflection and boxes on the way.
+      Assert.True(new Size(4, 2) == new Size(4, 2));
+      Assert.True(new Size(4, 2) != new Size(2, 4));
+      Assert.Equal(new Size(4, 2).GetHashCode(), new Size(4, 2).GetHashCode());
+      Assert.True(new Size(4, 2).Equals((object)new Size(4, 2)));
+
+      Assert.True(new Offset(1, 2) == new Offset(1, 2));
+      Assert.True(new Offset(1, 2) != new Offset(2, 1));
+      Assert.Equal(new Offset(1, 2).GetHashCode(), new Offset(1, 2).GetHashCode());
+      Assert.True(new Offset(1, 2).Equals((object)new Offset(1, 2)));
+
+      // A size and an offset of the same numbers are different things and are never equal.
+      Assert.False(new Size(1, 2).Equals((object)new Offset(1, 2)));
+    }
+
+    [Fact]
     public void AnAreaRendersAsItsSizeDoesByWhicheverDoorItWasBuilt()
     {
       // An Area IS a Size with a name, and its two constructors are two spellings of one value, so

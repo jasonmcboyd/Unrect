@@ -9,11 +9,11 @@ namespace Unrect.Core
   {
     /// <summary>
     /// What is being looked for, phrased as a negative noun so a failure reads as a sentence:
-    /// <c>no row containing 'Total'</c>.
+    /// <c>no row saying 'Total'</c>.
     /// </summary>
     string Description { get; }
 
-    /// <summary>The index of the first row that is the landmark, or null when there is none.</summary>
-    int? FindRow(Plane<ISpace> space);
+    /// <summary>The index of the first row of <paramref name="region"/> that is the landmark, or null when there is none.</summary>
+    int? FindRow(Plane<ISpace> region);
   }
 }

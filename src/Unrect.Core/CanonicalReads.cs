@@ -8,7 +8,7 @@ namespace Unrect.Core
   /// </summary>
   public static class CanonicalReads
   {
-    /// <summary>Whether the cell carries no value at all.</summary>
+    /// <summary>Whether the cell says nothing — see <see cref="ISpace.IsBlankAt"/>.</summary>
     /// <typeparam name="TSpace">The space the point addresses a cell of.</typeparam>
     /// <param name="point">The cell.</param>
     public static bool IsBlank<TSpace>(this Point<TSpace> point)

@@ -62,20 +62,17 @@ namespace Unrect.Core
 
     /// <summary>
     /// A region of no spans <paramref name="distance"/> spans along from <paramref name="first"/>'s
-    /// origin — where a child that is never fed would have begun. At the very end of the space the
-    /// constructor still admits an empty plane; past it, the first span's own origin stands in.
+    /// origin — where a child that is never fed would have begun. At the very end of the space an
+    /// empty plane still fits; past it, the first span's own origin stands in.
     /// </summary>
     internal static Plane<TSpace> EmptyAt<TSpace>(Plane<TSpace> first, int distance, Orientation along)
       where TSpace : class, ISpace
     {
-      try
-      {
-        return new Plane<TSpace>(first.Space, first.Origin + Step(distance, along), new Area(ToSize(0, Across(first, along), along)));
-      }
-      catch (OutOfBoundsException)
-      {
-        return Empty(first, along);
-      }
+      var origin = first.Origin + Step(distance, along);
+
+      return Along(origin.Size, along) <= Along(first.Space.Area.Size, along)
+        ? new Plane<TSpace>(first.Space, origin, new Area(ToSize(0, Across(first, along), along)))
+        : Empty(first, along);
     }
 
     /// <summary>The spans <paramref name="region"/> cuts into along <paramref name="along"/>; the whole region as one span when null.</summary>

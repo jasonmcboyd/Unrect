@@ -17,6 +17,6 @@ namespace Unrect.Strategies
     public ISizeScan Begin(Orientation along)
       => along == Orientation.Horizontal
         ? new ColumnsSizeScan(ColumnSelectionStrategy.Begin(), fullHeight: true)
-        : new Scanning.WholeSize(region => new Size(Scans.SelectColumns(ColumnSelectionStrategy, region), region.Area.Height), along);
+        : new Scanning.WholeSize(region => new Size(Scans.SelectColumns(ColumnSelectionStrategy, region), region.Height), along);
   }
 }

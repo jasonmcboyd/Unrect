@@ -333,7 +333,7 @@ namespace Unrect.Interactive
 
       public static Region Of<TSpace>(Plane<TSpace> plane)
         where TSpace : class, ICellSpace
-        => new Region(plane.Space, plane.Origin.Width, plane.Origin.Height, plane.Width, plane.Area.Height);
+        => new Region(plane.Space, plane.Origin.Width, plane.Origin.Height, plane.Width, plane.Height);
     }
 
     /// <summary>

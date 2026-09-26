@@ -65,7 +65,7 @@ namespace Unrect.Strategies
 
     public bool Take(Plane<ISpace> region, int taken) => _columns.IncludesColumn(region, taken);
 
-    public int? Across(Plane<ISpace> region, int taken, bool final) => _fullHeight ? region.Area.Height : 0;
+    public int? Across(Plane<ISpace> region, int taken, bool final) => _fullHeight ? region.Height : 0;
 
     public int Along(Plane<ISpace> region, int taken)
       => _columns.Required is int required && taken < required ? throw new OutOfBoundsException() : taken;

@@ -22,7 +22,7 @@ namespace Unrect.Strategies
 
     public int? FindRow(Plane<ISpace> space)
     {
-      for (var row = 0; row < space.Area.Height; row++)
+      for (var row = 0; row < space.Height; row++)
         if (Predicate(space, row))
           return row;
 

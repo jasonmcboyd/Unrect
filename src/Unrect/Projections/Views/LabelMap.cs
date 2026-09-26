@@ -385,7 +385,7 @@ namespace Unrect.Projections
     /// </param>
     internal HeaderLabels(CellStrip<TSpace> header)
     {
-      var rows = header.Space.Area.Height;
+      var rows = header.Space.Height;
 
       // The captions are what failures cite: a column is where its caption is.
       _header = rows > 1 ? header.Line(rows - 1) : header;

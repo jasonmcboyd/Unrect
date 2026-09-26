@@ -7,8 +7,8 @@ namespace Unrect.Core
   /// </summary>
   public interface IRowScan
   {
-    /// <summary>Whether row <paramref name="row"/> of <paramref name="space"/> belongs to the region.</summary>
-    bool IncludesRow(Plane<ISpace> space, int row);
+    /// <summary>Whether row <paramref name="row"/> of <paramref name="region"/> belongs to it.</summary>
+    bool IncludesRow(Plane<ISpace> region, int row);
 
     /// <summary>The number of rows the scan is owed, for one that counts them; null for one that discovers them.</summary>
     int? Required { get; }

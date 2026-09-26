@@ -330,7 +330,7 @@ namespace Unrect.Projections
           var remaining = _whole.Slice(Spans.Step(start, _along));
           var offset = Scans.FoldOffset(_strategy.Begin(_along), remaining, _along);
 
-          if (offset.Width > remaining.Width || offset.Height > remaining.Area.Height)
+          if (offset.Width > remaining.Width || offset.Height > remaining.Height)
             throw new OutOfBoundsException();
 
           _start = start;

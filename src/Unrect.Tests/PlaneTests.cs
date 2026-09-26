@@ -189,6 +189,26 @@ namespace Unrect.Tests
     // --- Minting ------------------------------------------------------------------------------------
 
     [Fact]
+    public void APlaneAnswersItsHeightAndWhetherItHasAColumnBesideItsWidthAndRows()
+    {
+      // Width and Height, HasColumn and HasRow: the two axes ask the same questions in the same
+      // shape, so a caller never reaches through Area for one and reads the other off the plane.
+      var band = Whole().Slice(new Offset(1, 0), new Area(2, 2));   // three wide, two tall in all
+
+      Assert.Equal(2, band.Width);
+      Assert.Equal(2, band.Height);
+      Assert.Equal(band.Area.Height, band.Height);
+
+      Assert.True(band.HasColumn(0));
+      Assert.True(band.HasColumn(1));
+      Assert.False(band.HasColumn(2));
+      Assert.False(band.HasColumn(-1));
+
+      Assert.True(band.HasRow(1));
+      Assert.False(band.HasRow(2));
+    }
+
+    [Fact]
     public void TheIndexerRefusesACoordinateOutsideThePlane()
     {
       var plane = Whole();

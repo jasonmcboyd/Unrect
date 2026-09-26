@@ -38,7 +38,7 @@ namespace Unrect.Projections
     private ProjectorScope<TSpace> Scope { get; }
 
     /// <summary>How many cells the strip holds: a row's width, or a column's height.</summary>
-    public int Count => Orientation == Orientation.Horizontal ? Space.Width : Space.Area.Height;
+    public int Count => Orientation == Orientation.Horizontal ? Space.Width : Space.Height;
 
     /// <summary>The cell at <paramref name="index"/> along the strip's own axis; an index outside it throws <see cref="ArgumentOutOfRangeException"/>.</summary>
     public Point<TSpace> this[int index]

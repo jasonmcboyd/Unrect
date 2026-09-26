@@ -23,10 +23,9 @@ namespace Unrect.Core
     /// The space's own extent.
     /// <para>
     /// It must be already known: answering it may neither throw nor go and measure anything. A space
-    /// is asked how big it is on paths that cannot fail — building an exception's message is one
-    /// (<c>CellReadException</c> cites a cell, and citing it needs the extent it sits in), and a
-    /// backend whose extent were discovered lazily would turn a read failure into a second failure
-    /// raised from inside the first one's <c>Message</c>.
+    /// is asked how big it is on paths that cannot fail — building a failure's message is one, since
+    /// citing a cell needs the extent it sits in — and a backend whose extent were discovered lazily
+    /// would turn a read failure into a second failure raised from inside the first one's message.
     /// </para>
     /// </summary>
     Area Area { get; }

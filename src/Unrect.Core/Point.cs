@@ -35,9 +35,8 @@ namespace Unrect.Core
     /// in that space's own root coordinates.
     /// <para>
     /// Minting is a locator's job, and this constructor trusts its caller to have checked the
-    /// coordinate. It deliberately does not check for itself: the only thing it could check against
-    /// is the space's extent, and asking a space how tall it is can settle a boundary the
-    /// declaration was still discovering.
+    /// coordinate: a plane checks against the region it names, which is the narrower question, and
+    /// the space checks again on every read, so a check here would be a third.
     /// </para>
     /// <para>
     /// The consequence is that <c>default(Point&lt;TSpace&gt;)</c> is a point with no space. It
@@ -111,9 +110,8 @@ namespace Unrect.Core
     public static bool operator !=(Point<TSpace> first, Point<TSpace> second) => !(first == second);
 
     /// <summary>
-    /// The cell's address inside its own space, as <c>(column,row)</c>. For diagnostics: a point
-    /// knows where it sits in the space it came from and not where that space sits in the sheet, so
-    /// this is never an A1 address.
+    /// The cell's address as <c>(column,row)</c>, in the space's own root coordinates. Coordinates
+    /// rather than A1, because a space need not be a sheet.
     /// </summary>
     public override string ToString() => $"({Column},{Row})";
   }

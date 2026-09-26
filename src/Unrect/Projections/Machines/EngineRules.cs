@@ -40,7 +40,7 @@ namespace Unrect.Projections
     /// <summary>Whether <paramref name="size"/> is wider or taller than <paramref name="space"/>.</summary>
     internal static bool Exceeds<TSpace>(Size size, Plane<TSpace> space)
       where TSpace : class, ISpace
-      => size.Width > space.Width || size.Height > space.Area.Height;
+      => size.Width > space.Width || size.Height > space.Height;
 
     internal static string Describe(Size size) => $"{size.Width}x{size.Height}";
 

@@ -33,7 +33,7 @@ namespace Unrect.Projections
 
     internal override Settlement<T> Collect(Plane<TSpace> extent, ProjectorScope<TSpace> scope)
     {
-      if (HeaderRows > 0 && (extent.Width == 0 || extent.Area.Height == 0))
+      if (HeaderRows > 0 && (extent.Width == 0 || extent.Height == 0))
         throw scope.Failure("a header row was declared but the table's extent is empty", extent);
 
       T value;

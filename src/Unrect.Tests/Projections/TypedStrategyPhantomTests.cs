@@ -383,7 +383,7 @@ namespace Unrect.Tests.Projections
     public void RetypingARegionKeepsItsOriginAndItsExtent()
     {
       var sheet = CoordinateGrid(4, 10);
-      var region = Plane<ICellSpace>.Of(sheet).Slice(new Offset(1, 2)).Narrowed(3);
+      var region = Plane<ICellSpace>.Of(sheet).Slice(new Offset(1, 2)).Slice(new Area(3, 8));
 
       var retyped = region.Erased().Retyped<ICellSpace>();
 

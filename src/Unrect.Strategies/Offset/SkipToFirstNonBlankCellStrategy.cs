@@ -28,7 +28,7 @@ namespace Unrect.Strategies
       }
 
       public Offset Settle(Plane<ISpace> region)
-        => _along == Orientation.Vertical ? new Offset(0, region.Area.Height) : new Offset(region.Width, 0);
+        => _along == Orientation.Vertical ? new Offset(0, region.Height) : new Offset(region.Width, 0);
     }
   }
 }

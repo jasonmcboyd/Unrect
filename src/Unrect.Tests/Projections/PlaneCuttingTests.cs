@@ -39,7 +39,7 @@ namespace Unrect.Tests.Projections
         (extent.Slice(new Offset(1, 1), new Area(2, 2)), new Offset(1, 1)),
         (extent.Slice(new Area(2, 2)), default(Offset)),
         (extent.Slice(new Offset(1, 1)), new Offset(1, 1)),
-        (extent.Narrowed(2), default(Offset)),
+        (extent.Slice(new Area(2, extent.Height)), default(Offset)),
       })
       {
         Assert.Same(extent.Space, cut.Space);

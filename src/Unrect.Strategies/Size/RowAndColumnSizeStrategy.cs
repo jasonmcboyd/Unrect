@@ -58,7 +58,7 @@ namespace Unrect.Strategies
       else
       {
         var columnCount = Scans.SelectColumns(ColumnSelectionStrategy, region);
-        var rowCount = Scans.SelectRows(RowSelectionStrategy, region.Slice(new Area(columnCount, region.Area.Height)));
+        var rowCount = Scans.SelectRows(RowSelectionStrategy, region.Slice(new Area(columnCount, region.Height)));
 
         return new Size(columnCount, rowCount);
       }
@@ -139,7 +139,7 @@ namespace Unrect.Strategies
       {
         var settled = final || _stopped || (_columns.Required is int required && taken >= required);
 
-        return settled ? _rows(region.Slice(new Area(taken, region.Area.Height))) : (int?)null;
+        return settled ? _rows(region.Slice(new Area(taken, region.Height))) : (int?)null;
       }
 
       public int Along(Plane<ISpace> region, int taken)

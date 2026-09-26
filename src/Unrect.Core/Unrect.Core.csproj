@@ -5,35 +5,29 @@
 
     Every type here appears in a contract signature, or in behaviour a contract documents:
 
-      ISpace, the strategy interfaces,
+      ISpace, the strategy and scan interfaces,
       IRowLandmark/IColumnLandmark                                   the contracts themselves
       Plane                                                          the 2-D locator: the region a
-                                                                     projection is handed. Spoken by
-                                                                     the strategy signatures and by
-                                                                     IProjection's Project
+                                                                     strategy is shown, spoken by
+                                                                     every scan and landmark
       Point                                                          the 0-D locator Plane mints
-      IBound                                                         a region's bottom edge while it
-                                                                     is still being discovered; it
-                                                                     is public because Plane speaks
-                                                                     it, while MINTING one is the
-                                                                     engine's business — Plane.Bounded
-                                                                     is internal to it
-      IValueCells                                                    what a grid of one CLR type
-                                                                     answers beyond the canonical
-                                                                     four; spoken by the Value read
-      Size, Offset, Area                                             the strategy signatures
+      CanonicalReads                                                 ISpace's questions asked of a Point
+      Scans                                                          the fold that defines a
+                                                                     strategy's whole-region answer
+      IValueSpace                                                    the value facet beside the text one
+      Size, Offset, Area, Orientation, OffsetStep                    the strategy signatures
       OutOfBoundsException                                           the throw ISpace mandates
 
-    Hashes is internal and exempt: the charter is about what this project's contracts SPEAK, and
-    nothing outside this package can name it. It exists because the value types here — and the cell
-    struct in Unrect.Spreadsheets, which is granted the same reach — mix a hash the same way, and
-    System.HashCode is netstandard2.1 and up. Renderings is internal and exempt for the same
-    reason: the in-memory grid and the spreadsheet cell must write a double as the same digits,
-    and neither target's own rendering agrees with the other's.
+    Hashes, Renderings and Spans are internal and exempt: the charter is about what this project's
+    contracts SPEAK, and nothing outside this package can name them. Hashes exists because the value
+    types here — and the cell struct in Unrect.Spreadsheets, which is granted the same reach — mix a
+    hash the same way, and System.HashCode is netstandard2.1 and up. Renderings, because the
+    in-memory grid and the spreadsheet cell must write a double as the same digits, and neither
+    target's own rendering agrees with the other's. Spans, because it is the arithmetic every scan
+    and machine would otherwise write for itself.
 
-    A type that merely USES those contracts belongs above them, in Unrect. That is why GridSpace
-    (an implementation of the grid contract) and SpaceExtensions (sugar over one of its methods)
-    left on 2026-09-03: both were reachable from here, neither was spoken of by anything here.
+    A type that merely USES those contracts belongs above them, in Unrect: an implementation of
+    ISpace, sugar over one of its members.
 
     The test before adding a type: name the contract it appears in. If you cannot, it goes in
     Unrect — which ships in the same package, so nothing about the move reaches a consumer but
