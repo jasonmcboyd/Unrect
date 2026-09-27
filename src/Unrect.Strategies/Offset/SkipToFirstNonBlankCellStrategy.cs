@@ -6,30 +6,38 @@ namespace Unrect.Strategies
   internal sealed class SkipToFirstNonBlankCellStrategy<TSpace> : IOffsetStrategy<TSpace>
     where TSpace : class, ISpace
   {
-    public IOffsetScan<TSpace> Begin(Orientation along) => new Scan(along);
+    public ISizeScan<TSpace> Begin(Orientation along) => new Scan(along);
 
-    private sealed class Scan : IOffsetScan<TSpace>
+    private sealed class Scan : ISizeScan<TSpace>
     {
       private readonly Orientation _along;
+      private int _across;
 
       internal Scan(Orientation along) => _along = along;
 
       public bool Incremental => true;
 
-      public OffsetStep Next(Plane<TSpace> region, int index, out int across)
+      public bool Take(Plane<TSpace> region, int taken)
       {
         var reach = Spans.Across(region, _along);
 
-        for (across = 0; across < reach; across++)
-          if (!Spans.Cell(region, index, across, _along).IsBlank())
-            return OffsetStep.StartHere;
+        for (var across = 0; across < reach; across++)
+        {
+          if (!Spans.Cell(region, taken, across, _along).IsBlank())
+          {
+            _across = across;
+            return false;
+          }
+        }
 
-        across = 0;
-        return OffsetStep.Skip;
+        return true;
       }
 
-      public Offset Settle(Plane<TSpace> region)
-        => _along == Orientation.Vertical ? new Offset(0, region.Height) : new Offset(region.Width, 0);
+      public int? Across(Plane<TSpace> region, int taken, bool final) => _across;
+
+      public int Along(Plane<TSpace> region, int taken) => taken;
+
+      public Size? Required => null;
     }
   }
 }

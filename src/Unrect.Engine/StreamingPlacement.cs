@@ -13,14 +13,13 @@ namespace Unrect.Projections
   internal sealed class StreamingPlacement<TSpace>
     where TSpace : class, ISpace
   {
-    private readonly IOffsetScan<TSpace> _offset;
+    private readonly ISizeScan<TSpace> _offset;
     private readonly ISizeScan<TSpace>? _size;
     private readonly IProjectionDefinition _definition;
     private readonly Orientation _driver;
     private readonly bool _strict;
-    private int _skipped;
 
-    internal StreamingPlacement(IOffsetScan<TSpace> offset, ISizeScan<TSpace>? size, bool derived, IProjectionDefinition definition, Orientation driver, bool strict)
+    internal StreamingPlacement(ISizeScan<TSpace> offset, ISizeScan<TSpace>? size, bool derived, IProjectionDefinition definition, Orientation driver, bool strict)
     {
       _offset = offset;
       _size = size;
@@ -49,19 +48,21 @@ namespace Unrect.Projections
     internal bool Failed { get; private set; }
 
     /// <summary>
-    /// The offset rule's answer for the newest span: skip it, start on it, start on the one after,
-    /// or refuse, which sets <see cref="Failed"/>. <paramref name="region"/> is every span offered
-    /// so far; <paramref name="across"/> is how far the newest one reaches across the driver's
-    /// axis, which a column offset must fit inside.
+    /// The offset rule's answer for the newest span: false while the span is part of the gap
+    /// before the region, true when the region starts on it — or a refusal, which sets
+    /// <see cref="Failed"/>. <paramref name="region"/> is every span offered so far; <paramref name="across"/>
+    /// is how far the newest one reaches across the driver's axis, which a column offset must fit inside.
     /// </summary>
-    internal OffsetStep Advance(Plane<TSpace> region, int index, int across, ProjectorScope<TSpace> parent)
+    internal bool Advance(Plane<TSpace> region, int index, int across, ProjectorScope<TSpace> parent)
     {
-      OffsetStep step;
-      int column;
+      Size block;
 
       try
       {
-        step = _offset.Next(region, index, out column);
+        if (_offset.Take(region, index))
+          return false;
+
+        block = Scans.Settle(_offset, Spans.Prefix(region, index, _driver), index, _driver);
       }
       catch (OutOfBoundsException exception)
       {
@@ -69,23 +70,16 @@ namespace Unrect.Projections
           throw parent.Failure(_definition, EngineRules.Missing(exception), region, null, exception);
 
         Failed = true;
-        return OffsetStep.Skip;
+        return false;
       }
       catch (Exception exception) when (exception is not ProjectionException)
       {
         throw parent.Failure(_definition, EngineRules.Threw("offset", exception), region, null, exception, EngineRules.IsFault(exception));
       }
 
-      if (step == OffsetStep.Skip)
-      {
-        _skipped++;
-        return step;
-      }
+      Offset = Scans.AsOffset(block);
 
-      if (step == OffsetStep.StartNext)
-        _skipped++;
-
-      Offset = _driver == Orientation.Vertical ? new Offset(column, _skipped) : new Offset(_skipped, column);
+      var column = Spans.Across(Offset, _driver);
 
       if (column > across)
       {
@@ -95,7 +89,7 @@ namespace Unrect.Projections
         Failed = true;
       }
 
-      return step;
+      return true;
     }
 
     /// <summary>Whether the size rule takes the newest span of <paramref name="region"/>, the <paramref name="taken"/>th; false with <see cref="Failed"/> set is a refusal.</summary>
@@ -203,9 +197,10 @@ namespace Unrect.Projections
     }
 
     /// <summary>
-    /// Where the offset settles once every span was shown and it never started: the scan's answer
-    /// over the whole <paramref name="region"/>, which must fit inside it. A place the region does
-    /// not have is a missing anchor, or a refusal when the child was started non-strictly.
+    /// Where the offset settles once every span was shown and the gap never ended: the scan
+    /// settled over the whole <paramref name="region"/>, an answer that must fit inside it. A place
+    /// the region does not have is a missing anchor, or a refusal when the child was started
+    /// non-strictly.
     /// </summary>
     internal bool SettleOffset(Plane<TSpace> region, ProjectorScope<TSpace> parent)
     {
@@ -213,7 +208,7 @@ namespace Unrect.Projections
 
       try
       {
-        offset = _offset.Settle(region);
+        offset = Scans.AsOffset(Scans.Settle(_offset, region, Spans.Along(region, _driver), _driver));
       }
       catch (OutOfBoundsException exception)
       {

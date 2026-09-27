@@ -43,7 +43,7 @@ namespace Unrect.Projections
     /// the two scans its placement machine will drive — the engine's question, asked of the typed
     /// tree because the scans are written over its space.
     /// </summary>
-    internal static bool Streams<TSpace, T>(IProjectionDefinition<TSpace, T> definition, Orientation driver, out IOffsetScan<TSpace> offset, out ISizeScan<TSpace>? size, out bool derived, out string? hold, Orientation? leadingBlanks = null)
+    internal static bool Streams<TSpace, T>(IProjectionDefinition<TSpace, T> definition, Orientation driver, out ISizeScan<TSpace> offset, out ISizeScan<TSpace>? size, out bool derived, out string? hold, Orientation? leadingBlanks = null)
       where TSpace : class, ISpace
     {
       (offset, size) = definition.Placement.Begin(driver, leadingBlanks, DeclaresOffset(definition));

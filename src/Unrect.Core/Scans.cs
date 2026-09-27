@@ -4,7 +4,8 @@ namespace Unrect.Core
   /// What a whole region answers, defined as the fold of a strategy's scan over it: the region's
   /// spans shown one at a time, in order, and the scan's settlement read at the end. The one
   /// definition of a strategy's whole-region answer, so a scan that decides as it goes and one
-  /// that decides at the end cannot disagree about what a region means.
+  /// that decides at the end cannot disagree about what a region means — and the one place a
+  /// block a scan measured is read as the offset to its far corner.
   /// </summary>
   public static class Scans
   {
@@ -43,29 +44,17 @@ namespace Unrect.Core
     }
 
     /// <summary>
-    /// The offset <paramref name="scan"/> settles on over <paramref name="region"/>: the spans
-    /// along <paramref name="along"/> shown one at a time until it starts, and its
-    /// <see cref="IOffsetScan{TSpace}.Settle"/> when it never does.
+    /// The offset <paramref name="scan"/> settles on over <paramref name="region"/>: the block it
+    /// measures — the gap before the region — folded as <see cref="FoldSize{TSpace}"/> folds it,
+    /// read as the displacement to its far corner. As there, the answer may exceed the region — a
+    /// scan that is owed an extent answers what it is owed, shown enough or not — and it is the
+    /// caller's to compare with the region.
     /// </summary>
-    /// <exception cref="OutOfBoundsException">The region has no such place.</exception>
-    public static Offset FoldOffset<TSpace>(IOffsetScan<TSpace> scan, Plane<TSpace> region, Orientation along)
+    /// <exception cref="OutOfBoundsException">The region has no such place: an anchor that was never found, a chain that ran past.</exception>
+    /// <exception cref="ScanContractException">The scan broke its contract: asked at the end, it did not say how far across it reaches.</exception>
+    public static Offset FoldOffset<TSpace>(ISizeScan<TSpace> scan, Plane<TSpace> region, Orientation along)
       where TSpace : class, ISpace
-    {
-      var count = Spans.Along(region, along);
-
-      for (var index = 0; index < count; index++)
-      {
-        var step = scan.Next(Spans.Prefix(region, index + 1, along), index, out var across);
-
-        if (step == OffsetStep.StartHere)
-          return Spans.ToOffset(index, across, along);
-
-        if (step == OffsetStep.StartNext)
-          return Spans.ToOffset(index + 1, across, along);
-      }
-
-      return scan.Settle(region);
-    }
+      => AsOffset(FoldSize(scan, region, along));
 
     /// <summary>
     /// The size <paramref name="scan"/> settles on over <paramref name="region"/>: the spans along
@@ -84,12 +73,29 @@ namespace Unrect.Core
       while (taken < count && scan.Take(Spans.Prefix(region, taken + 1, along), taken))
         taken++;
 
-      var kept = Spans.Prefix(region, taken, along);
+      return Settle(scan, Spans.Prefix(region, taken, along), taken, along);
+    }
+
+    /// <summary>
+    /// What <paramref name="scan"/> settles on once no more spans are coming, over
+    /// <paramref name="kept"/>, the <paramref name="taken"/> spans it took: how many it keeps and
+    /// how far across it reaches.
+    /// </summary>
+    /// <exception cref="ScanContractException">The scan broke its contract: asked at the end, it did not say how far across it reaches.</exception>
+    internal static Size Settle<TSpace>(ISizeScan<TSpace> scan, Plane<TSpace> kept, int taken, Orientation along)
+      where TSpace : class, ISpace
+    {
       var length = scan.Along(kept, taken);
       var across = scan.Across(kept, taken, final: true) ?? throw NoWidthAtTheEnd();
 
       return Spans.ToSize(length, across, along);
     }
+
+    /// <summary>
+    /// <paramref name="block"/> read as the displacement to its far corner: the one place a size
+    /// becomes an offset. A gap of three rows and two columns puts what follows at (2,3).
+    /// </summary>
+    internal static Offset AsOffset(Size block) => new Offset(block.Width, block.Height);
 
     /// <summary>The one breach a size scan can commit: asked at the end, it did not say how far across it reaches.</summary>
     internal static ScanContractException NoWidthAtTheEnd()

@@ -112,7 +112,7 @@ namespace Unrect.Projections
     /// blank-skipping default along <paramref name="leadingBlanks"/> for a child that declares none
     /// down its wrapper chain — and the extent's, null when the extent is derived.
     /// </summary>
-    internal (IOffsetScan<TSpace> Offset, ISizeScan<TSpace>? Extent) Begin(Orientation driver, Orientation? leadingBlanks, bool declaresOffset)
+    internal (ISizeScan<TSpace> Offset, ISizeScan<TSpace>? Extent) Begin(Orientation driver, Orientation? leadingBlanks, bool declaresOffset)
     {
       var offset = leadingBlanks is Orientation session && !declaresOffset
         ? (session == Orientation.Vertical ? OffsetStrategies.SkipBlankRows<TSpace>() : OffsetStrategies.SkipBlankColumns<TSpace>()).Begin(driver)

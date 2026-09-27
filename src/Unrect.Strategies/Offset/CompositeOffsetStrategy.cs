@@ -6,8 +6,8 @@ namespace Unrect.Strategies
 {
   /// <summary>
   /// Offsets applied one after another, each from where the last one left off: a chain of scans
-  /// along the axis, each stage starting on the span its predecessor started on (or the one
-  /// after), and reading its spans from that stage's own corner.
+  /// along the axis, each stage's gap starting on the span on which its predecessor's ended, and reading
+  /// its spans from that stage's own corner.
   /// </summary>
   internal sealed class CompositeOffsetStrategy<TSpace> : IOffsetStrategy<TSpace>
     where TSpace : class, ISpace
@@ -25,9 +25,9 @@ namespace Unrect.Strategies
 
     internal IOffsetStrategy<TSpace>[] Strategies { get; }
 
-    public IOffsetScan<TSpace> Begin(Orientation along)
+    public ISizeScan<TSpace> Begin(Orientation along)
     {
-      var stages = new IOffsetScan<TSpace>[Strategies.Length];
+      var stages = new ISizeScan<TSpace>[Strategies.Length];
 
       for (var index = 0; index < stages.Length; index++)
         stages[index] = Strategies[index].Begin(along);
@@ -35,18 +35,26 @@ namespace Unrect.Strategies
       return new Chain(stages, along);
     }
 
-    private sealed class Chain : IOffsetScan<TSpace>
+    /// <summary>
+    /// The stages driven in turn: a stage takes spans until its gap ends, is settled over what it
+    /// took, and the next stage is shown the span it refused as its first. A stage that was driven
+    /// is never folded again — a scan may carry state — so the end-of-spans settlement settles the
+    /// stage in progress over what it saw and folds only the stages never shown a span.
+    /// </summary>
+    private sealed class Chain : ISizeScan<TSpace>
     {
-      private readonly IOffsetScan<TSpace>[] _stages;
+      private readonly ISizeScan<TSpace>[] _stages;
       private readonly Orientation _along;
       private int _stage;
       private int _stageStart;
       private int _across;
+      private bool _done;
 
-      internal Chain(IOffsetScan<TSpace>[] stages, Orientation along)
+      internal Chain(ISizeScan<TSpace>[] stages, Orientation along)
       {
         _stages = stages;
         _along = along;
+        _done = stages.Length == 0;
       }
 
       public bool Incremental
@@ -61,59 +69,65 @@ namespace Unrect.Strategies
         }
       }
 
-      public OffsetStep Next(Plane<TSpace> region, int index, out int across)
+      public bool Take(Plane<TSpace> region, int taken)
       {
-        if (_stages.Length == 0)
+        while (!_done)
         {
-          across = 0;
-          return OffsetStep.StartHere;
+          var stageRegion = region.Slice(Corner());
+          var local = taken - _stageStart;
+
+          if (_stages[_stage].Take(stageRegion, local))
+            return true;
+
+          Advance(Scans.Settle(_stages[_stage], Spans.Prefix(stageRegion, local, _along), local, _along));
         }
 
-        while (true)
+        return false;
+      }
+
+      public int? Across(Plane<TSpace> region, int taken, bool final)
+        => final ? Spans.Across(Settle(region, taken), _along) : (int?)null;
+
+      public int Along(Plane<TSpace> region, int taken) => Spans.Along(Settle(region, taken), _along);
+
+      public Size? Required => null;
+
+      /// <summary>
+      /// The stage in progress settled over what it was shown, then every stage never shown a span
+      /// folded over what is left. Each stage's corner is cut from the region as the next stage's
+      /// start, so a corner past the region is the chain's own bounds failure — it ran past.
+      /// </summary>
+      private Size Settle(Plane<TSpace> region, int taken)
+      {
+        if (!_done)
         {
-          var stageRegion = region.Slice(_along == Orientation.Vertical ? new Offset(_across, _stageStart) : new Offset(_stageStart, _across));
-          var step = _stages[_stage].Next(stageRegion, index - _stageStart, out var stageAcross);
+          var stageRegion = region.Slice(Corner());
 
-          if (step == OffsetStep.Skip)
-          {
-            across = _across;
-            return OffsetStep.Skip;
-          }
+          Advance(Scans.Settle(_stages[_stage], Spans.Prefix(stageRegion, taken - _stageStart, _along), taken - _stageStart, _along));
 
-          _across += stageAcross;
-          across = _across;
+          while (!_done)
+            Advance(Scans.FoldSize(_stages[_stage], region.Slice(Corner()), _along));
 
-          if (_stage == _stages.Length - 1)
-            return step;
+          // The final corner must lie in the region: a chain that ran past is its own bounds failure.
+          _ = region.Slice(Corner());
+        }
 
+        return Spans.ToSize(_stageStart, _across, _along);
+      }
+
+      /// <summary>The current stage's block added to the total, and the chain moved on to the next stage or finished.</summary>
+      private void Advance(Size block)
+      {
+        _across += Spans.Across(block, _along);
+        _stageStart += Spans.Along(block, _along);
+
+        if (_stage == _stages.Length - 1)
+          _done = true;
+        else
           _stage++;
-
-          if (step == OffsetStep.StartHere)
-          {
-            _stageStart = index;
-            continue;
-          }
-
-          _stageStart = index + 1;
-          return OffsetStep.Skip;
-        }
       }
 
-      public Offset Settle(Plane<TSpace> region)
-      {
-        // Each stage over what the last one left: the same arithmetic the streaming form does,
-        // stated over the whole region for a chain whose stages need it that way.
-        var total = default(Offset);
-
-        foreach (var stage in _stages)
-        {
-          var offset = Scans.FoldOffset(stage, region, _along);
-          total += offset;
-          region = region.Slice(offset);
-        }
-
-        return total;
-      }
+      private Offset Corner() => Spans.ToOffset(_stageStart, _across, _along);
     }
   }
 }
