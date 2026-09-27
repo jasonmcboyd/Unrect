@@ -342,7 +342,7 @@ namespace Unrect.Projections
 
       public int? Across(Plane<TSpace> region, int taken, bool final) => Spans.Across(_offset, _along);
 
-      /// <summary>The gap, once the span after it was refused; the spans running out inside it is no room for another item.</summary>
+      /// <summary>The gap, once the span after it was refused; the spans running out inside it is no room for another item. The machine reads only <see cref="Take"/>; this is the contract kept, reached by nothing today.</summary>
       public int Along(Plane<TSpace> region, int taken)
         => _start >= 0 && taken >= Spans.Along(_offset, _along) ? taken : throw new OutOfBoundsException();
 

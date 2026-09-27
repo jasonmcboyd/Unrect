@@ -6,7 +6,7 @@ namespace Unrect.Strategies
 {
   /// <summary>
   /// Offsets applied one after another, each from where the last one left off: a chain of scans
-  /// along the axis, each stage's gap starting on the span its predecessor's ended, and reading
+  /// along the axis, each stage's gap starting on the span on which its predecessor's ended, and reading
   /// its spans from that stage's own corner.
   /// </summary>
   internal sealed class CompositeOffsetStrategy<TSpace> : IOffsetStrategy<TSpace>
@@ -69,12 +69,12 @@ namespace Unrect.Strategies
         }
       }
 
-      public bool Take(Plane<TSpace> region, int index)
+      public bool Take(Plane<TSpace> region, int taken)
       {
         while (!_done)
         {
           var stageRegion = region.Slice(Corner());
-          var local = index - _stageStart;
+          var local = taken - _stageStart;
 
           if (_stages[_stage].Take(stageRegion, local))
             return true;
@@ -105,15 +105,11 @@ namespace Unrect.Strategies
 
           Advance(Scans.Settle(_stages[_stage], Spans.Prefix(stageRegion, taken - _stageStart, _along), taken - _stageStart, _along));
 
-          while (true)
-          {
-            stageRegion = region.Slice(Corner());
+          while (!_done)
+            Advance(Scans.FoldSize(_stages[_stage], region.Slice(Corner()), _along));
 
-            if (_done)
-              break;
-
-            Advance(Scans.FoldSize(_stages[_stage], stageRegion, _along));
-          }
+          // The final corner must lie in the region: a chain that ran past is its own bounds failure.
+          _ = region.Slice(Corner());
         }
 
         return Spans.ToSize(_stageStart, _across, _along);

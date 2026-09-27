@@ -72,7 +72,7 @@ namespace Unrect.Projections
 
       // Driven or held is PlacementRules' decision, shared with the cost report so the two agree.
       _held = !PlacementRules.Streams(definition, _driver, out var offset, out var size, out var derived, out _, leadingBlanks);
-      _placement = new StreamingPlacement<TSpace>(offset, size, derived, definition, _driver, strict);
+      _placement = new StreamingPlacement<TSpace>(offset: offset, size: size, derived, definition, _driver, strict);
       _skipsByDefault = leadingBlanks is not null && !PlacementRules.DeclaresOffset(definition);
     }
 

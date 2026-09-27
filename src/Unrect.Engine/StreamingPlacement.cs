@@ -18,7 +18,6 @@ namespace Unrect.Projections
     private readonly IProjectionDefinition _definition;
     private readonly Orientation _driver;
     private readonly bool _strict;
-    private int _skipped;
 
     internal StreamingPlacement(ISizeScan<TSpace> offset, ISizeScan<TSpace>? size, bool derived, IProjectionDefinition definition, Orientation driver, bool strict)
     {
@@ -61,10 +60,7 @@ namespace Unrect.Projections
       try
       {
         if (_offset.Take(region, index))
-        {
-          _skipped++;
           return false;
-        }
 
         block = Scans.Settle(_offset, Spans.Prefix(region, index, _driver), index, _driver);
       }

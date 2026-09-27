@@ -10,13 +10,10 @@ namespace Unrect.Strategies
   internal sealed class OffsetStrategy<TSpace> : IOffsetStrategy<TSpace>
     where TSpace : class, ISpace
   {
-    public OffsetStrategy(ISizeStrategy<TSpace> strategy)
-    {
-      Strategy = strategy;
-    }
+    private readonly ISizeStrategy<TSpace> _strategy;
 
-    internal ISizeStrategy<TSpace> Strategy { get; }
+    public OffsetStrategy(ISizeStrategy<TSpace> strategy) => _strategy = strategy;
 
-    public ISizeScan<TSpace> Begin(Orientation along) => Strategy.Begin(along);
+    public ISizeScan<TSpace> Begin(Orientation along) => _strategy.Begin(along);
   }
 }

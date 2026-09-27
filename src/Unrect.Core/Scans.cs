@@ -50,6 +50,7 @@ namespace Unrect.Core
     /// scan that is owed an extent answers what it is owed, shown enough or not — and it is the
     /// caller's to compare with the region.
     /// </summary>
+    /// <exception cref="OutOfBoundsException">The region has no such place: an anchor that was never found, a chain that ran past.</exception>
     /// <exception cref="ScanContractException">The scan broke its contract: asked at the end, it did not say how far across it reaches.</exception>
     public static Offset FoldOffset<TSpace>(ISizeScan<TSpace> scan, Plane<TSpace> region, Orientation along)
       where TSpace : class, ISpace
