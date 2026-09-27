@@ -53,7 +53,6 @@ namespace Unrect.Projections
     private Phase _phase;
     private int _column;
     private readonly bool _skipsByDefault;
-    private bool _startNext;
     private int _innerStart;
     private int _taken;
     private int _fed;
@@ -203,33 +202,20 @@ namespace Unrect.Projections
     {
       if (_phase == Phase.Offset)
       {
-        if (_startNext)
+        var region = Spans.Region(_offered[0], index + 1, _driver);
+        var started = _placement.Advance(region, index, Spans.Across(span.Extent, _driver), _parent);
+
+        if (_placement.Failed)
         {
-          _startNext = false;
+          PlacementFailed = true;
+          return Refuse(live);
         }
-        else
-        {
-          var region = Spans.Region(_offered[0], index + 1, _driver);
-          var step = _placement.Advance(region, index, Spans.Across(span.Extent, _driver), _parent);
 
-          if (_placement.Failed)
-          {
-            PlacementFailed = true;
-            return Refuse(live);
-          }
+        if (!started)
+          return true;
 
-          if (step == OffsetStep.Skip)
-            return true;
-
-          _column = _driver == Orientation.Vertical ? _placement.Offset.Column : _placement.Offset.Row;
-          Offset = _placement.Offset;
-
-          if (step == OffsetStep.StartNext)
-          {
-            _startNext = true;
-            return true;
-          }
-        }
+        _column = _driver == Orientation.Vertical ? _placement.Offset.Column : _placement.Offset.Row;
+        Offset = _placement.Offset;
 
         Start(index, Cut(span, _column, null));
       }

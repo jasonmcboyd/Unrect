@@ -5,8 +5,8 @@ using Unrect.Core;
 namespace Unrect.Strategies
 {
   /// <summary>
-  /// The scans the strategies here are made of: the whole-region forms a strategy falls back to
-  /// when asked along an axis it cannot stream, and the scans a predicate or a size drives.
+  /// The scans the strategies here are made of: the whole-region form a strategy falls back to
+  /// when asked along an axis it cannot stream, and the scans a predicate drives.
   /// </summary>
   internal static class Scanning
   {
@@ -50,67 +50,6 @@ namespace Unrect.Strategies
       }
 
       public Size? Required => null;
-    }
-
-    /// <summary>An offset scan that answers only over the whole region: it skips every span and settles at the end with the offset of everything.</summary>
-    internal sealed class WholeOffset<TSpace> : IOffsetScan<TSpace>
-      where TSpace : class, ISpace
-    {
-      private readonly Func<Plane<TSpace>, Offset> _offset;
-
-      internal WholeOffset(Func<Plane<TSpace>, Offset> offset) => _offset = offset;
-
-      public bool Incremental => false;
-
-      public OffsetStep Next(Plane<TSpace> region, int index, out int across)
-      {
-        across = 0;
-        return OffsetStep.Skip;
-      }
-
-      public Offset Settle(Plane<TSpace> region) => _offset(region);
-    }
-
-    /// <summary>
-    /// A size read as an offset: skip while the size takes, start where it stops, as far across as
-    /// it reaches. An explicit 2x3 skips three spans and starts two cells in; a rows-while-blank
-    /// skips the blank rows.
-    /// </summary>
-    internal sealed class SizeAsOffset<TSpace> : IOffsetScan<TSpace>
-      where TSpace : class, ISpace
-    {
-      private readonly ISizeScan<TSpace> _size;
-      private readonly Orientation _along;
-
-      internal SizeAsOffset(ISizeScan<TSpace> size, Orientation along)
-      {
-        _size = size;
-        _along = along;
-      }
-
-      public bool Incremental => _size.Incremental;
-
-      public OffsetStep Next(Plane<TSpace> region, int index, out int across)
-      {
-        if (_size.Take(region, index))
-        {
-          across = 0;
-          return OffsetStep.Skip;
-        }
-
-        across = _size.Across(region, index, final: true) ?? 0;
-        return OffsetStep.StartHere;
-      }
-
-      // The size, wherever it lands, read as the displacement it measures — this lift is the one
-      // place an extent becomes an offset. A skip past the end is the placement's to report as not
-      // fitting, with what was asked and what was there.
-      public Offset Settle(Plane<TSpace> region)
-      {
-        var size = Scans.FoldSize(_size, region, _along);
-
-        return new Offset(size.Width, size.Height);
-      }
     }
 
     /// <summary>

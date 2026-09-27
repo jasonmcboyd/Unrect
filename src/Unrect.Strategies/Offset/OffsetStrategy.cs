@@ -2,7 +2,11 @@ using Unrect.Core;
 
 namespace Unrect.Strategies
 {
-  /// <summary>A size read as an offset: skip while the size takes, start where it stops.</summary>
+  /// <summary>
+  /// A size read as an offset: the size's own scan, its block read as the gap before the region.
+  /// The wrapper exists because an offset and a size are different words in the vocabulary, not
+  /// different machines.
+  /// </summary>
   internal sealed class OffsetStrategy<TSpace> : IOffsetStrategy<TSpace>
     where TSpace : class, ISpace
   {
@@ -13,6 +17,6 @@ namespace Unrect.Strategies
 
     internal ISizeStrategy<TSpace> Strategy { get; }
 
-    public IOffsetScan<TSpace> Begin(Orientation along) => new Scanning.SizeAsOffset<TSpace>(Strategy.Begin(along), along);
+    public ISizeScan<TSpace> Begin(Orientation along) => Strategy.Begin(along);
   }
 }

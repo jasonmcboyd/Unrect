@@ -1,10 +1,12 @@
 namespace Unrect.Core
 {
   /// <summary>
-  /// The machine a size strategy builds: shown the spans of a region one at a time along an axis,
-  /// it says which to take and, once it can, how wide the region is across the axis. A scan that
-  /// is <see cref="Incremental"/> answers as the spans arrive; one that is not takes every span and
-  /// answers over the whole region at the end, which is what the engine holds a child for.
+  /// The machine an offset or a size strategy builds: shown the spans of a region one at a time
+  /// along an axis, it says which belong to the block it measures and, once it can, how far the
+  /// block reaches across the axis. A size strategy's block is the region; an offset strategy's is
+  /// the gap in front of it. A scan that is <see cref="Incremental"/> answers as the spans arrive;
+  /// one that is not takes every span and answers over the whole region at the end, which is what
+  /// the engine holds a child for.
   /// </summary>
   /// <typeparam name="TSpace">The space this scan reads.</typeparam>
   public interface ISizeScan<TSpace>
@@ -13,18 +15,18 @@ namespace Unrect.Core
     /// <summary>Whether this scan can answer span by span. False means it needs the whole region, and the engine holds the child until it has it.</summary>
     bool Incremental { get; }
 
-    /// <summary>Whether the newest span of <paramref name="region"/>, the one after <paramref name="taken"/> already taken, belongs to the region.</summary>
+    /// <summary>Whether the newest span of <paramref name="region"/>, the one after <paramref name="taken"/> already taken, belongs to the block.</summary>
     bool Take(Plane<TSpace> region, int taken);
 
     /// <summary>
-    /// How far the region reaches across the axis, or null while that cannot be known.
+    /// How far the block reaches across the axis, or null while that cannot be known.
     /// <paramref name="region"/> is the spans taken so far; <paramref name="final"/> says no more
     /// are coming, at which point a scan must answer.
     /// </summary>
     int? Across(Plane<TSpace> region, int taken, bool final);
 
     /// <summary>
-    /// How many of the <paramref name="taken"/> spans the region keeps, asked once no more are
+    /// How many of the <paramref name="taken"/> spans the block keeps, asked once no more are
     /// coming. Every span for a scan that decided as it went; a whole-region scan decides here; a
     /// scan that is owed a count answers that count, shown enough or not, and the caller compares.
     /// </summary>
