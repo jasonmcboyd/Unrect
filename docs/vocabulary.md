@@ -244,7 +244,7 @@ space.** Every strategy and landmark contract in `Unrect.Core` is generic in the
 
 ```csharp
 public interface ISizeStrategy<TSpace>   where TSpace : class, ISpace { ISizeScan<TSpace> Begin(Orientation along); }
-public interface IOffsetStrategy<TSpace> where TSpace : class, ISpace { IOffsetScan<TSpace> Begin(Orientation along); }
+public interface IOffsetStrategy<TSpace> where TSpace : class, ISpace { ISizeScan<TSpace> Begin(Orientation along); }   // the same machine, measuring the gap before the region
 public interface ILineStrategy<TSpace>   where TSpace : class, ISpace { Orientation Along { get; } ILineScan<TSpace> Begin(); }
 public interface ILineLandmark<TSpace>   where TSpace : class, ISpace { Orientation Along { get; } string Description { get; } int? Find(Plane<TSpace> region); }
 ```
