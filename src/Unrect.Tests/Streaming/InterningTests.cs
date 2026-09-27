@@ -38,8 +38,8 @@ namespace Unrect.Tests.Streaming
     /// <summary>Every cell of <paramref name="sheet"/> read, since a pass loads rows only as they are asked for.</summary>
     private static ICellSpace ReadEveryCell(ICellSpace sheet)
     {
-      for (var row = 0; row < sheet.Area.Height; row++)
-        for (var column = 0; column < sheet.Area.Width; column++)
+      for (var row = 0; row < sheet.Extent.Height; row++)
+        for (var column = 0; column < sheet.Extent.Width; column++)
           _ = sheet.AsTextAt(column, row);
 
       return sheet;

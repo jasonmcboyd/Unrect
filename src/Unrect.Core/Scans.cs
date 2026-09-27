@@ -8,48 +8,35 @@ namespace Unrect.Core
   /// </summary>
   public static class Scans
   {
-    /// <summary>Where <paramref name="strategy"/> starts a region inside <paramref name="space"/>, its scan shown the rows in order.</summary>
+    /// <summary>Where <paramref name="strategy"/> starts a region inside <paramref name="region"/>, its scan shown the rows in order.</summary>
     /// <exception cref="OutOfBoundsException">The space has no such place.</exception>
-    public static Offset GetOffset(this IOffsetStrategy strategy, Plane<ISpace> space)
-      => FoldOffset(strategy.Begin(Orientation.Vertical), space, Orientation.Vertical);
+    public static Offset GetOffset<TSpace>(this IOffsetStrategy<TSpace> strategy, Plane<TSpace> region)
+      where TSpace : class, ISpace
+      => FoldOffset(strategy.Begin(Orientation.Vertical), region, Orientation.Vertical);
 
-    /// <summary>How big a region <paramref name="strategy"/> finds inside <paramref name="space"/>, its scan shown the rows in order.</summary>
+    /// <summary>How big a region <paramref name="strategy"/> finds inside <paramref name="region"/>, its scan shown the rows in order.</summary>
     /// <exception cref="OutOfBoundsException">The scan was owed more than the space holds.</exception>
-    public static Size GetSize(this ISizeStrategy strategy, Plane<ISpace> space)
-      => FoldSize(strategy.Begin(Orientation.Vertical), space, Orientation.Vertical);
+    public static Size GetSize<TSpace>(this ISizeStrategy<TSpace> strategy, Plane<TSpace> region)
+      where TSpace : class, ISpace
+      => FoldSize(strategy.Begin(Orientation.Vertical), region, Orientation.Vertical);
 
-    /// <summary>The area <paramref name="strategy"/> finds inside <paramref name="space"/>, its scan shown the rows in order.</summary>
-    /// <exception cref="OutOfBoundsException">The scan was owed more than the space holds.</exception>
-    public static Area GetArea(this IAreaStrategy strategy, Plane<ISpace> space)
-      => new Area(FoldSize(strategy.Begin(Orientation.Vertical), space, Orientation.Vertical));
+    /// <summary>How many leading lines of <paramref name="region"/> <paramref name="strategy"/> takes, along the axis it names.</summary>
+    /// <exception cref="OutOfBoundsException">The scan was owed more lines than the region holds.</exception>
+    public static int SelectLines<TSpace>(this ILineStrategy<TSpace> strategy, Plane<TSpace> region)
+      where TSpace : class, ISpace => FoldLines(strategy.Begin(), region, strategy.Along);
 
-    /// <summary>How many leading rows of <paramref name="space"/> <paramref name="strategy"/> takes.</summary>
-    /// <exception cref="OutOfBoundsException">The scan was owed more rows than the space holds.</exception>
-    public static int SelectRows(this IRowStrategy strategy, Plane<ISpace> space) => Fold(strategy.Begin(), space);
-
-    /// <summary>How many leading columns of <paramref name="space"/> <paramref name="strategy"/> takes.</summary>
-    /// <exception cref="OutOfBoundsException">The scan was owed more columns than the space holds.</exception>
-    public static int SelectColumns(this IColumnStrategy strategy, Plane<ISpace> space) => FoldColumns(strategy.Begin(), space);
-
-    /// <summary>The rows <paramref name="scan"/> includes, asked one at a time from the top until it says no or the rows run out.</summary>
-    /// <exception cref="OutOfBoundsException">The scan was owed more rows than there are.</exception>
-    public static int Fold(IRowScan scan, Plane<ISpace> space)
+    /// <summary>
+    /// The lines <paramref name="scan"/> includes along <paramref name="along"/>, asked one at a
+    /// time from the first until it says no or the lines run out.
+    /// </summary>
+    /// <exception cref="OutOfBoundsException">The scan was owed more lines than there are.</exception>
+    public static int FoldLines<TSpace>(ILineScan<TSpace> scan, Plane<TSpace> region, Orientation along)
+      where TSpace : class, ISpace
     {
       var count = 0;
+      var lines = Spans.Along(region, along);
 
-      while (space.HasRow(count) && scan.IncludesRow(space, count))
-        count++;
-
-      return scan.Required is int required && count < required ? throw new OutOfBoundsException() : count;
-    }
-
-    /// <summary>The columns <paramref name="scan"/> includes, asked one at a time from the left until it says no or the columns run out.</summary>
-    /// <exception cref="OutOfBoundsException">The scan was owed more columns than there are.</exception>
-    public static int FoldColumns(IColumnScan scan, Plane<ISpace> space)
-    {
-      var count = 0;
-
-      while (count < space.Width && scan.IncludesColumn(space, count))
+      while (count < lines && scan.Includes(region, count))
         count++;
 
       return scan.Required is int required && count < required ? throw new OutOfBoundsException() : count;
@@ -58,10 +45,11 @@ namespace Unrect.Core
     /// <summary>
     /// The offset <paramref name="scan"/> settles on over <paramref name="region"/>: the spans
     /// along <paramref name="along"/> shown one at a time until it starts, and its
-    /// <see cref="IOffsetScan.Settle"/> when it never does.
+    /// <see cref="IOffsetScan{TSpace}.Settle"/> when it never does.
     /// </summary>
     /// <exception cref="OutOfBoundsException">The region has no such place.</exception>
-    public static Offset FoldOffset(IOffsetScan scan, Plane<ISpace> region, Orientation along)
+    public static Offset FoldOffset<TSpace>(IOffsetScan<TSpace> scan, Plane<TSpace> region, Orientation along)
+      where TSpace : class, ISpace
     {
       var count = Spans.Along(region, along);
 
@@ -82,11 +70,13 @@ namespace Unrect.Core
     /// <summary>
     /// The size <paramref name="scan"/> settles on over <paramref name="region"/>: the spans along
     /// <paramref name="along"/> shown one at a time until it refuses one or they run out, then what
-    /// it keeps and how far across it reaches. The answer may exceed the region — an explicit
-    /// extent says what it wants — and it is the caller's to compare.
+    /// it keeps and how far across it reaches. The answer may exceed the region — a scan that is
+    /// owed an extent (<see cref="ISizeScan{TSpace}.Required"/>) answers what it is owed, shown enough or
+    /// not — and it is the caller's to compare with the region.
     /// </summary>
-    /// <exception cref="OutOfBoundsException">The scan was owed more than the region holds.</exception>
-    public static Size FoldSize(ISizeScan scan, Plane<ISpace> region, Orientation along)
+    /// <exception cref="ScanContractException">The scan broke its contract: asked at the end, it did not say how far across it reaches.</exception>
+    public static Size FoldSize<TSpace>(ISizeScan<TSpace> scan, Plane<TSpace> region, Orientation along)
+      where TSpace : class, ISpace
     {
       var count = Spans.Along(region, along);
       var taken = 0;
@@ -96,9 +86,13 @@ namespace Unrect.Core
 
       var kept = Spans.Prefix(region, taken, along);
       var length = scan.Along(kept, taken);
-      var across = scan.Across(kept, taken, final: true) ?? throw new OutOfBoundsException();
+      var across = scan.Across(kept, taken, final: true) ?? throw NoWidthAtTheEnd();
 
       return Spans.ToSize(length, across, along);
     }
+
+    /// <summary>The one breach a size scan can commit: asked at the end, it did not say how far across it reaches.</summary>
+    internal static ScanContractException NoWidthAtTheEnd()
+      => new ScanContractException("a size scan must say how far across it reaches once the spans have run out");
   }
 }

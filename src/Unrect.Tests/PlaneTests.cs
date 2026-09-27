@@ -32,10 +32,10 @@ namespace Unrect.Tests
       var plane = Plane<ISpace>.Of(space);
 
       Assert.Same(space, plane.Space);
-      Assert.Equal(0, plane.Origin.Width);
-      Assert.Equal(0, plane.Origin.Height);
-      Assert.Equal(3, plane.Area.Width);
-      Assert.Equal(2, plane.Area.Height);
+      Assert.Equal(0, plane.Origin.Column);
+      Assert.Equal(0, plane.Origin.Row);
+      Assert.Equal(3, plane.Extent.Width);
+      Assert.Equal(2, plane.Extent.Height);
     }
 
     [Fact]
@@ -45,10 +45,10 @@ namespace Unrect.Tests
       // addresses the space would refuse, and the refusal would arrive at the read rather than here.
       var space = Grid();
 
-      Assert.Throws<OutOfBoundsException>(() => new Plane<ISpace>(space, default, new Area(4, 2)));
-      Assert.Throws<OutOfBoundsException>(() => new Plane<ISpace>(space, default, new Area(3, 3)));
-      Assert.Throws<OutOfBoundsException>(() => new Plane<ISpace>(space, new Offset(2, 0), new Area(2, 1)));
-      Assert.Throws<OutOfBoundsException>(() => new Plane<ISpace>(space, new Offset(0, 2), new Area(1, 1)));
+      Assert.Throws<OutOfBoundsException>(() => new Plane<ISpace>(space, default, new Size(4, 2)));
+      Assert.Throws<OutOfBoundsException>(() => new Plane<ISpace>(space, default, new Size(3, 3)));
+      Assert.Throws<OutOfBoundsException>(() => new Plane<ISpace>(space, new Offset(2, 0), new Size(2, 1)));
+      Assert.Throws<OutOfBoundsException>(() => new Plane<ISpace>(space, new Offset(0, 2), new Size(1, 1)));
     }
 
     [Fact]
@@ -67,12 +67,12 @@ namespace Unrect.Tests
     {
       // Twice-composed offsets are where a locator that translated in the wrong frame — or twice —
       // would finally show up, and it is the only arithmetic a plane does.
-      var band = Whole().Slice(new Offset(1, 0), new Area(2, 2));
-      var corner = band.Slice(new Offset(1, 1), new Area(1, 1));
+      var band = Whole().Slice(new Offset(1, 0), new Size(2, 2));
+      var corner = band.Slice(new Offset(1, 1), new Size(1, 1));
 
-      Assert.Equal(1, band.Origin.Width);
-      Assert.Equal(2, corner.Origin.Width);
-      Assert.Equal(1, corner.Origin.Height);
+      Assert.Equal(1, band.Origin.Column);
+      Assert.Equal(2, corner.Origin.Column);
+      Assert.Equal(1, corner.Origin.Row);
       Assert.Equal("2,1", corner[0, 0].AsText());
     }
 
@@ -84,15 +84,15 @@ namespace Unrect.Tests
       // its overrun the same way.
       var plane = Whole();
 
-      Assert.Throws<OutOfBoundsException>(() => plane.Slice(default, new Area(4, 2)));
-      Assert.Throws<OutOfBoundsException>(() => plane.Slice(default, new Area(3, 3)));
-      Assert.Throws<OutOfBoundsException>(() => plane.Slice(new Offset(2, 0), new Area(2, 1)));
-      Assert.Throws<OutOfBoundsException>(() => plane.Slice(new Offset(0, 1), new Area(1, 2)));
+      Assert.Throws<OutOfBoundsException>(() => plane.Slice(default, new Size(4, 2)));
+      Assert.Throws<OutOfBoundsException>(() => plane.Slice(default, new Size(3, 3)));
+      Assert.Throws<OutOfBoundsException>(() => plane.Slice(new Offset(2, 0), new Size(2, 1)));
+      Assert.Throws<OutOfBoundsException>(() => plane.Slice(new Offset(0, 1), new Size(1, 2)));
 
       // ...and the region's edge, not the space's: this rectangle fits the sheet and not the band.
-      var band = plane.Slice(new Offset(1, 0), new Area(2, 2));
+      var band = plane.Slice(new Offset(1, 0), new Size(2, 2));
 
-      Assert.Throws<OutOfBoundsException>(() => band.Slice(default, new Area(3, 1)));
+      Assert.Throws<OutOfBoundsException>(() => band.Slice(default, new Size(3, 1)));
     }
 
     [Fact]
@@ -106,16 +106,16 @@ namespace Unrect.Tests
 
       var nothing = plane.Slice(new Offset(3, 2), default);
 
-      Assert.Equal(0, nothing.Area.Width);
-      Assert.Equal(0, nothing.Area.Height);
-      Assert.Equal(3, nothing.Origin.Width);
+      Assert.Equal(0, nothing.Extent.Width);
+      Assert.Equal(0, nothing.Extent.Height);
+      Assert.Equal(3, nothing.Origin.Column);
 
       // A zero-width band over real rows is legitimate too, the way a sheet with rows and no columns
       // is: the rows are there to be bounded against even though nothing can be read from them.
-      var rowsOnly = plane.Slice(default, new Area(0, 2));
+      var rowsOnly = plane.Slice(default, new Size(0, 2));
 
-      Assert.Equal(0, rowsOnly.Area.Width);
-      Assert.Equal(2, rowsOnly.Area.Height);
+      Assert.Equal(0, rowsOnly.Extent.Width);
+      Assert.Equal(2, rowsOnly.Extent.Height);
       Assert.Throws<OutOfBoundsException>(() => { _ = rowsOnly[0, 0]; });
     }
 
@@ -133,11 +133,11 @@ namespace Unrect.Tests
 
       var remainder = plane.Slice(new Offset(1, 1));
 
-      Assert.Equal(2, remainder.Area.Width);
-      Assert.Equal(1, remainder.Area.Height);
+      Assert.Equal(2, remainder.Extent.Width);
+      Assert.Equal(1, remainder.Extent.Height);
       Assert.Equal("1,1", remainder[0, 0].AsText());
 
-      var corner = plane.Slice(new Area(2, 1));
+      var corner = plane.Slice(new Size(2, 1));
 
       Assert.Equal("0,0", corner[0, 0].AsText());
       Assert.Equal("1,0", corner[1, 0].AsText());
@@ -146,9 +146,9 @@ namespace Unrect.Tests
       // ...and each refuses an oversized request as the bounds condition the long form does.
       Assert.Throws<OutOfBoundsException>(() => plane.Slice(new Offset(4, 0)));
       Assert.Throws<OutOfBoundsException>(() => plane.Slice(new Offset(0, 3)));
-      Assert.Throws<OutOfBoundsException>(() => plane.Slice(new Offset(4, 0), new Area(1, 1)));
-      Assert.Throws<OutOfBoundsException>(() => plane.Slice(new Area(4, 1)));
-      Assert.Throws<OutOfBoundsException>(() => plane.Slice(new Area(1, 3)));
+      Assert.Throws<OutOfBoundsException>(() => plane.Slice(new Offset(4, 0), new Size(1, 1)));
+      Assert.Throws<OutOfBoundsException>(() => plane.Slice(new Size(4, 1)));
+      Assert.Throws<OutOfBoundsException>(() => plane.Slice(new Size(1, 3)));
     }
 
     // --- Overflow is a bounds condition, not an argument bug ------------------------------------------
@@ -164,7 +164,7 @@ namespace Unrect.Tests
     public void AnOffsetThatWouldOverflowTheWidthIsRefusedAsAnOverrun()
     {
       // Width first, and with a zero-height area so nothing else could be doing the refusing.
-      Assert.Throws<OutOfBoundsException>(() => Whole().Slice(new Offset(int.MaxValue, 0), new Area(1, 0)));
+      Assert.Throws<OutOfBoundsException>(() => Whole().Slice(new Offset(int.MaxValue, 0), new Size(1, 0)));
     }
 
     [Fact]
@@ -172,7 +172,7 @@ namespace Unrect.Tests
     {
       // The twin, and the one the slice checks separately: a row sum that wraps is refused outright
       // rather than asked about, because a region reaching that far is past any edge there could be.
-      Assert.Throws<OutOfBoundsException>(() => Whole().Slice(new Offset(0, int.MaxValue), new Area(0, 1)));
+      Assert.Throws<OutOfBoundsException>(() => Whole().Slice(new Offset(0, int.MaxValue), new Size(0, 1)));
     }
 
     [Fact]
@@ -182,17 +182,37 @@ namespace Unrect.Tests
       // outside the engine reaches it directly. Both axes, both refused as bounds conditions.
       var space = Grid();
 
-      Assert.Throws<OutOfBoundsException>(() => new Plane<ISpace>(space, new Offset(int.MaxValue, 0), new Area(1, 0)));
-      Assert.Throws<OutOfBoundsException>(() => new Plane<ISpace>(space, new Offset(0, int.MaxValue), new Area(0, 1)));
+      Assert.Throws<OutOfBoundsException>(() => new Plane<ISpace>(space, new Offset(int.MaxValue, 0), new Size(1, 0)));
+      Assert.Throws<OutOfBoundsException>(() => new Plane<ISpace>(space, new Offset(0, int.MaxValue), new Size(0, 1)));
     }
 
     // --- Minting ------------------------------------------------------------------------------------
 
     [Fact]
+    public void APlaneAnswersItsHeightAndWhetherItHasAColumnBesideItsWidthAndRows()
+    {
+      // Width and Height, HasColumn and HasRow: the two axes ask the same questions in the same
+      // shape, so a caller never reaches through Extent for one and reads the other off the plane.
+      var band = Whole().Slice(new Offset(1, 0), new Size(2, 2));   // three wide, two tall in all
+
+      Assert.Equal(2, band.Width);
+      Assert.Equal(2, band.Height);
+      Assert.Equal(band.Extent.Height, band.Height);
+
+      Assert.True(band.HasColumn(0));
+      Assert.True(band.HasColumn(1));
+      Assert.False(band.HasColumn(2));
+      Assert.False(band.HasColumn(-1));
+
+      Assert.True(band.HasRow(1));
+      Assert.False(band.HasRow(2));
+    }
+
+    [Fact]
     public void TheIndexerRefusesACoordinateOutsideThePlane()
     {
       var plane = Whole();
-      var band = plane.Slice(new Offset(1, 0), new Area(2, 1));
+      var band = plane.Slice(new Offset(1, 0), new Size(2, 1));
 
       Assert.Throws<OutOfBoundsException>(() => { _ = band[-1, 0]; });
       Assert.Throws<OutOfBoundsException>(() => { _ = band[2, 0]; });
@@ -210,7 +230,7 @@ namespace Unrect.Tests
       // The indexer is asked in the plane's frame and answers in the space's: (1, 0) of a band that
       // starts at (1, 1) is the sheet's (2, 1). A point that kept the local coordinates would read
       // the wrong cell the moment anyone but this plane held it.
-      var band = Whole().Slice(new Offset(1, 1), new Area(2, 1));
+      var band = Whole().Slice(new Offset(1, 1), new Size(2, 1));
 
       var point = band[1, 0];
 
@@ -236,11 +256,11 @@ namespace Unrect.Tests
     {
       var plane = Plane<ISpace>.Of(Door(door));
 
-      Assert.True(plane.Area.Width >= 3 && plane.Area.Height >= 2, "the law needs a 3x2 space");
+      Assert.True(plane.Extent.Width >= 3 && plane.Extent.Height >= 2, "the law needs a 3x2 space");
 
       // Asymmetric on both axes, because an offset that composed by the wrong component — or by the
       // right one twice — is invisible wherever the two are equal.
-      var slice = plane.Slice(new Offset(2, 1), new Area(1, 1));
+      var slice = plane.Slice(new Offset(2, 1), new Size(1, 1));
 
       Assert.Same(plane.Space, slice.Space);
       Assert.Equal(plane[2, 1], slice[0, 0]);
@@ -261,10 +281,10 @@ namespace Unrect.Tests
       // inner slice is asked in the band's coordinates and must name the sheet's (1, 0) + (1, 0).
       var plane = Plane<ISpace>.Of(Door(door));
 
-      Assert.True(plane.Area.Width >= 3 && plane.Area.Height >= 2, "the law needs a 3x2 space");
+      Assert.True(plane.Extent.Width >= 3 && plane.Extent.Height >= 2, "the law needs a 3x2 space");
 
-      var band = plane.Slice(new Offset(1, 0), new Area(2, 2));
-      var inner = band.Slice(new Offset(1, 0), new Area(1, 2));
+      var band = plane.Slice(new Offset(1, 0), new Size(2, 2));
+      var inner = band.Slice(new Offset(1, 0), new Size(1, 2));
 
       Assert.Same(plane.Space, inner.Space);
       Assert.Equal(plane[2, 0], inner[0, 0]);
@@ -284,8 +304,8 @@ namespace Unrect.Tests
     {
       var space = Grid();
 
-      var first = new Plane<ISpace>(space, new Offset(1, 0), new Area(2, 2));
-      var second = Plane<ISpace>.Of(space).Slice(new Offset(1, 0), new Area(2, 2));
+      var first = new Plane<ISpace>(space, new Offset(1, 0), new Size(2, 2));
+      var second = Plane<ISpace>.Of(space).Slice(new Offset(1, 0), new Size(2, 2));
 
       Assert.Equal(first, second);
       Assert.True(first == second);
@@ -298,13 +318,13 @@ namespace Unrect.Tests
     public void APlaneDiffersFromOneNamingAnotherRegionOrAnotherSpace()
     {
       var space = Grid();
-      var region = new Plane<ISpace>(space, new Offset(1, 0), new Area(2, 2));
+      var region = new Plane<ISpace>(space, new Offset(1, 0), new Size(2, 2));
 
-      Assert.NotEqual(region, new Plane<ISpace>(space, new Offset(0, 0), new Area(2, 2)));
-      Assert.NotEqual(region, new Plane<ISpace>(space, new Offset(1, 0), new Area(2, 1)));
+      Assert.NotEqual(region, new Plane<ISpace>(space, new Offset(0, 0), new Size(2, 2)));
+      Assert.NotEqual(region, new Plane<ISpace>(space, new Offset(1, 0), new Size(2, 1)));
 
       // Two grids built from the same literals hold the same cells and are still two documents.
-      Assert.NotEqual(region, new Plane<ISpace>(Grid(), new Offset(1, 0), new Area(2, 2)));
+      Assert.NotEqual(region, new Plane<ISpace>(Grid(), new Offset(1, 0), new Size(2, 2)));
     }
 
     [Fact]
@@ -313,7 +333,7 @@ namespace Unrect.Tests
       // Diagnostics only, and in the space's own coordinates: a plane does not know where its space
       // sits in a workbook, so this is never an A1 address.
       Assert.Equal("(0,0) 3x2", Whole().ToString());
-      Assert.Equal("(1,1) 2x1", Whole().Slice(new Offset(1, 1), new Area(2, 1)).ToString());
+      Assert.Equal("(1,1) 2x1", Whole().Slice(new Offset(1, 1), new Size(2, 1)).ToString());
     }
   }
 }

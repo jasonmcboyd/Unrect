@@ -36,7 +36,7 @@ namespace Unrect.Tests.Projections
     // The table captures its columns at origin width 0, so "Amount" is ordinal 2. We then read a row
     // whose own frame is one column to the right (origin width 1) over the same sheet. The label must
     // still land on the absolute Amount cell (C2 = 100), which means the local index is ordinal - 1 = 1,
-    // not the bare ordinal 2. If the `CaptureOrigin.Width - Origin.Width` term were dropped, index 2
+    // not the bare ordinal 2. If the `CaptureOrigin.Column - Origin.Column` term were dropped, index 2
     // would be read instead — the neighbour Z (999). row.Decimal(2) is that neighbour, proved distinct.
 
     [Fact]
@@ -49,7 +49,7 @@ namespace Unrect.Tests.Projections
       // frame is the REGION's now — a plane carries its own root origin — so the context is handed
       // down unchanged and what differs between the two frames is the strip's plane.
       var reading = table.Scope;
-      var strip = new CellStrip<ICellSpace>(Plane<ICellSpace>.Of(sheet).Slice(new Offset(1, 1), new Area(3, 1)), Orientation.Horizontal, reading);
+      var strip = new CellStrip<ICellSpace>(Plane<ICellSpace>.Of(sheet).Slice(new Offset(1, 1), new Size(3, 1)), Orientation.Horizontal, reading);
       var row = new TableRow<ICellSpace>(0, strip, reading);
 
       // Translation applied: "Amount" lands on the absolute Amount cell, C2, holding 100.
@@ -74,7 +74,7 @@ namespace Unrect.Tests.Projections
       var table = TableOver(sheet);
 
       var reading = table.Scope;
-      var strip = new CellStrip<ICellSpace>(Plane<ICellSpace>.Of(sheet).Slice(new Offset(0, 1), new Area(2, 1)), Orientation.Horizontal, reading);
+      var strip = new CellStrip<ICellSpace>(Plane<ICellSpace>.Of(sheet).Slice(new Offset(0, 1), new Size(2, 1)), Orientation.Horizontal, reading);
       var row = new TableRow<ICellSpace>(0, strip, reading);
 
       var failure = Assert.Throws<ProjectionException>(() => row["Amount"].Decimal());
@@ -100,7 +100,7 @@ namespace Unrect.Tests.Projections
 
       // The reading frame is the last two columns (C, D); "X" (column A) is to their left.
       var reading = table.Scope;
-      var strip = new CellStrip<ICellSpace>(Plane<ICellSpace>.Of(sheet).Slice(new Offset(2, 1), new Area(2, 1)), Orientation.Horizontal, reading);
+      var strip = new CellStrip<ICellSpace>(Plane<ICellSpace>.Of(sheet).Slice(new Offset(2, 1), new Size(2, 1)), Orientation.Horizontal, reading);
       var row = new TableRow<ICellSpace>(0, strip, reading);
 
       var failure = Assert.Throws<ProjectionException>(() => row["X"].Decimal());

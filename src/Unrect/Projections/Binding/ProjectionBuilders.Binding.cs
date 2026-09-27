@@ -64,13 +64,13 @@ namespace Unrect.Projections
     /// The block finds its own first label, column then row — the order that works when the label
     /// column sits far to the right of a wide sheet.
     /// </summary>
-    private static Placement FieldsPlacement(string label)
-      => new Placement(
+    private static Placement<TSpace> FieldsPlacement(string label)
+      => new Placement<TSpace>(
         OffsetStrategies.Then(
           OffsetStrategies.To(ColumnLandmarks.ColumnWhere(
-            CellMatching.AnyCellInColumn(CellMatching.LabelEquals(label)), $"no column with the label '{label}'")),
+            CellMatching.AnyCellInColumn(CellMatching.LabelEquals<TSpace>(label)), $"no column with the label '{label}'")),
           OffsetStrategies.To(RowLandmarks.RowWhere(
-            CellMatching.AnyCellInRow(CellMatching.LabelEquals(label)), $"no row with the label '{label}'"))),
+            CellMatching.AnyCellInRow(CellMatching.LabelEquals<TSpace>(label)), $"no row with the label '{label}'"))),
         null);
 
     private static string NotEmptyLabel(string label)

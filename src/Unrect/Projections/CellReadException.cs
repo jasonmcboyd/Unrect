@@ -66,7 +66,7 @@ namespace Unrect.Projections
     /// whole sheet, so the address is already the one a reader has in front of them — the same
     /// sentence a <see cref="ProjectionException"/> carries, less the declaration path.
     /// <para>
-    /// Rendering it asks the point's space for its <see cref="ISpace.Area"/>, which that contract
+    /// Rendering it asks the point's space for its <see cref="ISpace.Extent"/>, which that contract
     /// requires to be known rather than measured: an exception's message must not fail, and a
     /// message that went and read a file to address a cell would be a second failure raised from
     /// inside the first.

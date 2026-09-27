@@ -235,9 +235,9 @@ namespace Unrect.Benchmarks
       switch (held)
       {
         case ICellSpace space:
-          if (space.Area.Height != rows || space.Area.Width != RetentionSpaces.Columns)
+          if (space.Extent.Height != rows || space.Extent.Width != RetentionSpaces.Columns)
             throw new InvalidOperationException(
-              FormattableString.Invariant($"{name}: expected a {rows}x{RetentionSpaces.Columns} grid, got {space.Area.Height}x{space.Area.Width}."));
+              FormattableString.Invariant($"{name}: expected a {rows}x{RetentionSpaces.Columns} grid, got {space.Extent.Height}x{space.Extent.Width}."));
 
           var sheet = Plane<ICellSpace>.Of(space);
 

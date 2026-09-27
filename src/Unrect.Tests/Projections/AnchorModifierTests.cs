@@ -23,7 +23,7 @@ namespace Unrect.Tests.Projections
   /// in the same words whichever spelling reached it.
   /// <para>
   /// The axis is carried by the argument's type and enforced by overload resolution:
-  /// <c>.Below</c> takes an <c>IRowLandmark</c> and <c>.RightOf</c> an <c>IColumnLandmark</c>, so
+  /// <c>.Below</c> takes an <c>ILineLandmark</c> and <c>.RightOf</c> an <c>ILineLandmark</c>, so
   /// <c>.Below(ColumnContaining("x"))</c> does not compile. There is no runtime behaviour to pin
   /// there — a test could only assert that something the compiler already refused stays refused.
   /// </para>
@@ -36,9 +36,9 @@ namespace Unrect.Tests.Projections
     // The same four cells turned on their side, so the column twins read identically.
     private static ICellSpace Columns() => Mixed(new object?[,] { { "junk", "Detail", "a", "b" } });
 
-    private static IRowLandmark Detail() => RowContaining("Detail").Landmark;
+    private static ILineLandmark<ICellSpace> Detail() => RowContaining("Detail");
 
-    private static IColumnLandmark DetailColumn() => ColumnContaining("Detail").Landmark;
+    private static ILineLandmark<ICellSpace> DetailColumn() => ColumnContaining("Detail");
 
     // --- On: the projection lands on the match and owns it -------------------------------------------------
 
@@ -50,8 +50,8 @@ namespace Unrect.Tests.Projections
       var applied = On(Detail()).Of(Text()).Apply(Rows());
 
       Assert.Equal("Detail", applied.Value);
-      Assert.Equal(1, applied.Offset.Size.Height);
-      Assert.Equal(0, applied.Offset.Size.Width);
+      Assert.Equal(1, applied.Offset.Row);
+      Assert.Equal(0, applied.Offset.Column);
 
       Assert.Equal(3, On(Detail()).Of(Range(b => b.Height)).Map(Rows()));
     }
@@ -63,8 +63,8 @@ namespace Unrect.Tests.Projections
       var applied = On(DetailColumn()).Of(Text()).Apply(Columns());
 
       Assert.Equal("Detail", applied.Value);
-      Assert.Equal(1, applied.Offset.Size.Width);
-      Assert.Equal(0, applied.Offset.Size.Height);
+      Assert.Equal(1, applied.Offset.Column);
+      Assert.Equal(0, applied.Offset.Row);
 
       Assert.Equal(3, On(DetailColumn()).Of(Range(b => b.Width)).Map(Columns()));
     }
@@ -79,13 +79,13 @@ namespace Unrect.Tests.Projections
       var applied = Below(Detail()).Of(Text()).Apply(Rows());
 
       Assert.Equal("a", applied.Value);
-      Assert.Equal(2, applied.Offset.Size.Height);
-      Assert.Equal(0, applied.Offset.Size.Width);
+      Assert.Equal(2, applied.Offset.Row);
+      Assert.Equal(0, applied.Offset.Column);
 
       // Said the other way, so a regression in either operator shows up here: one more than On.
       Assert.Equal(
-        On(Detail()).Of(Text()).Apply(Rows()).Offset.Size.Height + 1,
-        applied.Offset.Size.Height);
+        On(Detail()).Of(Text()).Apply(Rows()).Offset.Row + 1,
+        applied.Offset.Row);
 
       // ...and the matched row is outside the extent, where On had it inside.
       Assert.Equal(2, Below(Detail()).Of(Range(b => b.Height)).Map(Rows()));
@@ -97,12 +97,12 @@ namespace Unrect.Tests.Projections
       var applied = RightOf(DetailColumn()).Of(Text()).Apply(Columns());
 
       Assert.Equal("a", applied.Value);
-      Assert.Equal(2, applied.Offset.Size.Width);
-      Assert.Equal(0, applied.Offset.Size.Height);
+      Assert.Equal(2, applied.Offset.Column);
+      Assert.Equal(0, applied.Offset.Row);
 
       Assert.Equal(
-        On(DetailColumn()).Of(Text()).Apply(Columns()).Offset.Size.Width + 1,
-        applied.Offset.Size.Width);
+        On(DetailColumn()).Of(Text()).Apply(Columns()).Offset.Column + 1,
+        applied.Offset.Column);
 
       Assert.Equal(2, RightOf(DetailColumn()).Of(Range(b => b.Width)).Map(Columns()));
     }
@@ -185,7 +185,7 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void ADeclaredAreaSurvivesAnAnchor()
+    public void ADeclaredExtentSurvivesAnAnchor()
     {
       // An anchor replaces the OFFSET and nothing else. Placement is two independent halves, and
       // .Sized is the other half's own replace — so an extent the projection declared is still its
@@ -234,19 +234,19 @@ namespace Unrect.Tests.Projections
       var column = ColumnContaining("Nope");
 
       Assert.Equal(
-        Miss(OffsetBy(OffsetStrategies.To(row.Landmark)).Of(Text()), Rows()),
+        Miss(OffsetBy(OffsetStrategies.To(row)).Of(Text()), Rows()),
         Miss(On(row).Of(Text()), Rows()));
 
       Assert.Equal(
-        Miss(OffsetBy(OffsetStrategies.Past(row.Landmark)).Of(Text()), Rows()),
+        Miss(OffsetBy(OffsetStrategies.Past(row)).Of(Text()), Rows()),
         Miss(Below(row).Of(Text()), Rows()));
 
       Assert.Equal(
-        Miss(OffsetBy(OffsetStrategies.To(column.Landmark)).Of(Text()), Columns()),
+        Miss(OffsetBy(OffsetStrategies.To(column)).Of(Text()), Columns()),
         Miss(On(column).Of(Text()), Columns()));
 
       Assert.Equal(
-        Miss(OffsetBy(OffsetStrategies.Past(column.Landmark)).Of(Text()), Columns()),
+        Miss(OffsetBy(OffsetStrategies.Past(column)).Of(Text()), Columns()),
         Miss(RightOf(column).Of(Text()), Columns()));
     }
 
@@ -295,10 +295,10 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void TheAnchorModifiersRejectANullLandmark()
     {
-      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => On((IRowLandmark)null!).Of(Text())).ParamName);
-      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => On((IColumnLandmark)null!).Of(Text())).ParamName);
-      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => Below((IRowLandmark)null!).Of(Text())).ParamName);
-      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => RightOf((IColumnLandmark)null!).Of(Text())).ParamName);
+      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => On((ILineLandmark<ICellSpace>)null!).Of(Text())).ParamName);
+      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => On((ILineLandmark<ICellSpace>)null!).Of(Text())).ParamName);
+      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => Below((ILineLandmark<ICellSpace>)null!).Of(Text())).ParamName);
+      Assert.Equal("landmark", Assert.Throws<ArgumentNullException>(() => RightOf((ILineLandmark<ICellSpace>)null!).Of(Text())).ParamName);
     }
 
     // The anchors' null-projection guard now lives on the pipeline terminal: .Of blames "projection"
@@ -333,8 +333,8 @@ namespace Unrect.Tests.Projections
       var actual = anchored.Apply(space);
 
       Assert.Equal(expected.Value, actual.Value);
-      Assert.Equal(expected.Offset.Size.Width, actual.Offset.Size.Width);
-      Assert.Equal(expected.Offset.Size.Height, actual.Offset.Size.Height);
+      Assert.Equal(expected.Offset.Column, actual.Offset.Column);
+      Assert.Equal(expected.Offset.Row, actual.Offset.Row);
     }
   }
 }

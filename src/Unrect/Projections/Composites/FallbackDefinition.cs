@@ -22,7 +22,7 @@ namespace Unrect.Projections
       IProjectionDefinition<TSpace, T> inner,
       IProjectionDefinition<TSpace, T>? fallback,
       T fallbackValue,
-      Placement placement,
+      Placement<TSpace> placement,
       string description,
       UseSite fallbackSite = default)
       : base(placement)

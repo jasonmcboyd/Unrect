@@ -110,9 +110,9 @@ namespace Unrect.Tests.Projections
       { 4, "c1" },
     });
 
-    private static IRowLandmark Mark() => RowContaining("Mark").Landmark;
+    private static ILineLandmark<ICellSpace> Mark() => RowContaining("Mark");
 
-    private static IRowLandmark Missing() => RowContaining("Nope").Landmark;
+    private static ILineLandmark<ICellSpace> Missing() => RowContaining("Nope");
 
     /// <summary>A region that renders its own extent and contents, so every geometric difference shows.</summary>
     private static IProjectionDefinition<ICellSpace, string> Block() => Range(block =>
@@ -458,8 +458,8 @@ namespace Unrect.Tests.Projections
       AssertL1(inside, outside);
       Assert.Equal(inside.Advance, outside.Advance);
 
-      Assert.Equal("0x0", inside.Offset);
-      Assert.Equal("0x1", outside.Offset);
+      Assert.Equal("(0,0)", inside.Offset);
+      Assert.Equal("(0,1)", outside.Offset);
       Assert.NotEqual(inside.Consumed, outside.Consumed);
     }
 

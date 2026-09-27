@@ -234,19 +234,19 @@ namespace Unrect.Tests.Projections
     // --- Placement ---------------------------------------------------------------------------------------------
 
     [Fact]
-    public void LeavesDeclareTheirArea()
+    public void LeavesDeclareTheirExtent()
     {
-      Assert.NotNull(IntCell().Placement.Area);
-      Assert.NotNull(Row(s => s.Count).Placement.Area);
-      Assert.NotNull(Table(t => t.RowCount).Placement.Area);
+      Assert.NotNull(IntCell().Placement.Extent);
+      Assert.NotNull(Row(s => s.Count).Placement.Extent);
+      Assert.NotNull(Table(t => t.RowCount).Placement.Extent);
     }
 
     [Fact]
-    public void CompositesDeriveTheirArea()
+    public void CompositesDeriveTheirExtent()
     {
-      Assert.Null(VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(IntCell())}").Placement.Area);
-      Assert.Null(VerticalRepeat(IntCell()).Placement.Area);
-      Assert.Null(IntCell().Select(v => v).Placement.Area);
+      Assert.Null(VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(IntCell())}").Placement.Extent);
+      Assert.Null(VerticalRepeat(IntCell()).Placement.Extent);
+      Assert.Null(IntCell().Select(v => v).Placement.Extent);
     }
 
     // --- Walking a whole declaration without a space ---------------------------------------------------------------
@@ -347,7 +347,7 @@ namespace Unrect.Tests.Projections
       projection.Map(Grid(new[,] { { 1 }, { 2 } }));
 
       Assert.Equal("value", projection.Name);
-      Assert.NotNull(projection.Placement.Area);
+      Assert.NotNull(projection.Placement.Extent);
       Assert.Equal(2, projection.Map(Grid(new[,] { { 1 }, { 2 } })));
     }
 

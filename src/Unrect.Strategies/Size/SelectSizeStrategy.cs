@@ -5,15 +5,16 @@ using Unrect.Core;
 namespace Unrect.Strategies
 {
   /// <summary>A size that is a function of the whole region: answered at the end, along either axis.</summary>
-  internal sealed class SelectSizeStrategy : ISizeStrategy
+  internal sealed class SelectSizeStrategy<TSpace> : ISizeStrategy<TSpace>
+    where TSpace : class, ISpace
   {
-    public SelectSizeStrategy(Func<Plane<ISpace>, Size> areaSelector)
+    public SelectSizeStrategy(Func<Plane<TSpace>, Size> selector)
     {
-      AreaSelector = areaSelector;
+      Selector = selector;
     }
 
-    private Func<Plane<ISpace>, Size> AreaSelector { get; }
+    private Func<Plane<TSpace>, Size> Selector { get; }
 
-    public ISizeScan Begin(Orientation along) => new Scanning.WholeSize(AreaSelector, along);
+    public ISizeScan<TSpace> Begin(Orientation along) => new Scanning.WholeSize<TSpace>(Selector, along);
   }
 }

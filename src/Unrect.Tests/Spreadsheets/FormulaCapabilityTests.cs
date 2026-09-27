@@ -102,7 +102,7 @@ namespace Unrect.Tests.Spreadsheets
     [Fact]
     public void ARegionOfASheetReadsItsOwnCellsFormula()
     {
-      var band = Plane<ISpreadsheetSpace>.Of(Sheet()).Slice(new Offset(3, 1), new Area(1, 4));    // D2:D5
+      var band = Plane<ISpreadsheetSpace>.Of(Sheet()).Slice(new Offset(3, 1), new Size(1, 4));    // D2:D5
 
       Assert.Equal(@"IF(B4>0,ROUND(B4*$C$2,2)+SUM($B$2:B4),""B2"")", FormulaOf(band[0, 2]));      // D4
     }
@@ -183,29 +183,5 @@ return (
       Assert.Equal("Widget", firstComputed.Map(Sheet()));
     }
 
-    [Fact]
-    public void ABoundaryThatCannotLookFaultsAndNoToleranceAbsorbsIt()
-    {
-      // The run-time path the typed layer cannot close: the matcher's own type names the capability,
-      // so the only pipeline that accepts it is closed over a space that has one — unless a
-      // declaration reaches through `Landmark` for the plain lift and casts the demand away. It is
-      // then a space with no formulas, inside a boundary that is about to look for one.
-      //
-      // A cast this library owes itself, failing: that says the reader is wrong, never that a
-      // section is missing, so it arrives as a fault and NO tolerance boundary absorbs it.
-      var plain = ProjectionBuilders<ICellSpace>.On(SpreadsheetProjections.RowWithFormula().Landmark)
-        .Of(SheetProjectionBuilders<ICellSpace>.Text());
-
-      ICellSpace sheet = SheetGrid.Of(new object?[,] { { "a" } });
-
-      var failure = Assert.Throws<ProjectionException>(() => plain.Map(sheet));
-
-      Assert.True(failure.IsFault, "a boundary that could not look must be a fault");
-      Assert.IsType<InvalidCastException>(failure.GetBaseException());
-      Assert.Contains("IFormulaSpace", failure.Message, StringComparison.Ordinal);
-
-      // "I could not look" is not "the section is absent", so tolerance must not swallow it.
-      Assert.Throws<ProjectionException>(() => plain.Optional().Map(sheet));
-    }
   }
 }

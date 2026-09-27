@@ -2,6 +2,7 @@ using System.Linq;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Spreadsheets;
 
 using Xunit;
 
@@ -33,13 +34,13 @@ namespace Unrect.Tests.Machines
     }
 
     [Fact]
-    public void ABlockStreamsUnderTheVocabularysOwnAreasAndHoldsUnderAnOpaqueOne()
+    public void ABlockStreamsUnderTheVocabularysOwnExtentsAndHoldsUnderAnOpaqueOne()
     {
       // The bare Range is the discovered block, whose scan answers per row; a lambda area is a
       // function of the whole plane, its scan answers only at the end, and the block that carries
       // it is held and placed at close.
       var discovered = CostReport.Of(Range(b => b.Height));
-      var opaque = CostReport.Of(Sized(SelectArea(plane => new Size(1, 1))).Of(Range(b => b.Height)));
+      var opaque = CostReport.Of(Sized(SelectSize(plane => new Size(1, 1))).Of(Range(b => b.Height)));
 
       Assert.True(discovered.Lines[0].Streams);
       Assert.Null(discovered.Lines[0].Hold);
@@ -128,7 +129,7 @@ namespace Unrect.Tests.Machines
       };
 
       Assert.True(CostReport.Of(declared).Lines[0].Streams);
-      Assert.True(declared.Placement.Area!.Begin(Orientation.Vertical).Incremental);
+      Assert.True(((Placement<ICellSpace>)declared.Placement).Extent!.Begin(Orientation.Vertical).Incremental);
     }
 
     [Fact]

@@ -43,7 +43,7 @@ namespace Unrect.Tests.Strategies
       // nowhere to hide.
       // Every grid here is built from ints with 0 as blank, and a grid renders an int
       // invariantly, so parsing the rendering is the exact round trip the old TryGetInt was.
-      "even" => value => value.AsText() is string number && int.Parse(number, CultureInfo.InvariantCulture) % 2 == 0,
+      "even" => value => !value.IsBlank() && int.Parse(value.AsText(), CultureInfo.InvariantCulture) % 2 == 0,
 
       _ => throw new ArgumentOutOfRangeException(nameof(name), name, "No such predicate."),
     };
@@ -128,18 +128,18 @@ namespace Unrect.Tests.Strategies
     /// </summary>
     private static int LeadingColumnsWhereSomeRowMatches(ICellSpace space, Func<Point<ISpace>, bool> predicate)
     {
-      for (var column = 0; column < space.Area.Width; column++)
+      for (var column = 0; column < space.Extent.Width; column++)
       {
         var matched = false;
 
-        for (var row = 0; row < space.Area.Height; row++)
+        for (var row = 0; row < space.Extent.Height; row++)
           matched |= predicate(space.Region()[column, row]);
 
         if (!matched)
           return column;
       }
 
-      return space.Area.Width;
+      return space.Extent.Width;
     }
 
     /// <summary>
@@ -148,16 +148,16 @@ namespace Unrect.Tests.Strategies
     /// </summary>
     private static int LeadingColumnsWhereEveryRowMatches(ICellSpace space, Func<Point<ISpace>, bool> predicate)
     {
-      for (var column = 0; column < space.Area.Width; column++)
+      for (var column = 0; column < space.Extent.Width; column++)
       {
-        for (var row = 0; row < space.Area.Height; row++)
+        for (var row = 0; row < space.Extent.Height; row++)
         {
           if (!predicate(space.Region()[column, row]))
             return column;
         }
       }
 
-      return space.Area.Width;
+      return space.Extent.Width;
     }
 
     // --- The rewrite agrees with the denotation ----------------------------------------------------
@@ -171,7 +171,7 @@ namespace Unrect.Tests.Strategies
 
       Assert.Equal(
         LeadingColumnsWhereSomeRowMatches(space, rule),
-        ColumnStrategies.TakeColumnsWhileAny(rule).SelectColumns(space));
+        ColumnStrategies.TakeColumnsWhileAny(rule).SelectLines(space));
     }
 
     [Theory]
@@ -183,7 +183,7 @@ namespace Unrect.Tests.Strategies
 
       Assert.Equal(
         LeadingColumnsWhereEveryRowMatches(space, rule),
-        ColumnStrategies.TakeColumnsWhileAll(rule).SelectColumns(space));
+        ColumnStrategies.TakeColumnsWhileAll(rule).SelectLines(space));
     }
 
     [Theory]
@@ -202,8 +202,8 @@ namespace Unrect.Tests.Strategies
       var space = Space(grid);
 
       Assert.Equal(
-        ColumnStrategies.TakeColumnsWhileAny(value => !value.IsBlank()).SelectColumns(space),
-        ColumnStrategies.TakeColumnsWhileAnyIsNotBlank().SelectColumns(space));
+        ColumnStrategies.TakeColumnsWhileAny<ISpace>(value => !value.IsBlank()).SelectLines(space),
+        ColumnStrategies.TakeColumnsWhileAnyIsNotBlank<ISpace>().SelectLines(space));
     }
 
     [Theory]
@@ -226,8 +226,8 @@ namespace Unrect.Tests.Strategies
       // loop.
       var space = Space(grid);
 
-      Assert.Equal(any, ColumnStrategies.TakeColumnsWhileAny(value => !value.IsBlank()).SelectColumns(space));
-      Assert.Equal(all, ColumnStrategies.TakeColumnsWhileAll(value => !value.IsBlank()).SelectColumns(space));
+      Assert.Equal(any, ColumnStrategies.TakeColumnsWhileAny<ISpace>(value => !value.IsBlank()).SelectLines(space));
+      Assert.Equal(all, ColumnStrategies.TakeColumnsWhileAll<ISpace>(value => !value.IsBlank()).SelectLines(space));
     }
 
     // --- The early exit: the point of the rewrite --------------------------------------------------
@@ -241,7 +241,7 @@ namespace Unrect.Tests.Strategies
       // in reads — one row — however tall it is.
       var space = new CountingSpace(CoordinateGrid(width: 4, height: 50));
 
-      Assert.Equal(4, ColumnStrategies.TakeColumnsWhileAnyIsNotBlank().SelectColumns(space));
+      Assert.Equal(4, ColumnStrategies.TakeColumnsWhileAnyIsNotBlank<ISpace>().SelectLines(space));
 
       Assert.Equal(4, space.CellReads);
       Assert.Equal(1, space.RowsTouched);
@@ -259,7 +259,7 @@ namespace Unrect.Tests.Strategies
         { 0, 2 },
       }));
 
-      Assert.Equal(2, ColumnStrategies.TakeColumnsWhileAnyIsNotBlank().SelectColumns(space));
+      Assert.Equal(2, ColumnStrategies.TakeColumnsWhileAnyIsNotBlank<ISpace>().SelectLines(space));
 
       Assert.Equal(3, space.CellReads);   // both of row 0, then column 1 of row 1
       Assert.Equal(2, space.RowsTouched);
@@ -278,7 +278,7 @@ namespace Unrect.Tests.Strategies
         { 5, 6, 7, 8 },
       }));
 
-      Assert.Equal(0, ColumnStrategies.TakeColumnsWhileAll(value => !value.IsBlank()).SelectColumns(space));
+      Assert.Equal(0, ColumnStrategies.TakeColumnsWhileAll<ISpace>(value => !value.IsBlank()).SelectLines(space));
 
       Assert.Equal(1, space.CellReads);
       Assert.Equal(1, space.RowsTouched);
@@ -299,7 +299,7 @@ namespace Unrect.Tests.Strategies
         { 13, 14, 15, 16 },
       }));
 
-      Assert.Equal(1, ColumnStrategies.TakeColumnsWhileAll(value => !value.IsBlank()).SelectColumns(space));
+      Assert.Equal(1, ColumnStrategies.TakeColumnsWhileAll<ISpace>(value => !value.IsBlank()).SelectLines(space));
 
       Assert.Equal(8, space.CellReads);
       Assert.Equal(4, space.RowsTouched);

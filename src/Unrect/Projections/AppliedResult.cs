@@ -26,6 +26,6 @@ namespace Unrect.Projections
     public Size Consumed { get; }
 
     /// <summary>What a caller must step past this projection: <see cref="Offset"/> plus <see cref="Consumed"/>.</summary>
-    public Size Advance => Offset.Size + Consumed;
+    public Size Advance => Offset + Consumed;
   }
 }

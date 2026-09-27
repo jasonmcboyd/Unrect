@@ -61,27 +61,15 @@ namespace Unrect.Projections
     // --- Anchors: a position stated as a relation to something in the grid -------------------------
 
     /// <summary>
-    /// Opens a pipeline whose section sits <em>on</em> the row <paramref name="landmark"/> matches: it
-    /// starts at that row and owns it, so a caption is content the section reads rather than a gap it
-    /// steps over. A position is a relation to a thing, never a distance arrived at. Occupancy has no
-    /// direction, so the word names none — the argument's type carries the axis, and the column form is
-    /// this same word. A landmark that matches nothing is loud, absorbable by <c>Optional</c> and
-    /// <c>Else</c>, and read by a <c>VerticalRepeat</c> as having run out of sections.
+    /// Opens a pipeline whose section sits <em>on</em> the line <paramref name="landmark"/> matches —
+    /// a row or a column, whichever the landmark looks for: it starts at that line and owns it, so a
+    /// caption is content the section reads rather than a gap it steps over. A position is a relation
+    /// to a thing, never a distance arrived at. Occupancy has no direction, so the word names none —
+    /// the landmark carries the axis. A landmark that matches nothing is loud, absorbable by
+    /// <c>Optional</c> and <c>Else</c>, and read by a <c>VerticalRepeat</c> as having run out of sections.
     /// </summary>
-    /// <param name="landmark">The row to sit on.</param>
-    public static OffsetStage<TSpace> On(IRowLandmark landmark) => Enter(Step.OnRow(landmark));
-
-    /// <inheritdoc cref="On(IRowLandmark)"/>
-    /// <param name="landmark">The column to sit on.</param>
-    public static OffsetStage<TSpace> On(IColumnLandmark landmark) => Enter(Step.OnColumn(landmark));
-
-    /// <inheritdoc cref="On(IRowLandmark)"/>
-    /// <param name="landmark">The row to sit on. A matcher demanding less is accepted as it is.</param>
-    public static OffsetStage<TSpace> On(IRowLandmark<TSpace> landmark) => Enter(Step.OnRow(Required(landmark).Landmark));
-
-    /// <inheritdoc cref="On(IRowLandmark)"/>
-    /// <param name="landmark">The column to sit on. A matcher demanding less is accepted as it is.</param>
-    public static OffsetStage<TSpace> On(IColumnLandmark<TSpace> landmark) => Enter(Step.OnColumn(Required(landmark).Landmark));
+    /// <param name="landmark">The line to sit on.</param>
+    public static OffsetStage<TSpace> On(ILineLandmark<TSpace> landmark) => Enter(Step.On(landmark));
 
     /// <summary>
     /// Opens a pipeline whose section starts on the row directly below the one <paramref
@@ -90,24 +78,16 @@ namespace Unrect.Projections
     /// you chose; unlike <c>On</c> the concept has a direction, so the word carries one. A missing
     /// landmark is loud, absorbable by <c>Optional</c>/<c>Else</c> and read by a repeat as its end.
     /// </summary>
-    /// <param name="landmark">The row to sit below.</param>
-    public static OffsetStage<TSpace> Below(IRowLandmark landmark) => Enter(Step.Below(landmark));
-
-    /// <inheritdoc cref="Below(IRowLandmark)"/>
-    /// <param name="landmark">The row to sit below. A matcher demanding less is accepted as it is.</param>
-    public static OffsetStage<TSpace> Below(IRowLandmark<TSpace> landmark) => Enter(Step.Below(Required(landmark).Landmark));
+    /// <param name="landmark">The row to sit below; a landmark that finds a column is refused here.</param>
+    public static OffsetStage<TSpace> Below(ILineLandmark<TSpace> landmark) => Enter(Step.Below(landmark));
 
     /// <summary>
     /// Opens a pipeline whose section starts on the column directly right of the one <paramref
-    /// name="landmark"/> matches — the column twin of <see cref="Below(IRowLandmark)"/>, spelled
+    /// name="landmark"/> matches — the column twin of <see cref="Below(ILineLandmark{TSpace})"/>, spelled
     /// distinctly because the direction is part of what is being said.
     /// </summary>
-    /// <param name="landmark">The column to sit right of.</param>
-    public static OffsetStage<TSpace> RightOf(IColumnLandmark landmark) => Enter(Step.RightOf(landmark));
-
-    /// <inheritdoc cref="RightOf(IColumnLandmark)"/>
-    /// <param name="landmark">The column to sit right of. A matcher demanding less is accepted as it is.</param>
-    public static OffsetStage<TSpace> RightOf(IColumnLandmark<TSpace> landmark) => Enter(Step.RightOf(Required(landmark).Landmark));
+    /// <param name="landmark">The column to sit right of; a landmark that finds a row is refused here.</param>
+    public static OffsetStage<TSpace> RightOf(ILineLandmark<TSpace> landmark) => Enter(Step.RightOf(landmark));
 
     // --- The strategy door, the filler-steppers and the counted movements --------------------------
 
@@ -118,12 +98,7 @@ namespace Unrect.Projections
     /// intervals; reach for it when no anchor says what you mean, and prefer an anchor when one does.
     /// </summary>
     /// <param name="offset">Where the section starts.</param>
-    public static OffsetStage<TSpace> OffsetBy(IOffsetStrategy offset) => Enter(Step.OffsetBy(offset));
-
-    /// <inheritdoc cref="OffsetBy(IOffsetStrategy)"/>
-    /// <param name="offset">Where the section starts. A rule demanding less is accepted as it is.</param>
-    public static OffsetStage<TSpace> OffsetBy(IOffsetStrategy<TSpace> offset)
-      => Enter(Step.OffsetBy(Required(offset).Strategy));
+    public static OffsetStage<TSpace> OffsetBy(IOffsetStrategy<TSpace> offset) => Enter(Step.OffsetBy(offset));
 
     /// <summary>
     /// Opens a pipeline whose section starts past the blank rows in front of it. One of the two
@@ -181,45 +156,22 @@ namespace Unrect.Projections
     // --- The extent -------------------------------------------------------------------------------
 
     /// <summary>
-    /// Opens a pipeline sized to <paramref name="area"/> and placed at adjacency — the size-only
+    /// Opens a pipeline sized to <paramref name="extent"/> and placed at adjacency — the size-only
     /// pipeline start, for a region sized to its content but not moved
     /// (<c>Sized(RowsWhileAnyIsNotBlank()).Of(header)</c>). To also move it, lead with an offset entry:
-    /// <c>On(mark).Sized(area)</c>, <c>Down(1).Sized(area)</c>.
+    /// <c>On(mark).Sized(extent)</c>, <c>Down(1).Sized(extent)</c>.
     /// </summary>
-    /// <param name="area">The extent.</param>
-    public static OffsetAndSizeStage<TSpace> Sized(IAreaStrategy area)
-      => new OffsetAndSizeStage<TSpace>(Steps.None.Then(Step.Sized(area)));
-
-    /// <inheritdoc cref="Sized(IAreaStrategy)"/>
-    /// <param name="area">The extent. A rule demanding less is accepted as it is.</param>
-    public static OffsetAndSizeStage<TSpace> Sized(IAreaStrategy<TSpace> area)
-      => new OffsetAndSizeStage<TSpace>(Steps.None.Then(Step.Sized(Required(area).Strategy)));
+    /// <param name="extent">The extent.</param>
+    public static OffsetAndSizeStage<TSpace> Sized(ISizeStrategy<TSpace> extent)
+      => new OffsetAndSizeStage<TSpace>(Steps.None.Then(Step.Sized(extent)));
 
     // --- Bounds -----------------------------------------------------------------------------------
 
-    /// <inheritdoc cref="UnboundedStage{TSpace}.Until(IRowLandmark, bool)"/>
-    /// <param name="landmark">The row the extent stops before.</param>
+    /// <inheritdoc cref="UnboundedStage{TSpace}.Until(ILineLandmark{TSpace}, bool)"/>
+    /// <param name="landmark">The line the extent stops before — a row for a vertical bound, a column for a horizontal one.</param>
     /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
-    public static BoundStage<TSpace> Until(IRowLandmark landmark, bool orEnd = false)
-      => new BoundStage<TSpace>(Steps.None.Then(Step.UntilRow(landmark, orEnd)));
-
-    /// <inheritdoc cref="UnboundedStage{TSpace}.Until(IRowLandmark, bool)"/>
-    /// <param name="landmark">The row the extent stops before. A matcher demanding less is accepted as it is.</param>
-    /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
-    public static BoundStage<TSpace> Until(IRowLandmark<TSpace> landmark, bool orEnd = false)
-      => new BoundStage<TSpace>(Steps.None.Then(Step.UntilRow(Required(landmark).Landmark, orEnd)));
-
-    /// <inheritdoc cref="UnboundedStage{TSpace}.UntilColumn(IColumnLandmark, bool)"/>
-    /// <param name="landmark">The column the extent stops before.</param>
-    /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
-    public static BoundStage<TSpace> UntilColumn(IColumnLandmark landmark, bool orEnd = false)
-      => new BoundStage<TSpace>(Steps.None.Then(Step.UntilColumn(landmark, orEnd)));
-
-    /// <inheritdoc cref="UnboundedStage{TSpace}.UntilColumn(IColumnLandmark, bool)"/>
-    /// <param name="landmark">The column the extent stops before. A matcher demanding less is accepted as it is.</param>
-    /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
-    public static BoundStage<TSpace> UntilColumn(IColumnLandmark<TSpace> landmark, bool orEnd = false)
-      => new BoundStage<TSpace>(Steps.None.Then(Step.UntilColumn(Required(landmark).Landmark, orEnd)));
+    public static BoundStage<TSpace> Until(ILineLandmark<TSpace> landmark, bool orEnd = false)
+      => new BoundStage<TSpace>(Steps.None.Then(Step.Until(landmark, orEnd)));
 
     // --- The heading ------------------------------------------------------------------------------
 
@@ -230,13 +182,14 @@ namespace Unrect.Projections
     private static OffsetStage<TSpace> Enter(Step step) => new OffsetStage<TSpace>(Steps.None.Then(step));
 
     /// <summary>
-    /// The argument a typed overload has to unwrap, checked first. The name in the failure is the
-    /// text of the argument at the call site, which is always the parameter being unwrapped.
+    /// A rule, matcher or predicate a member was handed, refused where the declaration is written
+    /// when it is null. The name in the failure is the text of the argument at the call site, which
+    /// is the parameter the caller wrote.
     /// </summary>
-    private static TDemanding Required<TDemanding>(
-      TDemanding demanding,
-      [CallerArgumentExpression("demanding")] string? named = null)
-      where TDemanding : class
-      => demanding ?? throw new ArgumentNullException(named);
+    private static T Required<T>(
+      T value,
+      [CallerArgumentExpression("value")] string? named = null)
+      where T : class
+      => value ?? throw new ArgumentNullException(named);
   }
 }

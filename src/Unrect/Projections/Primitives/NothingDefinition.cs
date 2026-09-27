@@ -24,7 +24,7 @@ namespace Unrect.Projections
     public static readonly IProjectionDefinition<TSpace, T> Instance = new NothingDefinition<TSpace, T>();
 
     private NothingDefinition()
-      : base(Placement.Default)
+      : base(Placement<TSpace>.Default)
     {
     }
 

@@ -14,11 +14,11 @@ namespace Unrect.Projections
   {
     public RepeatDefinition(
       IProjectionDefinition<TSpace, T> item,
-      IOffsetStrategy? separator,
+      IOffsetStrategy<TSpace>? separator,
       Orientation orientation,
       int atLeast,
       UseSite itemSite,
-      Placement placement)
+      Placement<TSpace> placement)
       : base(placement)
     {
       Item = item ?? throw new ArgumentNullException(nameof(item));
@@ -33,7 +33,7 @@ namespace Unrect.Projections
 
     /// <summary>What the declaration called the item, for every occurrence of it to be labelled by.</summary>
     private UseSite ItemSite { get; }
-    private IOffsetStrategy? Separator { get; }
+    private IOffsetStrategy<TSpace>? Separator { get; }
     private Orientation Orientation { get; }
     private int AtLeast { get; }
 
@@ -68,7 +68,7 @@ namespace Unrect.Projections
       private readonly ProjectorScope<TSpace> _scope;
       private readonly List<T> _values = new List<T>();
       private readonly List<Plane<TSpace>>? _gathered;
-      private IOffsetScan? _separator;
+      private IOffsetScan<TSpace>? _separator;
       private Plane<TSpace>? _first;
       private int _offered;
       private int _along;
@@ -89,7 +89,7 @@ namespace Unrect.Projections
         // A separator with no per-span form is asked over the whole gap, which is known only once
         // every span is in: the spans are gathered, and the walk runs at Close over the gathered
         // extent with the separator's own answer for each gap.
-        if (repeat.Separator is IOffsetStrategy separator)
+        if (repeat.Separator is IOffsetStrategy<TSpace> separator)
         {
           var scan = separator.Begin(repeat.Orientation);
 
@@ -119,7 +119,7 @@ namespace Unrect.Projections
           _first = span;
           _across = 0;
 
-          if (Spans.Across(span.Area.Size, Along) == 0)
+          if (Spans.Across(span.Extent, Along) == 0)
           {
             _finished = true;
             return false;
@@ -157,7 +157,7 @@ namespace Unrect.Projections
           {
             // The gap between occurrences, taken tentatively: it is the repeat's only if an
             // occurrence follows it.
-            var region = Spans.Region(_first!.Value, position + 1, Along).Slice(Spans.Step(_attemptStart, Along)).Erased();
+            var region = Spans.Region(_first!.Value, position + 1, Along).Slice(Spans.Step(_attemptStart, Along));
             OffsetStep step;
 
             try
@@ -205,7 +205,7 @@ namespace Unrect.Projections
       {
         if (_gathered is not null && _first is Plane<TSpace> first)
         {
-          _separator = new EagerSeparator(_repeat.Separator!, Spans.Region(first, _gathered.Count, Along).Erased(), Along);
+          _separator = new EagerSeparator(_repeat.Separator!, Spans.Region(first, _gathered.Count, Along), Along);
 
           foreach (var span in _gathered)
             if (!Next(span))
@@ -302,15 +302,15 @@ namespace Unrect.Projections
     /// extent, once per attempt, its answer then stepped through span by span. No room for its
     /// answer is no room for another item.
     /// </summary>
-    private sealed class EagerSeparator : IOffsetScan
+    private sealed class EagerSeparator : IOffsetScan<TSpace>
     {
-      private readonly IOffsetStrategy _strategy;
-      private readonly Plane<ISpace> _whole;
+      private readonly IOffsetStrategy<TSpace> _strategy;
+      private readonly Plane<TSpace> _whole;
       private readonly Orientation _along;
       private int _start = -1;
       private Offset _offset;
 
-      public EagerSeparator(IOffsetStrategy strategy, Plane<ISpace> whole, Orientation along)
+      public EagerSeparator(IOffsetStrategy<TSpace> strategy, Plane<TSpace> whole, Orientation along)
       {
         _strategy = strategy;
         _whole = whole;
@@ -319,29 +319,29 @@ namespace Unrect.Projections
 
       public bool Incremental => true;
 
-      public OffsetStep Next(Plane<ISpace> region, int row, out int column)
+      public OffsetStep Next(Plane<TSpace> region, int row, out int column)
       {
         var start = _along == Orientation.Vertical
-          ? region.Origin.Height - _whole.Origin.Height
-          : region.Origin.Width - _whole.Origin.Width;
+          ? region.Origin.Row - _whole.Origin.Row
+          : region.Origin.Column - _whole.Origin.Column;
 
         if (start != _start)
         {
           var remaining = _whole.Slice(Spans.Step(start, _along));
           var offset = Scans.FoldOffset(_strategy.Begin(_along), remaining, _along);
 
-          if (offset.Width > remaining.Width || offset.Height > remaining.Area.Height)
+          if (offset.Column > remaining.Width || offset.Row > remaining.Height)
             throw new OutOfBoundsException();
 
           _start = start;
           _offset = offset;
         }
 
-        column = Spans.Across(_offset.Size, _along);
-        return row < Spans.Along(_offset.Size, _along) ? OffsetStep.Skip : OffsetStep.StartHere;
+        column = Spans.Across(_offset, _along);
+        return row < Spans.Along(_offset, _along) ? OffsetStep.Skip : OffsetStep.StartHere;
       }
 
-      public Offset Settle(Plane<ISpace> region) => throw new OutOfBoundsException();
+      public Offset Settle(Plane<TSpace> region) => throw new OutOfBoundsException();
     }
 
     /// <summary>What a repeat holds is the attempt in progress; see <see cref="Machine.HeldFrom"/>.</summary>

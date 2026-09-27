@@ -85,7 +85,7 @@ namespace Unrect.Interactive
 
       // The view's paths count from the table's left edge; the scaffolder's from the sheet's.
       static IReadOnlyList<IReadOnlyList<string>>? Shifted(IReadOnlyList<IReadOnlyList<string>>? paths, Plane<TSpace> region)
-        => paths is null ? null : Enumerable.Repeat((IReadOnlyList<string>)Array.Empty<string>(), region.Origin.Width).Concat(paths).ToList();
+        => paths is null ? null : Enumerable.Repeat((IReadOnlyList<string>)Array.Empty<string>(), region.Origin.Column).Concat(paths).ToList();
 
       // The labels are the first line of whatever region the declaration hands over, so there is no
       // search and no `at`: along a row that region is the table's own; down a column it is the

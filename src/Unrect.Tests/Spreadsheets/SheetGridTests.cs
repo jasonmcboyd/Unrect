@@ -27,7 +27,7 @@ namespace Unrect.Tests.Spreadsheets
       Assert.False(grid.IsBlankAt(0, 0));
       Assert.Equal("1", grid.AsTextAt(0, 0));
       Assert.True(grid.IsBlankAt(1, 0));
-      Assert.Null(grid.AsTextAt(1, 0));
+      Assert.Equal("", grid.AsTextAt(1, 0));
     }
 
     [Fact]
@@ -41,8 +41,8 @@ namespace Unrect.Tests.Spreadsheets
         { "d", "e", "f" },
       });
 
-      Assert.Equal(3, grid.Area.Size.Width);
-      Assert.Equal(2, grid.Area.Size.Height);
+      Assert.Equal(3, grid.Extent.Width);
+      Assert.Equal(2, grid.Extent.Height);
       Assert.Equal("c", grid.AsTextAt(2, 0));
       Assert.Equal("d", grid.AsTextAt(0, 1));
     }
@@ -89,8 +89,8 @@ namespace Unrect.Tests.Spreadsheets
       ISpace kinded = SheetGrid.Of(values);
       ISpace canonical = GridSpace.Create(values);
 
-      Assert.Equal(kinded.Area.Size.Width, canonical.Area.Size.Width);
-      Assert.Equal(kinded.Area.Size.Height, canonical.Area.Size.Height);
+      Assert.Equal(kinded.Extent.Width, canonical.Extent.Width);
+      Assert.Equal(kinded.Extent.Height, canonical.Extent.Height);
 
       for (var column = 0; column < 7; column++)
       {

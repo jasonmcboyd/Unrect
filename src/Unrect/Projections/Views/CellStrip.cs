@@ -38,7 +38,7 @@ namespace Unrect.Projections
     private ProjectorScope<TSpace> Scope { get; }
 
     /// <summary>How many cells the strip holds: a row's width, or a column's height.</summary>
-    public int Count => Orientation == Orientation.Horizontal ? Space.Width : Space.Area.Height;
+    public int Count => Orientation == Orientation.Horizontal ? Space.Width : Space.Height;
 
     /// <summary>The cell at <paramref name="index"/> along the strip's own axis; an index outside it throws <see cref="ArgumentOutOfRangeException"/>.</summary>
     public Point<TSpace> this[int index]
@@ -49,7 +49,7 @@ namespace Unrect.Projections
 
         var step = Step(index);
 
-        return Space[step.Width, step.Height];
+        return Space[step.Column, step.Row];
       }
     }
 
@@ -62,7 +62,7 @@ namespace Unrect.Projections
     {
       Validate(index);
 
-      return ProjectionLocation.At(Space.Origin + Step(index), Space.Area.Size);
+      return ProjectionLocation.At(Space.Origin + Step(index), Space.Extent);
     }
 
     /// <summary>The strip's cells, in order.</summary>
@@ -83,7 +83,7 @@ namespace Unrect.Projections
     /// header several rows tall is handed over as one band, and read a row at a time.
     /// </summary>
     internal CellStrip<TSpace> Line(int index)
-      => new CellStrip<TSpace>(Space.Slice(new Offset(0, index), new Area(Space.Width, 1)), Orientation, Scope);
+      => new CellStrip<TSpace>(Space.Slice(new Offset(0, index), new Size(Space.Width, 1)), Orientation, Scope);
 
     internal ProjectionException Failure(string problem) => Scope.Failure(problem, Space);
 

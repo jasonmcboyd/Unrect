@@ -41,7 +41,7 @@ namespace Unrect.Tests.Projections
       });
 
       var byDefault = Table(r => new Line(r["Name"].Text(), r["Amount"].Decimal()));
-      var byBlankRows = OffsetBy(OffsetStrategies.SkipBlankRows())
+      var byBlankRows = OffsetBy(OffsetStrategies.SkipBlankRows<ICellSpace>())
         .Of(Table(r => new Line(r["Name"].Text(), r["Amount"].Decimal())));
 
       AssertL3(Observe(byBlankRows, sheet), Observe(byDefault, sheet));

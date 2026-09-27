@@ -47,17 +47,17 @@ namespace Unrect.Tests.Strategies
     {
       // The offset stops short of the match, so the region it places starts AT the label — the two
       // junk rows above are exactly what a skip-while would have tripped on.
-      var offset = To(RowLandmarks.RowSaying("SECTION")).GetOffset(Labelled());
+      var offset = To(RowLandmarks.RowSaying<ISpace>("SECTION")).GetOffset(Labelled());
 
-      Assert.Equal(0, offset.Size.Width);
-      Assert.Equal(2, offset.Size.Height);
+      Assert.Equal(0, offset.Column);
+      Assert.Equal(2, offset.Row);
     }
 
     [Fact]
     public void To_RowWithCell_LandsOnTheFirstRowWithAMatchingCell()
     {
       // Column 1 is empty until the last row, so this finds a row by a cell that is not the first.
-      Assert.Equal(3, To(RowLandmarks.RowWithCell(cell => cell.AsText() == "b")).GetOffset(Labelled()).Size.Height);
+      Assert.Equal(3, To(RowLandmarks.RowWithCell<ISpace>(cell => cell.AsText() == "b")).GetOffset(Labelled()).Row);
     }
 
     [Fact]
@@ -65,22 +65,22 @@ namespace Unrect.Tests.Strategies
     {
       var space = Grid(new[,] { { 1, 0 }, { 2, 0 }, { 3, 0 } });
 
-      Assert.Equal(2, To(RowLandmarks.RowWhere((s, row) => s[0, row].AsText() == "3")).GetOffset(space).Size.Height);
+      Assert.Equal(2, To(RowLandmarks.RowWhere<ISpace>((s, row) => s[0, row].AsText() == "3")).GetOffset(space).Row);
     }
 
     [Fact]
     public void To_ColumnContaining_LandsOnTheColumnThatHoldsTheLabel()
     {
-      var offset = To(ColumnLandmarks.ColumnSaying("Total")).GetOffset(LabelledColumns());
+      var offset = To(ColumnLandmarks.ColumnSaying<ISpace>("Total")).GetOffset(LabelledColumns());
 
-      Assert.Equal(2, offset.Size.Width);
-      Assert.Equal(0, offset.Size.Height);
+      Assert.Equal(2, offset.Column);
+      Assert.Equal(0, offset.Row);
     }
 
     [Fact]
     public void To_ColumnWithCell_LandsOnTheFirstColumnWithAMatchingCell()
     {
-      Assert.Equal(3, To(ColumnLandmarks.ColumnWithCell(cell => cell.AsText() == "d")).GetOffset(LabelledColumns()).Size.Width);
+      Assert.Equal(3, To(ColumnLandmarks.ColumnWithCell<ISpace>(cell => cell.AsText() == "d")).GetOffset(LabelledColumns()).Column);
     }
 
     [Fact]
@@ -88,7 +88,7 @@ namespace Unrect.Tests.Strategies
     {
       var space = Grid(new[,] { { 1, 2, 3 } });
 
-      Assert.Equal(1, To(ColumnLandmarks.ColumnWhere((s, column) => s[column, 0].AsText() == "2")).GetOffset(space).Size.Width);
+      Assert.Equal(1, To(ColumnLandmarks.ColumnWhere<ISpace>((s, column) => s[column, 0].AsText() == "2")).GetOffset(space).Column);
     }
 
     // --- Past lands one after -----------------------------------------------------------------------
@@ -96,7 +96,7 @@ namespace Unrect.Tests.Strategies
     [Fact]
     public void Past_LandsOnTheRowAfterTheMatch()
     {
-      Assert.Equal(3, Past(RowLandmarks.RowSaying("SECTION")).GetOffset(Labelled()).Size.Height);
+      Assert.Equal(3, Past(RowLandmarks.RowSaying<ISpace>("SECTION")).GetOffset(Labelled()).Row);
     }
 
     [Fact]
@@ -107,14 +107,14 @@ namespace Unrect.Tests.Strategies
       var space = Labelled();
 
       Assert.Equal(
-        Then(To(RowLandmarks.RowSaying("SECTION")), ExplicitOffset(0, 1)).GetOffset(space).Size.Height,
-        Past(RowLandmarks.RowSaying("SECTION")).GetOffset(space).Size.Height);
+        Then(To(RowLandmarks.RowSaying<ISpace>("SECTION")), ExplicitOffset<ISpace>(0, 1)).GetOffset(space).Row,
+        Past(RowLandmarks.RowSaying<ISpace>("SECTION")).GetOffset(space).Row);
     }
 
     [Fact]
     public void Past_LandsOnTheColumnAfterTheMatch()
     {
-      Assert.Equal(3, Past(ColumnLandmarks.ColumnSaying("Total")).GetOffset(LabelledColumns()).Size.Width);
+      Assert.Equal(3, Past(ColumnLandmarks.ColumnSaying<ISpace>("Total")).GetOffset(LabelledColumns()).Column);
     }
 
     [Fact]
@@ -124,8 +124,8 @@ namespace Unrect.Tests.Strategies
       // caller is what reports it.
       var space = Labels(new string?[,] { { "a" }, { "TARGET" } });
 
-      Assert.Equal(2, Past(RowLandmarks.RowSaying("TARGET")).GetOffset(space).Size.Height);
-      Assert.Equal(2, space.Area.Size.Height);
+      Assert.Equal(2, Past(RowLandmarks.RowSaying<ISpace>("TARGET")).GetOffset(space).Row);
+      Assert.Equal(2, space.Extent.Height);
     }
 
     // --- Matching rules are the landmark's ------------------------------------------------------------
@@ -134,12 +134,12 @@ namespace Unrect.Tests.Strategies
     public void ALift_TrimsBothSidesAndIgnoresCase()
     {
       // The sheet says "  SECTION  "; the declaration may say it any way that reads well.
-      Assert.Equal(2, To(RowLandmarks.RowSaying("Section")).GetOffset(Labelled()).Size.Height);
-      Assert.Equal(2, To(RowLandmarks.RowSaying("section")).GetOffset(Labelled()).Size.Height);
-      Assert.Equal(2, To(RowLandmarks.RowSaying("  section  ")).GetOffset(Labelled()).Size.Height);
+      Assert.Equal(2, To(RowLandmarks.RowSaying<ISpace>("Section")).GetOffset(Labelled()).Row);
+      Assert.Equal(2, To(RowLandmarks.RowSaying<ISpace>("section")).GetOffset(Labelled()).Row);
+      Assert.Equal(2, To(RowLandmarks.RowSaying<ISpace>("  section  ")).GetOffset(Labelled()).Row);
 
-      Assert.Equal(2, To(ColumnLandmarks.ColumnSaying("total")).GetOffset(LabelledColumns()).Size.Width);
-      Assert.Equal(2, To(ColumnLandmarks.ColumnSaying("  Total  ")).GetOffset(LabelledColumns()).Size.Width);
+      Assert.Equal(2, To(ColumnLandmarks.ColumnSaying<ISpace>("total")).GetOffset(LabelledColumns()).Column);
+      Assert.Equal(2, To(ColumnLandmarks.ColumnSaying<ISpace>("  Total  ")).GetOffset(LabelledColumns()).Column);
     }
 
     [Theory]
@@ -150,32 +150,41 @@ namespace Unrect.Tests.Strategies
     {
       // Labels are whole cell values; substring matching would anchor on the first cell that merely
       // mentions the word. Anything fancier is what the predicate landmark is for.
-      Assert.ThrowsAny<OutOfBoundsException>(() => To(RowLandmarks.RowSaying(needle)).GetOffset(Labelled()));
-      Assert.ThrowsAny<OutOfBoundsException>(() => To(ColumnLandmarks.ColumnSaying("Tot")).GetOffset(LabelledColumns()));
+      Assert.ThrowsAny<OutOfBoundsException>(() => To(RowLandmarks.RowSaying<ISpace>(needle)).GetOffset(Labelled()));
+      Assert.ThrowsAny<OutOfBoundsException>(() => To(ColumnLandmarks.ColumnSaying<ISpace>("Tot")).GetOffset(LabelledColumns()));
     }
 
     // --- A miss is a placement failure, which is what lets a Repeat stop -------------------------------
 
     [Theory]
     [InlineData("Nope")]
-    [InlineData("")]
+    [InlineData("no such label")]
     public void ALiftWithNoMatch_Throws(string needle)
     {
-      Assert.ThrowsAny<OutOfBoundsException>(() => To(RowLandmarks.RowSaying(needle)).GetOffset(Labelled()));
-      Assert.ThrowsAny<OutOfBoundsException>(() => Past(RowLandmarks.RowSaying(needle)).GetOffset(Labelled()));
+      Assert.ThrowsAny<OutOfBoundsException>(() => To(RowLandmarks.RowSaying<ISpace>(needle)).GetOffset(Labelled()));
+      Assert.ThrowsAny<OutOfBoundsException>(() => Past(RowLandmarks.RowSaying<ISpace>(needle)).GetOffset(Labelled()));
+    }
+
+    [Fact]
+    public void ASayingMatcherAsksOnlyWhatACellSays_SoTheEmptyNeedleFindsACellThatSaysNothing()
+    {
+      // A blank cell is not invisible to a matcher: it says what it says — nothing, for a cell holding
+      // nothing — and whether it counts as content is a separate question nothing here asks. The
+      // first row of the fixture has such a cell, so the empty needle lands there.
+      Assert.Equal(0, To(RowLandmarks.RowSaying<ISpace>("")).GetOffset(Labelled()).Row);
     }
 
     [Fact]
     public void EveryLiftProjectionThrowsOnAMiss_OnBothAxes()
     {
-      Assert.ThrowsAny<OutOfBoundsException>(() => To(RowLandmarks.RowWhere((_, _) => false)).GetOffset(Labelled()));
-      Assert.ThrowsAny<OutOfBoundsException>(() => To(RowLandmarks.RowWithCell(_ => false)).GetOffset(Labelled()));
-      Assert.ThrowsAny<OutOfBoundsException>(() => Past(RowLandmarks.RowWhere((_, _) => false)).GetOffset(Labelled()));
+      Assert.ThrowsAny<OutOfBoundsException>(() => To(RowLandmarks.RowWhere<ISpace>((_, _) => false)).GetOffset(Labelled()));
+      Assert.ThrowsAny<OutOfBoundsException>(() => To(RowLandmarks.RowWithCell<ISpace>(_ => false)).GetOffset(Labelled()));
+      Assert.ThrowsAny<OutOfBoundsException>(() => Past(RowLandmarks.RowWhere<ISpace>((_, _) => false)).GetOffset(Labelled()));
 
-      Assert.ThrowsAny<OutOfBoundsException>(() => To(ColumnLandmarks.ColumnSaying("Nope")).GetOffset(LabelledColumns()));
-      Assert.ThrowsAny<OutOfBoundsException>(() => To(ColumnLandmarks.ColumnWhere((_, _) => false)).GetOffset(LabelledColumns()));
-      Assert.ThrowsAny<OutOfBoundsException>(() => To(ColumnLandmarks.ColumnWithCell(_ => false)).GetOffset(LabelledColumns()));
-      Assert.ThrowsAny<OutOfBoundsException>(() => Past(ColumnLandmarks.ColumnSaying("Nope")).GetOffset(LabelledColumns()));
+      Assert.ThrowsAny<OutOfBoundsException>(() => To(ColumnLandmarks.ColumnSaying<ISpace>("Nope")).GetOffset(LabelledColumns()));
+      Assert.ThrowsAny<OutOfBoundsException>(() => To(ColumnLandmarks.ColumnWhere<ISpace>((_, _) => false)).GetOffset(LabelledColumns()));
+      Assert.ThrowsAny<OutOfBoundsException>(() => To(ColumnLandmarks.ColumnWithCell<ISpace>(_ => false)).GetOffset(LabelledColumns()));
+      Assert.ThrowsAny<OutOfBoundsException>(() => Past(ColumnLandmarks.ColumnSaying<ISpace>("Nope")).GetOffset(LabelledColumns()));
     }
 
     [Fact]
@@ -184,7 +193,7 @@ namespace Unrect.Tests.Strategies
       // The derived type is internal, so this is what a caller can see: a miss is an
       // OutOfBoundsException, which is a placement failure, which is a Repeat's stop condition.
       // Nothing narrower is asserted, deliberately.
-      var miss = Assert.ThrowsAny<OutOfBoundsException>(() => To(RowLandmarks.RowSaying("Nope")).GetOffset(Labelled()));
+      var miss = Assert.ThrowsAny<OutOfBoundsException>(() => To(RowLandmarks.RowSaying<ISpace>("Nope")).GetOffset(Labelled()));
 
       Assert.IsAssignableFrom<OutOfBoundsException>(miss);
     }
@@ -203,12 +212,12 @@ namespace Unrect.Tests.Strategies
       });
 
       var offset = Then(
-        To(ColumnLandmarks.ColumnSaying("EIN:")),
-        To(RowLandmarks.RowSaying("EIN:")))
+        To(ColumnLandmarks.ColumnSaying<ISpace>("EIN:")),
+        To(RowLandmarks.RowSaying<ISpace>("EIN:")))
         .GetOffset(space);
 
-      Assert.Equal(1, offset.Size.Width);
-      Assert.Equal(1, offset.Size.Height);
+      Assert.Equal(1, offset.Column);
+      Assert.Equal(1, offset.Row);
     }
 
     // --- Landmarks: the same content rules, without the offset -------------------------------------
@@ -233,7 +242,7 @@ namespace Unrect.Tests.Strategies
     [Fact]
     public void RowWhere_FindsTheFirstRowSatisfyingAPositionalPredicate()
     {
-      Assert.Equal(2, RowLandmarks.RowWhere((space, row) => space[0, row].AsText() == "z").FindRow(RowsWithATotal()));
+      Assert.Equal(2, RowLandmarks.RowWhere<ISpace>((space, row) => space[0, row].AsText() == "z").Find(RowsWithATotal()));
     }
 
     [Fact]
@@ -241,22 +250,22 @@ namespace Unrect.Tests.Strategies
     {
       // Column 1 is empty except on the first row, so this finds a row by a cell that is not its
       // first — the reason the "any cell" form exists at all.
-      Assert.Equal(0, RowLandmarks.RowWithCell(cell => cell.AsText() == "y").FindRow(RowsWithATotal()));
+      Assert.Equal(0, RowLandmarks.RowWithCell<ISpace>(cell => cell.AsText() == "y").Find(RowsWithATotal()));
     }
 
     [Fact]
     public void RowContaining_MatchesWholeCellsTrimmedAndCaseInsensitively()
     {
       // The sheet says "  TOTAL  "; the declaration may say it any way that reads well.
-      Assert.Equal(1, RowLandmarks.RowSaying("Total").FindRow(RowsWithATotal()));
-      Assert.Equal(1, RowLandmarks.RowSaying("  total  ").FindRow(RowsWithATotal()));
+      Assert.Equal(1, RowLandmarks.RowSaying<ISpace>("Total").Find(RowsWithATotal()));
+      Assert.Equal(1, RowLandmarks.RowSaying<ISpace>("  total  ").Find(RowsWithATotal()));
     }
 
     [Fact]
     public void RowContaining_MatchesWholeCellsNotSubstrings()
     {
-      Assert.Null(RowLandmarks.RowSaying("TOT").FindRow(RowsWithATotal()));
-      Assert.Null(RowLandmarks.RowSaying("TOTALS").FindRow(RowsWithATotal()));
+      Assert.Null(RowLandmarks.RowSaying<ISpace>("TOT").Find(RowsWithATotal()));
+      Assert.Null(RowLandmarks.RowSaying<ISpace>("TOTALS").Find(RowsWithATotal()));
     }
 
     [Fact]
@@ -264,37 +273,37 @@ namespace Unrect.Tests.Strategies
     {
       // The whole difference from a seek: a missing end is a question for the projection being
       // bounded, not a failure in itself.
-      Assert.Null(RowLandmarks.RowWhere((_, _) => false).FindRow(RowsWithATotal()));
-      Assert.Null(RowLandmarks.RowWithCell(_ => false).FindRow(RowsWithATotal()));
-      Assert.Null(RowLandmarks.RowSaying("Nope").FindRow(RowsWithATotal()));
+      Assert.Null(RowLandmarks.RowWhere<ISpace>((_, _) => false).Find(RowsWithATotal()));
+      Assert.Null(RowLandmarks.RowWithCell<ISpace>(_ => false).Find(RowsWithATotal()));
+      Assert.Null(RowLandmarks.RowSaying<ISpace>("Nope").Find(RowsWithATotal()));
     }
 
     [Fact]
     public void ColumnWhere_FindsTheFirstColumnSatisfyingAPositionalPredicate()
     {
-      Assert.Equal(2, ColumnLandmarks.ColumnWhere((space, column) => space[column, 0].AsText() == "c").FindColumn(ColumnsWithATotal()));
+      Assert.Equal(2, ColumnLandmarks.ColumnWhere<ISpace>((space, column) => space[column, 0].AsText() == "c").Find(ColumnsWithATotal()));
     }
 
     [Fact]
     public void ColumnWithCell_FindsTheFirstColumnWithAMatchingCell()
     {
-      Assert.Equal(2, ColumnLandmarks.ColumnWithCell(cell => cell.AsText() == "z").FindColumn(ColumnsWithATotal()));
+      Assert.Equal(2, ColumnLandmarks.ColumnWithCell<ISpace>(cell => cell.AsText() == "z").Find(ColumnsWithATotal()));
     }
 
     [Fact]
     public void ColumnContaining_MatchesWholeCellsTrimmedAndCaseInsensitively()
     {
-      Assert.Equal(1, ColumnLandmarks.ColumnSaying("Total").FindColumn(ColumnsWithATotal()));
-      Assert.Equal(1, ColumnLandmarks.ColumnSaying("  total  ").FindColumn(ColumnsWithATotal()));
-      Assert.Null(ColumnLandmarks.ColumnSaying("TOT").FindColumn(ColumnsWithATotal()));
+      Assert.Equal(1, ColumnLandmarks.ColumnSaying<ISpace>("Total").Find(ColumnsWithATotal()));
+      Assert.Equal(1, ColumnLandmarks.ColumnSaying<ISpace>("  total  ").Find(ColumnsWithATotal()));
+      Assert.Null(ColumnLandmarks.ColumnSaying<ISpace>("TOT").Find(ColumnsWithATotal()));
     }
 
     [Fact]
     public void ColumnLandmarks_ReportAMissAsNullRatherThanThrowing()
     {
-      Assert.Null(ColumnLandmarks.ColumnWhere((_, _) => false).FindColumn(ColumnsWithATotal()));
-      Assert.Null(ColumnLandmarks.ColumnWithCell(_ => false).FindColumn(ColumnsWithATotal()));
-      Assert.Null(ColumnLandmarks.ColumnSaying("Nope").FindColumn(ColumnsWithATotal()));
+      Assert.Null(ColumnLandmarks.ColumnWhere<ISpace>((_, _) => false).Find(ColumnsWithATotal()));
+      Assert.Null(ColumnLandmarks.ColumnWithCell<ISpace>(_ => false).Find(ColumnsWithATotal()));
+      Assert.Null(ColumnLandmarks.ColumnSaying<ISpace>("Nope").Find(ColumnsWithATotal()));
     }
 
     [Fact]
@@ -302,13 +311,13 @@ namespace Unrect.Tests.Strategies
     {
       // The descriptions are the negative noun phrases the failure templates are built from, so a
       // bound reads beside a seek rather than in its own dialect.
-      Assert.Equal("no matching row", RowLandmarks.RowWhere((_, _) => false).Description);
-      Assert.Equal("no row with a matching cell", RowLandmarks.RowWithCell(_ => false).Description);
-      Assert.Equal("no row saying \'Total\'", RowLandmarks.RowSaying("Total").Description);
+      Assert.Equal("no matching row", RowLandmarks.RowWhere<ISpace>((_, _) => false).Description);
+      Assert.Equal("no row with a matching cell", RowLandmarks.RowWithCell<ISpace>(_ => false).Description);
+      Assert.Equal("no row saying \'Total\'", RowLandmarks.RowSaying<ISpace>("Total").Description);
 
-      Assert.Equal("no matching column", ColumnLandmarks.ColumnWhere((_, _) => false).Description);
-      Assert.Equal("no column with a matching cell", ColumnLandmarks.ColumnWithCell(_ => false).Description);
-      Assert.Equal("no column saying \'Total\'", ColumnLandmarks.ColumnSaying("Total").Description);
+      Assert.Equal("no matching column", ColumnLandmarks.ColumnWhere<ISpace>((_, _) => false).Description);
+      Assert.Equal("no column with a matching cell", ColumnLandmarks.ColumnWithCell<ISpace>(_ => false).Description);
+      Assert.Equal("no column saying \'Total\'", ColumnLandmarks.ColumnSaying<ISpace>("Total").Description);
     }
 
     [Fact]
@@ -322,26 +331,26 @@ namespace Unrect.Tests.Strategies
 
       foreach (var needle in new[] { "Total", "  total  ", "TOTAL" })
       {
-        Assert.Equal(1, RowLandmarks.RowSaying(needle).FindRow(space));
-        Assert.Equal(1, To(RowLandmarks.RowSaying(needle)).GetOffset(space).Size.Height);
+        Assert.Equal(1, RowLandmarks.RowSaying<ISpace>(needle).Find(space));
+        Assert.Equal(1, To(RowLandmarks.RowSaying<ISpace>(needle)).GetOffset(space).Row);
       }
 
       // ...including on what does not match, which the two report differently: the landmark returns
       // null and leaves the decision to its caller, and the lift turns that into a placement
       // failure.
-      Assert.Null(RowLandmarks.RowSaying("TOT").FindRow(space));
-      Assert.ThrowsAny<OutOfBoundsException>(() => To(RowLandmarks.RowSaying("TOT")).GetOffset(space));
+      Assert.Null(RowLandmarks.RowSaying<ISpace>("TOT").Find(space));
+      Assert.ThrowsAny<OutOfBoundsException>(() => To(RowLandmarks.RowSaying<ISpace>("TOT")).GetOffset(space));
     }
 
     [Fact]
     public void LandmarkFactories_RejectNullArguments()
     {
-      Assert.Equal("predicate", Assert.Throws<ArgumentNullException>(() => RowLandmarks.RowWhere(null!)).ParamName);
-      Assert.Equal("anyCell", Assert.Throws<ArgumentNullException>(() => RowLandmarks.RowWithCell(null!)).ParamName);
-      Assert.Equal("text", Assert.Throws<ArgumentNullException>(() => RowLandmarks.RowSaying(null!)).ParamName);
-      Assert.Equal("predicate", Assert.Throws<ArgumentNullException>(() => ColumnLandmarks.ColumnWhere(null!)).ParamName);
-      Assert.Equal("anyCell", Assert.Throws<ArgumentNullException>(() => ColumnLandmarks.ColumnWithCell(null!)).ParamName);
-      Assert.Equal("text", Assert.Throws<ArgumentNullException>(() => ColumnLandmarks.ColumnSaying(null!)).ParamName);
+      Assert.Equal("predicate", Assert.Throws<ArgumentNullException>(() => RowLandmarks.RowWhere<ISpace>(null!)).ParamName);
+      Assert.Equal("anyCell", Assert.Throws<ArgumentNullException>(() => RowLandmarks.RowWithCell<ISpace>(null!)).ParamName);
+      Assert.Equal("text", Assert.Throws<ArgumentNullException>(() => RowLandmarks.RowSaying<ISpace>(null!)).ParamName);
+      Assert.Equal("predicate", Assert.Throws<ArgumentNullException>(() => ColumnLandmarks.ColumnWhere<ISpace>(null!)).ParamName);
+      Assert.Equal("anyCell", Assert.Throws<ArgumentNullException>(() => ColumnLandmarks.ColumnWithCell<ISpace>(null!)).ParamName);
+      Assert.Equal("text", Assert.Throws<ArgumentNullException>(() => ColumnLandmarks.ColumnSaying<ISpace>(null!)).ParamName);
     }
   }
 }

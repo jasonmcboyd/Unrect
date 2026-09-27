@@ -196,7 +196,7 @@ namespace Unrect.Tests.Streaming
       // Blankness belongs to the adapter, and through this door the adapter is configured by the
       // options argument: the same cell reads as an absence under the default and as its own two
       // spaces under strict fidelity.
-      var cell = Down(2).Of(Point().Select(point => point.IsText() ? point.Text() : "<blank>"));
+      var cell = Down(2).Of(Point().Select(point => point.IsBlank() ? "<blank>" : point.Text()));
 
       Assert.Equal("<blank>", cell.MapWorkbook(Path("edge-cases.xlsx"), "Edges"));
       Assert.Equal(
@@ -281,8 +281,8 @@ namespace Unrect.Tests.Streaming
 
       Assert.Equal(2, block.Width);
       Assert.Equal(3, block.Height);
-      Assert.Equal(2, block.Space.Area.Width);
-      Assert.Equal(3, block.Space.Area.Height);
+      Assert.Equal(2, block.Space.Extent.Width);
+      Assert.Equal(3, block.Space.Extent.Height);
       Assert.Equal("A1", block.Location.A1);
     }
 

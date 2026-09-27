@@ -14,7 +14,7 @@ namespace Unrect.Projections
   internal abstract class CollectorNode<TSpace, TResult> : DefinitionNode<TSpace, TResult>
     where TSpace : class, ISpace
   {
-    private protected CollectorNode(Placement placement)
+    private protected CollectorNode(Placement<TSpace> placement)
       : base(placement)
     {
     }

@@ -8,21 +8,24 @@ namespace Unrect.Strategies
   /// Scans down for the first matching row and says where it is, or that there is none. The same
   /// scan a placement does, without the throwing: a matcher's caller decides what absence means.
   /// </summary>
-  internal sealed class PredicateRowLandmark : IRowLandmark
+  internal sealed class PredicateRowLandmark<TSpace> : ILineLandmark<TSpace>
+    where TSpace : class, ISpace
   {
-    public PredicateRowLandmark(Func<Plane<ISpace>, int, bool> predicate, string description)
+    public Orientation Along => Orientation.Vertical;
+
+    public PredicateRowLandmark(Func<Plane<TSpace>, int, bool> predicate, string description)
     {
       Predicate = predicate;
       Description = description;
     }
 
-    private Func<Plane<ISpace>, int, bool> Predicate { get; }
+    private Func<Plane<TSpace>, int, bool> Predicate { get; }
 
     public string Description { get; }
 
-    public int? FindRow(Plane<ISpace> space)
+    public int? Find(Plane<TSpace> space)
     {
-      for (var row = 0; row < space.Area.Height; row++)
+      for (var row = 0; row < space.Height; row++)
         if (Predicate(space, row))
           return row;
 

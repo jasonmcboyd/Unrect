@@ -407,8 +407,8 @@ namespace Unrect.Tests.Interactive
       // reveal, so it is checked before anything is read.
       var noColumns = SheetGrid.Of(new object?[2, 0]);
 
-      Assert.Equal(0, noColumns.Area.Width);
-      Assert.Equal(2, noColumns.Area.Height);
+      Assert.Equal(0, noColumns.Extent.Width);
+      Assert.Equal(2, noColumns.Extent.Height);
       Assert.Throws<OutOfBoundsException>(() => noColumns.ScaffoldRecord("Row", at: 9));
 
       // ...and the boundary itself, which is where an off-by-one would sit: the row AT the height is
@@ -427,7 +427,7 @@ namespace Unrect.Tests.Interactive
       // no samples under it, and row 1 is off the end.
       var headerOnly = SheetGrid.Of(new object?[,] { { "Date", "Amount" } });
 
-      Assert.Equal(1, headerOnly.Area.Height);
+      Assert.Equal(1, headerOnly.Extent.Height);
       Assert.Equal(
         Lines(
           "public sealed record Row(string? Date, string? Amount);"),

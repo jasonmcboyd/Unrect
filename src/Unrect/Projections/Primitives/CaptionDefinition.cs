@@ -20,15 +20,15 @@ namespace Unrect.Projections
   internal sealed class CaptionDefinition<TSpace> : CollectorNode<TSpace, string>
     where TSpace : class, ISpace
   {
-    public CaptionDefinition(string text, Placement placement)
+    public CaptionDefinition(string text, Placement<TSpace> placement)
       : base(placement)
     {
       Text = text;
-      Match = CellMatching.SaysEquals(text);
+      Match = CellMatching.SaysEquals<TSpace>(text);
     }
 
     private string Text { get; }
-    private Func<Point<ISpace>, bool> Match { get; }
+    private Func<Point<TSpace>, bool> Match { get; }
 
     public override string Description => $"Caption(\"{Text}\")";
 
@@ -36,7 +36,7 @@ namespace Unrect.Projections
 
     internal override Settlement<string> Collect(Plane<TSpace> extent, ProjectorScope<TSpace> scope)
     {
-      var size = extent.Area.Size;
+      var size = extent.Extent;
 
       // Reachable only when the placement was replaced — Caption("X").OffsetBy(SkipRows(1)), or a
       // caption inside a declared frame. Left in because it is also the half of this leaf that a
@@ -44,7 +44,7 @@ namespace Unrect.Projections
       if (size.Height != 1)
         throw scope.Failure($"a Caption must be exactly one row tall; this one is {size.Height} rows tall", extent);
 
-      var cells = extent.Erased();
+      var cells = extent;
 
       for (var column = 0; column < size.Width; column++)
         if (Match(cells[column, 0]))

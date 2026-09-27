@@ -114,8 +114,8 @@ namespace Unrect.Tests.Projections
     {
       var view = Table((TableView<ICellSpace> t) => t).Map(SimpleTable());
 
-      Assert.Equal(2, view.Space.Area.Size.Width);
-      Assert.Equal(4, view.Space.Area.Size.Height);
+      Assert.Equal(2, view.Space.Extent.Width);
+      Assert.Equal(4, view.Space.Extent.Height);
     }
 
     [Fact]
@@ -451,9 +451,9 @@ namespace Unrect.Tests.Projections
     // --- Explicit placement --------------------------------------------------------------------------------------
 
     [Fact]
-    public void Table_WithAnExplicitArea_UsesItInsteadOfDiscovering()
+    public void Table_WithAnExplicitExtent_UsesItInsteadOfDiscovering()
     {
-      var applied = Sized(AreaStrategies.ExplicitArea(1, 2)).Of(Table(t => (t.ColumnCount, t.RowCount)))
+      var applied = Sized(SizeStrategies.ExplicitSize<ICellSpace>(1, 2)).Of(Table(t => (t.ColumnCount, t.RowCount)))
         .Apply(SimpleTable());
 
       Assert.Equal((1, 1), applied.Value);

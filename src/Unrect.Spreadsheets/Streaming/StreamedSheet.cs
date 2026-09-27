@@ -24,19 +24,20 @@ namespace Unrect.Spreadsheets
     private bool _exhausted;
     private bool _disposed;
 
-    internal StreamedSheet(IRowCursor cursor, StringInterner strings, string name, int rowCount, int columnCount, int? cap, long rowsMeasured)
+    internal StreamedSheet(IRowCursor cursor, StringInterner strings, string name, int rowCount, int columnCount, int? cap, long rowsMeasured, Func<string, bool> textIsBlank)
+      : base(textIsBlank)
     {
       _cursor = cursor;
       _strings = strings;
       _rowsMeasured = rowsMeasured;
       Name = name;
-      Area = new Area(columnCount, rowCount);
+      Extent = new Size(columnCount, rowCount);
       Cap = cap;
     }
 
     internal string Name { get; }
 
-    public override Area Area { get; }
+    public override Size Extent { get; }
 
     public int Loaded { get; private set; }
 
@@ -54,13 +55,13 @@ namespace Unrect.Spreadsheets
       if (_disposed)
         throw new ObjectDisposedException(nameof(Workbook), "the workbook that lent this sheet has been disposed");
 
-      if (_exhausted || Loaded >= Area.Height || !_cursor.Read())
+      if (_exhausted || Loaded >= Extent.Height || !_cursor.Read())
       {
         _exhausted = true;
         return false;
       }
 
-      var row = new CellValue[Area.Width];
+      var row = new CellValue[Extent.Width];
 
       for (var column = 0; column < row.Length; column++)
         row[column] = _strings.Share(_cursor[column]);
@@ -89,7 +90,7 @@ namespace Unrect.Spreadsheets
       if (_disposed)
         throw new ObjectDisposedException(nameof(Workbook), "the workbook that lent this sheet has been disposed");
 
-      if (column < 0 || column >= Area.Width || row < 0 || row >= Area.Height)
+      if (column < 0 || column >= Extent.Width || row < 0 || row >= Extent.Height)
         throw new OutOfBoundsException();
 
       if (row < _first)

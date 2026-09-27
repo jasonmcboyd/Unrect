@@ -129,12 +129,12 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact(Timeout = 30000)]
-    public async Task Repeat_WithAZeroAreaItem_TerminatesInsteadOfLooping()
+    public async Task Repeat_WithAZeroExtentItem_TerminatesInsteadOfLooping()
     {
       // An item that occupies nothing would repeat forever. Run it off-thread so a regression fails
       // the test on a timeout rather than hanging the run.
       var space = Grid(new[,] { { 1, 1 }, { 1, 1 } });
-      var projection = VerticalRepeat(Range(AreaStrategies.MinArea(), b => b.Height));
+      var projection = VerticalRepeat(Range(SizeStrategies.MinSize<ICellSpace>(), b => b.Height));
 
       var items = await Task.Run(() => projection.Map(space));
 
@@ -145,7 +145,7 @@ namespace Unrect.Tests.Projections
     public async Task Repeat_WithAZeroHeightItem_TerminatesInsteadOfLooping()
     {
       var space = Grid(new[,] { { 1, 1 }, { 1, 1 } });
-      var projection = VerticalRepeat(Range(AreaStrategies.ExplicitArea(2, 0), b => b.Height));
+      var projection = VerticalRepeat(Range(SizeStrategies.ExplicitSize<ICellSpace>(2, 0), b => b.Height));
 
       var items = await Task.Run(() => projection.Map(space));
 
@@ -156,7 +156,7 @@ namespace Unrect.Tests.Projections
     public async Task HorizontalRepeat_WithAZeroWidthItem_TerminatesInsteadOfLooping()
     {
       var space = Grid(new[,] { { 1, 1 }, { 1, 1 } });
-      var projection = HorizontalRepeat(Range(AreaStrategies.ExplicitArea(0, 2), b => b.Width));
+      var projection = HorizontalRepeat(Range(SizeStrategies.ExplicitSize<ICellSpace>(0, 2), b => b.Width));
 
       var items = await Task.Run(() => projection.Map(space));
 
@@ -209,11 +209,11 @@ namespace Unrect.Tests.Projections
       // Only running out of space stops a repeat. A strategy that fails any other way is a broken
       // declaration, and silently returning the items collected so far would hide it.
       var space = Grid(new[,] { { 1, 2 }, { 3, 4 } });
-      var item = Range(AreaStrategies.SelectArea(_ => throw new InvalidOperationException("boom")), b => b.Width);
+      var item = Range(SizeStrategies.SelectSize<ICellSpace>(_ => throw new InvalidOperationException("boom")), b => b.Width);
 
       var failure = Assert.Throws<ProjectionException>(() => VerticalRepeat(item).Map(space));
 
-      Assert.Contains("its area strategy threw InvalidOperationException: boom", failure.Message);
+      Assert.Contains("its extent strategy threw InvalidOperationException: boom", failure.Message);
       Assert.Contains("VerticalRepeat[0]", failure.Path);
     }
 
@@ -491,8 +491,8 @@ namespace Unrect.Tests.Projections
     });
 
     /// <summary>A landmark for "a row with nothing on it", spelled through the space predicate.</summary>
-    private static IRowLandmark<ICellSpace> BlankRow()
-      => RowWhere((space, row) => Enumerable.Range(0, space.Area.Width).All(column => space[column, row].IsBlank()));
+    private static ILineLandmark<ICellSpace> BlankRow()
+      => RowWhere((space, row) => Enumerable.Range(0, space.Extent.Width).All(column => space[column, row].IsBlank()));
 
     [Fact]
     public void Repeat_OfRecords_IsEndedByALandmarkAndNotByABlankRow()

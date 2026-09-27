@@ -57,50 +57,20 @@ namespace Unrect.Projections
     /// <summary>Refused: a section announced by a heading is already located by it.</summary>
     /// <param name="landmark">The row that would be anchored on.</param>
     [Obsolete(PipelineRefusals.HeadingIsTheAnchor, error: true)]
-    public HeadingStage<TSpace> On(IRowLandmark landmark) => throw new NotSupportedException(PipelineRefusals.HeadingIsTheAnchor);
+    public HeadingStage<TSpace> On(ILineLandmark<TSpace> landmark) => throw new NotSupportedException(PipelineRefusals.HeadingIsTheAnchor);
 
-    /// <inheritdoc cref="On(IRowLandmark)"/>
-    /// <param name="landmark">The column that would be anchored on.</param>
-    [Obsolete(PipelineRefusals.HeadingIsTheAnchor, error: true)]
-    public HeadingStage<TSpace> On(IColumnLandmark landmark) => throw new NotSupportedException(PipelineRefusals.HeadingIsTheAnchor);
-
-    /// <inheritdoc cref="On(IRowLandmark)"/>
-    /// <param name="landmark">The row that would be anchored on, demanding a space of its own.</param>
-    [Obsolete(PipelineRefusals.HeadingIsTheAnchor, error: true)]
-    public HeadingStage<TSpace> On(IRowLandmark<TSpace> landmark) => throw new NotSupportedException(PipelineRefusals.HeadingIsTheAnchor);
-
-    /// <inheritdoc cref="On(IRowLandmark)"/>
-    /// <param name="landmark">The column that would be anchored on, demanding a space of its own.</param>
-    [Obsolete(PipelineRefusals.HeadingIsTheAnchor, error: true)]
-    public HeadingStage<TSpace> On(IColumnLandmark<TSpace> landmark) => throw new NotSupportedException(PipelineRefusals.HeadingIsTheAnchor);
-
-    /// <inheritdoc cref="On(IRowLandmark)"/>
+    /// <inheritdoc cref="On(ILineLandmark{TSpace})"/>
     /// <param name="landmark">The row that would be anchored below.</param>
     [Obsolete(PipelineRefusals.HeadingIsTheAnchor, error: true)]
-    public HeadingStage<TSpace> Below(IRowLandmark landmark) => throw new NotSupportedException(PipelineRefusals.HeadingIsTheAnchor);
+    public HeadingStage<TSpace> Below(ILineLandmark<TSpace> landmark) => throw new NotSupportedException(PipelineRefusals.HeadingIsTheAnchor);
 
-    /// <inheritdoc cref="On(IRowLandmark)"/>
-    /// <param name="landmark">The row that would be anchored below, demanding a space of its own.</param>
-    [Obsolete(PipelineRefusals.HeadingIsTheAnchor, error: true)]
-    public HeadingStage<TSpace> Below(IRowLandmark<TSpace> landmark) => throw new NotSupportedException(PipelineRefusals.HeadingIsTheAnchor);
-
-    /// <inheritdoc cref="On(IRowLandmark)"/>
+    /// <inheritdoc cref="On(ILineLandmark{TSpace})"/>
     /// <param name="landmark">The column that would be anchored right of.</param>
     [Obsolete(PipelineRefusals.HeadingIsTheAnchor, error: true)]
-    public HeadingStage<TSpace> RightOf(IColumnLandmark landmark) => throw new NotSupportedException(PipelineRefusals.HeadingIsTheAnchor);
+    public HeadingStage<TSpace> RightOf(ILineLandmark<TSpace> landmark) => throw new NotSupportedException(PipelineRefusals.HeadingIsTheAnchor);
 
-    /// <inheritdoc cref="On(IRowLandmark)"/>
-    /// <param name="landmark">The column that would be anchored right of, demanding a space of its own.</param>
-    [Obsolete(PipelineRefusals.HeadingIsTheAnchor, error: true)]
-    public HeadingStage<TSpace> RightOf(IColumnLandmark<TSpace> landmark) => throw new NotSupportedException(PipelineRefusals.HeadingIsTheAnchor);
-
-    /// <inheritdoc cref="On(IRowLandmark)"/>
+    /// <inheritdoc cref="On(ILineLandmark{TSpace})"/>
     /// <param name="offset">The offset that would replace the pipeline's.</param>
-    [Obsolete(PipelineRefusals.HeadingIsTheAnchor, error: true)]
-    public HeadingStage<TSpace> OffsetBy(IOffsetStrategy offset) => throw new NotSupportedException(PipelineRefusals.HeadingIsTheAnchor);
-
-    /// <inheritdoc cref="On(IRowLandmark)"/>
-    /// <param name="offset">The offset that would replace the pipeline's, demanding a space of its own.</param>
     [Obsolete(PipelineRefusals.HeadingIsTheAnchor, error: true)]
     public HeadingStage<TSpace> OffsetBy(IOffsetStrategy<TSpace> offset) => throw new NotSupportedException(PipelineRefusals.HeadingIsTheAnchor);
 
@@ -108,40 +78,13 @@ namespace Unrect.Projections
     /// <param name="landmark">The row the extent would stop before.</param>
     /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
     [Obsolete(PipelineRefusals.GeometryComesBeforeTheHeadings, error: true)]
-    public HeadingStage<TSpace> Until(IRowLandmark landmark, bool orEnd = false)
+    public HeadingStage<TSpace> Until(ILineLandmark<TSpace> landmark, bool orEnd = false)
       => throw new NotSupportedException(PipelineRefusals.GeometryComesBeforeTheHeadings);
 
-    /// <inheritdoc cref="Until(IRowLandmark, bool)"/>
-    /// <param name="landmark">The row the extent would stop before, demanding a space of its own.</param>
-    /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
+    /// <inheritdoc cref="Until(ILineLandmark{TSpace}, bool)"/>
+    /// <param name="extent">The extent that would be declared.</param>
     [Obsolete(PipelineRefusals.GeometryComesBeforeTheHeadings, error: true)]
-    public HeadingStage<TSpace> Until(IRowLandmark<TSpace> landmark, bool orEnd = false)
-      => throw new NotSupportedException(PipelineRefusals.GeometryComesBeforeTheHeadings);
-
-    /// <inheritdoc cref="Until(IRowLandmark, bool)"/>
-    /// <param name="landmark">The column the extent would stop before.</param>
-    /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
-    [Obsolete(PipelineRefusals.GeometryComesBeforeTheHeadings, error: true)]
-    public HeadingStage<TSpace> UntilColumn(IColumnLandmark landmark, bool orEnd = false)
-      => throw new NotSupportedException(PipelineRefusals.GeometryComesBeforeTheHeadings);
-
-    /// <inheritdoc cref="Until(IRowLandmark, bool)"/>
-    /// <param name="landmark">The column the extent would stop before, demanding a space of its own.</param>
-    /// <param name="orEnd">Whether running to the end of the space is acceptable.</param>
-    [Obsolete(PipelineRefusals.GeometryComesBeforeTheHeadings, error: true)]
-    public HeadingStage<TSpace> UntilColumn(IColumnLandmark<TSpace> landmark, bool orEnd = false)
-      => throw new NotSupportedException(PipelineRefusals.GeometryComesBeforeTheHeadings);
-
-    /// <inheritdoc cref="Until(IRowLandmark, bool)"/>
-    /// <param name="area">The extent that would be declared.</param>
-    [Obsolete(PipelineRefusals.GeometryComesBeforeTheHeadings, error: true)]
-    public HeadingStage<TSpace> Sized(IAreaStrategy area)
-      => throw new NotSupportedException(PipelineRefusals.GeometryComesBeforeTheHeadings);
-
-    /// <inheritdoc cref="Until(IRowLandmark, bool)"/>
-    /// <param name="area">The extent that would be declared, demanding a space of its own.</param>
-    [Obsolete(PipelineRefusals.GeometryComesBeforeTheHeadings, error: true)]
-    public HeadingStage<TSpace> Sized(IAreaStrategy<TSpace> area)
+    public HeadingStage<TSpace> Sized(ISizeStrategy<TSpace> extent)
       => throw new NotSupportedException(PipelineRefusals.GeometryComesBeforeTheHeadings);
 
     /// <summary>Refused: a movement belongs with the offset, ahead of the headings.</summary>

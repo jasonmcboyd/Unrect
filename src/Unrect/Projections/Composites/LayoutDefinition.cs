@@ -14,7 +14,7 @@ namespace Unrect.Projections
   internal abstract class LayoutDefinition<TSpace, T> : DefinitionNode<TSpace, T>
     where TSpace : class, ISpace
   {
-    protected LayoutDefinition(Layout<TSpace, T> layout, Placement placement)
+    protected LayoutDefinition(Layout<TSpace, T> layout, Placement<TSpace> placement)
       : base(placement)
     {
       Layout = layout ?? throw new ArgumentNullException(nameof(layout));

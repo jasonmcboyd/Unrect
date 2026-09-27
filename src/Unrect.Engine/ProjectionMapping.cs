@@ -115,7 +115,7 @@ namespace Unrect.Projections
       // Suppressed only when the whole parse is one absorbed failure: two boundaries that each
       // absorbed something have left a gap worth mentioning, even though neither consumed anything.
       if (!(applied.Advance.Width == 0 && applied.Advance.Height == 0 && scope.Diagnostics.AbsorbedAt(mark)))
-        ProjectionExtensions.ReportUnconsumed(projection, extent, applied.Offset.Size, applied.Consumed, scope);
+        ProjectionExtensions.ReportUnconsumed(projection, extent, applied.Offset, applied.Consumed, scope);
 
       return (applied, scope.Diagnostics.Snapshot());
     }
@@ -140,7 +140,7 @@ namespace Unrect.Projections
         // machine may have loaded rows ahead of the offer, and every one of them is still offered.
         for (var row = 0; Load(feed, row, definition, whole, scope); row++)
         {
-          var span = whole.Slice(new Offset(0, row), new Area(width, 1));
+          var span = whole.Slice(new Offset(0, row), new Size(width, 1));
 
           if (!root.Next(span))
             break;
@@ -177,7 +177,7 @@ namespace Unrect.Projections
         }
         catch (Exception exception) when (exception is not ProjectionException)
         {
-          var at = row < whole.Area.Height ? whole.Slice(new Offset(0, row), new Area(whole.Width, 1)) : whole;
+          var at = row < whole.Height ? whole.Slice(new Offset(0, row), new Size(whole.Width, 1)) : whole;
 
           throw scope.Failure(definition, $"the source threw {exception.GetType().Name}: {exception.Message}", at, null, exception, isFault: true);
         }

@@ -178,8 +178,8 @@ namespace Unrect.Projections
 
   /// <summary>
   /// Which axis a set of labels names: a <see cref="Column"/> label answers a column, translating
-  /// along <c>Offset.Width</c>; a <see cref="Row"/> label answers a row, translating along
-  /// <c>Offset.Height</c>. Kept separate on the stack so a row-labelled and a column-labelled scope
+  /// along <c>Offset.Column</c>; a <see cref="Row"/> label answers a row, translating along
+  /// <c>Offset.Row</c>. Kept separate on the stack so a row-labelled and a column-labelled scope
   /// coexist rather than shadow one another.
   /// </summary>
   internal enum LabelAxis

@@ -149,7 +149,7 @@ namespace Unrect.Tests.Spreadsheets
       Assert.True(Of("hello").IsText());
       Assert.False(Of(1.5).IsText());
       Assert.Equal("1.5", Of(1.5).AsText());
-      Assert.Null(Of(null).AsText());
+      Assert.Equal("", Of(null).AsText());
     }
 
     // --- Asking rather than asserting ---------------------------------------------------------------

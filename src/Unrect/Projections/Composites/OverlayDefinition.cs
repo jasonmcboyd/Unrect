@@ -12,7 +12,7 @@ namespace Unrect.Projections
   internal sealed class OverlayDefinition<TSpace, T> : LayoutDefinition<TSpace, T>
     where TSpace : class, ISpace
   {
-    public OverlayDefinition(Layout<TSpace, T> layout, Placement placement)
+    public OverlayDefinition(Layout<TSpace, T> layout, Placement<TSpace> placement)
       : base(layout, placement)
     {
     }
@@ -130,7 +130,7 @@ namespace Unrect.Projections
 
       private Plane<TSpace> Extent()
         => _first is Plane<TSpace> first
-          ? new Plane<TSpace>(first.Space, first.Origin, new Area(Math.Max(_width, first.Width), _height))
+          ? new Plane<TSpace>(first.Space, first.Origin, new Size(Math.Max(_width, first.Width), _height))
           : _scope.Anchor;
     }
   }

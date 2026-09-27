@@ -22,7 +22,7 @@ namespace Unrect.Projections
     /// <exception cref="ArgumentNullException"><paramref name="placement"/> is null.</exception>
     private protected DefinitionNode(Placement placement)
     {
-      Annotations = Annotations.Default.WithPlacement(placement);
+      Annotations = Annotations.Placed(placement);
     }
 
     /// <inheritdoc/>
@@ -117,10 +117,13 @@ namespace Unrect.Projections
     /// compiling cleanly. Closed at the projection rename (owner decision).
     /// </remarks>
     /// <param name="placement">Where this projection sits within the space it is handed.</param>
-    private protected DefinitionNode(Placement placement)
+    private protected DefinitionNode(Placement<TSpace> placement)
       : base(placement)
     {
     }
+
+    /// <summary>The placement with its rules over <typeparamref name="TSpace"/> — the same object the erased face carries as a <see cref="Projections.Placement"/>.</summary>
+    public new Placement<TSpace> Placement => (Placement<TSpace>)base.Placement;
 
     /// <inheritdoc/>
     public abstract IProjector<TSpace, TResult> Build(ProjectorScope<TSpace> scope);

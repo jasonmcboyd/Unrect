@@ -10,7 +10,7 @@ namespace Unrect.Projections
   internal sealed class PointDefinition<TSpace> : CollectorNode<TSpace, Point<TSpace>>
     where TSpace : class, ISpace
   {
-    public PointDefinition(Placement placement)
+    public PointDefinition(Placement<TSpace> placement)
       : base(placement)
     {
     }
@@ -19,7 +19,7 @@ namespace Unrect.Projections
 
     internal override Settlement<Point<TSpace>> Collect(Plane<TSpace> extent, ProjectorScope<TSpace> scope)
     {
-      var size = extent.Area.Size;
+      var size = extent.Extent;
 
       // Reachable only when the placement was replaced — Point().Sized(…) — and left in because it
       // is also the half a writer would satisfy: one cell declared, one cell emitted.

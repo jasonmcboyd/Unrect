@@ -11,7 +11,7 @@ namespace Unrect.Projections
   internal sealed class FlowDefinition<TSpace, T> : LayoutDefinition<TSpace, T>
     where TSpace : class, ISpace
   {
-    public FlowDefinition(Orientation orientation, Layout<TSpace, T> layout, Placement placement, string? description = null)
+    public FlowDefinition(Orientation orientation, Layout<TSpace, T> layout, Placement<TSpace> placement, string? description = null)
       : base(layout, placement)
     {
       Orientation = orientation;
@@ -171,7 +171,7 @@ namespace Unrect.Projections
 
       private Plane<TSpace> Extent()
         => _first is Plane<TSpace> first
-          ? new Plane<TSpace>(first.Space, first.Origin, new Area(Spans.ToSize(_length, Math.Max(_across, first.Width), _along)))
+          ? new Plane<TSpace>(first.Space, first.Origin, Spans.ToSize(_length, Math.Max(_across, first.Width), _along))
           : _scope.Anchor;
     }
   }

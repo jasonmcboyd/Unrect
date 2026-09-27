@@ -28,9 +28,9 @@ namespace Unrect.Tests.Projections
 
       var located = ProjectionLocation.At(plane[1, 1]);
 
-      Assert.Equal(ProjectionLocation.At(new Offset(1, 1), plane.Area.Size).ToString(), located.ToString());
+      Assert.Equal(ProjectionLocation.At(new Offset(1, 1), plane.Extent).ToString(), located.ToString());
       Assert.Equal("B2", located.A1);
-      Assert.Equal(plane.Area.Size.Width, located.Available.Width);
+      Assert.Equal(plane.Extent.Width, located.Available.Width);
     }
 
     [Fact]
@@ -39,7 +39,7 @@ namespace Unrect.Tests.Projections
       // The address is the cell's, not the region's: two locators naming the same cell cite the same
       // A1, which is what stops a nested declaration reporting a failure at the wrong place.
       var plane = Plane<ISpace>.Of(Grid());
-      var slice = plane.Slice(new Offset(2, 1), new Area(1, 1));
+      var slice = plane.Slice(new Offset(2, 1), new Size(1, 1));
 
       Assert.Equal(
         ProjectionLocation.At(plane[2, 1]).ToString(),
@@ -53,7 +53,7 @@ namespace Unrect.Tests.Projections
     {
       // A region is cited at the cell it starts on, and what was "available" is the region — the
       // room the declaration had rather than the room the sheet had.
-      var band = Plane<ISpace>.Of(Grid()).Slice(new Offset(1, 1), new Area(2, 1));
+      var band = Plane<ISpace>.Of(Grid()).Slice(new Offset(1, 1), new Size(2, 1));
 
       var located = ProjectionLocation.At(band);
 
@@ -72,7 +72,7 @@ namespace Unrect.Tests.Projections
       // region is what a declaration was HANDED, so what was available is the region — usually far
       // less, and saying the sheet's figure there would tell a reader the declaration had room it
       // never had.
-      var slice = Plane<ISpace>.Of(Grid()).Slice(new Offset(2, 1), new Area(1, 1));
+      var slice = Plane<ISpace>.Of(Grid()).Slice(new Offset(2, 1), new Size(1, 1));
 
       var atTheCell = ProjectionLocation.At(slice[0, 0]);
       var atTheRegion = ProjectionLocation.At(slice);

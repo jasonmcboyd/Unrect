@@ -90,8 +90,8 @@ namespace Unrect.Tests.Spreadsheets
       var applied = On(ColumnWithFormula()).Of(Text()).Apply(Sheet());
 
       Assert.Equal("Rate", applied.Value);
-      Assert.Equal(2, applied.Offset.Size.Width);
-      Assert.Equal(0, applied.Offset.Size.Height);
+      Assert.Equal(2, applied.Offset.Column);
+      Assert.Equal(0, applied.Offset.Row);
     }
 
     [Fact]
@@ -100,12 +100,12 @@ namespace Unrect.Tests.Spreadsheets
       var applied = RightOf(ColumnWithFormula()).Of(Text()).Apply(Sheet());
 
       Assert.Equal("Total", applied.Value);
-      Assert.Equal(3, applied.Offset.Size.Width);
+      Assert.Equal(3, applied.Offset.Column);
 
       // Said the other way, so a regression in either operator shows up here: one more than On.
       Assert.Equal(
-        On(ColumnWithFormula()).Of(Text()).Apply(Sheet()).Offset.Size.Width + 1,
-        applied.Offset.Size.Width);
+        On(ColumnWithFormula()).Of(Text()).Apply(Sheet()).Offset.Column + 1,
+        applied.Offset.Column);
     }
 
     [Fact]
@@ -133,49 +133,6 @@ namespace Unrect.Tests.Spreadsheets
     }
 
     // --- What it does with a space that cannot answer -----------------------------------------------
-
-    [Fact]
-    public void AColumnMatcherThatCouldNotLookIsAFaultNoToleranceAbsorbs()
-    {
-      // Reached the only way it can be: through Landmark, the plain lift, where the typed layer has
-      // handed the demand off and the mismatch survives to run time.
-      var cannotLook = PlainLift().Of(SheetProjectionBuilders<ICellSpace>.Text());
-
-      var failure = Assert.Throws<ProjectionException>(() => cannotLook.Map(Plain()));
-
-      Assert.True(failure.IsFault, "a boundary that could not look must be a fault");
-      Assert.IsType<InvalidCastException>(failure.GetBaseException());
-      Assert.Contains("IFormulaSpace", failure.Message, StringComparison.Ordinal);
-
-      // "I could not look" is not "the section is absent", so none of the three tolerances may
-      // quietly turn a wrong backend into an empty answer.
-      Assert.Throws<ProjectionException>(() => cannotLook.Optional().Map(Plain()));
-      Assert.Throws<ProjectionException>(() => cannotLook.Else("fallback").Map(Plain()));
-      Assert.Throws<ProjectionException>(
-        () => ProjectionBuilders<ICellSpace>.Choice(cannotLook, SheetProjectionBuilders<ICellSpace>.Text()).Map(Plain()));
-    }
-
-    [Fact]
-    public void ABoundThatCouldNotLookAcrossColumnsIsAFaultToo()
-    {
-      // The other lift and the other strategy slot: UntilColumn bounds an extent rather than placing
-      // it, so the demand is made from the area strategy instead of the offset strategy. Two code
-      // paths wrap a foreign exception and the fault list is consulted at both.
-      var bounded = ProjectionBuilders<ICellSpace>
-        .UntilColumn(SpreadsheetProjections.ColumnWithFormula().Landmark)
-        .Of(ProjectionBuilders<ICellSpace>.HorizontalFlow(h =>
-        {
-          var spreadsheetProjections = h.Next(SheetProjectionBuilders<ICellSpace>.Text());
-
-          return spreadsheetProjections;
-        }))
-        .Optional();
-
-      var failure = Assert.Throws<ProjectionException>(() => bounded.Map(Plain()));
-
-      Assert.True(failure.IsFault, "a bound that could not look must be a fault");
-      Assert.Contains("IFormulaSpace", failure.Message, StringComparison.Ordinal);
-    }
 
     [Fact]
     public void AbsenceOfAMatchStaysQuietWhereAbsenceOfTheCapabilityIsLoud()
@@ -218,12 +175,10 @@ namespace Unrect.Tests.Spreadsheets
         StringComparison.Ordinal);
     }
 
-    /// <summary>
-    /// The plain lift of the bare column matcher, over the canonical vocabulary: the one way a
-    /// declaration can reach a boundary its space cannot answer.
-    /// </summary>
-    private static OffsetStage<ICellSpace> PlainLift()
-      => ProjectionBuilders<ICellSpace>.On(SpreadsheetProjections.ColumnWithFormula().Landmark);
+    // A formula matcher is an ILineLandmark<ISpreadsheetSpace>, and every member that takes a landmark
+    // is written over the declaration's own space, so handing one to a pipeline closed over ICellSpace
+    // is a compile error where it is written. The run-time fault that used to catch the mis-wiring,
+    // and the tests that pinned it, went with the seam that made it possible.
 
     [Fact]
     public void ItRefusesAnEmptyThingToLookFor()
@@ -231,8 +186,8 @@ namespace Unrect.Tests.Spreadsheets
       // A matcher with nothing to look for would match the first formula anywhere and read as though
       // it had been asked a question. The guard is shared with the row twin; this pins the column
       // overload reaches it.
-      Assert.Equal("containing", Assert.Throws<ArgumentException>(() => SpreadsheetProjections.ColumnWithFormula("")).ParamName);
-      Assert.Equal("containing", Assert.Throws<ArgumentException>(() => SpreadsheetProjections.ColumnWithFormula(null!)).ParamName);
+      Assert.Equal("containing", Assert.Throws<ArgumentException>(() => SpreadsheetProjections.ColumnWithFormula<ISpreadsheetSpace>("")).ParamName);
+      Assert.Equal("containing", Assert.Throws<ArgumentException>(() => SpreadsheetProjections.ColumnWithFormula<ISpreadsheetSpace>(null!)).ParamName);
     }
   }
 }

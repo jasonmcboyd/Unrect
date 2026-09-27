@@ -17,12 +17,12 @@ namespace Unrect.Tests.Streaming
   /// the second half reads is read inside a region the first half never touched; the contrast is a
   /// first half that walks the sheet itself.
   /// </summary>
-  public class ComposedAreaAcrossDoorsTests
+  public class ComposedExtentAcrossDoorsTests
   {
     private static string Path(string file) => System.IO.Path.Combine(AppContext.BaseDirectory, "TestData", file);
 
     /// <summary><paramref name="area"/> applied to the tall ledger through the streaming door: the extent it settled on.</summary>
-    private static string Streamed(IAreaStrategy area)
+    private static string Streamed(ISizeStrategy<ICellSpace> area)
     {
       using var book = Workbook.Open(Path("tall-ledger.xlsx"));
 
@@ -30,17 +30,17 @@ namespace Unrect.Tests.Streaming
     }
 
     /// <summary>The same declaration through the eager door.</summary>
-    private static string Eager(IAreaStrategy area)
+    private static string Eager(ISizeStrategy<ICellSpace> area)
       => Sized(area).Of(Range(block => $"{block.Width}x{block.Height}")).Map(
         SpreadsheetSpace.Create(Path("tall-ledger.xlsx"), "Ledger"));
 
     /// <summary>Two rows taken without reading anything, then the columns measured inside them.</summary>
-    private static IAreaStrategy FirstHalfReadsNothing()
-      => AreaStrategies.RowsThenColumns(RowStrategies.TakeRows(2), ColumnStrategies.TakeColumnsWhileAnyIsNotBlank());
+    private static ISizeStrategy<ICellSpace> FirstHalfReadsNothing()
+      => SizeStrategies.RowsThenColumns(RowStrategies.TakeRows<ICellSpace>(2), ColumnStrategies.TakeColumnsWhileAnyIsNotBlank<ICellSpace>());
 
     /// <summary>The contrast: a first half that walks the sheet itself, so the reading is its own.</summary>
-    private static IAreaStrategy FirstHalfReads()
-      => AreaStrategies.RowsThenColumns(RowStrategies.TakeRowsWhileAnyIsNotBlank(), ColumnStrategies.TakeColumnsWhileAnyIsNotBlank());
+    private static ISizeStrategy<ICellSpace> FirstHalfReads()
+      => SizeStrategies.RowsThenColumns(RowStrategies.TakeRowsWhileAnyIsNotBlank<ICellSpace>(), ColumnStrategies.TakeColumnsWhileAnyIsNotBlank<ICellSpace>());
 
     [Theory]
     [InlineData("first-half-reads-nothing", "3x2")]

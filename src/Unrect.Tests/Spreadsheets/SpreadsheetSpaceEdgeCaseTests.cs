@@ -40,8 +40,8 @@ namespace Unrect.Tests.Spreadsheets
     {
       var space = Edges();
 
-      Assert.Equal(5, space.Area.Size.Width);
-      Assert.Equal(4, space.Area.Size.Height);
+      Assert.Equal(5, space.Extent.Width);
+      Assert.Equal(4, space.Extent.Height);
     }
 
     // --- Ordinary kinds ---------------------------------------------------------------------------
@@ -113,9 +113,9 @@ namespace Unrect.Tests.Spreadsheets
     public void ARowOfNothingButErrorsStillCarriesValues()
     {
       // The consequence that matters downstream: a discovered region does not stop at such a row.
-      var errorsOnly = Edges().Region().Slice(new Offset(0, 1), new Area(5, 1));
+      var errorsOnly = Edges().Region().Slice(new Offset(0, 1), new Size(5, 1));
 
-      Assert.Equal(1, SizeStrategies.RowsWhileAnyIsNotBlank().GetSize(errorsOnly).Height);
+      Assert.Equal(1, SizeStrategies.RowsWhileAnyIsNotBlank<ISpace>().GetSize(errorsOnly).Height);
     }
 
     // --- Blankness is the adapter's decision ---------------------------------------------------------
@@ -179,18 +179,18 @@ namespace Unrect.Tests.Spreadsheets
       var strict = Edges(isBlank: _ => false);
 
       var firstFour = new Offset(0, 0);
-      var block = new Area(4, 4);
+      var block = new Size(4, 4);
 
-      Assert.Equal(2, SizeStrategies.RowsWhileAnyIsNotBlank().GetSize(byDefault.Region().Slice(firstFour, block)).Height);
-      Assert.Equal(4, SizeStrategies.RowsWhileAnyIsNotBlank().GetSize(strict.Region().Slice(firstFour, block)).Height);
+      Assert.Equal(2, SizeStrategies.RowsWhileAnyIsNotBlank<ISpace>().GetSize(byDefault.Region().Slice(firstFour, block)).Height);
+      Assert.Equal(4, SizeStrategies.RowsWhileAnyIsNotBlank<ISpace>().GetSize(strict.Region().Slice(firstFour, block)).Height);
 
       // ...and the leaf that discovers its own extent sees exactly what the strategy does, which is
       // the half that says blankness reaches the declaration and not merely the calculus. The first
       // four columns are named here because the fifth carries "x" on the whitespace row under every
       // rule, and a region that included it could not tell the two apart.
-      var fourColumns = AreaStrategies.ColumnsThenRows(
-        ColumnStrategies.TakeColumns(4),
-        RowStrategies.TakeRowsWhileAnyIsNotBlank());
+      var fourColumns = SizeStrategies.ColumnsThenRows(
+        ColumnStrategies.TakeColumns<ICellSpace>(4),
+        RowStrategies.TakeRowsWhileAnyIsNotBlank<ICellSpace>());
 
       Assert.Equal((4, 2), Range(fourColumns, b => (b.Width, b.Height)).Map(byDefault));
       Assert.Equal((4, 4), Range(fourColumns, b => (b.Width, b.Height)).Map(strict));
@@ -199,11 +199,11 @@ namespace Unrect.Tests.Spreadsheets
     [Fact]
     public void BlanknessDecidesWhetherThereIsAGapToSkip()
     {
-      var byDefault = Edges().Region().Slice(new Offset(0, 2), new Area(4, 2));
-      var strict = Edges(isBlank: _ => false).Region().Slice(new Offset(0, 2), new Area(4, 2));
+      var byDefault = Edges().Region().Slice(new Offset(0, 2), new Size(4, 2));
+      var strict = Edges(isBlank: _ => false).Region().Slice(new Offset(0, 2), new Size(4, 2));
 
-      Assert.Equal(1, OffsetStrategies.SkipBlankRows().GetOffset(byDefault).Size.Height);
-      Assert.Equal(0, OffsetStrategies.SkipBlankRows().GetOffset(strict).Size.Height);
+      Assert.Equal(1, OffsetStrategies.SkipBlankRows<ISpace>().GetOffset(byDefault).Row);
+      Assert.Equal(0, OffsetStrategies.SkipBlankRows<ISpace>().GetOffset(strict).Row);
     }
 
     [Fact]

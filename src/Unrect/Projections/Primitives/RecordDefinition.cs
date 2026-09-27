@@ -20,7 +20,7 @@ namespace Unrect.Projections
   internal sealed class RecordDefinition<TSpace, T> : CollectorNode<TSpace, T>
     where TSpace : class, ISpace
   {
-    public RecordDefinition(Func<TableRow<TSpace>, T> record, Placement placement)
+    public RecordDefinition(Func<TableRow<TSpace>, T> record, Placement<TSpace> placement)
       : base(placement)
       => Record = record ?? throw new ArgumentNullException(nameof(record));
 
@@ -37,7 +37,7 @@ namespace Unrect.Projections
 
       try
       {
-        return new Settlement<T>(Record(row), extent.Area.Size);
+        return new Settlement<T>(Record(row), extent.Extent);
       }
       catch (CellReadException failure)
       {

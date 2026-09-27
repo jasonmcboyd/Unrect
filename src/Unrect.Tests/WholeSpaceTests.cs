@@ -50,10 +50,10 @@ namespace Unrect.Tests
       var region = space.Region();
 
       Assert.Same(space, region.Space);
-      Assert.Equal(0, region.Origin.Width);
-      Assert.Equal(0, region.Origin.Height);
-      Assert.Equal(space.Area.Width, region.Area.Width);
-      Assert.Equal(space.Area.Height, region.Area.Height);
+      Assert.Equal(0, region.Origin.Column);
+      Assert.Equal(0, region.Origin.Row);
+      Assert.Equal(space.Extent.Width, region.Extent.Width);
+      Assert.Equal(space.Extent.Height, region.Extent.Height);
 
       Assert.Equal(Plane<ISpace>.Of(space), region);
     }
@@ -62,7 +62,7 @@ namespace Unrect.Tests
     public void GetSizeForwards()
     {
       var space = Sheet();
-      var strategy = SizeStrategies.RowsWhileAnyIsNotBlank();
+      var strategy = SizeStrategies.RowsWhileAnyIsNotBlank<ISpace>();
 
       Assert.Equal(strategy.GetSize(Plane<ISpace>.Of(space)).Height, strategy.GetSize(space).Height);
       Assert.Equal(strategy.GetSize(Plane<ISpace>.Of(space)).Width, strategy.GetSize(space).Width);
@@ -74,67 +74,57 @@ namespace Unrect.Tests
     }
 
     [Fact]
-    public void GetAreaForwards()
-    {
-      var space = Sheet();
-      var strategy = SizeStrategies.RowsWhileAnyIsNotBlank().ToAreaStrategy();
-
-      Assert.Equal(strategy.GetArea(Plane<ISpace>.Of(space)).Size, strategy.GetArea(space).Size);
-      Assert.Equal(2, strategy.GetArea(space).Height);
-    }
-
-    [Fact]
     public void GetOffsetForwards()
     {
       // An offset that has to look at content to resolve, so the region it looks through matters.
       var space = Sheet();
-      var strategy = OffsetStrategies.To(RowLandmarks.RowSaying("Total"));
+      var strategy = OffsetStrategies.To(RowLandmarks.RowSaying<ISpace>("Total"));
 
-      Assert.Equal(strategy.GetOffset(Plane<ISpace>.Of(space)).Size, strategy.GetOffset(space).Size);
-      Assert.Equal(3, strategy.GetOffset(space).Height);
+      Assert.Equal(strategy.GetOffset(Plane<ISpace>.Of(space)), strategy.GetOffset(space));
+      Assert.Equal(3, strategy.GetOffset(space).Row);
     }
 
     [Fact]
     public void SelectRowsForwards()
     {
       var space = Sheet();
-      var strategy = RowStrategies.TakeRowsWhileAnyIsNotBlank();
+      var strategy = RowStrategies.TakeRowsWhileAnyIsNotBlank<ISpace>();
 
-      Assert.Equal(strategy.SelectRows(Plane<ISpace>.Of(space)), strategy.SelectRows(space));
-      Assert.Equal(2, strategy.SelectRows(space));
+      Assert.Equal(strategy.SelectLines(Plane<ISpace>.Of(space)), strategy.SelectLines(space));
+      Assert.Equal(2, strategy.SelectLines(space));
     }
 
     [Fact]
     public void SelectColumnsForwards()
     {
       var space = Sheet();
-      var strategy = ColumnStrategies.TakeColumnsWhileAll(point => !point.IsBlank());
+      var strategy = ColumnStrategies.TakeColumnsWhileAll<ISpace>(point => !point.IsBlank());
 
-      Assert.Equal(strategy.SelectColumns(Plane<ISpace>.Of(space)), strategy.SelectColumns(space));
+      Assert.Equal(strategy.SelectLines(Plane<ISpace>.Of(space)), strategy.SelectLines(space));
 
       // Row 2 is blank, so no column has a value in every row: the answer is zero, and a shortcut
       // that had trimmed the region to its valued rows would say four.
-      Assert.Equal(0, strategy.SelectColumns(space));
+      Assert.Equal(0, strategy.SelectLines(space));
     }
 
     [Fact]
     public void FindRowForwards()
     {
       var space = Sheet();
-      var landmark = RowLandmarks.RowSaying("Total");
+      var landmark = RowLandmarks.RowSaying<ISpace>("Total");
 
-      Assert.Equal(landmark.FindRow(Plane<ISpace>.Of(space)), landmark.FindRow(space));
-      Assert.Equal(3, landmark.FindRow(space));
+      Assert.Equal(landmark.Find(Plane<ISpace>.Of(space)), landmark.Find(space));
+      Assert.Equal(3, landmark.Find(space));
     }
 
     [Fact]
     public void FindColumnForwards()
     {
       var space = Sheet();
-      var landmark = ColumnLandmarks.ColumnSaying("d");
+      var landmark = ColumnLandmarks.ColumnSaying<ISpace>("d");
 
-      Assert.Equal(landmark.FindColumn(Plane<ISpace>.Of(space)), landmark.FindColumn(space));
-      Assert.Equal(3, landmark.FindColumn(space));
+      Assert.Equal(landmark.Find(Plane<ISpace>.Of(space)), landmark.Find(space));
+      Assert.Equal(3, landmark.Find(space));
     }
   }
 }

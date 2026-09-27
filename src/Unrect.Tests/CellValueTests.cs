@@ -515,11 +515,12 @@ namespace Unrect.Tests
     }
 
     [Fact]
-    public void AsText_OfABlank_IsNull()
+    public void AsText_OfABlank_IsTheEmptyString()
     {
-      Assert.Null(CellValue.Blank.AsText());
-      Assert.Null(default(CellValue).AsText());
-      Assert.Null(CellValue.Of((string?)null).AsText());
+      // A rendering is total: a value holding nothing says nothing, which is "", never null.
+      Assert.Equal("", CellValue.Blank.AsText());
+      Assert.Equal("", default(CellValue).AsText());
+      Assert.Equal("", CellValue.Of((string?)null).AsText());
     }
 
     [Theory]
@@ -607,7 +608,7 @@ namespace Unrect.Tests
         Assert.Equal("TRUE", CellValue.Of(true).AsText());
         Assert.Equal("FALSE", CellValue.Of(false).AsText());
         Assert.Equal("#DIV/0!", CellValue.OfError(CellError.DivisionByZero).AsText());
-        Assert.Null(CellValue.Blank.AsText());
+        Assert.Equal("", CellValue.Blank.AsText());
       }
       finally
       {

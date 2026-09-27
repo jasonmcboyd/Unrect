@@ -38,16 +38,13 @@ namespace Unrect.Tests.Machines
     private static IProjectionDefinition<ICellSpace, IReadOnlyList<IReadOnlyList<string>>> Repeat(IOffsetStrategy<ICellSpace> separator)
       => VerticalRepeat(Block(), separatedBy: separator);
 
-    private static IProjectionDefinition<ICellSpace, IReadOnlyList<IReadOnlyList<string>>> Repeat(IOffsetStrategy separator)
-      => VerticalRepeat(Block(), separatedBy: separator);
-
     /// <summary>The gap is however many leading rows are wholly blank — spelled as a lambda, so it has no per-span form.</summary>
     private static IOffsetStrategy<ICellSpace> BlankGap()
       => SelectOffset(plane =>
       {
         var rows = 0;
 
-        while (rows < plane.Area.Height && Enumerable.Range(0, plane.Width).All(column => plane[column, rows].IsBlank()))
+        while (rows < plane.Extent.Height && Enumerable.Range(0, plane.Width).All(column => plane[column, rows].IsBlank()))
           rows++;
 
         return new Size(0, rows);
@@ -70,7 +67,7 @@ namespace Unrect.Tests.Machines
     {
       // A separator that always asks for more rows than remain: the first occurrence stands alone.
       var space = Mixed(Blocks);
-      var greedy = Repeat(SelectOffset(plane => new Size(0, plane.Area.Height + 1)));
+      var greedy = Repeat(SelectOffset(plane => new Size(0, plane.Extent.Height + 1)));
 
       Assert.Equal(new[] { "a,b" }, greedy.Map(space).Select(block => string.Join(",", block)));
     }

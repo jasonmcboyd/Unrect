@@ -23,7 +23,7 @@ namespace Unrect.Projections
       int stride,
       UseSite eachSite,
       BlankRowStrategy? onBlank,
-      Placement placement)
+      Placement<TSpace> placement)
       : base(placement)
     {
       Each = each ?? throw new ArgumentNullException(nameof(each));
@@ -89,7 +89,7 @@ namespace Unrect.Projections
         if (_first is null)
         {
           _first = span;
-          _across = Spans.Across(span.Area.Size, Along);
+          _across = Spans.Across(span.Extent, Along);
         }
 
         if (_across == 0)
@@ -163,10 +163,10 @@ namespace Unrect.Projections
     /// <summary>Whether every cell of a cut band is blank. The band is measured, so its extent is free.</summary>
     private static bool IsBlank(Plane<TSpace> band)
     {
-      var area = band.Area;
+      var extent = band.Extent;
 
-      for (var row = 0; row < area.Height; row++)
-        for (var column = 0; column < area.Width; column++)
+      for (var row = 0; row < extent.Height; row++)
+        for (var column = 0; column < extent.Width; column++)
           if (!band[column, row].IsBlank())
             return false;
 

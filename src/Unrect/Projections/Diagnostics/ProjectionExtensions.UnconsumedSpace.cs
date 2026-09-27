@@ -16,10 +16,10 @@ namespace Unrect.Projections
     /// remainder is: a projection that starts two rows down described neither those two rows nor
     /// whatever follows it.
     /// </summary>
-    internal static void ReportUnconsumed<TSpace>(IProjectionDefinition projection, Plane<TSpace> space, Size gap, Size described, ProjectorScope<TSpace> scope)
+    internal static void ReportUnconsumed<TSpace>(IProjectionDefinition projection, Plane<TSpace> space, Offset gap, Size described, ProjectorScope<TSpace> scope)
       where TSpace : class, ISpace
     {
-      var size = space.Area.Size;
+      var size = space.Extent;
 
       if (described.Width >= size.Width && described.Height >= size.Height)
         return;
@@ -27,13 +27,13 @@ namespace Unrect.Projections
       var counts = new List<string>(2);
       var undescribed = new List<string>(2);
 
-      Describe(gap.Height, described.Height, size.Height, "row", counts, undescribed);
-      Describe(gap.Width, described.Width, size.Width, "column", counts, undescribed);
+      Describe(gap.Row, described.Height, size.Height, "row", counts, undescribed);
+      Describe(gap.Column, described.Width, size.Width, "column", counts, undescribed);
 
       // The earliest cell nothing described, in reading order: a leading gap on either axis starts
       // at the very first cell, otherwise it is wherever the described region stops.
       var first =
-        gap.Width > 0 || gap.Height > 0 ? default
+        gap.Column > 0 || gap.Row > 0 ? default
         : described.Width < size.Width ? new Offset(described.Width, 0)
         : new Offset(0, described.Height);
 

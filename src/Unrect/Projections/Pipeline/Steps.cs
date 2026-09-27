@@ -90,15 +90,21 @@ namespace Unrect.Projections
       _orEnd = orEnd;
     }
 
-    internal static Step OnRow(IRowLandmark landmark) => new Step(StepKind.OnRow, NotNull(landmark));
+    internal static Step On<TSpace>(ILineLandmark<TSpace> landmark)
+      where TSpace : class, ISpace
+      => new Step(NotNull(landmark).Along == Orientation.Vertical ? StepKind.OnRow : StepKind.OnColumn, landmark);
 
-    internal static Step OnColumn(IColumnLandmark landmark) => new Step(StepKind.OnColumn, NotNull(landmark));
+    internal static Step Below<TSpace>(ILineLandmark<TSpace> landmark)
+      where TSpace : class, ISpace
+      => new Step(StepKind.Below, LineAxis.Require(landmark, Orientation.Vertical, "landmark"));
 
-    internal static Step Below(IRowLandmark landmark) => new Step(StepKind.Below, NotNull(landmark));
+    internal static Step RightOf<TSpace>(ILineLandmark<TSpace> landmark)
+      where TSpace : class, ISpace
+      => new Step(StepKind.RightOf, LineAxis.Require(landmark, Orientation.Horizontal, "landmark"));
 
-    internal static Step RightOf(IColumnLandmark landmark) => new Step(StepKind.RightOf, NotNull(landmark));
-
-    internal static Step OffsetBy(IOffsetStrategy offset) => new Step(StepKind.OffsetBy, NotNull(offset, "offset"));
+    internal static Step OffsetBy<TSpace>(IOffsetStrategy<TSpace> offset)
+      where TSpace : class, ISpace
+      => new Step(StepKind.OffsetBy, NotNull(offset, "offset"));
 
     internal static Step Down(int rows) => new Step(StepKind.Down, count: NotNegative(rows, nameof(rows)));
 
@@ -110,11 +116,13 @@ namespace Unrect.Projections
 
     internal static Step SkipToFirstNonBlankCell() => new Step(StepKind.SkipToFirstNonBlankCell);
 
-    internal static Step Sized(IAreaStrategy area) => new Step(StepKind.Sized, NotNull(area, "area"));
+    internal static Step Sized<TSpace>(ISizeStrategy<TSpace> extent)
+      where TSpace : class, ISpace
+      => new Step(StepKind.Sized, NotNull(extent, "extent"));
 
-    internal static Step UntilRow(IRowLandmark landmark, bool orEnd) => new Step(StepKind.UntilRow, NotNull(landmark), orEnd: orEnd);
-
-    internal static Step UntilColumn(IColumnLandmark landmark, bool orEnd) => new Step(StepKind.UntilColumn, NotNull(landmark), orEnd: orEnd);
+    internal static Step Until<TSpace>(ILineLandmark<TSpace> landmark, bool orEnd)
+      where TSpace : class, ISpace
+      => new Step(NotNull(landmark).Along == Orientation.Vertical ? StepKind.UntilRow : StepKind.UntilColumn, landmark, orEnd: orEnd);
 
     /// <summary>
     /// The headings a section announces itself by, as the caption leaves the replay folds into one
@@ -123,7 +131,7 @@ namespace Unrect.Projections
     internal static Step Headings(IProjectionDefinition[] captions) => new Step(StepKind.Headings, captions);
 
     /// <summary>
-    /// Writes this step's offset/area/bound operation onto <paramref name="projection"/>'s
+    /// Writes this step's offset/extent/bound operation onto <paramref name="projection"/>'s
     /// <see cref="Placement"/>.
     /// </summary>
     internal IProjectionDefinition<TSpace, T> ApplyTo<TSpace, T>(IProjectionDefinition<TSpace, T> projection)
@@ -132,23 +140,23 @@ namespace Unrect.Projections
       return _kind switch
       {
         // Every offset kind composes onto an earlier pipeline offset, or starts from the origin.
-        StepKind.OnRow => Offset(projection, OffsetStrategies.To((IRowLandmark)_subject!)),
-        StepKind.OnColumn => Offset(projection, OffsetStrategies.To((IColumnLandmark)_subject!)),
-        StepKind.Below => Offset(projection, OffsetStrategies.Past((IRowLandmark)_subject!)),
-        StepKind.RightOf => Offset(projection, OffsetStrategies.Past((IColumnLandmark)_subject!)),
-        StepKind.OffsetBy => Offset(projection, (IOffsetStrategy)_subject!),
-        StepKind.Down => Offset(projection, OffsetStrategies.ExplicitOffset(0, _count)),
-        StepKind.Right => Offset(projection, OffsetStrategies.ExplicitOffset(_count, 0)),
-        StepKind.AfterBlankRows => Offset(projection, OffsetStrategies.SkipBlankRows()),
-        StepKind.AfterBlankColumns => Offset(projection, OffsetStrategies.SkipBlankColumns()),
-        StepKind.SkipToFirstNonBlankCell => Offset(projection, OffsetStrategies.SkipToFirstNonBlankCell()),
+        StepKind.OnRow => Offset(projection, OffsetStrategies.To((ILineLandmark<TSpace>)_subject!)),
+        StepKind.OnColumn => Offset(projection, OffsetStrategies.To((ILineLandmark<TSpace>)_subject!)),
+        StepKind.Below => Offset(projection, OffsetStrategies.Past((ILineLandmark<TSpace>)_subject!)),
+        StepKind.RightOf => Offset(projection, OffsetStrategies.Past((ILineLandmark<TSpace>)_subject!)),
+        StepKind.OffsetBy => Offset(projection, (IOffsetStrategy<TSpace>)_subject!),
+        StepKind.Down => Offset(projection, OffsetStrategies.ExplicitOffset<TSpace>(0, _count)),
+        StepKind.Right => Offset(projection, OffsetStrategies.ExplicitOffset<TSpace>(_count, 0)),
+        StepKind.AfterBlankRows => Offset(projection, OffsetStrategies.SkipBlankRows<TSpace>()),
+        StepKind.AfterBlankColumns => Offset(projection, OffsetStrategies.SkipBlankColumns<TSpace>()),
+        StepKind.SkipToFirstNonBlankCell => Offset(projection, OffsetStrategies.SkipToFirstNonBlankCell<TSpace>()),
 
         // An extent replaces the projection's derived one.
-        StepKind.Sized => projection.With(projection.Annotations.WithPlacement(projection.Placement.WithArea((IAreaStrategy)_subject!))),
+        StepKind.Sized => projection.With(projection.Annotations.WithPlacement(projection.Placement.WithExtent((ISizeStrategy<TSpace>)_subject!))),
 
         // Bounds and headings wrap rather than reposition.
-        StepKind.UntilRow => Bounded(projection, Landmark.Of((IRowLandmark)_subject!), _orEnd),
-        StepKind.UntilColumn => Bounded(projection, Landmark.Of((IColumnLandmark)_subject!), _orEnd),
+        StepKind.UntilRow => Bounded(projection, ((ILineLandmark<TSpace>)_subject!), _orEnd),
+        StepKind.UntilColumn => Bounded(projection, ((ILineLandmark<TSpace>)_subject!), _orEnd),
         StepKind.Headings => Headed(projection, (IProjectionDefinition[])_subject!),
 
         _ => throw new InvalidOperationException($"Unknown placement step {_kind}."),
@@ -161,13 +169,13 @@ namespace Unrect.Projections
     /// column bound over a row bound is a second end too. A wrapper in between makes the outer bound
     /// nest, which is a different declaration and a legal one.
     /// </summary>
-    private static IProjectionDefinition<TSpace, T> Bounded<TSpace, T>(IProjectionDefinition<TSpace, T> projection, Landmark landmark, bool orEnd)
+    private static IProjectionDefinition<TSpace, T> Bounded<TSpace, T>(IProjectionDefinition<TSpace, T> projection, ILineLandmark<TSpace> landmark, bool orEnd)
       where TSpace : class, ISpace
     {
       if (projection is BoundedDefinition<TSpace, T> bounded)
         throw bounded.AlreadyEnded(landmark);
 
-      return new BoundedDefinition<TSpace, T>(projection, landmark, orEnd, Placement.Default);
+      return new BoundedDefinition<TSpace, T>(projection, landmark, orEnd, Placement<TSpace>.Default);
     }
 
     /// <summary>
@@ -193,7 +201,7 @@ namespace Unrect.Projections
           },
           "a flow",
           nameof(projection)),
-        Placement.Default,
+        Placement<TSpace>.Default,
         description: "Heading");
 
     /// <summary>
@@ -201,7 +209,7 @@ namespace Unrect.Projections
     /// earlier pipeline stage declared (placement both <see cref="Placement.OffsetWasDeclared"/> and
     /// <see cref="Placement.HasDeclaredOffset"/>), otherwise starts from the origin.
     /// </summary>
-    private static IProjectionDefinition<TSpace, T> Offset<TSpace, T>(IProjectionDefinition<TSpace, T> projection, IOffsetStrategy offset)
+    private static IProjectionDefinition<TSpace, T> Offset<TSpace, T>(IProjectionDefinition<TSpace, T> projection, IOffsetStrategy<TSpace> offset)
       where TSpace : class, ISpace
     {
       var placement = projection.Placement;
@@ -220,8 +228,6 @@ namespace Unrect.Projections
 
     private static string Describe(object? subject) => subject switch
     {
-      IRowLandmark row => row.Description,
-      IColumnLandmark column => column.Description,
       IProjectionDefinition[] captions => string.Join(", ", Array.ConvertAll(captions, caption => caption.Description)),
       null => "?",
       _ => subject.GetType().Name,

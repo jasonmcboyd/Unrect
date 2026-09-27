@@ -4,8 +4,11 @@ using Unrect.Core;
 
 namespace Unrect.Strategies
 {
-  internal sealed class ExplicitColumnCountStrategy : IColumnStrategy
+  internal sealed class ExplicitColumnCountStrategy<TSpace> : ILineStrategy<TSpace>
+    where TSpace : class, ISpace
   {
+    public Orientation Along => Orientation.Horizontal;
+
     public ExplicitColumnCountStrategy(int count)
     {
       if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
@@ -15,16 +18,16 @@ namespace Unrect.Strategies
 
     internal int Count { get; }
 
-    public IColumnScan Begin() => new Scan(Count);
+    public ILineScan<TSpace> Begin() => new Scan(Count);
 
     /// <summary>Exactly this many columns, and owed all of them.</summary>
-    private sealed class Scan : IColumnScan
+    private sealed class Scan : ILineScan<TSpace>
     {
       private readonly int _count;
 
       internal Scan(int count) => _count = count;
 
-      public bool IncludesColumn(Plane<ISpace> space, int column) => column < _count;
+      public bool Includes(Plane<TSpace> space, int column) => column < _count;
 
       public int? Required => _count;
     }

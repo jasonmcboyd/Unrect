@@ -13,14 +13,14 @@ namespace Unrect.Projections
   internal sealed class StreamingPlacement<TSpace>
     where TSpace : class, ISpace
   {
-    private readonly IOffsetScan _offset;
-    private readonly ISizeScan? _size;
+    private readonly IOffsetScan<TSpace> _offset;
+    private readonly ISizeScan<TSpace>? _size;
     private readonly IProjectionDefinition _definition;
     private readonly Orientation _driver;
     private readonly bool _strict;
     private int _skipped;
 
-    internal StreamingPlacement(IOffsetScan offset, ISizeScan? size, bool derived, IProjectionDefinition definition, Orientation driver, bool strict)
+    internal StreamingPlacement(IOffsetScan<TSpace> offset, ISizeScan<TSpace>? size, bool derived, IProjectionDefinition definition, Orientation driver, bool strict)
     {
       _offset = offset;
       _size = size;
@@ -39,8 +39,8 @@ namespace Unrect.Projections
     /// <summary>The width across the driver's axis, once the size rule has settled it.</summary>
     internal int? Width { get; private set; }
 
-    /// <summary>What the size rule declared, for a message about an extent that does not fit.</summary>
-    internal Size Declared => _size!.Declared;
+    /// <summary>What the size rule is owed, for a message about an extent that does not fit; null when it discovers its extent.</summary>
+    internal Size? Required => _size!.Required;
 
     /// <summary>
     /// Set when a placement failed and the child was started non-strictly: the parent reads the
@@ -54,7 +54,7 @@ namespace Unrect.Projections
     /// so far; <paramref name="across"/> is how far the newest one reaches across the driver's
     /// axis, which a column offset must fit inside.
     /// </summary>
-    internal OffsetStep Advance(Plane<ISpace> region, int index, int across, ProjectorScope<TSpace> parent)
+    internal OffsetStep Advance(Plane<TSpace> region, int index, int across, ProjectorScope<TSpace> parent)
     {
       OffsetStep step;
       int column;
@@ -90,7 +90,7 @@ namespace Unrect.Projections
       if (column > across)
       {
         if (_strict)
-          throw parent.Failure(_definition, $"an offset of {EngineRules.Describe(Offset.Size)} does not fit the available space", region, Offset.Size, null);
+          throw parent.Failure(_definition, $"an offset of {EngineRules.Describe(Offset)} does not fit the available space", region, new Size(Offset.Column, Offset.Row), null);
 
         Failed = true;
       }
@@ -99,7 +99,7 @@ namespace Unrect.Projections
     }
 
     /// <summary>Whether the size rule takes the newest span of <paramref name="region"/>, the <paramref name="taken"/>th; false with <see cref="Failed"/> set is a refusal.</summary>
-    internal bool Take(Plane<ISpace> region, int taken, ProjectorScope<TSpace> child)
+    internal bool Take(Plane<TSpace> region, int taken, ProjectorScope<TSpace> child)
     {
       try
       {
@@ -108,14 +108,14 @@ namespace Unrect.Projections
       catch (OutOfBoundsException exception)
       {
         if (_strict)
-          throw EngineRules.AreaFailure(child, _definition, region, exception);
+          throw EngineRules.ExtentFailure(child, _definition, region, exception);
 
         Failed = true;
         return false;
       }
       catch (Exception exception) when (exception is not ProjectionException)
       {
-        throw EngineRules.AreaFailure(child, _definition, region, exception);
+        throw EngineRules.ExtentFailure(child, _definition, region, exception);
       }
     }
 
@@ -125,7 +125,7 @@ namespace Unrect.Projections
     /// so a declared 3x3 on a 2x2 space says "2x2 available" rather than the one row it had seen
     /// when the width came in.
     /// </summary>
-    internal bool TrySettleWidth(Plane<ISpace> region, int taken, bool rowsSettled, ProjectorScope<TSpace> child)
+    internal bool TrySettleWidth(Plane<TSpace> region, int taken, bool rowsSettled, ProjectorScope<TSpace> child)
     {
       int? width;
 
@@ -136,25 +136,32 @@ namespace Unrect.Projections
       catch (OutOfBoundsException exception)
       {
         if (_strict)
-          throw EngineRules.AreaFailure(child, _definition, region, exception);
+          throw EngineRules.ExtentFailure(child, _definition, region, exception);
 
         Failed = true;
         return false;
       }
       catch (Exception exception) when (exception is not ProjectionException)
       {
-        throw EngineRules.AreaFailure(child, _definition, region, exception);
+        throw EngineRules.ExtentFailure(child, _definition, region, exception);
       }
 
       if (width is not int settled)
-        return false;
+      {
+        // Asked at the end and still no answer: the scan broke its contract, which is a fault of
+        // the strategy's code and never a bounds condition the data could have caused.
+        if (rowsSettled)
+          throw EngineRules.ExtentFailure(child, _definition, region, Scans.NoWidthAtTheEnd());
 
-      if (settled > Spans.Across(region.Area.Size, _driver))
+        return false;
+      }
+
+      if (settled > Spans.Across(region.Extent, _driver))
       {
         if (!rowsSettled)
           return false;
 
-        var size = _size.Declared.Height > 0 ? _size.Declared : new Size(settled, taken);
+        var size = _size.Required is Size required && Spans.Along(required, _driver) > 0 ? required : new Size(settled, taken);
 
         if (_strict)
           throw child.Failure(_definition, $"an extent of {EngineRules.Describe(size)} does not fit here", region, size, null);
@@ -168,14 +175,14 @@ namespace Unrect.Projections
     }
 
     /// <summary>Whether <paramref name="taken"/> spans satisfy the size rule — an explicit height wants all of them.</summary>
-    internal bool Complete(int taken) => _size!.Complete(taken);
+    internal bool Complete(int taken) => _size!.Required is not Size required || taken == Spans.Along(required, _driver);
 
     /// <summary>
     /// How many of the <paramref name="taken"/> spans the size keeps, asked once no more are coming:
     /// every one for a scan that decided as it went, and the settled length for one that decides
     /// here. A scan owed more than it was shown is a refusal, or a failure when strict.
     /// </summary>
-    internal int? Along(Plane<ISpace> region, int taken, ProjectorScope<TSpace> child)
+    internal int? Along(Plane<TSpace> region, int taken, ProjectorScope<TSpace> child)
     {
       try
       {
@@ -184,14 +191,14 @@ namespace Unrect.Projections
       catch (OutOfBoundsException exception)
       {
         if (_strict)
-          throw EngineRules.AreaFailure(child, _definition, region, exception);
+          throw EngineRules.ExtentFailure(child, _definition, region, exception);
 
         Failed = true;
         return null;
       }
       catch (Exception exception) when (exception is not ProjectionException)
       {
-        throw EngineRules.AreaFailure(child, _definition, region, exception);
+        throw EngineRules.ExtentFailure(child, _definition, region, exception);
       }
     }
 
@@ -200,7 +207,7 @@ namespace Unrect.Projections
     /// over the whole <paramref name="region"/>, which must fit inside it. A place the region does
     /// not have is a missing anchor, or a refusal when the child was started non-strictly.
     /// </summary>
-    internal bool SettleOffset(Plane<ISpace> region, ProjectorScope<TSpace> parent)
+    internal bool SettleOffset(Plane<TSpace> region, ProjectorScope<TSpace> parent)
     {
       Offset offset;
 
@@ -223,10 +230,10 @@ namespace Unrect.Projections
 
       Offset = offset;
 
-      if (EngineRules.Exceeds(offset.Size, region))
+      if (EngineRules.Exceeds(offset, region))
       {
         if (_strict)
-          throw parent.Failure(_definition, $"an offset of {EngineRules.Describe(offset.Size)} does not fit the available space", region, offset.Size, null);
+          throw parent.Failure(_definition, $"an offset of {EngineRules.Describe(offset)} does not fit the available space", region, new Size(offset.Column, offset.Row), null);
 
         Failed = true;
         return false;

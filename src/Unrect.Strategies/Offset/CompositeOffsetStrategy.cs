@@ -9,24 +9,25 @@ namespace Unrect.Strategies
   /// along the axis, each stage starting on the span its predecessor started on (or the one
   /// after), and reading its spans from that stage's own corner.
   /// </summary>
-  internal sealed class CompositeOffsetStrategy : IOffsetStrategy
+  internal sealed class CompositeOffsetStrategy<TSpace> : IOffsetStrategy<TSpace>
+    where TSpace : class, ISpace
   {
-    public CompositeOffsetStrategy(IOffsetStrategy[] strategies)
+    public CompositeOffsetStrategy(IOffsetStrategy<TSpace>[] strategies)
     {
       if (strategies is null) throw new ArgumentNullException(nameof(strategies));
 
-      Strategies = (IOffsetStrategy[])strategies.Clone();
+      Strategies = (IOffsetStrategy<TSpace>[])strategies.Clone();
 
       foreach (var strategy in Strategies)
         if (strategy is null)
           throw new ArgumentException("An offset strategy is null.", nameof(strategies));
     }
 
-    internal IOffsetStrategy[] Strategies { get; }
+    internal IOffsetStrategy<TSpace>[] Strategies { get; }
 
-    public IOffsetScan Begin(Orientation along)
+    public IOffsetScan<TSpace> Begin(Orientation along)
     {
-      var stages = new IOffsetScan[Strategies.Length];
+      var stages = new IOffsetScan<TSpace>[Strategies.Length];
 
       for (var index = 0; index < stages.Length; index++)
         stages[index] = Strategies[index].Begin(along);
@@ -34,15 +35,15 @@ namespace Unrect.Strategies
       return new Chain(stages, along);
     }
 
-    private sealed class Chain : IOffsetScan
+    private sealed class Chain : IOffsetScan<TSpace>
     {
-      private readonly IOffsetScan[] _stages;
+      private readonly IOffsetScan<TSpace>[] _stages;
       private readonly Orientation _along;
       private int _stage;
       private int _stageStart;
       private int _across;
 
-      internal Chain(IOffsetScan[] stages, Orientation along)
+      internal Chain(IOffsetScan<TSpace>[] stages, Orientation along)
       {
         _stages = stages;
         _along = along;
@@ -60,7 +61,7 @@ namespace Unrect.Strategies
         }
       }
 
-      public OffsetStep Next(Plane<ISpace> region, int index, out int across)
+      public OffsetStep Next(Plane<TSpace> region, int index, out int across)
       {
         if (_stages.Length == 0)
         {
@@ -98,20 +99,20 @@ namespace Unrect.Strategies
         }
       }
 
-      public Offset Settle(Plane<ISpace> region)
+      public Offset Settle(Plane<TSpace> region)
       {
         // Each stage over what the last one left: the same arithmetic the streaming form does,
         // stated over the whole region for a chain whose stages need it that way.
-        var total = new Size(0, 0);
+        var total = default(Offset);
 
         foreach (var stage in _stages)
         {
           var offset = Scans.FoldOffset(stage, region, _along);
-          total += offset.Size;
+          total += offset;
           region = region.Slice(offset);
         }
 
-        return new Offset(total);
+        return total;
       }
     }
   }

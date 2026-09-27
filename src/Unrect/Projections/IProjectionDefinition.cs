@@ -106,6 +106,9 @@ namespace Unrect.Projections
     /// </summary>
     IProjectionDefinition<TSpace, TResult> With(Annotations annotations);
 
+    /// <summary>The placement with its rules, written over <typeparamref name="TSpace"/> — what the engine drives; the erased face carries the same object as a <see cref="Placement"/>.</summary>
+    new Placement<TSpace> Placement { get; }
+
     /// <summary>
     /// The machine that reads this definition, for ONE application. A composite starts its children
     /// and wires them into its own machine; a leaf returns a machine over its own read. Called once

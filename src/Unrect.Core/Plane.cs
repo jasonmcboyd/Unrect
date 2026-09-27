@@ -30,36 +30,36 @@ namespace Unrect.Core
   public readonly struct Plane<TSpace> : IEquatable<Plane<TSpace>>
     where TSpace : class, ISpace
   {
-    private readonly Area _extent;
+    private readonly Size _extent;
 
     /// <summary>
     /// The region of <paramref name="space"/> starting at <paramref name="origin"/> and
-    /// <paramref name="area"/> big, in that space's own coordinates.
+    /// <paramref name="extent"/> big, in that space's own coordinates.
     /// </summary>
     /// <exception cref="ArgumentNullException"><paramref name="space"/> is null.</exception>
     /// <exception cref="OutOfBoundsException">The region does not fit inside the space.</exception>
-    public Plane(TSpace space, Offset origin, Area area)
+    public Plane(TSpace space, Offset origin, Size extent)
     {
       if (space is null)
         throw new ArgumentNullException(nameof(space));
 
-      var extent = space.Area;
+      var whole = space.Extent;
 
       // Compared by subtraction rather than by adding the two terms, because the sum can overflow:
       // every component here is non-negative (a Size refuses a negative), so an origin near
-      // int.MaxValue plus any area at all wraps to a negative that passes a "> width" test, and the
-      // region would then be built past the edge and fail later as an argument bug — a fault, which
-      // no tolerance boundary may absorb — instead of as the bounds condition it is.
-      if (origin.Width > extent.Width - area.Width || origin.Height > extent.Height - area.Height)
+      // int.MaxValue plus any extent at all wraps to a negative that passes a "> width" test, and
+      // the region would then be built past the edge and fail later as an argument bug — a fault,
+      // which no tolerance boundary may absorb — instead of as the bounds condition it is.
+      if (origin.Column > whole.Width - extent.Width || origin.Row > whole.Height - extent.Height)
         throw new OutOfBoundsException();
 
       Space = space;
       Origin = origin;
-      _extent = area;
+      _extent = extent;
     }
 
     /// <summary>A region already known to fit. Private because every way in has just checked what it is about to build.</summary>
-    private Plane(TSpace space, Offset origin, Area extent, bool known)
+    private Plane(TSpace space, Offset origin, Size extent, bool known)
     {
       Space = space;
       Origin = origin;
@@ -71,7 +71,7 @@ namespace Unrect.Core
     public static Plane<TSpace> Of(TSpace space)
       => space is null
         ? throw new ArgumentNullException(nameof(space))
-        : new Plane<TSpace>(space, default, space.Area, known: true);
+        : new Plane<TSpace>(space, default, space.Extent, known: true);
 
     /// <summary>The space this plane names a region of, and reads through.</summary>
     public TSpace Space { get; }
@@ -82,24 +82,30 @@ namespace Unrect.Core
     /// <summary>How wide the region is.</summary>
     public int Width => _extent.Width;
 
-    /// <summary>How big the region is.</summary>
-    public Area Area => _extent;
+    /// <summary>How tall the region is.</summary>
+    public int Height => _extent.Height;
+
+    /// <summary>How big the region is — its width and height, with no position of its own.</summary>
+    public Size Extent => _extent;
+
+    /// <summary>Whether the region has a column at <paramref name="column"/> — the one-column question a scan asks as it folds.</summary>
+    public bool HasColumn(int column) => column >= 0 && column < _extent.Width;
 
     /// <summary>Whether the region has a row at <paramref name="row"/> — the one-row question a scan asks as it folds.</summary>
     public bool HasRow(int row) => row >= 0 && row < _extent.Height;
 
     /// <summary>
-    /// The region <paramref name="offset"/> into this one and <paramref name="area"/> big. The
+    /// The region <paramref name="offset"/> into this one and <paramref name="extent"/> big. The
     /// origin composes, so a slice of a slice is one translation and not two hops.
     /// </summary>
     /// <exception cref="OutOfBoundsException">The requested rectangle does not fit inside this region.</exception>
-    public Plane<TSpace> Slice(Offset offset, Area area)
+    public Plane<TSpace> Slice(Offset offset, Size extent)
     {
       // Both checks avoid adding the two terms, which can overflow — see the constructor.
-      if (offset.Width > Width - area.Width || offset.Height > _extent.Height - area.Height)
+      if (offset.Column > Width - extent.Width || offset.Row > _extent.Height - extent.Height)
         throw new OutOfBoundsException();
 
-      return new Plane<TSpace>(Space, Origin + offset, area, known: true);
+      return new Plane<TSpace>(Space, Origin + offset, extent, known: true);
     }
 
     /// <summary>Everything from <paramref name="offset"/> to the far edge — a starting point with no area to declare.</summary>
@@ -109,47 +115,15 @@ namespace Unrect.Core
       // Checked before the subtraction below: without the check an oversized offset produces a
       // negative extent, which Size reports as an argument bug rather than as the bounds condition
       // a declaration may recover from.
-      if (offset.Width > Width || offset.Height > _extent.Height)
+      if (offset.Column > Width || offset.Row > _extent.Height)
         throw new OutOfBoundsException();
 
-      return new Plane<TSpace>(Space, Origin + offset, new Area(Width - offset.Width, _extent.Height - offset.Height), known: true);
+      return new Plane<TSpace>(Space, Origin + offset, new Size(Width - offset.Column, _extent.Height - offset.Row), known: true);
     }
 
-    /// <summary>
-    /// The same region, named over the canonical surface alone — how a region reaches the strategy
-    /// calculus, which asks only the four questions every space answers. A copy of three fields
-    /// and a reference: nothing is read, and the space is the same object, so a read through the
-    /// result is the read it would have been.
-    /// </summary>
-    internal Plane<ISpace> Erased() => new Plane<ISpace>(Space, Origin, _extent, known: true);
-
-    /// <summary>
-    /// The same region, named over <typeparamref name="TOther"/> — the way back from the canonical
-    /// surface for a caller that knows which space it erased. The mirror of <see cref="Erased"/>,
-    /// and the same cost; a space that is not a <typeparamref name="TOther"/> throws
-    /// <see cref="InvalidCastException"/>.
-    /// </summary>
-    /// <typeparam name="TOther">The space to name this region over.</typeparam>
-    /// <exception cref="InvalidCastException">This region's space is not a <typeparamref name="TOther"/>.</exception>
-    internal Plane<TOther> Retyped<TOther>()
-      where TOther : class, ISpace
-      => new Plane<TOther>((TOther)(object)Space, Origin, _extent, known: true);
-
-    /// <summary>The leading <paramref name="width"/> columns, with everything else about the region left alone.</summary>
-    /// <exception cref="OutOfBoundsException"><paramref name="width"/> is wider than this region.</exception>
-    internal Plane<TSpace> Narrowed(int width)
-    {
-      // A width past the edge is a bounds condition; a negative one is an argument bug, which is
-      // what Area says about it a line later — the same division the constructor draws.
-      if (width > Width)
-        throw new OutOfBoundsException();
-
-      return new Plane<TSpace>(Space, Origin, new Area(width, _extent.Height), known: true);
-    }
-
-    /// <summary><paramref name="area"/>, from this region's own corner.</summary>
-    /// <exception cref="OutOfBoundsException"><paramref name="area"/> does not fit inside this region.</exception>
-    public Plane<TSpace> Slice(Area area) => Slice(default, area);
+    /// <summary><paramref name="extent"/>, from this region's own corner.</summary>
+    /// <exception cref="OutOfBoundsException"><paramref name="extent"/> does not fit inside this region.</exception>
+    public Plane<TSpace> Slice(Size extent) => Slice(default, extent);
 
     /// <summary>The cell at <paramref name="column"/>, <paramref name="row"/>, counted from this plane's own corner.</summary>
     /// <exception cref="OutOfBoundsException">The coordinate lies outside this region.</exception>
@@ -157,18 +131,18 @@ namespace Unrect.Core
     {
       get
       {
-        if (column < 0 || column >= Width || !HasRow(row))
+        if (!HasColumn(column) || !HasRow(row))
           throw new OutOfBoundsException();
 
-        return new Point<TSpace>(Space, Origin.Width + column, Origin.Height + row);
+        return new Point<TSpace>(Space, Origin.Column + column, Origin.Row + row);
       }
     }
 
     /// <summary>Whether <paramref name="other"/> names the same region of the same space.</summary>
     public bool Equals(Plane<TSpace> other)
       => ReferenceEquals(Space, other.Space)
-        && Same(Origin.Size, other.Origin.Size)
-        && Same(_extent.Size, other._extent.Size);
+        && Origin == other.Origin
+        && _extent == other._extent;
 
     /// <summary>Equality against any object — see <see cref="Equals(Plane{TSpace})"/> when the other value is a plane.</summary>
     public override bool Equals(object? obj) => obj is Plane<TSpace> other && Equals(other);
@@ -181,9 +155,7 @@ namespace Unrect.Core
     public override int GetHashCode()
       => Hashes.Combine(
         RuntimeHelpers.GetHashCode(Space),
-        Hashes.Combine(
-          Hashes.Combine(Origin.Width, Origin.Height),
-          Hashes.Combine(_extent.Width, _extent.Height)));
+        Hashes.Combine(Origin.GetHashCode(), _extent.GetHashCode()));
 
     /// <summary>Same as <see cref="Equals(Plane{TSpace})"/>.</summary>
     public static bool operator ==(Plane<TSpace> first, Plane<TSpace> second) => first.Equals(second);
@@ -192,13 +164,9 @@ namespace Unrect.Core
     public static bool operator !=(Plane<TSpace> first, Plane<TSpace> second) => !(first == second);
 
     /// <summary>
-    /// The region as <c>(column,row) WxH</c>, in the space's own coordinates. For diagnostics: a
-    /// plane knows where it sits in its space and not where that space sits in a workbook, so this
-    /// is never an A1 address.
+    /// The region as <c>(column,row) WxH</c>: its origin in the space's own root coordinates, then
+    /// its extent. Coordinates rather than A1, because a space need not be a sheet.
     /// </summary>
-    public override string ToString() => $"({Origin.Width},{Origin.Height}) {Width}x{_extent.Height}";
-
-    private static bool Same(Size first, Size second)
-      => first.Width == second.Width && first.Height == second.Height;
+    public override string ToString() => $"({Origin.Column},{Origin.Row}) {Width}x{_extent.Height}";
   }
 }

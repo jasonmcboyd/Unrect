@@ -1,4 +1,6 @@
-namespace Unrect.Core
+using Unrect.Core;
+
+namespace Unrect
 {
   /// <summary>
   /// The value facet: a space whose cells hold a value of one type, beside the text every space
@@ -21,7 +23,7 @@ namespace Unrect.Core
     /// </summary>
     /// <param name="column">The 0-based column.</param>
     /// <param name="row">The 0-based row.</param>
-    /// <exception cref="OutOfBoundsException">The coordinate lies outside <see cref="ISpace.Area"/>.</exception>
+    /// <exception cref="OutOfBoundsException">The coordinate lies outside <see cref="ISpace.Extent"/>.</exception>
     TValue ValueAt(int column, int row);
   }
 }

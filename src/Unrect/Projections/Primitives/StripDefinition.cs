@@ -7,7 +7,7 @@ namespace Unrect.Projections
   internal sealed class StripDefinition<TSpace, T> : CollectorNode<TSpace, T>
     where TSpace : class, ISpace
   {
-    public StripDefinition(Orientation orientation, Func<CellStrip<TSpace>, T> project, Placement placement, string description)
+    public StripDefinition(Orientation orientation, Func<CellStrip<TSpace>, T> project, Placement<TSpace> placement, string description)
       : base(placement)
     {
       Orientation = orientation;
@@ -25,7 +25,7 @@ namespace Unrect.Projections
 
     internal override Settlement<T> Collect(Plane<TSpace> extent, ProjectorScope<TSpace> scope)
     {
-      var size = extent.Area.Size;
+      var size = extent.Extent;
 
       if (Orientation == Orientation.Horizontal && size.Height != 1)
         throw scope.Failure($"a Row must be exactly one row tall; this one is {size.Height} rows tall", extent);

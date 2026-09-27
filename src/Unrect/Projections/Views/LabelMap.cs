@@ -385,7 +385,7 @@ namespace Unrect.Projections
     /// </param>
     internal HeaderLabels(CellStrip<TSpace> header)
     {
-      var rows = header.Space.Area.Height;
+      var rows = header.Space.Height;
 
       // The captions are what failures cite: a column is where its caption is.
       _header = rows > 1 ? header.Line(rows - 1) : header;
@@ -414,7 +414,7 @@ namespace Unrect.Projections
     // A label is whatever a header cell SAYS. It is a label by position, not by kind: a row of
     // years or of period-end dates is a row of captions.
     private static List<string> Words(CellStrip<TSpace> row)
-      => row.Select(cell => cell.IsBlank() ? string.Empty : (cell.AsText() ?? string.Empty).Trim()).ToList();
+      => row.Select(cell => cell.IsBlank() ? string.Empty : cell.AsText().Trim()).ToList();
 
     public IReadOnlyList<int> IndicesOf(string label)
     {

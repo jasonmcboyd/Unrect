@@ -29,7 +29,7 @@ namespace Unrect.Projections
       // Under a declared area the placement machine bounds the spans and the node reads the whole
       // area — so a leaf forced to two rows still sees two rows and says so. A derived placement
       // is the node's own to bound.
-      if (_definition.Placement.Area is null && _taken >= _count)
+      if (!_definition.Placement.HasDeclaredExtent && _taken >= _count)
         return false;
 
       _first ??= span;

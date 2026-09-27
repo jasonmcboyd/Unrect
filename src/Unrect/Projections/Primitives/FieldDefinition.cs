@@ -18,15 +18,15 @@ namespace Unrect.Projections
   internal sealed class FieldDefinition<TSpace> : CollectorNode<TSpace, Point<TSpace>>
     where TSpace : class, ISpace
   {
-    public FieldDefinition(string label, Placement placement)
+    public FieldDefinition(string label, Placement<TSpace> placement)
       : base(placement)
     {
       Label = label;
-      Match = CellMatching.LabelEquals(label);
+      Match = CellMatching.LabelEquals<TSpace>(label);
     }
 
     private string Label { get; }
-    private Func<Point<ISpace>, bool> Match { get; }
+    private Func<Point<TSpace>, bool> Match { get; }
 
     public override string Description => $"Field(\"{Label}\")";
 
@@ -34,7 +34,7 @@ namespace Unrect.Projections
 
     internal override Settlement<Point<TSpace>> Collect(Plane<TSpace> extent, ProjectorScope<TSpace> scope)
     {
-      var size = extent.Area.Size;
+      var size = extent.Extent;
 
       // Normally unreachable — the factory fixes the extent at 2x1 — but reachable the moment a
       // caller replaces the placement (.Sized, a field inside a declared frame), and it is the half
@@ -43,7 +43,7 @@ namespace Unrect.Projections
         throw scope.Failure(
           $"a Field must be two cells wide and one row tall; this one is {size.Width}x{size.Height}", extent);
 
-      if (!Match(extent.Erased()[0, 0]))
+      if (!Match(extent[0, 0]))
         throw scope.Failure(
           $"expected a label reading '{Label}' here, but this cell {Describe(extent[0, 0])}",
           extent);
@@ -56,6 +56,6 @@ namespace Unrect.Projections
     /// cell that says a word of its own quotes it, and anything else says what it renders as.
     /// </summary>
     private static string Describe(Point<TSpace> cell)
-      => cell.AsText() is string text ? $"says '{text}'" : "is blank";
+      => cell.IsBlank() ? "is blank" : $"says '{cell.AsText()}'";
   }
 }

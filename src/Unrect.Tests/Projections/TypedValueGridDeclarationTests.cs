@@ -4,7 +4,7 @@ using Unrect.Projections;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Core.IValueSpace<int>>;
+using static Unrect.Projections.ProjectionBuilders<Unrect.IValueSpace<int>>;
 
 namespace Unrect.Tests.Projections
 {

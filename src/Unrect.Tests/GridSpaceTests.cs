@@ -43,12 +43,12 @@ namespace Unrect.Tests
     // --- Orientation ----------------------------------------------------------------------------
 
     [Fact]
-    public void Area_TakesWidthFromTheSecondArrayDimensionAndHeightFromTheFirst()
+    public void Extent_TakesWidthFromTheSecondArrayDimensionAndHeightFromTheFirst()
     {
       var space = TextGrid();
 
-      Assert.Equal(3, space.Area.Size.Width);
-      Assert.Equal(2, space.Area.Size.Height);
+      Assert.Equal(3, space.Extent.Width);
+      Assert.Equal(2, space.Extent.Height);
     }
 
     [Fact]
@@ -73,7 +73,7 @@ namespace Unrect.Tests
     [InlineData(3, 0)]
     [InlineData(0, -1)]
     [InlineData(0, 2)]
-    public void Reads_OutsideTheArea_Throw(int column, int row)
+    public void Reads_OutsideTheExtent_Throw(int column, int row)
     {
       var space = TextGrid();
 
@@ -96,16 +96,15 @@ namespace Unrect.Tests
     }
 
     [Fact]
-    public void Create_WithBlankPredicate_MakesTheCellSayNothing()
+    public void Create_WithBlankPredicate_CallsTheCellBlankAndStillSaysWhatItHolds()
     {
-      // Blankness is a rule over the value rather than a replacement of it: the canonical surface
-      // reports an empty cell — it says nothing and is not text — while the value the array holds is
-      // still the value the array holds. A grid that answered AsText with "0" here would make
-      // "is there anything in this cell" a question with two answers.
+      // Blankness is a rule over the value rather than a replacement of it: the cell does not count
+      // as content, and it still says "0", because what a cell says and whether it counts are two
+      // questions. A CSV whose NULL marker is blank and still renders as NULL is the same shape.
       var space = GridSpace.Create(new[,] { { 0 } }, isBlank: v => v == 0);
 
       Assert.True(space.IsBlankAt(0, 0));
-      Assert.Null(space.AsTextAt(0, 0));
+      Assert.Equal("0", space.AsTextAt(0, 0));
       Assert.Equal(0, space.ValueAt(0, 0));
     }
 

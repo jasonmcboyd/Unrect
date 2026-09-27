@@ -31,16 +31,16 @@ namespace Unrect.Tests.Strategies
     [InlineData("discovered block", true, false)]
     public void ASizeStrategyStreamsAlongTheAxisItWasWrittenFor(string strategy, bool alongRows, bool alongColumns)
     {
-      IAreaStrategy size = strategy switch
+      ISizeStrategy<ISpace> size = strategy switch
       {
-        "rows while any value" => SizeStrategies.RowsWhileAnyIsNotBlank().ToAreaStrategy(),
-        "columns while any value" => SizeStrategies.ColumnsWhileAnyIsNotBlank().ToAreaStrategy(),
-        "explicit size" => AreaStrategies.ExplicitArea(2, 3),
-        "max size" => AreaStrategies.MaxArea(),
-        "select size" => AreaStrategies.SelectArea(plane => new Size(1, 1)),
-        "rows then columns" => AreaStrategies.RowsThenColumns(RowStrategies.TakeRows(2), ColumnStrategies.TakeColumnsTo((_, column) => column == 1)),
-        "columns then rows" => AreaStrategies.ColumnsThenRows(ColumnStrategies.TakeColumns(2), RowStrategies.TakeRowsWhileAnyIsNotBlank()),
-        "discovered block" => AreaStrategies.RowsThenColumns(RowStrategies.TakeRowsWhileAnyIsNotBlank(), ColumnStrategies.TakeColumnsWhileAnyIsNotBlank()),
+        "rows while any value" => SizeStrategies.RowsWhileAnyIsNotBlank<ISpace>(),
+        "columns while any value" => SizeStrategies.ColumnsWhileAnyIsNotBlank<ISpace>(),
+        "explicit size" => SizeStrategies.ExplicitSize<ISpace>(2, 3),
+        "max size" => SizeStrategies.MaxSize<ISpace>(),
+        "select size" => SizeStrategies.SelectSize<ISpace>(plane => new Size(1, 1)),
+        "rows then columns" => SizeStrategies.RowsThenColumns(RowStrategies.TakeRows<ISpace>(2), ColumnStrategies.TakeColumnsTo<ISpace>((_, column) => column == 1)),
+        "columns then rows" => SizeStrategies.ColumnsThenRows(ColumnStrategies.TakeColumns<ISpace>(2), RowStrategies.TakeRowsWhileAnyIsNotBlank<ISpace>()),
+        "discovered block" => SizeStrategies.RowsThenColumns(RowStrategies.TakeRowsWhileAnyIsNotBlank<ISpace>(), ColumnStrategies.TakeColumnsWhileAnyIsNotBlank<ISpace>()),
         _ => throw new System.ArgumentOutOfRangeException(nameof(strategy)),
       };
 
@@ -62,15 +62,15 @@ namespace Unrect.Tests.Strategies
     {
       var offset = strategy switch
       {
-        "skip blank rows" => OffsetStrategies.SkipBlankRows(),
-        "skip blank columns" => OffsetStrategies.SkipBlankColumns(),
-        "explicit offset" => OffsetStrategies.ExplicitOffset(1, 1),
-        "first non-blank cell" => OffsetStrategies.SkipToFirstNonBlankCell(),
-        "select offset" => OffsetStrategies.SelectOffset(plane => new Size(0, 1)),
-        "to a row landmark" => OffsetStrategies.To(RowLandmarks.RowSaying("x")),
-        "to a column landmark" => OffsetStrategies.To(ColumnLandmarks.ColumnSaying("x")),
-        "a chain of row skips" => OffsetStrategies.Then(OffsetStrategies.SkipBlankRows(), OffsetStrategies.ExplicitOffset(0, 1)),
-        "a chain with a lambda in it" => OffsetStrategies.Then(OffsetStrategies.SkipBlankRows(), OffsetStrategies.SelectOffset(plane => new Size(0, 1))),
+        "skip blank rows" => OffsetStrategies.SkipBlankRows<ISpace>(),
+        "skip blank columns" => OffsetStrategies.SkipBlankColumns<ISpace>(),
+        "explicit offset" => OffsetStrategies.ExplicitOffset<ISpace>(1, 1),
+        "first non-blank cell" => OffsetStrategies.SkipToFirstNonBlankCell<ISpace>(),
+        "select offset" => OffsetStrategies.SelectOffset<ISpace>(plane => new Size(0, 1)),
+        "to a row landmark" => OffsetStrategies.To(RowLandmarks.RowSaying<ISpace>("x")),
+        "to a column landmark" => OffsetStrategies.To(ColumnLandmarks.ColumnSaying<ISpace>("x")),
+        "a chain of row skips" => OffsetStrategies.Then(OffsetStrategies.SkipBlankRows<ISpace>(), OffsetStrategies.ExplicitOffset<ISpace>(0, 1)),
+        "a chain with a lambda in it" => OffsetStrategies.Then(OffsetStrategies.SkipBlankRows<ISpace>(), OffsetStrategies.SelectOffset<ISpace>(plane => new Size(0, 1))),
         _ => throw new System.ArgumentOutOfRangeException(nameof(strategy)),
       };
 
@@ -89,10 +89,10 @@ namespace Unrect.Tests.Strategies
         { 3, 4, 0 },
         { 0, 0, 0 },
       });
-      var strategy = SizeStrategies.RowsWhileAnyIsNotBlank();
+      var strategy = SizeStrategies.RowsWhileAnyIsNotBlank<ISpace>();
 
-      var byRows = Scans.FoldSize(strategy.Begin(Orientation.Vertical), Plane<ISpace>.Of(space), Orientation.Vertical);
-      var byColumns = Scans.FoldSize(strategy.Begin(Orientation.Horizontal), Plane<ISpace>.Of(space), Orientation.Horizontal);
+      var byRows = Scans.FoldSize<ISpace>(strategy.Begin(Orientation.Vertical), Plane<ISpace>.Of(space), Orientation.Vertical);
+      var byColumns = Scans.FoldSize<ISpace>(strategy.Begin(Orientation.Horizontal), Plane<ISpace>.Of(space), Orientation.Horizontal);
 
       Assert.Equal(new Size(3, 2), byRows);
       Assert.Equal(byRows, byColumns);

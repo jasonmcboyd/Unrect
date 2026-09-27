@@ -24,14 +24,15 @@ namespace Unrect.Spreadsheets
   {
     private readonly CellValue[,] _cells;
 
-    private SheetGrid(CellValue[,] cells)
+    private SheetGrid(CellValue[,] cells, Func<string, bool>? textIsBlank)
+      : base(textIsBlank)
     {
       _cells = cells;
-      Area = new Area(cells.GetLength(1), cells.GetLength(0));
+      Extent = new Size(cells.GetLength(1), cells.GetLength(0));
     }
 
     /// <inheritdoc/>
-    public override Area Area { get; }
+    public override Size Extent { get; }
 
     /// <summary>
     /// The whole of <paramref name="cells"/>, as a sheet. Everything is already decided: whatever
@@ -41,7 +42,11 @@ namespace Unrect.Spreadsheets
     /// <param name="cells">The cells, indexed <c>[row, column]</c>.</param>
     /// <exception cref="ArgumentNullException"><paramref name="cells"/> is null.</exception>
     public static SheetGrid Of(CellValue[,] cells)
-      => new SheetGrid(cells ?? throw new ArgumentNullException(nameof(cells)));
+      => new SheetGrid(cells ?? throw new ArgumentNullException(nameof(cells)), null);
+
+    /// <summary>The cells as read by a door, whose text cells are blank when <paramref name="textIsBlank"/> says so.</summary>
+    internal static SheetGrid Of(CellValue[,] cells, Func<string, bool> textIsBlank)
+      => new SheetGrid(cells, textIsBlank);
 
     /// <summary>
     /// Heterogeneous values, each adapting to the kind its CLR type implies — the array-adapter
@@ -67,7 +72,7 @@ namespace Unrect.Spreadsheets
         for (var column = 0; column < values.GetLength(1); column++)
           cells[row, column] = Adapt(values[row, column]);
 
-      return new SheetGrid(cells);
+      return new SheetGrid(cells, null);
     }
 
     /// <summary>
@@ -76,14 +81,14 @@ namespace Unrect.Spreadsheets
     /// </summary>
     /// <param name="column">The 0-based column.</param>
     /// <param name="row">The 0-based row.</param>
-    /// <exception cref="OutOfBoundsException">The coordinate lies outside <see cref="Area"/>.</exception>
+    /// <exception cref="OutOfBoundsException">The coordinate lies outside <see cref="Size"/>.</exception>
     /// <inheritdoc/>
     public override CellValue ValueAt(int column, int row)
     {
       // OutOfBoundsException and not IndexOutOfRangeException: running off the edge of a space is a
       // statement about the data that a declaration may recover from, where an index bug is on the
       // engine's fault list and would make the overrun unrecoverable.
-      if (column < 0 || column >= Area.Width || row < 0 || row >= Area.Height)
+      if (column < 0 || column >= Extent.Width || row < 0 || row >= Extent.Height)
         throw new OutOfBoundsException();
 
       return _cells[row, column];

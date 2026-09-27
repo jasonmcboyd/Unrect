@@ -17,7 +17,7 @@ namespace Unrect.Projections
   internal sealed class ColumnLabelsDefinition<TSpace> : CollectorNode<TSpace, LabelMap>
     where TSpace : class, ISpace
   {
-    public ColumnLabelsDefinition(int headerRows, Placement placement)
+    public ColumnLabelsDefinition(int headerRows, Placement<TSpace> placement)
       : base(placement)
       => HeaderRows = headerRows;
 
@@ -35,10 +35,10 @@ namespace Unrect.Projections
 
       // Checked here so an extent with no room for the header is an absorbable failure rather than
       // the bare OutOfBoundsException cutting the band would throw.
-      if (width == 0 || extent.Area.Height < HeaderRows)
+      if (width == 0 || extent.Height < HeaderRows)
         throw scope.Failure("a header row was declared but the table's extent is empty", extent);
 
-      var headerBand = extent.Slice(new Offset(0, 0), new Area(width, HeaderRows));
+      var headerBand = extent.Slice(new Offset(0, 0), new Size(width, HeaderRows));
       var header = new CellStrip<TSpace>(headerBand, Orientation.Horizontal, scope);
 
       return new Settlement<LabelMap>(LabelMap.FromHeader(header), new Size(width, HeaderRows));

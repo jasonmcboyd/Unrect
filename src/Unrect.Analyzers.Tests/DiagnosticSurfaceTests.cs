@@ -81,8 +81,7 @@ namespace Unrect.Analyzers.Tests
       Assert.Equal("Unrect.Projections.IProjectionDefinition`2", typeof(Projections.IProjectionDefinition<,>).FullName);
       Assert.Equal("Unrect.Projections.ProjectionBuilders`1", typeof(Projections.ProjectionBuilders<>).FullName);
       Assert.Equal("Unrect.Projections.PlacementStage`1", typeof(Projections.PlacementStage<>).FullName);
-      Assert.Equal("Unrect.Projections.IRowLandmark`1", typeof(Projections.IRowLandmark<>).FullName);
-      Assert.Equal("Unrect.Projections.IColumnLandmark`1", typeof(Projections.IColumnLandmark<>).FullName);
+      Assert.Equal("Unrect.Core.ILineLandmark`1", typeof(Core.ILineLandmark<>).FullName);
       Assert.Equal("Unrect.Projections.LayoutCursor`1", typeof(Projections.LayoutCursor<>).FullName);
     }
 

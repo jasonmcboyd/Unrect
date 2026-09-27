@@ -30,7 +30,7 @@ namespace Unrect.Tests.Projections
     {
       var failure = Assert.Throws<ProjectionException>(() => Down(5).Of(IntCell()).Map(Square()));
 
-      Assert.Contains("an offset of 0x5 does not fit the available space", failure.Message);
+      Assert.Contains("an offset of (0,5) does not fit the available space", failure.Message);
       Assert.Contains("2x2 available", failure.Message);
       Assert.Equal(0, failure.Requested!.Value.Width);
       Assert.Equal(5, failure.Requested!.Value.Height);
@@ -72,12 +72,12 @@ namespace Unrect.Tests.Projections
     {
       var space = Mixed(new object?[,] { { "nothing", null }, { "relevant", null } });
 
-      Assert.Contains("no row containing 'Total' exists", Missing(OffsetStrategies.To(RowContaining("Total").Landmark), space));
-      Assert.Contains("no column containing 'Total' exists", Missing(OffsetStrategies.To(ColumnContaining("Total").Landmark), space));
-      Assert.Contains("no row with a matching cell exists", Missing(OffsetStrategies.To(RowWithCell(_ => false).Landmark), space));
-      Assert.Contains("no column with a matching cell exists", Missing(OffsetStrategies.To(ColumnWithCell(_ => false).Landmark), space));
-      Assert.Contains("no matching row exists", Missing(OffsetStrategies.To(RowWhere((_, _) => false).Landmark), space));
-      Assert.Contains("no matching column exists", Missing(OffsetStrategies.To(ColumnWhere((_, _) => false).Landmark), space));
+      Assert.Contains("no row containing 'Total' exists", Missing(OffsetStrategies.To(RowContaining("Total")), space));
+      Assert.Contains("no column containing 'Total' exists", Missing(OffsetStrategies.To(ColumnContaining("Total")), space));
+      Assert.Contains("no row with a matching cell exists", Missing(OffsetStrategies.To(RowWithCell(_ => false)), space));
+      Assert.Contains("no column with a matching cell exists", Missing(OffsetStrategies.To(ColumnWithCell(_ => false)), space));
+      Assert.Contains("no matching row exists", Missing(OffsetStrategies.To(RowWhere((_, _) => false)), space));
+      Assert.Contains("no matching column exists", Missing(OffsetStrategies.To(ColumnWhere((_, _) => false)), space));
     }
 
     [Fact]
@@ -99,13 +99,13 @@ namespace Unrect.Tests.Projections
       Assert.Contains("its offset ran past the available space", Missing(FromRight(9), space));
     }
 
-    private static string Missing(IOffsetStrategy offset, ICellSpace space)
+    private static string Missing(IOffsetStrategy<ICellSpace> offset, ICellSpace space)
       => Assert.Throws<ProjectionException>(() => OffsetBy(offset).Of(TextCell()).Map(space)).Message;
 
     // --- Case B: the area does not fit ------------------------------------------------------------------
 
     [Fact]
-    public void AnAreaThatDoesNotFit_ReportsWhatWasRequestedAndWhatWasAvailable()
+    public void AnExtentThatDoesNotFit_ReportsWhatWasRequestedAndWhatWasAvailable()
     {
       var failure = Assert.Throws<ProjectionException>(() => Range(3, 3, b => b.Width).Map(Square()));
 
@@ -116,12 +116,12 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void AnAreaStrategyThatThrows_IsReportedAsAnAreaFailure()
+    public void AnExtentStrategyThatThrows_IsReportedAsAnExtentFailure()
     {
       var failure = Assert.Throws<ProjectionException>(() =>
-        Row(ColumnStrategies.TakeColumns(9), s => s.Count).Map(Square()));
+        Row(ColumnStrategies.TakeColumns<ICellSpace>(9), s => s.Count).Map(Square()));
 
-      Assert.Contains("its area ran past the space available here", failure.Message);
+      Assert.Contains("its extent ran past the space available here", failure.Message);
       Assert.IsType<OutOfBoundsException>(failure.InnerException);
     }
 
@@ -132,12 +132,12 @@ namespace Unrect.Tests.Projections
     // strategy it was — not as a bare exception from somewhere in the strategy calculus.
 
     [Fact]
-    public void AnAreaStrategyThatThrows_IsReportedAgainstTheProjectionThatDeclaredIt()
+    public void AnExtentStrategyThatThrows_IsReportedAgainstTheProjectionThatDeclaredIt()
     {
       var failure = Assert.Throws<ProjectionException>(() =>
-        Range(AreaStrategies.SelectArea(_ => throw new InvalidOperationException("boom")), b => b.Width).Map(Square()));
+        Range(SizeStrategies.SelectSize<ICellSpace>(_ => throw new InvalidOperationException("boom")), b => b.Width).Map(Square()));
 
-      Assert.Contains("its area strategy threw InvalidOperationException: boom", failure.Message);
+      Assert.Contains("its extent strategy threw InvalidOperationException: boom", failure.Message);
       Assert.IsType<InvalidOperationException>(failure.InnerException);
       Assert.Equal("Range", failure.Subject);
     }
@@ -146,7 +146,7 @@ namespace Unrect.Tests.Projections
     public void AnOffsetStrategyThatThrows_IsReportedAgainstTheProjectionThatDeclaredIt()
     {
       var failure = Assert.Throws<ProjectionException>(() =>
-        OffsetBy(OffsetStrategies.SelectOffset(_ => throw new InvalidOperationException("boom"))).Of(IntCell()).Map(Square()));
+        OffsetBy(OffsetStrategies.SelectOffset<ICellSpace>(_ => throw new InvalidOperationException("boom"))).Of(IntCell()).Map(Square()));
 
       Assert.Contains("its offset strategy threw InvalidOperationException: boom", failure.Message);
       Assert.IsType<InvalidOperationException>(failure.InnerException);
@@ -157,9 +157,9 @@ namespace Unrect.Tests.Projections
     {
       // Size rejects the negative itself; the engine's job is to say which strategy produced it.
       var failure = Assert.Throws<ProjectionException>(() =>
-        Range(AreaStrategies.SelectArea(_ => new Size(-1, 1)), b => b.Width).Map(Square()));
+        Range(SizeStrategies.SelectSize<ICellSpace>(_ => new Size(-1, 1)), b => b.Width).Map(Square()));
 
-      Assert.Contains("its area strategy threw ArgumentOutOfRangeException", failure.Message);
+      Assert.Contains("its extent strategy threw ArgumentOutOfRangeException", failure.Message);
       Assert.IsType<ArgumentOutOfRangeException>(failure.InnerException);
     }
 
@@ -167,7 +167,7 @@ namespace Unrect.Tests.Projections
     public void ASeparatorStrategyThatThrows_IsReportedAgainstTheRepeat()
     {
       var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalRepeat(Range(1, 1, b => b.Width), separatedBy: OffsetStrategies.SelectOffset(_ => throw new InvalidOperationException("boom")))
+        VerticalRepeat(Range(1, 1, b => b.Width), separatedBy: OffsetStrategies.SelectOffset<ICellSpace>(_ => throw new InvalidOperationException("boom")))
           .Map(Square()));
 
       Assert.Contains("its separator strategy threw InvalidOperationException: boom", failure.Message);
@@ -481,7 +481,7 @@ return horizontalFlow;
       Assert.Throws<ProjectionException>(() => Column(9, s => s.Count).Map(space));
       Assert.Throws<ProjectionException>(() => Range(9, 9, b => b.Width).Map(space));
       Assert.Throws<ProjectionException>(() => Down(9).Of(IntCell()).Map(space));
-      Assert.Throws<ProjectionException>(() => Row(ColumnStrategies.TakeColumns(9), s => s.Count).Map(space));
+      Assert.Throws<ProjectionException>(() => Row(ColumnStrategies.TakeColumns<ICellSpace>(9), s => s.Count).Map(space));
       Assert.Throws<ProjectionException>(() =>
         VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(IntCell())}{v.Next(IntCell())}").Map(Grid(new[,] { { 1 } })));
     }

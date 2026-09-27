@@ -1,3 +1,5 @@
+using System;
+
 using Unrect.Core;
 
 namespace Unrect.Spreadsheets
@@ -16,11 +18,13 @@ namespace Unrect.Spreadsheets
     private readonly CellFill[] _fills;
 
     /// <param name="values">The sheet's values.</param>
+    /// <param name="textIsBlank">The door's blankness rule over the text a cell holds — the same rule <paramref name="values"/> was given.</param>
     /// <param name="formulas">The formula behind each cell, null for a plain value.</param>
     /// <param name="styles">The style each cell names.</param>
     /// <param name="fonts">The font of each style, by the style's index.</param>
     /// <param name="fills">The fill of each style, by the style's index.</param>
-    internal SpreadsheetGridSpace(SheetGrid values, string?[,] formulas, int[,] styles, CellFont[] fonts, CellFill[] fills)
+    internal SpreadsheetGridSpace(SheetGrid values, Func<string, bool> textIsBlank, string?[,] formulas, int[,] styles, CellFont[] fonts, CellFill[] fills)
+      : base(textIsBlank)
     {
       _values = values;
       _formulas = formulas;
@@ -29,11 +33,11 @@ namespace Unrect.Spreadsheets
       _fills = fills;
     }
 
-    public override Area Area => _values.Area;
+    public override Size Extent => _values.Extent;
 
     public bool TryGetFormulaAt(int column, int row, out string formula)
     {
-      if (column < 0 || column >= Area.Width || row < 0 || row >= Area.Height)
+      if (column < 0 || column >= Extent.Width || row < 0 || row >= Extent.Height)
         throw new OutOfBoundsException();
 
       formula = _formulas[row, column]!;
@@ -48,7 +52,7 @@ namespace Unrect.Spreadsheets
 
     private int StyleAt(int column, int row)
     {
-      if (column < 0 || column >= Area.Width || row < 0 || row >= Area.Height)
+      if (column < 0 || column >= Extent.Width || row < 0 || row >= Extent.Height)
         throw new OutOfBoundsException();
 
       return _styles[row, column];

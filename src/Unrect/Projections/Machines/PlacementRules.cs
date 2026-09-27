@@ -1,5 +1,4 @@
 using Unrect.Core;
-using Unrect.Strategies;
 
 namespace Unrect.Projections
 {
@@ -31,23 +30,33 @@ namespace Unrect.Projections
       }
     }
 
-    internal static bool Streams(IProjectionDefinition definition, Orientation driver, out string? hold)
-      => Streams(definition, driver, out _, out _, out _, out hold);
+    /// <summary>Whether <paramref name="definition"/> streams under <paramref name="driver"/>, asked of the erased tree — the dry run's question.</summary>
+    internal static bool Streams(IProjectionDefinition definition, Orientation driver, out string? hold, Orientation? leadingBlanks = null)
+    {
+      var placementStreams = definition.Placement.StreamsUnder(driver, leadingBlanks, DeclaresOffset(definition), out var derived);
 
-    /// <summary>The same decision, handing back the scans a driven placement runs on.</summary>
-    internal static bool Streams(IProjectionDefinition definition, Orientation driver, out IOffsetScan offset, out ISizeScan? size, out bool derived, out string? hold, Orientation? leadingBlanks = null)
+      return Streams(definition, driver, placementStreams, derived, out hold);
+    }
+
+    /// <summary>
+    /// Whether <paramref name="definition"/> streams under <paramref name="driver"/>, handing back
+    /// the two scans its placement machine will drive — the engine's question, asked of the typed
+    /// tree because the scans are written over its space.
+    /// </summary>
+    internal static bool Streams<TSpace, T>(IProjectionDefinition<TSpace, T> definition, Orientation driver, out IOffsetScan<TSpace> offset, out ISizeScan<TSpace>? size, out bool derived, out string? hold, Orientation? leadingBlanks = null)
+      where TSpace : class, ISpace
+    {
+      (offset, size) = definition.Placement.Begin(driver, leadingBlanks, DeclaresOffset(definition));
+      derived = size is null;
+
+      return Streams(definition, driver, offset.Incremental && (size is null || size.Incremental), derived, out hold);
+    }
+
+    private static bool Streams(IProjectionDefinition definition, Orientation driver, bool placementStreams, bool derived, out string? hold)
     {
       var spans = driver == Orientation.Vertical ? "row" : "column";
 
-      // A child that declares no offset anywhere down its wrapper chain steps over the blank spans
-      // in front of it, along the axis the run reads its source and never across it.
-      offset = leadingBlanks is Orientation session && !DeclaresOffset(definition)
-        ? (session == Orientation.Vertical ? OffsetStrategies.SkipBlankRows() : OffsetStrategies.SkipBlankColumns()).Begin(driver)
-        : definition.Placement.Offset.Begin(driver);
-      size = definition.Placement.Area?.Begin(driver);
-      derived = size is null;
-
-      if (!offset.Incremental || (size is ISizeScan scan && !scan.Incremental))
+      if (!placementStreams)
       {
         hold = $"its placement answers only over its whole extent under a {spans} driver";
         return false;

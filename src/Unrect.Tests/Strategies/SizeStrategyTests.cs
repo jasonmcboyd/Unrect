@@ -5,7 +5,6 @@ using Xunit;
 
 using static Unrect.Tests.ProjectionTestSpaces;
 
-using static Unrect.Strategies.AreaStrategies;
 using static Unrect.Strategies.OffsetStrategies;
 using static Unrect.Strategies.SizeStrategies;
 
@@ -33,7 +32,7 @@ namespace Unrect.Tests.Strategies
         { 4, 0, 0 },
       });
 
-      var size = RowsWhileAnyIsNotBlank().GetSize(space);
+      var size = RowsWhileAnyIsNotBlank<ISpace>().GetSize(space);
 
       Assert.Equal(3, size.Width);
       Assert.Equal(2, size.Height);
@@ -48,7 +47,7 @@ namespace Unrect.Tests.Strategies
         { 1, 1 },
       });
 
-      var size = RowsWhileAnyIsNotBlank().GetSize(space);
+      var size = RowsWhileAnyIsNotBlank<ISpace>().GetSize(space);
 
       Assert.Equal(2, size.Width);
       Assert.Equal(0, size.Height);
@@ -59,7 +58,7 @@ namespace Unrect.Tests.Strategies
     {
       var space = Grid(new[,] { { 1, 0 }, { 0, 2 }, { 3, 3 } });
 
-      Assert.Equal(3, RowsWhileAnyIsNotBlank().GetSize(space).Height);
+      Assert.Equal(3, RowsWhileAnyIsNotBlank<ISpace>().GetSize(space).Height);
     }
 
     [Fact]
@@ -73,7 +72,7 @@ namespace Unrect.Tests.Strategies
         { 5, 5 },
       });
 
-      var size = RowsWhileAny(v => v.AsText() == "5").GetSize(space);
+      var size = RowsWhileAny<ISpace>(v => v.AsText() == "5").GetSize(space);
 
       Assert.Equal(2, size.Width);
       Assert.Equal(2, size.Height);
@@ -93,7 +92,7 @@ namespace Unrect.Tests.Strategies
         { 2, 3, 0, 0 },
       });
 
-      var size = ColumnsWhileAnyIsNotBlank().GetSize(space);
+      var size = ColumnsWhileAnyIsNotBlank<ISpace>().GetSize(space);
 
       Assert.Equal(2, size.Width);    // column 2 is empty in both rows: the region ends there
       Assert.Equal(2, size.Height);
@@ -104,7 +103,7 @@ namespace Unrect.Tests.Strategies
     {
       var space = Grid(new[,] { { 0, 1 }, { 0, 1 } });
 
-      var size = ColumnsWhileAnyIsNotBlank().GetSize(space);
+      var size = ColumnsWhileAnyIsNotBlank<ISpace>().GetSize(space);
 
       Assert.Equal(0, size.Width);
       Assert.Equal(2, size.Height);
@@ -115,7 +114,7 @@ namespace Unrect.Tests.Strategies
     {
       var space = Grid(new[,] { { 1, 0, 3 }, { 0, 2, 3 } });
 
-      Assert.Equal(3, ColumnsWhileAnyIsNotBlank().GetSize(space).Width);
+      Assert.Equal(3, ColumnsWhileAnyIsNotBlank<ISpace>().GetSize(space).Width);
     }
 
     [Fact]
@@ -127,7 +126,7 @@ namespace Unrect.Tests.Strategies
         { 1, 5, 1, 5 },
       });
 
-      var size = ColumnsWhileAny(v => v.AsText() == "5").GetSize(space);
+      var size = ColumnsWhileAny<ISpace>(v => v.AsText() == "5").GetSize(space);
 
       Assert.Equal(2, size.Width);    // no cell of column 2 is 5: stop
       Assert.Equal(2, size.Height);
@@ -138,7 +137,7 @@ namespace Unrect.Tests.Strategies
     [Fact]
     public void ExplicitSize_IgnoresTheAvailableSpace()
     {
-      var size = ExplicitSize(2, 3).GetSize(Grid(new[,] { { 1, 1 }, { 1, 1 } }));
+      var size = ExplicitSize<ISpace>(2, 3).GetSize(Grid(new[,] { { 1, 1 }, { 1, 1 } }));
 
       Assert.Equal(2, size.Width);
       Assert.Equal(3, size.Height);
@@ -147,7 +146,7 @@ namespace Unrect.Tests.Strategies
     [Fact]
     public void MaxSize_IsTheWholeAvailableSpace()
     {
-      var size = MaxSize().GetSize(Grid(new[,] { { 1, 1, 1 }, { 1, 1, 1 } }));
+      var size = MaxSize<ISpace>().GetSize(Grid(new[,] { { 1, 1, 1 }, { 1, 1, 1 } }));
 
       Assert.Equal(3, size.Width);
       Assert.Equal(2, size.Height);
@@ -156,7 +155,7 @@ namespace Unrect.Tests.Strategies
     [Fact]
     public void MinSize_IsEmpty()
     {
-      var size = MinSize().GetSize(Grid(new[,] { { 1, 1 } }));
+      var size = MinSize<ISpace>().GetSize(Grid(new[,] { { 1, 1 } }));
 
       Assert.Equal(0, size.Width);
       Assert.Equal(0, size.Height);
@@ -165,43 +164,34 @@ namespace Unrect.Tests.Strategies
     [Fact]
     public void ExplicitOffset_IsTheDeclaredOffset()
     {
-      var offset = ExplicitOffset(1, 2).GetOffset(Grid(new[,] { { 1, 1 }, { 1, 1 }, { 1, 1 } }));
+      var offset = ExplicitOffset<ISpace>(1, 2).GetOffset(Grid(new[,] { { 1, 1 }, { 1, 1 }, { 1, 1 } }));
 
-      Assert.Equal(1, offset.Size.Width);
-      Assert.Equal(2, offset.Size.Height);
+      Assert.Equal(1, offset.Column);
+      Assert.Equal(2, offset.Row);
     }
 
     [Fact]
     public void MinOffset_IsTheOrigin()
     {
-      var offset = MinOffset().GetOffset(Grid(new[,] { { 1, 1 } }));
+      var offset = MinOffset<ISpace>().GetOffset(Grid(new[,] { { 1, 1 } }));
 
-      Assert.Equal(0, offset.Size.Width);
-      Assert.Equal(0, offset.Size.Height);
+      Assert.Equal(0, offset.Column);
+      Assert.Equal(0, offset.Row);
     }
 
     [Fact]
-    public void ExplicitArea_IsTheDeclaredArea()
+    public void ExplicitSize_IsTheDeclaredExtent()
     {
-      var area = ExplicitArea(3, 1).GetArea(Grid(new[,] { { 1, 1, 1 }, { 1, 1, 1 } }));
+      var extent = ExplicitSize<ISpace>(3, 1).GetSize(Grid(new[,] { { 1, 1, 1 }, { 1, 1, 1 } }));
 
-      Assert.Equal(3, area.Size.Width);
-      Assert.Equal(1, area.Size.Height);
-    }
-
-    [Fact]
-    public void MaxArea_IsTheWholeAvailableSpace()
-    {
-      var area = MaxArea().GetArea(Grid(new[,] { { 1, 1, 1 }, { 1, 1, 1 } }));
-
-      Assert.Equal(3, area.Size.Width);
-      Assert.Equal(2, area.Size.Height);
+      Assert.Equal(3, extent.Width);
+      Assert.Equal(1, extent.Height);
     }
 
     [Fact]
     public void SelectSize_UsesTheSuppliedSelector()
     {
-      var size = SelectSize(s => new Size(s.Area.Size.Width - 1, 1)).GetSize(Grid(new[,] { { 1, 1, 1 } }));
+      var size = SelectSize<ISpace>(s => new Size(s.Extent.Width - 1, 1)).GetSize(Grid(new[,] { { 1, 1, 1 } }));
 
       Assert.Equal(2, size.Width);
       Assert.Equal(1, size.Height);
@@ -222,10 +212,10 @@ namespace Unrect.Tests.Strategies
       });
 
       // Rows first (one row), then columns within that row.
-      var area = RowStrategies.TakeRows(1).TakeColumnsWhileAnyIsNotBlank().GetArea(space);
+      var area = RowStrategies.TakeRows<ISpace>(1).TakeColumnsWhileAnyIsNotBlank().GetSize(space);
 
-      Assert.Equal(2, area.Size.Width);
-      Assert.Equal(1, area.Size.Height);
+      Assert.Equal(2, area.Width);
+      Assert.Equal(1, area.Height);
     }
 
     [Fact]
@@ -239,10 +229,10 @@ namespace Unrect.Tests.Strategies
       });
 
       // Columns first (two columns), then rows within those columns.
-      var area = ColumnStrategies.TakeColumns(2).TakeRowsWhileAnyIsNotBlank().GetArea(space);
+      var area = ColumnStrategies.TakeColumns<ISpace>(2).TakeRowsWhileAnyIsNotBlank().GetSize(space);
 
-      Assert.Equal(2, area.Size.Width);
-      Assert.Equal(1, area.Size.Height);
+      Assert.Equal(2, area.Width);
+      Assert.Equal(1, area.Height);
     }
 
     [Fact]
@@ -256,14 +246,14 @@ namespace Unrect.Tests.Strategies
         { 0, 0, 1 },
       });
 
-      var rowsFirst = RowStrategies.TakeRows(1).TakeColumnsWhileAnyIsNotBlank().GetArea(space);
-      var columnsFirst = ColumnStrategies.TakeColumnsWhileAnyIsNotBlank().TakeRowsWhileAnyIsNotBlank().GetArea(space);
+      var rowsFirst = RowStrategies.TakeRows<ISpace>(1).TakeColumnsWhileAnyIsNotBlank().GetSize(space);
+      var columnsFirst = ColumnStrategies.TakeColumnsWhileAnyIsNotBlank<ISpace>().TakeRowsWhileAnyIsNotBlank().GetSize(space);
 
-      Assert.Equal(2, rowsFirst.Size.Width);
-      Assert.Equal(1, rowsFirst.Size.Height);
+      Assert.Equal(2, rowsFirst.Width);
+      Assert.Equal(1, rowsFirst.Height);
 
-      Assert.Equal(3, columnsFirst.Size.Width);
-      Assert.Equal(2, columnsFirst.Size.Height);
+      Assert.Equal(3, columnsFirst.Width);
+      Assert.Equal(2, columnsFirst.Height);
     }
 
     [Fact]
@@ -275,10 +265,10 @@ namespace Unrect.Tests.Strategies
         { 0, 0, 0, 1 },
       });
 
-      var area = RowStrategies.TakeRows(1).TakeColumnsWhileAll(HasValue).GetArea(space);
+      var area = RowStrategies.TakeRows<ISpace>(1).TakeColumnsWhileAll(HasValue).GetSize(space);
 
-      Assert.Equal(3, area.Size.Width);
-      Assert.Equal(1, area.Size.Height);
+      Assert.Equal(3, area.Width);
+      Assert.Equal(1, area.Height);
     }
   }
 }

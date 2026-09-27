@@ -9,15 +9,16 @@ namespace Unrect.Strategies
   /// <c>ColumnAccumulators.Fold(BeginColumns(space.Width), space)</c>, which is how an
   /// implementation is expected to spell it, so that it states its rule once. The definition is a
   /// convention rather than an inherited body for the reason given on
-  /// <c>IRowStrategy</c>: netstandard2.0 has no default interface members.
+  /// <c>ILineStrategy</c>: netstandard2.0 has no default interface members.
   /// </summary>
-  internal interface IRowMajorColumnStrategy : IColumnStrategy
+  internal interface IRowMajorColumnStrategy<TSpace> : ILineStrategy<TSpace>
+    where TSpace : class, ISpace
   {
     /// <summary>
     /// An accumulator over an extent <paramref name="width"/> columns wide, positioned before row 0.
     /// The width is given rather than read from a space because the caller may be discovering the
-    /// height of the very extent being measured, and an <see cref="Area"/> is one struct.
+    /// height of the very extent being measured, and an <see cref="Size"/> is one struct.
     /// </summary>
-    IColumnAccumulator BeginColumns(int width);
+    IColumnAccumulator<TSpace> BeginColumns(int width);
   }
 }

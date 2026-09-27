@@ -61,7 +61,7 @@ namespace Unrect.Spreadsheets
 
       options.Validate();
 
-      return new Workbook(path, new SpreadsheetRowSource(path, options.IsBlank ?? WhitespaceIsBlank), options);
+      return new Workbook(path, new SpreadsheetRowSource(path), options);
     }
 
     internal static Workbook Over(IRowSource source, WorkbookOptions options)
@@ -137,7 +137,7 @@ namespace Unrect.Spreadsheets
 
         try
         {
-          var stream = new StreamedSheet(cursor, _strings, entry.Name, rowCount, columnCount, _options.BufferRows, surveyed ? rowCount : 0);
+          var stream = new StreamedSheet(cursor, _strings, entry.Name, rowCount, columnCount, _options.BufferRows, surveyed ? rowCount : 0, _options.IsBlank ?? WhitespaceIsBlank);
           _streams.Add(stream);
           _latest[entry.Name] = stream;
           return stream;

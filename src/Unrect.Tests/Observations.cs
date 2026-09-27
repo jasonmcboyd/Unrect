@@ -113,7 +113,7 @@ namespace Unrect.Tests
         return new Observation(
           RenderValue(applied.Value),
           Render(applied.Consumed),
-          Render(applied.Offset.Size),
+          applied.Offset.ToString(),
           Render(applied.Advance),
           diagnostics.Select(Describe).ToList(),
           null,

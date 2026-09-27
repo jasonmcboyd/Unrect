@@ -96,7 +96,7 @@ namespace Unrect.Tests.Projections
         .Apply(Workbook("simple-report.xlsx", "Report"));
 
       Assert.Equal((4, 8), table.Value);
-      Assert.Equal(4 + 3, table.Offset.Size.Height);
+      Assert.Equal(4 + 3, table.Offset.Row);
       Assert.Equal(4, table.Consumed.Width);
       Assert.Equal(9, table.Consumed.Height);
     }
@@ -336,8 +336,8 @@ namespace Unrect.Tests.Projections
 
       var result = InvestorIrr().MapWithDiagnostics(space);
 
-      Assert.Equal(6, space.Area.Size.Width);
-      Assert.Equal(45, space.Area.Size.Height);
+      Assert.Equal(6, space.Extent.Width);
+      Assert.Equal(45, space.Extent.Height);
       Assert.Empty(result.Diagnostics);
     }
 
@@ -436,7 +436,7 @@ namespace Unrect.Tests.Projections
         .Apply(space);
 
       Assert.Equal(projected.Value, typed.Value);
-      Assert.Equal(projected.Offset.Size.Height, typed.Offset.Size.Height);
+      Assert.Equal(projected.Offset.Row, typed.Offset.Row);
       Assert.Equal(projected.Consumed.Width, typed.Consumed.Width);
       Assert.Equal(projected.Consumed.Height, typed.Consumed.Height);
 

@@ -198,7 +198,7 @@ namespace Unrect.Tests.Projections
       // signature, so `in TSpace` survives there — which is what lets a matcher published for
       // IFormulaSpace stand in a pipeline closed over the bundle.
       IProjectionDefinition<ISpreadsheetSpace, string> firstFormulaRow =
-        ProjectionBuilders<ISpreadsheetSpace>.On(SpreadsheetProjections.RowWithFormula())
+        ProjectionBuilders<ISpreadsheetSpace>.On(SpreadsheetProjections.RowWithFormula<ISpreadsheetSpace>())
           .Of(ProjectionBuilders<ISpreadsheetSpace>.Row(cells => cells[0].Text()));
 
       Assert.Equal("A-1", firstFormulaRow.Map(CapableAllocations()));
@@ -240,7 +240,7 @@ namespace Unrect.Tests.Projections
     /// <summary>A helper generic in whatever space its caller names — the shape that replaced variance.</summary>
     private static IProjectionDefinition<TSpace, IReadOnlyList<T>> Sections<TSpace, T>(IProjectionDefinition<TSpace, T> item)
       where TSpace : class, ICellSpace
-      => ProjectionBuilders<TSpace>.VerticalRepeat(item, separatedBy: BlankRows());
+      => ProjectionBuilders<TSpace>.VerticalRepeat(item, separatedBy: ProjectionBuilders<TSpace>.BlankRows());
 
     [Fact]
     public void AHoistedHelperSaysWhatItRequiresInItsReturnType()
@@ -504,8 +504,8 @@ namespace Unrect.Tests.Projections
 
       var result = IrrReportDeclaration().MapWithDiagnostics(space);
 
-      Assert.Equal(6, space.Area.Size.Width);
-      Assert.Equal(45, space.Area.Size.Height);
+      Assert.Equal(6, space.Extent.Width);
+      Assert.Equal(45, space.Extent.Height);
       Assert.Empty(result.Diagnostics);
     }
 

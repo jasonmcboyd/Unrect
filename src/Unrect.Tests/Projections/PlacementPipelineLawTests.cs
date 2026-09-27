@@ -156,7 +156,7 @@ namespace Unrect.Tests.Projections
       var pipeline = Until(RowContaining(Inception)).Heading("IRR Details").Heading(Transfer).Of(Series());
       var applied = pipeline.Apply(space);
 
-      Assert.Equal("0x0", $"{applied.Offset.Size.Width}x{applied.Offset.Size.Height}");
+      Assert.Equal("0x0", $"{applied.Offset.Column}x{applied.Offset.Row}");
       Assert.Equal("3x7", $"{applied.Consumed.Width}x{applied.Consumed.Height}");
       Assert.Equal("3x7", $"{applied.Advance.Width}x{applied.Advance.Height}");
     }
@@ -311,7 +311,7 @@ namespace Unrect.Tests.Projections
       { "Beta", 250m },
     });
 
-    private static IRowLandmark Header() => RowContaining("Fund").Landmark;
+    private static ILineLandmark<ICellSpace> Header() => RowContaining("Fund");
 
     /// <summary>A bind pointed at the column of fund names, so every record fails.</summary>
     private static IProjectionDefinition<ICellSpace, decimal> FundColumnAsANumber(LabelMap captions) => Right(captions["Fund"]).Of(Decimal());
@@ -542,31 +542,26 @@ namespace Unrect.Tests.Projections
       // The census, so a stub that quietly disappeared — taking its sentence with it and leaving the
       // compiler to explain the refusal in its own words — is noticed. Counted per stage rather than
       // in total, because that is where a reader can check the claim: an unbounded pipeline refuses
-      // only a second anchor (5); a sized one refuses the movements as well (6, all of them — the
+      // only a second anchor (4); a sized one refuses the movements as well (6, all of them — the
       // three of Down/Right/AfterBlank*, the new SkipToFirstNonBlankCell offset entry, and Sized
       // itself); a bounded one refuses a second end, an extent and the anchors (12); a headed one
       // refuses everything but another heading (13, gaining the same new offset entry).
       //
-      // Every member that takes a landmark or a strategy is DOUBLED, taking the canonical form or
-      // the typed phantom (`IRowLandmark<TSpace>`, `IAreaStrategy<TSpace>`, ...) that carries a
-      // demand across the erased seam. A stage that refused only the canonical half of a doubled
-      // member would refuse in the library's words down one overload and in the compiler's down the
-      // other, for the same contradiction; so each refusal is spelled twice, once per twin. Nothing
-      // about the taxonomy moved — only how many spellings each refusal has to cover: an unbounded
-      // pipeline's five anchors become ten; a sized one adds the typed Sized to its six; a bounded
-      // one doubles its five anchors and Sized (Until/UntilColumn were already doubled), 12 -> 18; a
-      // headed one doubles the same five anchors, Sized, Until and UntilColumn, 13 -> 21.
+      // Every member that takes a rule takes it written over the declaration's own space, so there
+      // is one spelling of each refusal: an unbounded pipeline refuses its four anchors; a sized one
+      // the five movements and Sized; a bounded one its four anchors, Sized, Until, the two extents
+      // and the repeats; a headed one everything but another heading.
       var counted = Stages.ToDictionary(stage => stage.Key, stage => Refusals(stage.Value.Type), StringComparer.Ordinal);
 
       Assert.Equal(
         new Dictionary<string, int>(StringComparer.Ordinal)
         {
           ["PlacementStage"] = 0,
-          ["UnboundedStage"] = 10,
+          ["UnboundedStage"] = 4,
           ["OffsetStage"] = 0,
-          ["OffsetAndSizeStage"] = 7,
-          ["BoundStage"] = 18,
-          ["HeadingStage"] = 21,
+          ["OffsetAndSizeStage"] = 6,
+          ["BoundStage"] = 8,
+          ["HeadingStage"] = 11,
         },
         counted);
     }
@@ -579,71 +574,20 @@ namespace Unrect.Tests.Projections
 
       var demanding = parameter.GetGenericTypeDefinition();
 
-      if (demanding == typeof(IRowLandmark<>))
-        return typeof(IRowLandmark);
+      if (demanding == typeof(ILineLandmark<>))
+        return typeof(ILineLandmark<ICellSpace>);
 
-      if (demanding == typeof(IColumnLandmark<>))
-        return typeof(IColumnLandmark);
+      if (demanding == typeof(ILineLandmark<>))
+        return typeof(ILineLandmark<ICellSpace>);
 
-      if (demanding == typeof(Unrect.Projections.IAreaStrategy<>))
-        return typeof(IAreaStrategy);
+      if (demanding == typeof(ISizeStrategy<>))
+        return typeof(ISizeStrategy<ICellSpace>);
 
-      if (demanding == typeof(Unrect.Projections.IOffsetStrategy<>))
-        return typeof(IOffsetStrategy);
+      if (demanding == typeof(IOffsetStrategy<>))
+        return typeof(IOffsetStrategy<ICellSpace>);
 
       return parameter;
     }
-
-    [Theory]
-    [MemberData(nameof(TheStageTypes))]
-    public void AndATypedRefusalSaysWhatItsCanonicalTwinSays(string stage)
-    {
-      // The census counts spellings; this says the second spelling is the same refusal. A twin that
-      // reached for a different one of the seven sentences would pass the census and the
-      // library's-words law, and a declaration would be told two different reasons for one
-      // contradiction depending on which overload it happened to bind.
-      var (type, _) = Stages[stage];
-      var twinned = 0;
-
-      foreach (var member in type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
-      {
-        var refusal = member.GetCustomAttribute<ObsoleteAttribute>();
-        var parameters = member.GetParameters().Select(parameter => parameter.ParameterType).ToArray();
-        var canonical = parameters.Select(Erased).ToArray();
-
-        if (refusal is null || canonical.SequenceEqual(parameters))
-          continue;
-
-        var twin = type.GetMethod(member.Name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly, null, canonical, null);
-
-        Assert.True(twin is not null, $"{stage}.{member.Name} refuses a demanding argument with no canonical twin beside it");
-
-        var canonicalRefusal = twin!.GetCustomAttribute<ObsoleteAttribute>();
-
-        Assert.True(canonicalRefusal is not null, $"{stage}.{member.Name} refuses the demanding form only");
-        Assert.Equal(canonicalRefusal!.Message, refusal.Message);
-        Assert.Equal(canonicalRefusal.IsError, refusal.IsError);
-
-        twinned++;
-      }
-
-      // Non-vacuity: a stage whose typed refusals all disappeared would satisfy every assertion
-      // above by having nothing to check, which is the failure the census is blind to from the
-      // other side.
-      Assert.Equal(TheTypedRefusals[stage], twinned);
-    }
-
-    /// <summary>How many of each stage's refusals are the demanding spelling of another.</summary>
-    private static readonly IReadOnlyDictionary<string, int> TheTypedRefusals =
-      new Dictionary<string, int>(StringComparer.Ordinal)
-      {
-        ["PlacementStage"] = 0,
-        ["UnboundedStage"] = 5,
-        ["OffsetStage"] = 0,
-        ["OffsetAndSizeStage"] = 1,
-        ["BoundStage"] = 8,
-        ["HeadingStage"] = 8,
-      };
 
     private static int Refusals(Type stage)
       => stage

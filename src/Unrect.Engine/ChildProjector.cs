@@ -136,7 +136,7 @@ namespace Unrect.Projections
       return Math.Max(innerStart, current - own.Count!.Value + 1);
     }
 
-    private int Row(Plane<TSpace> span) => _driver == Orientation.Vertical ? span.Origin.Height : span.Origin.Width;
+    private int Row(Plane<TSpace> span) => _driver == Orientation.Vertical ? span.Origin.Row : span.Origin.Column;
 
     // --- What the parent reads off the handle --------------------------------------------------
 
@@ -209,8 +209,8 @@ namespace Unrect.Projections
         }
         else
         {
-          var region = Spans.Region(_offered[0], index + 1, _driver).Erased();
-          var step = _placement.Advance(region, index, Spans.Across(span.Area.Size, _driver), _parent);
+          var region = Spans.Region(_offered[0], index + 1, _driver);
+          var step = _placement.Advance(region, index, Spans.Across(span.Extent, _driver), _parent);
 
           if (_placement.Failed)
           {
@@ -221,7 +221,7 @@ namespace Unrect.Projections
           if (step == OffsetStep.Skip)
             return true;
 
-          _column = _driver == Orientation.Vertical ? _placement.Offset.Width : _placement.Offset.Height;
+          _column = _driver == Orientation.Vertical ? _placement.Offset.Column : _placement.Offset.Row;
           Offset = _placement.Offset;
 
           if (step == OffsetStep.StartNext)
@@ -307,7 +307,7 @@ namespace Unrect.Projections
     }
 
     /// <summary>Asks the placement for its width, and once it has one feeds the inner every span that waited for it.</summary>
-    private void SettleWidth(Plane<ISpace> region, bool rowsSettled)
+    private void SettleWidth(Plane<TSpace> region, bool rowsSettled)
     {
       if (!_placement.TrySettleWidth(region, _taken, rowsSettled, _child))
       {
@@ -395,16 +395,16 @@ namespace Unrect.Projections
       {
         var region = _offered.Count == 0 ? Spans.Empty(_anchor, _driver) : Spans.Region(_offered[0], _offered.Count, _driver);
 
-        if (!_placement.SettleOffset(region.Erased(), _parent))
+        if (!_placement.SettleOffset(region, _parent))
         {
           PlacementFailed = true;
         }
         else
         {
           Offset = _placement.Offset;
-          _column = Spans.Across(Offset.Size, _driver);
+          _column = Spans.Across(Offset, _driver);
 
-          var start = Spans.Along(Offset.Size, _driver);
+          var start = Spans.Along(Offset, _driver);
           Start(start, Spans.EmptyAt(_offered.Count == 0 ? _anchor : _offered[0], start, _driver));
 
           for (var index = start; index < _offered.Count && _phase != Phase.Finished; index++)
@@ -428,9 +428,10 @@ namespace Unrect.Projections
         if (!PlacementFailed && !_placement.Complete(_taken))
         {
           var region = InnerRegion(_taken);
+          var required = _placement.Required!.Value;   // Complete is false only when something was required
 
           if (_strict)
-            throw _child.Failure(_definition, $"an extent of {EngineRules.Describe(_placement.Declared)} does not fit here", region, _placement.Declared, null);
+            throw _child.Failure(_definition, $"an extent of {EngineRules.Describe(required)} does not fit here", region, required, null);
 
           PlacementFailed = true;
         }
@@ -494,7 +495,7 @@ namespace Unrect.Projections
         throw Threw(exception, inner);
       }
 
-      var consumed = declared ? inner.Area.Size : settlement.Consumed;
+      var consumed = declared ? inner.Extent : settlement.Consumed;
 
       Settle(settlement.Value, consumed, settlement.Absorbed);
     }
@@ -503,7 +504,7 @@ namespace Unrect.Projections
     {
       Consumed = consumed;
       Absorbed = absorbed;
-      Advance = Offset.Size + consumed;
+      Advance = Offset + consumed;
       _settlement = new Settlement<T>(value, consumed, absorbed);
     }
 
@@ -567,16 +568,16 @@ namespace Unrect.Projections
     // --- Regions -------------------------------------------------------------------------------
 
     /// <summary>The inner region <paramref name="rows"/> spans tall, from where the inner started, erased for a rule.</summary>
-    private Plane<ISpace> InnerRegion(int rows)
+    private Plane<TSpace> InnerRegion(int rows)
       => (rows == 0 ? Spans.Empty(InnerOrigin(), _driver) : Spans.Region(_offered[_innerStart], rows, _driver))
         .Slice(Spans.ToOffset(0, _column, _driver))
-        .Erased();
+        ;
 
     /// <summary>The same region as a plane over the space, clamped to what was offered, for a message or a machine.</summary>
     private Plane<TSpace> InnerPlane(int rows)
     {
       if (_innerStart >= _offered.Count)
-        return Spans.Empty(InnerOrigin(), _driver).Slice(Spans.ToOffset(0, Math.Min(_column, Spans.Across(InnerOrigin().Area.Size, _driver)), _driver));
+        return Spans.Empty(InnerOrigin(), _driver).Slice(Spans.ToOffset(0, Math.Min(_column, Spans.Across(InnerOrigin().Extent, _driver)), _driver));
 
       var region = rows == 0 ? Spans.Empty(_offered[_innerStart], _driver) : Spans.Region(_offered[_innerStart], Math.Min(rows, _offered.Count - _innerStart), _driver);
 
@@ -592,13 +593,13 @@ namespace Unrect.Projections
     /// <summary>The same region, <paramref name="width"/> wide across the driver's axis.</summary>
     private Plane<TSpace> Narrow(Plane<TSpace> region, int width)
       => _driver == Orientation.Vertical
-        ? region.Slice(new Area(width, region.Area.Height))
-        : region.Slice(new Area(region.Width, width));
+        ? region.Slice(new Size(width, region.Height))
+        : region.Slice(new Size(region.Width, width));
 
     /// <summary>The span from <paramref name="column"/> across the driver's axis, <paramref name="width"/> wide or to its edge.</summary>
     private Plane<TSpace> Cut(Plane<TSpace> span, int column, int? width)
       => _driver == Orientation.Vertical
-        ? span.Slice(new Offset(column, 0), new Area(width ?? span.Width - column, 1))
-        : span.Slice(new Offset(0, column), new Area(1, width ?? span.Area.Height - column));
+        ? span.Slice(new Offset(column, 0), new Size(width ?? span.Width - column, 1))
+        : span.Slice(new Offset(0, column), new Size(1, width ?? span.Height - column));
   }
 }

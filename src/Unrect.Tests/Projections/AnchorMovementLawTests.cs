@@ -54,9 +54,9 @@ namespace Unrect.Tests.Projections
       return Mixed(values);
     }
 
-    private static IRowLandmark Detail() => RowContaining("Detail").Landmark;
+    private static ILineLandmark<ICellSpace> Detail() => RowContaining("Detail");
 
-    private static IColumnLandmark DetailColumn() => ColumnContaining("Detail").Landmark;
+    private static ILineLandmark<ICellSpace> DetailColumn() => ColumnContaining("Detail");
 
     // --- The law, wherever the landmark sits ---------------------------------------------------------
 
@@ -129,7 +129,7 @@ namespace Unrect.Tests.Projections
     // --- The other half of the placement ---------------------------------------------------------------
 
     [Fact]
-    public void ADeclaredAreaSurvivesEitherSpellingIdentically()
+    public void ADeclaredExtentSurvivesEitherSpellingIdentically()
     {
       // Placement is two independent halves. Both spellings touch only the offset, so a projection
       // that declared its own extent keeps it — and keeps the same one — wherever the landmark puts

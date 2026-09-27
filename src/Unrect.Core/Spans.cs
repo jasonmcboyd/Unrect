@@ -18,15 +18,21 @@ namespace Unrect.Core
     /// <summary>How far <paramref name="size"/> reaches across <paramref name="along"/>.</summary>
     internal static int Across(Size size, Orientation along) => along == Orientation.Vertical ? size.Width : size.Height;
 
+    /// <summary>How many spans in <paramref name="offset"/> lies along <paramref name="along"/>.</summary>
+    internal static int Along(Offset offset, Orientation along) => along == Orientation.Vertical ? offset.Row : offset.Column;
+
+    /// <summary>How far across <paramref name="along"/> <paramref name="offset"/> starts.</summary>
+    internal static int Across(Offset offset, Orientation along) => along == Orientation.Vertical ? offset.Column : offset.Row;
+
     /// <summary>How many spans <paramref name="region"/> has along <paramref name="along"/>.</summary>
     internal static int Along<TSpace>(Plane<TSpace> region, Orientation along)
       where TSpace : class, ISpace
-      => Along(region.Area.Size, along);
+      => Along(region.Extent, along);
 
     /// <summary>How far <paramref name="region"/> reaches across <paramref name="along"/>.</summary>
     internal static int Across<TSpace>(Plane<TSpace> region, Orientation along)
       where TSpace : class, ISpace
-      => Across(region.Area.Size, along);
+      => Across(region.Extent, along);
 
     /// <summary>The size <paramref name="along"/> spans long and <paramref name="across"/> wide means under <paramref name="orientation"/>.</summary>
     internal static Size ToSize(int along, int across, Orientation orientation)
@@ -48,34 +54,31 @@ namespace Unrect.Core
     /// <exception cref="OutOfBoundsException">The region has fewer spans than that.</exception>
     internal static Plane<TSpace> Prefix<TSpace>(Plane<TSpace> region, int spans, Orientation along)
       where TSpace : class, ISpace
-      => region.Slice(new Area(ToSize(spans, Across(region, along), along)));
+      => region.Slice(ToSize(spans, Across(region, along), along));
 
     /// <summary>The region <paramref name="count"/> consecutive spans cover, starting at <paramref name="first"/>, along <paramref name="along"/>.</summary>
     internal static Plane<TSpace> Region<TSpace>(Plane<TSpace> first, int count, Orientation along)
       where TSpace : class, ISpace
-      => new Plane<TSpace>(first.Space, first.Origin, new Area(ToSize(count, Across(first, along), along)));
+      => new Plane<TSpace>(first.Space, first.Origin, ToSize(count, Across(first, along), along));
 
     /// <summary>A region of no spans at <paramref name="anchor"/>'s origin, as wide across as it is.</summary>
     internal static Plane<TSpace> Empty<TSpace>(Plane<TSpace> anchor, Orientation along)
       where TSpace : class, ISpace
-      => new Plane<TSpace>(anchor.Space, anchor.Origin, new Area(ToSize(0, Across(anchor, along), along)));
+      => new Plane<TSpace>(anchor.Space, anchor.Origin, ToSize(0, Across(anchor, along), along));
 
     /// <summary>
     /// A region of no spans <paramref name="distance"/> spans along from <paramref name="first"/>'s
-    /// origin — where a child that is never fed would have begun. At the very end of the space the
-    /// constructor still admits an empty plane; past it, the first span's own origin stands in.
+    /// origin — where a child that is never fed would have begun. At the very end of the space an
+    /// empty plane still fits; past it, the first span's own origin stands in.
     /// </summary>
     internal static Plane<TSpace> EmptyAt<TSpace>(Plane<TSpace> first, int distance, Orientation along)
       where TSpace : class, ISpace
     {
-      try
-      {
-        return new Plane<TSpace>(first.Space, first.Origin + Step(distance, along), new Area(ToSize(0, Across(first, along), along)));
-      }
-      catch (OutOfBoundsException)
-      {
-        return Empty(first, along);
-      }
+      var origin = first.Origin + Step(distance, along);
+
+      return Along(origin, along) <= Along(first.Space.Extent, along)
+        ? new Plane<TSpace>(first.Space, origin, ToSize(0, Across(first, along), along))
+        : Empty(first, along);
     }
 
     /// <summary>The spans <paramref name="region"/> cuts into along <paramref name="along"/>; the whole region as one span when null.</summary>
@@ -91,7 +94,7 @@ namespace Unrect.Core
       var count = Along(region, along.Value);
 
       for (var span = 0; span < count; span++)
-        yield return region.Slice(Step(span, along.Value), new Area(ToSize(1, Across(region, along.Value), along.Value)));
+        yield return region.Slice(Step(span, along.Value), ToSize(1, Across(region, along.Value), along.Value));
     }
   }
 }

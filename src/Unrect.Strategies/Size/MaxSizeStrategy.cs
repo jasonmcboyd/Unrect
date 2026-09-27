@@ -2,12 +2,13 @@ using Unrect.Core;
 
 namespace Unrect.Strategies
 {
-  internal sealed class MaxSizeStrategy : ISizeStrategy
+  internal sealed class MaxSizeStrategy<TSpace> : ISizeStrategy<TSpace>
+    where TSpace : class, ISpace
   {
-    public ISizeScan Begin(Orientation along) => new Scan(along);
+    public ISizeScan<TSpace> Begin(Orientation along) => new Scan(along);
 
     /// <summary>Everything: every span, as far across as the region reaches.</summary>
-    private sealed class Scan : ISizeScan
+    private sealed class Scan : ISizeScan<TSpace>
     {
       private readonly Orientation _along;
 
@@ -15,15 +16,13 @@ namespace Unrect.Strategies
 
       public bool Incremental => true;
 
-      public bool Take(Plane<ISpace> region, int taken) => true;
+      public bool Take(Plane<TSpace> region, int taken) => true;
 
-      public int? Across(Plane<ISpace> region, int taken, bool final) => Spans.Across(region, _along);
+      public int? Across(Plane<TSpace> region, int taken, bool final) => Spans.Across(region, _along);
 
-      public int Along(Plane<ISpace> region, int taken) => taken;
+      public int Along(Plane<TSpace> region, int taken) => taken;
 
-      public bool Complete(int taken) => true;
-
-      public Size Declared => default;
+      public Size? Required => null;
     }
   }
 }

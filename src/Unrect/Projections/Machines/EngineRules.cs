@@ -13,12 +13,12 @@ namespace Unrect.Projections
   /// </summary>
   internal static class EngineRules
   {
-    internal static ProjectionException AreaFailure<TSpace, TOther>(ProjectorScope<TSpace> scope, IProjectionDefinition projection, Plane<TOther> inner, Exception exception)
+    internal static ProjectionException ExtentFailure<TSpace, TOther>(ProjectorScope<TSpace> scope, IProjectionDefinition projection, Plane<TOther> inner, Exception exception)
       where TSpace : class, ISpace
       where TOther : class, ISpace
       => exception is OutOfBoundsException
-        ? scope.Failure(projection, "its area ran past the space available here", inner, null, exception)
-        : scope.Failure(projection, Threw("area", exception), inner, null, exception, IsFault(exception));
+        ? scope.Failure(projection, "its extent ran past the space available here", inner, null, exception)
+        : scope.Failure(projection, Threw("extent", exception), inner, null, exception, IsFault(exception));
 
     /// <summary>
     /// An exception that says something about this library or the machine, never about the data:
@@ -34,15 +34,23 @@ namespace Unrect.Projections
         or IOException                 // the disk, the network share, the workbook replaced mid-read
         or ObjectDisposedException     // a view outliving its Workbook
         or InvalidCastException        // an invariant this library owes itself; never the data
+        or ScanContractException       // a scan that broke its own contract; never the data
         or OutOfMemoryException        // never a statement about the data
         or CellReadException { IsFault: true };  // a read the SOURCE could not serve, not a cell that disagreed
 
     /// <summary>Whether <paramref name="size"/> is wider or taller than <paramref name="space"/>.</summary>
     internal static bool Exceeds<TSpace>(Size size, Plane<TSpace> space)
       where TSpace : class, ISpace
-      => size.Width > space.Width || size.Height > space.Area.Height;
+      => size.Width > space.Width || size.Height > space.Height;
+
+    /// <summary>Whether <paramref name="offset"/> lies beyond <paramref name="space"/>'s far edge on either axis.</summary>
+    internal static bool Exceeds<TSpace>(Offset offset, Plane<TSpace> space)
+      where TSpace : class, ISpace
+      => offset.Column > space.Width || offset.Row > space.Height;
 
     internal static string Describe(Size size) => $"{size.Width}x{size.Height}";
+
+    internal static string Describe(Offset offset) => offset.ToString();
 
     internal static string Threw(string what, Exception exception)
       => $"its {what} strategy threw {exception.GetType().Name}: {exception.Message}";

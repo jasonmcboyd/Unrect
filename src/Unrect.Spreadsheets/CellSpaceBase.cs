@@ -1,44 +1,42 @@
+using System;
+
 using Unrect.Core;
 
 namespace Unrect.Spreadsheets
 {
   /// <summary>
-  /// The text facet of a sheet, written once over its value facet: a door supplies its extent and
-  /// <see cref="ValueAt"/>, and whether a cell is blank and what it says both follow from the value
-  /// there.
-  /// <para>
-  /// There is no other way to be a sheet in this package. Two doors answering a question
-  /// differently would be the one bug nothing above them could see, so the answers are not a door's
-  /// to write.
-  /// </para>
+  /// The text facet of a space of <see cref="CellValue"/>s, derived once from the value so that no
+  /// two sheets can disagree about a cell: a cell counts as content unless it holds nothing, or
+  /// holds text the space's blankness rule calls blank; and it says what its value renders as, the
+  /// empty string for nothing. What a cell says and whether it counts are two questions, so a cell
+  /// the rule calls blank still says its text. An implementer writes the extent and <c>ValueAt</c>.
   /// </summary>
   public abstract class CellSpaceBase : ICellSpace
   {
-    /// <summary>
-    /// Not <c>protected</c>: only this package may be a sheet. An externally authored sheet would
-    /// be the one way to make two doors say different things about one cell.
-    /// </summary>
-    private protected CellSpaceBase()
+    private readonly Func<string, bool>? _textIsBlank;
+
+    /// <summary>A space whose text cells are blank when <paramref name="textIsBlank"/> says so; null for one in which only a cell holding nothing is blank.</summary>
+    private protected CellSpaceBase(Func<string, bool>? textIsBlank)
     {
+      _textIsBlank = textIsBlank;
     }
 
     /// <inheritdoc/>
-    public abstract Area Area { get; }
+    public abstract Size Extent { get; }
 
-    /// <summary>
-    /// The value at <paramref name="column"/>, <paramref name="row"/> in this space's own
-    /// coordinates — the one read a door writes. Implementations throw
-    /// <see cref="OutOfBoundsException"/> for a coordinate outside <see cref="Area"/>.
-    /// </summary>
-    /// <param name="column">The 0-based column.</param>
-    /// <param name="row">The 0-based row.</param>
+    /// <inheritdoc/>
     public abstract CellValue ValueAt(int column, int row);
 
     /// <inheritdoc/>
-    public bool IsBlankAt(int column, int row) => ValueAt(column, row).Kind == CellKind.Blank;
+    public bool IsBlankAt(int column, int row)
+    {
+      var value = ValueAt(column, row);
+
+      return value.Kind == CellKind.Blank
+        || (_textIsBlank is not null && value.TryGetText(out var text) && _textIsBlank(text));
+    }
 
     /// <inheritdoc/>
-    public string? AsTextAt(int column, int row) => ValueAt(column, row).AsText();
-
+    public string AsTextAt(int column, int row) => ValueAt(column, row).AsText();
   }
 }

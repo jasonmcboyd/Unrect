@@ -37,8 +37,9 @@ namespace Unrect.Benchmarks
     private ICellSpace _mixed = default!;
     private Plane<ICellSpace> _plane;
     private Plane<ISpace> _numericPlane;
-    private IRowStrategy _erasedRule = default!;
-    private IRowStrategy _typedRule = default!;
+    private Plane<ICellSpace> _typedNumericPlane;
+    private ILineStrategy<ISpace> _erasedRule = default!;
+    private ILineStrategy<ICellSpace> _typedRule = default!;
 
     [GlobalSetup]
     public void Setup()
@@ -50,24 +51,26 @@ namespace Unrect.Benchmarks
       _mixed = CanonicalSpaces.MegaDenseMixed;
       _plane = Plane<ICellSpace>.Of(_mixed);
       _numericPlane = Plane<ISpace>.Of(_numbers);
+      _typedNumericPlane = Plane<ICellSpace>.Of(_numbers);
 
-      // Built once: lowering happens where a declaration is written, so what the two predicate rows
-      // measure is evaluation. Both rules run to the bottom of the dense numeric grid, asking every
-      // one of its million cells, which is the output to check when this fixture changes.
-      _erasedRule = RowStrategies.TakeRowsWhileAll(cell => !cell.IsBlank());
-      _typedRule = ProjectionBuilders<ICellSpace>.TakeRowsWhileAll(cell => !cell.IsBlank()).Strategy;
+      // Built once, so what the two predicate rows measure is evaluation: the same rule written at
+      // the canonical space and at the sheet's own, each run over a plane of its space. Both run to
+      // the bottom of the dense numeric grid, asking every one of its million cells, which is the
+      // output to check when this fixture changes.
+      _erasedRule = RowStrategies.TakeRowsWhileAll<ISpace>(cell => !cell.IsBlank());
+      _typedRule = ProjectionBuilders<ICellSpace>.TakeRowsWhileAll(cell => !cell.IsBlank());
     }
 
     /// <summary>Adapting a million numbers: the allocation floor for a canonical grid this size.</summary>
     [Benchmark]
-    public int Create_FromInts() => GridSpace.Create(_ints, isBlank: v => v == 0).Area.Height;
+    public int Create_FromInts() => GridSpace.Create(_ints, isBlank: v => v == 0).Extent.Height;
 
     /// <summary>
     /// The same from a mixed object array, through the kinded adapter: one cell at a time, each
     /// deciding its own kind. The floor for a sheet a script builds without a file.
     /// </summary>
     [Benchmark]
-    public int Create_FromObjects() => SheetGrid.Of(_objects).Area.Height;
+    public int Create_FromObjects() => SheetGrid.Of(_objects).Extent.Height;
 
     /// <summary>
     /// A million blankness questions. Every size and offset strategy in the library asks one per
@@ -155,7 +158,7 @@ namespace Unrect.Benchmarks
     /// every row of a grid with no blank in it, so every cell is asked.
     /// </summary>
     [Benchmark]
-    public int Predicate_Million() => _erasedRule.SelectRows(_numericPlane);
+    public int Predicate_Million() => _erasedRule.SelectLines(_numericPlane);
 
     /// <summary>
     /// The same million evaluations of the same question, through the rule a declaration writes
@@ -170,7 +173,7 @@ namespace Unrect.Benchmarks
     /// same work.</para>
     /// </summary>
     [Benchmark]
-    public int TypedPredicate_Million() => _typedRule.SelectRows(_numericPlane);
+    public int TypedPredicate_Million() => _typedRule.SelectLines(_typedNumericPlane);
 
     /// <summary>
     /// A million slices: the arithmetic a composite does where it used to allocate a subspace. One
@@ -180,7 +183,7 @@ namespace Unrect.Benchmarks
     public int Slice_Million()
     {
       var total = 0;
-      var row = new Area(CanonicalSpaces.Columns, 1);
+      var row = new Size(CanonicalSpaces.Columns, 1);
 
       for (var i = 0; i < CanonicalSpaces.MegaCells; i++)
         total += _plane.Slice(new Offset(0, i % CanonicalSpaces.MegaRows), row).Width;

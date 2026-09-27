@@ -33,8 +33,8 @@ namespace Unrect.Tests.Spreadsheets
 
       using (formats)
       {
-        Assert.Equal(3, sheet.Area.Width);
-        Assert.Equal(5, sheet.Area.Height);
+        Assert.Equal(3, sheet.Extent.Width);
+        Assert.Equal(5, sheet.Extent.Height);
         Assert.Equal("1001", sheet.AsTextAt(0, 2));
         Assert.Equal(CellColor.Red, formats.FontOf(styles[2, 0]).Color);
       }

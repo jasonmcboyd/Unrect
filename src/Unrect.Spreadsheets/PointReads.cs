@@ -158,14 +158,14 @@ namespace Unrect.Spreadsheets
     /// <param name="point">The cell.</param>
     public static bool IsText<TSpace>(this Point<TSpace> point)
       where TSpace : class, ICellSpace
-      => point.Value().Kind == CellKind.Text;
+      => Content(point).Kind == CellKind.Text;
 
     /// <summary>Whether <see cref="Double{TSpace}"/> would succeed — the cell holds a number.</summary>
     /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>
     /// <param name="point">The cell.</param>
     public static bool IsDouble<TSpace>(this Point<TSpace> point)
       where TSpace : class, ICellSpace
-      => point.Value().Kind == CellKind.Number;
+      => Content(point).Kind == CellKind.Number;
 
     /// <summary>Whether <see cref="Decimal{TSpace}"/> would succeed — the cell holds a number a decimal can carry.</summary>
     /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>
@@ -186,28 +186,28 @@ namespace Unrect.Spreadsheets
     /// <param name="point">The cell.</param>
     public static bool IsDate<TSpace>(this Point<TSpace> point)
       where TSpace : class, ICellSpace
-      => point.Value().Kind == CellKind.Date;
+      => Content(point).Kind == CellKind.Date;
 
     /// <summary>Whether <see cref="Boolean{TSpace}"/> would succeed — the cell holds a boolean.</summary>
     /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>
     /// <param name="point">The cell.</param>
     public static bool IsBoolean<TSpace>(this Point<TSpace> point)
       where TSpace : class, ICellSpace
-      => point.Value().Kind == CellKind.Boolean;
+      => Content(point).Kind == CellKind.Boolean;
 
     /// <summary>Whether the cell carries a spreadsheet error — <c>#DIV/0!</c> and its kin. An error is a value, never a blank.</summary>
     /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>
     /// <param name="point">The cell.</param>
     public static bool IsError<TSpace>(this Point<TSpace> point)
       where TSpace : class, ICellSpace
-      => point.Value().Kind == CellKind.Error;
+      => Content(point).Kind == CellKind.Error;
 
     /// <summary>The file's own spelling of the cell's error, or null where the cell carries none.</summary>
     /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>
     /// <param name="point">The cell.</param>
     public static string? ErrorText<TSpace>(this Point<TSpace> point)
       where TSpace : class, ICellSpace
-      => point.Value() is { Kind: CellKind.Error } value ? value.AsText() : null;
+      => Content(point) is { Kind: CellKind.Error } value ? value.AsText() : null;
 
     // --- Trying ---------------------------------------------------------------------------------
 
@@ -226,7 +226,7 @@ namespace Unrect.Spreadsheets
     /// <param name="problem">Why not, when the answer is false; null when it is true.</param>
     public static bool TryGetText<TSpace>(this Point<TSpace> point, out string value, out CellProblem? problem)
       where TSpace : class, ICellSpace
-      => CellReading.Text(point.Value(), out value, out problem);
+      => CellReading.Text(Content(point), out value, out problem);
 
     /// <summary>The cell's number, if a number is what it holds.</summary>
     /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>
@@ -243,7 +243,7 @@ namespace Unrect.Spreadsheets
     /// <param name="problem">Why not, when the answer is false; null when it is true.</param>
     public static bool TryGetDouble<TSpace>(this Point<TSpace> point, out double value, out CellProblem? problem)
       where TSpace : class, ICellSpace
-      => CellReading.Double(point.Value(), out value, out problem);
+      => CellReading.Double(Content(point), out value, out problem);
 
     /// <summary>The cell's date or time, verbatim, if that is what it holds.</summary>
     /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>
@@ -260,7 +260,7 @@ namespace Unrect.Spreadsheets
     /// <param name="problem">Why not, when the answer is false; null when it is true.</param>
     public static bool TryGetDate<TSpace>(this Point<TSpace> point, out DateTime value, out CellProblem? problem)
       where TSpace : class, ICellSpace
-      => CellReading.DateTime(point.Value(), out value, out problem);
+      => CellReading.DateTime(Content(point), out value, out problem);
 
     /// <summary>The cell's boolean, if a boolean is what it holds.</summary>
     /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>
@@ -277,7 +277,17 @@ namespace Unrect.Spreadsheets
     /// <param name="problem">Why not, when the answer is false; null when it is true.</param>
     public static bool TryGetBoolean<TSpace>(this Point<TSpace> point, out bool value, out CellProblem? problem)
       where TSpace : class, ICellSpace
-      => CellReading.Boolean(point.Value(), out value, out problem);
+      => CellReading.Boolean(Content(point), out value, out problem);
+
+    /// <summary>
+    /// The value a kinded read sees: what the cell holds, unless the space calls the cell blank, in
+    /// which case a blank — a cell that does not count as content holds nothing a reading may
+    /// assert, whatever text the rule was applied to. The value facet itself, <see cref="Value{TSpace}"/>,
+    /// stays faithful to the store.
+    /// </summary>
+    private static CellValue Content<TSpace>(Point<TSpace> point)
+      where TSpace : class, ICellSpace
+      => point.IsBlank() ? CellValue.Blank : point.Value();
 
     private static CellReadException Failed<TSpace>(Point<TSpace> point, CellProblem? problem)
       where TSpace : class, ICellSpace

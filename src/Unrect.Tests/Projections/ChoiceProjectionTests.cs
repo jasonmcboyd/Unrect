@@ -410,7 +410,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal(1, choice.Children[0].Site.Ordinal);
       Assert.Equal(2, choice.Children[1].Site.Ordinal);
       Assert.False(choice.IsWrapper);
-      Assert.Null(choice.Placement.Area);
+      Assert.Null(choice.Placement.Extent);
     }
 
     [Fact]

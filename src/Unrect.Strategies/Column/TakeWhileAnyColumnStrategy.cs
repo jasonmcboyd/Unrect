@@ -9,9 +9,12 @@ namespace Unrect.Strategies
   /// reads the column; asked a row at a time it accumulates, and settles once every column has
   /// matched.
   /// </summary>
-  internal sealed class TakeWhileAnyColumnStrategy : IRowMajorColumnStrategy
+  internal sealed class TakeWhileAnyColumnStrategy<TSpace> : IRowMajorColumnStrategy<TSpace>
+    where TSpace : class, ISpace
   {
-    public TakeWhileAnyColumnStrategy(Func<Point<ISpace>, bool> predicate, bool afterLead = false)
+    public Orientation Along => Orientation.Horizontal;
+
+    public TakeWhileAnyColumnStrategy(Func<Point<TSpace>, bool> predicate, bool afterLead = false)
     {
       Predicate = predicate;
       AfterLead = afterLead;
@@ -24,11 +27,11 @@ namespace Unrect.Strategies
     /// </summary>
     internal bool AfterLead { get; }
 
-    internal Func<Point<ISpace>, bool> Predicate { get; }
+    internal Func<Point<TSpace>, bool> Predicate { get; }
 
-    public IColumnAccumulator BeginColumns(int width) => new Accumulator(Predicate, width, AfterLead);
+    public IColumnAccumulator<TSpace> BeginColumns(int width) => new Accumulator(Predicate, width, AfterLead);
 
-    public IColumnScan Begin() => new Scanning.RowMajorColumns(this, (space, column) =>
+    public ILineScan<TSpace> Begin() => new Scanning.RowMajorColumns<TSpace>(this, (space, column) =>
     {
       if (AfterLead && space.HasRow(0) && InLead(space, column))
         return true;
@@ -40,7 +43,7 @@ namespace Unrect.Strategies
       return false;
     });
 
-    private bool InLead(Plane<ISpace> space, int column)
+    private bool InLead(Plane<TSpace> space, int column)
     {
       for (var before = 0; before <= column; before++)
         if (Predicate(space[before, 0]))
@@ -49,13 +52,13 @@ namespace Unrect.Strategies
       return true;
     }
 
-    private sealed class Accumulator : IColumnAccumulator
+    private sealed class Accumulator : IColumnAccumulator<TSpace>
     {
       private readonly bool[] _matched;
 
       private readonly bool _afterLead;
 
-      public Accumulator(Func<Point<ISpace>, bool> predicate, int width, bool afterLead)
+      public Accumulator(Func<Point<TSpace>, bool> predicate, int width, bool afterLead)
       {
         Predicate = predicate;
         _matched = new bool[width];
@@ -66,9 +69,9 @@ namespace Unrect.Strategies
 
       public bool IsSettled => Count == _matched.Length;
 
-      private Func<Point<ISpace>, bool> Predicate { get; }
+      private Func<Point<TSpace>, bool> Predicate { get; }
 
-      public void Include(Plane<ISpace> space, int row)
+      public void Include(Plane<TSpace> space, int row)
       {
         // The lead is settled by the first row and counts as matched from then on.
         if (_afterLead && row == 0)

@@ -55,7 +55,7 @@ namespace Unrect.Tests.Interactive
       // column, same row — rather than merely reading the same value.
       var sheet = Sheet();
 
-      var throughASlice = Plane<ICellSpace>.Of(sheet).Slice(new Offset(1, 1), new Area(3, 3))[1, 2];
+      var throughASlice = Plane<ICellSpace>.Of(sheet).Slice(new Offset(1, 1), new Size(3, 3))[1, 2];
 
       Assert.Equal(throughASlice, sheet.At(2, 3));
       Assert.Equal(throughASlice.GetHashCode(), sheet.At(2, 3).GetHashCode());

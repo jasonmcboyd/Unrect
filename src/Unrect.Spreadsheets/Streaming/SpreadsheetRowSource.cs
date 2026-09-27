@@ -11,19 +11,16 @@ namespace Unrect.Spreadsheets
   /// </summary>
   internal sealed class SpreadsheetRowSource : IRowSource
   {
-    private readonly Func<string, bool> _isBlank;
-
-    internal SpreadsheetRowSource(string path, Func<string, bool> isBlank)
+    internal SpreadsheetRowSource(string path)
     {
       Name = path ?? throw new ArgumentNullException(nameof(path));
-      _isBlank = isBlank ?? throw new ArgumentNullException(nameof(isBlank));
     }
 
     /// <inheritdoc/>
     public string Name { get; }
 
     /// <inheritdoc/>
-    public IRowCursor Open() => new SpreadsheetRowCursor(Name, _isBlank);
+    public IRowCursor Open() => new SpreadsheetRowCursor(Name);
   }
 
   /// <summary>
@@ -34,11 +31,8 @@ namespace Unrect.Spreadsheets
   {
     private readonly FileStream _stream;
     private readonly IExcelDataReader _reader;
-    private readonly Func<string, bool> _isBlank;
-
-    internal SpreadsheetRowCursor(string path, Func<string, bool> isBlank)
+    internal SpreadsheetRowCursor(string path)
     {
-      _isBlank = isBlank;
       SpreadsheetEncodings.Register();
 
       // The same sharing the eager path uses, and for the same reasons: the workbook may be open in
@@ -97,9 +91,7 @@ namespace Unrect.Spreadsheets
         if (column < 0 || column >= _reader.FieldCount)
           return CellValue.Blank;
 
-        var value = _reader.GetCellValue(column);
-
-        return value.TryGetText(out var text) && _isBlank(text) ? CellValue.Blank : value;
+        return _reader.GetCellValue(column);
       }
     }
 

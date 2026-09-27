@@ -23,7 +23,7 @@ namespace Unrect.Projections
       HeaderRows = headerRows;
 
       Header = new CellStrip<TSpace>(
-        space.Slice(new Offset(0, 0), new Area(HasHeader ? ColumnCount : 0, headerRows)),
+        space.Slice(new Offset(0, 0), new Size(HasHeader ? ColumnCount : 0, headerRows)),
         Orientation.Horizontal,
         scope);
 
@@ -46,7 +46,7 @@ namespace Unrect.Projections
     public int ColumnCount => Space.Width;
 
     /// <summary>How many body rows the table has, header row(s) excluded.</summary>
-    public int RowCount => Space.Area.Height - HeaderRows;
+    public int RowCount => Space.Height - HeaderRows;
 
     /// <summary>Whether a header row was declared. By-name lookups (<see cref="TableRow{TSpace}.this[string]"/>) need one.</summary>
     public bool HasHeader => HeaderRows > 0;
@@ -148,9 +148,9 @@ namespace Unrect.Projections
     {
       var rows = new List<TableRow<TSpace>>(RowCount);
 
-      for (var row = HeaderRows; row < Space.Area.Height; row++)
+      for (var row = HeaderRows; row < Space.Height; row++)
       {
-        var band = Space.Slice(new Offset(0, row), new Area(ColumnCount, 1));
+        var band = Space.Slice(new Offset(0, row), new Size(ColumnCount, 1));
 
         rows.Add(new TableRow<TSpace>(row - HeaderRows, new CellStrip<TSpace>(band, Orientation.Horizontal, Scope), Scope));
       }

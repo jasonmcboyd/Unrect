@@ -50,8 +50,8 @@ namespace Unrect.Tests.Streaming
       using var book = Workbook.Open(Path(file), new WorkbookOptions());
       var streamed = book.Sheet(sheet);
 
-      Assert.Equal(eager.Area.Size.Width, streamed.Area.Size.Width);
-      Assert.Equal(eager.Area.Size.Height, streamed.Area.Size.Height);
+      Assert.Equal(eager.Extent.Width, streamed.Extent.Width);
+      Assert.Equal(eager.Extent.Height, streamed.Extent.Height);
 
       AssertEveryCellAgrees(eager, streamed);
     }
@@ -70,9 +70,9 @@ namespace Unrect.Tests.Streaming
       using var book = Workbook.Open(Path("no-extent.xlsx"), new WorkbookOptions());
       var streamed = book.Sheet("Undeclared");
 
-      Assert.Equal(4, eager.Area.Size.Height);
-      Assert.Equal(eager.Area.Size.Height, streamed.Area.Size.Height);
-      Assert.Equal(eager.Area.Size.Width, streamed.Area.Size.Width);
+      Assert.Equal(4, eager.Extent.Height);
+      Assert.Equal(eager.Extent.Height, streamed.Extent.Height);
+      Assert.Equal(eager.Extent.Width, streamed.Extent.Width);
 
       // The measure is where that answer came from, and the streaming door says so out loud — which
       // also guards the fixture. A regenerated no-extent.xlsx that described itself again would
@@ -112,8 +112,8 @@ namespace Unrect.Tests.Streaming
       var seen = new Dictionary<object, int>(ByReference.Instance);
       var pattern = new List<int>();
 
-      for (var row = 0; row < space.Area.Size.Height; row++)
-        for (var column = 0; column < space.Area.Size.Width; column++)
+      for (var row = 0; row < space.Extent.Height; row++)
+        for (var column = 0; column < space.Extent.Width; column++)
         {
           if (!space.IsText(column, row) || space.AsTextAt(column, row) is not string text)
           {
@@ -360,8 +360,8 @@ namespace Unrect.Tests.Streaming
     /// </summary>
     private static void AssertEveryCellAgrees(ICellSpace eager, ICellSpace streamed)
     {
-      for (var row = 0; row < eager.Area.Size.Height; row++)
-        for (var column = 0; column < eager.Area.Size.Width; column++)
+      for (var row = 0; row < eager.Extent.Height; row++)
+        for (var column = 0; column < eager.Extent.Width; column++)
         {
           Assert.Equal(eager.Describe(column, row), streamed.Describe(column, row));
           Assert.Equal(eager.IsBlankAt(column, row), streamed.IsBlankAt(column, row));

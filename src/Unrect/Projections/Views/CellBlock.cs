@@ -39,7 +39,7 @@ namespace Unrect.Projections
     public int Width => Space.Width;
 
     /// <summary>How many rows tall the block is.</summary>
-    public int Height => Space.Area.Height;
+    public int Height => Space.Height;
 
     /// <summary>
     /// The cell at <paramref name="column"/>, <paramref name="row"/>; either index outside the
@@ -63,7 +63,7 @@ namespace Unrect.Projections
     {
       Validate(column, row);
 
-      return ProjectionLocation.At(Space.Origin + new Offset(column, row), Space.Area.Size);
+      return ProjectionLocation.At(Space.Origin + new Offset(column, row), Space.Extent);
     }
 
     /// <summary>The row at <paramref name="index"/>; an index outside the block throws <see cref="ArgumentOutOfRangeException"/>.</summary>
@@ -72,7 +72,7 @@ namespace Unrect.Projections
       if (index < 0 || index >= Height)
         throw new ArgumentOutOfRangeException(nameof(index), index, $"The block is {Height} rows tall.");
 
-      return new CellStrip<TSpace>(Space.Slice(new Offset(0, index), new Area(Width, 1)), Orientation.Horizontal, Scope);
+      return new CellStrip<TSpace>(Space.Slice(new Offset(0, index), new Size(Width, 1)), Orientation.Horizontal, Scope);
     }
 
     /// <summary>The column at <paramref name="index"/>; an index outside the block throws <see cref="ArgumentOutOfRangeException"/>.</summary>
@@ -81,7 +81,7 @@ namespace Unrect.Projections
       if (index < 0 || index >= Width)
         throw new ArgumentOutOfRangeException(nameof(index), index, $"The block is {Width} columns wide.");
 
-      return new CellStrip<TSpace>(Space.Slice(new Offset(index, 0), new Area(1, Height)), Orientation.Vertical, Scope);
+      return new CellStrip<TSpace>(Space.Slice(new Offset(index, 0), new Size(1, Height)), Orientation.Vertical, Scope);
     }
 
     /// <summary>Every row, top to bottom, built once and cached.</summary>

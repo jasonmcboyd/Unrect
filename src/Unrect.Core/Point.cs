@@ -35,9 +35,8 @@ namespace Unrect.Core
     /// in that space's own root coordinates.
     /// <para>
     /// Minting is a locator's job, and this constructor trusts its caller to have checked the
-    /// coordinate. It deliberately does not check for itself: the only thing it could check against
-    /// is the space's extent, and asking a space how tall it is can settle a boundary the
-    /// declaration was still discovering.
+    /// coordinate: a plane checks against the region it names, which is the narrower question, and
+    /// the space checks again on every read, so a check here would be a third.
     /// </para>
     /// <para>
     /// The consequence is that <c>default(Point&lt;TSpace&gt;)</c> is a point with no space. It
@@ -73,21 +72,6 @@ namespace Unrect.Core
     public Point<ISpace> Erased() => new Point<ISpace>(Space, Column, Row);
 
     /// <summary>
-    /// The same cell, named over <typeparamref name="TOther"/> — the way back from the canonical
-    /// surface for a caller that knows which space it erased.
-    /// <para>
-    /// The mirror of <see cref="Erased"/>, and the same cost: a copy of a reference and two
-    /// integers, nothing read, the same space object underneath. A space that is not a
-    /// <typeparamref name="TOther"/> throws <see cref="InvalidCastException"/>.
-    /// </para>
-    /// </summary>
-    /// <typeparam name="TOther">The space to name this cell over.</typeparam>
-    /// <exception cref="InvalidCastException">This cell's space is not a <typeparamref name="TOther"/>.</exception>
-    internal Point<TOther> Retyped<TOther>()
-      where TOther : class, ISpace
-      => new Point<TOther>((TOther)(object)Space, Column, Row);
-
-    /// <summary>
     /// Whether <paramref name="other"/> names the same cell of the same space — see the type's own
     /// summary for why this is not a comparison of values.
     /// </summary>
@@ -111,9 +95,8 @@ namespace Unrect.Core
     public static bool operator !=(Point<TSpace> first, Point<TSpace> second) => !(first == second);
 
     /// <summary>
-    /// The cell's address inside its own space, as <c>(column,row)</c>. For diagnostics: a point
-    /// knows where it sits in the space it came from and not where that space sits in the sheet, so
-    /// this is never an A1 address.
+    /// The cell's address as <c>(column,row)</c>, in the space's own root coordinates. Coordinates
+    /// rather than A1, because a space need not be a sheet.
     /// </summary>
     public override string ToString() => $"({Column},{Row})";
   }
