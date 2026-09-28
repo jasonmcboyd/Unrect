@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <!-- This project PRODUCES the "Unrect" package. The engine is the top of the graph — it drives
-       the definitions in Unrect over the calculus in Strategies and the substrate in Core — so it is
+       the definitions in Unrect, spelled by the vocabulary in Unrect.Fluent, over the calculus in Strategies and the substrate in Core — so it is
        the one project that can bundle every assembly a consumer needs without a reference cycle.
        A consumer installs "Unrect" and has the vocabulary, the engine and the analyzers. -->
   <PropertyGroup>
@@ -22,10 +22,11 @@
     <InternalsVisibleTo Include="Unrect.Benchmarks" />
   </ItemGroup>
 
-  <!-- One package, four assemblies. PrivateAssets stops them appearing as dependencies, and the
+  <!-- One package, five assemblies. PrivateAssets stops them appearing as dependencies, and the
        target below puts their build output in the package instead. -->
   <ItemGroup>
     <ProjectReference Include="..\Unrect\Unrect.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\Unrect.Fluent\Unrect.Fluent.csproj" PrivateAssets="all" />
     <ProjectReference Include="..\Unrect.Core\Unrect.Core.csproj" PrivateAssets="all" />
     <ProjectReference Include="..\Unrect.Strategies\Unrect.Strategies.csproj" PrivateAssets="all" />
   </ItemGroup>
@@ -66,7 +67,7 @@
 
   <!-- Symbols ship IN the package rather than in a symbol package. A .snupkg carries one assembly's
        pdb and there is no supported hook for adding a bundled project's, so a symbol package here
-       would debug a quarter of what the package contains. Putting all four pdbs in lib/ instead is
+       would debug a quarter of what the package contains. Putting all five pdbs in lib/ instead is
        one property, works with SourceLink's embedded commit, and needs nothing of the consumer. -->
   <PropertyGroup>
     <IncludeSymbols>false</IncludeSymbols>

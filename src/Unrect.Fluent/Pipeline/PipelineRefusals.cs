@@ -1,4 +1,4 @@
-namespace Unrect.Projections
+namespace Unrect.Fluent
 {
   /// <summary>
   /// What a stage says when it refuses a member, written once and attached to every stub that

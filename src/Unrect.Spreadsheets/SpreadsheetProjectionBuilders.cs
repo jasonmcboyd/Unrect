@@ -10,7 +10,7 @@ namespace Unrect.Spreadsheets
   /// The spreadsheet vocabulary as a file scope, imported beside
   /// <c>ProjectionBuilders&lt;TSpace&gt;</c> and closed over the same space:
   /// <code>
-  /// using static Unrect.Projections.ProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;;
+  /// using static Unrect.Fluent.ProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;;
   /// using static Unrect.Spreadsheets.SpreadsheetProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;;
   ///
   /// var line = Overlay(o =&gt;

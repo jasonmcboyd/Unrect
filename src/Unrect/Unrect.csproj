@@ -16,6 +16,8 @@
     <!-- So the tests can reach IOpaqueComposite, which marks a composite whose children exist only
          while it runs; asserting that through reflection was the alternative. -->
     <InternalsVisibleTo Include="Unrect.Tests" />
+    <!-- The builders construct the nodes, whose constructors stay internal until they are opened one by one. -->
+    <InternalsVisibleTo Include="Unrect.Fluent" />
 
     <!-- So a backend can be a first-class part of this vocabulary rather than a consumer of it:
          DefinitionNode's private-protected constructor (a backend's leaves are real primitives, not

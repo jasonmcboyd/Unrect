@@ -1,8 +1,9 @@
 using System;
 
 using Unrect.Core;
+using Unrect.Projections;
 
-namespace Unrect.Projections
+namespace Unrect.Fluent
 {
   /// <summary>
   /// What a section announces itself by: <c>Heading("Portfolio Income").Of(lines)</c> finds the row

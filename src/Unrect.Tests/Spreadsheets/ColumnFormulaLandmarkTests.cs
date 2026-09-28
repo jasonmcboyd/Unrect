@@ -1,11 +1,12 @@
 using System;
 
 using Unrect.Projections;
+using Unrect.Fluent;
 using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>;
+using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>;
 using static Unrect.Spreadsheets.SpreadsheetProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 

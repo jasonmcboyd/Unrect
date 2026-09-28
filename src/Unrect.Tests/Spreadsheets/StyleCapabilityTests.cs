@@ -8,7 +8,7 @@ using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>;
+using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>;
 
 namespace Unrect.Tests.Spreadsheets
 {

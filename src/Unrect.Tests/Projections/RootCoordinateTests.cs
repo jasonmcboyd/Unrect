@@ -8,7 +8,7 @@ using Unrect.Tests.Streaming;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Spreadsheets.SpreadsheetProjections;
 using static Unrect.Tests.ProjectionTestSpaces;
 

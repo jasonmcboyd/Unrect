@@ -5,10 +5,11 @@ using System.Linq;
 
 using Unrect.Spreadsheets;
 using Unrect.Projections;
+using Unrect.Fluent;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 using Unrect.Projections;
+using Unrect.Fluent;
 
 namespace Unrect.Spreadsheets
 {

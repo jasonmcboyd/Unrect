@@ -2,6 +2,7 @@ using System;
 using System.IO;
 
 using Unrect.Projections;
+using Unrect.Fluent;
 using Unrect.Spreadsheets;
 
 using Xunit;

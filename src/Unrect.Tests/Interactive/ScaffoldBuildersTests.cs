@@ -7,7 +7,7 @@ using Unrect.Spreadsheets;
 using Xunit;
 
 using static Unrect.Interactive.ScaffoldBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 
 namespace Unrect.Tests.Interactive

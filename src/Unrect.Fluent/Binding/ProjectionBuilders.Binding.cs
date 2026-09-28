@@ -4,8 +4,9 @@ using System.Linq;
 
 using Unrect.Core;
 using Unrect.Strategies;
+using Unrect.Projections;
 
-namespace Unrect.Projections
+namespace Unrect.Fluent
 {
   /// <summary>
   /// How the exploratory table rung and the labelled-pair block actually read a region. Kept apart

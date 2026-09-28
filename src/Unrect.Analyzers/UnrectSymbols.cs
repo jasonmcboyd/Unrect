@@ -72,8 +72,8 @@ namespace Unrect.Analyzers
       // split, so the analyzer and library packages need not be upgraded in lockstep.
       var projection = compilation.GetTypeByMetadataName("Unrect.Projections.IProjectionDefinition`2")
         ?? compilation.GetTypeByMetadataName("Unrect.Projections.IProjection`2");
-      var builders = compilation.GetTypeByMetadataName("Unrect.Projections.ProjectionBuilders`1");
-      var stage = compilation.GetTypeByMetadataName("Unrect.Projections.PlacementStage`1");
+      var builders = compilation.GetTypeByMetadataName("Unrect.Fluent.ProjectionBuilders`1");
+      var stage = compilation.GetTypeByMetadataName("Unrect.Fluent.PlacementStage`1");
 
       if (space is null || projection is null || builders is null || stage is null)
         return null;

@@ -1,12 +1,14 @@
 <Query Kind="Statements">
   <Reference Relative="..\src\Unrect.Core\bin\Debug\netstandard2.1\Unrect.Core.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Core\bin\Debug\netstandard2.1\Unrect.Core.dll</Reference>
   <Reference Relative="..\src\Unrect\bin\Debug\netstandard2.1\Unrect.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect\bin\Debug\netstandard2.1\Unrect.dll</Reference>
+  <Reference Relative="..\src\Unrect.Fluent\bin\Debug\netstandard2.1\Unrect.Fluent.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Fluent\bin\Debug\netstandard2.1\Unrect.Fluent.dll</Reference>
   <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Engine.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Engine.dll</Reference>
   <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll</Reference>
   <Reference Relative="..\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll</Reference>
-  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;</Namespace>
+  <Namespace>static Unrect.Fluent.ProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;</Namespace>
   <Namespace>static Unrect.Spreadsheets.SpreadsheetProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;</Namespace>
   <Namespace>Unrect.Core</Namespace>
+  <Namespace>Unrect.Fluent</Namespace>
   <Namespace>Unrect.Projections</Namespace>
   <Namespace>Unrect.Spreadsheets</Namespace>
 </Query>
@@ -14,7 +16,7 @@
 // NOTE: examples/scrubbed-k1.xlsx is a LOCAL-ONLY fixture (gitignored, never committed).
 //
 // ONE root projection, ZERO hard-coded coordinates. The space is named once, in the query's
-// namespace imports: `using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>` —
+// namespace imports: `using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>` —
 // this file declares nothing that asserts a kind, so it takes only the canonical vocabulary; the
 // kinded READS below (.Text(), .Double(), .DecimalOrBlank()) are extensions on a point over a sheet,
 // and come with the `Unrect.Spreadsheets` namespace import rather than with a second builder class.

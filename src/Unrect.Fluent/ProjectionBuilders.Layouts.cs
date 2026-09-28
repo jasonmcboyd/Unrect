@@ -1,6 +1,7 @@
 using Unrect.Core;
+using Unrect.Projections;
 
-namespace Unrect.Projections
+namespace Unrect.Fluent
 {
   /// <summary>
   /// The layout composites: children declared by calling <c>Next</c> on a cursor, in the order they

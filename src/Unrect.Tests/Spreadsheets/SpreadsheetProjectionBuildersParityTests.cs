@@ -18,7 +18,7 @@ using Xunit;
 // other `using`s around it, so neither `Unrect.Projections;` nor `Unrect.Spreadsheets;` above helps
 // here. That is the price of naming the space exactly once per file, and it is paid in the one place
 // where a namespace import cannot reach.
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>;
+using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>;
 using static Unrect.Spreadsheets.SpreadsheetProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>;
 
 namespace Unrect.Tests.Spreadsheets

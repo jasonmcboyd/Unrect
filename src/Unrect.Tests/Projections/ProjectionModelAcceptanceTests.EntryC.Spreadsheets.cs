@@ -1,4 +1,5 @@
 using Unrect.Projections;
+using Unrect.Fluent;
 using Unrect.Spreadsheets;
 
 using Xunit;
@@ -16,7 +17,7 @@ using Xunit;
 // names, which is exactly what lets these two `using static` directives coexist — `Formula` and
 // `RowWithFormula` are nowhere in ProjectionBuilders<>, so nothing collides and the declaration
 // below is prefix-free across both vocabularies at once.
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>;
+using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>;
 using static Unrect.Spreadsheets.SpreadsheetProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>;
 
 namespace Unrect.Tests.Projections

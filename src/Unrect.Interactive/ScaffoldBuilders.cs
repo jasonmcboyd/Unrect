@@ -4,6 +4,7 @@ using System.Linq;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Fluent;
 using Unrect.Spreadsheets;
 
 namespace Unrect.Interactive

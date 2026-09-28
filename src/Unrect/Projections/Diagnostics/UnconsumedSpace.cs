@@ -8,7 +8,7 @@ namespace Unrect.Projections
   /// The one diagnostic a successful parse can still raise: the cells nobody described. It is how a
   /// declaration that has drifted from its file says so without failing.
   /// </summary>
-  public static partial class ProjectionExtensions
+  internal static class UnconsumedSpace
   {
     /// <summary>
     /// Space left over is the projection drifting from the file — the cells nobody described are
@@ -16,7 +16,7 @@ namespace Unrect.Projections
     /// remainder is: a projection that starts two rows down described neither those two rows nor
     /// whatever follows it.
     /// </summary>
-    internal static void ReportUnconsumed<TSpace>(IProjectionDefinition projection, Plane<TSpace> space, Offset gap, Size described, ProjectorScope<TSpace> scope)
+    internal static void Report<TSpace>(IProjectionDefinition projection, Plane<TSpace> space, Offset gap, Size described, ProjectorScope<TSpace> scope)
       where TSpace : class, ISpace
     {
       var size = space.Extent;

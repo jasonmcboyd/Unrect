@@ -11,7 +11,7 @@ namespace Unrect.Projections
   /// A set of labels along an axis: the result of a table projecting its own header, handed to a row
   /// bind so a declaration written once can find this file's columns, and — since it is public and
   /// implements <see cref="ILabelSource"/> — what a scope-introducer such as
-  /// <see cref="ProjectionBuilders{TSpace}.WithColumnLabels{T}(LabelMap, IProjectionDefinition{TSpace, T})"/>
+  /// <c>ProjectionBuilders&lt;TSpace&gt;.WithColumnLabels</c>
   /// pushes so a decoupled record reads by name.
   /// <para>
   /// It is per-file data rather than geometry, which is why it arrives as an argument and not as
@@ -44,7 +44,7 @@ namespace Unrect.Projections
 
     /// <summary>
     /// Parses <paramref name="header"/> into the labels a table binds by — the one home of the header
-    /// parse, read by both <see cref="ProjectionBuilders{TSpace}.ColumnLabels(int)"/> and a built-in <c>Table</c>, so
+    /// parse, read by both <c>ProjectionBuilders&lt;TSpace&gt;.ColumnLabels</c> and a built-in <c>Table</c>, so
     /// the two mint byte-identical labels, ordinals and citations. Both the label source and the
     /// header-citation face are the same <see cref="HeaderLabels{TSpace}"/>.
     /// </summary>
@@ -364,7 +364,7 @@ namespace Unrect.Projections
   /// <summary>
   /// A header strip parsed into its labels: the trimmed names in column order, the content-rule lookup
   /// the primitive path resolves through, and the header cells the bind rung cites. It is the single
-  /// home of the header parse — both a table and <see cref="ProjectionBuilders{TSpace}.ColumnLabels(int)"/> read a
+  /// home of the header parse — both a table and <c>ProjectionBuilders&lt;TSpace&gt;.ColumnLabels</c> read a
   /// header through here.
   /// </summary>
   /// <typeparam name="TSpace">The space the header strip reads through.</typeparam>

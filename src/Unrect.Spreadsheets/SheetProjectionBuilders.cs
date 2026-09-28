@@ -10,7 +10,7 @@ namespace Unrect.Spreadsheets
   /// The kinded vocabulary as a file scope, for a declaration written over a sheet that carries no
   /// formulas — which is what the streaming door vends:
   /// <code>
-  /// using static Unrect.Projections.ProjectionBuilders&lt;Unrect.Spreadsheets.ICellSpace&gt;;
+  /// using static Unrect.Fluent.ProjectionBuilders&lt;Unrect.Spreadsheets.ICellSpace&gt;;
   /// using static Unrect.Spreadsheets.SheetProjectionBuilders&lt;Unrect.Spreadsheets.ICellSpace&gt;;
   ///
   /// var row = HorizontalFlow(h =&gt;

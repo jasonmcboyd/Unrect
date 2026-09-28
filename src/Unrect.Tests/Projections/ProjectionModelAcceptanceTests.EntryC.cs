@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 
 using Unrect.Projections;
+using Unrect.Fluent;
 using Unrect.Spreadsheets;
 
 using Xunit;
@@ -24,7 +25,7 @@ using static Unrect.Tests.Observations;
 // The type argument is spelled in FULL, and must be: a using alias or a `using static` is resolved
 // as if the other usings were not there, so `ProjectionBuilders<ICellSpace>` would not bind even with
 // `using Unrect.Core;` four lines above.
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 
 namespace Unrect.Tests.Projections

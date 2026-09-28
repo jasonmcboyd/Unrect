@@ -3,7 +3,7 @@ using System;
 using Unrect.Core;
 using Unrect.Strategies;
 
-namespace Unrect.Projections
+namespace Unrect.Fluent
 {
   /// <summary>
   /// The strategy layer's vocabulary, re-exported so the one <c>using static</c> at the top of a

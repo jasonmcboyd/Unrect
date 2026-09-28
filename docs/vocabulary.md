@@ -6,10 +6,11 @@ TResult>`. A declaration file imports the vocabulary once, closed over the space
 declaration in the file is written against:
 
 ```csharp
-using Unrect.Projections;                                                      // the postfix half
+using Unrect.Projections;
+using Unrect.Fluent;                                                           // the postfix half
 using Unrect.Spreadsheets;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 
 var report = VerticalFlow(v => new Report(
@@ -320,7 +321,7 @@ Streaming's cost is declaration-shaped, not a flat tax — see `docs/streaming.m
 ## Entry — the one door in
 
 A declaration file reaches the vocabulary through exactly one door: `using static
-Unrect.Projections.ProjectionBuilders<TSpace>;`, plus a backend's own sibling closed class
+Unrect.Fluent.ProjectionBuilders<TSpace>;`, plus a backend's own sibling closed class
 (`using static Unrect.Spreadsheets.SheetProjectionBuilders<TSpace>;` or
 `SpreadsheetProjectionBuilders<TSpace>`) for a backend's own leaves and matchers. There is no
 non-generic entry point and no runtime scope value any more — `ProjectionBuilders<TSpace>`
@@ -328,10 +329,11 @@ answers the space once, at the class, in the `using` block, where C# already put
 bindings, so every declaration below it is written with zero prefix.
 
 ```csharp
-using Unrect.Projections;                                                      // the postfix half
+using Unrect.Projections;
+using Unrect.Fluent;                                                           // the postfix half
 using Unrect.Spreadsheets;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>;
+using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>;
 using static Unrect.Spreadsheets.SpreadsheetProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>;
 
 var report = VerticalFlow(v => new Report(

@@ -5,10 +5,11 @@ using System.Runtime.CompilerServices;
 
 using Unrect.Core;
 using Unrect.Strategies;
+using Unrect.Projections;
 
 using static Unrect.Strategies.SizeStrategies;
 
-namespace Unrect.Projections
+namespace Unrect.Fluent
 {
   /// <summary>
   /// The leaves, the tables, the labels, the repeats and the alternation — what a declaration says

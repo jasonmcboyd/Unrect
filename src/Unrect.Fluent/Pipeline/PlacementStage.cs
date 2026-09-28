@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 using Unrect.Core;
+using Unrect.Projections;
 
-namespace Unrect.Projections
+namespace Unrect.Fluent
 {
   /// <summary>
   /// A placement being declared, one stage at a time, with the projection still to come:

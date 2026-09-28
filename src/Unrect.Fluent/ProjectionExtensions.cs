@@ -2,8 +2,9 @@ using System;
 using System.Runtime.CompilerServices;
 
 using Unrect.Core;
+using Unrect.Projections;
 
-namespace Unrect.Projections
+namespace Unrect.Fluent
 {
   /// <summary>
   /// Application, naming, tolerance, and the one surviving extent modifier.

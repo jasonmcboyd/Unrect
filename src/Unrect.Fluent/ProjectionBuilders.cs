@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 
 using Unrect.Core;
 
-namespace Unrect.Projections
+namespace Unrect.Fluent
 {
   /// <summary>
   /// The projection vocabulary, with <typeparamref name="TSpace"/> answered once at the top of a
@@ -13,7 +13,7 @@ namespace Unrect.Projections
   /// using Unrect.Projections;                                                      // the postfix half
   /// using Unrect.Spreadsheets;
   ///
-  /// using static Unrect.Projections.ProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;;
+  /// using static Unrect.Fluent.ProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;;
   /// using static Unrect.Spreadsheets.SpreadsheetProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;;
   ///
   /// var report = VerticalFlow(v =&gt;

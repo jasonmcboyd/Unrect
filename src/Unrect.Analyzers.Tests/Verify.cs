@@ -29,9 +29,10 @@ namespace Unrect.Analyzers.Tests
 
       using Unrect.Core;
       using Unrect.Projections;
+      using Unrect.Fluent;
       using Unrect.Spreadsheets;
 
-      using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+      using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
       using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 
       """;
@@ -39,8 +40,9 @@ namespace Unrect.Analyzers.Tests
     private static readonly MetadataReference[] Unrect =
     {
       MetadataReference.CreateFromFile(typeof(Core.ISpace).Assembly.Location),
-      MetadataReference.CreateFromFile(typeof(Projections.ProjectionBuilders<>).Assembly.Location),
+      MetadataReference.CreateFromFile(typeof(Fluent.ProjectionBuilders<>).Assembly.Location),
       MetadataReference.CreateFromFile(typeof(Projections.ProjectionMapping).Assembly.Location),
+      MetadataReference.CreateFromFile(typeof(Projections.IProjectionDefinition<,>).Assembly.Location),
       MetadataReference.CreateFromFile(typeof(Strategies.SizeStrategies).Assembly.Location),
       MetadataReference.CreateFromFile(typeof(Spreadsheets.SpreadsheetProjections).Assembly.Location),
     };

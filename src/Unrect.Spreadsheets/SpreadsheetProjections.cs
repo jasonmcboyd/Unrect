@@ -2,6 +2,7 @@ using System;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Fluent;
 using Unrect.Strategies;
 
 namespace Unrect.Spreadsheets

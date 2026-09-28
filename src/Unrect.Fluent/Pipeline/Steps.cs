@@ -2,8 +2,9 @@ using System;
 
 using Unrect.Core;
 using Unrect.Strategies;
+using Unrect.Projections;
 
-namespace Unrect.Projections
+namespace Unrect.Fluent
 {
   /// <summary>
   /// What a placement pipeline has declared so far, held as the modifier calls its terminal replays
