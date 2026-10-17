@@ -20,7 +20,7 @@
     <InternalsVisibleTo Include="Unrect.Interactive" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Unrect\Unrect.csproj" />
+    <ProjectReference Include="..\Unrect.Projections\Unrect.Projections.csproj" />
     <ProjectReference Include="..\Unrect.Core\Unrect.Core.csproj" />
     <ProjectReference Include="..\Unrect.Strategies\Unrect.Strategies.csproj" />
   </ItemGroup>

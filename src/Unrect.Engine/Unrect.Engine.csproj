@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <!-- This project PRODUCES the "Unrect" package. The engine is the top of the graph — it drives
-       the definitions in Unrect, spelled by the vocabulary in Unrect.Fluent, over the calculus in Strategies and the substrate in Core — so it is
+       the definitions in Unrect.Projections, spelled by the vocabulary in Unrect.Fluent, over the calculus in Strategies and the substrate in Core — so it is
        the one project that can bundle every assembly a consumer needs without a reference cycle.
        A consumer installs "Unrect" and has the vocabulary, the engine and the analyzers. -->
   <PropertyGroup>
@@ -25,7 +25,7 @@
   <!-- One package, five assemblies. PrivateAssets stops them appearing as dependencies, and the
        target below puts their build output in the package instead. -->
   <ItemGroup>
-    <ProjectReference Include="..\Unrect\Unrect.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\Unrect.Projections\Unrect.Projections.csproj" PrivateAssets="all" />
     <ProjectReference Include="..\Unrect.Fluent\Unrect.Fluent.csproj" PrivateAssets="all" />
     <ProjectReference Include="..\Unrect.Core\Unrect.Core.csproj" PrivateAssets="all" />
     <ProjectReference Include="..\Unrect.Strategies\Unrect.Strategies.csproj" PrivateAssets="all" />

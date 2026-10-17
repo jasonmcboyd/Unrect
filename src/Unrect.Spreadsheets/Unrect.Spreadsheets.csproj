@@ -32,7 +32,7 @@
        advertising only the one dependency a consumer installs. -->
   <ItemGroup>
     <ProjectReference Include="..\Unrect.Engine\Unrect.Engine.csproj" />
-    <ProjectReference Include="..\Unrect\Unrect.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\Unrect.Projections\Unrect.Projections.csproj" PrivateAssets="all" />
     <ProjectReference Include="..\Unrect.Fluent\Unrect.Fluent.csproj" PrivateAssets="all" />
     <ProjectReference Include="..\Unrect.Core\Unrect.Core.csproj" PrivateAssets="all" />
   </ItemGroup>

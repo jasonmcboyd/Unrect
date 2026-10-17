@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.14.37516.0 d17.14
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Unrect", "Unrect\Unrect.csproj", "{AFCFEB42-BD8F-44D3-AF7B-8F5E876A57A4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Unrect.Projections", "Unrect.Projections\Unrect.Projections.csproj", "{AFCFEB42-BD8F-44D3-AF7B-8F5E876A57A4}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Unrect.Core", "Unrect.Core\Unrect.Core.csproj", "{9787265C-E096-4670-B2AA-4E909C7ED60A}"
 EndProject
