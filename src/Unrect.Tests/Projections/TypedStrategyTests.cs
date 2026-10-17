@@ -2,7 +2,6 @@ using System;
 using System.Reflection;
 
 using Unrect.Core;
-using Unrect.Projections;
 using Unrect.Fluent;
 using Unrect.Spreadsheets;
 using Unrect.Strategies;

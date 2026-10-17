@@ -7,7 +7,7 @@ declaration in the file is written against:
 
 ```csharp
 using Unrect.Projections;
-using Unrect.Fluent;                                                           // the postfix half
+using Unrect.Fluent;                                           // the postfix half, and Map
 using Unrect.Spreadsheets;
 
 using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
@@ -328,7 +328,7 @@ bindings, so every declaration below it is written with zero prefix.
 
 ```csharp
 using Unrect.Projections;
-using Unrect.Fluent;                                                           // the postfix half
+using Unrect.Fluent;                                           // the postfix half, and Map
 using Unrect.Spreadsheets;
 
 using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>;
@@ -342,7 +342,8 @@ resolves without the other `using`s around it, the one place in a C# file where 
 does not help. What cannot follow into the closed class is the *postfix* half: C# forbids
 extension methods inside a generic static class (CS1106), so `.Named`, `.Optional`, `.OrBlank`,
 `.Select`, `.Until`, `.AsUnit`, `.AsScaffolding` and the placement modifiers still arrive through
-the ordinary `using Unrect.Projections;` — the seam falls exactly on the geography law: what
+the ordinary `using Unrect.Fluent;`, and so do `Map`, `Apply` and `MapWithDiagnostics`, the verbs
+that run a declaration — the seam falls exactly on the geography law: what
 spells before the subject is imported from the closed class, what spells after it is an extension.
 
 Two boundaries, both load-bearing rather than incidental:

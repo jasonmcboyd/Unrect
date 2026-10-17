@@ -1,6 +1,6 @@
 using System.Linq;
 
-using Unrect.Projections;
+using Unrect.Fluent;
 
 using Xunit;
 

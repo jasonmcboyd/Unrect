@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 
+using Unrect.Fluent;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
 using Unrect.Strategies;

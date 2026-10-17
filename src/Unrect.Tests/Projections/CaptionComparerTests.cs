@@ -1,5 +1,6 @@
 using System;
 
+using Unrect.Fluent;
 using Unrect.Projections;
 
 using Xunit;

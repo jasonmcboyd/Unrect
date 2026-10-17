@@ -1,6 +1,7 @@
 using System;
 
 using Unrect.Core;
+using Unrect.Fluent;
 using Unrect.Projections;
 
 namespace Unrect.Spreadsheets

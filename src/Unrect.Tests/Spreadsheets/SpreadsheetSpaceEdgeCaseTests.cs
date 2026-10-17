@@ -3,6 +3,7 @@ using System.IO;
 
 using Unrect.Core;
 using Unrect.Spreadsheets;
+using Unrect.Fluent;
 using Unrect.Projections;
 using Unrect.Strategies;
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using BenchmarkDotNet.Attributes;
 
 using Unrect.Core;
+using Unrect.Fluent;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
 

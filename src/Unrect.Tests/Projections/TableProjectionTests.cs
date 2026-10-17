@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 
+using Unrect.Fluent;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
 using Unrect.Strategies;

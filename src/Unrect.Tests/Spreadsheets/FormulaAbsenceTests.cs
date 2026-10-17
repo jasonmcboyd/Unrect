@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 
 using Unrect.Core;
+using Unrect.Fluent;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
 using Unrect.Tests.Streaming;

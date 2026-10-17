@@ -2,8 +2,9 @@ using System;
 using System.Collections.Generic;
 
 using Unrect.Core;
+using Unrect.Projections;
 
-namespace Unrect.Projections
+namespace Unrect.Fluent
 {
   /// <summary>
   /// Applying a definition to a space: the engine's door, and the run behind it. <see cref="Map"/>
@@ -11,6 +12,11 @@ namespace Unrect.Projections
   /// <see cref="MapWithDiagnostics"/> the value with everything the run had to say. A run is one
   /// forward pass over the space's rows: each offered to the root machine in order, and, over a
   /// streamed source, released once no open machine may still read it.
+  /// <para>
+  /// In <c>Unrect.Fluent</c> rather than beside the model it runs: the one <c>using</c> a
+  /// declaration file has must cover declaring a projection and running it, and a verb hidden
+  /// behind a second namespace is a verb nobody finds.
+  /// </para>
   /// </summary>
   public static class ProjectionMapping
   {
