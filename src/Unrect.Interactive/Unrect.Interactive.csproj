@@ -17,6 +17,10 @@
        PrivateAssets="all", which by design stops their types flowing transitively, so we compile
        against them here while advertising only the dependencies a consumer installs. -->
   <ItemGroup>
+    <!-- The tests read RuntimeDefaults, the one decision the scaffolder takes from the runtime. -->
+    <InternalsVisibleTo Include="Unrect.Tests" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Unrect.Engine\Unrect.Engine.csproj" />
     <ProjectReference Include="..\Unrect.Spreadsheets\Unrect.Spreadsheets.csproj" />
     <ProjectReference Include="..\Unrect\Unrect.csproj" PrivateAssets="all" />

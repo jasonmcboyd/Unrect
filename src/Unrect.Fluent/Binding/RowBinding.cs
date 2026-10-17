@@ -162,10 +162,12 @@ namespace Unrect.Fluent
       ISet<string> ignored,
       Type space)
     {
-      // Read-only properties are invisible to the binder and are never required.
+      // A property with a setter of any accessibility is bindable — init, set, private set — since
+      // the materialiser is a compiled expression and reaches a private setter as a mapper should.
+      // A get-only property is invisible to the binder and is never required.
       var settable = typeof(T)
         .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-        .Where(p => p.GetSetMethod() is not null && p.GetIndexParameters().Length == 0)
+        .Where(p => p.GetSetMethod(nonPublic: true) is not null && p.GetIndexParameters().Length == 0)
         .ToArray();
 
       if (settable.Length == 0)
