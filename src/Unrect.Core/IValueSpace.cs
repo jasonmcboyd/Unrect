@@ -1,6 +1,4 @@
-using Unrect.Core;
-
-namespace Unrect
+namespace Unrect.Core
 {
   /// <summary>
   /// The value facet: a space whose cells hold a value of one type, beside the text every space

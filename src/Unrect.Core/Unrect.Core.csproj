@@ -1,9 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    THE CHARTER: this project contains exactly the types its contracts speak — nothing else.
+    THE CHARTER: Core is the substrate — what a space is, how it is read, the facets a space may
+    offer, and the reference grid. Nothing else.
 
-    Every type here appears in a contract signature, or in behaviour a contract documents:
+    Every type here is a contract, a type a contract speaks, a facet a space may add, or the one
+    in-memory space that stands in for a backend:
 
       ISpace, the strategy and scan interfaces,
       ILineLandmark                                                  the contracts themselves
@@ -18,6 +20,12 @@
       OutOfBoundsException                                           the throw ISpace mandates
       ScanContractException                                          the throw Scans mandates of a
                                                                      scan that broke its contract
+      CellProblem, TextReads                                         what a read hands back when it
+                                                                     refuses, and the parsing default
+                                                                     a text-backed space may use
+      IValueSpace, ValueReads, IFormulaSpace, FormulaReads           the facets a space may offer,
+                                                                     each with its point half
+      GridSpace                                                      the reference in-memory space
 
     Hashes, Renderings and Spans are internal and exempt: the charter is about what this project's
     contracts SPEAK, and nothing outside this package can name them. Hashes exists because the value
@@ -27,12 +35,12 @@
     target's own rendering agrees with the other's. Spans, because it is the arithmetic every scan
     and machine would otherwise write for itself.
 
-    A type that merely USES those contracts belongs above them, in Unrect: an implementation of
-    ISpace, sugar over one of its members.
+    A type that merely USES those contracts belongs above them, in Unrect.Projections: a node, a
+    machine, a view, a diagnostic.
 
-    The test before adding a type: name the contract it appears in. If you cannot, it goes in
-    Unrect — which ships in the same package, so nothing about the move reaches a consumer but
-    the namespace.
+    The test before adding a type: is it part of what a space IS, how one is read, or a facet one
+    may offer? If not, it goes in Unrect.Projections — which ships in the same package, so nothing
+    about the move reaches a consumer but the namespace.
   -->
 
   <PropertyGroup>

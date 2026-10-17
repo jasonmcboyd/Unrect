@@ -1,10 +1,11 @@
 using System.Linq;
 
+using Unrect.Core;
 using Unrect.Fluent;
 
 using Xunit;
 
-using static Unrect.Fluent.ProjectionBuilders<Unrect.IValueSpace<int>>;
+using static Unrect.Fluent.ProjectionBuilders<Unrect.Core.IValueSpace<int>>;
 
 namespace Unrect.Tests.Projections
 {

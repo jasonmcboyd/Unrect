@@ -1,6 +1,4 @@
-using Unrect.Core;
-
-namespace Unrect.Projections
+namespace Unrect.Core
 {
   /// <summary>
   /// The formula behind a cell, asked of a point: <c>row["Total"].HasFormula()</c>.

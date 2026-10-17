@@ -1,9 +1,7 @@
 using System;
 using System.Globalization;
 
-using Unrect.Core;
-
-namespace Unrect
+namespace Unrect.Core
 {
   /// <summary>
   /// A rectangular array of <typeparamref name="T"/> viewed as a space: the text facet answered
@@ -21,7 +19,8 @@ namespace Unrect
   /// <para>
   /// Useful directly, not only to adapters: a test or a script with values already in hand can build
   /// one through <see cref="GridSpace"/>'s factories and skip the file entirely, and everything
-  /// above it behaves exactly as it does over a workbook.
+  /// above it behaves exactly as it does over a workbook. It is the reference in-memory space, and
+  /// lives in Core as such.
   /// </para>
   /// </summary>
   /// <typeparam name="T">What every cell of the grid holds.</typeparam>

@@ -1,6 +1,4 @@
-using Unrect.Core;
-
-namespace Unrect
+namespace Unrect.Core
 {
   /// <summary>
   /// A space whose cells may carry formulas as well as values.

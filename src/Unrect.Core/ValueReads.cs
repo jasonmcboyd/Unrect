@@ -1,6 +1,4 @@
-using Unrect.Core;
-
-namespace Unrect
+namespace Unrect.Core
 {
   /// <summary>
   /// Reading a cell of a grid of values as the value it holds, rather than as the text it says.
