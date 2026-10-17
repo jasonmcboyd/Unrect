@@ -7,13 +7,12 @@ using Unrect.Spreadsheets;
 using Xunit;
 
 using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>;
-using static Unrect.Spreadsheets.SpreadsheetProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Spreadsheets
 {
   /// <summary>
-  /// <c>ColumnWithFormula()</c>, the declared twin of <c>RowWithFormula()</c>.
+  /// <c>ColumnWithCell(p => p.HasFormula())</c>, the declared twin of <c>RowWithCell(p => p.HasFormula())</c>.
   /// <para>
   /// It exists because the mirror is law, not because a caller asked for it — which is exactly the
   /// shape that goes untested and rots. Everything the row half is pinned for lives in three other
@@ -72,7 +71,6 @@ namespace Unrect.Tests.Spreadsheets
     }
 
     /// <summary>A space that holds no formulas and cannot be asked about them.</summary>
-    private static ICellSpace Plain() => SheetGrid.Of(new object?[,] { { "a", "b" } });
 
     /// <summary>
     /// A space that CAN be asked and has nothing to report — the only way to reach the bare
@@ -88,7 +86,7 @@ namespace Unrect.Tests.Spreadsheets
     {
       // C is the first computed column, and On owns it: offset 2, not 3. The heading is read from the
       // matched column itself, which is what distinguishes On from RightOf below.
-      var applied = On(ColumnWithFormula()).Of(Text()).Apply(Sheet());
+      var applied = On(ColumnWithCell(p => p.HasFormula())).Of(Point().Text()).Apply(Sheet());
 
       Assert.Equal("Rate", applied.Value);
       Assert.Equal(2, applied.Offset.Column);
@@ -98,14 +96,14 @@ namespace Unrect.Tests.Spreadsheets
     [Fact]
     public void RightOf_StartsExactlyOneColumnRightOfTheMatch()
     {
-      var applied = RightOf(ColumnWithFormula()).Of(Text()).Apply(Sheet());
+      var applied = RightOf(ColumnWithCell(p => p.HasFormula())).Of(Point().Text()).Apply(Sheet());
 
       Assert.Equal("Total", applied.Value);
       Assert.Equal(3, applied.Offset.Column);
 
       // Said the other way, so a regression in either operator shows up here: one more than On.
       Assert.Equal(
-        On(ColumnWithFormula()).Of(Text()).Apply(Sheet()).Offset.Column + 1,
+        On(ColumnWithCell(p => p.HasFormula())).Of(Point().Text()).Apply(Sheet()).Offset.Column + 1,
         applied.Offset.Column);
     }
 
@@ -114,11 +112,11 @@ namespace Unrect.Tests.Spreadsheets
     {
       // C holds a formula and D holds one that mentions SUM. The bare overload stops at C; this one
       // must walk past it. A substring, case-insensitively — the rule the row half documents.
-      Assert.Equal("Total", On(ColumnWithFormula("SUM")).Of(Text()).Map(Sheet()));
-      Assert.Equal("Total", On(ColumnWithFormula("sum")).Of(Text()).Map(Sheet()));
+      Assert.Equal("Total", On(ColumnWithCell(p => p.Formula() is string f && f.IndexOf("SUM", StringComparison.OrdinalIgnoreCase) >= 0)).Of(Point().Text()).Map(Sheet()));
+      Assert.Equal("Total", On(ColumnWithCell(p => p.Formula() is string f && f.IndexOf("sum", StringComparison.OrdinalIgnoreCase) >= 0)).Of(Point().Text()).Map(Sheet()));
 
       // ...and the search is genuinely column-major: the reference formula in C matches on its own.
-      Assert.Equal("Rate", On(ColumnWithFormula("$C$1")).Of(Text()).Map(Sheet()));
+      Assert.Equal("Rate", On(ColumnWithCell(p => p.Formula() is string f && f.IndexOf("$C$1", StringComparison.OrdinalIgnoreCase) >= 0)).Of(Point().Text()).Map(Sheet()));
     }
 
     [Fact]
@@ -128,7 +126,7 @@ namespace Unrect.Tests.Spreadsheets
       // space, and the pipeline accepts this matcher only because that space can answer it — which
       // would not compile if the column lift had been left off the demanding family.
       IProjectionDefinition<ISpreadsheetSpace, string> firstComputedColumn =
-        On(ColumnWithFormula()).Of(Column(cells => cells[0].Text()));
+        On(ColumnWithCell(p => p.HasFormula())).Of(Column(cells => cells[0].Text()));
 
       Assert.Equal("Rate", firstComputedColumn.Map(Sheet()));
     }
@@ -141,7 +139,7 @@ namespace Unrect.Tests.Spreadsheets
       // The half that keeps the test above meaningful. Over a space that CAN answer, "there is no
       // such column" is an ordinary miss, and the ordinary tolerances are exactly what it is for —
       // otherwise "loud" would only mean this matcher is loud about everything.
-      var missing = On(ColumnWithFormula("MEDIAN")).Of(Text());
+      var missing = On(ColumnWithCell(p => p.Formula() is string f && f.IndexOf("MEDIAN", StringComparison.OrdinalIgnoreCase) >= 0)).Of(Point().Text());
 
       Assert.Null(missing.Optional().Map(Sheet()));
       Assert.Equal("fallback", missing.Else("fallback").Map(Sheet()));
@@ -150,45 +148,6 @@ namespace Unrect.Tests.Spreadsheets
       var failure = Assert.Throws<ProjectionException>(() => missing.Map(Sheet()));
 
       Assert.False(failure.IsFault, "a matcher that looked and found nothing is not a fault");
-    }
-
-    // --- The axis word, which is the whole difference between the twins -----------------------------
-
-    [Fact]
-    public void TheMatcherNamesItselfByItsOwnAxis()
-    {
-      // The landmarks share a base that builds both of these strings from one axis argument, so a
-      // copy-pasted "Row" would be invisible everywhere else in the suite. Both overloads, because
-      // they take different branches of that constructor.
-      //
-      // (The fault said the axis too, until the capability seam went: what a boundary that could not
-      // look throws now is a failed cast, which speaks of the TYPE rather than of the matcher.)
-      // The absence noun is the matcher family's own voice, on the column axis. The bare form needs
-      // a space that can answer and has nothing to report; over Sheet() it always finds one.
-      Assert.Contains(
-        "no column with a formula",
-        Assert.Throws<ProjectionException>(() => On(ColumnWithFormula()).Of(Text()).Map(Barren())).Message,
-        StringComparison.Ordinal);
-
-      Assert.Contains(
-        "no column with a formula mentioning 'MEDIAN'",
-        Assert.Throws<ProjectionException>(() => On(ColumnWithFormula("MEDIAN")).Of(Text()).Map(Sheet())).Message,
-        StringComparison.Ordinal);
-    }
-
-    // A formula matcher is an ILineLandmark<ISpreadsheetSpace>, and every member that takes a landmark
-    // is written over the declaration's own space, so handing one to a pipeline closed over ICellSpace
-    // is a compile error where it is written. The run-time fault that used to catch the mis-wiring,
-    // and the tests that pinned it, went with the seam that made it possible.
-
-    [Fact]
-    public void ItRefusesAnEmptyThingToLookFor()
-    {
-      // A matcher with nothing to look for would match the first formula anywhere and read as though
-      // it had been asked a question. The guard is shared with the row twin; this pins the column
-      // overload reaches it.
-      Assert.Equal("containing", Assert.Throws<ArgumentException>(() => SpreadsheetProjections.ColumnWithFormula<ISpreadsheetSpace>("")).ParamName);
-      Assert.Equal("containing", Assert.Throws<ArgumentException>(() => SpreadsheetProjections.ColumnWithFormula<ISpreadsheetSpace>(null!)).ParamName);
     }
   }
 }

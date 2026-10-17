@@ -1,6 +1,7 @@
 using System;
 
 using Unrect.Core;
+using Unrect.Fluent;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
 using Unrect.Strategies;
@@ -46,8 +47,8 @@ namespace Unrect.Tests.Strategies
     public void OnAndUntilTakeEitherAxisAndFollowTheLandmarks()
     {
       // Occupancy and a bound have no direction of their own: the landmark carries it.
-      Assert.Equal("3", On(RowSaying("3")).Of(AsText()).Map(Sheet()));
-      Assert.Equal("2", On(ColumnSaying("2")).Of(AsText()).Map(Sheet()));
+      Assert.Equal("3", On(RowSaying("3")).Of(Point().AsText()).Map(Sheet()));
+      Assert.Equal("2", On(ColumnSaying("2")).Of(Point().AsText()).Map(Sheet()));
       Assert.Equal(1, Until(ColumnSaying("2")).Of(Row(strip => strip.Count)).Map(Sheet()));
       Assert.Equal(1, Until(RowSaying("3")).Of(Column(strip => strip.Count)).Map(Sheet()));
     }

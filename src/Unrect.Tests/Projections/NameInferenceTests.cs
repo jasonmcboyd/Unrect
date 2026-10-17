@@ -5,7 +5,6 @@ using Unrect.Spreadsheets;
 using Xunit;
 
 using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -34,8 +33,6 @@ namespace Unrect.Tests.Projections
   {
     private static IProjectionDefinition<ICellSpace, int> Number() => IntCell();
 
-    /// <summary>A projection that always fails, so every test reads its label off the failure.</summary>
-    private static IProjectionDefinition<ICellSpace, string> Text() => TextCell();
 
     private static ProjectionException Failure<T>(IProjectionDefinition<ICellSpace, T> projection) => Assert.Throws<ProjectionException>(() => projection.Map(Ladder()));
 
@@ -44,7 +41,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void Rung1_AnExplicitNameWins()
     {
-      var transactions = Text();
+      var transactions = Point().Text();
 
       var failure = Failure(VerticalFlow(v => $"{v.Next(Number())}{v.Next(transactions.Named("summary"))}"));
 
@@ -57,7 +54,7 @@ namespace Unrect.Tests.Projections
     {
       // The name the user already wrote, reused. It is rendered verbatim: the point of the segment
       // is to lead a reader back to the line that produced it.
-      var transactions = Text();
+      var transactions = Point().Text();
 
       var failure = Failure(VerticalFlow(v => $"{v.Next(Number())}{v.Next(transactions)}"));
 
@@ -70,7 +67,7 @@ namespace Unrect.Tests.Projections
     {
       // The label is the use site's, not the projection's, which is what lets one projection be two
       // things.
-      var transactions = Text();
+      var transactions = Point().Text();
 
       Failure(VerticalFlow(v => $"{v.Next(Number())}{v.Next(transactions)}"));
 
@@ -111,8 +108,8 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ANameBeatsAnIdentifierWhichBeatsAnOrdinal()
     {
-      var labelled = Text().Named("chosen");
-      var identified = Text();
+      var labelled = Point().Text().Named("chosen");
+      var identified = Point().Text();
 
       Assert.Equal("'chosen'", Failure(VerticalFlow(v =>
       {
@@ -155,7 +152,7 @@ namespace Unrect.Tests.Projections
     {
       // One instance, two well-named locals, two segments — the whole reason the label lives at the
       // use site.
-      var shared = Text();
+      var shared = Point().Text();
       var gross = shared;
       var net = shared;
 
@@ -179,9 +176,9 @@ namespace Unrect.Tests.Projections
       // Select, Padded and Until add no segment of their own, so the label travels through them and
       // lands on the projection that does render one — one segment carrying the use site's name,
       // not a wrapper segment followed by an anonymous child.
-      var selected = Text().Select(s => s);
-      var padded = Text().Padded(0);
-      var bounded = Until(RowContaining("Nothing here"), orEnd: true).Of(Text());
+      var selected = Point().Text().Select(s => s);
+      var padded = Point().Text().Padded(0);
+      var bounded = Until(RowContaining("Nothing here"), orEnd: true).Of(Point().Text());
 
       Assert.Equal("VerticalFlow -> 'selected' (Text)", Failure(VerticalFlow(v =>
       {
@@ -214,7 +211,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void TheLadderIsTheSameInAnOverlay()
     {
-      var transactions = Text();
+      var transactions = Point().Text();
 
       var identified = Assert.Throws<ProjectionException>(() =>
         Overlay(o => $"{o.Next(Number())}{o.Next(transactions)}").Map(Ladder()));
@@ -234,7 +231,7 @@ namespace Unrect.Tests.Projections
       // Inference applies to Next only; capturing factory arguments is deferred. A repeat's index
       // is a coordinate into data and stays 0-based in brackets, beside a 1-based ordinal in
       // hashes.
-      var items = VerticalRepeat(Text());
+      var items = VerticalRepeat(Point().Text());
 
       var failure = Failure(VerticalFlow(v => $"{string.Join(",", v.Next(items))}"));
 
@@ -253,7 +250,7 @@ namespace Unrect.Tests.Projections
     {
       // The index decorates the repeat, the label lands on the item — which is how a named item has
       // always rendered. Capture only changes which rung supplies that segment's text.
-      var investorDetail = Text();
+      var investorDetail = Point().Text();
 
       var failure = Failure(VerticalRepeat(investorDetail));
 
@@ -264,7 +261,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void Rung1_AnExplicitNameStillBeatsTheItemsIdentifier()
     {
-      var chosen = Text().Named("explicit");
+      var chosen = Point().Text().Named("explicit");
 
       Assert.Equal("VerticalRepeat[0] -> 'explicit' (Text)", Failure(VerticalRepeat(chosen)).Path);
     }
@@ -274,12 +271,12 @@ namespace Unrect.Tests.Projections
     {
       // No ordinal: there is only ever one item, so there is nothing to count. An inline item, a
       // call, and a modifier chain are all "not a bare identifier" and all render the same way.
-      var block = Text();
+      var block = Point().Text();
 
       // Left as an inline lambda on purpose: the three spellings this test enumerates are an
       // inline lambda, an inline factory call and a modifier chain, so funnelling this one into
       // TextCell() would leave the first of them untested.
-      Assert.Equal("VerticalRepeat[0] -> Text", Failure(VerticalRepeat(Text())).Path);
+      Assert.Equal("VerticalRepeat[0] -> Text", Failure(VerticalRepeat(Point().Text())).Path);
       Assert.Equal("VerticalRepeat[0] -> Text", Failure(VerticalRepeat(MakeBlock())).Path);
       Assert.Equal("VerticalRepeat[0] -> Text", Failure(VerticalRepeat(Down(1).Of(block))).Path);
     }
@@ -287,7 +284,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void HorizontalRepeat_CapturesItsItemIdentically()
     {
-      var detail = Text();
+      var detail = Point().Text();
 
       var failure = Assert.Throws<ProjectionException>(() =>
         HorizontalRepeat(detail).Map(Grid(new[,] { { 1, 2 } })));
@@ -302,7 +299,7 @@ namespace Unrect.Tests.Projections
       // item, and the index sits between them on the repeat it belongs to.
       var space = Mixed(new object?[,] { { "a" }, { null }, { "b" }, { null }, { 9 } });
 
-      var detail = Text();
+      var detail = Point().Text();
       var details = VerticalRepeat(detail, separatedBy: BlankRows());
 
       var failure = Assert.Throws<ProjectionException>(() =>
@@ -316,7 +313,7 @@ namespace Unrect.Tests.Projections
     {
       // The label belongs to the item's segment and stops there; what is inside the item is named
       // by its own ladder, at its own use sites.
-      var inner = Text();
+      var inner = Point().Text();
       var detailFlow = VerticalFlow(w => $"{w.Next(IntCell())}{w.Next(inner)}");
       var blocks = VerticalRepeat(detailFlow);
 
@@ -334,7 +331,7 @@ namespace Unrect.Tests.Projections
       // passing by name keep binding to what they always did.
       var space = Mixed(new object?[,] { { "a" }, { null }, { "b" } });
 
-      var detail = Text();
+      var detail = Point().Text();
 
       Assert.Equal(new[] { "a", "b" }, VerticalRepeat(detail, separatedBy: BlankRows(), atLeast: 1).Map(space));
       Assert.Equal(new[] { "a", "b" }, VerticalRepeat(detail, separatedBy: BlankRows()).Map(space));
@@ -351,7 +348,7 @@ namespace Unrect.Tests.Projections
     {
       // Both halves failed, so the fallback owns the failure — and it is the fallback's own
       // identifier that says which stand-in was being read when the parse gave up.
-      var primary = Text().Named("primary");
+      var primary = Point().Text().Named("primary");
       var recovery = Point().Select(p => p.Date().ToString());
 
       var failure = Failure(primary.Else(recovery));
@@ -366,7 +363,7 @@ namespace Unrect.Tests.Projections
     {
       // The label is for the failure the fallback might raise. When it succeeds there is nothing to
       // blame it for, and the Warning still names the projection that actually went wrong.
-      var primary = Text().Named("primary");
+      var primary = Point().Text().Named("primary");
       var recovery = Point().Select(p => p.Integer().ToString());
 
       var result = primary.Else(recovery).MapWithDiagnostics(Ladder());
@@ -384,7 +381,7 @@ namespace Unrect.Tests.Projections
     {
       // Like a repeat's item, a fallback is *the* fallback rather than the nth child, so there is
       // no ordinal to count and rung 3 is the bare description.
-      var primary = Text().Named("primary");
+      var primary = Point().Text().Named("primary");
 
       var failure = Failure(primary.Else(Point().Select(p => p.Date().ToString())));
 
@@ -449,7 +446,7 @@ namespace Unrect.Tests.Projections
       // The failure is the table's own placement, so the table is the deepest segment and earns the
       // kind suffix — the same rendering a leaf gets, over a projection that is really four.
       var sheet = Mixed(new object?[,] { { "Investor" }, { 10m } });
-      var transactions = Down(5).Of(Table(1, Decimal()));
+      var transactions = Down(5).Of(Table(1, Point().Decimal()));
 
       var failure = Assert.Throws<ProjectionException>(
         () => VerticalFlow(v => string.Join(",", v.Next(transactions))).Map(sheet));
@@ -464,7 +461,7 @@ namespace Unrect.Tests.Projections
       // The band's occurrence index rides up onto the table's own segment, because the tiler that
       // carried it is scaffolding. FullPath is where the parts are still readable.
       var sheet = Mixed(new object?[,] { { "Investor" }, { "oops" } });
-      var transactions = Table(1, Decimal());
+      var transactions = Table(1, Point().Decimal());
 
       var failure = Assert.Throws<ProjectionException>(
         () => VerticalFlow(v => string.Join(",", v.Next(transactions))).Map(sheet));
@@ -486,7 +483,7 @@ namespace Unrect.Tests.Projections
       });
 
       var failure = Assert.Throws<ProjectionException>(
-        () => VerticalFlow(v => $"{v.Next(Text())}|{string.Join(",", v.Next(Table(1, Decimal())))}").Map(sheet));
+        () => VerticalFlow(v => $"{v.Text()}|{string.Join(",", v.Next(Table(1, Point().Decimal())))}").Map(sheet));
 
       Assert.Equal("VerticalFlow -> Table#2[0] -> Decimal", failure.Path);
     }

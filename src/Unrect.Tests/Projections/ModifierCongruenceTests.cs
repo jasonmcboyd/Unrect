@@ -8,7 +8,6 @@ using Unrect.Spreadsheets;
 using Xunit;
 
 using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.Observations;
 using static Unrect.Tests.ProjectionTestSpaces;
 
@@ -196,8 +195,8 @@ namespace Unrect.Tests.Projections
       var space = Rows();
 
       AssertL3(
-        Observe(With(modifier, Text()).OrBlank()!, space),
-        Observe(With(modifier, Text().OrBlank()!), space));
+        Observe(With(modifier, Point().Text()).OrBlank()!, space),
+        Observe(With(modifier, Point().Text().OrBlank()!), space));
     }
 
     [Fact]
@@ -239,7 +238,7 @@ namespace Unrect.Tests.Projections
       // spike/PlacementGauntlet/MustNotCompilePipeline.cs (Z). What survives, and is what the
       // vocabulary offers instead: a movement composes onto the anchor rather than answering the same
       // question a second time.
-      Assert.Equal("c0", On(Mark()).Down(1).Of(Text()).Map(Rows()));
+      Assert.Equal("c0", On(Mark()).Down(1).Of(Point().Text()).Map(Rows()));
     }
 
     [Fact]
@@ -253,10 +252,10 @@ namespace Unrect.Tests.Projections
       // What survives at run time: one anchor reads, and one missing landmark is still loud at Map.
       var space = Rows();
 
-      Assert.Equal("c0", Below(Mark()).Of(Text()).Map(space));
+      Assert.Equal("c0", Below(Mark()).Of(Point().Text()).Map(space));
       Assert.Contains(
         "no row containing 'Nope' exists in the available space",
-        Assert.Throws<ProjectionException>(() => On(Missing()).Of(Text()).Map(space)).Message);
+        Assert.Throws<ProjectionException>(() => On(Missing()).Of(Point().Text()).Map(space)).Message);
     }
 
     [Fact]
@@ -268,8 +267,8 @@ namespace Unrect.Tests.Projections
       // remains to pin is that each anchor alone lands where it always did, one row apart.
       var space = Rows();
 
-      Assert.Equal("Mark", On(Mark()).Of(Text()).Map(space));
-      Assert.Equal("c0", Below(Mark()).Of(Text()).Map(space));
+      Assert.Equal("Mark", On(Mark()).Of(Point().Text()).Map(space));
+      Assert.Equal("c0", Below(Mark()).Of(Point().Text()).Map(space));
     }
 
     [Fact]
@@ -313,9 +312,9 @@ namespace Unrect.Tests.Projections
       // the other spelling stepped past.
       var space = Ragged();
 
-      Assert.Equal("b1", Right(1).AfterBlankRows().Of(Text()).Map(space));
+      Assert.Equal("b1", Right(1).AfterBlankRows().Of(Point().Text()).Map(space));
 
-      var failure = Assert.Throws<ProjectionException>(() => AfterBlankRows().Right(1).Of(Text()).Map(space));
+      var failure = Assert.Throws<ProjectionException>(() => AfterBlankRows().Right(1).Of(Point().Text()).Map(space));
 
       Assert.Equal("expected Text at B1, found Blank", Problem(failure));
     }
@@ -327,8 +326,8 @@ namespace Unrect.Tests.Projections
       // declarations, and only the first is what a reader of a gap-then-section sheet means.
       var space = BlankLead();
 
-      Assert.Equal("Mark", AfterBlankRows().Down(1).Of(Text()).Map(space));
-      Assert.Equal("b0", Down(1).AfterBlankRows().Of(Text()).Map(space));
+      Assert.Equal("Mark", AfterBlankRows().Down(1).Of(Point().Text()).Map(space));
+      Assert.Equal("b0", Down(1).AfterBlankRows().Of(Point().Text()).Map(space));
     }
 
     // --- A clone crossing a wrapper: which layer it lands on -------------------------------------------
@@ -361,8 +360,8 @@ namespace Unrect.Tests.Projections
       // is about.
       var space = Numbers();
 
-      var inside = Assert.Single(Text().Named("n").Optional().MapWithDiagnostics(space).Diagnostics);
-      var outside = Assert.Single(Text().Optional().Named("n").MapWithDiagnostics(space).Diagnostics);
+      var inside = Assert.Single(Point().Text().Named("n").Optional().MapWithDiagnostics(space).Diagnostics);
+      var outside = Assert.Single(Point().Text().Optional().Named("n").MapWithDiagnostics(space).Diagnostics);
 
       Assert.Equal("'n'", inside.Subject);
       Assert.Equal("'n' (Text)", inside.Path);
@@ -380,8 +379,8 @@ namespace Unrect.Tests.Projections
       // (UntilProjectionTests.ANamedBoundSpeaksForItself pins the outer spelling alone.)
       var space = Rows();
 
-      var inside = Assert.Throws<ProjectionException>(() => Until(Missing()).Of(Text().Named("n")).Map(space));
-      var outside = Assert.Throws<ProjectionException>(() => Until(Missing()).Of(Text()).Named("n").Map(space));
+      var inside = Assert.Throws<ProjectionException>(() => Until(Missing()).Of(Point().Text().Named("n")).Map(space));
+      var outside = Assert.Throws<ProjectionException>(() => Until(Missing()).Of(Point().Text()).Named("n").Map(space));
 
       Assert.Equal("'n'", inside.Subject);
       Assert.Equal("'n' (Text)", inside.Path);
@@ -398,8 +397,8 @@ namespace Unrect.Tests.Projections
       // from the message a reader gets.
       var space = Rows();
 
-      var inside = Assert.Throws<ProjectionException>(() => Text().Named("n").Padded(3).Map(space));
-      var outside = Assert.Throws<ProjectionException>(() => Text().Padded(3).Named("n").Map(space));
+      var inside = Assert.Throws<ProjectionException>(() => Point().Text().Named("n").Padded(3).Map(space));
+      var outside = Assert.Throws<ProjectionException>(() => Point().Text().Padded(3).Named("n").Map(space));
 
       Assert.Equal("Padded", inside.Subject);
       Assert.Equal("Padded", inside.Path);
@@ -477,8 +476,8 @@ namespace Unrect.Tests.Projections
     {
       var space = Numbers();
 
-      var inside = Observe(Sized(Extent(1, 1)).Of(Text()).Optional()!, space);
-      var outside = Observe(Sized(Extent(1, 1)).Of(Text().Optional())!, space);
+      var inside = Observe(Sized(Extent(1, 1)).Of(Point().Text()).Optional()!, space);
+      var outside = Observe(Sized(Extent(1, 1)).Of(Point().Text().Optional())!, space);
 
       AssertL1(inside, outside);
 
@@ -491,8 +490,8 @@ namespace Unrect.Tests.Projections
     {
       var space = Numbers();
 
-      var inside = Observe(Text().Padded(0, 1, 0, 0).Optional()!, space);
-      var outside = Observe(Text().Optional().Padded(0, 1, 0, 0)!, space);
+      var inside = Observe(Point().Text().Padded(0, 1, 0, 0).Optional()!, space);
+      var outside = Observe(Point().Text().Optional().Padded(0, 1, 0, 0)!, space);
 
       AssertL1(inside, outside);
 
@@ -508,8 +507,8 @@ namespace Unrect.Tests.Projections
       // in a different place.
       var space = Numbers();
 
-      var inside = Observe(Down(1).Of(Text()).Optional()!, space);
-      var outside = Observe(Down(1).Of(Text().Optional())!, space);
+      var inside = Observe(Down(1).Of(Point().Text()).Optional()!, space);
+      var outside = Observe(Down(1).Of(Point().Text().Optional())!, space);
 
       AssertL1(inside, outside);
 
@@ -525,9 +524,9 @@ namespace Unrect.Tests.Projections
       // written outside it, the bound included.
       var space = Rows();
 
-      Assert.Null(Until(Missing()).Of(Text()).Optional().Map(space));
+      Assert.Null(Until(Missing()).Of(Point().Text()).Optional().Map(space));
 
-      var failure = Assert.Throws<ProjectionException>(() => Until(Missing()).Of(Text().Optional()).Map(space));
+      var failure = Assert.Throws<ProjectionException>(() => Until(Missing()).Of(Point().Text().Optional()).Map(space));
 
       Assert.Equal("no row containing 'Nope' exists to end this projection", Problem(failure));
     }
@@ -539,9 +538,9 @@ namespace Unrect.Tests.Projections
       // outside too. So "the section may be absent" has to be written outside the Heading, not inside.
       var space = Rows();
 
-      Assert.Null(Heading("Nope").Of(Text()).Optional().Map(space));
+      Assert.Null(Heading("Nope").Of(Point().Text()).Optional().Map(space));
 
-      var failure = Assert.Throws<ProjectionException>(() => Heading("Nope").Of(Text().Optional()).Map(space));
+      var failure = Assert.Throws<ProjectionException>(() => Heading("Nope").Of(Point().Text().Optional()).Map(space));
 
       Assert.Contains("no row saying 'Nope' exists in the available space", failure.Message);
     }
@@ -555,11 +554,11 @@ namespace Unrect.Tests.Projections
       // never contained.
       var space = Numbers();
 
-      Assert.Null(Text().Select(value => value + "!").Optional().Map(space));
-      Assert.Equal("!", Text().Optional().Select(value => value + "!").Map(space));
+      Assert.Null(Point().Text().Select(value => value + "!").Optional().Map(space));
+      Assert.Equal("!", Point().Text().Optional().Select(value => value + "!").Map(space));
 
-      Assert.Equal("z", Text().Select(value => value + "!").Else("z").Map(space));
-      Assert.Equal("z!", Text().Else("z").Select(value => value + "!").Map(space));
+      Assert.Equal("z", Point().Text().Select(value => value + "!").Else("z").Map(space));
+      Assert.Equal("z!", Point().Text().Else("z").Select(value => value + "!").Map(space));
     }
 
     [Fact]
@@ -572,10 +571,10 @@ namespace Unrect.Tests.Projections
       // The primary fails on a kind, not on a blank: a blank first row would be a gap, which the
       // boundary steps over before either spelling is reached.
       var space = Rows();
-      var fallback = Down(1).Of(Text()).Named("fb");
+      var fallback = Down(1).Of(Point().Text()).Named("fb");
 
-      Assert.Equal("b0", Right(1).Of(Decimal()).Select(d => d.ToString()).Else(fallback).Map(space));
-      Assert.Equal("b1", Right(1).Of(Decimal().Select(d => d.ToString()).Else(fallback)).Map(space));
+      Assert.Equal("b0", Right(1).Of(Point().Decimal()).Select(d => d.ToString()).Else(fallback).Map(space));
+      Assert.Equal("b1", Right(1).Of(Point().Decimal().Select(d => d.ToString()).Else(fallback)).Map(space));
     }
 
     [Fact]
@@ -586,8 +585,8 @@ namespace Unrect.Tests.Projections
       // on the order.
       var space = Numbers();
 
-      Assert.Null(Text().Optional().Else("z").Map(space));
-      Assert.Equal("z", Text().Else("z").Optional().Map(space));
+      Assert.Null(Point().Text().Optional().Else("z").Map(space));
+      Assert.Equal("z", Point().Text().Else("z").Optional().Map(space));
     }
 
     // --- The wrapper stack ------------------------------------------------------------------------------
@@ -743,14 +742,14 @@ namespace Unrect.Tests.Projections
       // declared a kind, and a wrapper is not one. Written the other way round — OrBlank first, the
       // wrapper after — every one of these composes, which is why the refusal has to name the
       // receiver rather than merely say no.
-      var failure = Assert.Throws<ArgumentException>(() => With(wrapper, Text()).OrBlank());
+      var failure = Assert.Throws<ArgumentException>(() => With(wrapper, Point().Text()).OrBlank());
 
       Assert.Equal("projection", failure.ParamName);
       Assert.Contains("OrBlank reads a blank cell as null", failure.Message);
       Assert.Contains(" is not one.", failure.Message);
 
       // ...and the composable direction really is composable.
-      Assert.NotNull(With(wrapper, Text().OrBlank()!));
+      Assert.NotNull(With(wrapper, Point().Text().OrBlank()!));
     }
 
     // A congruence pin stood here for `Demanding` — the ascription that stated a demand in the

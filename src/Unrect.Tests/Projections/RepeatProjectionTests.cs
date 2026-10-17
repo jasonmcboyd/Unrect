@@ -11,7 +11,6 @@ using Unrect.Strategies;
 using Xunit;
 
 using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -95,7 +94,7 @@ namespace Unrect.Tests.Projections
 
       var items = Until(RowContaining("end")).Of(VerticalRepeat(Range(1, 1, b => b[0, 0].Integer())));
 
-      var read = VerticalFlow(v => $"{string.Join(",", v.Next(items))}|{v.Next(Text())}").Map(space);
+      var read = VerticalFlow(v => $"{string.Join(",", v.Next(items))}|{v.Text()}").Map(space);
 
       Assert.Equal("1,2|end", read);
     }

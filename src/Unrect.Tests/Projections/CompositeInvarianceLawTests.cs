@@ -1,12 +1,12 @@
 using System;
 
+using Unrect.Fluent;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
 
 using Xunit;
 
 using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.Observations;
 using static Unrect.Tests.ProjectionTestSpaces;
 
@@ -159,10 +159,10 @@ namespace Unrect.Tests.Projections
       // The same difference where it matters most. The problem, the cell and the child's own label
       // are identical; only the enclosing segment says which composite was written.
       var inFlow = Assert.Throws<ProjectionException>(() =>
-        HorizontalFlow(h => $"{h.Next(IntCell())}/{h.Next(Text())}").Map(CoordinateGrid()));
+        HorizontalFlow(h => $"{h.Next(IntCell())}/{h.Text()}").Map(CoordinateGrid()));
 
       var inOverlay = Assert.Throws<ProjectionException>(() =>
-        Overlay(o => $"{o.Next(IntCell())}/{o.Next(Right(1).Of(Text()))}").Map(CoordinateGrid()));
+        Overlay(o => $"{o.Next(IntCell())}/{o.Next(Right(1).Of(Point().Text()))}").Map(CoordinateGrid()));
 
       Assert.Equal("HorizontalFlow -> Text#2", inFlow.Path);
       Assert.Equal("Overlay -> Text#2", inOverlay.Path);

@@ -170,9 +170,6 @@ namespace Unrect.Fluent
     /// <inheritdoc cref="ProjectionBuilders{TSpace}.Point()"/>
     public IProjectionDefinition<TSpace, Point<TSpace>> Point() => Close(ProjectionBuilders<TSpace>.Point());
 
-    /// <inheritdoc cref="ProjectionBuilders{TSpace}.AsText()"/>
-    public IProjectionDefinition<TSpace, string> AsText() => Close(ProjectionBuilders<TSpace>.AsText());
-
     /// <inheritdoc cref="ProjectionBuilders{TSpace}.Caption(string)"/>
     /// <param name="text">What the row must say.</param>
     public IProjectionDefinition<TSpace, string> Caption(string text) => Close<string>(ProjectionBuilders<TSpace>.Caption(text));

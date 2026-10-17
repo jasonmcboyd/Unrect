@@ -88,10 +88,10 @@ namespace Unrect.Tests.Projections
       // Every kind but Blank, through the one leaf, with no declaration of what any of them is. The
       // renderings are the backend's — pinned per door in SpaceContractTests — and what is pinned
       // here is that the leaf hands them back untouched.
-      Assert.Equal("hello", AsText().Map(One("hello")));
-      Assert.Equal("1.5", AsText().Map(One(1.5m)));
-      Assert.Equal("TRUE", AsText().Map(One(true)));
-      Assert.Equal("#DIV/0!", AsText().Map(One(CellValue.OfError(CellError.DivisionByZero))));
+      Assert.Equal("hello", Point().AsText().Map(One("hello")));
+      Assert.Equal("1.5", Point().AsText().Map(One(1.5m)));
+      Assert.Equal("TRUE", Point().AsText().Map(One(true)));
+      Assert.Equal("#DIV/0!", Point().AsText().Map(One(CellValue.OfError(CellError.DivisionByZero))));
     }
 
     [Fact]
@@ -100,7 +100,7 @@ namespace Unrect.Tests.Projections
       // Absence, said in the canonical vocabulary: there is no kind to have expected and none to
       // report finding, so the sentence speaks of a value and a blank cell and nothing else. The
       // A1 is inside it, exactly as a kinded leaf's is.
-      var failure = Assert.Throws<ProjectionException>(() => Right(1).Of(AsText()).Map(Mixed(new object?[,] { { "a", null } })));
+      var failure = Assert.Throws<ProjectionException>(() => Right(1).Of(Point().AsText()).Map(Mixed(new object?[,] { { "a", null } })));
 
       Assert.Equal("expected a value at B1, found a blank cell", Problem(failure));
       Assert.Equal("AsText", failure.Subject);
@@ -113,7 +113,7 @@ namespace Unrect.Tests.Projections
       // Quietly — the declaration said the cell may be absent, so its absence is the answer rather
       // than something to report. That is the whole difference from Optional, which absorbs a
       // failure and raises a Warning about it.
-      var read = AsText().OrBlank().MapWithDiagnostics(BlankCell());
+      var read = Point().AsText().OrBlank().MapWithDiagnostics(BlankCell());
 
       Assert.Null(read.Value);
       Assert.DoesNotContain(read.Diagnostics, d => d.Severity == DiagnosticSeverity.Warning);
@@ -123,7 +123,7 @@ namespace Unrect.Tests.Projections
     public void AsTextOrBlankStillReadsAValueWhenThereIsOne()
     {
       // Non-vacuity: the tolerant form is the same reading, not a reading that stopped happening.
-      Assert.Equal("hello", AsText().OrBlank().Map(One("hello")));
+      Assert.Equal("hello", Point().AsText().OrBlank().Map(One("hello")));
     }
 
     [Fact]
@@ -131,8 +131,8 @@ namespace Unrect.Tests.Projections
     {
       // The same convention the kinded leaves follow — Decimal becomes Decimal? — so a path segment
       // says which of the two readings was declared.
-      Assert.Equal("AsText", AsText().Description);
-      Assert.Equal("AsText?", AsText().OrBlank().Description);
+      Assert.Equal("AsText", Point().AsText().Description);
+      Assert.Equal("AsText?", Point().AsText().OrBlank().Description);
     }
 
     [Fact]
@@ -142,7 +142,7 @@ namespace Unrect.Tests.Projections
       // rather than through a Select, because a Select is placed by the engine like any other
       // projection and would re-place its inner leaf at the leaf's own 1x1 default.
       var failure = Assert.Throws<ProjectionException>(() =>
-        Sized(Unrect.Strategies.SizeStrategies.ExplicitSize<ICellSpace>(2, 1)).Of(AsText()).Map(CoordinateGrid(4, 4)));
+        Sized(Unrect.Strategies.SizeStrategies.ExplicitSize<ICellSpace>(2, 1)).Of(Point().AsText()).Map(CoordinateGrid(4, 4)));
 
       Assert.Contains("an AsText must be exactly one cell; this one is 2x1", failure.Message);
     }
@@ -154,7 +154,7 @@ namespace Unrect.Tests.Projections
     {
       // A blank cell is a statement about the data, not a broken declaration, so a tolerance
       // boundary may take it — which is the property a fault would remove.
-      var read = AsText().Optional().MapWithDiagnostics(BlankCell());
+      var read = Point().AsText().Optional().MapWithDiagnostics(BlankCell());
 
       Assert.Null(read.Value);
       Assert.Contains(read.Diagnostics, d => d.Severity == DiagnosticSeverity.Warning);

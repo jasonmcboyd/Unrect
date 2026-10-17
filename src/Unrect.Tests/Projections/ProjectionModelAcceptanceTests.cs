@@ -10,8 +10,6 @@ using Unrect.Spreadsheets;
 using Xunit;
 
 using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SpreadsheetProjections;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -113,7 +111,7 @@ namespace Unrect.Tests.Projections
     /// </summary>
     private static IProjectionDefinition<ICellSpace, Report> AllocationReport()
     {
-      var title = Text();
+      var title = Point().Text();
       var rows = Table<Allocation>();
 
       return VerticalFlow(v => new Report(
@@ -180,7 +178,7 @@ namespace Unrect.Tests.Projections
       // The annotated local is the assertion; that it reads its sheet is the proof the type is not
       // the only thing that survived. (The demanding twin of this very chain is in
       // ProjectionModelAcceptanceTests.EntryC.Spreadsheets.cs, because its space is not this file's.)
-      IProjectionDefinition<ICellSpace, decimal> plain = On(RowContaining("Total")).Right(2).Of(Decimal()
+      IProjectionDefinition<ICellSpace, decimal> plain = On(RowContaining("Total")).Right(2).Of(Point().Decimal()
         .Named("total"));
 
       Assert.Equal(1.00m, plain.Map(PlainAllocations()));
@@ -199,7 +197,7 @@ namespace Unrect.Tests.Projections
       // signature, so `in TSpace` survives there — which is what lets a matcher published for
       // IFormulaSpace stand in a pipeline closed over the bundle.
       IProjectionDefinition<ISpreadsheetSpace, string> firstFormulaRow =
-        ProjectionBuilders<ISpreadsheetSpace>.On(SpreadsheetProjections.RowWithFormula<ISpreadsheetSpace>())
+        ProjectionBuilders<ISpreadsheetSpace>.On(ProjectionBuilders<ISpreadsheetSpace>.RowWithCell(p => p.HasFormula()))
           .Of(ProjectionBuilders<ISpreadsheetSpace>.Row(cells => cells[0].Text()));
 
       Assert.Equal("A-1", firstFormulaRow.Map(CapableAllocations()));
@@ -227,16 +225,16 @@ namespace Unrect.Tests.Projections
     /// <summary>A hoisted plain helper: exactly what it was, which is the common case and the point.</summary>
     private static IProjectionDefinition<ICellSpace, Allocation> AllocationRow()
       => HorizontalFlow(h => new Allocation(
-        Account: h.Next(Text()),
-        Symbol: h.Next(Text()),
-        Weight: h.Next(Decimal())));
+        Account: h.Text(),
+        Symbol: h.Text(),
+        Weight: h.Decimal()));
 
     /// <summary>A hoisted demanding helper: its space says what it requires, and it says so once.</summary>
     private static IProjectionDefinition<ISpreadsheetSpace, SourcedAllocation> SourcedRow()
       => ProjectionBuilders<ISpreadsheetSpace>.Overlay(o => new SourcedAllocation(
-        Account: o.Next(SpreadsheetProjectionBuilders<ISpreadsheetSpace>.Text()),
+        Account: o.Next(ProjectionBuilders<ISpreadsheetSpace>.Point().Text()),
         Formula: o.Next(ProjectionBuilders<ISpreadsheetSpace>.Right(2)
-          .Of(SpreadsheetProjections.Formula<ISpreadsheetSpace>()))));
+          .Of(ProjectionBuilders<ISpreadsheetSpace>.Point().Formula()))));
 
     /// <summary>A helper generic in whatever space its caller names — the shape that replaced variance.</summary>
     private static IProjectionDefinition<TSpace, IReadOnlyList<T>> Sections<TSpace, T>(IProjectionDefinition<TSpace, T> item)
@@ -260,7 +258,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal("VerticalRepeat", plainSections.Description);
       Assert.Equal("VerticalRepeat", demandingSections.Description);
 
-      var sourced = ProjectionBuilders<ISpreadsheetSpace>.On(SpreadsheetProjectionBuilders<ISpreadsheetSpace>.RowContaining("A-1"))
+      var sourced = ProjectionBuilders<ISpreadsheetSpace>.On(ProjectionBuilders<ISpreadsheetSpace>.RowContaining("A-1"))
         .Of(SourcedRow())
         .Map(CapableAllocations());
 
@@ -326,16 +324,16 @@ namespace Unrect.Tests.Projections
     private static IProjectionDefinition<ICellSpace, BuyingPowerAllocation> BuyingPowerParser()
     {
       var allocation = Overlay(o => new BuyingPowerRow(
-        FundCode: o.Next(Right(1).Of(Text())),
-        Primary: o.Next(Right(6).Of(Decimal().OrBlank())),
-        Fep: o.Next(Right(9).Of(Decimal().OrBlank()))));
+        FundCode: o.Next(Right(1).Of(Point().Text())),
+        Primary: o.Next(Right(6).Of(Point().Decimal().OrBlank())),
+        Fep: o.Next(Right(9).Of(Point().Decimal().OrBlank()))));
 
       var allocations = Below(RowContaining("ACCOUNT")).Sized(RowsWhileAnyIsNotBlank()).Of(Table(headerRows: 0, eachRow: allocation));
 
       return VerticalFlow(v => new BuyingPowerAllocation(
-        Title: v.Next(Text()),
+        Title: v.Text(),
         Allocations: v.Next(allocations),
-        Total: v.Next(On(RowContaining("TOTAL")).Right(6).Of(Decimal()))));
+        Total: v.Next(On(RowContaining("TOTAL")).Right(6).Of(Point().Decimal()))));
     }
 
     [Fact]
@@ -442,10 +440,10 @@ namespace Unrect.Tests.Projections
 
       return VerticalFlow(v => new IrrReport(
         Header: v.Next(VerticalFlow(h => new IrrHeader(
-          Title: h.Next(Text()),
-          Fund: h.Next(Text()),
-          AsOf: h.Next(Date()),
-          Id: h.Next(Text()))).Named("report header")),
+          Title: h.Text(),
+          Fund: h.Text(),
+          AsOf: h.Date(),
+          Id: h.Text())).Named("report header")),
         Summary: v.Next(Table<InvestorSummary>().Named("summary")),
         ByTransferDate: v.Next(Until(RowContaining(Inception)).Heading("IRR Details").Heading("Cash Flows Using Transfer Date").Of(series)),
         ByInception: v.Next(Heading(Inception).Of(series))));
@@ -527,7 +525,7 @@ namespace Unrect.Tests.Projections
       var cashFlows = Table<InvestorCashFlow>();
 
       var investor = VerticalFlow(v => new InvestorBlock(
-        Name: v.Next(Text()),
+        Name: v.Text(),
         CashFlows: v.Next(cashFlows)));
 
       var read = investor.Map(sheet);

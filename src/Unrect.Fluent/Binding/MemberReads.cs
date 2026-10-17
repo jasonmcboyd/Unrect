@@ -2,16 +2,15 @@ using System;
 
 using Unrect.Core;
 using Unrect.Projections;
-using Unrect.Fluent;
 
-namespace Unrect.Spreadsheets
+namespace Unrect.Fluent
 {
   /// <summary>
-  /// Which leaf reads a CLR type: the one place that decides that a <c>decimal</c> member and a
-  /// <c>Decimal()</c> leaf are the same reading, so a bound record and a hand-written row cannot
+  /// Which reading fills a CLR type: the one place that decides that a <c>decimal</c> member and a
+  /// <c>Point().Decimal()</c> are the same reading, so a bound record and a hand-written row cannot
   /// describe the same cell differently.
   /// </summary>
-  internal static class KindedLeaves
+  internal static class MemberReads
   {
     /// <summary>
     /// Whether a member of this type can be read from a cell at all: the six kinds a leaf asserts,
@@ -44,7 +43,7 @@ namespace Unrect.Spreadsheets
     /// <typeparam name="TSpace">The sheet the record is declared over.</typeparam>
     /// <param name="member">The member to fill.</param>
     internal static IProjectionDefinition<TSpace, object?> For<TSpace>(MemberPlan member)
-      where TSpace : class, ICellSpace
+      where TSpace : class, ISpace
     {
       var leaf = Boxed<TSpace>(member.Type);
 
@@ -52,7 +51,7 @@ namespace Unrect.Spreadsheets
     }
 
     private static IProjectionDefinition<TSpace, object?> Boxed<TSpace>(Type type)
-      where TSpace : class, ICellSpace
+      where TSpace : class, ISpace
     {
       // The one member that asserts nothing: it hands over the cell's address and lets the reader
       // ask. No kind, so no kind failure, and nothing for blank tolerance to do.
@@ -60,27 +59,27 @@ namespace Unrect.Spreadsheets
         return ProjectionBuilders<TSpace>.Point().Select(point => (object?)point);
 
       if (type == typeof(string))
-        return SpreadsheetProjections.Kinded<TSpace, object?>(
+        return CellReadLeaves.Leaf<TSpace, object?>(
           "Text", (Point<TSpace> cell, out object? v, out CellProblem? p) => Box(cell.TryGetText(out var value, out p), value, out v));
 
       if (type == typeof(decimal))
-        return SpreadsheetProjections.Kinded<TSpace, object?>(
+        return CellReadLeaves.Leaf<TSpace, object?>(
           "Decimal", (Point<TSpace> cell, out object? v, out CellProblem? p) => Box(Readings.TryDecimal(cell, out var value, out p), value, out v));
 
       if (type == typeof(double))
-        return SpreadsheetProjections.Kinded<TSpace, object?>(
+        return CellReadLeaves.Leaf<TSpace, object?>(
           "Double", (Point<TSpace> cell, out object? v, out CellProblem? p) => Box(cell.TryGetDouble(out var value, out p), value, out v));
 
       if (type == typeof(int))
-        return SpreadsheetProjections.Kinded<TSpace, object?>(
+        return CellReadLeaves.Leaf<TSpace, object?>(
           "Integer", (Point<TSpace> cell, out object? v, out CellProblem? p) => Box(Readings.TryInteger(cell, out var value, out p), value, out v));
 
       if (type == typeof(DateTime))
-        return SpreadsheetProjections.Kinded<TSpace, object?>(
+        return CellReadLeaves.Leaf<TSpace, object?>(
           "Date", (Point<TSpace> cell, out object? v, out CellProblem? p) => Box(cell.TryGetDate(out var value, out p), value, out v));
 
       if (type == typeof(bool))
-        return SpreadsheetProjections.Kinded<TSpace, object?>(
+        return CellReadLeaves.Leaf<TSpace, object?>(
           "Boolean", (Point<TSpace> cell, out object? v, out CellProblem? p) => Box(cell.TryGetBoolean(out var value, out p), value, out v));
 
       // Unreachable: the plan refuses a type Reads says no to, where it is written rather than per
@@ -106,7 +105,7 @@ namespace Unrect.Spreadsheets
     /// </para>
     /// </summary>
     private static IProjectionDefinition<TSpace, object?> Tolerant<TSpace>(IProjectionDefinition<TSpace, object?> leaf)
-      where TSpace : class, ICellSpace
+      where TSpace : class, ISpace
       => ((ReadDefinition<TSpace, object?>)leaf).Tolerating<object?>(value => value);
   }
 }

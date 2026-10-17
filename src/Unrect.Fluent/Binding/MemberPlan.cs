@@ -1,11 +1,13 @@
 using System;
 
-namespace Unrect.Spreadsheets
+using Unrect.Projections;
+
+namespace Unrect.Fluent
 {
   /// <summary>How one member of <c>T</c> is filled from a row: which caption, which reading.</summary>
   internal sealed class MemberPlan
   {
-    public MemberPlan(string name, string caption, Type type, bool blankTolerant, int? position = null, Func<object, object?>? reading = null, Unrect.Projections.LabelStep[]? path = null)
+    public MemberPlan(string name, string caption, Type type, bool blankTolerant, int? position = null, Func<object, object?>? reading = null, LabelStep[]? path = null)
     {
       Path = path;
       Reading = reading;
@@ -20,10 +22,10 @@ namespace Unrect.Spreadsheets
     public MemberPlan At(int? position) => new MemberPlan(Name, Caption, Type, BlankTolerant, position, Reading, Path);
 
     /// <summary>The same member, read from the column <paramref name="path"/> names in a banded header.</summary>
-    public MemberPlan Via(Unrect.Projections.LabelStep[]? path) => new MemberPlan(Name, Caption, Type, BlankTolerant, Position, Reading, path);
+    public MemberPlan Via(LabelStep[]? path) => new MemberPlan(Name, Caption, Type, BlankTolerant, Position, Reading, path);
 
     /// <summary>The path through the header this member was bound by; null where it binds by caption, position or reading.</summary>
-    public Unrect.Projections.LabelStep[]? Path { get; }
+    public LabelStep[]? Path { get; }
 
     /// <summary>The member's own name, for messages.</summary>
     public string Name { get; }

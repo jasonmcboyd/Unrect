@@ -14,11 +14,10 @@ namespace Unrect.Fluent
   /// using Unrect.Spreadsheets;
   ///
   /// using static Unrect.Fluent.ProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;;
-  /// using static Unrect.Spreadsheets.SpreadsheetProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;;
   ///
   /// var report = VerticalFlow(v =&gt;
   /// {
-  ///     var title = v.Next(Text());
+  ///     var title = v.Text();
   ///     var rows  = v.Next(Table(headerRows: 1, eachRow: row));
   ///
   ///     return v.Build(read =&gt; new Report(Title: read.Of(title), Rows: read.Of(rows)));

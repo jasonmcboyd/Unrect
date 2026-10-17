@@ -37,35 +37,6 @@ namespace Unrect.Fluent
     public static IProjectionDefinition<TSpace, Point<TSpace>> Point()
       => new PointDefinition<TSpace>(Placement<TSpace>.Of(ExplicitSize<TSpace>(1, 1)));
 
-    /// <summary>
-    /// One cell, read as what it says — the total canonical leaf. Every space renders every cell, so
-    /// the only thing that can go wrong is that there is nothing there; <c>OrBlank</c> turns that
-    /// from a failure into a null.
-    /// <para>
-    /// It says what the cell says, which for a cell holding words is the word itself and for
-    /// anything else is the backend's own rendering. A reading that asserts the cell <em>is</em>
-    /// words, or is a number, is a kind assertion and belongs to a backend's vocabulary.
-    /// </para>
-    /// </summary>
-    public static IProjectionDefinition<TSpace, string> AsText()
-      => new ReadDefinition<TSpace, string>("AsText", ReadText, Placement<TSpace>.Of(ExplicitSize<TSpace>(1, 1)), blankIsNull: false);
-
-    /// <summary>The total reading: every space renders every cell, so the only thing that can go wrong is that the cell does not count as content.</summary>
-    private static bool ReadText(Point<TSpace> cell, out string value, out CellProblem? problem)
-    {
-      if (cell.IsBlank())
-      {
-        value = string.Empty;
-        problem = new CellProblem("expected a value at ", ", found a blank cell");
-        return false;
-      }
-
-      value = cell.AsText();
-
-      problem = null;
-      return true;
-    }
-
     /// <summary>One row, as wide as the leading columns that carry values.</summary>
     public static IProjectionDefinition<TSpace, T> Row<T>(Func<CellStrip<TSpace>, T> project)
       => Strip(Orientation.Horizontal, project, RowStrategies.TakeRows<TSpace>(1).TakeColumnsWhileAnyIsNotBlank(), "Row");

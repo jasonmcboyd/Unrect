@@ -1,6 +1,7 @@
 using System;
 
 using Unrect.Core;
+using Unrect.Fluent;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
 using Unrect.Strategies;
@@ -8,7 +9,6 @@ using Unrect.Strategies;
 using Xunit;
 
 using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -419,8 +419,8 @@ namespace Unrect.Tests.Projections
       Assert.Equal(10m, report.Lines[0].Amount);
 
       // ...and the typed leaves, which are the other half of the phase's vocabulary.
-      Assert.Equal("Acme", Down(3).Of(Text()).Map(card));
-      Assert.Equal(10m, Down(3).Right(2).Of(Decimal()).Map(card));
+      Assert.Equal("Acme", Down(3).Of(Point().Text()).Map(card));
+      Assert.Equal(10m, Down(3).Right(2).Of(Point().Decimal()).Map(card));
     }
 
     [Fact]

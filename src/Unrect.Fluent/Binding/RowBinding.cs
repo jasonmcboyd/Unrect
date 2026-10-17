@@ -4,9 +4,10 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
+using Unrect.Core;
 using Unrect.Projections;
 
-namespace Unrect.Spreadsheets
+namespace Unrect.Fluent
 {
   /// <summary>
   /// The plan for turning a table row into a <c>T</c>: which members exist, what caption and CLR
@@ -40,7 +41,7 @@ namespace Unrect.Spreadsheets
     /// another would refuse the member it had just accepted.
     /// </param>
     public static RowBinding<T> Create<TSpace>(TableBinding<TSpace, T>? binding, Type space)
-      where TSpace : class, ICellSpace
+      where TSpace : class, ISpace
     {
       var readings = new Dictionary<string, Func<object, object?>>(StringComparer.Ordinal);
 
@@ -246,7 +247,7 @@ namespace Unrect.Spreadsheets
       var underlying = Nullable.GetUnderlyingType(type);
       var effective = underlying ?? type;
 
-      var point = effective == KindedLeaves.PointOf(space);
+      var point = effective == MemberReads.PointOf(space);
 
       // A point IS the cell, blank included, so a nullable point has no blank left to tolerate —
       // and the advice differs from every other refusal, which is why it is said separately.
@@ -256,13 +257,13 @@ namespace Unrect.Spreadsheets
           + "blank included, so there is no blank for the nullable form to tolerate. Declare it "
           + "non-nullable.");
 
-      if (!KindedLeaves.Reads(effective, space))
+      if (!MemberReads.Reads(effective, space))
       {
         var described = Describe(effective) + (underlying is null ? string.Empty : "?");
 
         throw new ArgumentException(
           $"{typeof(T).Name}.{name} is {Article(described)} {described}, and no cell accessor yields {described}. "
-          + $"Supported: string, decimal, double, int, DateTime, bool, {Describe(KindedLeaves.PointOf(space))}, and the nullable forms. "
+          + $"Supported: string, decimal, double, int, DateTime, bool, {Describe(MemberReads.PointOf(space))}, and the nullable forms. "
           + "Read it as int or decimal and convert in Select.");
       }
 

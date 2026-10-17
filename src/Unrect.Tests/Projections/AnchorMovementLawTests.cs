@@ -1,11 +1,11 @@
 using Unrect.Core;
+using Unrect.Fluent;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
 
 using Xunit;
 
 using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.Observations;
 using static Unrect.Tests.ProjectionTestSpaces;
 
@@ -69,8 +69,8 @@ namespace Unrect.Tests.Projections
       var space = RowsWithLandmarkAt(landmark);
 
       AssertL3(
-        Observe(Below(Detail()).Of(Text()), space),
-        Observe(On(Detail()).Down(1).Of(Text()), space));
+        Observe(Below(Detail()).Of(Point().Text()), space),
+        Observe(On(Detail()).Down(1).Of(Point().Text()), space));
     }
 
     [Theory]
@@ -82,8 +82,8 @@ namespace Unrect.Tests.Projections
       var space = ColumnsWithLandmarkAt(landmark);
 
       AssertL3(
-        Observe(RightOf(DetailColumn()).Of(Text()), space),
-        Observe(On(DetailColumn()).Right(1).Of(Text()), space));
+        Observe(RightOf(DetailColumn()).Of(Point().Text()), space),
+        Observe(On(DetailColumn()).Right(1).Of(Point().Text()), space));
     }
 
     // --- The two edges the analysis was least sure of -------------------------------------------------
@@ -98,10 +98,10 @@ namespace Unrect.Tests.Projections
       var space = RowsWithLandmarkAt(3);
 
       AssertL3(
-        Observe(Below(Detail()).Of(Text()), space),
-        Observe(On(Detail()).Down(1).Of(Text()), space));
+        Observe(Below(Detail()).Of(Point().Text()), space),
+        Observe(On(Detail()).Down(1).Of(Point().Text()), space));
 
-      var failure = Assert.Throws<ProjectionException>(() => Below(Detail()).Of(Text()).Map(space));
+      var failure = Assert.Throws<ProjectionException>(() => Below(Detail()).Of(Point().Text()).Map(space));
 
       Assert.Contains("an extent of 1x1 does not fit here", failure.Message);
       Assert.Equal("A5", failure.Location.A1);
@@ -117,10 +117,10 @@ namespace Unrect.Tests.Projections
       var missing = RowContaining("Nope");
 
       AssertL3(
-        Observe(Below(missing).Of(Text()), space),
-        Observe(On(missing).Down(1).Of(Text()), space));
+        Observe(Below(missing).Of(Point().Text()), space),
+        Observe(On(missing).Down(1).Of(Point().Text()), space));
 
-      var failure = Assert.Throws<ProjectionException>(() => On(missing).Down(1).Of(Text()).Map(space));
+      var failure = Assert.Throws<ProjectionException>(() => On(missing).Down(1).Of(Point().Text()).Map(space));
 
       Assert.Contains("no row containing 'Nope' exists in the available space", failure.Message);
       Assert.False(failure.IsFault);

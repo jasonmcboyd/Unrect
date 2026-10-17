@@ -10,7 +10,6 @@ using Unrect.Spreadsheets;
 using Xunit;
 
 using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -107,7 +106,7 @@ namespace Unrect.Tests.Projections
     {
       Assert.Equal(
         "expected Number at B2, found Text",
-        SameSentence("Amount", "x", Decimal(), Table<Money>()));
+        SameSentence("Amount", "x", Point().Decimal(), Table<Money>()));
     }
 
     [Fact]
@@ -115,7 +114,7 @@ namespace Unrect.Tests.Projections
     {
       Assert.Equal(
         "expected Text at B2, found Number",
-        SameSentence("Note", 5m, Text(), Table<Noted>()));
+        SameSentence("Note", 5m, Point().Text(), Table<Noted>()));
     }
 
     [Fact]
@@ -123,7 +122,7 @@ namespace Unrect.Tests.Projections
     {
       Assert.Equal(
         "expected Boolean at B2, found Number",
-        SameSentence("Flag", 1m, Boolean(), Table<Flagged>()));
+        SameSentence("Flag", 1m, Point().Boolean(), Table<Flagged>()));
     }
 
     [Fact]
@@ -133,7 +132,7 @@ namespace Unrect.Tests.Projections
       // identically whether the declaration named a leaf or a member type.
       Assert.Equal(
         "expected Date at B2, found Text",
-        SameSentence("Date", "x", Date(), Table<Dated>()));
+        SameSentence("Date", "x", Point().Date(), Table<Dated>()));
     }
 
     [Fact]
@@ -143,7 +142,7 @@ namespace Unrect.Tests.Projections
       // from either reader — so this is the case where a duplicated message would show first.
       Assert.Equal(
         "expected Number at B2, found Error(#DIV/0!)",
-        SameSentence("Amount", CellValue.OfError(CellError.DivisionByZero), Decimal(), Table<Money>()));
+        SameSentence("Amount", CellValue.OfError(CellError.DivisionByZero), Point().Decimal(), Table<Money>()));
     }
 
     [Fact]
@@ -151,7 +150,7 @@ namespace Unrect.Tests.Projections
     {
       Assert.Equal(
         "expected Number at B2, found Blank",
-        SameSentence("Amount", null, Decimal(), Table<Money>()));
+        SameSentence("Amount", null, Point().Decimal(), Table<Money>()));
     }
 
     // --- Conversion failures ------------------------------------------------------------------------------
@@ -161,13 +160,13 @@ namespace Unrect.Tests.Projections
     {
       Assert.Equal(
         "the Number at B2 (1.5) is not a whole number",
-        SameSentence("Count", 1.5, Integer(), Table<Counted>()));
+        SameSentence("Count", 1.5, Point().Integer(), Table<Counted>()));
 
       // A fixture's decimal literal is not a scale the cell keeps: the sheet holds a double, so
       // 1.50m says 1.5 through either door, and the sentence quotes what the cell says.
       Assert.Equal(
         "the Number at B2 (1.5) is not a whole number",
-        SameSentence("Count", 1.50m, Integer(), Table<Counted>()));
+        SameSentence("Count", 1.50m, Point().Integer(), Table<Counted>()));
     }
 
     [Fact]
@@ -175,11 +174,11 @@ namespace Unrect.Tests.Projections
     {
       Assert.Equal(
         "the Number at B2 (5000000000) is outside the range of a 32-bit integer",
-        SameSentence("Count", 5e9, Integer(), Table<Counted>()));
+        SameSentence("Count", 5e9, Point().Integer(), Table<Counted>()));
 
       Assert.Equal(
         "the Number at B2 (1E+30) is not representable as a decimal",
-        SameSentence("Amount", 1e30, Decimal(), Table<Money>()));
+        SameSentence("Amount", 1e30, Point().Decimal(), Table<Money>()));
     }
 
     // --- What the law does NOT cover -------------------------------------------------------------------------
@@ -195,7 +194,7 @@ namespace Unrect.Tests.Projections
         { "Acme", "x" },
       });
 
-      var byLeaf = Assert.Throws<ProjectionException>(() => Right(1).Down(1).Of(Decimal()).Map(space));
+      var byLeaf = Assert.Throws<ProjectionException>(() => Right(1).Down(1).Of(Point().Decimal()).Map(space));
       var byColumn = Assert.Throws<ProjectionException>(() => Table<Money>().Map(space));
 
       Assert.Equal("Decimal", byLeaf.Subject);
@@ -211,7 +210,7 @@ namespace Unrect.Tests.Projections
 
       // OrBlank moves the wrapper too — it renames the leaf to "Decimal?" — and leaves the sentence
       // about the cell exactly where it was.
-      var tolerant = Assert.Throws<ProjectionException>(() => Right(1).Down(1).Of(Decimal().OrBlank()).Map(space));
+      var tolerant = Assert.Throws<ProjectionException>(() => Right(1).Down(1).Of(Point().Decimal().OrBlank()).Map(space));
 
       Assert.Equal("Decimal?", tolerant.Subject);
       Assert.Equal(Problem(byLeaf), Problem(tolerant));
@@ -266,7 +265,7 @@ namespace Unrect.Tests.Projections
         { "Acme", null },
       });
 
-      var byLeaf = Right(1).Down(1).Of(Decimal().OrBlank()).MapWithDiagnostics(space);
+      var byLeaf = Right(1).Down(1).Of(Point().Decimal().OrBlank()).MapWithDiagnostics(space);
       var byColumn = Table<Tolerant>().Map(space);
 
       Assert.Null(byLeaf.Value);
@@ -288,7 +287,7 @@ namespace Unrect.Tests.Projections
         { "Acme", null },
       });
 
-      Assert.Null(Right(1).Down(1).Of(Text().OrBlank()).Map(space));
+      Assert.Null(Right(1).Down(1).Of(Point().Text().OrBlank()).Map(space));
       Assert.Null(Table<Annotated>().Map(space).Single().Note);
     }
 
@@ -299,11 +298,11 @@ namespace Unrect.Tests.Projections
       // Text cell in a Number column, and the refusal is still the same sentence on both readers.
       Assert.Equal(
         "expected Number at B2, found Text",
-        SameSentence("Amount", "x", Decimal().OrBlank(), Table<Tolerant>()));
+        SameSentence("Amount", "x", Point().Decimal().OrBlank(), Table<Tolerant>()));
 
       Assert.Equal(
         "expected Text at B2, found Number",
-        SameSentence("Note", 5m, Text().OrBlank(), Table<Annotated>()));
+        SameSentence("Note", 5m, Point().Text().OrBlank(), Table<Annotated>()));
     }
 
     [Fact]
@@ -323,7 +322,7 @@ namespace Unrect.Tests.Projections
         { "Acme", noisy },
       });
 
-      Assert.Equal(0.3m, Right(1).Down(1).Of(Decimal()).Map(space));
+      Assert.Equal(0.3m, Right(1).Down(1).Of(Point().Decimal()).Map(space));
       Assert.Equal(0.3m, Plane<ICellSpace>.Of(space)[1, 1].Decimal());
       Assert.Equal(0.3m, Table<Money>().Map(space).Single().Amount);
 

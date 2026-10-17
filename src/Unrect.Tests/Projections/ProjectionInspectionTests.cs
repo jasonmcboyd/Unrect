@@ -9,7 +9,6 @@ using Unrect.Spreadsheets;
 using Xunit;
 
 using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -33,17 +32,17 @@ namespace Unrect.Tests.Projections
     public void LeavesDescribeThemselvesStructurally()
     {
       // The typed leaves and the labelled block, described by the factory the user typed.
-      Assert.Equal("Text", Text().Description);
-      Assert.Equal("Decimal", Decimal().Description);
-      Assert.Equal("Integer", Integer().Description);
-      Assert.Equal("Double", Double().Description);
-      Assert.Equal("Date", Date().Description);
-      Assert.Equal("Boolean", Boolean().Description);
+      Assert.Equal("Text", Point().Text().Description);
+      Assert.Equal("Decimal", Point().Decimal().Description);
+      Assert.Equal("Integer", Point().Integer().Description);
+      Assert.Equal("Double", Point().Double().Description);
+      Assert.Equal("Date", Point().Date().Description);
+      Assert.Equal("Boolean", Point().Boolean().Description);
       Assert.Equal("Fields", Fields(Field("EIN")).Description);
       Assert.Equal("Caption(\"Total\")", Caption("Total").Description);
 
       Assert.Equal("Point", Point().Description);
-      Assert.Equal("AsText", AsText().Description);
+      Assert.Equal("AsText", Point().AsText().Description);
       Assert.Equal("Row", Row(s => s.Count).Description);
       Assert.Equal("Row(3)", Row(3, s => s.Count).Description);
       Assert.Equal("Column", Column(s => s.Count).Description);

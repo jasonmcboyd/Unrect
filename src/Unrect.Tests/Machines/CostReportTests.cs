@@ -8,8 +8,6 @@ using Unrect.Spreadsheets;
 using Xunit;
 
 using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-
 namespace Unrect.Tests.Machines
 {
   /// <summary>
@@ -23,7 +21,7 @@ namespace Unrect.Tests.Machines
     [Fact]
     public void AFlowOfLeavesOverATableStreamsEndToEnd()
     {
-      var report = CostReport.Of(VerticalFlow(v => $"{v.Next(Text().Named("title"))}:{v.Next(AfterBlankRows().Of(Table())).Count}"));
+      var report = CostReport.Of(VerticalFlow(v => $"{v.Next(Point().Text().Named("title"))}:{v.Next(AfterBlankRows().Of(Table())).Count}"));
 
       Assert.All(report.Lines, line => Assert.True(line.Streams, $"{line.Name}: {line.Hold}"));
       Assert.Equal(Orientation.Vertical, report.Driver);
@@ -54,7 +52,7 @@ namespace Unrect.Tests.Machines
     [Fact]
     public void AHorizontalFlowUnderARowDriverHoldsAndItsChildrenRunAlongColumns()
     {
-      var report = CostReport.Of(HorizontalFlow(h => h.Next(Text().Named("a")) + h.Next(Text().Named("b"))));
+      var report = CostReport.Of(HorizontalFlow(h => h.Next(Point().Text().Named("a")) + h.Next(Point().Text().Named("b"))));
 
       var flow = report.Lines[0];
       Assert.False(flow.Streams);
@@ -70,7 +68,7 @@ namespace Unrect.Tests.Machines
     [Fact]
     public void AColumnLandmarkHoldsBecauseItsPlacementHasNoPerSpanFormAlongRows()
     {
-      var report = CostReport.Of(RightOf(ColumnContaining("Investor")).Of(Text()));
+      var report = CostReport.Of(RightOf(ColumnContaining("Investor")).Of(Point().Text()));
 
       Assert.False(report.Lines[0].Streams);
       Assert.Equal("its placement answers only over its whole extent under a row driver", report.Lines[0].Hold);
@@ -81,7 +79,7 @@ namespace Unrect.Tests.Machines
     {
       var flow = VerticalFlow(v =>
       {
-        var a = v.Next(Text());
+        var a = v.Text();
 
         return a;
       });
@@ -96,8 +94,8 @@ namespace Unrect.Tests.Machines
     {
       var report = CostReport.Of(VerticalFlow(v =>
       {
-        var one = v.Next(Text().Named("one"));
-        var many = v.Next(VerticalRepeat(Text(), separatedBy: BlankRows()).Optional().Named("many"));
+        var one = v.Next(Point().Text().Named("one"));
+        var many = v.Next(VerticalRepeat(Point().Text(), separatedBy: BlankRows()).Optional().Named("many"));
 
         return $"{one}:{many?.Count}";
       }));
@@ -123,8 +121,8 @@ namespace Unrect.Tests.Machines
         "Table(row lambda)" => Table(row => row.Index),
         "Table()" => Table(),
         "Table(view lambda)" => Table(table => table.RowCount),
-        "Table(0, eachRow)" => Table(0, Text()),
-        "Table(1, eachRow)" => Table(1, Text()),
+        "Table(0, eachRow)" => Table(0, Point().Text()),
+        "Table(1, eachRow)" => Table(1, Point().Text()),
 
         _ => throw new System.ArgumentOutOfRangeException(nameof(rung), rung, "No such rung."),
       };
@@ -148,9 +146,9 @@ namespace Unrect.Tests.Machines
     [Fact]
     public void TheTextFormNamesTheDriverAndEveryHold()
     {
-      var text = CostReport.Of(VerticalFlow(v => $"{v.Next(Text().Named("title"))}:{v.Next(HorizontalFlow(h =>
+      var text = CostReport.Of(VerticalFlow(v => $"{v.Next(Point().Text().Named("title"))}:{v.Next(HorizontalFlow(h =>
       {
-        var a = h.Next(Text());
+        var a = h.Text();
         return a;
       }).Named("wide"))}")).ToString();
 

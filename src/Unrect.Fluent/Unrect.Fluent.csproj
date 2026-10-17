@@ -14,6 +14,10 @@
     <!-- A backend's own vocabulary is a first-class part of this one: its terminals close the
          pipeline stage internals. -->
     <InternalsVisibleTo Include="Unrect.Spreadsheets" />
+    <!-- The forgiving table is reached through Unrect.Interactive ALONE, which is the point of the
+         grant: a shipped declaration does not reference that package, so LooseTable cannot be
+         switched on from production code without a reference a reviewer can see. -->
+    <InternalsVisibleTo Include="Unrect.Interactive" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Unrect\Unrect.csproj" />

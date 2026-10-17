@@ -13,10 +13,9 @@ namespace Unrect.Spreadsheets
   /// <para>
   /// <b>If <c>.Font()</c> will not compile</b> — "ICellSpace cannot be used as type parameter
   /// TSpace", often reported on the call AROUND it, as an overload that was not found — the file's
-  /// <c>using static</c> lines name <see cref="ICellSpace"/>. A declaration's space is fixed by
-  /// those imports, not by how the workbook is opened: name <see cref="ISpreadsheetSpace"/> in both,
-  /// taking the second from <see cref="SpreadsheetProjectionBuilders{TSpace}"/>, and open the sheet
-  /// with <see cref="SpreadsheetSpace.CreateWithFormulas(string, string, bool, System.Func{string, bool})"/>.
+  /// <c>using static</c> line names <see cref="ICellSpace"/>. A declaration's space is fixed by
+  /// that import, not by how the workbook is opened: name <see cref="ISpreadsheetSpace"/> there, and
+  /// open the sheet with <see cref="SpreadsheetSpace.CreateWithFormulas(string, string, bool, System.Func{string, bool})"/>.
   /// </para>
   /// </summary>
   public static class StyleReads

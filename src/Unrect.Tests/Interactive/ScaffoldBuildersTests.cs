@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 
+using Unrect.Fluent;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
 
@@ -8,8 +9,6 @@ using Xunit;
 
 using static Unrect.Interactive.ScaffoldBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-
 namespace Unrect.Tests.Interactive
 {
   /// <summary>
@@ -50,7 +49,7 @@ namespace Unrect.Tests.Interactive
       // the title and the gaps, and each reads the labels of the region it was handed.
       var report = VerticalFlow(v => new
       {
-        Title = v.Next(Text()),
+        Title = v.Text(),
         FundStructures = v.Next(ScaffoldClass("FundStructure")),
         Transactions = v.Next(ScaffoldRecord("Transaction")),
       });
@@ -78,7 +77,7 @@ namespace Unrect.Tests.Interactive
       // scaffold consumed exactly what Table<T>() consumes.
       var report = VerticalFlow(v => new
       {
-        Title = v.Next(Text()),
+        Title = v.Text(),
         FundStructures = v.Next(Table<FundStructure>()),
         Transactions = v.Next(Table<Transaction>()),
       });

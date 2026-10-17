@@ -10,7 +10,6 @@ using Unrect.Fluent;
 using Xunit;
 
 using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -34,10 +33,10 @@ namespace Unrect.Tests.Projections
         // The header's kinds are declared rather than asked for: four leaves in a flow read the
         // same four rows Column(4, ...) did, and say what each one is.
         Header: v.Next(VerticalFlow(h => new SimpleHeader(
-          Title: h.Next(Text()),
-          Subtitle: h.Next(Text()),
-          Date: h.Next(Date()),
-          Id: h.Next(Text())))
+          Title: h.Text(),
+          Subtitle: h.Text(),
+          Date: h.Date(),
+          Id: h.Text()))
           .Named("report header")),
         // Two captions the comparer would not have found; the other two bind free.
         Transactions: v.Next(Table<Transaction>(bind => bind

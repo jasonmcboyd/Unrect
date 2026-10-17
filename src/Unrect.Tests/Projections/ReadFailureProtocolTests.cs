@@ -8,7 +8,6 @@ using Unrect.Spreadsheets;
 using Xunit;
 
 using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -152,7 +151,7 @@ namespace Unrect.Tests.Projections
 
       Assert.Null(declaration.Optional().Map(sheet));
       Assert.Equal("absorbed", declaration.Select(_ => "read").Named("read").Else("absorbed").Map(sheet));
-      Assert.Equal("second", Choice(declaration.Select(_ => "first").Named("first"), AsText().Select(_ => "second")).Map(sheet));
+      Assert.Equal("second", Choice(declaration.Select(_ => "first").Named("first"), Point().AsText().Select(_ => "second")).Map(sheet));
     }
 
     // --- The corner at the root --------------------------------------------------------------------
@@ -232,7 +231,7 @@ namespace Unrect.Tests.Projections
       // And no boundary takes it — which is the property the flag exists to produce.
       Assert.Throws<ProjectionException>(() => miscast.Optional().Map(Sheet()));
       Assert.Throws<ProjectionException>(() => miscast.Else(-1).Map(Sheet()));
-      Assert.Throws<ProjectionException>(() => Choice(miscast, Integer()).Map(Sheet()));
+      Assert.Throws<ProjectionException>(() => Choice(miscast, Point().Integer()).Map(Sheet()));
     }
 
     [Fact]

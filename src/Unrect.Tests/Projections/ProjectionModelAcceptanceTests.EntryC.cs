@@ -10,12 +10,12 @@ using Xunit;
 using static Unrect.Tests.Observations;
 
 // THE SHIPPING SHAPE, WRITTEN AS IT SHIPS. This is a declaration file in the Entry C canon: one
-// space named once, at the top, and not one prefix below it. `Text()`, `Table<T>()`, `Below(...)`
+// space named once, at the top, and not one prefix below it. `Point().Text()`, `Table<T>()`, `Below(...)`
 // and `Heading(...)` all come from here, closed over ICellSpace, and the file is the scope.
 //
 // It is therefore the exact opposite of ProjectionBuildersParityTests, whose header explains why
 // THAT file must hold the vocabulary at arm's length behind a `using B = ...` alias: a parity suite
-// has to name both spellings at once, and `Projection.Text()` and `ProjectionBuilders<ICellSpace>.Text()`
+// has to name both spellings at once, and `Projection.Text()` and `ProjectionBuilders<ICellSpace>.Point().Text()`
 // have identical signatures, so a file importing both statically could not invoke either. Here there
 // is nothing to compare against in-file — the pre-campaign spellings live in
 // ProjectionModelAcceptanceTests.cs, which carries its own `using static Unrect.Projections.Projection`
@@ -26,8 +26,6 @@ using static Unrect.Tests.Observations;
 // as if the other usings were not there, so `ProjectionBuilders<ICellSpace>` would not bind even with
 // `using Unrect.Core;` four lines above.
 using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-
 namespace Unrect.Tests.Projections
 {
   /// <summary>
@@ -93,7 +91,7 @@ namespace Unrect.Tests.Projections
     /// </summary>
     private static IProjectionDefinition<ICellSpace, Report> AllocationReportInTheClosedVocabulary()
     {
-      var title = Text();
+      var title = Point().Text();
       var rows = Table<Allocation>();
 
       return VerticalFlow(v => new Report(
@@ -148,18 +146,18 @@ namespace Unrect.Tests.Projections
     private static IProjectionDefinition<ICellSpace, BuyingPowerAllocation> BuyingPowerParserThroughThePipeline()
     {
       var allocation = Overlay(o => new BuyingPowerRow(
-        FundCode: o.Next(Right(1).Of(Text())),
-        Primary: o.Next(Right(6).Of(Decimal().OrBlank())),
-        Fep: o.Next(Right(9).Of(Decimal().OrBlank()))));
+        FundCode: o.Next(Right(1).Of(Point().Text())),
+        Primary: o.Next(Right(6).Of(Point().Decimal().OrBlank())),
+        Fep: o.Next(Right(9).Of(Point().Decimal().OrBlank()))));
 
       var allocations = Below(RowContaining("ACCOUNT"))
         .Sized(RowsWhileAnyIsNotBlank())
         .Table(headerRows: 0, eachRow: allocation);
 
       return VerticalFlow(v => new BuyingPowerAllocation(
-        Title: v.Next(Text()),
+        Title: v.Text(),
         Allocations: v.Next(allocations),
-        Total: v.Next(On(RowContaining("TOTAL")).Right(6).Decimal())));
+        Total: v.Next(On(RowContaining("TOTAL")).Right(6).Point().Decimal())));
     }
 
     [Fact]
@@ -236,10 +234,10 @@ namespace Unrect.Tests.Projections
 
       return VerticalFlow(v => new IrrReport(
         Header: v.Next(VerticalFlow(h => new IrrHeader(
-          Title: h.Next(Text()),
-          Fund: h.Next(Text()),
-          AsOf: h.Next(Date()),
-          Id: h.Next(Text()))).Named("report header")),
+          Title: h.Text(),
+          Fund: h.Text(),
+          AsOf: h.Date(),
+          Id: h.Text())).Named("report header")),
         Summary: v.Next(Table<InvestorSummary>().Named("summary")),
         ByTransferDate: v.Next(Until(RowContaining(Inception))
           .Heading("IRR Details")

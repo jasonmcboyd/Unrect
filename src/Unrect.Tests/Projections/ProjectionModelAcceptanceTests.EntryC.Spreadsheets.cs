@@ -13,13 +13,10 @@ using Xunit;
 // dichotomy, demonstrated: the two files are halves of one partial class and each names its own
 // space at the top.
 //
-// The BACKEND rule, in the same header: a backend ships its own closed class with DISJOINT member
-// names, which is exactly what lets these two `using static` directives coexist — `Formula` and
-// `RowWithFormula` are nowhere in ProjectionBuilders<>, so nothing collides and the declaration
-// below is prefix-free across both vocabularies at once.
+// The BACKEND rule, in the same header: there is one vocabulary, and what a backend adds hangs off
+// a receiver whose type carries the space — `Point().Formula()`, `o.Formula()`, `p.HasFormula()` —
+// so the declaration below is prefix-free and nothing a backend ships can collide with it.
 using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>;
-using static Unrect.Spreadsheets.SpreadsheetProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>;
-
 namespace Unrect.Tests.Projections
 {
   /// <summary>
@@ -42,7 +39,7 @@ namespace Unrect.Tests.Projections
     /// <summary>
     /// The audited ledger, and the fourth acceptance declaration. Three column offsets written
     /// position-first, and the total line's anchor-then-movement read as one phrase —
-    /// <c>On(RowContaining("Total")).Right(3).Of(Formula())</c>, which is where the section is,
+    /// <c>On(RowContaining("Total")).Right(3).Of(Point().Formula())</c>, which is where the section is,
     /// then what it reads.
     /// <para>
     /// <c>.Of</c> carries the backend's leaf here, and that is the boundary working as designed
@@ -55,13 +52,13 @@ namespace Unrect.Tests.Projections
     {
       // A cell has a value and a formula, so reading both is an overlay's job, as ever.
       var line = Overlay(o => new AuditedLine(
-        Item: o.Next(Text()),
-        Qty: o.Next(Right(1).Integer()),
-        Total: o.Next(Right(3).Double()),
-        Formula: o.Next(Right(3).Of(Formula()))));
+        Item: o.Text(),
+        Qty: o.Next(Right(1).Point().Integer()),
+        Total: o.Next(Right(3).Point().Double()),
+        Formula: o.Next(Right(3).Of(Point().Formula()))));
 
       var lines = Table(headerRows: 1, eachRow: line);
-      var total = On(RowContaining("Total")).Right(3).Of(Formula());
+      var total = On(RowContaining("Total")).Right(3).Of(Point().Formula());
 
       return VerticalFlow(v => new AuditedLedger(
         Lines: v.Next(lines),
@@ -78,7 +75,7 @@ namespace Unrect.Tests.Projections
       var sheet = SpreadsheetSpace.CreateWithFormulas(TestData("formulas.xlsx"), "Formulas");
 
       IProjectionDefinition<ISpreadsheetSpace, string?> demanding =
-        On(RowContaining("Widget")).Right(3).Of(Formula().Named("line formula"));
+        On(RowContaining("Widget")).Right(3).Of(Point().Formula().Named("line formula"));
 
       Assert.Equal(@"IF(B2>0,ROUND(B2*$C$2,2)+SUM($B$2:B2),""B2"")", demanding.Map(sheet));
       Assert.Equal("line formula", demanding.Name);

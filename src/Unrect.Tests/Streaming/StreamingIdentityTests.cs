@@ -10,7 +10,6 @@ using Unrect.Spreadsheets;
 using Xunit;
 
 using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Streaming
@@ -248,9 +247,9 @@ namespace Unrect.Tests.Streaming
     private static IProjectionDefinition<ICellSpace, IReadOnlyList<LedgerEntry>> Ledger()
     {
       var ledgerEntry = HorizontalFlow(h => new LedgerEntry(
-        Entry: h.Next(Integer()),
-        Amount: h.Next(Integer()),
-        Category: h.Next(Text())));
+        Entry: h.Integer(),
+        Amount: h.Integer(),
+        Category: h.Text()));
 
       return Below(RowContaining("Entry")).Of(Table(headerRows: 0, eachRow: ledgerEntry));
     }
@@ -276,9 +275,9 @@ namespace Unrect.Tests.Streaming
     private static IProjectionDefinition<ICellSpace, IReadOnlyList<LedgerEntry>> HeaderedLedger()
     {
       var ledgerEntry = HorizontalFlow(h => new LedgerEntry(
-        Entry: h.Next(Integer()),
-        Amount: h.Next(Integer()),
-        Category: h.Next(Text())));
+        Entry: h.Integer(),
+        Amount: h.Integer(),
+        Category: h.Text()));
 
       return On(RowContaining("Entry")).Of(Table(headerRows: 1, eachRow: ledgerEntry));
     }

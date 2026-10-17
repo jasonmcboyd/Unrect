@@ -34,8 +34,6 @@ namespace Unrect.Analyzers.Tests
       using Unrect.Spreadsheets;
 
       using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-      using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-
       """;
 
     private static readonly MetadataReference[] Unrect =
@@ -45,7 +43,7 @@ namespace Unrect.Analyzers.Tests
       MetadataReference.CreateFromFile(typeof(Projections.ProjectionMapping).Assembly.Location),
       MetadataReference.CreateFromFile(typeof(Projections.IProjectionDefinition<,>).Assembly.Location),
       MetadataReference.CreateFromFile(typeof(Strategies.SizeStrategies).Assembly.Location),
-      MetadataReference.CreateFromFile(typeof(Spreadsheets.SpreadsheetProjections).Assembly.Location),
+      MetadataReference.CreateFromFile(typeof(Spreadsheets.SpreadsheetReads).Assembly.Location),
     };
 
     /// <summary>Asserts that <paramref name="source"/> reports exactly <paramref name="expected"/>.</summary>

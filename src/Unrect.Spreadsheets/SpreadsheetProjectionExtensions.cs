@@ -11,7 +11,7 @@ namespace Unrect.Spreadsheets
   /// <para>
   /// The split is the one the projection layer already makes — <c>Projection</c> is what a
   /// declaration says and <c>ProjectionExtensions</c> is what is done to it, and this is that
-  /// second half for spreadsheets, beside <see cref="SpreadsheetProjections"/>. Like every other
+  /// second half for spreadsheets, beside <see cref="SpreadsheetReads"/>. Like every other
   /// extension in the library it is reached by importing its namespace
   /// (<c>using Unrect.Spreadsheets;</c>), exactly as <c>Map</c> is reached by importing
   /// <c>Unrect.Projections</c>; the backend <em>vocabulary</em> needs no namespace import at all.

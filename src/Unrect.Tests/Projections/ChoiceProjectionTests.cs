@@ -9,7 +9,6 @@ using Unrect.Spreadsheets;
 using Xunit;
 
 using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -39,8 +38,8 @@ namespace Unrect.Tests.Projections
 
     // --- The degeneracy, named ----------------------------------------------------------------------
     //
-    // A Choice discriminates only as far as its alternatives can fail. AsText() is TOTAL over a cell
-    // that has anything in it — every space renders every cell — so an AsText() alternative wins
+    // A Choice discriminates only as far as its alternatives can fail. Point().AsText() is TOTAL over a cell
+    // that has anything in it — every space renders every cell — so an Point().AsText() alternative wins
     // against any data the later arms could have read, and the Choice is a Choice in spelling only.
     // It is not refused, because refusing it would mean the vocabulary deciding which readings are
     // worth alternating over; it is pinned by name, so the shape is on record and a reader who meets
@@ -54,8 +53,8 @@ namespace Unrect.Tests.Projections
       // Nothing is even reported: a Choice raises an Info per alternative it PASSED OVER, and this
       // one passed over none.
       var readEither = Choice(
-        AsText().Select(text => $"text:{text}"),
-        Decimal().Select(amount => $"number:{amount}"));
+        Point().AsText().Select(text => $"text:{text}"),
+        Point().Decimal().Select(amount => $"number:{amount}"));
 
       var read = readEither.MapWithDiagnostics(Mixed(new object?[,] { { 1.5m } }));
 
@@ -70,11 +69,11 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AndTheOnlyThingItStillDiscriminatesOnIsAbsence()
     {
-      // The exception that proves the rule, and the reason AsText() is total rather than infallible:
+      // The exception that proves the rule, and the reason Point().AsText() is total rather than infallible:
       // a blank cell says nothing, so the first arm does fail, and the Choice does choose. Nothing
       // else about the cell can make it.
       var readEither = Choice(
-        AsText().Select(text => $"text:{text}"),
+        Point().AsText().Select(text => $"text:{text}"),
         Point().Select(_ => "absent"));
 
       // A blank cell beside a value: a row blank all the way across is a gap the placement steps
@@ -85,12 +84,12 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void WhereAKindedLeafFirstStillDiscriminates()
     {
-      // The contrast, and the thing a reader should write instead. Text() asserts a KIND, so it
+      // The contrast, and the thing a reader should write instead. Point().Text() asserts a KIND, so it
       // fails on a number and the Choice picks the arm that can read one — which is the whole
       // purpose of declaring a kind, seen from the alternation side.
       var readEither = Choice(
-        Text().Select(text => $"text:{text}"),
-        Decimal().Select(amount => $"number:{amount}"));
+        Point().Text().Select(text => $"text:{text}"),
+        Point().Decimal().Select(amount => $"number:{amount}"));
 
       var read = readEither.MapWithDiagnostics(Mixed(new object?[,] { { 1.5m } }));
 
@@ -254,7 +253,7 @@ namespace Unrect.Tests.Projections
     // AlternationLawProbeTests deliberately asserts no layout — this is the file it defers to.
 
     /// <summary>A typed leaf, named — one clause of a problem, so a tally's line is predictable.</summary>
-    private static IProjectionDefinition<ICellSpace, int> Number(string name) => Integer().Named(name);
+    private static IProjectionDefinition<ICellSpace, int> Number(string name) => Point().Integer().Named(name);
 
     private static ICellSpace OneText() => Mixed(new object?[,] { { "text" } });
 

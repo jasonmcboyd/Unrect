@@ -10,8 +10,6 @@ using Unrect.Spreadsheets;
 using Xunit;
 
 using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-
 namespace Unrect.Tests.Streaming
 {
   /// <summary>
@@ -49,7 +47,7 @@ namespace Unrect.Tests.Streaming
       // — and an ICellSpace IS an ISpace, so a declaration written over the canonical surface is a
       // declaration this file can answer. Without the overload, the whole canonical vocabulary would
       // be unusable through the sugar for no reason a reader could name.
-      IProjectionDefinition<ISpace, string?> canonical = ProjectionBuilders<ISpace>.AsText().OrBlank();
+      IProjectionDefinition<ISpace, string?> canonical = ProjectionBuilders<ISpace>.Point().AsText().OrBlank();
 
       Assert.Equal("Fund", canonical.MapWorkbook(Path("multi-sheet.xlsx"), "Detail", Cold()));
     }
@@ -60,7 +58,7 @@ namespace Unrect.Tests.Streaming
       // MUST NOT COMPILE, and there is no way to assert that from inside a test — so it is recorded
       // here instead, beside the two overloads that make it true:
       //
-      //   IProjectionDefinition<IFormulaSpace, string?> formula = SpreadsheetProjections.Formula<IFormulaSpace>();
+      //   IProjectionDefinition<IFormulaSpace, string?> formula = ProjectionBuilders<IFormulaSpace>.Point().Formula();
       //   formula.MapWorkbook(path, sheet);          // CS1929/CS0411 — no overload takes it
       //
       // The receiver is IProjectionDefinition<ICellSpace, T> on one overload and IProjectionDefinition<ISpace, T> on the
@@ -153,7 +151,7 @@ namespace Unrect.Tests.Streaming
     {
       // Nothing about reading through the sugar changes what a failure says: the coordinates are the
       // sheet's own, because the space handed to the declaration is the whole sheet either way.
-      var declaration = VerticalFlow(v => $"{v.Next(Text())}{v.Next(Decimal())}");
+      var declaration = VerticalFlow(v => $"{v.Text()}{v.Decimal()}");
 
       var failure = Assert.Throws<ProjectionException>(
         () => declaration.MapWorkbook(Path("multi-sheet.xlsx"), "Detail"));
@@ -171,7 +169,7 @@ namespace Unrect.Tests.Streaming
       // rows is refused by the workbook's own validation, and it is refused over a file that does not
       // exist — so the refusal cannot have come from reading anything.
       var failure = Assert.Throws<ArgumentOutOfRangeException>(() =>
-        Text().MapWorkbook(Path("no-such-workbook.xlsx"), "Any", new WorkbookOptions { BufferRows = 0 }));
+        Point().Text().MapWorkbook(Path("no-such-workbook.xlsx"), "Any", new WorkbookOptions { BufferRows = 0 }));
 
       Assert.Equal("BufferRows", failure.ParamName);
     }
@@ -211,7 +209,7 @@ namespace Unrect.Tests.Streaming
     public void AnUnknownSheetIsTheWorkbooksOwnRefusal()
     {
       var failure = Assert.Throws<ArgumentException>(
-        () => Text().MapWorkbook(Path("multi-sheet.xlsx"), "Nope"));
+        () => Point().Text().MapWorkbook(Path("multi-sheet.xlsx"), "Nope"));
 
       Assert.Contains("No sheet named 'Nope'", failure.Message, StringComparison.Ordinal);
       Assert.Contains("multi-sheet.xlsx", failure.Message, StringComparison.Ordinal);
@@ -228,7 +226,7 @@ namespace Unrect.Tests.Streaming
       Assert.Throws<ArgumentNullException>(() => ((IProjectionDefinition<ICellSpace, string>)null!).MapWorkbookWithDiagnostics(missing, "Any"));
 
       // ...and the path really is one that would have failed, so the assertion above is not vacuous.
-      Assert.ThrowsAny<IOException>(() => Text().MapWorkbook(missing, "Any"));
+      Assert.ThrowsAny<IOException>(() => Point().Text().MapWorkbook(missing, "Any"));
     }
 
     // --- The workbook is gone when this returns ------------------------------------------------------------
@@ -261,7 +259,7 @@ namespace Unrect.Tests.Streaming
         return block.Width;
       });
 
-      var declaration = VerticalFlow(v => $"{v.Next(probe)}{v.Next(Decimal())}");
+      var declaration = VerticalFlow(v => $"{v.Next(probe)}{v.Decimal()}");
 
       Assert.Throws<ProjectionException>(() => declaration.MapWorkbook(Path("multi-sheet.xlsx"), "Detail"));
 
@@ -381,7 +379,7 @@ namespace Unrect.Tests.Streaming
     // define. Verbatim from `dotnet build spike/TypedSpacesGauntlet -p:DefineConstants=MUST_NOT_COMPILE`,
     // re-run against this tree when these tests were written:
     //
-    //   (n) Formula().MapWorkbook(path, "Data")
+    //   (n) Point().Formula().MapWorkbook(path, "Data")
     //       CS1061: 'IProjectionDefinition<IFormulaSpace, string?>' does not contain a definition for
     //               'MapWorkbook' and no accessible extension method 'MapWorkbook' accepting a first
     //               argument of type 'IProjectionDefinition<IFormulaSpace, string?>' could be found (are you

@@ -8,8 +8,6 @@ using Unrect.Fluent;
 using Unrect.Spreadsheets;
 
 using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-
 namespace Unrect.Benchmarks
 {
   /// <summary>

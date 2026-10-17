@@ -8,7 +8,6 @@ using Unrect.Spreadsheets;
 using Xunit;
 
 using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -243,7 +242,7 @@ namespace Unrect.Tests.Projections
         { "oops" },
       });
 
-      var allocation = Decimal();
+      var allocation = Point().Decimal();
 
       var failure = Assert.Throws<ProjectionException>(() => VerticalBands(1, allocation).Map(sheet));
 
@@ -298,7 +297,7 @@ namespace Unrect.Tests.Projections
         { 3 },
       });
 
-      var applied = VerticalBands(1, Text().Optional()).Apply(sheet);
+      var applied = VerticalBands(1, Point().Text().Optional()).Apply(sheet);
 
       Assert.Equal(new string?[] { null, null, null }, applied.Value);
       Assert.Equal(3, applied.Consumed.Height);

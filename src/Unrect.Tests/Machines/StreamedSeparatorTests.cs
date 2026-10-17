@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 
 using Unrect.Core;
+using Unrect.Fluent;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
 using Unrect.Strategies;
@@ -20,7 +21,7 @@ namespace Unrect.Tests.Machines
   public class StreamedSeparatorTests
   {
     private static IReadOnlyList<string> Items(object?[,] cells, IOffsetStrategy<ICellSpace> separator)
-      => VerticalRepeat(AsText(), separatedBy: separator).Map(Mixed(cells));
+      => VerticalRepeat(Point().AsText(), separatedBy: separator).Map(Mixed(cells));
 
     [Fact]
     public void ALandmarkSeparatorFindsEveryGapNotJustTheFirst()

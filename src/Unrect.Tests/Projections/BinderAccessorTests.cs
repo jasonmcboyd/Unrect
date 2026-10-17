@@ -7,7 +7,6 @@ using Unrect.Spreadsheets;
 using Xunit;
 
 using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -383,7 +382,7 @@ namespace Unrect.Tests.Projections
         { "left", "x" },
       });
 
-      var byLeaf = Assert.Throws<ProjectionException>(() => Right(1).Down(1).Of(Decimal()).Map(grid));
+      var byLeaf = Assert.Throws<ProjectionException>(() => Right(1).Down(1).Of(Point().Decimal()).Map(grid));
       var byStrip = Assert.Throws<CellReadException>(() => Down(1).Of(Row(2, r => r)).Map(grid)[1].Decimal());
       var byRow = Assert.Throws<CellReadException>(() => Assert.Single(Table((TableRow<ICellSpace> r) => r).Map(grid))[1].Decimal());
 
@@ -401,7 +400,7 @@ namespace Unrect.Tests.Projections
         { "left", 1.5 },
       });
 
-      var byLeaf = Assert.Throws<ProjectionException>(() => Right(1).Down(1).Of(Integer()).Map(grid));
+      var byLeaf = Assert.Throws<ProjectionException>(() => Right(1).Down(1).Of(Point().Integer()).Map(grid));
       var byStrip = Assert.Throws<CellReadException>(() => Down(1).Of(Row(2, r => r)).Map(grid)[1].Integer());
 
       Assert.Equal("the Number at B2 (1.5) is not a whole number", Problem(byLeaf));

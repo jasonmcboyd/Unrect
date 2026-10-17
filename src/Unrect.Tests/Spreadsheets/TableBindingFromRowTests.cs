@@ -2,13 +2,13 @@ using System;
 using System.IO;
 using System.Linq;
 
+using Unrect.Fluent;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Spreadsheets.SpreadsheetProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>;
-
+using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>;
 namespace Unrect.Tests.Spreadsheets
 {
   /// <summary>

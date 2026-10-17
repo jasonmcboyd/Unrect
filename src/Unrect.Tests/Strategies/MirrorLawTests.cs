@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 
 using Unrect.Core;
+using Unrect.Fluent;
 using Unrect.Spreadsheets;
 using Unrect.Strategies;
 
@@ -204,8 +205,8 @@ namespace Unrect.Tests.Strategies
       // ...and the by-text spelling of the same pair, which addresses its own cell.
       Mirrored(
         WithCells,
-        SheetProjectionBuilders<ICellSpace>.TakeRowsToText(0, "m").SelectLines,
-        SheetProjectionBuilders<ICellSpace>.TakeColumnsToText(0, "m").SelectLines);
+        ProjectionBuilders<ICellSpace>.TakeRowsToText(0, "m").SelectLines,
+        ProjectionBuilders<ICellSpace>.TakeColumnsToText(0, "m").SelectLines);
     }
 
     // --- Explicit counts ---------------------------------------------------------------------------------

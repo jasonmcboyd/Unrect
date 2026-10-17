@@ -16,7 +16,7 @@ namespace Unrect.Interactive
   ///
   /// var report = VerticalFlow(v =&gt; new
   /// {
-  ///   Title        = v.Next(Text()),
+  ///   Title        = v.Text(),
   ///   Transactions = v.Next(ScaffoldRecord("Transaction")),
   /// });
   ///

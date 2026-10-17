@@ -10,7 +10,6 @@ using Unrect.Strategies;
 using Xunit;
 
 using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Strategies
@@ -337,18 +336,18 @@ namespace Unrect.Tests.Strategies
       // wrong thing.
       var sheet = RowsHolding(42);
 
-      var row = Assert.Throws<ProjectionException>(() => On(RowSaying("nope")).Of(Text()).Map(sheet));
+      var row = Assert.Throws<ProjectionException>(() => On(RowSaying("nope")).Of(Point().Text()).Map(sheet));
 
       Assert.Equal("no row saying 'nope' exists in the available space", Problem(row));
 
       var column = Assert.Throws<ProjectionException>(
-        () => On(ColumnSaying("nope")).Of(Text()).Map(ColumnsHolding(42)));
+        () => On(ColumnSaying("nope")).Of(Point().Text()).Map(ColumnsHolding(42)));
 
       Assert.Equal("no column saying 'nope' exists in the available space", Problem(column));
 
       // ...and the narrow matcher's sentence differs by exactly the one word, which is what makes
       // the pair readable as a choice rather than as two unrelated messages.
-      var containing = Assert.Throws<ProjectionException>(() => On(RowContaining("nope")).Of(Text()).Map(sheet));
+      var containing = Assert.Throws<ProjectionException>(() => On(RowContaining("nope")).Of(Point().Text()).Map(sheet));
 
       Assert.Equal("no row containing 'nope' exists in the available space", Problem(containing));
     }
@@ -372,14 +371,14 @@ namespace Unrect.Tests.Strategies
     {
       // Occupancy: the section starts at the matched row and reads it. One pipeline, anchor first
       // and the step after it, because an anchor is a root and a movement composes onto it.
-      Assert.Equal("the anchor row", On(RowSaying("42")).Right(1).Of(Text()).Map(NumericAnchor()));
+      Assert.Equal("the anchor row", On(RowSaying("42")).Right(1).Of(Point().Text()).Map(NumericAnchor()));
     }
 
     [Fact]
     public void BelowASayingMatchStartsOneRowBeyondIt()
     {
       // Adjacency: exactly one row past the match, never a distance the declaration chose.
-      Assert.Equal("below", Below(RowSaying("42")).Of(Text()).Map(NumericAnchor()));
+      Assert.Equal("below", Below(RowSaying("42")).Of(Point().Text()).Map(NumericAnchor()));
     }
 
     [Fact]
@@ -403,7 +402,7 @@ namespace Unrect.Tests.Strategies
         { null, "x", "y" },
       });
 
-      Assert.Equal("right of it", RightOf(ColumnSaying("42")).Of(Text()).Map(sheet));
+      Assert.Equal("right of it", RightOf(ColumnSaying("42")).Of(Point().Text()).Map(sheet));
       Assert.Equal("42", On(ColumnSaying("42")).Of(AsSaid()).Map(sheet));
     }
 

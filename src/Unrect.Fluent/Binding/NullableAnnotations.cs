@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace Unrect.Spreadsheets
+namespace Unrect.Fluent
 {
   /// <summary>
   /// Whether a reference-typed member was declared <c>string?</c>. <c>Nullable&lt;T&gt;</c> is a
