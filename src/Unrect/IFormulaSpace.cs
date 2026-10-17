@@ -1,22 +1,20 @@
 using Unrect.Core;
 
-namespace Unrect.Spreadsheets
+namespace Unrect
 {
   /// <summary>
   /// A space whose cells may carry formulas as well as values.
   /// <para>
-  /// The capability lives here, in the package that owns the vocabulary, and nothing in
-  /// <c>Unrect.Core</c> or <c>Unrect</c> names it. Strategies still decide extents from content; a
-  /// formula-aware matcher is a declaration like any other, shipped beside the backend that can
-  /// answer it (see <see cref="SpreadsheetProjections"/>).
+  /// A capability beside the value facet: a space that read its formulas says so by implementing
+  /// this, and nothing in <c>Unrect.Core</c> names it. Strategies still decide extents from content;
+  /// a formula-aware matcher is a declaration like any other, answered by a space that can.
   /// </para>
   /// <para>
   /// <b>Honest absence.</b> A space implements this only when it actually read formulas. A reader
   /// that skipped them must not implement it and answer null everywhere, because null here means
   /// "that cell is a plain value" — a statement about the file — and a whole grid of them would say
   /// the file has no formulas when nobody looked. That is why the eager door has a second factory
-  /// rather than a flag on the first: see
-  /// <see cref="SpreadsheetSpace.CreateWithFormulas(string, string, bool, System.Func{string, bool})"/>.
+  /// rather than a flag on the first: see <c>SpreadsheetSpace.CreateWithFormulas</c>.
   /// </para>
   /// <para>
   /// <b>Root coordinates, like every other read.</b> The coordinates are the whole sheet's; a region
@@ -35,8 +33,7 @@ namespace Unrect.Spreadsheets
     /// expression, and that is what comes back. A shared formula's follower answers with the
     /// expression as it applies to <em>that</em> cell — the master's text with its relative
     /// references shifted — because that is the formula the cell has, whatever the bytes economise
-    /// on. See <see cref="SpreadsheetSpace"/> for what the xlsx reader does and does not
-    /// reconstruct.
+    /// on. See <c>SpreadsheetSpace</c> for what the xlsx reader does and does not reconstruct.
     /// </para>
     /// </summary>
     /// <param name="column">The 0-based column.</param>

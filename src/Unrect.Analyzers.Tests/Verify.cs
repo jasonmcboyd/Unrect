@@ -27,6 +27,7 @@ namespace Unrect.Analyzers.Tests
     public const string Usings = """
       using System.Collections.Generic;
 
+      using Unrect;
       using Unrect.Core;
       using Unrect.Projections;
       using Unrect.Fluent;

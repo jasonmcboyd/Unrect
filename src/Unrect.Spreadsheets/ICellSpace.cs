@@ -10,7 +10,7 @@ namespace Unrect.Spreadsheets
   /// the value once — so no two doors can disagree about a cell.
   /// <para>
   /// The readings — <c>p.Double()</c>, <c>p.IsDate()</c>, <c>p.TryGetBoolean(out …)</c>, the
-  /// kinded leaves, the table binder — are extensions over the value (<see cref="PointReads"/>),
+  /// kinded leaves, the table binder — are extensions over the value (<see cref="CellReads"/> and <see cref="Projections.PointReads"/>),
   /// which is where the kind vocabulary lives and where a failure is worded: a cell of the wrong
   /// kind is a statement about the data, so it comes back as a <see cref="CellProblem"/> in the
   /// document's vocabulary (<c>expected Number at B4, found Text</c>), never as an exception from

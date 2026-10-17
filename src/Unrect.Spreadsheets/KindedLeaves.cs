@@ -65,7 +65,7 @@ namespace Unrect.Spreadsheets
 
       if (type == typeof(decimal))
         return SpreadsheetProjections.Kinded<TSpace, object?>(
-          "Decimal", (Point<TSpace> cell, out object? v, out CellProblem? p) => Box(CellReading.Decimal(cell, out var value, out p), value, out v));
+          "Decimal", (Point<TSpace> cell, out object? v, out CellProblem? p) => Box(Readings.TryDecimal(cell, out var value, out p), value, out v));
 
       if (type == typeof(double))
         return SpreadsheetProjections.Kinded<TSpace, object?>(
@@ -73,7 +73,7 @@ namespace Unrect.Spreadsheets
 
       if (type == typeof(int))
         return SpreadsheetProjections.Kinded<TSpace, object?>(
-          "Integer", (Point<TSpace> cell, out object? v, out CellProblem? p) => Box(CellReading.Integer(cell, out var value, out p), value, out v));
+          "Integer", (Point<TSpace> cell, out object? v, out CellProblem? p) => Box(Readings.TryInteger(cell, out var value, out p), value, out v));
 
       if (type == typeof(DateTime))
         return SpreadsheetProjections.Kinded<TSpace, object?>(

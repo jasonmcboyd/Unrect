@@ -46,7 +46,7 @@ namespace Unrect.Spreadsheets
     /// <typeparam name="TSpace">The sheet the leaf is declared over.</typeparam>
     public static IProjectionDefinition<TSpace, decimal> Decimal<TSpace>()
       where TSpace : class, ICellSpace
-      => Kinded<TSpace, decimal>("Decimal", (Point<TSpace> cell, out decimal v, out CellProblem? p) => CellReading.Decimal(cell, out v, out p));
+      => Kinded<TSpace, decimal>("Decimal", (Point<TSpace> cell, out decimal v, out CellProblem? p) => Readings.TryDecimal(cell, out v, out p));
 
     /// <summary>
     /// One cell holding a whole number. A number that is really there but is fractional or out of
@@ -55,7 +55,7 @@ namespace Unrect.Spreadsheets
     /// <typeparam name="TSpace">The sheet the leaf is declared over.</typeparam>
     public static IProjectionDefinition<TSpace, int> Integer<TSpace>()
       where TSpace : class, ICellSpace
-      => Kinded<TSpace, int>("Integer", (Point<TSpace> cell, out int v, out CellProblem? p) => CellReading.Integer(cell, out v, out p));
+      => Kinded<TSpace, int>("Integer", (Point<TSpace> cell, out int v, out CellProblem? p) => Readings.TryInteger(cell, out v, out p));
 
     /// <summary>One cell holding a number, read as a <see cref="double"/>.</summary>
     /// <typeparam name="TSpace">The sheet the leaf is declared over.</typeparam>
