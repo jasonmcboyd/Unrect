@@ -2,11 +2,11 @@ using System.Collections.Generic;
 using System.Linq;
 
 using Unrect.Projections;
+using Unrect.Fluent;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.Observations;
 using static Unrect.Tests.ProjectionTestSpaces;
 
@@ -66,7 +66,7 @@ namespace Unrect.Tests.Projections
       // change how many occurrences the repeat found — the loudest possible way for this law to
       // fail, and the reason the item is worth a case of its own.
       var space = Mixed(new object?[,] { { "a" }, { null }, { "b" }, { null }, { "c" } });
-      var item = Text();
+      var item = Point().Text();
 
       var plain = VerticalRepeat(item, separatedBy: BlankRows());
       var named = VerticalRepeat(item.Named("detail"), separatedBy: BlankRows());
@@ -106,7 +106,7 @@ namespace Unrect.Tests.Projections
       // Rung 1 of the naming ladder, at the segment the named projection owns: the enclosing flow
       // keeps its own description, and the name renders with the projection's kind beside it so a
       // reader can still tell what was being read.
-      var summary = Text();
+      var summary = Point().Text();
 
       var failure = Assert.Throws<ProjectionException>(() =>
         VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(summary.Named("summary"))}").Map(Ladder()));
@@ -123,10 +123,10 @@ namespace Unrect.Tests.Projections
       var second = IntCell();
 
       var plain = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(second)}{v.Next(Text())}").Map(Ladder()));
+        VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(second)}{v.Text()}").Map(Ladder()));
 
       var named = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(second.Named("middle"))}{v.Next(Text())}").Map(Ladder()));
+        VerticalFlow(v => $"{v.Next(IntCell())}{v.Next(second.Named("middle"))}{v.Text()}").Map(Ladder()));
 
       Assert.Equal("Text#3", plain.Subject);
       Assert.Equal("Text#3", named.Subject);

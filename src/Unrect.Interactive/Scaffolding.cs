@@ -6,6 +6,7 @@ using System.Text;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Fluent;
 using Unrect.Spreadsheets;
 
 namespace Unrect.Interactive
@@ -109,6 +110,11 @@ namespace Unrect.Interactive
     {
       var source = new StringBuilder();
 
+      // A positional record has no older spelling, so where the compiler cannot take one the paste
+      // says so first and points at the shape that works.
+      if (RuntimeDefaults.IsNetFramework)
+        source.Append("// a positional record needs C# 9; on .NET Framework use ScaffoldClass(…)").Append(Environment.NewLine);
+
       if (headerRows > 1)
         source.Append($"// binds with Table<{typeName}>({headerRows}): a member answers to a caption, or to its band and caption run together").Append(Environment.NewLine);
 
@@ -130,9 +136,9 @@ namespace Unrect.Interactive
     }
 
     /// <summary>
-    /// The same type as <see cref="ScaffoldRecord{TSpace}"/> writes, as a class with a parameterless
-    /// constructor and one init-only property per label — the other shape <c>Table&lt;T&gt;()</c>
-    /// binds:
+    /// The same type as <see cref="ScaffoldRecord{TSpace}"/> writes, as a class — the other shape
+    /// <c>Table&lt;T&gt;()</c> binds — with one property per label written in the
+    /// <paramref name="style"/> asked for:
     /// <code>
     /// public sealed class Transaction
     /// {
@@ -140,7 +146,11 @@ namespace Unrect.Interactive
     ///     public decimal Amount { get; init; }
     /// }
     /// </code>
-    /// A label that does not bind back to its member is noted in a comment above that property.
+    /// <see cref="MemberStyle.Init"/>, <see cref="MemberStyle.Set"/> and <see cref="MemberStyle.PrivateSet"/>
+    /// differ in the setter alone and bind through the properties; <see cref="MemberStyle.ReadOnly"/>
+    /// writes get-only properties and one constructor assigning them, and binds through that
+    /// constructor. A label that does not bind back to its member is noted in a comment above that
+    /// property.
     /// </summary>
     /// <typeparam name="TSpace">The sheet being read.</typeparam>
     /// <param name="sheet">The sheet to read labels and samples from.</param>
@@ -158,13 +168,20 @@ namespace Unrect.Interactive
     /// <exception cref="ArgumentException"><paramref name="typeName"/> is blank.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="at"/> or <paramref name="samples"/> is negative.</exception>
     /// <exception cref="OutOfBoundsException"><paramref name="at"/> is past the end of the sheet.</exception>
+    /// <param name="style">
+    /// The setter each property gets, or none. Null takes the runtime's default: <see cref="MemberStyle.Set"/>
+    /// on .NET Framework, whose in-box compilers do not know <c>init</c>, and <see cref="MemberStyle.Init"/>
+    /// elsewhere. The runtime is a guess about the compiler that will see the paste; this parameter
+    /// overrides it.
+    /// </param>
     /// <exception cref="InvalidOperationException">No labels were found and <paramref name="at"/> was not given.</exception>
-    public static string ScaffoldClass<TSpace>(this TSpace sheet, string typeName, LabelsIn labels = LabelsIn.Row, int? at = null, int samples = 5, int headerRows = 1)
+    public static string ScaffoldClass<TSpace>(this TSpace sheet, string typeName, LabelsIn labels = LabelsIn.Row, int? at = null, int samples = 5, int headerRows = 1, MemberStyle? style = null)
       where TSpace : class, ICellSpace
-      => Class(Read(Region.Of(sheet), typeName, labels, at, samples, headerRows), typeName, labels, headerRows);
+      => Class(Read(Region.Of(sheet), typeName, labels, at, samples, headerRows), typeName, labels, headerRows, style);
 
-    internal static string Class(List<Member> members, string typeName, LabelsIn labels, int headerRows = 1)
+    internal static string Class(List<Member> members, string typeName, LabelsIn labels, int headerRows = 1, MemberStyle? style = null)
     {
+      var chosen = style ?? RuntimeDefaults.MemberStyle;
       var notes = members.ToDictionary(member => member.Name, _ => new List<string>());
 
       foreach (var (member, note) in MemberNotes(members, typeName, labels))
@@ -177,19 +194,49 @@ namespace Unrect.Interactive
 
       source.Append($"public sealed class {typeName}").Append(Environment.NewLine).Append('{');
 
+      if (chosen == MemberStyle.ReadOnly)
+      {
+        // The constructor the binder fills: one parameter per member, in label order, named as a
+        // positional record would name them.
+        source.Append(Environment.NewLine).Append($"    public {typeName}({string.Join(", ", members.Select(member => $"{member.Type} {Parameter(member.Name)}"))})")
+          .Append(Environment.NewLine).Append("    {");
+
+        foreach (var member in members)
+          source.Append(Environment.NewLine).Append($"        {member.Name} = {Parameter(member.Name)};");
+
+        source.Append(Environment.NewLine).Append("    }").Append(Environment.NewLine);
+      }
+
       foreach (var member in members)
       {
         foreach (var note in notes[member.Name])
           source.Append(Environment.NewLine).Append("    // ").Append(note);
 
+        source.Append(Environment.NewLine).Append($"    public {member.Type} {member.Name} {Accessors(chosen)}");
+
         // A non-nullable string with nothing assigned is a warning wherever nullable is on, and a
-        // pasted type should be clean in either setting.
-        source.Append(Environment.NewLine).Append($"    public {member.Type} {member.Name} {{ get; init; }}")
-          .Append(member.Type == "string" ? " = \"\";" : string.Empty);
+        // pasted type should be clean in either setting; the constructor assigns it in the
+        // read-only shape.
+        if (member.Type == "string" && chosen != MemberStyle.ReadOnly)
+          source.Append(" = \"\";");
       }
 
       return source.Append(Environment.NewLine).Append('}').ToString();
     }
+
+    private static string Accessors(MemberStyle style)
+      => style switch
+      {
+        MemberStyle.Init => "{ get; init; }",
+        MemberStyle.Set => "{ get; set; }",
+        MemberStyle.PrivateSet => "{ get; private set; }",
+        MemberStyle.ReadOnly => "{ get; }",
+        _ => throw new ArgumentOutOfRangeException(nameof(style), style, "Not a member style."),
+      };
+
+    /// <summary>A constructor parameter for <paramref name="member"/>: the member's name with its first letter lowered.</summary>
+    private static string Parameter(string member)
+      => member.Length == 0 ? member : char.ToLowerInvariant(member[0]) + member.Substring(1);
 
     // --- Reading the sheet ---------------------------------------------------------------------------
 

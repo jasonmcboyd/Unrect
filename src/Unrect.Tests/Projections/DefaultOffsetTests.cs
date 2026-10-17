@@ -2,13 +2,12 @@ using System;
 using System.Linq;
 
 using Unrect.Projections;
+using Unrect.Fluent;
 using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-
+using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 namespace Unrect.Tests.Projections
 {
   /// <summary>
@@ -71,7 +70,7 @@ namespace Unrect.Tests.Projections
         Summary = v.Next(Table<Summary>()),
         Details = v.Next(
           VerticalRepeat(
-            VerticalFlow(block => new { Investor = block.Next(Text()), Transactions = block.Next(Table<Transaction>()) }),
+            VerticalFlow(block => new { Investor = block.Text(), Transactions = block.Next(Table<Transaction>()) }),
             atLeast: 1)),
       });
 
@@ -89,7 +88,7 @@ namespace Unrect.Tests.Projections
       // Two cards side by side with a gap column between them: the second starts on the gap, and
       // steps over it along the flow's own axis.
       var cards = SheetGrid.Of(new object?[,] { { "a", null, "c" }, { "b", null, "d" } });
-      var card = VerticalFlow(v => $"({v.Next(Text())},{v.Next(Text())})");
+      var card = VerticalFlow(v => $"({v.Text()},{v.Text()})");
 
       Assert.Equal("(a,b)(c,d)", HorizontalFlow(h => $"{h.Next(card)}{h.Next(card)}").Map(cards));
     }
@@ -106,7 +105,7 @@ namespace Unrect.Tests.Projections
 
       Assert.Equal(
         "Acme|NY|x",
-        HorizontalFlow(h => $"{h.Next(Text())}|{h.Next(Text().OrBlank())}|{h.Next(Text())}").Map(row));
+        HorizontalFlow(h => $"{h.Text()}|{h.Next(Point().Text().OrBlank())}|{h.Text()}").Map(row));
 
       // The strip says how long it is: a discovered one ends at the first blank cell — the same gap,
       // read as the end of a block.
@@ -122,7 +121,7 @@ namespace Unrect.Tests.Projections
       // leaf reads the blank in column A as the blank it is.
       var row = SheetGrid.Of(new object?[,] { { null, "x", 5m } });
 
-      var read = Overlay(o => $"{o.Next(Text().OrBlank()) ?? "<blank>"}|{o.Next(Right(2).Of(Decimal()))}").Map(row);
+      var read = Overlay(o => $"{o.Next(Point().Text().OrBlank()) ?? "<blank>"}|{o.Next(Right(2).Of(Point().Decimal()))}").Map(row);
 
       Assert.Equal("<blank>|5", read);
     }
@@ -136,7 +135,7 @@ namespace Unrect.Tests.Projections
 
       Assert.Equal(
         "top|x",
-        VerticalFlow(v => $"{v.Next(Text())}|{v.Next(Down(1).Of(Text()))}").Map(sheet));
+        VerticalFlow(v => $"{v.Text()}|{v.Next(Down(1).Of(Point().Text()))}").Map(sheet));
     }
 
     [Fact]
@@ -146,8 +145,8 @@ namespace Unrect.Tests.Projections
       // per node, whether it starts as it declared or by the default, and along which axis.
       var report = VerticalFlow(v => new
       {
-        Title = v.Next(Text()),
-        Pair = v.Next(HorizontalFlow(h => $"{h.Next(Text())}{h.Next(Right(1).Of(Text()))}")),
+        Title = v.Text(),
+        Pair = v.Next(HorizontalFlow(h => $"{h.Text()}{h.Next(Right(1).Of(Point().Text()))}")),
         Rows = v.Next(Table<Transaction>().Select(rows => rows.Count)),
       });
 
@@ -183,7 +182,7 @@ namespace Unrect.Tests.Projections
 
       var read = VerticalFlow(v => new
       {
-        Title = v.Next(Right(1).Of(Text())),
+        Title = v.Next(Right(1).Of(Point().Text())),
         Rows = v.Next(Table(r => r["Code"].Text())),
       }).Map(sheet);
 

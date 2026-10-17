@@ -3,13 +3,12 @@ using System.Collections.Generic;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Fluent;
 using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SpreadsheetProjections;
+using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -96,9 +95,9 @@ namespace Unrect.Tests.Projections
     private static IProjectionDefinition<ICellSpace, IReadOnlyList<BuyingPowerRow>> SparseTable()
     {
       var allocation = Overlay(o => new BuyingPowerRow(
-        FundCode: o.Next(Right(1).Of(Text())),
-        Primary: o.Next(Right(6).Of(Decimal().OrBlank())),
-        Fep: o.Next(Right(9).Of(Decimal().OrBlank()))));
+        FundCode: o.Next(Right(1).Of(Point().Text())),
+        Primary: o.Next(Right(6).Of(Point().Decimal().OrBlank())),
+        Fep: o.Next(Right(9).Of(Point().Decimal().OrBlank()))));
 
       return Below(RowContaining("ACCOUNT")).Sized(RowsWhileAnyIsNotBlank()).Of(Table(headerRows: 0, eachRow: allocation));
     }
@@ -153,9 +152,9 @@ namespace Unrect.Tests.Projections
       var strict = Below(RowContaining("ACCOUNT")).Sized(RowsWhileAnyIsNotBlank()).Of(Table(
         headerRows: 0,
         eachRow: Overlay(o => new BuyingPowerRow(
-          FundCode: o.Next(Right(1).Of(Text())),
-          Primary: o.Next(Right(6).Of(Decimal())),
-          Fep: o.Next(Right(9).Of(Decimal().OrBlank()))))));
+          FundCode: o.Next(Right(1).Of(Point().Text())),
+          Primary: o.Next(Right(6).Of(Point().Decimal())),
+          Fep: o.Next(Right(9).Of(Point().Decimal().OrBlank()))))));
 
       var failure = Assert.Throws<ProjectionException>(() => strict.Map(BuyingPower()));
 
@@ -181,9 +180,9 @@ namespace Unrect.Tests.Projections
     {
       // Silence is adjacency: every leaf consumes its own cell and the next starts where it stopped.
       var allocation = HorizontalFlow(h => new Allocation(
-        Account: h.Next(Text()),
-        Symbol: h.Next(Text()),
-        Weight: h.Next(Decimal())));
+        Account: h.Text(),
+        Symbol: h.Text(),
+        Weight: h.Decimal()));
 
       Assert.Equal(
         new[] { new Allocation("A-1", "XYZ", 1.5m), new Allocation("A-2", "ABC", 2.5m) },
@@ -197,9 +196,9 @@ namespace Unrect.Tests.Projections
       // same declaration over the same sheet reads two records with headerRows: 1 and meets the
       // caption row itself with headerRows: 0.
       var allocation = HorizontalFlow(h => new Allocation(
-        Account: h.Next(Text()),
-        Symbol: h.Next(Text()),
-        Weight: h.Next(Decimal())));
+        Account: h.Text(),
+        Symbol: h.Text(),
+        Weight: h.Decimal()));
 
       Assert.Equal(2, Table(headerRows: 1, eachRow: allocation).Map(Allocations()).Count);
 
@@ -299,9 +298,9 @@ namespace Unrect.Tests.Projections
       // The index belongs to the table's own segment and the label to the record's — the same
       // division a repeat makes. A hoisted row therefore labels every occurrence of itself.
       var buyingPowerRow = Overlay(o => new BuyingPowerRow(
-        FundCode: o.Next(Right(1).Of(Text())),
-        Primary: o.Next(Right(6).Of(Decimal())),
-        Fep: o.Next(Right(9).Of(Decimal().OrBlank()))));
+        FundCode: o.Next(Right(1).Of(Point().Text())),
+        Primary: o.Next(Right(6).Of(Point().Decimal())),
+        Fep: o.Next(Right(9).Of(Point().Decimal().OrBlank()))));
 
       var failure = Assert.Throws<ProjectionException>(() =>
         Below(RowContaining("ACCOUNT")).Sized(RowsWhileAnyIsNotBlank()).Of(Table(headerRows: 0, eachRow: buyingPowerRow))
@@ -319,9 +318,9 @@ namespace Unrect.Tests.Projections
         Below(RowContaining("ACCOUNT")).Sized(RowsWhileAnyIsNotBlank()).Of(Table(
           headerRows: 0,
           eachRow: Overlay(o => new BuyingPowerRow(
-            FundCode: o.Next(Right(1).Of(Text())),
-            Primary: o.Next(Right(6).Of(Decimal())),
-            Fep: o.Next(Right(9).Of(Decimal().OrBlank()))))))
+            FundCode: o.Next(Right(1).Of(Point().Text())),
+            Primary: o.Next(Right(6).Of(Point().Decimal())),
+            Fep: o.Next(Right(9).Of(Point().Decimal().OrBlank()))))))
           .Map(BuyingPower()));
 
       Assert.Equal("Table[2] -> Overlay -> Decimal#2", failure.Path);
@@ -334,9 +333,9 @@ namespace Unrect.Tests.Projections
         Below(RowContaining("ACCOUNT")).Sized(RowsWhileAnyIsNotBlank()).Of(Table(
           headerRows: 0,
           eachRow: Overlay(o => new BuyingPowerRow(
-            FundCode: o.Next(Right(1).Of(Text())),
-            Primary: o.Next(Right(6).Of(Decimal())),
-            Fep: o.Next(Right(9).Of(Decimal().OrBlank())))).Named("allocation line")))
+            FundCode: o.Next(Right(1).Of(Point().Text())),
+            Primary: o.Next(Right(6).Of(Point().Decimal())),
+            Fep: o.Next(Right(9).Of(Point().Decimal().OrBlank())))).Named("allocation line")))
           .Map(BuyingPower()));
 
       Assert.Equal("Table[2] -> 'allocation line' -> Decimal#2", failure.Path);
@@ -408,9 +407,9 @@ namespace Unrect.Tests.Projections
       IProjectionDefinition<ISpreadsheetSpace, IReadOnlyList<SourcedRow>> table = ProjectionBuilders<ISpreadsheetSpace>.Table(
         headerRows: 1,
         eachRow: ProjectionBuilders<ISpreadsheetSpace>.Overlay(o => new SourcedRow(
-          Account: o.Next(SpreadsheetProjectionBuilders<ISpreadsheetSpace>.Text()),
+          Account: o.Next(ProjectionBuilders<ISpreadsheetSpace>.Point().Text()),
           Formula: o.Next(ProjectionBuilders<ISpreadsheetSpace>.Right(2)
-            .Of(SpreadsheetProjections.Formula<ISpreadsheetSpace>())))));
+            .Of(ProjectionBuilders<ISpreadsheetSpace>.Point().Formula())))));
 
       Assert.Equal(
         new[] { new SourcedRow("Acme", "B2*3"), new SourcedRow("Beta", "B3*3") },
@@ -425,9 +424,9 @@ namespace Unrect.Tests.Projections
       IProjectionDefinition<ICellSpace, IReadOnlyList<Allocation>> table = Table(
         headerRows: 1,
         eachRow: HorizontalFlow(h => new Allocation(
-          Account: h.Next(Text()),
-          Symbol: h.Next(Text()),
-          Weight: h.Next(Decimal()))));
+          Account: h.Text(),
+          Symbol: h.Text(),
+          Weight: h.Decimal())));
 
       Assert.Equal(2, table.Map(Allocations()).Count);
     }

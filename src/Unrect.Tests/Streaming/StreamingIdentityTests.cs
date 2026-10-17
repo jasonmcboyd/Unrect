@@ -4,12 +4,12 @@ using System.Linq;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Fluent;
 using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Streaming
@@ -46,7 +46,7 @@ namespace Unrect.Tests.Streaming
     [MemberData(nameof(Workbooks))]
     public void EveryCellOfEveryWorkbookReadsTheSameThroughAStream(string file, string sheet)
     {
-      var eager = SpreadsheetSpace.Create(Path(file), sheet);
+      var eager = SpreadsheetSpace.CreateValues(Path(file), sheet);
       using var book = Workbook.Open(Path(file), new WorkbookOptions());
       var streamed = book.Sheet(sheet);
 
@@ -66,7 +66,7 @@ namespace Unrect.Tests.Streaming
       // file. The streaming door has measured such a sheet since it shipped; the eager door sized
       // its grid from the counts the reader would not give and yielded an empty space for a file
       // with four rows in it. Both now read the sheet to find out, and get the same answer.
-      var eager = SpreadsheetSpace.Create(Path("no-extent.xlsx"), "Undeclared");
+      var eager = SpreadsheetSpace.CreateValues(Path("no-extent.xlsx"), "Undeclared");
       using var book = Workbook.Open(Path("no-extent.xlsx"), new WorkbookOptions());
       var streamed = book.Sheet("Undeclared");
 
@@ -93,7 +93,7 @@ namespace Unrect.Tests.Streaming
       // that could drift apart. repeated-text.xlsx is the case with something to say (its 256- and
       // 257-character neighbours land on opposite sides of the guard, and both doors must put them
       // there); the rest are the control.
-      var eager = SpreadsheetSpace.Create(Path(file), sheet);
+      var eager = SpreadsheetSpace.CreateValues(Path(file), sheet);
       using var book = Workbook.Open(Path(file), new WorkbookOptions());
       var streamed = book.Sheet(sheet);
 
@@ -157,7 +157,7 @@ namespace Unrect.Tests.Streaming
     {
       var declaration = InvestorIrr();
 
-      var eager = declaration.Map(SpreadsheetSpace.Create(Path("investor-irr.xlsx"), "IRR"));
+      var eager = declaration.Map(SpreadsheetSpace.CreateValues(Path("investor-irr.xlsx"), "IRR"));
 
       using var book = Workbook.Open(Path("investor-irr.xlsx"), new WorkbookOptions());
       var streamed = declaration.Map(book.Sheet("IRR"));
@@ -180,7 +180,7 @@ namespace Unrect.Tests.Streaming
       // wrong about the sheet, and the unconsumed-space Info is what would have said so.
       var declaration = InvestorIrr();
 
-      var eagerSpace = SpreadsheetSpace.Create(Path("investor-irr.xlsx"), "IRR");
+      var eagerSpace = SpreadsheetSpace.CreateValues(Path("investor-irr.xlsx"), "IRR");
       var eager = declaration.MapWithDiagnostics(eagerSpace);
       var eagerExtent = declaration.Apply(eagerSpace);
 
@@ -207,7 +207,7 @@ namespace Unrect.Tests.Streaming
           Rows: v.Next(Table(row => row["Name"].Text())))),
         separatedBy: BlankRows());
 
-      var eager = declaration.Map(SpreadsheetSpace.Create(Path("investors-by-deal.xlsx"), "Investors"));
+      var eager = declaration.Map(SpreadsheetSpace.CreateValues(Path("investors-by-deal.xlsx"), "Investors"));
 
       using var book = Workbook.Open(Path("investors-by-deal.xlsx"), new WorkbookOptions());
       var streamed = declaration.Map(book.Sheet("Investors"));
@@ -225,7 +225,7 @@ namespace Unrect.Tests.Streaming
         Header: v.Next(Column(4, column => column[0].Text())),
         Rows: v.Next(Table(row => (row["Client"].Text(), row["Amount"].Decimal())))));
 
-      var eager = declaration.Map(SpreadsheetSpace.Create(Path("simple-report.xlsx"), "Report"));
+      var eager = declaration.Map(SpreadsheetSpace.CreateValues(Path("simple-report.xlsx"), "Report"));
 
       using var book = Workbook.Open(Path("simple-report.xlsx"), new WorkbookOptions());
       var streamed = declaration.Map(book.Sheet("Report"));
@@ -247,9 +247,9 @@ namespace Unrect.Tests.Streaming
     private static IProjectionDefinition<ICellSpace, IReadOnlyList<LedgerEntry>> Ledger()
     {
       var ledgerEntry = HorizontalFlow(h => new LedgerEntry(
-        Entry: h.Next(Integer()),
-        Amount: h.Next(Integer()),
-        Category: h.Next(Text())));
+        Entry: h.Integer(),
+        Amount: h.Integer(),
+        Category: h.Text()));
 
       return Below(RowContaining("Entry")).Of(Table(headerRows: 0, eachRow: ledgerEntry));
     }
@@ -259,7 +259,7 @@ namespace Unrect.Tests.Streaming
     {
       var declaration = Ledger();
 
-      var eager = declaration.Map(SpreadsheetSpace.Create(Path("tall-ledger.xlsx"), "Ledger"));
+      var eager = declaration.Map(SpreadsheetSpace.CreateValues(Path("tall-ledger.xlsx"), "Ledger"));
 
       using var book = Workbook.Open(Path("tall-ledger.xlsx"), new WorkbookOptions());
       var streamed = declaration.Map(book.Sheet("Ledger"));
@@ -275,9 +275,9 @@ namespace Unrect.Tests.Streaming
     private static IProjectionDefinition<ICellSpace, IReadOnlyList<LedgerEntry>> HeaderedLedger()
     {
       var ledgerEntry = HorizontalFlow(h => new LedgerEntry(
-        Entry: h.Next(Integer()),
-        Amount: h.Next(Integer()),
-        Category: h.Next(Text())));
+        Entry: h.Integer(),
+        Amount: h.Integer(),
+        Category: h.Text()));
 
       return On(RowContaining("Entry")).Of(Table(headerRows: 1, eachRow: ledgerEntry));
     }
@@ -290,7 +290,7 @@ namespace Unrect.Tests.Streaming
       // captions per record — or held the block before projecting — the peak would say so.
       var declaration = HeaderedLedger();
 
-      var eager = declaration.Map(SpreadsheetSpace.Create(Path("tall-ledger.xlsx"), "Ledger"));
+      var eager = declaration.Map(SpreadsheetSpace.CreateValues(Path("tall-ledger.xlsx"), "Ledger"));
 
       using var book = Workbook.Open(Path("tall-ledger.xlsx"), new WorkbookOptions { BufferRows = 16 });
 
@@ -316,7 +316,7 @@ namespace Unrect.Tests.Streaming
       var declaration = IntCell().Named("a number");
 
       var eager = Assert.Throws<ProjectionException>(
-        () => declaration.Map(SpreadsheetSpace.Create(Path("edge-cases.xlsx"), "Edges")));
+        () => declaration.Map(SpreadsheetSpace.CreateValues(Path("edge-cases.xlsx"), "Edges")));
 
       using var book = Workbook.Open(Path("edge-cases.xlsx"), new WorkbookOptions());
       var streamed = Assert.Throws<ProjectionException>(() => declaration.Map(book.Sheet("Edges")));

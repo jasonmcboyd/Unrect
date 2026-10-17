@@ -27,22 +27,23 @@ namespace Unrect.Analyzers.Tests
     public const string Usings = """
       using System.Collections.Generic;
 
+      using Unrect;
       using Unrect.Core;
       using Unrect.Projections;
+      using Unrect.Fluent;
       using Unrect.Spreadsheets;
 
-      using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-      using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-
+      using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
       """;
 
     private static readonly MetadataReference[] Unrect =
     {
       MetadataReference.CreateFromFile(typeof(Core.ISpace).Assembly.Location),
-      MetadataReference.CreateFromFile(typeof(Projections.ProjectionBuilders<>).Assembly.Location),
-      MetadataReference.CreateFromFile(typeof(Projections.ProjectionMapping).Assembly.Location),
+      MetadataReference.CreateFromFile(typeof(Fluent.ProjectionBuilders<>).Assembly.Location),
+      MetadataReference.CreateFromFile(typeof(Fluent.ProjectionMapping).Assembly.Location),
+      MetadataReference.CreateFromFile(typeof(Projections.IProjectionDefinition<,>).Assembly.Location),
       MetadataReference.CreateFromFile(typeof(Strategies.SizeStrategies).Assembly.Location),
-      MetadataReference.CreateFromFile(typeof(Spreadsheets.SpreadsheetProjections).Assembly.Location),
+      MetadataReference.CreateFromFile(typeof(Spreadsheets.SpreadsheetReads).Assembly.Location),
     };
 
     /// <summary>Asserts that <paramref name="source"/> reports exactly <paramref name="expected"/>.</summary>

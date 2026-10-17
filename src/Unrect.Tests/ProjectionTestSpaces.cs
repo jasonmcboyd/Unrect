@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 
+using Unrect.Fluent;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
 using Unrect.Tests.Streaming;
@@ -82,7 +83,7 @@ namespace Unrect.Tests
 
     /// <summary>A sheet of <paramref name="file"/> in <c>TestData</c>, read whole.</summary>
     public static ICellSpace Eager(string file, string sheet)
-      => SpreadsheetSpace.Create(Path.Combine(AppContext.BaseDirectory, "TestData", file), sheet);
+      => SpreadsheetSpace.CreateValues(Path.Combine(AppContext.BaseDirectory, "TestData", file), sheet);
 
     /// <summary>
     /// A column of 1..<paramref name="height"/>, so an assertion reads as the row it came from.
@@ -113,7 +114,7 @@ namespace Unrect.Tests
     }
 
     /// <summary>A cell read as a number — the leaf most tests need and none of them vary.</summary>
-    public static IProjectionDefinition<ICellSpace, int> IntCell() => SpreadsheetProjections.Integer<ICellSpace>();
+    public static IProjectionDefinition<ICellSpace, int> IntCell() => ProjectionBuilders<ICellSpace>.Point().Integer();
 
     /// <summary>
     /// A cell read as text — the other leaf the suite reaches for by reflex, and the twin of
@@ -121,7 +122,7 @@ namespace Unrect.Tests
     /// <c>v.Next(TextCell())</c> is named exactly as the inline lambda it replaced was: by kind and
     /// ordinal.
     /// </summary>
-    public static IProjectionDefinition<ICellSpace, string> TextCell() => SheetProjectionBuilders<ICellSpace>.Text();
+    public static IProjectionDefinition<ICellSpace, string> TextCell() => ProjectionBuilders<ICellSpace>.Point().Text();
 
     /// <summary>
     /// The problem text of a failure, without the subject the message template puts in front of it.

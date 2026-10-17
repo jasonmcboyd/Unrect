@@ -1,21 +1,22 @@
 <Query Kind="Statements">
-  <Reference Relative="..\src\Unrect\bin\Debug\netstandard2.1\Unrect.Core.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect\bin\Debug\netstandard2.1\Unrect.Core.dll</Reference>
-  <Reference Relative="..\src\Unrect\bin\Debug\netstandard2.1\Unrect.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect\bin\Debug\netstandard2.1\Unrect.dll</Reference>
+  <Reference Relative="..\src\Unrect.Projections\bin\Debug\netstandard2.1\Unrect.Core.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Projections\bin\Debug\netstandard2.1\Unrect.Core.dll</Reference>
+  <Reference Relative="..\src\Unrect.Projections\bin\Debug\netstandard2.1\Unrect.Projections.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Projections\bin\Debug\netstandard2.1\Unrect.Projections.dll</Reference>
+  <Reference Relative="..\src\Unrect.Fluent\bin\Debug\netstandard2.1\Unrect.Fluent.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Fluent\bin\Debug\netstandard2.1\Unrect.Fluent.dll</Reference>
   <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Engine.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Engine.dll</Reference>
   <Reference Relative="..\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll</Reference>
-  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.IValueSpace&lt;int&gt;&gt;</Namespace>
-  <Namespace>Unrect</Namespace>
+  <Namespace>static Unrect.Fluent.ProjectionBuilders&lt;Unrect.Core.IValueSpace&lt;int&gt;&gt;</Namespace>
   <Namespace>Unrect.Core</Namespace>
+  <Namespace>Unrect.Fluent</Namespace>
   <Namespace>Unrect.Projections</Namespace>
 </Query>
 
 // Projections over an in-memory array. The adapter decides blankness where data enters
 // the system — in this grid, zero means empty — and everything above it is the same
 // vocabulary the spreadsheet scripts use — down to the header. The query's namespace imports name
-// this file's space once, `using static Unrect.Projections.ProjectionBuilders<Unrect.IValueSpace<int>>`,
+// this file's space once, `using static Unrect.Fluent.ProjectionBuilders<Unrect.Core.IValueSpace<int>>`,
 // which is the same line the spreadsheet scripts carry with ICellSpace in it: one vocabulary, each
 // file naming the space it is written over. What differs is only what a cell can be asked — a point
-// over a grid of values answers Value(), a point over a sheet answers Decimal() — because the
+// over a grid of values answers Value(), a point over a sheet answers Point().Decimal() — because the
 // reading a space can promise is the space's own.
 var nums = new[,]
 {

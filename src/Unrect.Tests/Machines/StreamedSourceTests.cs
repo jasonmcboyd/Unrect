@@ -4,13 +4,13 @@ using System.Linq;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Fluent;
 using Unrect.Spreadsheets;
 using Unrect.Tests.Streaming;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Machines
@@ -143,9 +143,9 @@ namespace Unrect.Tests.Machines
       // succeeds; what reaches a boundary is a read of rows released before it began, as here,
       // where the sheet's one pass has been spent.)
       var sheet = Blocks(blocks: 30, blockRows: 3);
-      var first = Down(0).Of(AsText());
+      var first = Down(0).Of(Point().AsText());
 
-      foreach (var tolerant in new[] { first.Optional()!, first.Else("absent"), first.Else(Down(1).Of(AsText())), Choice(first, Down(1).Of(AsText())) })
+      foreach (var tolerant in new[] { first.Optional()!, first.Else("absent"), first.Else(Down(1).Of(Point().AsText())), Choice(first, Down(1).Of(Point().AsText())) })
       {
         using var book = Workbook.Over(new FakeRowSource(sheet), new WorkbookOptions());
         var spent = book.Sheet("Data");
@@ -163,7 +163,7 @@ namespace Unrect.Tests.Machines
     {
       var sheet = Blocks(blocks: 30, blockRows: 3);
 
-      var inside = VerticalFlow(v => $"{v.Next(Text())}:{v.Next(BlockTotals()).Count}");
+      var inside = VerticalFlow(v => $"{v.Text()}:{v.Next(BlockTotals()).Count}");
 
       using var book = Workbook.Over(new FakeRowSource(sheet), new WorkbookOptions());
         Assert.Equal("block 0:30", inside.Map(book.Sheet("Data")));
@@ -172,7 +172,7 @@ namespace Unrect.Tests.Machines
     [Fact]
     public void MapWorkbookReadsWhatTheEagerDoorReads()
     {
-      var report = VerticalFlow(v => $"{v.Next(Text())}:{v.Next(AfterBlankRows().Of(Table())).Count}");
+      var report = VerticalFlow(v => $"{v.Text()}:{v.Next(AfterBlankRows().Of(Table())).Count}");
 
       var path = System.IO.Path.Combine(AppContext.BaseDirectory, "TestData", "simple-report.xlsx");
       var eager = report.Map(Eager("simple-report.xlsx", "Report"));

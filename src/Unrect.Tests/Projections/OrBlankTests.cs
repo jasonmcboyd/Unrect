@@ -1,12 +1,12 @@
 using System;
 
 using Unrect.Projections;
+using Unrect.Fluent;
 using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -53,8 +53,8 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ABlankCellReadsAsNull()
     {
-      Assert.Null(Decimal().OrBlank().Map(BlankCell()));
-      Assert.Null(Text().OrBlank().Map(BlankCell()));
+      Assert.Null(Point().Decimal().OrBlank().Map(BlankCell()));
+      Assert.Null(Point().Text().OrBlank().Map(BlankCell()));
     }
 
     [Fact]
@@ -62,7 +62,7 @@ namespace Unrect.Tests.Projections
     {
       // The pin the modifier exists for. Nothing is absorbed here, so there is nothing to report:
       // the declaration said the cell may be absent and the cell is absent.
-      var read = Decimal().OrBlank().MapWithDiagnostics(BlankCell());
+      var read = Point().Decimal().OrBlank().MapWithDiagnostics(BlankCell());
 
       // The neighbour that keeps the row from being a gap is not described, and the run says so;
       // that Info is about the sheet. About the cell there is nothing.
@@ -76,7 +76,7 @@ namespace Unrect.Tests.Projections
       // The other half, over the same cell, so the two spellings can be read side by side. Optional
       // turns a kind failure — a blank IS a kind failure to Decimal — into a default plus a Warning,
       // which is right for a section that may be missing and wrong for a field that may be empty.
-      var read = Decimal().Optional().MapWithDiagnostics(BlankCell());
+      var read = Point().Decimal().Optional().MapWithDiagnostics(BlankCell());
 
       var warning = Assert.Single(read.Diagnostics, d => d.Severity == DiagnosticSeverity.Warning);
 
@@ -92,8 +92,8 @@ namespace Unrect.Tests.Projections
     {
       // Word for word what the intolerant leaf says. Blankness is about the data; a kind is about
       // the format, and no format tolerates the wrong one.
-      var tolerant = Assert.Throws<ProjectionException>(() => Decimal().OrBlank().Map(One("n/a")));
-      var strict = Assert.Throws<ProjectionException>(() => Decimal().Map(One("n/a")));
+      var tolerant = Assert.Throws<ProjectionException>(() => Point().Decimal().OrBlank().Map(One("n/a")));
+      var strict = Assert.Throws<ProjectionException>(() => Point().Decimal().Map(One("n/a")));
 
       Assert.Equal("expected Number at A1, found Text", Problem(tolerant));
       Assert.Equal(Problem(strict), Problem(tolerant));
@@ -104,7 +104,7 @@ namespace Unrect.Tests.Projections
     {
       Assert.Equal(
         "expected Text at A1, found Number",
-        Problem(Assert.Throws<ProjectionException>(() => Text().OrBlank().Map(One(1)))));
+        Problem(Assert.Throws<ProjectionException>(() => Point().Text().OrBlank().Map(One(1)))));
     }
 
     [Fact]
@@ -115,7 +115,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal(
         "expected Number at A1, found Error(#DIV/0!)",
         Problem(Assert.Throws<ProjectionException>(() =>
-          Decimal().OrBlank().Map(One(CellValue.OfError(CellError.DivisionByZero))))));
+          Point().Decimal().OrBlank().Map(One(CellValue.OfError(CellError.DivisionByZero))))));
     }
 
     [Fact]
@@ -125,9 +125,9 @@ namespace Unrect.Tests.Projections
       // whatever the space calls blank — and the array adapter calls "" blank and "   " Text.
       Assert.Equal(
         "expected Number at A1, found Text",
-        Problem(Assert.Throws<ProjectionException>(() => Decimal().OrBlank().Map(One("   ")))));
+        Problem(Assert.Throws<ProjectionException>(() => Point().Decimal().OrBlank().Map(One("   ")))));
 
-      Assert.Null(Decimal().OrBlank().Map(Mixed(new object?[,] { { "", "." } })));
+      Assert.Null(Point().Decimal().OrBlank().Map(Mixed(new object?[,] { { "", "." } })));
     }
 
     [Fact]
@@ -135,7 +135,7 @@ namespace Unrect.Tests.Projections
     {
       // The kind was right, so the message names the value rather than the column — the second half
       // of the §1.4 discipline, unchanged by tolerance.
-      var failure = Assert.Throws<ProjectionException>(() => Integer().OrBlank().Map(One(1.5)));
+      var failure = Assert.Throws<ProjectionException>(() => Point().Integer().OrBlank().Map(One(1.5)));
 
       Assert.Equal("the Number at A1 (1.5) is not a whole number", Problem(failure));
       Assert.DoesNotContain("expected", Problem(failure));
@@ -146,11 +146,11 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ItCommutesWithPlacement()
     {
-      // Decimal().Right(6).OrBlank() and Decimal().OrBlank().Right(6) are the same declaration: the
+      // Point().Decimal().Right(6).OrBlank() and Point().Decimal().OrBlank().Right(6) are the same declaration: the
       // kind, the accessor and the placement are the leaf's own, and tolerance changes only what a
       // blank means. Compared on everything a caller can observe rather than on one reading.
-      var placedThenTolerant = Right(6).Of(Decimal()).OrBlank();
-      var tolerantThenPlaced = Right(6).Of(Decimal().OrBlank());
+      var placedThenTolerant = Right(6).Of(Point().Decimal()).OrBlank();
+      var tolerantThenPlaced = Right(6).Of(Point().Decimal().OrBlank());
 
       Assert.Equal(1250.75m, placedThenTolerant.Map(Sparse(1250.75m)));
       Assert.Equal(1250.75m, tolerantThenPlaced.Map(Sparse(1250.75m)));
@@ -176,9 +176,9 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ItKeepsTheNameWhicheverSideItIsWrittenOn()
     {
-      Assert.Equal("primary", Decimal().Named("primary").OrBlank().Name);
-      Assert.Equal("primary", Decimal().OrBlank().Named("primary").Name);
-      Assert.Equal("fund", Text().Named("fund").OrBlank().Name);
+      Assert.Equal("primary", Point().Decimal().Named("primary").OrBlank().Name);
+      Assert.Equal("primary", Point().Decimal().OrBlank().Named("primary").Name);
+      Assert.Equal("fund", Point().Text().Named("fund").OrBlank().Name);
     }
 
     [Fact]
@@ -186,19 +186,19 @@ namespace Unrect.Tests.Projections
     {
       // The other side of the clause that preserves the name: it must not invent one, or a hoisted
       // leaf would stop borrowing the identifier at its use site.
-      Assert.Null(Decimal().OrBlank().Name);
-      Assert.Null(Text().OrBlank().Name);
+      Assert.Null(Point().Decimal().OrBlank().Name);
+      Assert.Null(Point().Text().OrBlank().Name);
     }
 
     [Fact]
     public void ItDescribesItselfAsTheNullableReading()
     {
-      Assert.Equal("Decimal?", Decimal().OrBlank().Description);
-      Assert.Equal("Text?", Text().OrBlank().Description);
-      Assert.Equal("Integer?", Integer().OrBlank().Description);
-      Assert.Equal("Double?", Double().OrBlank().Description);
-      Assert.Equal("Date?", Date().OrBlank().Description);
-      Assert.Equal("Boolean?", Boolean().OrBlank().Description);
+      Assert.Equal("Decimal?", Point().Decimal().OrBlank().Description);
+      Assert.Equal("Text?", Point().Text().OrBlank().Description);
+      Assert.Equal("Integer?", Point().Integer().OrBlank().Description);
+      Assert.Equal("Double?", Point().Double().OrBlank().Description);
+      Assert.Equal("Date?", Point().Date().OrBlank().Description);
+      Assert.Equal("Boolean?", Point().Boolean().OrBlank().Description);
     }
 
     [Fact]
@@ -209,7 +209,7 @@ namespace Unrect.Tests.Projections
       var failure = Assert.Throws<ProjectionException>(() =>
         VerticalFlow(v =>
         {
-          var decimalSlot = v.Next(Decimal().OrBlank());
+          var decimalSlot = v.Next(Point().Decimal().OrBlank());
 
           return decimalSlot;
         }).Map(One("n/a")));
@@ -223,7 +223,7 @@ namespace Unrect.Tests.Projections
     {
       // The naming ladder is unchanged: the modifier does not name what it returns, so the use site
       // still gets to.
-      var primary = Decimal().OrBlank();
+      var primary = Point().Decimal().OrBlank();
 
       var failure = Assert.Throws<ProjectionException>(() =>
         VerticalFlow(v =>
@@ -239,7 +239,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ItStillConsumesExactlyOneCell()
     {
-      var applied = Decimal().OrBlank().Apply(BlankCell());
+      var applied = Point().Decimal().OrBlank().Apply(BlankCell());
 
       Assert.Equal(1, applied.Consumed.Width);
       Assert.Equal(1, applied.Consumed.Height);
@@ -248,13 +248,13 @@ namespace Unrect.Tests.Projections
     // Not testable, and recorded here because it is a designed refusal rather than an omission:
     // NEITHER of these compiles, and they are refused for two different reasons.
     //
-    //   Decimal().OrBlank().OrBlank()   CS0453, "the type 'decimal?' must be a non-nullable value
+    //   Point().Decimal().OrBlank().OrBlank()   CS0453, "the type 'decimal?' must be a non-nullable value
     //     type". The first call returns IProjectionDefinition<ICellSpace, decimal?>; the generic overload constrains T to
     //     a non-nullable struct and the reference-typed one takes IProjectionDefinition<ICellSpace, string>. There is no
     //     Nullable<Nullable<T>> to reach for, so the second "may be absent" has nothing left to say.
     //     This is the library's own refusal, and the one the design intended.
     //
-    //   Text().OrBlank().OrBlank()      CS8620 — IProjectionDefinition<ICellSpace, string?> cannot be passed where
+    //   Point().Text().OrBlank().OrBlank()      CS8620 — IProjectionDefinition<ICellSpace, string?> cannot be passed where
     //     IProjectionDefinition<ICellSpace, string> is wanted, because IProjectionDefinition<ICellSpace, TResult> is invariant. Verified against
     //     this tree, where TreatWarningsAsErrors makes it an error outright; in a project that only
     //     warns it would compile and be a harmless no-op, since string? and string are one type at
@@ -278,8 +278,8 @@ namespace Unrect.Tests.Projections
       // only if OrBlank carried it.
       var space = Mixed(new object?[,] { { "x" } });
 
-      var markedThenTolerant = Assert.Throws<ProjectionException>(() => Decimal().AsUnit("x").OrBlank().Map(space));
-      var tolerantThenMarked = Assert.Throws<ProjectionException>(() => Decimal().OrBlank().AsUnit("x").Map(space));
+      var markedThenTolerant = Assert.Throws<ProjectionException>(() => Point().Decimal().AsUnit("x").OrBlank().Map(space));
+      var tolerantThenMarked = Assert.Throws<ProjectionException>(() => Point().Decimal().OrBlank().AsUnit("x").Map(space));
 
       Assert.Equal(tolerantThenMarked.Path, markedThenTolerant.Path);
       Assert.Equal(tolerantThenMarked.Subject, markedThenTolerant.Subject);
@@ -339,10 +339,10 @@ namespace Unrect.Tests.Projections
 
       // The pin the modifier's own documentation implies: the two tolerances do not stack. Optional
       // has already turned every failure into a default, so there is no blank left to tolerate.
-      "Optional" => Decimal().Optional().OrBlank(),
+      "Optional" => Point().Decimal().Optional().OrBlank(),
 
       // A conversion beyond the leaf's own reading is Select territory, and a Select is not a leaf.
-      "Select" => Decimal().Select(amount => amount * 2).OrBlank(),
+      "Select" => Point().Decimal().Select(amount => amount * 2).OrBlank(),
 
       _ => throw new ArgumentOutOfRangeException(nameof(receiver), receiver, "No such receiver."),
     };

@@ -9,7 +9,8 @@
          CellMatching, so Caption, Field and the matchers agree on what matching means. (Fields once
          reached for the Predicate*Landmark classes too; RowWhere/ColumnWhere's described overloads
          replaced that.) -->
-    <InternalsVisibleTo Include="Unrect" />
+    <InternalsVisibleTo Include="Unrect.Projections" />
+    <InternalsVisibleTo Include="Unrect.Fluent" />
     <InternalsVisibleTo Include="Unrect.Spreadsheets" />
   </ItemGroup>
 

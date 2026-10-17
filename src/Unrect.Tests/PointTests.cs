@@ -1,6 +1,7 @@
 using System;
 
 using Unrect.Core;
+using Unrect.Projections;
 using Unrect.Spreadsheets;
 
 using Xunit;
@@ -185,6 +186,22 @@ namespace Unrect.Tests
       public bool IsBlankAt(int column, int row) => true;
 
       public string AsTextAt(int column, int row) => string.Empty;
+
+      public bool TryGetTextAt(int column, int row, out string value, out CellProblem? problem)
+      {
+        value = string.Empty;
+        problem = null;
+        return true;
+      }
+
+      public bool TryGetDoubleAt(int column, int row, out double value, out CellProblem? problem)
+        => TextReads.TryDouble(string.Empty, out value, out problem);
+
+      public bool TryGetDateAt(int column, int row, out DateTime value, out CellProblem? problem)
+        => TextReads.TryDate(string.Empty, out value, out problem);
+
+      public bool TryGetBooleanAt(int column, int row, out bool value, out CellProblem? problem)
+        => TextReads.TryBoolean(string.Empty, out value, out problem);
     }
 
     [Fact]

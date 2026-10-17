@@ -70,7 +70,7 @@ This is the real decision of this spec. The options:
 
   ```csharp
   StaticFlow(v => {
-      var title  = v.Next(Text());          // Slot<string>, not string
+      var title  = v.Text();          // Slot<string>, not string
       var table  = v.Next(Table<Tx>());     // Slot<IReadOnlyList<Tx>>
       return v.Combine(title, table, (t, rows) => new Report(t, rows));
   })

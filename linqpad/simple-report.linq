@@ -1,27 +1,27 @@
 <Query Kind="Statements">
   <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Core.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Core.dll</Reference>
-  <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.dll</Reference>
+  <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Projections.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Projections.dll</Reference>
+  <Reference Relative="..\src\Unrect.Fluent\bin\Debug\netstandard2.1\Unrect.Fluent.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Fluent\bin\Debug\netstandard2.1\Unrect.Fluent.dll</Reference>
   <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Engine.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Engine.dll</Reference>
   <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll</Reference>
   <Reference Relative="..\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll</Reference>
-  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;</Namespace>
-  <Namespace>static Unrect.Spreadsheets.SpreadsheetProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;</Namespace>
+  <Namespace>static Unrect.Fluent.ProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;</Namespace>
   <Namespace>Unrect.Core</Namespace>
+  <Namespace>Unrect.Fluent</Namespace>
   <Namespace>Unrect.Projections</Namespace>
   <Namespace>Unrect.Spreadsheets</Namespace>
 </Query>
 
-// The space this file is written over is named ONCE — in two imports that say the same name:
-// `using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>` is the
-// vocabulary every space has, and `using static Unrect.Spreadsheets.SpreadsheetProjectionBuilders<...>`
-// adds the readings only a sheet can promise: Text(), Date(), Decimal(), and the Table<T> rungs
-// that assert a kind per member. Everything below is spelled with no prefix and no type argument.
+// The space this file is written over is named ONCE, in the one import:
+// `using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>` is the
+// whole vocabulary. Every reading of a cell is an extension on the point — v.Text(), v.Date(),
+// v.Decimal(), Point().Formula() — and the Table<T> rungs read each member the same way.
+// Everything below is spelled with no prefix and no type argument.
 //
 // ISpreadsheetSpace is the FULL space — values, formulas, and what a cell looks like — and it is
-// the one to start a script in: `row["Amount"].Font()` and `Formula()` compile only over it, and
-// the space is fixed by these two imports, not by how the workbook is opened below. (The narrower
-// pair, ICellSpace with SheetProjectionBuilders, reads values alone — cheaper, and the only one
-// an .xls or a streamed Workbook can answer. Never both sheet classes in one file.)
+// the one to start a script in: `row["Amount"].Font()` and `Point().Formula()` compile only over it, and
+// the space is fixed by that import, not by how the workbook is opened below. (ICellSpace reads
+// values alone — cheaper, and the only one an .xls or a streamed Workbook can answer.)
 var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\examples\simple-report.xlsx");
 
 // The report definition: the region and the reading of it, fused into one value independent of
@@ -33,10 +33,10 @@ var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\exam
 // 1x4 either way, so nothing below it moves.
 var reportHeader = VerticalFlow(v => new
 {
-	Title = v.Next(Text()),
-	SubTitle = v.Next(Text()),
-	ReportDate = v.Next(Date()),
-	ReportId = v.Next(Text()),
+	Title = v.Text(),
+	SubTitle = v.Text(),
+	ReportDate = v.Date(),
+	ReportId = v.Text(),
 });
 
 // Captions bind to members by name, ignoring case and whitespace: Client and Amount need nothing
@@ -53,6 +53,6 @@ var report = VerticalFlow(v => new
 	Transactions = v.Next(transactions),
 });
 
-report.Map(SpreadsheetSpace.CreateWithFormulas(path, "Report")).Dump();
+report.Map(SpreadsheetSpace.Create(path, "Report")).Dump();
 
 record Transaction(string Client, DateTime Date, string Type, decimal Amount);

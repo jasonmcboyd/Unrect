@@ -1,6 +1,7 @@
 using System;
 
 using Unrect.Core;
+using Unrect.Projections;
 using Unrect.Spreadsheets;
 
 using Xunit;

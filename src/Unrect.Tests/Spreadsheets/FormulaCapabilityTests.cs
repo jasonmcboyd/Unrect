@@ -1,14 +1,13 @@
 using System;
 
 using Unrect.Core;
+using Unrect.Fluent;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>;
-using static Unrect.Spreadsheets.SpreadsheetProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>;
-
+using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>;
 namespace Unrect.Tests.Spreadsheets
 {
   /// <summary>
@@ -34,10 +33,10 @@ namespace Unrect.Tests.Spreadsheets
   {
     private static string Path() => System.IO.Path.Combine(AppContext.BaseDirectory, "TestData", "formulas.xlsx");
 
-    private static ISpreadsheetSpace Sheet() => SpreadsheetSpace.CreateWithFormulas(Path(), "Formulas");
+    private static ISpreadsheetSpace Sheet() => SpreadsheetSpace.Create(Path(), "Formulas");
 
     [Fact]
-    public void CreateWithFormulas_ReadsAFormulaAndLeavesAPlainCellNull()
+    public void Create_ReadsAFormulaAndLeavesAPlainCellNull()
     {
       var sheet = Sheet();
 
@@ -91,10 +90,10 @@ namespace Unrect.Tests.Spreadsheets
     [Fact]
     public void TheDefaultDoorDoesNotImplementTheCapabilityAtAll()
     {
-      var plain = SpreadsheetSpace.Create(Path(), "Formulas");
+      var plain = SpreadsheetSpace.CreateValues(Path(), "Formulas");
 
       // Honest absence: present-and-null everywhere would say the file has no formulas. The type is
-      // the whole of the answer now — a declaration written over this door cannot name Formula() at
+      // the whole of the answer now — a declaration written over this door cannot name Point().Formula() at
       // all, which is the static half the run-time query used to stand in for.
       Assert.False(plain is IFormulaSpace);
     }
@@ -111,7 +110,7 @@ namespace Unrect.Tests.Spreadsheets
     public void TheLeafReadsAFormulaWhereTheCellReadsAValue()
     {
       // A cell has both, so reading both is an overlay's job: the same cell, twice.
-      var cell = On(RowContaining("Text")).Right(1).Of(Overlay(o => (Value: o.Next(Text()), Formula: o.Next(Formula()))));
+      var cell = On(RowContaining("Text")).Right(1).Of(Overlay(o => (Value: o.Text(), Formula: o.Formula())));
 
       var read = cell.Map(Sheet());
 
@@ -146,8 +145,8 @@ namespace Unrect.Tests.Spreadsheets
       {
         v.Next(Row(cells => cells.Count));
 
-        var overlay = v.Next(Overlay(o => (Total: o.Next(Right(3).Of(Decimal())), Formula: o.Next(Right(3).Of(Formula())))));
-var overlay2 = v.Next(Overlay(o => (Total: o.Next(Right(3).Of(Decimal())), Formula: o.Next(Right(3).Of(Formula())))));
+        var overlay = v.Next(Overlay(o => (Total: o.Next(Right(3).Of(Point().Decimal())), Formula: o.Next(Right(3).Of(Point().Formula())))));
+var overlay2 = v.Next(Overlay(o => (Total: o.Next(Right(3).Of(Point().Decimal())), Formula: o.Next(Right(3).Of(Point().Formula())))));
 
 return (
           First: overlay,
@@ -175,7 +174,7 @@ return (
       {
         v.Next(Row(cells => cells.Count));
 
-        var on = v.Next(On(RowWithFormula()).Of(Row(cells => cells[0].Text())));
+        var on = v.Next(On(RowWithCell(p => p.HasFormula())).Of(Row(cells => cells[0].Text())));
 
         return on;
       }));

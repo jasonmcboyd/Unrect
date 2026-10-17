@@ -1,21 +1,22 @@
 <Query Kind="Statements">
   <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Core.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Core.dll</Reference>
-  <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.dll</Reference>
+  <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Projections.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Projections.dll</Reference>
+  <Reference Relative="..\src\Unrect.Fluent\bin\Debug\netstandard2.1\Unrect.Fluent.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Fluent\bin\Debug\netstandard2.1\Unrect.Fluent.dll</Reference>
   <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Engine.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Engine.dll</Reference>
   <Reference Relative="..\src\Unrect.Interactive\bin\Debug\netstandard2.1\Unrect.Interactive.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Interactive\bin\Debug\netstandard2.1\Unrect.Interactive.dll</Reference>
   <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll</Reference>
   <Reference Relative="..\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll</Reference>
-  <Namespace>static Unrect.Projections.ProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;</Namespace>
-  <Namespace>static Unrect.Spreadsheets.SpreadsheetProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;</Namespace>
+  <Namespace>static Unrect.Fluent.ProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;</Namespace>
   <Namespace>Unrect.Core</Namespace>
   <Namespace>Unrect.Interactive</Namespace>
+  <Namespace>Unrect.Fluent</Namespace>
   <Namespace>Unrect.Projections</Namespace>
   <Namespace>Unrect.Spreadsheets</Namespace>
 </Query>
 
 // The space is named once, in the query's namespace imports: the canonical vocabulary as
-// `using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>`, and the
-// sheet's own readings as `using static Unrect.Spreadsheets.SpreadsheetProjectionBuilders<...>`. That
+// `using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>`, and the
+// sheet's own readings as `using static Unrect.Spreadsheets.ProjectionBuilders<...>`. That
 // split IS this script's subject: every space answers the canonical questions — how big it is,
 // whether a cell is blank, whether a cell's text is its own value, and what a cell says — while a
 // kind is a claim only a sheet makes about its own cells, which is why the readings that assert one
@@ -25,8 +26,8 @@ var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\exam
 // The corner-case fixture (distilled from the real K-1 workbook):
 //   row 1: one of each ordinary kind      row 2: five error cells
 //   row 3: whitespace / empty / absent    row 4: the remaining two errors
-var defaultSpace = SpreadsheetSpace.CreateWithFormulas(path, "Edges");
-var strictSpace = SpreadsheetSpace.CreateWithFormulas(path, "Edges", isBlank: _ => false);
+var defaultSpace = SpreadsheetSpace.Create(path, "Edges");
+var strictSpace = SpreadsheetSpace.Create(path, "Edges", isBlank: _ => false);
 
 // A space has no indexer: the locator does the addressing. A plane is the 2-D one, and asking it for
 // a cell mints a point — an address, not a value, which is what every read below is written at.
@@ -108,18 +109,18 @@ string Message<T>(IProjectionDefinition<ISpreadsheetSpace, T> projection)
 new
 {
 	DecimalOverAnError = Message(OffsetBy(SkipRows(1)).Decimal()),      // A2 is #VALUE!
-	TextOverANumber = Message(OffsetBy(SkipColumns(1)).Of(Text())),         // B1 is 42
+	TextOverANumber = Message(OffsetBy(SkipColumns(1)).Of(Point().Text())),         // B1 is 42
 	IntegerOverAFraction = Message(OffsetBy(SkipColumns(2)).Integer()), // C1 is 3.14
 	AsTextOverTheSameNumber = Message(OffsetBy(SkipColumns(1)).AsText()),
 }.Dump("typed-leaf diagnostics");
 
-// 6. The two leaves are different words for a reason. Text() asserts the cell IS words, so a Choice
-// of kinded leaves discriminates — the first alternative the cell agrees with wins. AsText() asserts
+// 6. The two leaves are different words for a reason. Point().Text() asserts the cell IS words, so a Choice
+// of kinded leaves discriminates — the first alternative the cell agrees with wins. Point().AsText() asserts
 // nothing and therefore never fails over a cell that is there, so a Choice led by it can never reach
 // a second alternative: total, and degenerate as an alternative.
 var wordsOrNumber = Choice(
-	Text().Select(t => $"text: {t}"),
-	Decimal().Select(d => $"number: {d}"));
+	Point().Text().Select(t => $"text: {t}"),
+	Point().Decimal().Select(d => $"number: {d}"));
 new
 {
 	AtA1 = wordsOrNumber.Map(defaultSpace),                                 // the word "text"

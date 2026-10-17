@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
 
+using Unrect.Core;
 using Unrect.Projections;
-using Unrect.Spreadsheets;
+using Unrect.Fluent;
 
 namespace Unrect.Interactive
 {
@@ -31,31 +32,31 @@ namespace Unrect.Interactive
   /// </summary>
   /// <typeparam name="TSpace">The sheet every declaration in the file is written against.</typeparam>
   public static class ExploratoryBuilders<TSpace>
-    where TSpace : class, ICellSpace
+    where TSpace : class, ISpace
   {
     /// <summary><c>Table&lt;T&gt;()</c>, forgiving a member no column binds.</summary>
     /// <typeparam name="T">What one record reads.</typeparam>
     public static IProjectionDefinition<TSpace, IReadOnlyList<T>> LooseTable<T>()
-      => SpreadsheetProjections.LooseTable<TSpace, T>(null, BlankRowStrategy.Stop);
+      => ProjectionBuilders<TSpace>.LooseTable<T>(null, BlankRowStrategy.Stop);
 
     /// <summary><c>Table&lt;T&gt;(onBlank)</c>, forgiving a member no column binds.</summary>
     /// <typeparam name="T">What one record reads.</typeparam>
     /// <param name="onBlank">How a fully-blank body row is treated.</param>
     public static IProjectionDefinition<TSpace, IReadOnlyList<T>> LooseTable<T>(BlankRowStrategy onBlank)
-      => SpreadsheetProjections.LooseTable<TSpace, T>(null, onBlank);
+      => ProjectionBuilders<TSpace>.LooseTable<T>(null, onBlank);
 
     /// <summary><c>Table&lt;T&gt;(bind =&gt; …)</c>, forgiving a member no column binds.</summary>
     /// <typeparam name="T">What one record reads.</typeparam>
     /// <param name="bind">The per-member declarations, exactly as <c>Table&lt;T&gt;</c> takes them.</param>
     public static IProjectionDefinition<TSpace, IReadOnlyList<T>> LooseTable<T>(Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>> bind)
-      => SpreadsheetProjections.LooseTable<TSpace, T>(bind ?? throw new ArgumentNullException(nameof(bind)), BlankRowStrategy.Stop);
+      => ProjectionBuilders<TSpace>.LooseTable<T>(bind ?? throw new ArgumentNullException(nameof(bind)), BlankRowStrategy.Stop);
 
     /// <summary><c>Table&lt;T&gt;(bind =&gt; …, onBlank)</c>, forgiving a member no column binds.</summary>
     /// <typeparam name="T">What one record reads.</typeparam>
     /// <param name="bind">The per-member declarations, exactly as <c>Table&lt;T&gt;</c> takes them.</param>
     /// <param name="onBlank">How a fully-blank body row is treated.</param>
     public static IProjectionDefinition<TSpace, IReadOnlyList<T>> LooseTable<T>(Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>> bind, BlankRowStrategy onBlank)
-      => SpreadsheetProjections.LooseTable<TSpace, T>(bind ?? throw new ArgumentNullException(nameof(bind)), onBlank);
+      => ProjectionBuilders<TSpace>.LooseTable<T>(bind ?? throw new ArgumentNullException(nameof(bind)), onBlank);
 
     /// <summary><c>Table&lt;T&gt;(headerRows, …)</c> — a header of captions under rows of bands — forgiving a member no column binds.</summary>
     /// <typeparam name="T">What one record reads.</typeparam>
@@ -66,6 +67,6 @@ namespace Unrect.Interactive
       int headerRows,
       Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>>? bind = null,
       BlankRowStrategy? onBlank = null)
-      => SpreadsheetProjections.LooseTable<TSpace, T>(bind, onBlank ?? BlankRowStrategy.Stop, headerRows);
+      => ProjectionBuilders<TSpace>.LooseTable<T>(bind, onBlank ?? BlankRowStrategy.Stop, headerRows);
   }
 }

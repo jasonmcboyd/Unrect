@@ -5,13 +5,12 @@ using System.Threading.Tasks;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Fluent;
 using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-
+using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 namespace Unrect.Tests.Streaming
 {
   /// <summary>
@@ -40,7 +39,7 @@ namespace Unrect.Tests.Streaming
     {
       using var book = Workbook.Open(Path("simple-report.xlsx"), Cold());
       var streamed = book.Sheet("Report");
-      var eager = SpreadsheetSpace.Create(Path("simple-report.xlsx"), "Report");
+      var eager = SpreadsheetSpace.CreateValues(Path("simple-report.xlsx"), "Report");
 
       Assert.Equal(eager.Extent.Width, streamed.Extent.Width);
       Assert.Equal(eager.Extent.Height, streamed.Extent.Height);

@@ -41,7 +41,7 @@ namespace Unrect.Analyzers.Tests
         {
           static string? Read(ICellSpace sheet)
           {
-            IProjectionDefinition<IFormulaSpace, string?> formula = SpreadsheetProjections.Formula<IFormulaSpace>();
+            IProjectionDefinition<IFormulaSpace, string?> formula = ProjectionBuilders<IFormulaSpace>.Point().Formula();
 
             return {|#0:formula.{|CS0411:Map|}(sheet)|};
           }
@@ -57,7 +57,7 @@ namespace Unrect.Analyzers.Tests
         {
           static void Read(ICellSpace sheet)
           {
-            IProjectionDefinition<IFormulaSpace, string?> formula = SpreadsheetProjections.Formula<IFormulaSpace>();
+            IProjectionDefinition<IFormulaSpace, string?> formula = ProjectionBuilders<IFormulaSpace>.Point().Formula();
 
             var applied = {|#0:formula.{|CS0411:Apply|}(sheet)|};
           }
@@ -73,7 +73,7 @@ namespace Unrect.Analyzers.Tests
         {
           static void Read(ICellSpace sheet)
           {
-            IProjectionDefinition<IFormulaSpace, string?> formula = SpreadsheetProjections.Formula<IFormulaSpace>();
+            IProjectionDefinition<IFormulaSpace, string?> formula = ProjectionBuilders<IFormulaSpace>.Point().Formula();
 
             var mapped = {|#0:formula.{|CS0411:MapWithDiagnostics|}(sheet)|};
           }
@@ -93,7 +93,7 @@ namespace Unrect.Analyzers.Tests
         {
           static string? Read(ISpace grid)
           {
-            IProjectionDefinition<IFormulaSpace, string?> formula = SpreadsheetProjections.Formula<IFormulaSpace>();
+            IProjectionDefinition<IFormulaSpace, string?> formula = ProjectionBuilders<IFormulaSpace>.Point().Formula();
 
             return {|#0:formula.{|CS0411:Map|}(grid)|};
           }
@@ -109,7 +109,7 @@ namespace Unrect.Analyzers.Tests
         {
           static string? Read(ISpreadsheetSpace sheet)
           {
-            IProjectionDefinition<IFormulaSpace, string?> formula = SpreadsheetProjections.Formula<IFormulaSpace>();
+            IProjectionDefinition<IFormulaSpace, string?> formula = ProjectionBuilders<IFormulaSpace>.Point().Formula();
 
             return formula.Map(sheet);
           }
@@ -122,7 +122,7 @@ namespace Unrect.Analyzers.Tests
         """
         class Report
         {
-          static string? Read(ICellSpace sheet) => Text().Map(sheet);
+          static string? Read(ICellSpace sheet) => Point().Text().Map(sheet);
         }
         """);
 
@@ -138,7 +138,7 @@ namespace Unrect.Analyzers.Tests
         {
           static void Read()
           {
-            IProjectionDefinition<IFormulaSpace, string?> formula = SpreadsheetProjections.Formula<IFormulaSpace>();
+            IProjectionDefinition<IFormulaSpace, string?> formula = ProjectionBuilders<IFormulaSpace>.Point().Formula();
 
             var mapped = formula.{|CS0411:Map|}("not a space");
           }

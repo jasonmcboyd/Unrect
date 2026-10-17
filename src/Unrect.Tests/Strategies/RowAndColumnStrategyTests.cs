@@ -3,6 +3,7 @@ using System;
 using System.Globalization;
 
 using Unrect.Core;
+using Unrect.Fluent;
 using Unrect.Spreadsheets;
 using Unrect.Strategies;
 
@@ -105,7 +106,7 @@ namespace Unrect.Tests.Strategies
     {
       // Up to AND including the match, which is the whole of what distinguishes this from a
       // while-rule: the boundary row is content the section reads, not a gap it stops before.
-      Assert.Equal(3, SheetProjectionBuilders<ICellSpace>.TakeRowsToText(0, "Total").SelectLines(LabelledRows()));
+      Assert.Equal(3, ProjectionBuilders<ICellSpace>.TakeRowsToText(0, "Total").SelectLines(LabelledRows()));
     }
 
     [Fact]
@@ -113,23 +114,23 @@ namespace Unrect.Tests.Strategies
     {
       // The one content rule, which this shares with RowContaining, Caption and Field: the fixture's
       // cell is "  Total  " and the declaration writes "total".
-      Assert.Equal(3, SheetProjectionBuilders<ICellSpace>.TakeRowsToText(0, "total").SelectLines(LabelledRows()));
+      Assert.Equal(3, ProjectionBuilders<ICellSpace>.TakeRowsToText(0, "total").SelectLines(LabelledRows()));
 
       // ...and whole-cell, not substring: a band must not end on a row that merely mentions the word.
-      Assert.Equal(4, SheetProjectionBuilders<ICellSpace>.TakeRowsToText(0, "Tot").SelectLines(LabelledRows()));
+      Assert.Equal(4, ProjectionBuilders<ICellSpace>.TakeRowsToText(0, "Tot").SelectLines(LabelledRows()));
     }
 
     [Fact]
     public void TakeRowsToText_ReadsTheColumnItWasGivenAndNoOther()
     {
       // The column argument is the whole of the addressing, so a match in another column is not one.
-      Assert.Equal(4, SheetProjectionBuilders<ICellSpace>.TakeRowsToText(1, "Total").SelectLines(LabelledRows()));
+      Assert.Equal(4, ProjectionBuilders<ICellSpace>.TakeRowsToText(1, "Total").SelectLines(LabelledRows()));
     }
 
     [Fact]
     public void TakeRowsToText_WhenNothingMatches_TakesEveryRow()
     {
-      Assert.Equal(4, SheetProjectionBuilders<ICellSpace>.TakeRowsToText(0, "no such label").SelectLines(LabelledRows()));
+      Assert.Equal(4, ProjectionBuilders<ICellSpace>.TakeRowsToText(0, "no such label").SelectLines(LabelledRows()));
     }
 
     [Fact]
@@ -146,13 +147,13 @@ namespace Unrect.Tests.Strategies
       Assert.False(space.IsText(0, 1));
       Assert.True(space.IsText(0, 2));
 
-      Assert.Equal(3, SheetProjectionBuilders<ICellSpace>.TakeRowsToText(0, "42").SelectLines(space));
+      Assert.Equal(3, ProjectionBuilders<ICellSpace>.TakeRowsToText(0, "42").SelectLines(space));
     }
 
     [Fact]
     public void TakeRowsToText_NeedsSomethingToLookFor()
     {
-      Assert.Throws<ArgumentNullException>(() => SheetProjectionBuilders<ICellSpace>.TakeRowsToText(0, null!));
+      Assert.Throws<ArgumentNullException>(() => ProjectionBuilders<ICellSpace>.TakeRowsToText(0, null!));
     }
 
     [Fact]
@@ -284,26 +285,26 @@ namespace Unrect.Tests.Strategies
     [Fact]
     public void TakeColumnsToText_IncludesTheColumnHoldingTheText()
     {
-      Assert.Equal(3, SheetProjectionBuilders<ICellSpace>.TakeColumnsToText(0, "Total").SelectLines(LabelledColumns()));
+      Assert.Equal(3, ProjectionBuilders<ICellSpace>.TakeColumnsToText(0, "Total").SelectLines(LabelledColumns()));
     }
 
     [Fact]
     public void TakeColumnsToText_MatchesWholeCellTrimmedAndCaseInsensitively()
     {
-      Assert.Equal(3, SheetProjectionBuilders<ICellSpace>.TakeColumnsToText(0, "total").SelectLines(LabelledColumns()));
-      Assert.Equal(4, SheetProjectionBuilders<ICellSpace>.TakeColumnsToText(0, "Tot").SelectLines(LabelledColumns()));
+      Assert.Equal(3, ProjectionBuilders<ICellSpace>.TakeColumnsToText(0, "total").SelectLines(LabelledColumns()));
+      Assert.Equal(4, ProjectionBuilders<ICellSpace>.TakeColumnsToText(0, "Tot").SelectLines(LabelledColumns()));
     }
 
     [Fact]
     public void TakeColumnsToText_ReadsTheRowItWasGivenAndNoOther()
     {
-      Assert.Equal(4, SheetProjectionBuilders<ICellSpace>.TakeColumnsToText(1, "Total").SelectLines(LabelledColumns()));
+      Assert.Equal(4, ProjectionBuilders<ICellSpace>.TakeColumnsToText(1, "Total").SelectLines(LabelledColumns()));
     }
 
     [Fact]
     public void TakeColumnsToText_WhenNothingMatches_TakesEveryColumn()
     {
-      Assert.Equal(4, SheetProjectionBuilders<ICellSpace>.TakeColumnsToText(0, "no such label").SelectLines(LabelledColumns()));
+      Assert.Equal(4, ProjectionBuilders<ICellSpace>.TakeColumnsToText(0, "no such label").SelectLines(LabelledColumns()));
     }
 
     [Fact]
@@ -317,13 +318,13 @@ namespace Unrect.Tests.Strategies
       Assert.False(space.IsText(1, 0));
       Assert.True(space.IsText(2, 0));
 
-      Assert.Equal(3, SheetProjectionBuilders<ICellSpace>.TakeColumnsToText(0, "42").SelectLines(space));
+      Assert.Equal(3, ProjectionBuilders<ICellSpace>.TakeColumnsToText(0, "42").SelectLines(space));
     }
 
     [Fact]
     public void TakeColumnsToText_NeedsSomethingToLookFor()
     {
-      Assert.Throws<ArgumentNullException>(() => SheetProjectionBuilders<ICellSpace>.TakeColumnsToText(0, null!));
+      Assert.Throws<ArgumentNullException>(() => ProjectionBuilders<ICellSpace>.TakeColumnsToText(0, null!));
     }
 
     [Fact]

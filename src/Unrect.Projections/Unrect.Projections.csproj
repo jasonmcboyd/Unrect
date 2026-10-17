@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+  </PropertyGroup>
+
+  <!-- The MODEL of a projection, named for what it is. Not packable on its own: the "Unrect" package
+       is produced by Unrect.Engine, which bundles this assembly beside Core, Strategies and Fluent
+       (see Unrect.Engine.csproj). The doc ratchet in Directory.Build.targets names this project
+       explicitly for the same reason. The PackageId is restore's identity for a project, packable
+       or not; nothing is ever published under this name. -->
+  <PropertyGroup>
+    <PackageId>Unrect.Projections</PackageId>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- So the tests can reach IOpaqueComposite, which marks a composite whose children exist only
+         while it runs; asserting that through reflection was the alternative. -->
+    <InternalsVisibleTo Include="Unrect.Tests" />
+    <!-- The builders construct the nodes, whose constructors stay internal until they are opened one by one. -->
+    <InternalsVisibleTo Include="Unrect.Fluent" />
+
+    <!-- So a backend can be a first-class part of this vocabulary rather than a consumer of it:
+         DefinitionNode's private-protected constructor (a backend's leaves are real primitives, not
+         Select wrappers), the Tolerating seam OrBlank dispatches through, and the pipeline stage
+         internals its terminals close. -->
+    <InternalsVisibleTo Include="Unrect.Spreadsheets" />
+
+    <!-- The engine: it implements ProjectorScope, drives the machines a definition builds, and —
+         until the pull interpreter retires — routes a map to whichever interpreter is on. -->
+    <InternalsVisibleTo Include="Unrect.Engine" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Unrect.Core\Unrect.Core.csproj" />
+    <ProjectReference Include="..\Unrect.Strategies\Unrect.Strategies.csproj" />
+  </ItemGroup>
+
+</Project>

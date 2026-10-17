@@ -1,12 +1,12 @@
 using System;
 
 using Unrect.Projections;
+using Unrect.Fluent;
 using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -33,29 +33,29 @@ namespace Unrect.Tests.Projections
     {
       var moment = new DateTime(2026, 3, 4, 13, 45, 0);
 
-      Assert.Equal("hello", Text().Map(One("hello")));
-      Assert.Equal(1.5m, Decimal().Map(One(1.5m)));
-      Assert.Equal(42, Integer().Map(One(42)));
-      Assert.Equal(0.25, Double().Map(One(0.25)));
-      Assert.Equal(moment, Date().Map(One(moment)));
-      Assert.True(Boolean().Map(One(true)));
+      Assert.Equal("hello", Point().Text().Map(One("hello")));
+      Assert.Equal(1.5m, Point().Decimal().Map(One(1.5m)));
+      Assert.Equal(42, Point().Integer().Map(One(42)));
+      Assert.Equal(0.25, Point().Double().Map(One(0.25)));
+      Assert.Equal(moment, Point().Date().Map(One(moment)));
+      Assert.True(Point().Boolean().Map(One(true)));
     }
 
     [Fact]
     public void EachLeafDescribesItselfByItsFactory()
     {
-      Assert.Equal("Text", Text().Description);
-      Assert.Equal("Decimal", Decimal().Description);
-      Assert.Equal("Integer", Integer().Description);
-      Assert.Equal("Double", Double().Description);
-      Assert.Equal("Date", Date().Description);
-      Assert.Equal("Boolean", Boolean().Description);
+      Assert.Equal("Text", Point().Text().Description);
+      Assert.Equal("Decimal", Point().Decimal().Description);
+      Assert.Equal("Integer", Point().Integer().Description);
+      Assert.Equal("Double", Point().Double().Description);
+      Assert.Equal("Date", Point().Date().Description);
+      Assert.Equal("Boolean", Point().Boolean().Description);
     }
 
     [Fact]
     public void EachLeafConsumesExactlyOneCell()
     {
-      var applied = Decimal().Apply(One(1.5m));
+      var applied = Point().Decimal().Apply(One(1.5m));
 
       Assert.Equal(1, applied.Consumed.Width);
       Assert.Equal(1, applied.Consumed.Height);
@@ -68,8 +68,8 @@ namespace Unrect.Tests.Projections
       // Select where the meaning is known, not the leaf's.
       var moment = new DateTime(2026, 3, 4, 13, 45, 0);
 
-      Assert.Equal(moment, Date().Map(One(moment)));
-      Assert.Equal(13, Date().Map(One(moment)).Hour);
+      Assert.Equal(moment, Point().Date().Map(One(moment)));
+      Assert.Equal(13, Point().Date().Map(One(moment)).Hour);
     }
 
     // --- Kind failures speak kinds ---------------------------------------------------------------------
@@ -81,7 +81,7 @@ namespace Unrect.Tests.Projections
     {
       // Beside a neighbour, so the blank is a cell with nothing in it rather than a blank row, which
       // is a gap the placement steps over.
-      var failure = Assert.Throws<ProjectionException>(() => Decimal().Map(Mixed(new object?[,] { { value, "." } })));
+      var failure = Assert.Throws<ProjectionException>(() => Point().Decimal().Map(Mixed(new object?[,] { { value, "." } })));
 
       Assert.Equal($"expected Number at A1, {found}", Problem(failure));
       Assert.Equal("Decimal", failure.Subject);
@@ -92,7 +92,7 @@ namespace Unrect.Tests.Projections
     public void AnErrorCellIsNamedAsTheErrorItIs()
     {
       var failure = Assert.Throws<ProjectionException>(() =>
-        Decimal().Map(One(CellValue.OfError(CellError.DivisionByZero))));
+        Point().Decimal().Map(One(CellValue.OfError(CellError.DivisionByZero))));
 
       Assert.Equal("expected Number at A1, found Error(#DIV/0!)", Problem(failure));
     }
@@ -100,7 +100,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void TextOverANumberSpeaksKindsToo()
     {
-      Assert.Equal("expected Text at A1, found Number", Problem(Assert.Throws<ProjectionException>(() => Text().Map(One(1)))));
+      Assert.Equal("expected Text at A1, found Number", Problem(Assert.Throws<ProjectionException>(() => Point().Text().Map(One(1)))));
     }
 
     [Fact]
@@ -108,7 +108,7 @@ namespace Unrect.Tests.Projections
     {
       // The §1.4 pin. "expected Decimal, found Text" would be a category error: the cell holds a
       // Number or it does not, and Decimal is one of several ways to read a Number.
-      var failure = Assert.Throws<ProjectionException>(() => Decimal().Map(One("x")));
+      var failure = Assert.Throws<ProjectionException>(() => Point().Decimal().Map(One("x")));
 
       Assert.DoesNotContain("Decimal", Problem(failure));
       Assert.Contains("Number", Problem(failure));
@@ -121,7 +121,7 @@ namespace Unrect.Tests.Projections
     {
       Assert.Equal(
         "the Number at A1 (1.5) is not a whole number",
-        Problem(Assert.Throws<ProjectionException>(() => Integer().Map(One(1.5)))));
+        Problem(Assert.Throws<ProjectionException>(() => Point().Integer().Map(One(1.5)))));
     }
 
     [Fact]
@@ -129,7 +129,7 @@ namespace Unrect.Tests.Projections
     {
       Assert.Equal(
         "the Number at A1 (5000000000) is outside the range of a 32-bit integer",
-        Problem(Assert.Throws<ProjectionException>(() => Integer().Map(One(5e9)))));
+        Problem(Assert.Throws<ProjectionException>(() => Point().Integer().Map(One(5e9)))));
     }
 
     [Fact]
@@ -137,7 +137,7 @@ namespace Unrect.Tests.Projections
     {
       Assert.Equal(
         "the Number at A1 (1E+30) is not representable as a decimal",
-        Problem(Assert.Throws<ProjectionException>(() => Decimal().Map(One(1e30)))));
+        Problem(Assert.Throws<ProjectionException>(() => Point().Decimal().Map(One(1e30)))));
     }
 
     [Fact]
@@ -148,12 +148,12 @@ namespace Unrect.Tests.Projections
       // the reader is looking at would show under a General format.
       Assert.Equal(
         "the Number at A1 (1.5) is not a whole number",
-        Problem(Assert.Throws<ProjectionException>(() => Integer().Map(One(1.50m)))));
+        Problem(Assert.Throws<ProjectionException>(() => Point().Integer().Map(One(1.50m)))));
 
       // ...and one that arrived as a double is rendered as a double.
       Assert.Equal(
         "the Number at A1 (1.5) is not a whole number",
-        Problem(Assert.Throws<ProjectionException>(() => Integer().Map(One(1.5)))));
+        Problem(Assert.Throws<ProjectionException>(() => Point().Integer().Map(One(1.5)))));
     }
 
     [Fact]
@@ -161,7 +161,7 @@ namespace Unrect.Tests.Projections
     {
       // The other half of the discipline: the kind was right, so the message does not talk about
       // kinds — it names the value that would not fit.
-      var failure = Assert.Throws<ProjectionException>(() => Integer().Map(One(1.5)));
+      var failure = Assert.Throws<ProjectionException>(() => Point().Integer().Map(One(1.5)));
 
       Assert.DoesNotContain("expected", Problem(failure));
       Assert.Contains("1.5", Problem(failure));
@@ -173,7 +173,7 @@ namespace Unrect.Tests.Projections
     public void ALeafForcedToMoreThanOneCell_Throws()
     {
       var failure = Assert.Throws<ProjectionException>(() =>
-        Sized(WholeExtent()).Of(Decimal()).Map(Mixed(new object?[,] { { 1, 2 } })));
+        Sized(WholeExtent()).Of(Point().Decimal()).Map(Mixed(new object?[,] { { 1, 2 } })));
 
       Assert.Equal("a Decimal must be exactly one cell; this one is 2x1", Problem(failure));
     }
@@ -183,7 +183,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ALeafFailureIsAbsorbable()
     {
-      var result = Decimal().Optional().MapWithDiagnostics(One("x"));
+      var result = Point().Decimal().Optional().MapWithDiagnostics(One("x"));
 
       Assert.Equal(0m, result.Value);
 
@@ -200,8 +200,8 @@ namespace Unrect.Tests.Projections
       // matches, which the untyped Cell(c => …) spelling could only do by throwing from inside a
       // lambda.
       var readEither = Choice(
-        Decimal().Select(amount => $"number:{amount}"),
-        Text().Select(text => $"text:{text}"));
+        Point().Decimal().Select(amount => $"number:{amount}"),
+        Point().Text().Select(text => $"text:{text}"));
 
       var result = readEither.MapWithDiagnostics(One("n/a"));
 
@@ -218,7 +218,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ALeafTakesItsUseSiteLabel()
     {
-      var amount = Decimal();
+      var amount = Point().Decimal();
 
       var failure = Assert.Throws<ProjectionException>(() =>
         VerticalFlow(v =>
@@ -245,10 +245,10 @@ namespace Unrect.Tests.Projections
 
       var byLeaves = VerticalFlow(v => new
       {
-        Title = v.Next(Text()),
-        Subtitle = v.Next(Text()),
-        Date = v.Next(Date()),
-        Id = v.Next(Text()),
+        Title = v.Text(),
+        Subtitle = v.Text(),
+        Date = v.Date(),
+        Id = v.Text(),
       }).Apply(space);
 
       var byColumn = Column(4, c => c[0].Text()).Apply(space);
@@ -287,12 +287,12 @@ namespace Unrect.Tests.Projections
       Assert.Equal(DateTime.MinValue, moment);
 
       // ...and all six factories still resolve to the projections.
-      Assert.Equal("Text", Text().Description);
-      Assert.Equal("Decimal", Decimal().Description);
-      Assert.Equal("Integer", Integer().Description);
-      Assert.Equal("Double", Double().Description);
-      Assert.Equal("Date", Date().Description);
-      Assert.Equal("Boolean", Boolean().Description);
+      Assert.Equal("Text", Point().Text().Description);
+      Assert.Equal("Decimal", Point().Decimal().Description);
+      Assert.Equal("Integer", Point().Integer().Description);
+      Assert.Equal("Double", Point().Double().Description);
+      Assert.Equal("Date", Point().Date().Description);
+      Assert.Equal("Boolean", Point().Boolean().Description);
     }
 
     /// <summary>The problem text, without the subject the template puts in front of it.</summary>

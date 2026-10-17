@@ -4,13 +4,13 @@ using System.Linq;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Fluent;
 using Unrect.Spreadsheets;
 using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -335,7 +335,7 @@ namespace Unrect.Tests.Projections
       var sheet = Mixed(new object?[,] { { "oops" } });
 
       var failure = Assert.Throws<ProjectionException>(
-        () => VerticalRepeat(Decimal().Named("allocation")).AsUnit("Table").Map(sheet));
+        () => VerticalRepeat(Point().Decimal().Named("allocation")).AsUnit("Table").Map(sheet));
 
       Assert.Equal("Table[0] -> 'allocation' (Decimal)", failure.Path);
       Assert.Equal("'allocation'", failure.Subject);
@@ -356,7 +356,7 @@ namespace Unrect.Tests.Projections
     private static IProjectionDefinition<ICellSpace, decimal> InnerUnit()
       => new FlowDefinition<ICellSpace, decimal>(
         Orientation.Vertical,
-        SingleChild(Decimal().Named("allocation")),
+        SingleChild(Point().Decimal().Named("allocation")),
         Placement<ICellSpace>.Default,
         "Row").AsUnit("Inner");
 
@@ -430,9 +430,9 @@ namespace Unrect.Tests.Projections
       var sheet = Mixed(new object?[,] { { "oops" } });
 
       var unitThenNamed = Assert.Throws<ProjectionException>(
-        () => Decimal().AsUnit("Table").Named("fruit").Map(sheet));
+        () => Point().Decimal().AsUnit("Table").Named("fruit").Map(sheet));
       var namedThenUnit = Assert.Throws<ProjectionException>(
-        () => Decimal().Named("fruit").AsUnit("Table").Map(sheet));
+        () => Point().Decimal().Named("fruit").AsUnit("Table").Map(sheet));
 
       // The kind suffix is there because a name is: the segment says "fruit", and the leaf is still
       // a Decimal.
@@ -442,7 +442,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal("Table:fruit", namedThenUnit.Subject);
 
       var plainNamed = Assert.Throws<ProjectionException>(
-        () => Decimal().Named("fruit").Map(sheet));
+        () => Point().Decimal().Named("fruit").Map(sheet));
 
       Assert.Equal("'fruit' (Decimal)", plainNamed.Path);
     }
@@ -453,7 +453,7 @@ namespace Unrect.Tests.Projections
     public void AUnitNameBeatsTheUseSiteLabel()
     {
       var sheet = Mixed(new object?[,] { { "oops" } });
-      var block = VerticalRepeat(Decimal().Named("x")).AsUnit("Table");
+      var block = VerticalRepeat(Point().Decimal().Named("x")).AsUnit("Table");
 
       var failure = Assert.Throws<ProjectionException>(
         () => VerticalFlow(v =>
@@ -475,7 +475,7 @@ namespace Unrect.Tests.Projections
       var sheet = Mixed(new object?[,] { { "oops" } });
 
       var failure = Assert.Throws<ProjectionException>(
-        () => Decimal().AsUnit("Cell").Map(sheet));
+        () => Point().Decimal().AsUnit("Cell").Map(sheet));
 
       Assert.Equal("Cell", failure.Path);
       Assert.Equal("Cell", failure.Subject);
@@ -490,7 +490,7 @@ namespace Unrect.Tests.Projections
     private static IProjectionDefinition<ICellSpace, IReadOnlyList<string>> Card(bool marked)
       => new FlowDefinition<ICellSpace, IReadOnlyList<string>>(
         Orientation.Vertical,
-        SingleChild(Mark(VerticalRepeat(Text().Named("investor")), marked)),
+        SingleChild(Mark(VerticalRepeat(Point().Text().Named("investor")), marked)),
         Placement<ICellSpace>.Default,
         "Body").AsUnit("Card");
 
@@ -520,7 +520,7 @@ namespace Unrect.Tests.Projections
       // Nothing survives the fold, so the path is the degenerate one rather than empty; the subject
       // still names the node that failed.
       var failure = Assert.Throws<ProjectionException>(
-        () => Decimal().AsScaffolding().Map(Mixed(new object?[,] { { "oops" } })));
+        () => Point().Decimal().AsScaffolding().Map(Mixed(new object?[,] { { "oops" } })));
 
       Assert.Equal("(root)", failure.Path);
       Assert.NotEmpty(failure.Subject);
@@ -540,7 +540,7 @@ namespace Unrect.Tests.Projections
       var sheet = Mixed(new object?[,] { { "oops" } });
 
       var failure = Assert.Throws<ProjectionException>(
-        () => Decimal().Named("amount").Map(sheet));
+        () => Point().Decimal().Named("amount").Map(sheet));
 
       Assert.Equal("'amount' (Decimal)", failure.Path);
       Assert.Equal(failure.Path, failure.FullPath);

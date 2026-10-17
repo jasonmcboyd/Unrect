@@ -17,6 +17,27 @@ dotnet add package Unrect.Spreadsheets
 dotnet add package Unrect.Interactive   # optional: LINQPad and notebook sugar
 ```
 
+In LINQPad (5, 7 or 8), add the `Unrect` and `Unrect.Spreadsheets` packages to the query and put
+these five lines in the namespace box (F4):
+
+```
+static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>
+Unrect.Core
+Unrect.Fluent
+Unrect.Projections
+Unrect.Spreadsheets
+```
+
+That is the whole import: one vocabulary, over the space the file names once. Then
+
+```csharp
+var space  = SpreadsheetSpace.Create(path, "Sheet1");   // values, formulas, formatting (.xlsx)
+var result = report.Map(space);                         // run the declaration
+```
+
+`SpreadsheetSpace.CreateValues` opens the values alone, which is cheaper and the only door for `.xls`;
+a declaration written over `ICellSpace` runs on either.
+
 `Unrect` is the engine — the projection vocabulary, the layout composites, the strategies
 that decide boundaries — and works directly over any 2D grid you can adapt to `ISpace`.
 `Unrect.Spreadsheets` adds the adapters that read spreadsheet files — `.xls`/`.xlsx` today — straight into that grid;
@@ -27,7 +48,7 @@ A header may be several rows tall — a merged "From" and "To" over `Id | Code |
 `Table(2, r => r["From", "Id"].Integer())` addresses a column by its path, and
 `Table<Transfer>(2)` binds a flat `record Transfer(int FromId, string FromCode, int ToId, string ToCode)`
 with nothing declared.
-A sheet opened with `SpreadsheetSpace.CreateWithFormulas` also answers for its formulas and for
+A sheet opened with `SpreadsheetSpace.Create` also answers for its formulas and for
 what its cells look like — `row["Account"].Font().Color == CellColor.Red` turns "the rows someone
 coloured red" into a property you filter on (`.xlsx` only), and
 `Table<T>(bind => bind.Column(t => t.IsDeprecated, row => …))` puts it on a bound record without
@@ -68,15 +89,14 @@ Cash Flows using inception date
 ```
 
 ```csharp
+using Unrect.Fluent;
 using Unrect.Spreadsheets;
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-
+using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 var header = VerticalFlow(v => new
 {
-    Title = v.Next(Text()),
-    Fund = v.Next(Text()),
-    ReportDate = v.Next(Date()),
+    Title = v.Text(),
+    Fund = v.Text(),
+    ReportDate = v.Date(),
 });
 
 // Captions bind to record properties by name (case- and whitespace-insensitive).
@@ -103,7 +123,7 @@ var report = VerticalFlow(v => new
     ByInception = v.Next(byInception),
 });
 
-var result = report.Map(SpreadsheetSpace.Create("irr-report.xlsx", "IRR"));
+var result = report.Map(SpreadsheetSpace.CreateValues("irr-report.xlsx", "IRR"));
 
 record SummaryRow(string Investor, decimal ContributionItd, decimal DistributionItd,
                    decimal ManagementFeeItd, decimal EndBalance, double Irr);

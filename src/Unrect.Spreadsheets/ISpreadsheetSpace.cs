@@ -1,3 +1,5 @@
+using Unrect.Core;
+
 namespace Unrect.Spreadsheets
 {
   /// <summary>

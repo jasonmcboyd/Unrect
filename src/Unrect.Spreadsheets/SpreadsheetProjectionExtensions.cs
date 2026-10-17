@@ -1,6 +1,7 @@
 using System;
 
 using Unrect.Core;
+using Unrect.Fluent;
 using Unrect.Projections;
 
 namespace Unrect.Spreadsheets
@@ -11,7 +12,7 @@ namespace Unrect.Spreadsheets
   /// <para>
   /// The split is the one the projection layer already makes — <c>Projection</c> is what a
   /// declaration says and <c>ProjectionExtensions</c> is what is done to it, and this is that
-  /// second half for spreadsheets, beside <see cref="SpreadsheetProjections"/>. Like every other
+  /// second half for spreadsheets, beside <see cref="SpreadsheetReads"/>. Like every other
   /// extension in the library it is reached by importing its namespace
   /// (<c>using Unrect.Spreadsheets;</c>), exactly as <c>Map</c> is reached by importing
   /// <c>Unrect.Projections</c>; the backend <em>vocabulary</em> needs no namespace import at all.
@@ -49,7 +50,7 @@ namespace Unrect.Spreadsheets
     /// cannot be — <see cref="IFormulaSpace"/>, <see cref="ISpreadsheetSpace"/>, a grid of typed
     /// values — matches neither, so <c>formulaReadingProjection.MapWorkbook(…)</c> is a compile
     /// error rather than a run-time fault or a file's formulas quietly read as absent. Read formulas
-    /// through the eager door instead — <c>projection.Map(SpreadsheetSpace.CreateWithFormulas(path,
+    /// through the eager door instead — <c>projection.Map(SpreadsheetSpace.Create(path,
     /// sheet))</c>, which needs no sugar because it has no lifetime to hide.
     /// </para>
     /// </summary>

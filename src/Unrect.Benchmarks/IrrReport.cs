@@ -1,12 +1,11 @@
 using System;
 using System.Collections.Generic;
 
+using Unrect.Fluent;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-
+using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 namespace Unrect.Benchmarks
 {
   public sealed record SummaryRow(
@@ -40,10 +39,10 @@ namespace Unrect.Benchmarks
   internal static class IrrReport
   {
     private static readonly IProjectionDefinition<ICellSpace, IrrReportHeader> Header = VerticalFlow(v => new IrrReportHeader(
-      Title: v.Next(Text()),
-      Fund: v.Next(Text()),
-      ReportDate: v.Next(Date()),
-      ReportId: v.Next(Text())));
+      Title: v.Text(),
+      Fund: v.Text(),
+      ReportDate: v.Date(),
+      ReportId: v.Text()));
 
     // Five of six captions bind with nothing said; only Investor needs one, because the sheet's
     // heading is plural where the member is singular.

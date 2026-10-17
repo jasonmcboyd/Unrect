@@ -1,12 +1,12 @@
 using System.Linq;
 
 using Unrect.Projections;
+using Unrect.Fluent;
 using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 
@@ -106,7 +106,7 @@ namespace Unrect.Tests.Projections
       // fires — an item nobody could have read is reported as a tolerated ending.
       var band = SheetGrid.Of(new CellValue[0, 3]);
 
-      var horizontal = HorizontalRepeat(Text().Optional()).MapWithDiagnostics(band);
+      var horizontal = HorizontalRepeat(Point().Text().Optional()).MapWithDiagnostics(band);
 
       Assert.Empty(horizontal.Value);
       Assert.DoesNotContain(horizontal.Diagnostics, d => d.Message.Contains("absorbed"));
@@ -115,7 +115,7 @@ namespace Unrect.Tests.Projections
       // band ends the same quiet way, so the guard reads the same on both axes.
       var column = SheetGrid.Of(new CellValue[0, 1]);
 
-      var vertical = VerticalRepeat(Text().Optional()).MapWithDiagnostics(column);
+      var vertical = VerticalRepeat(Point().Text().Optional()).MapWithDiagnostics(column);
 
       Assert.Empty(vertical.Value);
       Assert.DoesNotContain(vertical.Diagnostics, d => d.Message.Contains("absorbed"));
@@ -144,7 +144,7 @@ namespace Unrect.Tests.Projections
     /// whatever the boundary made of it. One row per occurrence, whether the row read or was
     /// tolerated.
     /// </summary>
-    private static IProjectionDefinition<ICellSpace, int> ToleratedRow() => Sized(Extent(1, 1)).Of(Integer().Optional());
+    private static IProjectionDefinition<ICellSpace, int> ToleratedRow() => Sized(Extent(1, 1)).Of(Point().Integer().Optional());
 
     [Fact]
     public void AnAbsorbedItemThatStillConsumedItsExtentGoesOnRepeating()
@@ -197,7 +197,7 @@ namespace Unrect.Tests.Projections
       // rather than about one modifier: padding is added outside the boundary, so an absorbed
       // occupant still occupies its padding. Two rows per occurrence — the inner reading contributes
       // nothing and the padding contributes the rest — so six rows make three occurrences.
-      var padded = Integer().Optional().Padded(1);
+      var padded = Point().Integer().Optional().Padded(1);
       var sheet = Mixed(new object?[,]
       {
         { "a", "b", "c" },

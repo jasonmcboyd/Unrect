@@ -5,12 +5,12 @@ using System.Reflection;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Fluent;
 using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.Observations;
 using static Unrect.Tests.ProjectionTestSpaces;
 
@@ -191,7 +191,7 @@ namespace Unrect.Tests.Projections
 
       var pipelineReport = VerticalFlow(v => new
       {
-        Title = v.Next(Text()),
+        Title = v.Text(),
         ByTransferDate = v.Next(Until(RowContaining(Inception)).Heading("IRR Details").Heading(Transfer).Of(series)),
         ByInception = v.Next(Heading(Inception).Of(series)),
       });
@@ -314,12 +314,12 @@ namespace Unrect.Tests.Projections
     private static ILineLandmark<ICellSpace> Header() => RowContaining("Fund");
 
     /// <summary>A bind pointed at the column of fund names, so every record fails.</summary>
-    private static IProjectionDefinition<ICellSpace, decimal> FundColumnAsANumber(LabelMap captions) => Right(captions["Fund"]).Of(Decimal());
+    private static IProjectionDefinition<ICellSpace, decimal> FundColumnAsANumber(LabelMap captions) => Right(captions["Fund"]).Of(Point().Decimal());
 
     [Fact]
     public void AVerticalRepeatTerminalKeepsTheIdentifierItsItemWasWrittenAs()
     {
-      var investorDetail = Decimal();
+      var investorDetail = Point().Decimal();
 
       var throughPipeline = Assert.Throws<ProjectionException>(
         () => On(Header()).VerticalRepeat(investorDetail).Map(Ledger()));
@@ -330,7 +330,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AndSoDoesAHorizontalRepeatTerminal()
     {
-      var quarterlyColumn = Decimal();
+      var quarterlyColumn = Point().Decimal();
 
       var throughPipeline = Assert.Throws<ProjectionException>(
         () => On(Header()).HorizontalRepeat(quarterlyColumn).Map(Ledger()));
@@ -341,7 +341,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AndATableRowSlotTerminal()
     {
-      var allocationRow = Decimal();
+      var allocationRow = Point().Decimal();
 
       var throughPipeline = Assert.Throws<ProjectionException>(
         () => On(Header()).Table(headerRows: 1, eachRow: allocationRow).Map(Ledger()));

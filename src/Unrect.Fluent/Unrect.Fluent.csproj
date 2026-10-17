@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+  </PropertyGroup>
+  <!-- Not packable on its own: the "Unrect" package is produced by Unrect.Engine, which bundles this
+       assembly beside the model, Core and Strategies (see Unrect.Engine.csproj). The doc ratchet in
+       Directory.Build.targets names this project explicitly for the same reason. The PackageId is
+       restore's identity for a project, packable or not; nothing is ever published under this name. -->
+  <PropertyGroup>
+    <PackageId>Unrect.Fluent</PackageId>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Unrect.Tests" />
+    <!-- A backend's own vocabulary is a first-class part of this one: its terminals close the
+         pipeline stage internals. -->
+    <InternalsVisibleTo Include="Unrect.Spreadsheets" />
+    <!-- The forgiving table is reached through Unrect.Interactive ALONE, which is the point of the
+         grant: a shipped declaration does not reference that package, so LooseTable cannot be
+         switched on from production code without a reference a reviewer can see. -->
+    <InternalsVisibleTo Include="Unrect.Interactive" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Unrect.Projections\Unrect.Projections.csproj" />
+    <ProjectReference Include="..\Unrect.Core\Unrect.Core.csproj" />
+    <ProjectReference Include="..\Unrect.Strategies\Unrect.Strategies.csproj" />
+  </ItemGroup>
+</Project>

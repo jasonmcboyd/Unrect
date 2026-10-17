@@ -4,6 +4,7 @@ using System.Linq;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Fluent;
 using Unrect.Spreadsheets;
 
 namespace Unrect.Interactive
@@ -15,7 +16,7 @@ namespace Unrect.Interactive
   ///
   /// var report = VerticalFlow(v =&gt; new
   /// {
-  ///   Title        = v.Next(Text()),
+  ///   Title        = v.Text(),
   ///   Transactions = v.Next(ScaffoldRecord("Transaction")),
   /// });
   ///
@@ -52,14 +53,15 @@ namespace Unrect.Interactive
       => Leaf(typeName, labels, samples, Scaffolding.Record, nameof(ScaffoldRecord), headerRows);
 
     /// <summary>
-    /// The same guess as <see cref="ScaffoldRecord"/>, written as a class with init-only properties.
+    /// The same guess as <see cref="ScaffoldRecord"/>, written as a class, its properties in the <paramref name="style"/> asked for (the runtime's default when null; see <see cref="Scaffolding.ScaffoldClass{TSpace}"/>).
     /// </summary>
     /// <param name="typeName">The type's name.</param>
     /// <param name="labels">Whether the labels run along the region's first row or down its first column.</param>
     /// <param name="samples">How many cells beside each label to type the member from.</param>
     /// <param name="headerRows">How many rows the header is: the captions, under any rows of bands. Along a row only.</param>
-    public static IProjectionDefinition<TSpace, string> ScaffoldClass(string typeName, LabelsIn labels = LabelsIn.Row, int samples = 5, int headerRows = 1)
-      => Leaf(typeName, labels, samples, Scaffolding.Class, nameof(ScaffoldClass), headerRows);
+    /// <param name="style">The setter each property gets, or none; null takes the runtime's default.</param>
+    public static IProjectionDefinition<TSpace, string> ScaffoldClass(string typeName, LabelsIn labels = LabelsIn.Row, int samples = 5, int headerRows = 1, MemberStyle? style = null)
+      => Leaf(typeName, labels, samples, (members, name, along, header) => Scaffolding.Class(members, name, along, header, style), nameof(ScaffoldClass), headerRows);
 
     private static IProjectionDefinition<TSpace, string> Leaf(
       string typeName,

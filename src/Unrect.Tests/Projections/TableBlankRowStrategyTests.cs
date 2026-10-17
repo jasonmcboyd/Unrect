@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 
 using Unrect.Projections;
+using Unrect.Fluent;
 using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.Observations;
 using static Unrect.Tests.ProjectionTestSpaces;
 
@@ -142,7 +142,7 @@ namespace Unrect.Tests.Projections
     {
       // With a boundary, the run ends at the landmark; the interior blank is still skipped, and the
       // bound is consumed in full so a following sibling lands ON the landmark.
-      var report = VerticalFlow(v => (Lines: v.Next(Until(RowContaining("Total")).Of(Lines(BlankRowStrategy.Skip))), Total: v.Next(HorizontalFlow(h => new Line(h.Next(Text()), h.Next(Decimal()))))));
+      var report = VerticalFlow(v => (Lines: v.Next(Until(RowContaining("Total")).Of(Lines(BlankRowStrategy.Skip))), Total: v.Next(HorizontalFlow(h => new Line(h.Text(), h.Decimal())))));
 
       var read = report.Map(GappedWithTotal());
 
@@ -239,7 +239,7 @@ namespace Unrect.Tests.Projections
     // --- C. The reflection rungs carry the knob too ------------------------------------------------
 
     // The production gap this pin was Skipped for is closed: when the kinded family moved to
-    // SheetProjectionBuilders<TSpace> it published only Table<T>() and Table<T>(bind), leaving the
+    // ProjectionBuilders<TSpace> it published only Table<T>() and Table<T>(bind), leaving the
     // onBlank twins with no spelling at all. Both are back, on both kinded vocabularies, so the knob
     // threads through the reflection binder exactly as documented — which is what this says.
 

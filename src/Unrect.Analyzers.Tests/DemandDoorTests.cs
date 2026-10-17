@@ -30,14 +30,14 @@ namespace Unrect.Analyzers.Tests
         class Report
         {
           IProjectionDefinition<IFormulaSpace, string?> Header()
-            => VerticalFlow(v => v.Next({|CS1503:SpreadsheetProjections.Formula<IFormulaSpace>()|}));
+            => VerticalFlow(v => v.Next({|CS1503:ProjectionBuilders<IFormulaSpace>.Point().Formula()|}));
         }
         """,
         """
         class Report
         {
           IProjectionDefinition<IFormulaSpace, string?> Header()
-            => ProjectionBuilders<IFormulaSpace>.VerticalFlow(v => v.Next(SpreadsheetProjections.Formula<IFormulaSpace>()));
+            => ProjectionBuilders<IFormulaSpace>.VerticalFlow(v => v.Next(ProjectionBuilders<IFormulaSpace>.Point().Formula()));
         }
         """);
 
@@ -58,7 +58,7 @@ namespace Unrect.Analyzers.Tests
         {
           IProjectionDefinition<IFormulaSpace, IReadOnlyList<string?>> Rows()
           {
-            IProjectionDefinition<IFormulaSpace, string?> row = SpreadsheetProjections.Formula<IFormulaSpace>();
+            IProjectionDefinition<IFormulaSpace, string?> row = ProjectionBuilders<IFormulaSpace>.Point().Formula();
 
             return Table(headerRows: 1, eachRow: {|CS1503:row|});
           }
@@ -69,7 +69,7 @@ namespace Unrect.Analyzers.Tests
         {
           IProjectionDefinition<IFormulaSpace, IReadOnlyList<string?>> Rows()
           {
-            IProjectionDefinition<IFormulaSpace, string?> row = SpreadsheetProjections.Formula<IFormulaSpace>();
+            IProjectionDefinition<IFormulaSpace, string?> row = ProjectionBuilders<IFormulaSpace>.Point().Formula();
 
             return ProjectionBuilders<IFormulaSpace>.Table(headerRows: 1, eachRow: row);
           }
@@ -109,7 +109,7 @@ namespace Unrect.Analyzers.Tests
           {
           }
 
-          static void Give() => Take({|CS1503:SpreadsheetProjections.Formula<IFormulaSpace>()|});
+          static void Give() => Take({|CS1503:ProjectionBuilders<IFormulaSpace>.Point().Formula()|});
         }
         """);
 
@@ -154,7 +154,7 @@ namespace Unrect.Analyzers.Tests
         """
         class Report
         {
-          static object Header(ISizeStrategy<ISpreadsheetSpace> rule) => Sized({|CS1503:rule|}).Of(AsText());
+          static object Header(ISizeStrategy<ISpreadsheetSpace> rule) => Sized({|CS1503:rule|}).Of(Point().AsText());
         }
         """);
   }

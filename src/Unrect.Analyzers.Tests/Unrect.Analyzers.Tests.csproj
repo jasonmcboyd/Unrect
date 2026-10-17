@@ -37,7 +37,8 @@
   <ItemGroup>
     <ProjectReference Include="..\Unrect.Analyzers\Unrect.Analyzers.csproj" />
     <ProjectReference Include="..\Unrect.Analyzers.CodeFixes\Unrect.Analyzers.CodeFixes.csproj" />
-    <ProjectReference Include="..\Unrect\Unrect.csproj" />
+    <ProjectReference Include="..\Unrect.Projections\Unrect.Projections.csproj" />
+    <ProjectReference Include="..\Unrect.Fluent\Unrect.Fluent.csproj" />
     <ProjectReference Include="..\Unrect.Engine\Unrect.Engine.csproj" />
     <ProjectReference Include="..\Unrect.Core\Unrect.Core.csproj" />
     <ProjectReference Include="..\Unrect.Strategies\Unrect.Strategies.csproj" />

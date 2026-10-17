@@ -10,11 +10,10 @@ declaration holds and the cap on it, the statistics, and the limits that are hon
 limits.
 
 `book.Sheet(name)` hands back an `ICellSpace` — the kinded, no-formulas face a streamed sheet
-answers — so a declaration file over it imports `SheetProjectionBuilders<ICellSpace>` beside
-`ProjectionBuilders<ICellSpace>`, never `SpreadsheetProjectionBuilders<TSpace>`: a streamed
-sheet carries no formulas, and a declaration that calls `Formula()` will not compile against
-one. Read formulas through the eager door instead
-(`SpreadsheetSpace.CreateWithFormulas(path, sheet)`).
+answers — so a declaration file over it imports `ProjectionBuilders<ICellSpace>`, and a streamed
+sheet carries no formulas: `Point().Formula()` and `v.Formula()` are constrained to a formula space,
+so a declaration that calls either will not compile against one. Read formulas through the eager door instead
+(`SpreadsheetSpace.Create(path, sheet)`).
 
 The interpreter underneath is the push engine: a
 declaration builds a tree of machines, the engine feeds them one row span at a time, and

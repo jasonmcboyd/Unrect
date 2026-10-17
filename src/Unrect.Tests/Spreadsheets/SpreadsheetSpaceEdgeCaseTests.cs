@@ -3,12 +3,13 @@ using System.IO;
 
 using Unrect.Core;
 using Unrect.Spreadsheets;
+using Unrect.Fluent;
 using Unrect.Projections;
 using Unrect.Strategies;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 
 namespace Unrect.Tests.Spreadsheets
 {
@@ -30,7 +31,7 @@ namespace Unrect.Tests.Spreadsheets
     /// </code>
     /// </summary>
     private static ICellSpace Edges(Func<string, bool>? isBlank = null)
-      => SpreadsheetSpace.Create(
+      => SpreadsheetSpace.CreateValues(
         Path.Combine(AppContext.BaseDirectory, "TestData", "edge-cases.xlsx"),
         "Edges",
         isBlank: isBlank);

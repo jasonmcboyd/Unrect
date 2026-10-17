@@ -3,13 +3,12 @@ using System.Collections.Generic;
 using System.IO;
 
 using Unrect.Projections;
+using Unrect.Fluent;
 using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SpreadsheetProjections;
+using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -113,9 +112,9 @@ namespace Unrect.Tests.Projections
     /// </summary>
     private static IProjectionDefinition<ICellSpace, Allocation> AllocationRow(LabelMap captions)
       => Overlay(o => new Allocation(
-        Account: o.Next(Right(captions["Account"]).Of(Text())),
-        Symbol: o.Next(Right(captions["Symbol"]).Of(Text())),
-        Weight: o.Next(Right(captions["Weight"]).Of(Decimal()))));
+        Account: o.Next(Right(captions["Account"]).Of(Point().Text())),
+        Symbol: o.Next(Right(captions["Symbol"]).Of(Point().Text())),
+        Weight: o.Next(Right(captions["Weight"]).Of(Point().Decimal()))));
 
     // --- 1. The bind runs exactly once per APPLICATION of the table ------------------------------------
     //
@@ -370,7 +369,7 @@ namespace Unrect.Tests.Projections
       => throw new InvalidOperationException("this is not the export this declaration reads");
 
     /// <summary>A bind that works, for the half of each test that must stay quiet.</summary>
-    private static IProjectionDefinition<ICellSpace, string> AccountCell(LabelMap captions) => Right(captions["Account"]).Of(Text());
+    private static IProjectionDefinition<ICellSpace, string> AccountCell(LabelMap captions) => Right(captions["Account"]).Of(Point().Text());
 
     private static ProjectionException Faults<T>(IProjectionDefinition<ICellSpace, T> projection, ICellSpace sheet)
     {
@@ -461,9 +460,9 @@ namespace Unrect.Tests.Projections
     private static IProjectionDefinition<ISpreadsheetSpace, SourcedAllocation> SourcedRow(LabelMap captions)
       => ProjectionBuilders<ISpreadsheetSpace>.Overlay(o => new SourcedAllocation(
         Account: o.Next(ProjectionBuilders<ISpreadsheetSpace>.Right(captions["Account"])
-          .Of(SpreadsheetProjectionBuilders<ISpreadsheetSpace>.Text())),
+          .Of(ProjectionBuilders<ISpreadsheetSpace>.Point().Text())),
         Formula: o.Next(ProjectionBuilders<ISpreadsheetSpace>.Right(captions["Total"])
-          .Of(SpreadsheetProjections.Formula<ISpreadsheetSpace>()))));
+          .Of(ProjectionBuilders<ISpreadsheetSpace>.Point().Formula()))));
 
     [Fact]
     public void ABindReturningADemandingRowMakesTheTableDemandIt()
@@ -522,9 +521,9 @@ namespace Unrect.Tests.Projections
       // adjacency instead of by caption. Over the canonical order it agrees; over the reordered one
       // it does not even typecheck against the file.
       var positional = Table(headerRows: 1, eachRow: HorizontalFlow(h => new Allocation(
-        Account: h.Next(Text()),
-        Symbol: h.Next(Text()),
-        Weight: h.Next(Decimal()))));
+        Account: h.Text(),
+        Symbol: h.Text(),
+        Weight: h.Decimal())));
 
       Assert.Equal(TheThreeRecords(), positional.Map(Allocations()));
 

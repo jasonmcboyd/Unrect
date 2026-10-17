@@ -2,13 +2,13 @@ using System;
 using System.IO;
 using System.Linq;
 
+using Unrect.Fluent;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Spreadsheets.SpreadsheetProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>;
-
+using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>;
 namespace Unrect.Tests.Spreadsheets
 {
   /// <summary>
@@ -19,7 +19,7 @@ namespace Unrect.Tests.Spreadsheets
   public class TableBindingFromRowTests
   {
     private static ISpreadsheetSpace Ledger()
-      => SpreadsheetSpace.CreateWithFormulas(Path.Combine(AppContext.BaseDirectory, "TestData", "formatting.xlsx"), "Ledger");
+      => SpreadsheetSpace.Create(Path.Combine(AppContext.BaseDirectory, "TestData", "formatting.xlsx"), "Ledger");
 
     public sealed record Entry(string Account, decimal Amount, string Note, bool IsDeprecated);
 

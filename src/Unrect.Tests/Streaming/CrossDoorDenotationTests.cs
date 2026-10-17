@@ -8,12 +8,12 @@ using System.Text;
 
 using Unrect.Core;
 using Unrect.Projections;
+using Unrect.Fluent;
 using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.Observations;
 
 namespace Unrect.Tests.Streaming
@@ -277,7 +277,7 @@ namespace Unrect.Tests.Streaming
 
     /// <summary>A deal block: its name, and how many holdings are under it.</summary>
     private static IProjectionDefinition<ICellSpace, string> DealBlock() =>
-      VerticalFlow(v => $"{v.Next(Text())}[{v.Next(Table<Holding>()).Count}]");
+      VerticalFlow(v => $"{v.Text()}[{v.Next(Table<Holding>()).Count}]");
 
     /// <summary>The tall ledger, anchored on its caption and bounded by its terminator.</summary>
     private static IProjectionDefinition<ICellSpace, IReadOnlyList<Ledger>> TallLedger() =>
@@ -291,13 +291,13 @@ namespace Unrect.Tests.Streaming
       // has something to say about where the declaration stops.
       "one row of a report" => Scenario.Of(Row(cells => cells.Count), "report"),
       "a flow of two leaves" => Scenario.Of(
-        VerticalFlow(v => $"{v.Next(Text())}|{v.Next(Point().Select(point => point.IsBlank() ? "-" : "x"))}"),
+        VerticalFlow(v => $"{v.Text()}|{v.Next(Point().Select(point => point.IsBlank() ? "-" : "x"))}"),
         "report"),
 
       // An overlay whose second child places itself three rows down and one across: an extent far
       // taller than a row, which is the shape the window sizing law is written about.
       "an overlay reaching down and across" => Scenario.Of(
-        Overlay(o => $"{o.Next(Text())}|{o.Next(Down(3).Right(1).Of(Decimal()))}"),
+        Overlay(o => $"{o.Text()}|{o.Next(Down(3).Right(1).Of(Point().Decimal()))}"),
         "report"),
 
       // The table ladder, the four rungs a declaration is normally written at (the view lambda is the
@@ -309,10 +309,10 @@ namespace Unrect.Tests.Streaming
       "the bind rung" => Scenario.Of(
         Heading("Quarterly Report").Of(Table(
           headerRows: 1,
-          eachRow: captions => Overlay(o => $"{o.Next(Right(captions["Client"]).Of(Text()))}={o.Next(Right(captions["Amount"]).Of(Decimal()))}"))),
+          eachRow: captions => Overlay(o => $"{o.Next(Right(captions["Client"]).Of(Point().Text()))}={o.Next(Right(captions["Amount"]).Of(Point().Decimal()))}"))),
         "report"),
       "the record-projection rung" => Scenario.Of(
-        Heading("Quarterly Report").Of(Table(headerRows: 1, eachRow: HorizontalFlow(h => $"{h.Next(Text())}/{h.Next(Decimal())}"))),
+        Heading("Quarterly Report").Of(Table(headerRows: 1, eachRow: HorizontalFlow(h => $"{h.Text()}/{h.Decimal()}"))),
         "report"),
       // .Under before .Select on purpose: Select's wrapper is a projection with a placement of its
       // own, so anchoring the wrapper would leave the table inside it placed by its own default.
@@ -354,21 +354,21 @@ namespace Unrect.Tests.Streaming
         "drift"),
 
       // The three tolerance boundaries, each absorbing a real failure and saying so.
-      "a choice absorbing its losing alternative" => Scenario.Of(Choice(Down(1).Of(Text()), Text()), "report"),
-      "optional absorbing a failure" => Scenario.Of(Integer().Optional(), "report"),
-      "else absorbing a failure" => Scenario.Of(Integer().Else(-1), "report"),
+      "a choice absorbing its losing alternative" => Scenario.Of(Choice(Down(1).Of(Point().Text()), Point().Text()), "report"),
+      "optional absorbing a failure" => Scenario.Of(Point().Integer().Optional(), "report"),
+      "else absorbing a failure" => Scenario.Of(Point().Integer().Else(-1), "report"),
 
       // Failures. A landmark that is not there, a kind mismatch deep inside a table record, a kind
       // mismatch in a different column reported by the binder instead, and a leaf placed off the end
       // of the sheet.
       "a caption that is not there" => Scenario.Of(Caption("Annual Report"), "report"),
       "a kind mismatch inside a table record" => Scenario.Of(
-        Heading("Quarterly Report").Of(Table(headerRows: 1, eachRow: HorizontalFlow(h => $"{h.Next(Text())}/{h.Next(Text())}"))),
+        Heading("Quarterly Report").Of(Table(headerRows: 1, eachRow: HorizontalFlow(h => $"{h.Text()}/{h.Text()}"))),
         "report"),
       "a binder that asks for the wrong kind" => Scenario.Of(
         Heading("Quarterly Report").Of(Table<Mistyped>()),
         "report"),
-      "a leaf past the end of the sheet" => Scenario.Of(Down(20).Of(Text()), "report"),
+      "a leaf past the end of the sheet" => Scenario.Of(Down(20).Of(Point().Text()), "report"),
 
       // Blankness, which is the adapter's decision and therefore the one most easily made twice: the
       // row-wise rule must stop above the whitespace-only cell through either door.
@@ -379,7 +379,7 @@ namespace Unrect.Tests.Streaming
       // The measured-by-reading path: a sheet with no valued cell has no width, so the leaf that
       // reads its first cell runs off the edge — identically, from a sheet both doors had to read to
       // measure.
-      "a leaf over a sheet with no valued cells" => Scenario.Of(Text(), "valueless"),
+      "a leaf over a sheet with no valued cells" => Scenario.Of(Point().Text(), "valueless"),
 
       // Forty rows, an anchor at the top and a terminator at the bottom: the declaration the window
       // sweep below re-reads through a window that cannot hold it.
@@ -439,7 +439,7 @@ namespace Unrect.Tests.Streaming
       var scenario = Case(name);
       var path = Fixture(scenario.Grid);
 
-      var eager = scenario.Read(SpreadsheetSpace.Create(path, SheetName));
+      var eager = scenario.Read(SpreadsheetSpace.CreateValues(path, SheetName));
 
       Observation streamed;
 
@@ -473,7 +473,7 @@ namespace Unrect.Tests.Streaming
       // The numbers are meant to be edited. A case added to the matrix moves one of them, on purpose,
       // and the edit is where its author says which kind of evidence it contributes.
       var observed = CaseNames
-        .Select(name => (Name: name, Observation: Case(name).Read(SpreadsheetSpace.Create(Fixture(Case(name).Grid), SheetName))))
+        .Select(name => (Name: name, Observation: Case(name).Read(SpreadsheetSpace.CreateValues(Fixture(Case(name).Grid), SheetName))))
         .ToList();
 
       Assert.Equal(22, observed.Count);
@@ -513,7 +513,7 @@ namespace Unrect.Tests.Streaming
       // meant to be empty.
       var path = Fixture("whitespace");
 
-      var eager = SpreadsheetSpace.Create(path, SheetName);
+      var eager = SpreadsheetSpace.CreateValues(path, SheetName);
 
       using var book = Workbook.Open(path, Cold());
       var streamed = book.Sheet(SheetName);
@@ -550,7 +550,7 @@ namespace Unrect.Tests.Streaming
       // the file, and none of them carries a value.
       var path = Fixture("valueless");
 
-      var eager = SpreadsheetSpace.Create(path, SheetName);
+      var eager = SpreadsheetSpace.CreateValues(path, SheetName);
 
       using var book = Workbook.Open(path, Cold());
       var streamed = book.Sheet(SheetName);

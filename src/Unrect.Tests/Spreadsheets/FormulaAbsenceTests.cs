@@ -5,13 +5,14 @@ using System.Linq;
 using System.Text;
 
 using Unrect.Core;
+using Unrect.Fluent;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
 using Unrect.Tests.Streaming;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 
 namespace Unrect.Tests.Spreadsheets
 {
@@ -40,7 +41,7 @@ namespace Unrect.Tests.Spreadsheets
       // a decompiler rather than a missing branch. The refusal names the format, because the caller's
       // next move is to convert the file, and "not supported" alone would not tell them that.
       var refused = Assert.Throws<NotSupportedException>(
-        () => SpreadsheetSpace.CreateWithFormulas(TestData("legacy.xls"), "Legacy"));
+        () => SpreadsheetSpace.Create(TestData("legacy.xls"), "Legacy"));
 
       Assert.Contains("BIFF", refused.Message, StringComparison.Ordinal);
       Assert.Contains(".xlsx", refused.Message, StringComparison.Ordinal);
@@ -54,7 +55,7 @@ namespace Unrect.Tests.Spreadsheets
       // enumeration is walked rather than when it is described. It is the same refusal: a door that
       // yielded a first sheet and then threw would be worse than one that never started.
       Assert.Throws<NotSupportedException>(
-        () => SpreadsheetSpace.CreateWithFormulas(TestData("legacy.xls"), _ => true).ToList());
+        () => SpreadsheetSpace.Create(TestData("legacy.xls"), _ => true).ToList());
     }
 
     [Fact]
@@ -62,7 +63,7 @@ namespace Unrect.Tests.Spreadsheets
     {
       // The other half of the pin, and the reason the refusal above is narrow rather than a rejection
       // of the format. Nothing about .xls is unreadable; one capability over it is.
-      var sheet = SpreadsheetSpace.Create(TestData("legacy.xls"), "Legacy");
+      var sheet = SpreadsheetSpace.CreateValues(TestData("legacy.xls"), "Legacy");
 
       var cells = Plane<ICellSpace>.Of(sheet);
 
@@ -101,7 +102,7 @@ namespace Unrect.Tests.Spreadsheets
 
       try
       {
-        Assert.ThrowsAny<Exception>(() => SpreadsheetSpace.CreateWithFormulas(path, _ => true).ToList());
+        Assert.ThrowsAny<Exception>(() => SpreadsheetSpace.Create(path, _ => true).ToList());
       }
       finally
       {

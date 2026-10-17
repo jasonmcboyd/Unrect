@@ -1,11 +1,11 @@
 using Unrect.Core;
+using Unrect.Fluent;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
 
 using Xunit;
 
-using static Unrect.Projections.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
+using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
 using static Unrect.Tests.ProjectionTestSpaces;
 
 namespace Unrect.Tests.Projections
@@ -73,9 +73,9 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void TheLeafReadsHeldText()
     {
-      Assert.Equal("Total", Text().Map(Sheet()));
+      Assert.Equal("Total", Point().Text().Map(Sheet()));
 
-      var failure = Assert.Throws<ProjectionException>(() => Right(1).Of(Text()).Map(Sheet()));
+      var failure = Assert.Throws<ProjectionException>(() => Right(1).Of(Point().Text()).Map(Sheet()));
 
       Assert.Equal("expected Text at B1, found Number", Problem(failure));
       Assert.Equal("Text", failure.Subject);
@@ -87,7 +87,7 @@ namespace Unrect.Tests.Projections
       var space = Sheet();
 
       var byRead = Assert.Throws<CellReadException>(() => At(space, 1).Text());
-      var byLeaf = Assert.Throws<ProjectionException>(() => Right(1).Of(Text()).Map(space));
+      var byLeaf = Assert.Throws<ProjectionException>(() => Right(1).Of(Point().Text()).Map(space));
 
       Assert.Equal(Problem(byLeaf), byRead.Message);
 
