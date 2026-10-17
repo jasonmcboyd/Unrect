@@ -389,6 +389,6 @@ namespace Unrect.Tests.Streaming
     // demanding overload to find. A streamed sheet reads values only — Workbook.Sheet hands back a
     // plain ICellSpace — so a formula-reading declaration has no capable space here to be applied to, and
     // the alternatives were a run-time fault or a file's formulas quietly read as absent. Read
-    // formulas through the eager door instead: projection.Map(SpreadsheetSpace.CreateWithFormulas(…)).
+    // formulas through the eager door instead: projection.Map(SpreadsheetSpace.Create(…)).
   }
 }

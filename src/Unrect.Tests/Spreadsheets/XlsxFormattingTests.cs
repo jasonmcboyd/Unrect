@@ -28,7 +28,7 @@ namespace Unrect.Tests.Spreadsheets
     {
       // What lets a style read out of the package be indexed by a space's coordinates: both count
       // from the sheet's own A1. The red row is the one whose account the value reader calls 1001.
-      var sheet = SpreadsheetSpace.Create(Workbook, "Ledger");
+      var sheet = SpreadsheetSpace.CreateValues(Workbook, "Ledger");
       var (formats, styles) = Open();
 
       using (formats)

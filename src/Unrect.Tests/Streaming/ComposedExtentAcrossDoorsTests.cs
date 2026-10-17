@@ -32,7 +32,7 @@ namespace Unrect.Tests.Streaming
     /// <summary>The same declaration through the eager door.</summary>
     private static string Eager(ISizeStrategy<ICellSpace> area)
       => Sized(area).Of(Range(block => $"{block.Width}x{block.Height}")).Map(
-        SpreadsheetSpace.Create(Path("tall-ledger.xlsx"), "Ledger"));
+        SpreadsheetSpace.CreateValues(Path("tall-ledger.xlsx"), "Ledger"));
 
     /// <summary>Two rows taken without reading anything, then the columns measured inside them.</summary>
     private static ISizeStrategy<ICellSpace> FirstHalfReadsNothing()

@@ -20,7 +20,7 @@ namespace Unrect.Tests.Spreadsheets
   public class TableBindingByPathTests
   {
     private static ICellSpace Workbook()
-      => SpreadsheetSpace.Create(Path.Combine(AppContext.BaseDirectory, "TestData", "multi-header-table.xlsx"), "Sheet1");
+      => SpreadsheetSpace.CreateValues(Path.Combine(AppContext.BaseDirectory, "TestData", "multi-header-table.xlsx"), "Sheet1");
 
     public sealed record Transfer(int FromId, string FromCode, int ToId, string ToCode);
 

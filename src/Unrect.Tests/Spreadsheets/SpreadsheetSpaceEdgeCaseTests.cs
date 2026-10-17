@@ -31,7 +31,7 @@ namespace Unrect.Tests.Spreadsheets
     /// </code>
     /// </summary>
     private static ICellSpace Edges(Func<string, bool>? isBlank = null)
-      => SpreadsheetSpace.Create(
+      => SpreadsheetSpace.CreateValues(
         Path.Combine(AppContext.BaseDirectory, "TestData", "edge-cases.xlsx"),
         "Edges",
         isBlank: isBlank);

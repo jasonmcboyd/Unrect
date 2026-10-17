@@ -14,7 +14,7 @@ namespace Unrect
   /// that skipped them must not implement it and answer null everywhere, because null here means
   /// "that cell is a plain value" — a statement about the file — and a whole grid of them would say
   /// the file has no formulas when nobody looked. That is why the eager door has a second factory
-  /// rather than a flag on the first: see <c>SpreadsheetSpace.CreateWithFormulas</c>.
+  /// rather than a flag on the first: see <c>SpreadsheetSpace.Create</c>.
   /// </para>
   /// <para>
   /// <b>Root coordinates, like every other read.</b> The coordinates are the whole sheet's; a region

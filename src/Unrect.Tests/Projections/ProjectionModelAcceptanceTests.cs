@@ -425,7 +425,7 @@ namespace Unrect.Tests.Projections
     // spelling never had, plus the two facts that must agree between the spellings (the block
     // counts, and full consumption of the sheet).
 
-    private static ICellSpace Irr() => SpreadsheetSpace.Create(TestData("investor-irr.xlsx"), "IRR");
+    private static ICellSpace Irr() => SpreadsheetSpace.CreateValues(TestData("investor-irr.xlsx"), "IRR");
 
     private static IProjectionDefinition<ICellSpace, IrrReport> IrrReportDeclaration()
     {

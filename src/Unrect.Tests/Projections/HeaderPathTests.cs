@@ -20,7 +20,7 @@ namespace Unrect.Tests.Projections
   public class HeaderPathTests
   {
     private static ICellSpace Workbook()
-      => SpreadsheetSpace.Create(Path.Combine(AppContext.BaseDirectory, "TestData", "multi-header-table.xlsx"), "Sheet1");
+      => SpreadsheetSpace.CreateValues(Path.Combine(AppContext.BaseDirectory, "TestData", "multi-header-table.xlsx"), "Sheet1");
 
     [Fact]
     public void TheOwnersCallSite()

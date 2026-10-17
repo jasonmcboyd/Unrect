@@ -157,7 +157,7 @@ namespace Unrect.Tests.Projections
 
     /// <summary>The formula fixture, through the door that carries formulas.</summary>
     private static ISpreadsheetSpace FormulaSheet()
-      => SpreadsheetSpace.CreateWithFormulas(
+      => SpreadsheetSpace.Create(
         System.IO.Path.Combine(System.AppContext.BaseDirectory, "TestData", "formulas.xlsx"),
         "Formulas");
 

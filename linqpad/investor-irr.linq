@@ -74,7 +74,7 @@ var report = VerticalFlow(v => new
 	ByInception = v.Next(byInception),
 });
 
-var mapped = report.MapWithDiagnostics(SpreadsheetSpace.CreateWithFormulas(path, "IRR"));
+var mapped = report.MapWithDiagnostics(SpreadsheetSpace.Create(path, "IRR"));
 var result = mapped.Value;
 
 // Nothing left undescribed: the two bounded series between them account for the whole sheet.

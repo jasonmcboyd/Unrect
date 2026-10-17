@@ -296,9 +296,10 @@ over the spreadsheet space and refuses to compile in a file closed over a sheet 
 
 All three are usable as method groups — `spaces.Select(report.Map)`.
 
-**Where the `space` comes from.** `SpreadsheetSpace.Create(path, sheet)` / `CreateWithFormulas(...)`
-(`Unrect.Spreadsheets`) read a whole sheet eagerly into a `SpreadsheetGridSpace : ISpreadsheetSpace`
-— the simple default. `Workbook.Open(path)` (same namespace) is the streaming door: `book.Sheet(name)`
+**Where the `space` comes from.** `SpreadsheetSpace.Create(path, sheet)` (`Unrect.Spreadsheets`)
+reads a whole sheet eagerly as the full space, `ISpreadsheetSpace` — values, formulas and
+formatting, the simple default; `CreateValues(path, sheet)` reads values alone, costs less, and is
+the only door for an `.xls`. `Workbook.Open(path)` (same namespace) is the streaming door: `book.Sheet(name)`
 is one forward pass over the sheet's own cursor — read it inside the projection, once, before the
 workbook that lent it is disposed. `Point().Formula()`
 composes into a file scoped to `ICellSpace`, but a *declaration* that calls it demands
@@ -355,7 +356,7 @@ Two boundaries, both load-bearing rather than incidental:
   declarations target the shared base one import already covers. A file that seems to need both
   is two parsers sharing a file, and the fix is the file split.
 - **(b) Scope the file to what the declarations READ, not to what the file parses.** A workbook
-  opened `CreateWithFormulas` whose projections never call `Point().Formula()` should be an `ICellSpace`
+  opened `Create` whose projections never call `Point().Formula()` should be an `ICellSpace`
   file, not an `ISpreadsheetSpace` one. A **generic helper method**, not a file import, is how a
   hoisted library projection states its own minimum: `static IProjectionDefinition<TSpace, T>
   Helper<TSpace>(...) where TSpace : class, ICellSpace` composes into any file whose space can
@@ -401,10 +402,10 @@ declaration composes or a `Map` call is made — there is no runtime capability 
 | `RowWithCell(p => p.HasFormula())` / `RowWithCell(p => p.Formula() is string f && f.IndexOf(containing, StringComparison.OrdinalIgnoreCase) >= 0)` and the column twins | Matchers over formulas — see "Rules name their space," above, for how they carry their demand through `On`/`Below`/`Until` with nothing annotated. `containing` is a **substring, case-insensitively** |
 | `IFormulaSpace` / `ISpreadsheetSpace` | The capability, and the bundle a declaration written over "a spreadsheet" demands |
 
-**Where they come from.** `SpreadsheetSpace.CreateWithFormulas(path, sheet)` is a second factory
-rather than a flag on the first, because the two answers differ in their *type*: what comes back
-is an `ISpreadsheetSpace`, and the plain `Create` hands back a space that does not implement the
-capability at all. The streaming door reads no formulas and says so by absence — `Workbook.Sheet`
+**Where they come from.** `SpreadsheetSpace.Create(path, sheet)` hands back an
+`ISpreadsheetSpace`; `CreateValues(path, sheet)` is a second factory rather than a flag on the
+first, because the two answers differ in their *type*: the values-only space does not implement
+the capability at all. The streaming door reads no formulas and says so by absence — `Workbook.Sheet`
 returns a plain `ICellSpace`, so a formula-reading declaration will not compile against it, a
 compile error rather than a run-time surprise or a file's formulas quietly read as none.
 

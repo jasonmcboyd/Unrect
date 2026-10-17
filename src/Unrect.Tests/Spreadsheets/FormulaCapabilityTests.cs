@@ -33,10 +33,10 @@ namespace Unrect.Tests.Spreadsheets
   {
     private static string Path() => System.IO.Path.Combine(AppContext.BaseDirectory, "TestData", "formulas.xlsx");
 
-    private static ISpreadsheetSpace Sheet() => SpreadsheetSpace.CreateWithFormulas(Path(), "Formulas");
+    private static ISpreadsheetSpace Sheet() => SpreadsheetSpace.Create(Path(), "Formulas");
 
     [Fact]
-    public void CreateWithFormulas_ReadsAFormulaAndLeavesAPlainCellNull()
+    public void Create_ReadsAFormulaAndLeavesAPlainCellNull()
     {
       var sheet = Sheet();
 
@@ -90,7 +90,7 @@ namespace Unrect.Tests.Spreadsheets
     [Fact]
     public void TheDefaultDoorDoesNotImplementTheCapabilityAtAll()
     {
-      var plain = SpreadsheetSpace.Create(Path(), "Formulas");
+      var plain = SpreadsheetSpace.CreateValues(Path(), "Formulas");
 
       // Honest absence: present-and-null everywhere would say the file has no formulas. The type is
       // the whole of the answer now — a declaration written over this door cannot name Point().Formula() at

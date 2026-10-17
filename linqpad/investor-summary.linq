@@ -69,7 +69,7 @@ var report = VerticalFlow(v => new
 	Details = v.Next(details),
 });
 
-var result = report.Map(SpreadsheetSpace.CreateWithFormulas(path, "Summary"));
+var result = report.Map(SpreadsheetSpace.Create(path, "Summary"));
 
 // Cross-region correlations are post-parse validation, not decomposition.
 (result.Summary.Count == result.Details.Count).Dump("summary rows == detail blocks");

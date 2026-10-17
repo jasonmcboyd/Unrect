@@ -32,7 +32,7 @@ namespace Unrect.Tests.Spreadsheets
         r["Amount"].Decimal(),
         Deprecated: r["Account"].Font().Color == CellColor.Red));
 
-      var entries = ledger.Map(SpreadsheetSpace.CreateWithFormulas(Workbook, "Ledger"));
+      var entries = ledger.Map(SpreadsheetSpace.Create(Workbook, "Ledger"));
 
       Assert.Equal(new[] { "1000", "1001", "1002", "1003" }, entries.Select(e => e.Account));
       Assert.Equal(new[] { "1001" }, entries.Where(e => e.Deprecated).Select(e => e.Account));
@@ -42,7 +42,7 @@ namespace Unrect.Tests.Spreadsheets
     [Fact]
     public void ASpreadsheetSpaceAnswersForItsFormattingInRootCoordinates()
     {
-      var sheet = SpreadsheetSpace.CreateWithFormulas(Workbook, "Ledger");
+      var sheet = SpreadsheetSpace.Create(Workbook, "Ledger");
 
       Assert.IsAssignableFrom<IStyleSpace>(sheet);
       Assert.True(sheet.FontAt(0, 0).Bold);
@@ -63,7 +63,7 @@ namespace Unrect.Tests.Spreadsheets
       // Honest absence: the plain door never looked at the formatting, so what it hands back is not
       // a style space at all — and a declaration that asks what a cell looks like does not compile
       // against it, rather than being told "black" everywhere.
-      var plain = SpreadsheetSpace.Create(Workbook, "Ledger");
+      var plain = SpreadsheetSpace.CreateValues(Workbook, "Ledger");
 
       Assert.False(plain is IStyleSpace);
     }

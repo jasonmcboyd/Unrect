@@ -439,7 +439,7 @@ namespace Unrect.Tests.Streaming
       var scenario = Case(name);
       var path = Fixture(scenario.Grid);
 
-      var eager = scenario.Read(SpreadsheetSpace.Create(path, SheetName));
+      var eager = scenario.Read(SpreadsheetSpace.CreateValues(path, SheetName));
 
       Observation streamed;
 
@@ -473,7 +473,7 @@ namespace Unrect.Tests.Streaming
       // The numbers are meant to be edited. A case added to the matrix moves one of them, on purpose,
       // and the edit is where its author says which kind of evidence it contributes.
       var observed = CaseNames
-        .Select(name => (Name: name, Observation: Case(name).Read(SpreadsheetSpace.Create(Fixture(Case(name).Grid), SheetName))))
+        .Select(name => (Name: name, Observation: Case(name).Read(SpreadsheetSpace.CreateValues(Fixture(Case(name).Grid), SheetName))))
         .ToList();
 
       Assert.Equal(22, observed.Count);
@@ -513,7 +513,7 @@ namespace Unrect.Tests.Streaming
       // meant to be empty.
       var path = Fixture("whitespace");
 
-      var eager = SpreadsheetSpace.Create(path, SheetName);
+      var eager = SpreadsheetSpace.CreateValues(path, SheetName);
 
       using var book = Workbook.Open(path, Cold());
       var streamed = book.Sheet(SheetName);
@@ -550,7 +550,7 @@ namespace Unrect.Tests.Streaming
       // the file, and none of them carries a value.
       var path = Fixture("valueless");
 
-      var eager = SpreadsheetSpace.Create(path, SheetName);
+      var eager = SpreadsheetSpace.CreateValues(path, SheetName);
 
       using var book = Workbook.Open(path, Cold());
       var streamed = book.Sheet(SheetName);

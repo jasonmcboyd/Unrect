@@ -131,7 +131,7 @@ namespace Unrect.Benchmarks
     /// </para>
     /// </summary>
     public static ICellSpace EagerSpace(bool unique, bool sharedStrings, int rows = Rows, int columns = Columns) =>
-      SpreadsheetSpace.Create(
+      SpreadsheetSpace.CreateValues(
         RetentionWorkbooks.Path(unique, sharedStrings, rows, columns),
         RetentionWorkbooks.SheetName);
 

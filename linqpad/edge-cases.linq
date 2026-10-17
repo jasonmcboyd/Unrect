@@ -26,8 +26,8 @@ var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\exam
 // The corner-case fixture (distilled from the real K-1 workbook):
 //   row 1: one of each ordinary kind      row 2: five error cells
 //   row 3: whitespace / empty / absent    row 4: the remaining two errors
-var defaultSpace = SpreadsheetSpace.CreateWithFormulas(path, "Edges");
-var strictSpace = SpreadsheetSpace.CreateWithFormulas(path, "Edges", isBlank: _ => false);
+var defaultSpace = SpreadsheetSpace.Create(path, "Edges");
+var strictSpace = SpreadsheetSpace.Create(path, "Edges", isBlank: _ => false);
 
 // A space has no indexer: the locator does the addressing. A plane is the 2-D one, and asking it for
 // a cell mints a point — an address, not a value, which is what every read below is written at.

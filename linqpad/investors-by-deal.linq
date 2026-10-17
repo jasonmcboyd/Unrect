@@ -35,7 +35,7 @@ var deal = VerticalFlow(v => new
 // The report: that block, repeated, blank-row separated.
 var deals = VerticalRepeat(deal);
 
-var space = SpreadsheetSpace.CreateWithFormulas(path, "Investors");
+var space = SpreadsheetSpace.Create(path, "Investors");
 
 deals.Map(space).Dump();
 

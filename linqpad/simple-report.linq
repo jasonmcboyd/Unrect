@@ -53,6 +53,6 @@ var report = VerticalFlow(v => new
 	Transactions = v.Next(transactions),
 });
 
-report.Map(SpreadsheetSpace.CreateWithFormulas(path, "Report")).Dump();
+report.Map(SpreadsheetSpace.Create(path, "Report")).Dump();
 
 record Transaction(string Client, DateTime Date, string Type, decimal Amount);

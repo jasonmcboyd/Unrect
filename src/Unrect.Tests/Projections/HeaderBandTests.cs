@@ -32,7 +32,7 @@ namespace Unrect.Tests.Projections
     /// each, and the captions Id, Code, Id, Code beneath them.
     /// </summary>
     private static ICellSpace Workbook()
-      => SpreadsheetSpace.Create(Path.Combine(AppContext.BaseDirectory, "TestData", "multi-header-table.xlsx"), "Sheet1");
+      => SpreadsheetSpace.CreateValues(Path.Combine(AppContext.BaseDirectory, "TestData", "multi-header-table.xlsx"), "Sheet1");
 
     private static string[] Paths(int headerRows, ICellSpace sheet)
       => Table(headerRows, t => t.ColumnPaths).Map(sheet).Select(path => string.Join(" / ", path)).ToArray();

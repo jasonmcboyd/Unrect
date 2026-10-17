@@ -18,7 +18,7 @@ void Main()
 {
 	var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\examples\multi-header-table.xlsx");
 	
-	var space = SpreadsheetSpace.CreateWithFormulas(path, "Sheet1");
+	var space = SpreadsheetSpace.Create(path, "Sheet1");
 
 
 	var report =

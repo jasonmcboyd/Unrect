@@ -33,7 +33,7 @@
 //     the block finds itself by its own first label;
 //   - one `section` projection, declared once and placed twice under two different headings.
 var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\examples\scrubbed-k1.xlsx");
-var space = SpreadsheetSpace.CreateWithFormulas(path, "Sheet1");
+var space = SpreadsheetSpace.Create(path, "Sheet1");
 
 // A cell comes back as a place, and the reading is written at it: an ATAX code is either the words
 // in a text cell or a whole number, and the cell's own kind says which.

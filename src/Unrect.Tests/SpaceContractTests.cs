@@ -156,12 +156,12 @@ namespace Unrect.Tests
           return ProjectionTestSpaces.Streamed(FakeSheet.Of("Edges", EdgeRows()));
 
         case "xlsx":
-          return SpreadsheetSpace.Create(file, "Edges");
+          return SpreadsheetSpace.CreateValues(file, "Edges");
 
         // The same file through the door that hands back a formula-carrying implementation: a
         // second class answering this contract, which is the only reason it is swept separately.
         case "xlsx-formulas":
-          return SpreadsheetSpace.CreateWithFormulas(file, "Edges");
+          return SpreadsheetSpace.Create(file, "Edges");
 
         default:
           throw new ArgumentOutOfRangeException(nameof(door), door, "No such door.");
@@ -412,7 +412,7 @@ namespace Unrect.Tests
       // stays because the door is free to hand back something else tomorrow (it already does when
       // formulas are asked for, and that space is a wrapper), and this is where such a change would
       // have to keep the bounds contract.
-      var space = SpreadsheetSpace.Create(
+      var space = SpreadsheetSpace.CreateValues(
         System.IO.Path.Combine(AppContext.BaseDirectory, "TestData", "simple-report.xlsx"),
         "Report");
 
@@ -514,7 +514,7 @@ namespace Unrect.Tests
     private static ISpreadsheetSpace CapableDoor(string door)
     {
       if (door == "xlsx")
-        return SpreadsheetSpace.CreateWithFormulas(
+        return SpreadsheetSpace.Create(
           System.IO.Path.Combine(AppContext.BaseDirectory, "TestData", "formulas.xlsx"),
           "Formulas");
 
@@ -617,7 +617,7 @@ namespace Unrect.Tests
       // The door that COULD have carried formulas and was not asked to. Honest absence: a reader
       // that skipped formulas must not answer about them at all, because a null there would say the
       // file has none — cell by cell, about a file nobody read that way.
-      var space = SpreadsheetSpace.Create(
+      var space = SpreadsheetSpace.CreateValues(
         System.IO.Path.Combine(AppContext.BaseDirectory, "TestData", "formulas.xlsx"),
         "Formulas");
 
@@ -626,7 +626,7 @@ namespace Unrect.Tests
       // ...and the same file through the door that WAS asked, so the fact above is about the asking
       // and not about the file.
       Assert.True(
-        SpreadsheetSpace.CreateWithFormulas(
+        SpreadsheetSpace.Create(
           System.IO.Path.Combine(AppContext.BaseDirectory, "TestData", "formulas.xlsx"),
           "Formulas") is IFormulaSpace);
     }

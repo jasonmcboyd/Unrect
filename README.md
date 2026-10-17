@@ -27,7 +27,7 @@ A header may be several rows tall — a merged "From" and "To" over `Id | Code |
 `Table(2, r => r["From", "Id"].Integer())` addresses a column by its path, and
 `Table<Transfer>(2)` binds a flat `record Transfer(int FromId, string FromCode, int ToId, string ToCode)`
 with nothing declared.
-A sheet opened with `SpreadsheetSpace.CreateWithFormulas` also answers for its formulas and for
+A sheet opened with `SpreadsheetSpace.Create` also answers for its formulas and for
 what its cells look like — `row["Account"].Font().Color == CellColor.Red` turns "the rows someone
 coloured red" into a property you filter on (`.xlsx` only), and
 `Table<T>(bind => bind.Column(t => t.IsDeprecated, row => …))` puts it on a bound record without
@@ -102,7 +102,7 @@ var report = VerticalFlow(v => new
     ByInception = v.Next(byInception),
 });
 
-var result = report.Map(SpreadsheetSpace.Create("irr-report.xlsx", "IRR"));
+var result = report.Map(SpreadsheetSpace.CreateValues("irr-report.xlsx", "IRR"));
 
 record SummaryRow(string Investor, decimal ContributionItd, decimal DistributionItd,
                    decimal ManagementFeeItd, decimal EndBalance, double Irr);

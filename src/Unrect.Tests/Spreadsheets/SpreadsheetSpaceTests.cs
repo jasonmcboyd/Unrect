@@ -22,9 +22,9 @@ namespace Unrect.Tests.Spreadsheets
     private static string WorkbookPath(string fileName)
       => Path.Combine(AppContext.BaseDirectory, "TestData", fileName);
 
-    private static ICellSpace SimpleReport() => SpreadsheetSpace.Create(WorkbookPath("simple-report.xlsx"), "Report");
+    private static ICellSpace SimpleReport() => SpreadsheetSpace.CreateValues(WorkbookPath("simple-report.xlsx"), "Report");
 
-    private static ICellSpace InvestorsByDeal() => SpreadsheetSpace.Create(WorkbookPath("investors-by-deal.xlsx"), "Investors");
+    private static ICellSpace InvestorsByDeal() => SpreadsheetSpace.CreateValues(WorkbookPath("investors-by-deal.xlsx"), "Investors");
 
     // --- Adapter behaviour ------------------------------------------------------------------------
 
@@ -40,7 +40,7 @@ namespace Unrect.Tests.Spreadsheets
     [Fact]
     public void Create_MatchesSheetNamesCaseInsensitivelyByDefault()
     {
-      var space = SpreadsheetSpace.Create(WorkbookPath("simple-report.xlsx"), "report");
+      var space = SpreadsheetSpace.CreateValues(WorkbookPath("simple-report.xlsx"), "report");
 
       Assert.Equal(16, space.Extent.Height);
     }
@@ -49,7 +49,7 @@ namespace Unrect.Tests.Spreadsheets
     public void Create_WithCaseSensitiveMatchingAndTheWrongCase_FindsNoSheet()
     {
       var failure = Assert.Throws<ArgumentException>(() =>
-        SpreadsheetSpace.Create(WorkbookPath("simple-report.xlsx"), "report", caseSensitive: true));
+        SpreadsheetSpace.CreateValues(WorkbookPath("simple-report.xlsx"), "report", caseSensitive: true));
 
       Assert.Equal("sheetName", failure.ParamName);
       Assert.Contains("No sheet named 'report'", failure.Message);
@@ -138,7 +138,7 @@ namespace Unrect.Tests.Spreadsheets
     [Fact]
     public void Create_OnASheetThatReportsNoExtent_MeasuresItByReadingTheRows()
     {
-      var space = SpreadsheetSpace.Create(WorkbookPath("no-extent.xlsx"), "Undeclared");
+      var space = SpreadsheetSpace.CreateValues(WorkbookPath("no-extent.xlsx"), "Undeclared");
 
       // Four rows, because four rows arrive. Zero wide, because not one of them carries a value and
       // the reader will not name a column it never saw one in — an honest extent either way, where
@@ -156,7 +156,7 @@ namespace Unrect.Tests.Spreadsheets
       // declaration that runs off it gets the ordinary bounds condition rather than blank rows
       // stretching away past the end of the file. Its two axes fail in different places, so both
       // are said.
-      var space = SpreadsheetSpace.Create(WorkbookPath("no-extent.xlsx"), "Undeclared");
+      var space = SpreadsheetSpace.CreateValues(WorkbookPath("no-extent.xlsx"), "Undeclared");
 
       // Zero wide means there is no cell to read at all, the first one included — that is the whole
       // of what a zero-wide space refuses, and it refuses it rather than answering Blank, which a
@@ -201,7 +201,7 @@ namespace Unrect.Tests.Spreadsheets
     // same one already recorded for the measured path's width above, and for the same reason.
 
     private static ICellSpace RepeatedText(string sheetName = "Ledger")
-      => SpreadsheetSpace.Create(WorkbookPath("repeated-text.xlsx"), sheetName);
+      => SpreadsheetSpace.CreateValues(WorkbookPath("repeated-text.xlsx"), sheetName);
 
     [Fact]
     public void EqualTextCellsInOneSheetAreGivenOneInstanceOfTheirCharacters()
@@ -227,7 +227,7 @@ namespace Unrect.Tests.Spreadsheets
       // The table is scoped to the call, not to a sheet: captions, codes and categories repeat
       // across the sheets of a workbook, so a caller enumerating several of them gets one instance
       // per distinct value across all of them.
-      var sheets = SpreadsheetSpace.Create(WorkbookPath("repeated-text.xlsx"), _ => true).ToArray();
+      var sheets = SpreadsheetSpace.CreateValues(WorkbookPath("repeated-text.xlsx"), _ => true).ToArray();
       var ledger = sheets[0];
       var notes = sheets[1];
 

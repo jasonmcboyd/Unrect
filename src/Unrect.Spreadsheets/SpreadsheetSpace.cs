@@ -20,14 +20,15 @@ namespace Unrect.Spreadsheets
   /// with the same reasoning.)
   /// </para>
   /// <para>
-  /// <b>Formulas are opt-in, by a second factory rather than a flag.</b>
-  /// <see cref="CreateWithFormulas(string, string, bool, Func{string, bool})"/> costs a second
-  /// pass over the file's own bytes and hands back a space that carries formulas; the plain
-  /// <see cref="Create(string, string, bool, Func{string, bool})"/> pays nothing and hands back
-  /// one that does not <em>implement</em> the capability at all. A flag could not do this: the two
-  /// answers differ in their type, and a space that implemented <see cref="IFormulaSpace"/> and
-  /// answered null everywhere would tell every caller the file has no formulas when the truth is
-  /// that nobody looked.
+  /// <b>Two doors, by type rather than by a flag.</b>
+  /// <see cref="Create(string, string, bool, Func{string, bool})"/> is the full space — values,
+  /// formulas and formatting, <c>.xlsx</c> only — and the one a script wants;
+  /// <see cref="CreateValues(string, string, bool, Func{string, bool})"/> reads values alone, costs
+  /// less, opens an <c>.xls</c> too, and hands back a space that does not <em>implement</em> the
+  /// formula and style capabilities at all. A flag could not do this: the two answers differ in
+  /// their type, and a space that implemented <see cref="IFormulaSpace"/> and answered null
+  /// everywhere would tell every caller the file has no formulas when the truth is that nobody
+  /// looked.
   /// </para>
   /// <para>
   /// <b>Known limitation: the modern Excel errors arrive as blank on the .xlsx path.</b>
@@ -49,10 +50,14 @@ namespace Unrect.Spreadsheets
     private static readonly Func<string, bool> WhitespaceIsBlank = string.IsNullOrWhiteSpace;
 
     /// <summary>
-    /// The named sheet of <paramref name="path"/>, with blankness decided by
-    /// <paramref name="isBlank"/> — see the sibling overload for what the default does.
+    /// The named sheet of <paramref name="path"/>, values alone: no formulas, no formatting, so
+    /// what comes back is an <see cref="ICellSpace"/> and a declaration over it cannot ask for
+    /// either. The only door for an <c>.xls</c>, and the cheaper one for an <c>.xlsx</c> whose
+    /// formulas and fonts nobody will read — it skips the two extra passes over the sheet's XML
+    /// that <see cref="Create(string, string, bool, Func{string, bool})"/> pays. Blankness is
+    /// decided by <paramref name="isBlank"/>; see the sibling overload for what the default does.
     /// </summary>
-    public static ICellSpace Create(
+    public static ICellSpace CreateValues(
       string path,
       string sheetName,
       bool caseSensitive = false,
@@ -60,7 +65,7 @@ namespace Unrect.Spreadsheets
       => Sheet(path, sheetName, caseSensitive, isBlank, withFormulas: false);
 
     /// <summary>
-    /// Every sheet of <paramref name="path"/> matching <paramref name="predicate"/>.
+    /// Every sheet of <paramref name="path"/> matching <paramref name="predicate"/>, values alone.
     /// <para>
     /// Blankness belongs to the adapter, so <paramref name="isBlank"/> decides which cells count as
     /// empty space for the strategies downstream. It is a rule over the TEXT a cell holds, asked of
@@ -79,20 +84,23 @@ namespace Unrect.Spreadsheets
     /// grid is built, and only for such a sheet.
     /// </para>
     /// </summary>
-    public static IEnumerable<ICellSpace> Create(
+    public static IEnumerable<ICellSpace> CreateValues(
       string path,
       Func<SpreadsheetContext, bool> predicate,
       Func<string, bool>? isBlank = null)
       => Read(path, predicate, isBlank, withFormulas: false);
 
     /// <summary>
-    /// The named sheet of <paramref name="path"/>, carrying the formula behind each cell as well as
-    /// its value — <c>.xlsx</c> only.
+    /// The named sheet of <paramref name="path"/> as the full space: every cell's value, the
+    /// formula behind it, and its font and fill — <c>.xlsx</c> only. The door a script wants, and
+    /// the space every declaration in this package's examples is written over
+    /// (<c>ISpreadsheetSpace</c>), so that <c>.Formula()</c> and <c>.Font()</c> compile.
     /// <para>
-    /// The formulas are read from the file's own bytes in a second pass (ExcelDataReader parses the
-    /// formula element and drops it, with no public seam to reach the text through), so this costs
-    /// one more read of the sheet's XML and one string per formula cell. The plain factory pays
-    /// none of it.
+    /// The formulas and the formatting are read from the file's own bytes in two further passes
+    /// (ExcelDataReader parses the formula element and drops it, and exposes a font index with no
+    /// font table), so this costs two more reads of the sheet's XML, one string per formula cell
+    /// and one style index per cell. <see cref="CreateValues(string, string, bool, Func{string, bool})"/>
+    /// pays none of it.
     /// </para>
     /// <para>
     /// <b>What a cell answers.</b> The file's own expression, without the leading <c>=</c>, and
@@ -112,7 +120,7 @@ namespace Unrect.Spreadsheets
     /// </para>
     /// </summary>
     /// <exception cref="NotSupportedException"><paramref name="path"/> is not an xlsx.</exception>
-    public static ISpreadsheetSpace CreateWithFormulas(
+    public static ISpreadsheetSpace Create(
       string path,
       string sheetName,
       bool caseSensitive = false,
@@ -120,13 +128,13 @@ namespace Unrect.Spreadsheets
       => (ISpreadsheetSpace)Sheet(path, sheetName, caseSensitive, isBlank, withFormulas: true);
 
     /// <summary>
-    /// Every sheet of <paramref name="path"/> matching <paramref name="predicate"/>, carrying
-    /// formulas — see <see cref="CreateWithFormulas(string, string, bool, Func{string, bool})"/>
-    /// for what is read and <see cref="Create(string, Func{SpreadsheetContext, bool}, Func{string, bool})"/>
+    /// Every sheet of <paramref name="path"/> matching <paramref name="predicate"/>, as the full
+    /// space — see <see cref="Create(string, string, bool, Func{string, bool})"/>
+    /// for what is read and <see cref="CreateValues(string, Func{SpreadsheetContext, bool}, Func{string, bool})"/>
     /// for what <paramref name="isBlank"/> decides.
     /// </summary>
     /// <exception cref="NotSupportedException"><paramref name="path"/> is not an xlsx.</exception>
-    public static IEnumerable<ISpreadsheetSpace> CreateWithFormulas(
+    public static IEnumerable<ISpreadsheetSpace> Create(
       string path,
       Func<SpreadsheetContext, bool> predicate,
       Func<string, bool>? isBlank = null)

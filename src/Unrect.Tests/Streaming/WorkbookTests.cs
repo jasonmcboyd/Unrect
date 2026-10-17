@@ -39,7 +39,7 @@ namespace Unrect.Tests.Streaming
     {
       using var book = Workbook.Open(Path("simple-report.xlsx"), Cold());
       var streamed = book.Sheet("Report");
-      var eager = SpreadsheetSpace.Create(Path("simple-report.xlsx"), "Report");
+      var eager = SpreadsheetSpace.CreateValues(Path("simple-report.xlsx"), "Report");
 
       Assert.Equal(eager.Extent.Width, streamed.Extent.Width);
       Assert.Equal(eager.Extent.Height, streamed.Extent.Height);

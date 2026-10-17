@@ -72,7 +72,7 @@ namespace Unrect.Tests.Projections
       // ItIsWrittenOver, and it is HERE for the reason this file exists: the chain is the same chain,
       // written once in the library, and what types it is the space the file named. Its plain twin
       // reads a decimal off the same coordinates over a sheet with no formulas in it.
-      var sheet = SpreadsheetSpace.CreateWithFormulas(TestData("formulas.xlsx"), "Formulas");
+      var sheet = SpreadsheetSpace.Create(TestData("formulas.xlsx"), "Formulas");
 
       IProjectionDefinition<ISpreadsheetSpace, string?> demanding =
         On(RowContaining("Widget")).Right(3).Of(Point().Formula().Named("line formula"));
@@ -92,7 +92,7 @@ namespace Unrect.Tests.Projections
       // The two readings that make this file worth a whole declaration: a value and the formula
       // behind it in one record, and a shared FOLLOWER whose text the reader reconstructs for its
       // own row rather than reporting the master's.
-      var sheet = SpreadsheetSpace.CreateWithFormulas(TestData("formulas.xlsx"), "Formulas");
+      var sheet = SpreadsheetSpace.Create(TestData("formulas.xlsx"), "Formulas");
 
       var ledger = AuditedLedgerThroughTheBuilders().Map(sheet);
 

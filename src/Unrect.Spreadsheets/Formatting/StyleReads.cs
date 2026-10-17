@@ -15,7 +15,7 @@ namespace Unrect.Spreadsheets
   /// TSpace", often reported on the call AROUND it, as an overload that was not found — the file's
   /// <c>using static</c> line names <see cref="ICellSpace"/>. A declaration's space is fixed by
   /// that import, not by how the workbook is opened: name <see cref="ISpreadsheetSpace"/> there, and
-  /// open the sheet with <see cref="SpreadsheetSpace.CreateWithFormulas(string, string, bool, System.Func{string, bool})"/>.
+  /// open the sheet with <see cref="SpreadsheetSpace.Create(string, string, bool, System.Func{string, bool})"/>.
   /// </para>
   /// </summary>
   public static class StyleReads

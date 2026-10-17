@@ -50,7 +50,7 @@ void Main()
 					.ToArray(),
 			});
 	
-	var result = report.Map(SpreadsheetSpace.Create(path, "Summary"));
+	var result = report.Map(SpreadsheetSpace.CreateValues(path, "Summary"));
 	
 	// Cross-region correlations are post-parse validation, not decomposition.
 	(result.Summary.Length == result.Details.Length).Dump("summary rows == detail blocks");

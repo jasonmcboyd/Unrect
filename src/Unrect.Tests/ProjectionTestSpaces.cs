@@ -83,7 +83,7 @@ namespace Unrect.Tests
 
     /// <summary>A sheet of <paramref name="file"/> in <c>TestData</c>, read whole.</summary>
     public static ICellSpace Eager(string file, string sheet)
-      => SpreadsheetSpace.Create(Path.Combine(AppContext.BaseDirectory, "TestData", file), sheet);
+      => SpreadsheetSpace.CreateValues(Path.Combine(AppContext.BaseDirectory, "TestData", file), sheet);
 
     /// <summary>
     /// A column of 1..<paramref name="height"/>, so an assertion reads as the row it came from.

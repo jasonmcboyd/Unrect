@@ -19,7 +19,7 @@ namespace Unrect.Tests.Spreadsheets
   public class TableBindingFromRowTests
   {
     private static ISpreadsheetSpace Ledger()
-      => SpreadsheetSpace.CreateWithFormulas(Path.Combine(AppContext.BaseDirectory, "TestData", "formatting.xlsx"), "Ledger");
+      => SpreadsheetSpace.Create(Path.Combine(AppContext.BaseDirectory, "TestData", "formatting.xlsx"), "Ledger");
 
     public sealed record Entry(string Account, decimal Amount, string Note, bool IsDeprecated);
 

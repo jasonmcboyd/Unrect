@@ -50,7 +50,7 @@ namespace Unrect.Spreadsheets
     /// cannot be — <see cref="IFormulaSpace"/>, <see cref="ISpreadsheetSpace"/>, a grid of typed
     /// values — matches neither, so <c>formulaReadingProjection.MapWorkbook(…)</c> is a compile
     /// error rather than a run-time fault or a file's formulas quietly read as absent. Read formulas
-    /// through the eager door instead — <c>projection.Map(SpreadsheetSpace.CreateWithFormulas(path,
+    /// through the eager door instead — <c>projection.Map(SpreadsheetSpace.Create(path,
     /// sheet))</c>, which needs no sugar because it has no lifetime to hide.
     /// </para>
     /// </summary>

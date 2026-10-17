@@ -13,7 +13,7 @@ limits.
 answers — so a declaration file over it imports `ProjectionBuilders<ICellSpace>`, and a streamed
 sheet carries no formulas: `Point().Formula()` and `v.Formula()` are constrained to a formula space,
 so a declaration that calls either will not compile against one. Read formulas through the eager door instead
-(`SpreadsheetSpace.CreateWithFormulas(path, sheet)`).
+(`SpreadsheetSpace.Create(path, sheet)`).
 
 The interpreter underneath is the push engine: a
 declaration builds a tree of machines, the engine feeds them one row span at a time, and

@@ -38,7 +38,7 @@ namespace Unrect.Tests.Interactive
     /// is the 0-based row 7 — over eight transactions.
     /// </summary>
     private static ICellSpace Report()
-      => SpreadsheetSpace.Create(Path.Combine(AppContext.BaseDirectory, "TestData", "simple-report.xlsx"), "Report");
+      => SpreadsheetSpace.CreateValues(Path.Combine(AppContext.BaseDirectory, "TestData", "simple-report.xlsx"), "Report");
 
     [Fact]
     public void AHeaderRowScaffoldsTheRecordTheScriptWroteByHand()

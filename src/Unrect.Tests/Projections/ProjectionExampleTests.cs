@@ -24,7 +24,7 @@ namespace Unrect.Tests.Projections
     // The workbooks are copied into the test output, so tests never depend on the repository
     // layout.
     private static ICellSpace Workbook(string fileName, string sheet)
-      => SpreadsheetSpace.Create(Path.Combine(AppContext.BaseDirectory, "TestData", fileName), sheet);
+      => SpreadsheetSpace.CreateValues(Path.Combine(AppContext.BaseDirectory, "TestData", fileName), sheet);
 
     // --- simple-report.xlsx: a fixed header over a table ----------------------------------------------------
 
