@@ -44,6 +44,18 @@ namespace Unrect.Tests
 
     public CellValue ValueAt(int column, int row) => _inner.ValueAt(column, Read(row));
 
+    public bool TryGetTextAt(int column, int row, out string value, out CellProblem? problem)
+      => _inner.TryGetTextAt(column, Read(row), out value, out problem);
+
+    public bool TryGetDoubleAt(int column, int row, out double value, out CellProblem? problem)
+      => _inner.TryGetDoubleAt(column, Read(row), out value, out problem);
+
+    public bool TryGetDateAt(int column, int row, out System.DateTime value, out CellProblem? problem)
+      => _inner.TryGetDateAt(column, Read(row), out value, out problem);
+
+    public bool TryGetBooleanAt(int column, int row, out bool value, out CellProblem? problem)
+      => _inner.TryGetBooleanAt(column, Read(row), out value, out problem);
+
     /// <summary>
     /// Records one row touched and hands it straight back, so every member traces by using its
     /// argument rather than by remembering to.

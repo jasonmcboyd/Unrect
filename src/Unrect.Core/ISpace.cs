@@ -1,11 +1,20 @@
 namespace Unrect.Core
 {
   /// <summary>
-  /// The canonical surface of a grid: its extent, and the two questions anything may ask of a cell
+  /// The canonical surface of a grid: its extent, the two questions anything may ask of a cell
   /// without knowing what kind of data lies behind it — whether the cell counts as content, and
-  /// what it says. They are independent: neither is defined in terms of the other.
-  /// The text facet, which every space has because every space can render its cells, and which
-  /// carries nothing about kind: a plain CSV is an <see cref="ISpace"/> and nothing more.
+  /// what it says — and the four readings a cell may be asked for: the text it holds, a number, a
+  /// date, a boolean. The two questions are independent: neither is defined in terms of the other.
+  /// <para>
+  /// A space says how its cells may be read, and answers from its OWN store: an integer grid
+  /// converts its number, a sheet reads the cell's kind, a text source parses what the cell says.
+  /// No layer above a space decides what a backend's cell means. Each read hands back the value, or
+  /// the reason it could not be had — a <see cref="CellProblem"/> the space words in its own
+  /// vocabulary, <c>expected Number at B4, found Text</c>. Blank is decided first: a read is asked
+  /// only of a cell the space does not call blank, and <see cref="IsBlankAt"/> is the one blankness
+  /// question. Faithful to the store: a number is a double, and there is no decimal or integer here
+  /// because a store holds neither — those are conversions a reader makes above this contract.
+  /// </para>
   /// <para>
   /// One canonical surface, not one per capability: a backend that can do more says so by adding an
   /// interface of its own — the value facet, <c>IValueSpace&lt;TValue&gt;</c> in Unrect, first among them —
@@ -51,5 +60,21 @@ namespace Unrect.Core
     /// </summary>
     /// <exception cref="OutOfBoundsException">The coordinate lies outside <see cref="Extent"/>.</exception>
     string AsTextAt(int column, int row);
+
+    /// <summary>The text the cell holds, or why it holds none: a cell holding a number, a date or a boolean is not text.</summary>
+    /// <exception cref="OutOfBoundsException">The coordinate lies outside <see cref="Extent"/>.</exception>
+    bool TryGetTextAt(int column, int row, out string value, out CellProblem? problem);
+
+    /// <summary>The number the cell holds, or why it holds none.</summary>
+    /// <exception cref="OutOfBoundsException">The coordinate lies outside <see cref="Extent"/>.</exception>
+    bool TryGetDoubleAt(int column, int row, out double value, out CellProblem? problem);
+
+    /// <summary>The date the cell holds, or why it holds none.</summary>
+    /// <exception cref="OutOfBoundsException">The coordinate lies outside <see cref="Extent"/>.</exception>
+    bool TryGetDateAt(int column, int row, out System.DateTime value, out CellProblem? problem);
+
+    /// <summary>The boolean the cell holds, or why it holds none.</summary>
+    /// <exception cref="OutOfBoundsException">The coordinate lies outside <see cref="Extent"/>.</exception>
+    bool TryGetBooleanAt(int column, int row, out bool value, out CellProblem? problem);
   }
 }

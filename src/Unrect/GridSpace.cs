@@ -68,6 +68,69 @@ namespace Unrect
 
     /// <inheritdoc/>
     public string AsTextAt(int column, int row) => _asText(ValueAt(column, row));
+
+    // --- The four readings, answered from the value's own type ---------------------------------
+    //
+    // A grid holds whatever T is: a number converts, a boolean or a date is itself, a word parses,
+    // and a value of some other kind than the one asked for is refused the way a sheet refuses it.
+    // An object grid classifies each value by its runtime type, as its rendering already does.
+
+    /// <inheritdoc/>
+    public bool TryGetTextAt(int column, int row, out string value, out CellProblem? problem)
+    {
+      value = AsTextAt(column, row);
+      problem = null;
+      return true;
+    }
+
+    /// <inheritdoc/>
+    public bool TryGetDoubleAt(int column, int row, out double value, out CellProblem? problem)
+    {
+      var held = ValueAt(column, row);
+
+      switch (held)
+      {
+        case double number: value = number; problem = null; return true;
+        case int number: value = number; problem = null; return true;
+        case long number: value = number; problem = null; return true;
+        case float number: value = number; problem = null; return true;
+        case decimal number: value = (double)number; problem = null; return true;
+        case bool: value = default; problem = Found("Number", "Boolean"); return false;
+        case DateTime: value = default; problem = Found("Number", "Date"); return false;
+        default: return TextReads.TryDouble(_asText(held), out value, out problem);
+      }
+    }
+
+    /// <inheritdoc/>
+    public bool TryGetDateAt(int column, int row, out DateTime value, out CellProblem? problem)
+    {
+      var held = ValueAt(column, row);
+
+      switch (held)
+      {
+        case DateTime moment: value = moment; problem = null; return true;
+        case bool: value = default; problem = Found("Date", "Boolean"); return false;
+        case double: case int: case long: case float: case decimal: value = default; problem = Found("Date", "Number"); return false;
+        default: return TextReads.TryDate(_asText(held), out value, out problem);
+      }
+    }
+
+    /// <inheritdoc/>
+    public bool TryGetBooleanAt(int column, int row, out bool value, out CellProblem? problem)
+    {
+      var held = ValueAt(column, row);
+
+      switch (held)
+      {
+        case bool flag: value = flag; problem = null; return true;
+        case DateTime: value = default; problem = Found("Boolean", "Date"); return false;
+        case double: case int: case long: case float: case decimal: value = default; problem = Found("Boolean", "Number"); return false;
+        default: return TextReads.TryBoolean(_asText(held), out value, out problem);
+      }
+    }
+
+    private static CellProblem Found(string expected, string found)
+      => new CellProblem("expected " + expected + " at ", ", found " + found);
   }
 
   /// <summary>

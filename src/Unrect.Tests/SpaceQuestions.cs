@@ -28,7 +28,7 @@ namespace Unrect.Tests
 
     /// <summary>The same word as a message says it after "found": an error spells itself out.</summary>
     public static string Describe(this ICellSpace space, int column, int row)
-      => space.IsBlankAt(column, row) ? "Blank" : CellReading.Describe(space.ValueAt(column, row));
+      => space.IsBlankAt(column, row) ? "Blank" : CellKinds.Describe(space.ValueAt(column, row));
 
     /// <inheritdoc cref="Describe(ICellSpace, int, int)"/>
     public static string Describe(this Point<ICellSpace> point)

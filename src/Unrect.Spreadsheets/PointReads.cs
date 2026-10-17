@@ -226,7 +226,7 @@ namespace Unrect.Spreadsheets
     /// <param name="problem">Why not, when the answer is false; null when it is true.</param>
     public static bool TryGetText<TSpace>(this Point<TSpace> point, out string value, out CellProblem? problem)
       where TSpace : class, ICellSpace
-      => CellReading.Text(Content(point), out value, out problem);
+      => CellKinds.Text(Content(point), out value, out problem);
 
     /// <summary>The cell's number, if a number is what it holds.</summary>
     /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>
@@ -243,7 +243,7 @@ namespace Unrect.Spreadsheets
     /// <param name="problem">Why not, when the answer is false; null when it is true.</param>
     public static bool TryGetDouble<TSpace>(this Point<TSpace> point, out double value, out CellProblem? problem)
       where TSpace : class, ICellSpace
-      => CellReading.Double(Content(point), out value, out problem);
+      => CellKinds.Double(Content(point), out value, out problem);
 
     /// <summary>The cell's date or time, verbatim, if that is what it holds.</summary>
     /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>
@@ -260,7 +260,7 @@ namespace Unrect.Spreadsheets
     /// <param name="problem">Why not, when the answer is false; null when it is true.</param>
     public static bool TryGetDate<TSpace>(this Point<TSpace> point, out DateTime value, out CellProblem? problem)
       where TSpace : class, ICellSpace
-      => CellReading.DateTime(Content(point), out value, out problem);
+      => CellKinds.DateTime(Content(point), out value, out problem);
 
     /// <summary>The cell's boolean, if a boolean is what it holds.</summary>
     /// <typeparam name="TSpace">The sheet the point addresses a cell of.</typeparam>
@@ -277,7 +277,7 @@ namespace Unrect.Spreadsheets
     /// <param name="problem">Why not, when the answer is false; null when it is true.</param>
     public static bool TryGetBoolean<TSpace>(this Point<TSpace> point, out bool value, out CellProblem? problem)
       where TSpace : class, ICellSpace
-      => CellReading.Boolean(Content(point), out value, out problem);
+      => CellKinds.Boolean(Content(point), out value, out problem);
 
     /// <summary>
     /// The value a kinded read sees: what the cell holds, unless the space calls the cell blank, in

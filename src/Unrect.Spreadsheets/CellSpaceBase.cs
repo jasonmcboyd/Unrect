@@ -9,7 +9,9 @@ namespace Unrect.Spreadsheets
   /// two sheets can disagree about a cell: a cell counts as content unless it holds nothing, or
   /// holds text the space's blankness rule calls blank; and it says what its value renders as, the
   /// empty string for nothing. What a cell says and whether it counts are two questions, so a cell
-  /// the rule calls blank still says its text. An implementer writes the extent and <c>ValueAt</c>.
+  /// the rule calls blank still says its text. The four readings are answered from the value the
+  /// same way, a cell the rule calls blank reading as blank to every one of them. An implementer
+  /// writes the extent and <c>ValueAt</c>.
   /// </summary>
   public abstract class CellSpaceBase : ICellSpace
   {
@@ -38,5 +40,24 @@ namespace Unrect.Spreadsheets
 
     /// <inheritdoc/>
     public string AsTextAt(int column, int row) => ValueAt(column, row).AsText();
+
+    /// <inheritdoc/>
+    public bool TryGetTextAt(int column, int row, out string value, out CellProblem? problem)
+      => CellKinds.Text(Content(column, row), out value, out problem);
+
+    /// <inheritdoc/>
+    public bool TryGetDoubleAt(int column, int row, out double value, out CellProblem? problem)
+      => CellKinds.Double(Content(column, row), out value, out problem);
+
+    /// <inheritdoc/>
+    public bool TryGetDateAt(int column, int row, out DateTime value, out CellProblem? problem)
+      => CellKinds.DateTime(Content(column, row), out value, out problem);
+
+    /// <inheritdoc/>
+    public bool TryGetBooleanAt(int column, int row, out bool value, out CellProblem? problem)
+      => CellKinds.Boolean(Content(column, row), out value, out problem);
+
+    /// <summary>The value a kinded read sees: a cell the blankness rule calls blank is blank to it, whatever text it holds.</summary>
+    private CellValue Content(int column, int row) => IsBlankAt(column, row) ? CellValue.Blank : ValueAt(column, row);
   }
 }

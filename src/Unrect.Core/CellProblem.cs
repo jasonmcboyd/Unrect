@@ -1,4 +1,4 @@
-namespace Unrect.Projections
+namespace Unrect.Core
 {
   /// <summary>
   /// The reason a read was refused: a sentence awaiting an address. A read that fails knows what it
