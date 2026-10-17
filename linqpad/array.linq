@@ -17,7 +17,7 @@
 // this file's space once, `using static Unrect.Fluent.ProjectionBuilders<Unrect.IValueSpace<int>>`,
 // which is the same line the spreadsheet scripts carry with ICellSpace in it: one vocabulary, each
 // file naming the space it is written over. What differs is only what a cell can be asked — a point
-// over a grid of values answers Value(), a point over a sheet answers Decimal() — because the
+// over a grid of values answers Value(), a point over a sheet answers Point().Decimal() — because the
 // reading a space can promise is the space's own.
 var nums = new[,]
 {

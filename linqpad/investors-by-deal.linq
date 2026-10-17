@@ -10,18 +10,17 @@
   <Namespace>Unrect.Fluent</Namespace>
   <Namespace>Unrect.Projections</Namespace>
   <Namespace>static Unrect.Fluent.ProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;</Namespace>
-  <Namespace>static Unrect.Spreadsheets.SpreadsheetProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;</Namespace>
 </Query>
 
 // The space is named once, in the query's namespace imports: the canonical vocabulary as
 // `using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>`, and the
-// sheet's own readings — Text() and the Table<T> rungs used below — as
-// `using static Unrect.Spreadsheets.SpreadsheetProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>`.
+// sheet's own readings — Point().Text() and the Table<T> rungs used below — as
+// `using static Unrect.Spreadsheets.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>`.
 var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\examples\investors-by-deal.xlsx");
 
 // One deal block: a deal-code cell over a table. Block extents are derived from what the
 // block's children consume, so blocks may differ in length.
-var dealCode = Text();
+var dealCode = Point().Text();
 
 // Every caption binds free — this is the comparer earning its keep, and why it ignores whitespace
 // rather than demanding an exact match.

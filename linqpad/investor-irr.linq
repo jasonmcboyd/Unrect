@@ -7,7 +7,6 @@
   <Reference Relative="..\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Spreadsheets\bin\Debug\netstandard2.1\Unrect.Spreadsheets.dll</Reference>
   <Reference Relative="..\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll">&lt;UserProfile&gt;\source\repos\Unrect\src\Unrect.Strategies\bin\Debug\netstandard2.1\Unrect.Strategies.dll</Reference>
   <Namespace>static Unrect.Fluent.ProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;</Namespace>
-  <Namespace>static Unrect.Spreadsheets.SpreadsheetProjectionBuilders&lt;Unrect.Spreadsheets.ISpreadsheetSpace&gt;</Namespace>
   <Namespace>Unrect.Core</Namespace>
   <Namespace>Unrect.Fluent</Namespace>
   <Namespace>Unrect.Projections</Namespace>
@@ -18,8 +17,8 @@ var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\exam
 
 // The space is named once, in the query's namespace imports: the canonical vocabulary as
 // `using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>`, and the
-// sheet's own readings — Text(), Date() and the Table<T> rungs — as
-// `using static Unrect.Spreadsheets.SpreadsheetProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>`.
+// sheet's own readings — Point().Text(), Point().Date() and the Table<T> rungs — as
+// `using static Unrect.Spreadsheets.ProjectionBuilders<Unrect.Spreadsheets.ISpreadsheetSpace>`.
 //
 // What this demonstrates: ONE projection declared once and PLACED TWICE, and Until — the dual of
 // On. The sheet carries the same per-investor blocks twice, under two headings:
@@ -34,10 +33,10 @@ var path = Path.Combine(Path.GetDirectoryName(Util.CurrentQueryPath)!, @"..\exam
 // consumed in full — the next child's own seek finds that row at distance zero.
 var reportHeader = VerticalFlow(v => new
 {
-	Title = v.Next(Text()),
-	Fund = v.Next(Text()),
-	ReportDate = v.Next(Date()),
-	ReportId = v.Next(Text()),
+	Title = v.Text(),
+	Fund = v.Text(),
+	ReportDate = v.Date(),
+	ReportId = v.Text(),
 });
 
 // Five of six captions bind with nothing said: the comparer ignores case and whitespace, so

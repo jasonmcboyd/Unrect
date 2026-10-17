@@ -71,13 +71,11 @@ Cash Flows using inception date
 using Unrect.Fluent;
 using Unrect.Spreadsheets;
 using static Unrect.Fluent.ProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-using static Unrect.Spreadsheets.SheetProjectionBuilders<Unrect.Spreadsheets.ICellSpace>;
-
 var header = VerticalFlow(v => new
 {
-    Title = v.Next(Text()),
-    Fund = v.Next(Text()),
-    ReportDate = v.Next(Date()),
+    Title = v.Text(),
+    Fund = v.Text(),
+    ReportDate = v.Date(),
 });
 
 // Captions bind to record properties by name (case- and whitespace-insensitive).
