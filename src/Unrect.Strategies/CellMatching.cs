@@ -35,8 +35,9 @@ namespace Unrect.Strategies
   /// more than anyone wants; each is scoped on purpose, and they are not to be unified.
   /// </para>
   /// </summary>
-  internal static class CellMatching
+  public static class CellMatching
   {
+    /// <summary>A row rule: row <c>n</c> of a region has a cell <paramref name="cell"/> accepts.</summary>
     public static Func<Plane<TSpace>, int, bool> AnyCellInRow<TSpace>(Func<Point<TSpace>, bool> cell)
       where TSpace : class, ISpace
       => (space, row) =>
@@ -48,6 +49,7 @@ namespace Unrect.Strategies
         return false;
       };
 
+    /// <summary>A column rule: column <c>n</c> of a region has a cell <paramref name="cell"/> accepts.</summary>
     public static Func<Plane<TSpace>, int, bool> AnyCellInColumn<TSpace>(Func<Point<TSpace>, bool> cell)
       where TSpace : class, ISpace
       => (space, column) =>

@@ -16,7 +16,13 @@
     <!-- So the tests can reach IOpaqueComposite, which marks a composite whose children exist only
          while it runs; asserting that through reflection was the alternative. -->
     <InternalsVisibleTo Include="Unrect.Tests" />
-    <!-- The builders construct the nodes, whose constructors stay internal until they are opened one by one. -->
+    <!-- The builders compose tables and records over seams the model keeps internal — the label
+         resolution a binder needs (LabelMap.Bound/BoundByPath/Column/AddressOf and its Failure/Note
+         wording), TableView.ClassifiedRows/BodyRows/Failure, BlankRowStrategy.IsStop,
+         Placement.OffsetWasDeclared (whether a movement composes onto a declared offset) and
+         PathRenderer for a refusal's wording. Every NODE is public with a public constructor, so a
+         projection can be built by hand without this grant; it exists for the table and record
+         composition alone. -->
     <InternalsVisibleTo Include="Unrect.Fluent" />
 
     <!-- So a backend can be a first-class part of this vocabulary rather than a consumer of it:

@@ -4,20 +4,35 @@ using Unrect.Core;
 
 namespace Unrect.Projections
 {
-  internal sealed class StripDefinition<TSpace, T> : CollectorNode<TSpace, T>
+  /// <summary>
+  /// The strip leaf: one row or one column, handed to a lambda as a <see cref="CellStrip{TSpace}"/>
+  /// of points, read at close. What <c>Row(cells =&gt; …)</c> and <c>Column(cells =&gt; …)</c> declare.
+  /// </summary>
+  /// <typeparam name="TSpace">The space the strip is read from.</typeparam>
+  /// <typeparam name="T">What the lambda makes of it.</typeparam>
+  public sealed class StripDefinition<TSpace, T> : CollectorNode<TSpace, T>
     where TSpace : class, ISpace
   {
+    /// <summary>
+    /// A one-line leaf — a row when <paramref name="orientation"/> is horizontal, a column when vertical — handed to <paramref name="project"/> as a <see cref="CellStrip{TSpace}"/>.
+    /// <para>Fluent: <c>Row(cells =&gt; …)</c>.</para>
+    /// </summary>
+    /// <param name="orientation">Which way the strip runs.</param>
+    /// <param name="project">What to make of the strip.</param>
+    /// <param name="placement">Where the strip is.</param>
+    /// <param name="description">The path segment, such as <c>Row</c> or <c>Column</c>.</param>
     public StripDefinition(Orientation orientation, Func<CellStrip<TSpace>, T> project, Placement<TSpace> placement, string description)
       : base(placement)
     {
       Orientation = orientation;
       Projection = project ?? throw new ArgumentNullException(nameof(project));
-      Description = description;
+      Description = description ?? throw new ArgumentNullException(nameof(description));
     }
 
     private Orientation Orientation { get; }
     private Func<CellStrip<TSpace>, T> Projection { get; }
 
+    /// <inheritdoc/>
     public override string Description { get; }
 
     /// <summary>A row strip is one row-span; a column strip is one column-span, held and re-driven under a row-major driver.</summary>

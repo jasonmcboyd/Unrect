@@ -45,7 +45,7 @@ namespace Unrect.Projections
     /// cannot promise that type survives being built from nothing; a declaration written in the
     /// vocabulary assembles and needs no such door.
     /// </summary>
-    internal bool Recording => _pass is RecordingPass<TSpace>;
+    public bool Recording => _pass is RecordingPass<TSpace>;
 
     /// <summary>
     /// Declares <paramref name="projection"/> as the next child and hands back what it read: in a

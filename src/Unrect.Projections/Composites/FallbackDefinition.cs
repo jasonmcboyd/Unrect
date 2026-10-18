@@ -15,9 +15,19 @@ namespace Unrect.Projections
   /// <c>x.Optional().On(anchor)</c> does not.
   /// </para>
   /// </summary>
-  internal sealed class FallbackDefinition<TSpace, T> : DefinitionNode<TSpace, T>
+  public sealed class FallbackDefinition<TSpace, T> : DefinitionNode<TSpace, T>
     where TSpace : class, ISpace
   {
+    /// <summary>
+    /// A tolerance boundary: <paramref name="inner"/>'s failure over the data is absorbed and <paramref name="fallback"/> is tried in its place, or <paramref name="fallbackValue"/> stands in when there is none.
+    /// <para>Fluent: <c>inner.Optional()</c>.</para>
+    /// </summary>
+    /// <param name="inner">What is tolerated.</param>
+    /// <param name="fallback">What is tried instead; null for a value alone.</param>
+    /// <param name="fallbackValue">The value when nothing is tried instead, such as <c>null</c> for <c>Optional</c>.</param>
+    /// <param name="placement">Where the boundary is.</param>
+    /// <param name="description">The path segment, such as <c>Optional</c> or <c>Else</c>.</param>
+    /// <param name="fallbackSite">How the fallback was declared, for its path segment.</param>
     public FallbackDefinition(
       IProjectionDefinition<TSpace, T> inner,
       IProjectionDefinition<TSpace, T>? fallback,
@@ -30,7 +40,7 @@ namespace Unrect.Projections
       Inner = inner ?? throw new ArgumentNullException(nameof(inner));
       Fallback = fallback;
       FallbackValue = fallbackValue;
-      Description = description;
+      Description = description ?? throw new ArgumentNullException(nameof(description));
       FallbackSite = fallbackSite;
       Children = fallback is null ? new[] { new Child(inner, default) } : new[] { new Child(inner, default), new Child(fallback, fallbackSite) };
     }
@@ -42,14 +52,19 @@ namespace Unrect.Projections
     /// <summary>What the declaration called the fallback, so a stand-in names itself as written.</summary>
     private UseSite FallbackSite { get; }
 
+    /// <inheritdoc/>
     public override string Description { get; }
 
+    /// <inheritdoc/>
     public override IReadOnlyList<Child> Children { get; }
 
+    /// <inheritdoc/>
     public override bool IsWrapper => true;
 
+    /// <inheritdoc/>
     public override Axes Axis => (Fallback is null ? Inner.Axis : Inner.Axis & Fallback.Axis).OrEither();
 
+    /// <inheritdoc/>
     public override IProjector<TSpace, T> Build(ProjectorScope<TSpace> scope) => new Machine(this, scope);
 
     /// <summary>

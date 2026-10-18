@@ -32,7 +32,9 @@ namespace Unrect.Projections
     /// <paramref name="ordinal"/>, or to its description where there is no ordinal either. The top
     /// rung needs no code: a projection's own name always wins.
     /// </summary>
-    internal static UseSite From(string? declared, int? ordinal)
+    /// <param name="declared">The text the child was declared as; kept as the name only when it is a bare identifier.</param>
+    /// <param name="ordinal">The child's 1-based position among its siblings, or null.</param>
+    public static UseSite From(string? declared, int? ordinal)
       => new UseSite(IsIdentifier(declared) ? declared : null, ordinal);
 
     /// <summary>

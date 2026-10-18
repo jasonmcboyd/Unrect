@@ -14,9 +14,19 @@ namespace Unrect.Projections
   /// the stride and the bound stay two separate declarations.
   /// </para>
   /// </summary>
-  internal sealed class BandsDefinition<TSpace, T> : DefinitionNode<TSpace, IReadOnlyList<T>>
+  public sealed class BandsDefinition<TSpace, T> : DefinitionNode<TSpace, IReadOnlyList<T>>
     where TSpace : class, ISpace
   {
+    /// <summary>
+    /// The tiler: the region cut into bands of a declared <paramref name="stride"/> along <paramref name="orientation"/>, <paramref name="each"/> applied to every band.
+    /// <para>Fluent: <c>VerticalBands(rows: 3, each)</c>.</para>
+    /// </summary>
+    /// <param name="each">The projection applied to every band.</param>
+    /// <param name="orientation">Which way the bands are stacked.</param>
+    /// <param name="stride">How many rows or columns a band is; at least one.</param>
+    /// <param name="eachSite">How the item was declared, for its path segment; <c>default</c> for kind-and-position.</param>
+    /// <param name="onBlank">What a fully blank band means; null for the default, which stops.</param>
+    /// <param name="placement">Where the tiled region is.</param>
     public BandsDefinition(
       IProjectionDefinition<TSpace, T> each,
       Orientation orientation,
@@ -28,7 +38,7 @@ namespace Unrect.Projections
     {
       Each = each ?? throw new ArgumentNullException(nameof(each));
       Orientation = orientation;
-      Stride = stride;
+      Stride = stride >= 1 ? stride : throw new ArgumentOutOfRangeException(nameof(stride), stride, "A band is at least one row or column across.");
       EachSite = eachSite;
       OnBlank = onBlank;
       Children = new[] { new Child(each, eachSite) };
@@ -47,12 +57,16 @@ namespace Unrect.Projections
     /// <summary>How a fully-blank band is treated, or null to project every band there is.</summary>
     private BlankRowStrategy? OnBlank { get; }
 
+    /// <inheritdoc/>
     public override string Description => Orientation == Orientation.Vertical ? "VerticalBands" : "HorizontalBands";
 
+    /// <inheritdoc/>
     public override IReadOnlyList<Child> Children { get; }
 
+    /// <inheritdoc/>
     public override Axes Axis => Orientation.Of();
 
+    /// <inheritdoc/>
     public override IProjector<TSpace, IReadOnlyList<T>> Build(ProjectorScope<TSpace> scope) => new Machine(this, scope);
 
     /// <summary>

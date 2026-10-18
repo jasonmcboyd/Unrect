@@ -1,3 +1,5 @@
+using System;
+
 namespace Unrect.Projections
 {
   /// <summary>
@@ -7,8 +9,12 @@ namespace Unrect.Projections
   /// </summary>
   public sealed class Field
   {
-    internal Field(string label)
+    /// <summary>A field whose left cell must say <paramref name="label"/>; refused when null or empty.</summary>
+    public Field(string label)
     {
+      if (string.IsNullOrEmpty(label))
+        throw new ArgumentException("A field label must say something.", nameof(label));
+
       Label = label;
     }
 

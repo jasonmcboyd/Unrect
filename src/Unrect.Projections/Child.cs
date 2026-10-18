@@ -8,7 +8,8 @@ namespace Unrect.Projections
   /// </summary>
   public readonly struct Child
   {
-    internal Child(IProjectionDefinition definition, UseSite site)
+    /// <summary>An edge from a parent to <paramref name="definition"/>, declared at <paramref name="site"/>.</summary>
+    public Child(IProjectionDefinition definition, UseSite site)
     {
       Definition = definition;
       Site = site;

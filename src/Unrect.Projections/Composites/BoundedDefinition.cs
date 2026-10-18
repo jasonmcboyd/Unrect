@@ -14,9 +14,17 @@ namespace Unrect.Projections
   /// arithmetic underneath is the same "rows up to the landmark by full width" a strategy would do.
   /// </para>
   /// </summary>
-  internal sealed class BoundedDefinition<TSpace, TResult> : DefinitionNode<TSpace, TResult>
+  public sealed class BoundedDefinition<TSpace, TResult> : DefinitionNode<TSpace, TResult>
     where TSpace : class, ISpace
   {
+    /// <summary>
+    /// <paramref name="inner"/> ended just before the line <paramref name="landmark"/> finds, the bound consumed in full.
+    /// <para>Fluent: <c>inner.Until(RowSaying("Total"))</c>.</para>
+    /// </summary>
+    /// <param name="inner">What is bounded.</param>
+    /// <param name="landmark">The line the region ends before.</param>
+    /// <param name="orEnd">Whether a landmark that is never found ends the region at the end of the space instead of failing.</param>
+    /// <param name="placement">Where the bounded region starts.</param>
     public BoundedDefinition(IProjectionDefinition<TSpace, TResult> inner, ILineLandmark<TSpace> landmark, bool orEnd, Placement<TSpace> placement)
       : base(placement)
     {
@@ -32,8 +40,10 @@ namespace Unrect.Projections
 
     private bool IsVertical => Landmark.Along == Orientation.Vertical;
 
+    /// <inheritdoc/>
     public override string Description => Spelling(Landmark);
 
+    /// <inheritdoc/>
     public override IReadOnlyList<Child> Children { get; }
 
     /// <summary>Like a pad: a bound the user wrote as part of a projection is not a level of the tree.</summary>
@@ -45,6 +55,7 @@ namespace Unrect.Projections
     /// would replace the end already declared, and the landmark it replaced would never be looked
     /// for: the erasure is silent and total.
     /// </summary>
+    /// <summary>The refusal for a second bound written on this one: a projection has one end.</summary>
     public ArgumentException AlreadyEnded(ILineLandmark<TSpace> landmark)
       => new ArgumentException(
         $"{PathRenderer.DescribeThrough(this)} already ends at a landmark, and {Spelling(landmark)} would "
@@ -56,6 +67,7 @@ namespace Unrect.Projections
     /// <summary>A bound is driven along its landmark's axis: a row landmark is looked for on each row span, a column landmark on each column span.</summary>
     public override Axes Axis => Landmark.Along.Of();
 
+    /// <inheritdoc/>
     public override IProjector<TSpace, TResult> Build(ProjectorScope<TSpace> scope) => new Machine(this, scope);
 
     /// <summary>

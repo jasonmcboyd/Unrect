@@ -11,7 +11,7 @@ namespace Unrect.Projections
   /// </summary>
   /// <typeparam name="TSpace">The space this projection is written over.</typeparam>
   /// <typeparam name="TResult">What reading the region produces.</typeparam>
-  internal abstract class CollectorNode<TSpace, TResult> : DefinitionNode<TSpace, TResult>
+  public abstract class CollectorNode<TSpace, TResult> : DefinitionNode<TSpace, TResult>
     where TSpace : class, ISpace
   {
     private protected CollectorNode(Placement<TSpace> placement)
@@ -24,6 +24,7 @@ namespace Unrect.Projections
 
     internal sealed override bool Collects => true;
 
+    /// <inheritdoc/>
     public sealed override IProjector<TSpace, TResult> Build(ProjectorScope<TSpace> scope)
       => new SpanCountProjector<TSpace, TResult>(this, scope, SpanCount);
 

@@ -11,10 +11,10 @@ namespace Unrect.Projections
   /// combiner applied to what they read. Subclasses differ in one thing: the machine they build,
   /// which is what decides whether a child moves the next one along.
   /// </summary>
-  internal abstract class LayoutDefinition<TSpace, T> : DefinitionNode<TSpace, T>
+  public abstract class LayoutDefinition<TSpace, T> : DefinitionNode<TSpace, T>
     where TSpace : class, ISpace
   {
-    protected LayoutDefinition(Layout<TSpace, T> layout, Placement<TSpace> placement)
+    private protected LayoutDefinition(Layout<TSpace, T> layout, Placement<TSpace> placement)
       : base(placement)
     {
       Layout = layout ?? throw new ArgumentNullException(nameof(layout));
@@ -22,6 +22,7 @@ namespace Unrect.Projections
 
     private protected Layout<TSpace, T> Layout { get; }
 
+    /// <inheritdoc/>
     public override IReadOnlyList<Child> Children => Layout.Children;
   }
 }

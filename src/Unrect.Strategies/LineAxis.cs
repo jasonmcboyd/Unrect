@@ -9,9 +9,10 @@ namespace Unrect.Strategies
   /// line rule says which axis it is about, and a declaration that passes a column rule where a
   /// row rule was wanted is refused where it is written, with the two axes named.
   /// </summary>
-  internal static class LineAxis
+  public static class LineAxis
   {
-    internal static ILineStrategy<TSpace> Require<TSpace>(ILineStrategy<TSpace> strategy, Orientation along, string parameter)
+    /// <summary><paramref name="strategy"/> itself when it is about <paramref name="along"/>; otherwise refused, naming <paramref name="parameter"/>.</summary>
+    public static ILineStrategy<TSpace> Require<TSpace>(ILineStrategy<TSpace> strategy, Orientation along, string parameter)
       where TSpace : class, ISpace
     {
       if (strategy is null)
@@ -23,7 +24,8 @@ namespace Unrect.Strategies
       return strategy;
     }
 
-    internal static ILineLandmark<TSpace> Require<TSpace>(ILineLandmark<TSpace> landmark, Orientation along, string parameter)
+    /// <summary><paramref name="landmark"/> itself when it looks along <paramref name="along"/>; otherwise refused, naming <paramref name="parameter"/>.</summary>
+    public static ILineLandmark<TSpace> Require<TSpace>(ILineLandmark<TSpace> landmark, Orientation along, string parameter)
       where TSpace : class, ISpace
     {
       if (landmark is null)

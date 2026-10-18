@@ -368,8 +368,8 @@ namespace Unrect.Tests.Projections
         "Body").AsUnit("Outer");
 
     /// <summary>A layout of exactly one child, declared with no use-site text — as a factory declares the parts it assembles.</summary>
-    private static Layout<ICellSpace, T> SingleChild<T>(IProjectionDefinition<ICellSpace, T> child)
-      => Layout<ICellSpace, T>.Declare(flow => flow.Next(child, declared: null), "a flow", nameof(child));
+    private static LayoutDeclaration<ICellSpace, T> SingleChild<T>(IProjectionDefinition<ICellSpace, T> child)
+      => flow => flow.Next(child, declared: null);
 
     [Fact]
     public void NestedUnitsBothFoldAndNeitherLeaksScaffolding()

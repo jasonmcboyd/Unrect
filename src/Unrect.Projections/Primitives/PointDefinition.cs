@@ -7,14 +7,20 @@ namespace Unrect.Projections
   /// name: a point answers the canonical questions, and a backend's own extension answers the rest.
   /// </summary>
   /// <typeparam name="TSpace">The space the point addresses a cell of.</typeparam>
-  internal sealed class PointDefinition<TSpace> : CollectorNode<TSpace, Point<TSpace>>
+  public sealed class PointDefinition<TSpace> : CollectorNode<TSpace, Point<TSpace>>
     where TSpace : class, ISpace
   {
+    /// <summary>
+    /// The one cell leaf: a 1x1 region whose value is the cell's own address, for every reading to be an extension on.
+    /// <para>Fluent: <c>Point()</c>.</para>
+    /// </summary>
+    /// <param name="placement">Where the cell is; the fluent spelling places it at the leading edge.</param>
     public PointDefinition(Placement<TSpace> placement)
       : base(placement)
     {
     }
 
+    /// <inheritdoc/>
     public override string Description => "Point";
 
     internal override Settlement<Point<TSpace>> Collect(Plane<TSpace> extent, ProjectorScope<TSpace> scope)

@@ -14,13 +14,14 @@ namespace Unrect.Projections
   /// named — so it is available to the law tests and to whatever mints one while rewriting later.
   /// </para>
   /// </summary>
-  internal sealed class NothingDefinition<TSpace, T> : CollectorNode<TSpace, T>
+  public sealed class NothingDefinition<TSpace, T> : CollectorNode<TSpace, T>
     where TSpace : class, ISpace
   {
     /// <summary>
     /// The one of them. A projection is an immutable value applied to many spaces, and this one has
     /// no state to vary, so there is nothing for a second instance to be.
     /// </summary>
+    /// <summary>The one instance: it consumes nothing and yields <c>default</c>.</summary>
     public static readonly IProjectionDefinition<TSpace, T> Instance = new NothingDefinition<TSpace, T>();
 
     private NothingDefinition()
@@ -28,6 +29,7 @@ namespace Unrect.Projections
     {
     }
 
+    /// <inheritdoc/>
     public override string Description => "Nothing";
 
     internal override int SpanCount => 0;

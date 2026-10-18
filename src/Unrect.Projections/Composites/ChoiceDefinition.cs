@@ -12,12 +12,24 @@ namespace Unrect.Projections
   /// it absorbed on its way to failing is rolled back — a branch that did not win says nothing
   /// beyond the one line explaining itself.
   /// </summary>
-  internal sealed class ChoiceDefinition<TSpace, T> : DefinitionNode<TSpace, T>
+  public sealed class ChoiceDefinition<TSpace, T> : DefinitionNode<TSpace, T>
     where TSpace : class, ISpace
   {
+    /// <summary>
+    /// The first of <paramref name="alternatives"/> that succeeds, each tried over the same region in order.
+    /// <para>Fluent: <c>Choice(a, b, c)</c>.</para>
+    /// </summary>
+    /// <param name="alternatives">At least two projections of one result type; a null among them is refused.</param>
+    /// <param name="placement">Where the alternatives are tried.</param>
     public ChoiceDefinition(IReadOnlyList<IProjectionDefinition<TSpace, T>> alternatives, Placement<TSpace> placement)
       : base(placement)
     {
+      if (alternatives is null)
+        throw new ArgumentNullException(nameof(alternatives));
+
+      if (alternatives.Count < 2)
+        throw new ArgumentException("A choice needs at least two alternatives.", nameof(alternatives));
+
       var copy = new IProjectionDefinition<TSpace, T>[alternatives.Count];
       var children = new Child[alternatives.Count];
 
@@ -35,10 +47,13 @@ namespace Unrect.Projections
 
     private IProjectionDefinition<TSpace, T>[] Alternatives { get; }
 
+    /// <inheritdoc/>
     public override string Description => "Choice";
 
+    /// <inheritdoc/>
     public override IReadOnlyList<Child> Children { get; }
 
+    /// <inheritdoc/>
     public override Axes Axis
     {
       get
@@ -52,6 +67,7 @@ namespace Unrect.Projections
       }
     }
 
+    /// <inheritdoc/>
     public override IProjector<TSpace, T> Build(ProjectorScope<TSpace> scope) => new Machine(this, scope);
 
     /// <summary>

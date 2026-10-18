@@ -27,10 +27,18 @@ namespace Unrect.Projections
   /// </summary>
   /// <typeparam name="TSpace">The space the leaf is declared over.</typeparam>
   /// <typeparam name="TResult">What the leaf hands back.</typeparam>
-  internal sealed class ReadDefinition<TSpace, TResult> : CollectorNode<TSpace, TResult>
+  public sealed class ReadDefinition<TSpace, TResult> : CollectorNode<TSpace, TResult>
     where TSpace : class, ISpace
   {
-    internal ReadDefinition(string kind, CellRead<TSpace, TResult> read, Placement<TSpace> placement, bool blankIsNull)
+    /// <summary>
+    /// A one-cell leaf that reads the cell through <paramref name="read"/> and fails with the read's own sentence, under the name <paramref name="kind"/>.
+    /// <para>Fluent: <c>Point().Decimal()</c>.</para>
+    /// </summary>
+    /// <param name="kind">The path segment and the word in the failure sentence, such as <c>Decimal</c>.</param>
+    /// <param name="read">The reading: the value, or the <see cref="CellProblem"/> saying why not.</param>
+    /// <param name="placement">Where the cell is.</param>
+    /// <param name="blankIsNull">Whether a blank cell yields <c>default</c> rather than failing; the <c>OrBlank</c> forms set it.</param>
+    public ReadDefinition(string kind, CellRead<TSpace, TResult> read, Placement<TSpace> placement, bool blankIsNull)
       : base(placement)
     {
       Kind = kind ?? throw new ArgumentNullException(nameof(kind));
@@ -53,6 +61,7 @@ namespace Unrect.Projections
     /// </summary>
     public bool BlankIsNull { get; }
 
+    /// <inheritdoc/>
     public override string Description => BlankIsNull ? Kind + "?" : Kind;
 
     internal override Settlement<TResult> Collect(Plane<TSpace> extent, ProjectorScope<TSpace> scope)
@@ -82,7 +91,7 @@ namespace Unrect.Projections
     /// </summary>
     /// <typeparam name="TValue">The nullable form of <typeparamref name="TResult"/>.</typeparam>
     /// <param name="widen">The widening, which is the identity conversion at run time.</param>
-    internal IProjectionDefinition<TSpace, TValue> Tolerating<TValue>(Func<TResult, TValue> widen)
+    public IProjectionDefinition<TSpace, TValue> Tolerating<TValue>(Func<TResult, TValue> widen)
     {
       var read = Read;
 

@@ -1,3 +1,5 @@
+using System;
+
 using Unrect.Core;
 
 namespace Unrect.Projections
@@ -14,17 +16,27 @@ namespace Unrect.Projections
   /// own, so a header and the body beneath it describe the same columns.
   /// </para>
   /// </summary>
-  internal sealed class ColumnLabelsDefinition<TSpace> : CollectorNode<TSpace, LabelMap>
+  public sealed class ColumnLabelsDefinition<TSpace> : CollectorNode<TSpace, LabelMap>
     where TSpace : class, ISpace
   {
+    /// <summary>
+    /// The header of a table read as a <see cref="LabelMap"/>: <paramref name="headerRows"/> rows, the last of captions and every row above it of bands.
+    /// <para>Fluent: <c>ColumnLabels(2)</c>.</para>
+    /// </summary>
+    /// <param name="headerRows">How many rows the header is; at least one.</param>
+    /// <param name="placement">Where the header starts; its height is the row count.</param>
     public ColumnLabelsDefinition(int headerRows, Placement<TSpace> placement)
       : base(placement)
-      => HeaderRows = headerRows;
+      => HeaderRows = headerRows >= 1
+        ? headerRows
+        : throw new ArgumentOutOfRangeException(nameof(headerRows), headerRows, "A header is at least one row.");
 
     private int HeaderRows { get; }
 
+    /// <inheritdoc/>
     public override string Description => "ColumnLabels";
 
+    /// <inheritdoc/>
     public override Axes Axis => Axes.Vertical;
 
     internal override int SpanCount => HeaderRows;

@@ -28,14 +28,14 @@ namespace Unrect.Fluent
     /// <param name="point">The cell to read.</param>
     public static IProjectionDefinition<TSpace, string> Text<TSpace>(this IProjectionDefinition<TSpace, Point<TSpace>> point)
       where TSpace : class, ISpace
-      => CellReadLeaves.Over<TSpace, string>(point, "Text", (Point<TSpace> cell, out string v, out CellProblem? p) => Readings.TryText(cell, out v, out p));
+      => CellReadLeaves.Over<TSpace, string>(point, "Text", (Point<TSpace> cell, out string v, out CellProblem? p) => cell.TryGetText(out v, out p));
 
     /// <summary>The cell, read as a number — a <see cref="double"/>, which is what a store holds.</summary>
     /// <typeparam name="TSpace">The space the point is declared over.</typeparam>
     /// <param name="point">The cell to read.</param>
     public static IProjectionDefinition<TSpace, double> Double<TSpace>(this IProjectionDefinition<TSpace, Point<TSpace>> point)
       where TSpace : class, ISpace
-      => CellReadLeaves.Over<TSpace, double>(point, "Double", (Point<TSpace> cell, out double v, out CellProblem? p) => Readings.TryDouble(cell, out v, out p));
+      => CellReadLeaves.Over<TSpace, double>(point, "Double", (Point<TSpace> cell, out double v, out CellProblem? p) => cell.TryGetDouble(out v, out p));
 
     /// <summary>
     /// The cell, read as a number and converted to a <see cref="decimal"/> — the reading for money,
@@ -45,7 +45,7 @@ namespace Unrect.Fluent
     /// <param name="point">The cell to read.</param>
     public static IProjectionDefinition<TSpace, decimal> Decimal<TSpace>(this IProjectionDefinition<TSpace, Point<TSpace>> point)
       where TSpace : class, ISpace
-      => CellReadLeaves.Over<TSpace, decimal>(point, "Decimal", (Point<TSpace> cell, out decimal v, out CellProblem? p) => Readings.TryDecimal(cell, out v, out p));
+      => CellReadLeaves.Over<TSpace, decimal>(point, "Decimal", (Point<TSpace> cell, out decimal v, out CellProblem? p) => cell.TryGetDecimal(out v, out p));
 
     /// <summary>
     /// The cell, read as a whole number. A number that is really there but is fractional or out of
@@ -55,7 +55,7 @@ namespace Unrect.Fluent
     /// <param name="point">The cell to read.</param>
     public static IProjectionDefinition<TSpace, int> Integer<TSpace>(this IProjectionDefinition<TSpace, Point<TSpace>> point)
       where TSpace : class, ISpace
-      => CellReadLeaves.Over<TSpace, int>(point, "Integer", (Point<TSpace> cell, out int v, out CellProblem? p) => Readings.TryInteger(cell, out v, out p));
+      => CellReadLeaves.Over<TSpace, int>(point, "Integer", (Point<TSpace> cell, out int v, out CellProblem? p) => cell.TryGetInteger(out v, out p));
 
     /// <summary>
     /// The cell, read as a date or time, verbatim. The time of day is kept: truncating is
@@ -66,14 +66,14 @@ namespace Unrect.Fluent
     /// <param name="point">The cell to read.</param>
     public static IProjectionDefinition<TSpace, DateTime> Date<TSpace>(this IProjectionDefinition<TSpace, Point<TSpace>> point)
       where TSpace : class, ISpace
-      => CellReadLeaves.Over<TSpace, DateTime>(point, "Date", (Point<TSpace> cell, out DateTime v, out CellProblem? p) => Readings.TryDate(cell, out v, out p));
+      => CellReadLeaves.Over<TSpace, DateTime>(point, "Date", (Point<TSpace> cell, out DateTime v, out CellProblem? p) => cell.TryGetDate(out v, out p));
 
     /// <summary>The cell, read as a boolean.</summary>
     /// <typeparam name="TSpace">The space the point is declared over.</typeparam>
     /// <param name="point">The cell to read.</param>
     public static IProjectionDefinition<TSpace, bool> Boolean<TSpace>(this IProjectionDefinition<TSpace, Point<TSpace>> point)
       where TSpace : class, ISpace
-      => CellReadLeaves.Over<TSpace, bool>(point, "Boolean", (Point<TSpace> cell, out bool v, out CellProblem? p) => Readings.TryBoolean(cell, out v, out p));
+      => CellReadLeaves.Over<TSpace, bool>(point, "Boolean", (Point<TSpace> cell, out bool v, out CellProblem? p) => cell.TryGetBoolean(out v, out p));
 
     /// <summary>
     /// The cell, read as what it says — the total reading. Every space renders every cell, so the
@@ -128,7 +128,7 @@ namespace Unrect.Fluent
         throw new ArgumentNullException(nameof(point));
 
       if (point is PointDefinition<TSpace>)
-        return (IProjectionDefinition<TSpace, T>)new ReadDefinition<TSpace, T>(kind, read, point.Placement, blankIsNull: false).With(point.Annotations);
+        return ((IProjectionDefinition<TSpace, T>)new ReadDefinition<TSpace, T>(kind, read, point.Placement, blankIsNull: false)).With(point.Annotations);
 
       return point
         .Select(cell => read(cell, out var value, out var problem) ? value : throw new CellReadException(cell.Erased(), problem!.Value))
