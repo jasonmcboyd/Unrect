@@ -188,8 +188,7 @@ namespace Unrect.Fluent
       where TSpace : class, ISpace
       => new FlowDefinition<TSpace, T>(
         Orientation.Vertical,
-        Layout<TSpace, T>.Declare(
-          cursor =>
+        cursor =>
           {
             // declared: null at both sites, and it is mandatory. Left to the compiler, the naming
             // ladder would read the argument text from inside HERE and label every caption 'caption'
@@ -200,8 +199,6 @@ namespace Unrect.Fluent
 
             return cursor.Next(projection, declared: null);
           },
-          "a flow",
-          nameof(projection)),
         Placement<TSpace>.Default,
         description: "Heading");
 

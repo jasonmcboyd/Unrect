@@ -13,9 +13,18 @@ namespace Unrect.Projections
   /// place the library would otherwise have chosen a shape from a value, which a declaration must
   /// not do.
   /// </summary>
-  internal sealed class LabelledDefinition<TSpace, T> : DefinitionNode<TSpace, T>
+  public sealed class LabelledDefinition<TSpace, T> : DefinitionNode<TSpace, T>
     where TSpace : class, ISpace
   {
+    /// <summary>
+    /// <paramref name="body"/> read under the labels <paramref name="header"/> yields: the header first, then the body with that <see cref="LabelMap"/> in scope.
+    /// <para>Fluent: <c>UnderColumnLabels(ColumnLabels(1), body)</c>.</para>
+    /// </summary>
+    /// <param name="axis">Which axis the labels name; only <see cref="LabelAxis.Column"/> in this release.</param>
+    /// <param name="header">The projection that yields the labels.</param>
+    /// <param name="body">What is read under them.</param>
+    /// <param name="placement">Where header and body are.</param>
+    /// <param name="description">The path segment; null for <c>UnderColumnLabels</c>.</param>
     public LabelledDefinition(LabelAxis axis, IProjectionDefinition<TSpace, LabelMap> header, IProjectionDefinition<TSpace, T> body, Placement<TSpace> placement, string? description = null)
       : this(axis, header, placement, description)
     {
@@ -29,6 +38,16 @@ namespace Unrect.Projections
     /// A body built from the header once it is read — the bind rung. The body is not a child the
     /// tree can see, and <paramref name="opacity"/> says so.
     /// </summary>
+    /// <summary>
+    /// The bind: <paramref name="body"/> builds the body from the labels once they are read, so the children are not known until then and <paramref name="opacity"/> says so.
+    /// <para>Fluent: <c>Table(headerRows: 1, eachRow: captions =&gt; …)</c>.</para>
+    /// </summary>
+    /// <param name="axis">Which axis the labels name.</param>
+    /// <param name="header">The projection that yields the labels.</param>
+    /// <param name="body">Builds the body from the labels; null for nothing under them.</param>
+    /// <param name="opacity">Why tooling cannot see this node's children before a map.</param>
+    /// <param name="placement">Where header and body are.</param>
+    /// <param name="description">The path segment.</param>
     public LabelledDefinition(LabelAxis axis, IProjectionDefinition<TSpace, LabelMap> header, Func<LabelMap, IProjectionDefinition<TSpace, T>?> body, string opacity, Placement<TSpace> placement, string? description = null)
       : this(axis, header, placement, description)
     {
@@ -54,14 +73,19 @@ namespace Unrect.Projections
     private IProjectionDefinition<TSpace, T>? Body { get; }
     private Func<LabelMap, IProjectionDefinition<TSpace, T>?>? LateBody { get; }
 
+    /// <inheritdoc/>
     public override string Description { get; }
 
+    /// <inheritdoc/>
     public override IReadOnlyList<Child> Children { get; }
 
+    /// <inheritdoc/>
     public override string? Opacity { get; }
 
+    /// <inheritdoc/>
     public override Axes Axis => Axes.Vertical;
 
+    /// <inheritdoc/>
     public override IProjector<TSpace, T> Build(ProjectorScope<TSpace> scope) => new Machine(this, scope);
 
     /// <summary>The header until it refuses, then the body under the labels it produced: a flow of two, with the second child built from the first's value.</summary>

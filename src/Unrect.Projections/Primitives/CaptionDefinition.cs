@@ -17,12 +17,21 @@ namespace Unrect.Projections
   /// written again.
   /// </para>
   /// </summary>
-  internal sealed class CaptionDefinition<TSpace> : CollectorNode<TSpace, string>
+  public sealed class CaptionDefinition<TSpace> : CollectorNode<TSpace, string>
     where TSpace : class, ISpace
   {
+    /// <summary>
+    /// A one-row leaf that asserts a cell in its row SAYS <paramref name="text"/> (whole cell, trimmed, case-insensitive) and yields that text.
+    /// <para>Fluent: <c>Caption("Investors")</c>.</para>
+    /// </summary>
+    /// <param name="text">What the caption must say; refused when null or empty.</param>
+    /// <param name="placement">Where the row is; the fluent spelling places it at the leading edge, one row tall.</param>
     public CaptionDefinition(string text, Placement<TSpace> placement)
       : base(placement)
     {
+      if (string.IsNullOrEmpty(text))
+        throw new ArgumentException("A caption must say something.", nameof(text));
+
       Text = text;
       Match = CellMatching.SaysEquals<TSpace>(text);
     }
@@ -30,8 +39,10 @@ namespace Unrect.Projections
     private string Text { get; }
     private Func<Point<TSpace>, bool> Match { get; }
 
+    /// <inheritdoc/>
     public override string Description => $"Caption(\"{Text}\")";
 
+    /// <inheritdoc/>
     public override Axes Axis => Axes.Vertical;
 
     internal override Settlement<string> Collect(Plane<TSpace> extent, ProjectorScope<TSpace> scope)

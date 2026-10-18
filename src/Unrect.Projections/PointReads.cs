@@ -252,5 +252,39 @@ namespace Unrect.Projections
     public static bool TryGetBoolean<TSpace>(this Point<TSpace> point, out bool value, out CellProblem? problem)
       where TSpace : class, ISpace
       => Readings.TryBoolean(point, out value, out problem);
+
+    /// <summary>The cell's number as a decimal: the double the space hands back, converted — or the reason it holds no number, or will not fit.</summary>
+    /// <typeparam name="TSpace">The space the point addresses a cell of.</typeparam>
+    /// <param name="point">The cell.</param>
+    /// <param name="value">The decimal, when the answer is true.</param>
+    public static bool TryGetDecimal<TSpace>(this Point<TSpace> point, out decimal value)
+      where TSpace : class, ISpace
+      => Readings.TryDecimal(point, out value, out _);
+
+    /// <summary>The cell's number as a decimal, or the reason it holds none or will not fit.</summary>
+    /// <typeparam name="TSpace">The space the point addresses a cell of.</typeparam>
+    /// <param name="point">The cell.</param>
+    /// <param name="value">The decimal, when the answer is true.</param>
+    /// <param name="problem">Why not, when the answer is false; null when it is true.</param>
+    public static bool TryGetDecimal<TSpace>(this Point<TSpace> point, out decimal value, out CellProblem? problem)
+      where TSpace : class, ISpace
+      => Readings.TryDecimal(point, out value, out problem);
+
+    /// <summary>The cell's number as a 32-bit integer: whole and in range — or the reason it holds no number, or will not fit.</summary>
+    /// <typeparam name="TSpace">The space the point addresses a cell of.</typeparam>
+    /// <param name="point">The cell.</param>
+    /// <param name="value">The integer, when the answer is true.</param>
+    public static bool TryGetInteger<TSpace>(this Point<TSpace> point, out int value)
+      where TSpace : class, ISpace
+      => Readings.TryInteger(point, out value, out _);
+
+    /// <summary>The cell's number as a 32-bit integer, or the reason it holds none or will not fit.</summary>
+    /// <typeparam name="TSpace">The space the point addresses a cell of.</typeparam>
+    /// <param name="point">The cell.</param>
+    /// <param name="value">The integer, when the answer is true.</param>
+    /// <param name="problem">Why not, when the answer is false; null when it is true.</param>
+    public static bool TryGetInteger<TSpace>(this Point<TSpace> point, out int value, out CellProblem? problem)
+      where TSpace : class, ISpace
+      => Readings.TryInteger(point, out value, out problem);
   }
 }

@@ -53,7 +53,7 @@ namespace Unrect.Fluent
     /// </para>
     /// </summary>
     public static IProjectionDefinition<TSpace, T> VerticalFlow<T>(LayoutDeclaration<TSpace, T> declare)
-      => new FlowDefinition<TSpace, T>(Orientation.Vertical, Layout<TSpace, T>.Declare(declare, "a flow", nameof(declare)), Placement<TSpace>.Default);
+      => new FlowDefinition<TSpace, T>(Orientation.Vertical, declare, Placement<TSpace>.Default);
 
     /// <summary>
     /// A flow rightwards, whose children are declared with <c>Next</c>; see
@@ -62,7 +62,7 @@ namespace Unrect.Fluent
     /// inline.
     /// </summary>
     public static IProjectionDefinition<TSpace, T> HorizontalFlow<T>(LayoutDeclaration<TSpace, T> declare)
-      => new FlowDefinition<TSpace, T>(Orientation.Horizontal, Layout<TSpace, T>.Declare(declare, "a flow", nameof(declare)), Placement<TSpace>.Default);
+      => new FlowDefinition<TSpace, T>(Orientation.Horizontal, declare, Placement<TSpace>.Default);
 
     /// <summary>
     /// One extent shared by every child, each finding its own place in it — the projection for a
@@ -92,6 +92,6 @@ namespace Unrect.Fluent
     /// </para>
     /// </summary>
     public static IProjectionDefinition<TSpace, T> Overlay<T>(LayoutDeclaration<TSpace, T> declare)
-      => new OverlayDefinition<TSpace, T>(Layout<TSpace, T>.Declare(declare, "an overlay", nameof(declare)), Placement<TSpace>.Default);
+      => new OverlayDefinition<TSpace, T>(declare, Placement<TSpace>.Default);
   }
 }

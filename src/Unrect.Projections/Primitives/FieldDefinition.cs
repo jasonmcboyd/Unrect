@@ -15,12 +15,21 @@ namespace Unrect.Projections
   /// </para>
   /// </summary>
   /// <typeparam name="TSpace">The space the pair's cells belong to.</typeparam>
-  internal sealed class FieldDefinition<TSpace> : CollectorNode<TSpace, Point<TSpace>>
+  public sealed class FieldDefinition<TSpace> : CollectorNode<TSpace, Point<TSpace>>
     where TSpace : class, ISpace
   {
+    /// <summary>
+    /// A two-cell leaf: a label on the left that must say <paramref name="label"/>, and the cell beside it, which is the value.
+    /// <para>Fluent: <c>Field("EIN")</c>.</para>
+    /// </summary>
+    /// <param name="label">What the left cell must say; refused when null or empty.</param>
+    /// <param name="placement">Where the pair is; the fluent spelling places it two cells wide, one row tall.</param>
     public FieldDefinition(string label, Placement<TSpace> placement)
       : base(placement)
     {
+      if (string.IsNullOrEmpty(label))
+        throw new ArgumentException("A field label must say something.", nameof(label));
+
       Label = label;
       Match = CellMatching.LabelEquals<TSpace>(label);
     }
@@ -28,8 +37,10 @@ namespace Unrect.Projections
     private string Label { get; }
     private Func<Point<TSpace>, bool> Match { get; }
 
+    /// <inheritdoc/>
     public override string Description => $"Field(\"{Label}\")";
 
+    /// <inheritdoc/>
     public override Axes Axis => Axes.Vertical;
 
     internal override Settlement<Point<TSpace>> Collect(Plane<TSpace> extent, ProjectorScope<TSpace> scope)

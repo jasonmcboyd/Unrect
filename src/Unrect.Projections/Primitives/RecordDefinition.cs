@@ -17,17 +17,25 @@ namespace Unrect.Projections
   /// enclosing repeat stamped on the scope, so a decoupled record still numbers its rows.
   /// </para>
   /// </summary>
-  internal sealed class RecordDefinition<TSpace, T> : CollectorNode<TSpace, T>
+  public sealed class RecordDefinition<TSpace, T> : CollectorNode<TSpace, T>
     where TSpace : class, ISpace
   {
+    /// <summary>
+    /// A one-row leaf that hands its row to <paramref name="record"/> as a <see cref="TableRow{TSpace}"/>, labels in scope and all.
+    /// <para>Fluent: <c>Record(r =&gt; …)</c>.</para>
+    /// </summary>
+    /// <param name="record">What to make of the row.</param>
+    /// <param name="placement">Where the row is.</param>
     public RecordDefinition(Func<TableRow<TSpace>, T> record, Placement<TSpace> placement)
       : base(placement)
       => Record = record ?? throw new ArgumentNullException(nameof(record));
 
     private Func<TableRow<TSpace>, T> Record { get; }
 
+    /// <inheritdoc/>
     public override string Description => "Record";
 
+    /// <inheritdoc/>
     public override Axes Axis => Axes.Vertical;
 
     internal override Settlement<T> Collect(Plane<TSpace> extent, ProjectorScope<TSpace> scope)

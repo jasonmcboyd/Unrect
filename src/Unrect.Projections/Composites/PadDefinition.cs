@@ -11,19 +11,32 @@ namespace Unrect.Projections
   /// this is a wrapper projection rather than a placement, and why the two compose without
   /// interfering.
   /// </summary>
-  internal sealed class PadDefinition<TSpace, TResult> : DefinitionNode<TSpace, TResult>
+  public sealed class PadDefinition<TSpace, TResult> : DefinitionNode<TSpace, TResult>
     where TSpace : class, ISpace
   {
+    /// <summary>
+    /// <paramref name="inner"/> with a margin on each side, consumed but not read.
+    /// <para>Fluent: <c>inner.Padded(left: 1, top: 0, right: 1, bottom: 0)</c>.</para>
+    /// </summary>
+    /// <param name="inner">What is padded.</param>
+    /// <param name="left">Columns to the left; not negative.</param>
+    /// <param name="top">Rows above; not negative.</param>
+    /// <param name="right">Columns to the right; not negative.</param>
+    /// <param name="bottom">Rows below; not negative.</param>
+    /// <param name="placement">Where the padded region is.</param>
     public PadDefinition(IProjectionDefinition<TSpace, TResult> inner, int left, int top, int right, int bottom, Placement<TSpace> placement)
       : base(placement)
     {
       Inner = inner ?? throw new ArgumentNullException(nameof(inner));
-      Left = left;
-      Top = top;
-      Right = right;
-      Bottom = bottom;
+      Left = NotNegative(left, nameof(left));
+      Top = NotNegative(top, nameof(top));
+      Right = NotNegative(right, nameof(right));
+      Bottom = NotNegative(bottom, nameof(bottom));
       Children = new[] { new Child(inner, default) };
     }
+
+    private static int NotNegative(int cells, string parameter)
+      => cells >= 0 ? cells : throw new ArgumentOutOfRangeException(parameter, cells, "Padding cannot be negative.");
 
     private IProjectionDefinition<TSpace, TResult> Inner { get; }
     private int Left { get; }
@@ -31,14 +44,19 @@ namespace Unrect.Projections
     private int Right { get; }
     private int Bottom { get; }
 
+    /// <inheritdoc/>
     public override string Description => "Padded";
 
+    /// <inheritdoc/>
     public override IReadOnlyList<Child> Children { get; }
 
+    /// <inheritdoc/>
     public override bool IsWrapper => true;
 
+    /// <inheritdoc/>
     public override Axes Axis => Inner.Axis.OrEither();
 
+    /// <inheritdoc/>
     public override IProjector<TSpace, TResult> Build(ProjectorScope<TSpace> scope) => new Machine(this, scope);
 
     /// <summary>

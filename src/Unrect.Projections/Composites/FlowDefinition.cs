@@ -8,11 +8,19 @@ namespace Unrect.Projections
   /// A flow: children laid out one after another along an axis, each starting where the one before
   /// it left off, so the space is divided into bands nobody shares.
   /// </summary>
-  internal sealed class FlowDefinition<TSpace, T> : LayoutDefinition<TSpace, T>
+  public sealed class FlowDefinition<TSpace, T> : LayoutDefinition<TSpace, T>
     where TSpace : class, ISpace
   {
-    public FlowDefinition(Orientation orientation, Layout<TSpace, T> layout, Placement<TSpace> placement, string? description = null)
-      : base(layout, placement)
+    /// <summary>
+    /// A flow: the region divided into blocks along <paramref name="orientation"/>, one per child the <paramref name="declare"/> lambda declares, gaps of any size between them.
+    /// <para>Fluent: <c>VerticalFlow(v =&gt; new R(v.Next(a), v.Next(b)))</c>.</para>
+    /// </summary>
+    /// <param name="orientation">Which way the children follow one another.</param>
+    /// <param name="declare">The lambda, run once now to learn its children (each reading as the empty value of its type) and once per application with the values; one that reads a cell or depends on a value is refused here.</param>
+    /// <param name="placement">Where the flow is.</param>
+    /// <param name="description">The path segment; null for <c>VerticalFlow</c>/<c>HorizontalFlow</c>.</param>
+    public FlowDefinition(Orientation orientation, LayoutDeclaration<TSpace, T> declare, Placement<TSpace> placement, string? description = null)
+      : base(Layout<TSpace, T>.Declare(declare, "a flow", nameof(declare)), placement)
     {
       Orientation = orientation;
       Declared = description;
@@ -28,13 +36,16 @@ namespace Unrect.Projections
     private string? Declared { get; }
 
     // A path segment names the factory the user typed, so it can be grepped back to the line.
+    /// <inheritdoc/>
     public override string Description
       => Declared ?? (Orientation == Orientation.Vertical ? "VerticalFlow" : "HorizontalFlow");
 
+    /// <inheritdoc/>
     public override Axes Axis => Orientation.Of();
 
     internal override Orientation? LeadsChildren(Orientation session) => Orientation;
 
+    /// <inheritdoc/>
     public override IProjector<TSpace, T> Build(ProjectorScope<TSpace> scope) => new Machine(this, scope);
 
     /// <summary>

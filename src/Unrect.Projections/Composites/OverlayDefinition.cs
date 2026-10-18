@@ -9,19 +9,27 @@ namespace Unrect.Projections
   /// cursor between them. Where a flow divides the space into bands, this hands the whole of it to
   /// everyone, so children may overlap and may read the same cells.
   /// </summary>
-  internal sealed class OverlayDefinition<TSpace, T> : LayoutDefinition<TSpace, T>
+  public sealed class OverlayDefinition<TSpace, T> : LayoutDefinition<TSpace, T>
     where TSpace : class, ISpace
   {
-    public OverlayDefinition(Layout<TSpace, T> layout, Placement<TSpace> placement)
-      : base(layout, placement)
+    /// <summary>
+    /// An overlay: every child the <paramref name="declare"/> lambda declares is handed the whole region.
+    /// <para>Fluent: <c>Overlay(o =&gt; new R(o.Next(a), o.Next(b)))</c>.</para>
+    /// </summary>
+    /// <param name="declare">The lambda, run once now to learn its children and once per application with the values.</param>
+    /// <param name="placement">Where the overlay is.</param>
+    public OverlayDefinition(LayoutDeclaration<TSpace, T> declare, Placement<TSpace> placement)
+      : base(Layout<TSpace, T>.Declare(declare, "an overlay", nameof(declare)), placement)
     {
     }
 
+    /// <inheritdoc/>
     public override string Description => "Overlay";
 
     /// <summary>An overlay streams along whatever axis every child streams along: its children run concurrently on the same spans.</summary>
     internal override Orientation? LeadsChildren(Orientation session) => session;
 
+    /// <inheritdoc/>
     public override Axes Axis
     {
       get
@@ -35,6 +43,7 @@ namespace Unrect.Projections
       }
     }
 
+    /// <inheritdoc/>
     public override IProjector<TSpace, T> Build(ProjectorScope<TSpace> scope) => new Machine(this, scope);
 
     /// <summary>

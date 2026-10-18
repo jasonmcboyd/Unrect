@@ -9,9 +9,19 @@ namespace Unrect.Projections
   /// One declared item applied as many times as the space supports. The separator sits between
   /// items and never before the first; a leading gap is the repeat's own offset.
   /// </summary>
-  internal sealed class RepeatDefinition<TSpace, T> : DefinitionNode<TSpace, IReadOnlyList<T>>
+  public sealed class RepeatDefinition<TSpace, T> : DefinitionNode<TSpace, IReadOnlyList<T>>
     where TSpace : class, ISpace
   {
+    /// <summary>
+    /// A repeat: <paramref name="item"/> applied again and again along <paramref name="orientation"/>, each occurrence's extent discovered from the item, until one finds nothing.
+    /// <para>Fluent: <c>VerticalRepeat(item, separatedBy: …, atLeast: 1)</c>.</para>
+    /// </summary>
+    /// <param name="item">The pattern repeated.</param>
+    /// <param name="separator">What lies between occurrences, when it is content; null for blank spans alone, which every occurrence steps over anyway.</param>
+    /// <param name="orientation">Which way the occurrences follow one another.</param>
+    /// <param name="atLeast">The fewest occurrences that is not a failure; not negative.</param>
+    /// <param name="itemSite">How the item was declared, for its path segment; <c>default</c> for kind-and-position.</param>
+    /// <param name="placement">Where the run starts.</param>
     public RepeatDefinition(
       IProjectionDefinition<TSpace, T> item,
       IOffsetStrategy<TSpace>? separator,
@@ -24,7 +34,7 @@ namespace Unrect.Projections
       Item = item ?? throw new ArgumentNullException(nameof(item));
       Separator = separator;
       Orientation = orientation;
-      AtLeast = atLeast;
+      AtLeast = atLeast >= 0 ? atLeast : throw new ArgumentOutOfRangeException(nameof(atLeast), atLeast, "A repeat cannot require a negative number of occurrences.");
       ItemSite = itemSite;
       Children = new[] { new Child(item, itemSite) };
     }
@@ -37,8 +47,10 @@ namespace Unrect.Projections
     private Orientation Orientation { get; }
     private int AtLeast { get; }
 
+    /// <inheritdoc/>
     public override string Description => Orientation == Orientation.Vertical ? "VerticalRepeat" : "HorizontalRepeat";
 
+    /// <inheritdoc/>
     public override IReadOnlyList<Child> Children { get; }
 
     /// <summary>Along its orientation: a repeat walks occurrence by occurrence, each a band along it.</summary>
@@ -51,6 +63,7 @@ namespace Unrect.Projections
     /// <summary>A separator with no per-span form is asked over the whole gap, so the repeat must have its extent first.</summary>
     internal override string? Holds => SeparatorStreams ? null : "its separator has no per-span form";
 
+    /// <inheritdoc/>
     public override IProjector<TSpace, IReadOnlyList<T>> Build(ProjectorScope<TSpace> scope) => new Machine(this, scope);
 
     /// <summary>

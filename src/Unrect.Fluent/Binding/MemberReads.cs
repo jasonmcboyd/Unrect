@@ -64,7 +64,7 @@ namespace Unrect.Fluent
 
       if (type == typeof(decimal))
         return CellReadLeaves.Leaf<TSpace, object?>(
-          "Decimal", (Point<TSpace> cell, out object? v, out CellProblem? p) => Box(Readings.TryDecimal(cell, out var value, out p), value, out v));
+          "Decimal", (Point<TSpace> cell, out object? v, out CellProblem? p) => Box(cell.TryGetDecimal(out var value, out p), value, out v));
 
       if (type == typeof(double))
         return CellReadLeaves.Leaf<TSpace, object?>(
@@ -72,7 +72,7 @@ namespace Unrect.Fluent
 
       if (type == typeof(int))
         return CellReadLeaves.Leaf<TSpace, object?>(
-          "Integer", (Point<TSpace> cell, out object? v, out CellProblem? p) => Box(Readings.TryInteger(cell, out var value, out p), value, out v));
+          "Integer", (Point<TSpace> cell, out object? v, out CellProblem? p) => Box(cell.TryGetInteger(out var value, out p), value, out v));
 
       if (type == typeof(DateTime))
         return CellReadLeaves.Leaf<TSpace, object?>(

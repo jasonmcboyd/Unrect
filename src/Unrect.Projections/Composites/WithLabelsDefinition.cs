@@ -13,9 +13,17 @@ namespace Unrect.Projections
   /// transparent node, so the body reads at the wrapper's own frame and column translation is the
   /// identity in the canonical table composition.
   /// </summary>
-  internal sealed class WithLabelsDefinition<TSpace, T> : DefinitionNode<TSpace, T>
+  public sealed class WithLabelsDefinition<TSpace, T> : DefinitionNode<TSpace, T>
     where TSpace : class, ISpace
   {
+    /// <summary>
+    /// <paramref name="body"/> read with a <see cref="LabelMap"/> VALUE in scope, where <see cref="LabelledDefinition{TSpace, T}"/> reads the labels from the sheet.
+    /// <para>Fluent: <c>WithColumnLabels(map, body)</c>.</para>
+    /// </summary>
+    /// <param name="axis">Which axis the labels name.</param>
+    /// <param name="map">The labels.</param>
+    /// <param name="body">What is read under them.</param>
+    /// <param name="placement">Where the body is.</param>
     public WithLabelsDefinition(LabelAxis axis, LabelMap map, IProjectionDefinition<TSpace, T> body, Placement<TSpace> placement)
       : base(placement)
     {
@@ -29,14 +37,19 @@ namespace Unrect.Projections
     private LabelMap Map { get; }
     private IProjectionDefinition<TSpace, T> Body { get; }
 
+    /// <inheritdoc/>
     public override string Description => LabelledAxis == LabelAxis.Column ? "WithColumnLabels" : "WithRowLabels";
 
+    /// <inheritdoc/>
     public override IReadOnlyList<Child> Children { get; }
 
+    /// <inheritdoc/>
     public override bool IsWrapper => true;
 
+    /// <inheritdoc/>
     public override Axes Axis => Body.Axis.OrEither();
 
+    /// <inheritdoc/>
     public override IProjector<TSpace, T> Build(ProjectorScope<TSpace> scope) => new Machine(this, scope);
 
     /// <summary>

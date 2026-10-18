@@ -4,21 +4,39 @@ using Unrect.Core;
 
 namespace Unrect.Projections
 {
-  internal sealed class TableViewDefinition<TSpace, T> : CollectorNode<TSpace, T>
+  /// <summary>
+  /// The table-view leaf: its whole region, the header rows parsed into labels, handed to a lambda
+  /// as a <see cref="TableView{TSpace}"/>, read at close. What <c>Table(view =&gt; …)</c> declares.
+  /// </summary>
+  /// <typeparam name="TSpace">The space the table is read from.</typeparam>
+  /// <typeparam name="T">What the lambda makes of it.</typeparam>
+  public sealed class TableViewDefinition<TSpace, T> : CollectorNode<TSpace, T>
     where TSpace : class, ISpace
   {
+    /// <summary>
+    /// A leaf that hands its whole region to <paramref name="project"/> as a <see cref="TableView{TSpace}"/>, the first <paramref name="headerRows"/> rows read as the header.
+    /// <para>Fluent: <c>Table(view =&gt; …)</c>.</para>
+    /// </summary>
+    /// <param name="headerRows">How many rows are the header; zero for none.</param>
+    /// <param name="project">What to make of the table.</param>
+    /// <param name="placement">Where the table is.</param>
+    /// <param name="description">The path segment, such as <c>Table</c>.</param>
+    /// <param name="opacity">Why this node's children are not visible to tooling, when its row projection is built from the header it read; null otherwise.</param>
     public TableViewDefinition(int headerRows, Func<TableView<TSpace>, T> project, Placement<TSpace> placement, string description, string? opacity = null)
       : base(placement)
     {
-      HeaderRows = headerRows;
+      HeaderRows = headerRows >= 0
+        ? headerRows
+        : throw new ArgumentOutOfRangeException(nameof(headerRows), headerRows, "A table cannot have a negative number of header rows.");
       Projection = project ?? throw new ArgumentNullException(nameof(project));
-      Description = description;
+      Description = description ?? throw new ArgumentNullException(nameof(description));
       Opacity = opacity;
     }
 
     private int HeaderRows { get; }
     private Func<TableView<TSpace>, T> Projection { get; }
 
+    /// <inheritdoc/>
     public override string Description { get; }
 
     /// <summary>

@@ -61,7 +61,7 @@ namespace Unrect.Strategies
     /// A table's columns: any leading columns the first row leaves blank — columns with no caption,
     /// which nothing binds to — and then the columns that carry a value.
     /// </summary>
-    internal static ILineStrategy<TSpace> TakeTableColumns<TSpace>()
+    public static ILineStrategy<TSpace> TakeTableColumns<TSpace>()
       where TSpace : class, ISpace
       => new TakeWhileAnyColumnStrategy<TSpace>(v => !v.IsBlank(), afterLead: true);
 

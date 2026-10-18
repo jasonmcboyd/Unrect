@@ -567,8 +567,7 @@ namespace Unrect.Fluent
 
       return new FlowDefinition<TSpace, IReadOnlyDictionary<string, Point<TSpace>>>(
         Orientation.Vertical,
-        Layout<TSpace, IReadOnlyDictionary<string, Point<TSpace>>>.Declare(
-          cursor =>
+        cursor =>
           {
             var values = new Dictionary<string, Point<TSpace>>(declared.Length, CaptionComparer.Default);
 
@@ -579,8 +578,6 @@ namespace Unrect.Fluent
 
             return values;
           },
-          "a flow",
-          nameof(fields)),
         FieldsPlacement(declared[0].Label),
         description: "Fields");
     }
