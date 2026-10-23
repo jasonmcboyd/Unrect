@@ -255,7 +255,7 @@ namespace Unrect.Tests.Projections
     {
       // A disagreement about the data rather than a broken projection, so a tolerance boundary is
       // allowed to take it — as a Warning that still carries the matcher's own words.
-      var result = Below(Rows.Containing("Nope")).Of(Point().Text()).Optional().MapWithDiagnostics(RowSheet());
+      var result = Below(Rows.Containing("Nope")).Of(Point().Text()).ElseDefault().MapWithDiagnostics(RowSheet());
 
       Assert.Null(result.Value);
       Assert.Contains(

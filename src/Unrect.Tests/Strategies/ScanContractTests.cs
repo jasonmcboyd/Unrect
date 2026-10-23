@@ -48,10 +48,10 @@ namespace Unrect.Tests.Strategies
     [Fact]
     public void ABrokenContractIsAFaultNoToleranceAbsorbs()
     {
-      // A scan that THROWS over the data is the source's rule failing, and Optional may take it. A
-      // scan that breaks its contract is the strategy's code, and Optional must not turn that into
+      // A scan that THROWS over the data is the source's rule failing, and ElseDefault may take it. A
+      // scan that breaks its contract is the strategy's code, and ElseDefault must not turn that into
       // an absent section.
-      var tolerant = Sized(new Mute()).Of(Point()).Optional();
+      var tolerant = Sized(new Mute()).Of(Point()).ElseDefault();
 
       var failure = Assert.Throws<ProjectionException>(() => tolerant.Map(TwoRows()));
 

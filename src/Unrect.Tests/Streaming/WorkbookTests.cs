@@ -392,7 +392,7 @@ namespace Unrect.Tests.Streaming
       var direct = Assert.Throws<ProjectionException>(() => declaration.Map(space));
       Assert.IsType<ObjectDisposedException>(direct.GetBaseException());
 
-      var tolerated = Assert.Throws<ProjectionException>(() => declaration.Optional().Map(space));
+      var tolerated = Assert.Throws<ProjectionException>(() => declaration.ElseDefault().Map(space));
       Assert.IsType<ObjectDisposedException>(tolerated.GetBaseException());
     }
 

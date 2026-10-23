@@ -338,7 +338,7 @@ namespace Unrect.Tests.Projections
         Point().Select(p => p.Integer().ToString()).Named("a"),
         Point().Select(p => p.Date().ToString()).Named("b"));
 
-      var reported = Assert.Single(choice.Optional().MapWithDiagnostics(space).Diagnostics);
+      var reported = Assert.Single(choice.ElseDefault().MapWithDiagnostics(space).Diagnostics);
 
       Assert.Equal("Choice", reported.Subject);
       Assert.StartsWith("no alternative matched; alternative 1 ('a'): ", reported.Message);
@@ -356,7 +356,7 @@ namespace Unrect.Tests.Projections
       // reading that was thrown away, so keeping it would describe a parse that never happened.
       var losing = VerticalFlow(v =>
       {
-        v.Next(TextCell().Optional());
+        v.Next(TextCell().ElseDefault());
         v.Next(TextCell());
         return 0;
       }).Named("losing");
@@ -375,7 +375,7 @@ namespace Unrect.Tests.Projections
       var winning = VerticalFlow(v =>
       {
         v.Next(TextCell());
-        v.Next(TextCell().Optional());
+        v.Next(TextCell().ElseDefault());
         var intCell = v.Next(IntCell());
 
         return intCell;

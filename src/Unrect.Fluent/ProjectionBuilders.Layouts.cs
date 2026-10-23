@@ -31,7 +31,7 @@ namespace Unrect.Fluent
     /// nothing has built yet: that is refused where it is written, pointing at the leaf and at
     /// <c>Select</c>. And a lambda whose shape depends on a value — a different child asked for on
     /// the second run — is a fault when it runs.
-    /// Alternation belongs to <c>Choice</c>, <c>Else</c>, and <c>Optional</c>; repetition to
+    /// Alternation belongs to <c>Choice</c>, <c>Else</c>, and <c>ElseDefault</c>; repetition to
     /// <c>VerticalRepeat</c>/<c>HorizontalRepeat</c>; gaps to the following projection's offset.
     /// </para>
     /// <para>

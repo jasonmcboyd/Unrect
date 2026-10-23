@@ -106,17 +106,17 @@ namespace Unrect.Tests.Projections
           Placement<ICellSpace>.Default);
 
       /// <summary>
-      /// Fluent: <c>number.Optional()</c>. Over a value type the fluent form's <c>T?</c> is <c>T</c>
+      /// Fluent: <c>number.ElseDefault()</c>. Over a value type the fluent form's <c>T?</c> is <c>T</c>
       /// itself (an unconstrained type parameter's <c>?</c> is an annotation, not a Nullable), so an
       /// absent number is <c>default</c>, 0 — the hand-built form says so plainly.
       /// </summary>
-      public static IProjectionDefinition<ICellSpace, int> OptionalNumber(IProjectionDefinition<ICellSpace, int> number)
+      public static IProjectionDefinition<ICellSpace, int> DefaultedNumber(IProjectionDefinition<ICellSpace, int> number)
         => new FallbackDefinition<ICellSpace, int>(
           new SelectDefinition<ICellSpace, int, int>(number, value => value, Placement<ICellSpace>.Default),
           fallback: null,
-          fallbackValue: default,
+          fallbackValue: default(int),
           Placement<ICellSpace>.Default,
-          "Optional");
+          "ElseDefault");
     }
   }
 }

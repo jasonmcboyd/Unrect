@@ -126,7 +126,7 @@ namespace Unrect.Tests.Projections
     {
       // A landmark that is not there is a disagreement about the shape of the data, which is
       // precisely what a tolerance boundary is for — not a bug in the reading code.
-      Assert.Null(Until(Rows.Containing("Nope")).Of(Lines()).Optional().Map(Sections()));
+      Assert.Null(Until(Rows.Containing("Nope")).Of(Lines()).ElseDefault().Map(Sections()));
     }
 
     [Fact]

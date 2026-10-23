@@ -18,14 +18,14 @@ namespace Unrect.Tests.Streaming
   /// The correctness fix, and the tests that matter most in this feature.
   /// <para>
   /// Under streaming a strategy reads cells. Before this, a disk read failing in the middle of
-  /// <c>SkipBlankRows</c> inside <c>section.Optional()</c> was reported as <em>section absent</em>,
+  /// <c>SkipBlankRows</c> inside <c>section.ElseDefault()</c> was reported as <em>section absent</em>,
   /// with a warning, and the parse carried on and produced a quietly wrong answer. A tolerance
   /// boundary exists to absorb disagreements about the SHAPE of the data; it must never absorb the
   /// environment failing underneath the reader.
   /// </para>
   /// <para>
   /// The controls at the bottom are half the point: if everything were non-absorbable the fault
-  /// list would not be a discrimination, it would be a blanket, and <c>.Optional()</c> would mean
+  /// list would not be a discrimination, it would be a blanket, and <c>.ElseDefault()</c> would mean
   /// nothing.
   /// </para>
   /// </summary>
@@ -132,9 +132,9 @@ namespace Unrect.Tests.Streaming
 
     [Theory]
     [MemberData(nameof(Faults))]
-    public void OptionalDoesNotAbsorbAFault(string fault)
+    public void ElseDefaultDoesNotAbsorbAFault(string fault)
     {
-      AssertSurfacedAsAFault(fault, space => Table(row => row["Amount"].Integer()).Optional().Map(space));
+      AssertSurfacedAsAFault(fault, space => Table(row => row["Amount"].Integer()).ElseDefault().Map(space));
     }
 
     [Theory]
@@ -180,15 +180,15 @@ namespace Unrect.Tests.Streaming
       // wrong answer.
       AssertSurfacedAsAFault(
         fault,
-        space => Sized(Rows.WhileAnyIsNotBlank()).Of(Range(block => block.Height)).Optional().Map(space));
+        space => Sized(Rows.WhileAnyIsNotBlank()).Of(Range(block => block.Height)).ElseDefault().Map(space));
 
       AssertSurfacedAsAFault(
         fault,
-        space => On(Rows.Containing("nowhere")).Of(TextCell()).Optional().Map(space));
+        space => On(Rows.Containing("nowhere")).Of(TextCell()).ElseDefault().Map(space));
 
       AssertSurfacedAsAFault(
         fault,
-        space => VerticalRepeat(Row(row => row[0].Text()), separatedBy: Rows.SkipBlank()).Optional().Map(space));
+        space => VerticalRepeat(Row(row => row[0].Text()), separatedBy: Rows.SkipBlank()).ElseDefault().Map(space));
     }
 
     [Fact]
@@ -197,7 +197,7 @@ namespace Unrect.Tests.Streaming
       // MapWithDiagnostics is where an absorbed failure would show up as a Warning saying the
       // section was absent. It must throw instead: there is no diagnostic that can honestly
       // describe a sheet nobody could read.
-      var declaration = Table(row => row["Amount"].Integer()).Named("amounts").Optional();
+      var declaration = Table(row => row["Amount"].Integer()).Named("amounts").ElseDefault();
 
       Assert.Throws<ProjectionException>(() => declaration.MapWithDiagnostics(Faulting("io")));
     }
@@ -230,7 +230,7 @@ namespace Unrect.Tests.Streaming
     {
       // "Amount is text where a number was declared" is a disagreement about the data, which is
       // exactly what a tolerance boundary is for.
-      var value = IntCell().Optional().Map(Sound());
+      var value = IntCell().ElseDefault().Map(Sound());
 
       Assert.Equal(0, value);
     }
@@ -238,7 +238,7 @@ namespace Unrect.Tests.Streaming
     [Fact]
     public void AMissingAnchorIsStillAbsorbed()
     {
-      var value = On(Rows.Containing("absent")).Of(TextCell()).Optional().Map(Sound());
+      var value = On(Rows.Containing("absent")).Of(TextCell()).ElseDefault().Map(Sound());
 
       Assert.Null(value);
     }
@@ -246,7 +246,7 @@ namespace Unrect.Tests.Streaming
     [Fact]
     public void AnExtentLargerThanTheSpaceIsStillAbsorbed()
     {
-      var value = Sized(Extent.Of(9, 9)).Of(Range(block => block.Height)).Optional().Map(Sound());
+      var value = Sized(Extent.Of(9, 9)).Of(Range(block => block.Height)).ElseDefault().Map(Sound());
 
       Assert.Equal(0, value);
     }

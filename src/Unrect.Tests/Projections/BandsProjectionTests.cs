@@ -213,10 +213,10 @@ namespace Unrect.Tests.Projections
       Assert.True(failure.IsFault);
       Assert.Equal("the row at A2 is blank, which is not allowed here", Problem(failure));
 
-      // A blank band is malformed data rather than an absent section, so Optional must let it out.
-      var underOptional = Assert.Throws<ProjectionException>(() => tiler.Optional().Map(InteriorBlank()));
+      // A blank band is malformed data rather than an absent section, so ElseDefault must let it out.
+      var underElseDefault = Assert.Throws<ProjectionException>(() => tiler.ElseDefault().Map(InteriorBlank()));
 
-      Assert.True(underOptional.IsFault);
+      Assert.True(underElseDefault.IsFault);
     }
 
     [Fact]
@@ -297,7 +297,7 @@ namespace Unrect.Tests.Projections
         { 3 },
       });
 
-      var applied = VerticalBands(1, Point().Text().Optional()).Apply(sheet);
+      var applied = VerticalBands(1, Point().Text().ElseDefault()).Apply(sheet);
 
       Assert.Equal(new string?[] { null, null, null }, applied.Value);
       Assert.Equal(3, applied.Consumed.Height);

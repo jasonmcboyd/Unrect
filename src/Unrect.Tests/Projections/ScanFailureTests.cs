@@ -78,7 +78,7 @@ namespace Unrect.Tests.Projections
     // --- A fault is never tolerance ----------------------------------------------------------------
 
     [Theory]
-    [InlineData("Optional")]
+    [InlineData("ElseDefault")]
     [InlineData("Else")]
     [InlineData("Choice")]
     public void AnIoFaultInAScanIsNotAbsorbedByAToleranceBoundary(string boundary)
@@ -87,7 +87,7 @@ namespace Unrect.Tests.Projections
 
       IProjectionDefinition<ICellSpace, int> projection = boundary switch
       {
-        "Optional" => broken.Optional(),
+        "ElseDefault" => broken.ElseDefault(),
         "Else" => broken.Else(-1),
         "Choice" => Choice(broken, Range(Extent.Whole(), b => b.Height)),
 
@@ -103,18 +103,18 @@ namespace Unrect.Tests.Projections
     // --- An absorbable break is absorbed -----------------------------------------------------------
 
     [Theory]
-    [InlineData("Optional")]
+    [InlineData("ElseDefault")]
     [InlineData("Else")]
     public void AnAbsorbableBreakInAScanIsAbsorbed(string boundary)
     {
       // The warning names the projection that failed, not the boundary that caught it.
       var broken = Range(Rows.WhileAny(BreaksOn(LateMarker)), _ => 0);
-      var projection = boundary == "Optional" ? broken.Optional() : broken.Else(-1);
+      var projection = boundary == "ElseDefault" ? broken.ElseDefault() : broken.Else(-1);
 
       var result = projection.MapWithDiagnostics(Sheet());
       var warning = Assert.Single(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Warning);
 
-      Assert.Equal(boundary == "Optional" ? 0 : -1, result.Value);
+      Assert.Equal(boundary == "ElseDefault" ? 0 : -1, result.Value);
       Assert.Equal("its extent strategy threw InvalidOperationException: no", warning.Message);
       Assert.Equal("Range", warning.Path);
     }

@@ -95,7 +95,7 @@ namespace Unrect.Tests.Machines
       var report = CostReport.Of(VerticalFlow(v =>
       {
         var one = v.Next(Point().Text().Named("one"));
-        var many = v.Next(VerticalRepeat(Point().Text(), separatedBy: Rows.SkipBlank()).Optional().Named("many"));
+        var many = v.Next(VerticalRepeat(Point().Text(), separatedBy: Rows.SkipBlank()).ElseDefault().Named("many"));
 
         return $"{one}:{many?.Count}";
       }));

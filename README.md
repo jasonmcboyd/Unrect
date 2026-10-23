@@ -139,7 +139,7 @@ record CashFlow(string InvestorName, DateTime Date, string Transaction, double I
 - **Names are inferred from your own identifiers.** The local you assign a projection to
   (`series`, `byTransferDate`) is what shows up in its diagnostics — no separate naming
   step.
-- **Tolerance is declared per projection, never ambient.** `.Optional()` and `.Else()` mark
+- **Tolerance is declared per projection, never ambient.** `.ElseDefault()` and `.Else()` mark
   exactly where a missing or malformed region is acceptable; nothing is silently lenient
   everywhere.
 - **Content anchors survive layout drift.** `.On`, `.Below`, `.RightOf`, `Caption`, and

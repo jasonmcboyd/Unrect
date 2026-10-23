@@ -55,7 +55,7 @@ namespace Unrect.Projections
 
     /// <summary>
     /// True for a projection the declaration did not write as a level of its own — <c>Select</c>,
-    /// <c>Padded</c>, <c>Until</c>, and the <c>Else</c>/<c>Optional</c> boundary. A structural
+    /// <c>Padded</c>, <c>Until</c>, and the <c>Else</c>/<c>ElseDefault</c> boundary. A structural
     /// fact, and only that: whether a path skips it is the renderer's rule (an unnamed wrapper with
     /// no unit label contributes no segment), not the projection's.
     /// </summary>

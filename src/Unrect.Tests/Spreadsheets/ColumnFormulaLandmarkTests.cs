@@ -142,7 +142,7 @@ namespace Unrect.Tests.Spreadsheets
       // otherwise "loud" would only mean this matcher is loud about everything.
       var missing = On(Columns.WithCell(p => p.Formula() is string f && f.IndexOf("MEDIAN", StringComparison.OrdinalIgnoreCase) >= 0)).Of(Point().Text());
 
-      Assert.Null(missing.Optional().Map(Sheet()));
+      Assert.Null(missing.ElseDefault().Map(Sheet()));
       Assert.Equal("fallback", missing.Else("fallback").Map(Sheet()));
 
       // Untolerated it still fails, and NOT as a fault: it is a statement about the document.

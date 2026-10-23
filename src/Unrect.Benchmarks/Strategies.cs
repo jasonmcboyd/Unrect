@@ -14,7 +14,7 @@ namespace Unrect.Benchmarks
   ///
   /// <para>The seek rows are the family's point. A content anchor is a linear scan, so its cost
   /// depends on how far in the answer is -- and the interesting case is the one that never finds
-  /// it. That row is wrapped in <c>Optional</c> deliberately: the scan is the subject, and an
+  /// it. That row is wrapped in <c>ElseDefault</c> deliberately: the scan is the subject, and an
   /// unabsorbed miss would measure exception construction and path rendering instead (which the
   /// Diagnostics family measures on purpose).</para>
   /// </summary>
@@ -28,7 +28,7 @@ namespace Unrect.Benchmarks
       On(Rows.Containing(CanonicalSpaces.Landmark)).Row(r => r.Count);
 
     // The miss: absorbed, so the row measures the full-grid scan and not the throw.
-    private static readonly IProjectionDefinition<ICellSpace, int> SeekMiss = Seek.Optional();
+    private static readonly IProjectionDefinition<ICellSpace, int> SeekMiss = Seek.ElseDefault();
 
     private static readonly IProjectionDefinition<ICellSpace, int> Bounded =
       Until(Rows.Containing(CanonicalSpaces.Landmark)).Range(Rows.WhileAnyIsNotBlank(), b => b.Height);

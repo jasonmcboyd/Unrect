@@ -278,7 +278,7 @@ namespace Unrect.Tests.Projections
       // Three levels down: the Warning must name the cell that failed rather than anything that
       // caught it, and an absorbed projection consumes nothing.
       var projection = VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(VerticalFlow(w => $"{w.Next(IntCell())}{w.Next(TextCell().Named("deep"))}"))}")
-        .Optional();
+        .ElseDefault();
 
       AssertReads(projection, Ladder(), null, 0, 0);
 
@@ -336,7 +336,7 @@ namespace Unrect.Tests.Projections
     {
       AssertFails(
         VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(Point().Select<ICellSpace, Point<ICellSpace>, string>(_ => throw new NullReferenceException("boom")).Named("broken"))}")
-          .Optional(),
+          .ElseDefault(),
         Ladder(),
         "'broken'",
         "VerticalFlow -> 'broken' (Select)",
@@ -404,7 +404,7 @@ namespace Unrect.Tests.Projections
       // The sibling note lives in FlowState: a child failing on the very cells its predecessor
       // declined to consume is told why it is probably there.
       AssertFails(
-        VerticalFlow(v => $"{v.Next(IntCell().Optional())}|{v.Next(IntCell())}"),
+        VerticalFlow(v => $"{v.Next(IntCell().ElseDefault())}|{v.Next(IntCell())}"),
         Mixed(new object?[,] { { "x" }, { 5 } }),
         "Integer#2",
         "VerticalFlow -> Integer#2",

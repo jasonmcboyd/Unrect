@@ -252,7 +252,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ABlockMissIsAbsorbable()
     {
-      var result = Fields(Field("EIN"), Field("Deal Type")).Optional().MapWithDiagnostics(Card());
+      var result = Fields(Field("EIN"), Field("Deal Type")).ElseDefault().MapWithDiagnostics(Card());
 
       Assert.Null(result.Value);
 

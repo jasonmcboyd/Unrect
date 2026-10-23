@@ -149,7 +149,7 @@ namespace Unrect.Tests.Projections
 
       Assert.False(Assert.Throws<ProjectionException>(() => declaration.Map(sheet)).IsFault);
 
-      Assert.Null(declaration.Optional().Map(sheet));
+      Assert.Null(declaration.ElseDefault().Map(sheet));
       Assert.Equal("absorbed", declaration.Select(_ => "read").Named("read").Else("absorbed").Map(sheet));
       Assert.Equal("second", Choice(declaration.Select(_ => "first").Named("first"), Point().AsText().Select(_ => "second")).Map(sheet));
     }
@@ -229,7 +229,7 @@ namespace Unrect.Tests.Projections
       Assert.True(Assert.Throws<ProjectionException>(() => miscast.Map(Sheet())).IsFault);
 
       // And no boundary takes it — which is the property the flag exists to produce.
-      Assert.Throws<ProjectionException>(() => miscast.Optional().Map(Sheet()));
+      Assert.Throws<ProjectionException>(() => miscast.ElseDefault().Map(Sheet()));
       Assert.Throws<ProjectionException>(() => miscast.Else(-1).Map(Sheet()));
       Assert.Throws<ProjectionException>(() => Choice(miscast, Point().Integer()).Map(Sheet()));
     }

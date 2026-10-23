@@ -74,7 +74,7 @@ namespace Unrect.Fluent
     /// declared tolerance is the only thing that ever softens a parse.
     /// <para>
     /// Space nothing described is reported as an <c>Info</c>, except where the entire parse was one
-    /// absorbed failure: <c>projection.Optional().MapWithDiagnostics(space)</c> — tolerance
+    /// absorbed failure: <c>projection.ElseDefault().MapWithDiagnostics(space)</c> — tolerance
     /// declared at the root, the nearest thing to a lenient mode — would otherwise say "consumed 0
     /// of N rows" underneath a warning that already named the projection, the reason, and the cell.
     /// Anything else still reports, including a root that consumed nothing after absorbing in two

@@ -30,13 +30,13 @@ namespace Unrect.Tests.Projections
     public void Map_DiscardsWhatTheParseNoticed()
     {
       // The same parse, the same value; Map simply does not offer the diagnostics.
-      Assert.Null(Title().Optional().Map(Square()));
+      Assert.Null(Title().ElseDefault().Map(Square()));
     }
 
     [Fact]
     public void MapWithDiagnostics_SurfacesWhatTheSameParseNoticed()
     {
-      var result = Title().Optional().MapWithDiagnostics(Square());
+      var result = Title().ElseDefault().MapWithDiagnostics(Square());
 
       Assert.Null(result.Value);
       Assert.Contains(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Warning);
@@ -60,7 +60,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void DiagnosticsAreASnapshotThatLaterParsesDoNotDisturb()
     {
-      var projection = Title().Optional();
+      var projection = Title().ElseDefault();
 
       var first = projection.MapWithDiagnostics(Square());
       var second = projection.MapWithDiagnostics(Square());
@@ -155,7 +155,7 @@ namespace Unrect.Tests.Projections
       // Tolerance declared at the root is the nearest thing to a lenient mode, and an absorbed root
       // consumed nothing — so "consumed 0 of 2 rows" would sit underneath a warning that already
       // named the projection, the reason, and the cell, saying the same thing more vaguely.
-      var result = Title().Optional().MapWithDiagnostics(Mixed(new object?[,] { { 1 }, { 2 } }));
+      var result = Title().ElseDefault().MapWithDiagnostics(Mixed(new object?[,] { { 1 }, { 2 } }));
 
       var only = Assert.Single(result.Diagnostics);
 
@@ -189,8 +189,8 @@ namespace Unrect.Tests.Projections
 
       var result = VerticalFlow(v =>
       {
-        v.Next(TextCell().Named("a").Optional());
-        var textCell = v.Next(TextCell().Named("b").Optional());
+        v.Next(TextCell().Named("a").ElseDefault());
+        var textCell = v.Next(TextCell().Named("b").ElseDefault());
 
         return textCell;
       }).MapWithDiagnostics(space);
@@ -205,7 +205,7 @@ namespace Unrect.Tests.Projections
       // The item absorbs, and so consumes nothing, and so is not collected — the repetition ends
       // having read nothing. A warning about a reading that was thrown away would describe a parse
       // that never happened, exactly as with a losing choice branch.
-      var result = VerticalRepeat(TextCell().Optional()).MapWithDiagnostics(Mixed(new object?[,] { { 1 }, { 2 }, { 3 } }));
+      var result = VerticalRepeat(TextCell().ElseDefault()).MapWithDiagnostics(Mixed(new object?[,] { { 1 }, { 2 }, { 3 } }));
 
       Assert.Empty(result.Value);
       Assert.DoesNotContain(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Warning);
@@ -221,7 +221,7 @@ namespace Unrect.Tests.Projections
 
       var result = VerticalFlow(v =>
       {
-        v.Next(TextCell().Optional());
+        v.Next(TextCell().ElseDefault());
         var intCell = v.Next(IntCell());
 
         return intCell;
@@ -262,7 +262,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal(
         DiagnosticSeverity.Warning,
         Assert.Single(
-          Title().Optional().MapWithDiagnostics(Mixed(new object?[,] { { 1 } })).Diagnostics,
+          Title().ElseDefault().MapWithDiagnostics(Mixed(new object?[,] { { 1 } })).Diagnostics,
           d => d.Severity == DiagnosticSeverity.Warning).Severity);
     }
 
@@ -270,7 +270,7 @@ namespace Unrect.Tests.Projections
     public void ADiagnosticRendersItsSeveritySubjectMessagePathAndLocation()
     {
       var warning = Assert.Single(
-        Title().Optional().MapWithDiagnostics(Mixed(new object?[,] { { 1 } })).Diagnostics,
+        Title().ElseDefault().MapWithDiagnostics(Mixed(new object?[,] { { 1 } })).Diagnostics,
         d => d.Severity == DiagnosticSeverity.Warning);
 
       var rendered = warning.ToString();

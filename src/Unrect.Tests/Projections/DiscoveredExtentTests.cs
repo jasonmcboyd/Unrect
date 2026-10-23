@@ -100,7 +100,7 @@ namespace Unrect.Tests.Projections
       // A reading bug reported as "this section was absent" would be the worst outcome a boundary
       // could produce.
       var failure = Assert.Throws<ProjectionException>(() =>
-        Range(Rows.WhileAnyIsNotBlank(), block => block[0, BoundHeight].Integer()).Named("bad").Optional().Map(TallSheet()));
+        Range(Rows.WhileAnyIsNotBlank(), block => block[0, BoundHeight].Integer()).Named("bad").ElseDefault().Map(TallSheet()));
 
       Assert.IsType<ArgumentOutOfRangeException>(failure.GetBaseException());
       Assert.Equal("'bad'", failure.Subject);

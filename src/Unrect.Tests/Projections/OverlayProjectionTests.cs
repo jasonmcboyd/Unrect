@@ -267,7 +267,7 @@ namespace Unrect.Tests.Projections
       // — so the identical declaration is noted in a flow and silent here.
       var space = Mixed(new object?[,] { { "x" }, { 5 } });
 
-      var absorbed = IntCell().Optional();
+      var absorbed = IntCell().ElseDefault();
       var second = IntCell();
 
       var inOverlay = Assert.Throws<ProjectionException>(() =>

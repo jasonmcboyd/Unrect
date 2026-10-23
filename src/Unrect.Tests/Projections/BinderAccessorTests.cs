@@ -350,7 +350,7 @@ namespace Unrect.Tests.Projections
       // And because it is a statement about the data rather than a fault, the located one is
       // absorbable — which the bare one, having no boundary around it, could never be.
       Assert.False(inside.IsFault);
-      Assert.Null(Table((TableRow<ICellSpace> r) => r["Amount"].Decimal()).Optional().Map(sheet));
+      Assert.Null(Table((TableRow<ICellSpace> r) => r["Amount"].Decimal()).ElseDefault().Map(sheet));
     }
 
     [Fact]

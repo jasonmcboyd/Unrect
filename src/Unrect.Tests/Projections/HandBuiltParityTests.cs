@@ -112,14 +112,14 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void AnOptionalAgrees()
+    public void AnElseDefaultAgrees()
     {
-      var fluent = IntCell().Optional();
-      var byHand = ByHand.OptionalNumber(ByHand.IntegerCell());
+      var fluent = IntCell().ElseDefault();
+      var byHand = ByHand.DefaultedNumber(ByHand.IntegerCell());
 
       Assert.Equal(7, fluent.Map(Grid(new[,] { { 7 } })));
       Assert.Equal(7, byHand.Map(Grid(new[,] { { 7 } })));
-      // Over a value type Optional yields default, not null: T? on an unconstrained T is T.
+      // Over a value type ElseDefault yields default, not null: T? on an unconstrained T is T.
       Assert.Equal(0, fluent.Map(Mixed(new object?[,] { { "x" } })));
       Assert.Equal(0, byHand.Map(Mixed(new object?[,] { { "x" } })));
 

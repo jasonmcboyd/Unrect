@@ -95,7 +95,7 @@ namespace Unrect.Tests.Projections
       // Again with a child that notices something, so the L3 half of the claim is not two empty
       // lists agreeing: the absorbed reading's warning is the same sentence about the same cell,
       // under the same path, on both sides of the equation.
-      var tolerated = Title().Optional();
+      var tolerated = Title().ElseDefault();
 
       AssertL3(
         Observe(VerticalFlow(v =>

@@ -11,8 +11,8 @@ namespace Unrect.Projections
   /// actually went wrong, and supplies a filler — either a fallback projection or a constant value.
   /// <para>
   /// It behaves like a catch block. Its own placement is resolved before it can catch anything, so
-  /// tolerance goes innermost: <c>x.On(anchor).Optional()</c> absorbs a missing anchor, while
-  /// <c>x.Optional().On(anchor)</c> does not.
+  /// tolerance goes innermost: <c>x.On(anchor).ElseDefault()</c> absorbs a missing anchor, while
+  /// <c>x.ElseDefault().On(anchor)</c> does not.
   /// </para>
   /// </summary>
   public sealed class FallbackDefinition<TSpace, T> : DefinitionNode<TSpace, T>
@@ -20,13 +20,13 @@ namespace Unrect.Projections
   {
     /// <summary>
     /// A tolerance boundary: <paramref name="inner"/>'s failure over the data is absorbed and <paramref name="fallback"/> is tried in its place, or <paramref name="fallbackValue"/> stands in when there is none.
-    /// <para>Fluent: <c>inner.Optional()</c>.</para>
+    /// <para>Fluent: <c>inner.ElseDefault()</c>, <c>inner.Else(value)</c>, <c>inner.Else(fallback)</c>.</para>
     /// </summary>
     /// <param name="inner">What is tolerated.</param>
     /// <param name="fallback">What is tried instead; null for a value alone.</param>
-    /// <param name="fallbackValue">The value when nothing is tried instead, such as <c>null</c> for <c>Optional</c>.</param>
+    /// <param name="fallbackValue">The value when nothing is tried instead, such as <c>default</c> for <c>ElseDefault</c>.</param>
     /// <param name="placement">Where the boundary is.</param>
-    /// <param name="description">The path segment, such as <c>Optional</c> or <c>Else</c>.</param>
+    /// <param name="description">The path segment, such as <c>ElseDefault</c> or <c>Else</c>.</param>
     /// <param name="fallbackSite">How the fallback was declared, for its path segment.</param>
     public FallbackDefinition(
       IProjectionDefinition<TSpace, T> inner,
@@ -35,11 +35,34 @@ namespace Unrect.Projections
       Placement<TSpace> placement,
       string description,
       UseSite fallbackSite = default)
+      : this(inner, fallback, () => fallbackValue, placement, description, fallbackSite)
+    {
+    }
+
+    /// <summary>
+    /// A tolerance boundary whose filler is BUILT when it is needed: <paramref name="inner"/>'s
+    /// failure over the data is absorbed and <paramref name="fallbackValue"/> is called for the
+    /// value that stands in — once per absence, never when the inner succeeds.
+    /// <para>Fluent: <c>inner.Else(() => value)</c>.</para>
+    /// </summary>
+    /// <param name="inner">What is tolerated.</param>
+    /// <param name="fallback">What is tried instead; null for a value alone.</param>
+    /// <param name="fallbackValue">Builds the value when nothing is tried instead.</param>
+    /// <param name="placement">Where the boundary is.</param>
+    /// <param name="description">The path segment, such as <c>Else</c>.</param>
+    /// <param name="fallbackSite">How the fallback was declared, for its path segment.</param>
+    public FallbackDefinition(
+      IProjectionDefinition<TSpace, T> inner,
+      IProjectionDefinition<TSpace, T>? fallback,
+      Func<T> fallbackValue,
+      Placement<TSpace> placement,
+      string description,
+      UseSite fallbackSite = default)
       : base(placement)
     {
       Inner = inner ?? throw new ArgumentNullException(nameof(inner));
       Fallback = fallback;
-      FallbackValue = fallbackValue;
+      FallbackValue = fallbackValue ?? throw new ArgumentNullException(nameof(fallbackValue));
       Description = description ?? throw new ArgumentNullException(nameof(description));
       FallbackSite = fallbackSite;
       Children = fallback is null ? new[] { new Child(inner, default) } : new[] { new Child(inner, default), new Child(fallback, fallbackSite) };
@@ -47,7 +70,7 @@ namespace Unrect.Projections
 
     private IProjectionDefinition<TSpace, T> Inner { get; }
     private IProjectionDefinition<TSpace, T>? Fallback { get; }
-    private T FallbackValue { get; }
+    private Func<T> FallbackValue { get; }
 
     /// <summary>What the declaration called the fallback, so a stand-in names itself as written.</summary>
     private UseSite FallbackSite { get; }
@@ -201,7 +224,7 @@ namespace Unrect.Projections
         return taken;
       }
 
-      private Settlement<T> Absorbed() => new Settlement<T>(_boundary.FallbackValue, new Size(0, 0), absorbed: true);
+      private Settlement<T> Absorbed() => new Settlement<T>(_boundary.FallbackValue(), new Size(0, 0), absorbed: true);
 
       private ProjectionException StandingIn(ProjectionException fallbackFailure)
         => fallbackFailure.WithNote($"it stands in for {_primary!.Subject}, which failed too: {_primary.Problem}");

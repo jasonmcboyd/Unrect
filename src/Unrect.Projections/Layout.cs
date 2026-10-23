@@ -252,7 +252,7 @@ namespace Unrect.Projections
     private const string Rule =
       "A layout's shape may not depend on a value it read: the lambda runs once at declaration to learn its "
       + "children and once per application to assemble them, and the two must agree. Declare the alternatives "
-      + "with Choice, Else or Optional";
+      + "with Choice, Else or ElseDefault";
 
     private static string Count(int children) => children == 1 ? "1 child" : $"{children} children";
   }

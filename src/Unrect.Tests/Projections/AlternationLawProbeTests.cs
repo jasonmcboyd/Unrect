@@ -12,7 +12,7 @@ namespace Unrect.Tests.Projections
 {
   /// <summary>
   /// The open questions of v0.4 §14.2 (associativity of <c>Choice</c> and <c>Else</c>) and §14.3
-  /// (idempotence of <c>Optional</c>), answered by experiment and pinned at the level each answer
+  /// (idempotence of <c>ElseDefault</c>), answered by experiment and pinned at the level each answer
   /// turned out to hold at. Nothing here was known before it was measured; the test names ARE the
   /// findings.
   /// <para>
@@ -33,11 +33,11 @@ namespace Unrect.Tests.Projections
   /// two agree again, note chain and all.
   /// </para>
   /// <para>
-  /// <strong>Optional is idempotent at L3</strong> — value, consumption and the single Warning are
+  /// <strong>ElseDefault is idempotent at L3</strong> — value, consumption and the single Warning are
   /// identical on success and on absorbed failure alike, because the second boundary sees the first
   /// one succeed. It differs only in the declaration tree, which is L0. There is no nullability
   /// question to answer: <c>T?</c> on an unconstrained <c>T</c> is an annotation, so
-  /// <c>Optional()</c> on a projection of <c>int</c> hands back a projection of <c>int</c> and there
+  /// <c>ElseDefault()</c> on a projection of <c>int</c> hands back a projection of <c>int</c> and there
   /// is no <c>T??</c> for a second one to collapse.
   /// </para>
   /// <para>
@@ -280,23 +280,23 @@ namespace Unrect.Tests.Projections
         "the nearest stand-in is named first, then the one it stood in for");
     }
 
-    // --- Optional idempotence ----------------------------------------------------------------------
+    // --- ElseDefault idempotence ----------------------------------------------------------------------
 
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public void OptionalIsIdempotentAtEveryLevelAReaderCanObserve(bool accepts)
+    public void ElseDefaultIsIdempotentAtEveryLevelAReaderCanObserve(bool accepts)
     {
       // §14.3, answered: yes, at L3, in both scenarios. The second boundary is inert because the
       // first one never fails — it absorbs, reports, and returns a value — so there is no second
       // Warning, no second rollback and nothing to consume differently.
       var x = accepts ? Accepts("x") : Rejects("x");
 
-      AssertL3(Observe(x.Optional(), Sheet()), Observe(x.Optional().Optional(), Sheet()));
+      AssertL3(Observe(x.ElseDefault(), Sheet()), Observe(x.ElseDefault().ElseDefault(), Sheet()));
     }
 
     [Fact]
-    public void TheSecondOptionalIsAWrapperOnlyInspectionCanSee()
+    public void TheSecondElseDefaultIsAWrapperOnlyInspectionCanSee()
     {
       // Where the idempotence stops, which is L0: the doubled form is a boundary over a Select over
       // a boundary. Both describe themselves the same way and both are unnamed wrappers, so the extra
@@ -304,33 +304,33 @@ namespace Unrect.Tests.Projections
       // exactly why the levels above cannot tell them apart.
       var x = Rejects("x");
 
-      var once = x.Optional();
-      var twice = x.Optional().Optional();
+      var once = x.ElseDefault();
+      var twice = x.ElseDefault().ElseDefault();
 
-      Assert.Equal("Optional", once.Description);
-      Assert.Equal("Optional", twice.Description);
+      Assert.Equal("ElseDefault", once.Description);
+      Assert.Equal("ElseDefault", twice.Description);
       Assert.True(once.IsWrapper);
       Assert.True(twice.IsWrapper);
 
       Assert.Equal("Select", Assert.Single(Assert.Single(once.Children).Definition.Children).Definition.Description);
-      Assert.Equal("Optional", Assert.Single(Assert.Single(twice.Children).Definition.Children).Definition.Description);
+      Assert.Equal("ElseDefault", Assert.Single(Assert.Single(twice.Children).Definition.Children).Definition.Description);
     }
 
     [Fact]
-    public void OptionalNeverAddedANullableForASecondOneToCollapse()
+    public void ElseDefaultNeverAddedANullableForASecondOneToCollapse()
     {
       // The nullability half of the question turns out not to exist. T? on an unconstrained T is an
       // annotation and not Nullable<T>, so a projection of int stays a projection of int — the
       // absent reading is 0, as BoundaryProjectionTests pins — and both spellings have the same
       // static type at both arities.
-      IProjectionDefinition<ICellSpace, int> once = IntCell().Optional();
-      IProjectionDefinition<ICellSpace, int> twice = IntCell().Optional().Optional();
+      IProjectionDefinition<ICellSpace, int> once = IntCell().ElseDefault();
+      IProjectionDefinition<ICellSpace, int> twice = IntCell().ElseDefault().ElseDefault();
 
       Assert.Equal(0, once.Map(Sheet()));
       Assert.Equal(0, twice.Map(Sheet()));
 
-      IProjectionDefinition<ICellSpace, string?> onceText = Accepts("x").Optional();
-      IProjectionDefinition<ICellSpace, string?> twiceText = Accepts("x").Optional().Optional();
+      IProjectionDefinition<ICellSpace, string?> onceText = Accepts("x").ElseDefault();
+      IProjectionDefinition<ICellSpace, string?> twiceText = Accepts("x").ElseDefault().ElseDefault();
 
       Assert.Equal("x-x", onceText.Map(Sheet()));
       Assert.Equal("x-x", twiceText.Map(Sheet()));

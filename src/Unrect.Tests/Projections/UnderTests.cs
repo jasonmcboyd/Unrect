@@ -16,7 +16,7 @@ namespace Unrect.Tests.Projections
   /// spelled only through the pipeline — is sugar for a vertical flow that reads the caption rows and
   /// then the projection, and it is sugar in the strongest sense: it builds a real flow with real
   /// children, so every caption is a node the engine places, the naming ladder labels, <c>Until</c>
-  /// bounds, <c>Optional</c> tolerates, and the consumed-space meter counts.
+  /// bounds, <c>ElseDefault</c> tolerates, and the consumed-space meter counts.
   /// <para>
   /// The tests below are mostly about that claim. Nothing here is new machinery — what is worth
   /// pinning is that nothing had to be. (The suite keeps its name from the retired modifier; the
@@ -198,9 +198,9 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void OptionalAbsorbsAMissingCaptionAsAnAbsentSection()
+    public void ElseDefaultAbsorbsAMissingCaptionAsAnAbsentSection()
     {
-      var result = Heading("Nope").Of(Lines()).Optional().MapWithDiagnostics(Sheet());
+      var result = Heading("Nope").Of(Lines()).ElseDefault().MapWithDiagnostics(Sheet());
 
       Assert.Equal(0, result.Value);
 
@@ -214,7 +214,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AnAbsorbedSectionConsumesNothing()
     {
-      var applied = Heading("Nope").Of(Lines()).Optional().Apply(Sheet());
+      var applied = Heading("Nope").Of(Lines()).ElseDefault().Apply(Sheet());
 
       Assert.Equal(0, applied.Consumed.Width);
       Assert.Equal(0, applied.Consumed.Height);

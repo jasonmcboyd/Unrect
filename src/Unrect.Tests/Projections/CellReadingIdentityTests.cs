@@ -271,7 +271,7 @@ namespace Unrect.Tests.Projections
       Assert.Null(byLeaf.Value);
       Assert.Null(byColumn.Single().Amount);
 
-      // Quietly on both sides: a declared blank is the answer, not something to report. Optional()
+      // Quietly on both sides: a declared blank is the answer, not something to report. ElseDefault()
       // is the operator that absorbs and says so.
       Assert.DoesNotContain(byLeaf.Diagnostics, d => d.Severity == DiagnosticSeverity.Warning);
     }

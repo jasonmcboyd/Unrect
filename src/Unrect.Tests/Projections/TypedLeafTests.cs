@@ -183,7 +183,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ALeafFailureIsAbsorbable()
     {
-      var result = Point().Decimal().Optional().MapWithDiagnostics(One("x"));
+      var result = Point().Decimal().ElseDefault().MapWithDiagnostics(One("x"));
 
       Assert.Equal(0m, result.Value);
 

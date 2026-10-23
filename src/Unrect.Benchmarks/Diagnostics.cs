@@ -18,7 +18,7 @@ namespace Unrect.Benchmarks
   ///     that has to stay on one machine to mean anything.</item>
   ///   <item><b>Rollback.</b> A <c>Choice</c> whose first alternative loses does the work, discards
   ///     it, and starts over -- the cost of an alternative that was tried and abandoned.</item>
-  ///   <item><b>Absorption.</b> <c>Optional</c> around a section that is not there. The failure is
+  ///   <item><b>Absorption.</b> <c>ElseDefault</c> around a section that is not there. The failure is
   ///     still constructed with its full path and location before it is swallowed, so this measures
   ///     what tolerance actually costs when it triggers.</item>
   ///   <item><b>Rendering.</b> A failure allowed to escape, with its message and path materialized.
@@ -42,7 +42,7 @@ namespace Unrect.Benchmarks
       Heading(CanonicalSpaces.DetailsCaption).Of(Section));
 
     private static readonly IProjectionDefinition<ICellSpace, int> AbsorbedFailure =
-      Heading("No Such Caption Exists Here").Of(Section).Optional();
+      Heading("No Such Caption Exists Here").Of(Section).ElseDefault();
 
     private ICellSpace _document = default!;
 

@@ -181,7 +181,7 @@ namespace Unrect.Tests.Projections
     }
 
     /// <summary>A section that raises a Warning of its own rather than failing the parse.</summary>
-    private static IProjectionDefinition<ICellSpace, int> Tolerated() => IntCell().Optional();
+    private static IProjectionDefinition<ICellSpace, int> Tolerated() => IntCell().ElseDefault();
 
     /// <summary>A diagnostic with everything but its subject and path — the L3 residue the law keeps.</summary>
     private static IReadOnlyList<string> WithoutLabels(IReadOnlyList<ProjectionDiagnostic> diagnostics)

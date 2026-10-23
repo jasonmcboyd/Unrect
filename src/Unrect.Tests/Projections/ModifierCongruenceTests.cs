@@ -38,14 +38,14 @@ namespace Unrect.Tests.Projections
   /// </list>
   /// <para>
   /// <strong>The one general congruence found, and the one a normal form may use.</strong> Moving a
-  /// placement across a non-frame-shifting wrapper (<c>Optional</c>, <c>Else</c>, <c>Padded</c>,
+  /// placement across a non-frame-shifting wrapper (<c>ElseDefault</c>, <c>Else</c>, <c>Padded</c>,
   /// <c>Select</c>) preserves the value and the ADVANCE and only re-splits offset against consumed —
   /// so it is invisible to a parent flow and visible to <c>Apply</c>. It fails for the two wrappers
   /// that search their own extent for content (<c>Until</c>, <c>Heading</c>), and it fails whenever a
   /// tolerance boundary actually absorbs.
   /// </para>
   /// <para>
-  /// <strong>Not duplicated here.</strong> <c>Optional</c>×<c>On</c> is
+  /// <strong>Not duplicated here.</strong> <c>ElseDefault</c>×<c>On</c> is
   /// <c>BoundaryProjectionTests.ABoundaryInsideTheAnchor_AbsorbsAMissingAnchor</c> and its twin;
   /// <c>Until</c>×<c>Sized</c> at L2 is <c>UntilProjectionTests.SizedAfterUntil_IsWhatTheParentSees</c>
   /// and its twin (this file adds the L1 half those do not reach); <c>Sized</c>×<c>Sized</c> refused
@@ -144,7 +144,7 @@ namespace Unrect.Tests.Projections
       "Below" => Below(Mark()).Of(projection),
       "Down" => Down(1).Of(projection),
       "Right" => Right(1).Of(projection),
-      "Optional" => projection.Optional()!,
+      "ElseDefault" => projection.ElseDefault()!,
       "Else" => projection.Else("z"),
       "Until" => Until(Mark()).Of(projection),
       "Padded" => projection.Padded(0, 1, 0, 0),
@@ -333,7 +333,7 @@ namespace Unrect.Tests.Projections
     // --- A clone crossing a wrapper: which layer it lands on -------------------------------------------
 
     [Theory]
-    [InlineData("Optional")]
+    [InlineData("ElseDefault")]
     [InlineData("Else")]
     [InlineData("Until")]
     [InlineData("Padded")]
@@ -360,8 +360,8 @@ namespace Unrect.Tests.Projections
       // is about.
       var space = Numbers();
 
-      var inside = Assert.Single(Point().Text().Named("n").Optional().MapWithDiagnostics(space).Diagnostics);
-      var outside = Assert.Single(Point().Text().Optional().Named("n").MapWithDiagnostics(space).Diagnostics);
+      var inside = Assert.Single(Point().Text().Named("n").ElseDefault().MapWithDiagnostics(space).Diagnostics);
+      var outside = Assert.Single(Point().Text().ElseDefault().Named("n").MapWithDiagnostics(space).Diagnostics);
 
       Assert.Equal("'n'", inside.Subject);
       Assert.Equal("'n' (Text)", inside.Path);
@@ -438,7 +438,7 @@ namespace Unrect.Tests.Projections
     }
 
     [Theory]
-    [InlineData("Optional")]
+    [InlineData("ElseDefault")]
     [InlineData("Else")]
     [InlineData("Padded")]
     [InlineData("Select")]
@@ -476,8 +476,8 @@ namespace Unrect.Tests.Projections
     {
       var space = Numbers();
 
-      var inside = Observe(Sized(Extent.Of(1, 1)).Of(Point().Text()).Optional()!, space);
-      var outside = Observe(Sized(Extent.Of(1, 1)).Of(Point().Text().Optional())!, space);
+      var inside = Observe(Sized(Extent.Of(1, 1)).Of(Point().Text()).ElseDefault()!, space);
+      var outside = Observe(Sized(Extent.Of(1, 1)).Of(Point().Text().ElseDefault())!, space);
 
       AssertL1(inside, outside);
 
@@ -490,8 +490,8 @@ namespace Unrect.Tests.Projections
     {
       var space = Numbers();
 
-      var inside = Observe(Point().Text().Padded(0, 1, 0, 0).Optional()!, space);
-      var outside = Observe(Point().Text().Optional().Padded(0, 1, 0, 0)!, space);
+      var inside = Observe(Point().Text().Padded(0, 1, 0, 0).ElseDefault()!, space);
+      var outside = Observe(Point().Text().ElseDefault().Padded(0, 1, 0, 0)!, space);
 
       AssertL1(inside, outside);
 
@@ -507,8 +507,8 @@ namespace Unrect.Tests.Projections
       // in a different place.
       var space = Numbers();
 
-      var inside = Observe(Down(1).Of(Point().Text()).Optional()!, space);
-      var outside = Observe(Down(1).Of(Point().Text().Optional())!, space);
+      var inside = Observe(Down(1).Of(Point().Text()).ElseDefault()!, space);
+      var outside = Observe(Down(1).Of(Point().Text().ElseDefault())!, space);
 
       AssertL1(inside, outside);
 
@@ -524,9 +524,9 @@ namespace Unrect.Tests.Projections
       // written outside it, the bound included.
       var space = RowSheet();
 
-      Assert.Null(Until(Missing()).Of(Point().Text()).Optional().Map(space));
+      Assert.Null(Until(Missing()).Of(Point().Text()).ElseDefault().Map(space));
 
-      var failure = Assert.Throws<ProjectionException>(() => Until(Missing()).Of(Point().Text().Optional()).Map(space));
+      var failure = Assert.Throws<ProjectionException>(() => Until(Missing()).Of(Point().Text().ElseDefault()).Map(space));
 
       Assert.Equal("no row containing 'Nope' exists to end this projection", Problem(failure));
     }
@@ -538,9 +538,9 @@ namespace Unrect.Tests.Projections
       // outside too. So "the section may be absent" has to be written outside the Heading, not inside.
       var space = RowSheet();
 
-      Assert.Null(Heading("Nope").Of(Point().Text()).Optional().Map(space));
+      Assert.Null(Heading("Nope").Of(Point().Text()).ElseDefault().Map(space));
 
-      var failure = Assert.Throws<ProjectionException>(() => Heading("Nope").Of(Point().Text().Optional()).Map(space));
+      var failure = Assert.Throws<ProjectionException>(() => Heading("Nope").Of(Point().Text().ElseDefault()).Map(space));
 
       Assert.Contains("no row saying 'Nope' exists in the available space", failure.Message);
     }
@@ -549,13 +549,13 @@ namespace Unrect.Tests.Projections
     public void ASelectWrittenOutsideABoundaryTransformsTheStandIn()
     {
       // Select is neutral about placement and emphatically not about tolerance: outside the
-      // boundary it is applied to the filler, which for Optional is the default value. A conversion
+      // boundary it is applied to the filler, which for ElseDefault is the default value. A conversion
       // written on the wrong side of a tolerance boundary therefore runs on a value the document
       // never contained.
       var space = Numbers();
 
-      Assert.Null(Point().Text().Select(value => value + "!").Optional().Map(space));
-      Assert.Equal("!", Point().Text().Optional().Select(value => value + "!").Map(space));
+      Assert.Null(Point().Text().Select(value => value + "!").ElseDefault().Map(space));
+      Assert.Equal("!", Point().Text().ElseDefault().Select(value => value + "!").Map(space));
 
       Assert.Equal("z", Point().Text().Select(value => value + "!").Else("z").Map(space));
       Assert.Equal("z!", Point().Text().Else("z").Select(value => value + "!").Map(space));
@@ -585,8 +585,8 @@ namespace Unrect.Tests.Projections
       // on the order.
       var space = Numbers();
 
-      Assert.Null(Point().Text().Optional().Else("z").Map(space));
-      Assert.Equal("z", Point().Text().Else("z").Optional().Map(space));
+      Assert.Null(Point().Text().ElseDefault().Else("z").Map(space));
+      Assert.Equal("z", Point().Text().Else("z").ElseDefault().Map(space));
     }
 
     // --- The wrapper stack ------------------------------------------------------------------------------
@@ -703,7 +703,7 @@ namespace Unrect.Tests.Projections
     [InlineData("Padded")]
     [InlineData("Until")]
     [InlineData("Heading")]
-    [InlineData("Optional")]
+    [InlineData("ElseDefault")]
     public void SelectCommutesWithEveryOtherWrapperAtL3WhileNothingIsAbsorbed(string wrapper)
     {
       // Select changes the value and nothing else, so among the wrappers it is the one that stacks
@@ -724,14 +724,14 @@ namespace Unrect.Tests.Projections
       var space = RowSheet();
 
       AssertL3(
-        Observe(Block().Padded(0, 1, 0, 0).Optional()!, space),
-        Observe(Block().Optional()!.Padded(0, 1, 0, 0), space));
+        Observe(Block().Padded(0, 1, 0, 0).ElseDefault()!, space),
+        Observe(Block().ElseDefault()!.Padded(0, 1, 0, 0), space));
     }
 
     // --- Composability is itself a table entry ---------------------------------------------------------
 
     [Theory]
-    [InlineData("Optional")]
+    [InlineData("ElseDefault")]
     [InlineData("Until")]
     [InlineData("Padded")]
     [InlineData("Select")]

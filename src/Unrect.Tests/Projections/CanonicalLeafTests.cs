@@ -111,7 +111,7 @@ namespace Unrect.Tests.Projections
     public void AsTextOrBlankReadsTheAbsenceAsNullAndSaysNothing()
     {
       // Quietly — the declaration said the cell may be absent, so its absence is the answer rather
-      // than something to report. That is the whole difference from Optional, which absorbs a
+      // than something to report. That is the whole difference from ElseDefault, which absorbs a
       // failure and raises a Warning about it.
       var read = Point().AsText().OrBlank().MapWithDiagnostics(BlankCell());
 
@@ -154,7 +154,7 @@ namespace Unrect.Tests.Projections
     {
       // A blank cell is a statement about the data, not a broken declaration, so a tolerance
       // boundary may take it — which is the property a fault would remove.
-      var read = Point().AsText().Optional().MapWithDiagnostics(BlankCell());
+      var read = Point().AsText().ElseDefault().MapWithDiagnostics(BlankCell());
 
       Assert.Null(read.Value);
       Assert.Contains(read.Diagnostics, d => d.Severity == DiagnosticSeverity.Warning);

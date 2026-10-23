@@ -1021,9 +1021,9 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void TheComposedRungsEmptyExtentFailureIsAbsorbable()
     {
-      // The other half of the regression: a raw OutOfBoundsException escaped .Optional(), so the
+      // The other half of the regression: a raw OutOfBoundsException escaped .ElseDefault(), so the
       // absence of a table read as a broken file. The guarded failure is absorbed and reads as null.
-      IReadOnlyList<int>? absent = Table(1, Record((TableRow<ICellSpace> row) => row.Index)).Optional().Map(AllBlank());
+      IReadOnlyList<int>? absent = Table(1, Record((TableRow<ICellSpace> row) => row.Index)).ElseDefault().Map(AllBlank());
 
       Assert.Null(absent);
     }

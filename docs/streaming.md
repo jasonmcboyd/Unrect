@@ -38,7 +38,7 @@ sheet determines what a pass has to hold:
   strip, a `Table(view => …)` or `Table(row => …)` lambda rung reads the region it collected
   at close, so every row of that region is held until then. That is the right cost for a
   block a reader genuinely wants whole; it is the wrong shape for a sheet-sized region.
-- **A tolerance boundary holds until it settles.** `.Optional()`, `.Else(…)` and `Choice(…)`
+- **A tolerance boundary holds until it settles.** `.ElseDefault()`, `.Else(…)` and `Choice(…)`
   may have to replay what their inner took to the successor, so they hold from where they
   started. Put the boundary around the part that may be absent, not around the sheet.
 - **A repeat holds one attempt.** A committed occurrence is final, so a walk over a
@@ -78,7 +78,7 @@ var result = projection.Map(book.Sheet("Data"));    // Sheet(name) is one forwar
   `row 7 of 'Data' has left the buffer: a streamed sheet is read once, forward, so read B7
   inside the projection rather than after it` — which is what a `Point()` escaping its leaf
   and read in a combiner, or the same sheet value mapped twice, will see. It is a fault, like a
-  disk error: it says nothing about the data, so `.Optional()`, `.Else()` and `Choice` let it
+  disk error: it says nothing about the data, so `.ElseDefault()`, `.Else()` and `Choice` let it
   through and never report it as an absent section.
 - **A cell read directly is loaded on the way to it.** Outside the engine nothing is
   released, so a sheet can be walked forward by hand — `sheet.AsTextAt(0, 0)`, then row 1, then
@@ -210,7 +210,7 @@ The eager door does the same thing without the counters and without a cap:
 
 A disk failure — or a read against a sheet whose `Workbook` has been disposed — is
 classified a **fault**, never a data disagreement. Faults propagate through every tolerance
-boundary unchanged: `.Optional()`, `.Else(fallback)`, `.Else(value)`, and `Choice(...)` all
+boundary unchanged: `.ElseDefault()`, `.Else(fallback)`, `.Else(value)`, and `Choice(...)` all
 let a fault through rather than absorbing it. This applies at every point a strategy or a
 projection reads a cell, and to the pass itself: a cursor that throws while the engine is
 loading the next row is a fault naming the declaration and the row.
@@ -221,7 +221,7 @@ Concretely, `IOException` (and its derivatives), `ObjectDisposedException` and
 `InvalidCastException`). A wrong-kind cell, an unparseable value, and a missing anchor
 (`OutOfBoundsException`) remain ordinary, absorbable failures — the fault list is a
 discrimination, not a blanket. Without this rule, a disk failure in the middle of
-`SkipBlankRows()` inside `section.Optional()` would have been reported as *"section
+`SkipBlankRows()` inside `section.ElseDefault()` would have been reported as *"section
 absent"*, with a warning, and the parse would have continued and produced a wrong answer
 quietly.
 

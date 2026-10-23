@@ -35,7 +35,7 @@ and a backend's own leaves, closed over the VALUE its store holds and living bes
 | `Point().AsText()` | `string` | One cell, read as what it says: a text cell's own value, or the backend's rendering of anything else. **Total** — every space renders every cell, so the only failure is a blank one, and `OrBlank()` turns that into `null`. `Choice(Point().AsText(), …)` is therefore degenerate: `AsText` cannot fail, so nothing after it in the choice is reachable — put the narrower leaf first |
 | `Point().Text()` `Point().Double()` `Point().Date()` `Point().Boolean()` | typed value | One cell; asserts which CASE of the value the cell holds. Live in `Unrect.Spreadsheets`, imported via `ProjectionBuilders<TSpace>` (over `ICellSpace`) or `ProjectionBuilders<TSpace>` (over `ISpreadsheetSpace`, which also carries `Point().Formula()`). Closed over the `CellValue` at the cell (`p.Value()`) and never leading it: where `Point().AsText()` takes whatever the cell says, `Point().Text()` refuses a numeric 42 that merely says "42", in the sheet's own words (`expected Text at B4, found Number`). A workbook's numbers are doubles, so that is the number read |
 | `Point().Decimal()` `Point().Integer()` | `decimal` / `int` | CONVERSIONS over the double the sheet holds, kept as leaves because nearly every amount and count wants one. `Point().Decimal()` rounds to the fifteen significant digits a double carries (a stored 0.30000000000000004 reads as 0.3); a number that will not fit fails as a conversion, quoting the number as the cell says it, never as a kind. The same conversion fills a bound `decimal`/`int` member. No `Long()`, ever; a conversion beyond these is `Select` territory |
-| `Point().AsText().OrBlank()` / `Point().Text().OrBlank()` / `Point().Decimal().OrBlank()` … | `T?` | The same reading, tolerating a BLANK cell: null, quietly, with no diagnostic — where `.Optional()` absorbs a *failure* and records a Warning. A wrong kind still fails loudly. The standalone spelling of a nullable table member's tolerance |
+| `Point().AsText().OrBlank()` / `Point().Text().OrBlank()` / `Point().Decimal().OrBlank()` … | `T?` | The same reading, tolerating a BLANK cell: null, quietly, with no diagnostic — where `.ElseDefault()` absorbs a *failure* and records a Warning. A wrong kind still fails loudly. The standalone spelling of a nullable table member's tolerance |
 | `Cell(v => ...)` | `T` | Removed name; the escape hatch for one cell is `Point(...)` composed with a caller's own read, or a bespoke leaf over `DefinitionNode<TSpace, T>` |
 | `Row(r => ...)` / `Row(width, r => ...)` / `Row(columns, r => ...)` | from `CellStrip<TSpace>` | One row; width discovered (`while any value`), explicit count, or by column strategy |
 | `Column(c => ...)` / `Column(height, c => ...)` / `Column(rows, c => ...)` | from `CellStrip<TSpace>` | One column; height discovered, explicit count, or by row strategy |
@@ -164,7 +164,7 @@ declaration would need (`On(a).On(b)` does not compile; the stub it would resolv
 compiler's).
 
 Absence semantics live in the word, not in a flag: a landmark that matches nothing is **loud**
-(`Optional`/`Else` absorb it; a repeat reads it as having run out of sections), while a
+(`ElseDefault`/`Else` absorb it; a repeat reads it as having run out of sections), while a
 filler-skip that finds no filler is **tolerant** and simply does not move.
 
 The strategy vocabulary `.OffsetBy` takes:
@@ -279,7 +279,7 @@ over the spreadsheet space and refuses to compile in a file closed over a sheet 
 |---|---|
 | `.Under(params captions)` | Captions stacked above the projection, in reading order — sugar desugaring to a plain flow. `Heading(text)` is the pipeline's canonical prefix spelling of the assert-and-consume case; `.Under` is more general (any string-valued projection) |
 | `.Padded(all)` / `(h, v)` / `(l, t, r, b)` | Shrink the inside; consumed includes the border. The one geometry modifier that stays postfix — it nests rather than erases, so it needs no pipeline stage |
-| `.Optional()` | Tolerance boundary: absorbs a failure, yields `default`, records a Warning |
+| `.ElseDefault()` | Tolerance boundary: absorbs a failure, yields `default`, records a Warning |
 | `.Else(fallbackProjection)` / `.Else(value)` | Fallback boundary; Warning carries the primary's failure |
 | `.Select(f)` | Transform the value (single-value only) |
 | `.Named(name)` | Explicit name — an override on the naming ladder, below |
@@ -341,7 +341,7 @@ var report = VerticalFlow(v => new Report(
 **The space is spelled in full, in the `using static` line, exactly once** — a `using` directive
 resolves without the other `using`s around it, the one place in a C# file where a namespace import
 does not help. What cannot follow into the closed class is the *postfix* half: C# forbids
-extension methods inside a generic static class (CS1106), so `.Named`, `.Optional`, `.OrBlank`,
+extension methods inside a generic static class (CS1106), so `.Named`, `.ElseDefault`, `.OrBlank`,
 `.Select`, `.Until`, `.AsUnit`, `.AsScaffolding` and the placement modifiers still arrive through
 the ordinary `using Unrect.Fluent;`, and so do `Map`, `Apply` and `MapWithDiagnostics`, the verbs
 that run a declaration — the seam falls exactly on the geography law: what

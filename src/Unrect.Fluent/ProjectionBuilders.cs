@@ -38,7 +38,7 @@ namespace Unrect.Fluent
   /// </para>
   /// <para>
   /// <b>What cannot live here is the postfix half.</b> C# forbids extension methods in a generic
-  /// static class, so <c>.Named</c>, <c>.Optional</c>, <c>.OrBlank</c>, <c>.Select</c>,
+  /// static class, so <c>.Named</c>, <c>.ElseDefault</c>, <c>.OrBlank</c>, <c>.Select</c>,
   /// <c>.Padded</c> and <c>.Map</c> arrive through the ordinary
   /// <c>using Unrect.Projections;</c>. A namespace import publishes no simple names, so the two
   /// cannot collide, and the seam falls where a reader would draw it anyway: what spells before the
@@ -65,7 +65,7 @@ namespace Unrect.Fluent
     /// caption is content the section reads rather than a gap it steps over. A position is a relation
     /// to a thing, never a distance arrived at. Occupancy has no direction, so the word names none —
     /// the landmark carries the axis. A landmark that matches nothing is loud, absorbable by
-    /// <c>Optional</c> and <c>Else</c>, and read by a <c>VerticalRepeat</c> as having run out of sections.
+    /// <c>ElseDefault</c> and <c>Else</c>, and read by a <c>VerticalRepeat</c> as having run out of sections.
     /// </summary>
     /// <param name="landmark">The line to sit on.</param>
     public static OffsetStage<TSpace> On(ILineLandmark<TSpace> landmark) => Enter(Step.On(landmark));
@@ -75,7 +75,7 @@ namespace Unrect.Fluent
     /// name="landmark"/> matches — for a section under a caption another projection describes, or one
     /// nothing does. Exactly one row beyond the match, the matched row's own height and never a step
     /// you chose; unlike <c>On</c> the concept has a direction, so the word carries one. A missing
-    /// landmark is loud, absorbable by <c>Optional</c>/<c>Else</c> and read by a repeat as its end.
+    /// landmark is loud, absorbable by <c>ElseDefault</c>/<c>Else</c> and read by a repeat as its end.
     /// </summary>
     /// <param name="landmark">The row to sit below; a landmark that finds a column is refused here.</param>
     public static OffsetStage<TSpace> Below(ILineLandmark<TSpace> landmark) => Enter(Step.Below(landmark));

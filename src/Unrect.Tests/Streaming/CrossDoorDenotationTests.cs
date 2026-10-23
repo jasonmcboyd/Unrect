@@ -355,7 +355,7 @@ namespace Unrect.Tests.Streaming
 
       // The three tolerance boundaries, each absorbing a real failure and saying so.
       "a choice absorbing its losing alternative" => Scenario.Of(Choice(Down(1).Of(Point().Text()), Point().Text()), "report"),
-      "optional absorbing a failure" => Scenario.Of(Point().Integer().Optional(), "report"),
+      "optional absorbing a failure" => Scenario.Of(Point().Integer().ElseDefault(), "report"),
       "else absorbing a failure" => Scenario.Of(Point().Integer().Else(-1), "report"),
 
       // Failures. A landmark that is not there, a kind mismatch deep inside a table record, a kind

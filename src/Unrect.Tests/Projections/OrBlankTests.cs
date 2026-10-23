@@ -14,7 +14,7 @@ namespace Unrect.Tests.Projections
   /// <summary>
   /// <c>OrBlank</c>: the leaf's way of saying "this field may be absent". A blank reads as null and
   /// nothing is recorded, because an expected blank is a value the declaration allowed for — where
-  /// <c>Optional</c> absorbs a <em>failure</em> and says so with a <c>Warning</c>. That difference is
+  /// <c>ElseDefault</c> absorbs a <em>failure</em> and says so with a <c>Warning</c>. That difference is
   /// the whole reason the modifier exists, so it is pinned from both sides over the same cell.
   /// <para>
   /// Everything else about the leaf is untouched. A cell of the wrong kind still fails in the
@@ -48,7 +48,7 @@ namespace Unrect.Tests.Projections
       return Mixed(cells);
     }
 
-    // --- Quietly: the difference from Optional -----------------------------------------------------
+    // --- Quietly: the difference from ElseDefault -----------------------------------------------------
 
     [Fact]
     public void ABlankCellReadsAsNull()
@@ -71,12 +71,12 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void WhereTheSameCellThroughOptionalRecordsAWarning()
+    public void WhereTheSameCellThroughElseDefaultRecordsAWarning()
     {
-      // The other half, over the same cell, so the two spellings can be read side by side. Optional
+      // The other half, over the same cell, so the two spellings can be read side by side. ElseDefault
       // turns a kind failure — a blank IS a kind failure to Decimal — into a default plus a Warning,
       // which is right for a section that may be missing and wrong for a field that may be empty.
-      var read = Point().Decimal().Optional().MapWithDiagnostics(BlankCell());
+      var read = Point().Decimal().ElseDefault().MapWithDiagnostics(BlankCell());
 
       var warning = Assert.Single(read.Diagnostics, d => d.Severity == DiagnosticSeverity.Warning);
 
@@ -314,12 +314,12 @@ namespace Unrect.Tests.Projections
     [InlineData("Point", "Point")]
     [InlineData("Range", "Range")]
     [InlineData("Caption", "Caption(\"Total\")")]
-    [InlineData("Optional", "Optional")]
+    [InlineData("ElseDefault", "ElseDefault")]
     [InlineData("Select", "Select")]
     public void AndItNamesTheReceiverItRefused(string receiver, string described)
     {
       // Every shape of receiver that reaches the guard, each naming itself as a reader would see it
-      // written. Caption and Optional are the two worth having by name: a caption reads a cell and
+      // written. Caption and ElseDefault are the two worth having by name: a caption reads a cell and
       // still declares no kind, and a tolerance wrapper is the one a reader would most plausibly try
       // to stack this on.
       var failure = Assert.Throws<ArgumentException>(() => Refuse(receiver));
@@ -337,9 +337,9 @@ namespace Unrect.Tests.Projections
       // rather than a kind, and its result is the file's own, never an absence.
       "Caption" => Caption("Total").OrBlank(),
 
-      // The pin the modifier's own documentation implies: the two tolerances do not stack. Optional
+      // The pin the modifier's own documentation implies: the two tolerances do not stack. ElseDefault
       // has already turned every failure into a default, so there is no blank left to tolerate.
-      "Optional" => Point().Decimal().Optional().OrBlank(),
+      "ElseDefault" => Point().Decimal().ElseDefault().OrBlank(),
 
       // A conversion beyond the leaf's own reading is Select territory, and a Select is not a leaf.
       "Select" => Point().Decimal().Select(amount => amount * 2).OrBlank(),

@@ -414,7 +414,7 @@ namespace Unrect.Fluent
     /// It takes the width of the band it is handed rather than discovering one of its own, so the
     /// labels describe the same columns the body beneath them reads. An extent with no room for the
     /// header row — no rows, or no columns — is an absorbable failure, so a table over an empty
-    /// region answers to <c>.Optional()</c> like any other absent section.
+    /// region answers to <c>.ElseDefault()</c> like any other absent section.
     /// </para>
     /// </summary>
     /// <param name="headerRows">How many rows to read as the header. Only 1 is supported in this release.</param>
@@ -705,7 +705,7 @@ namespace Unrect.Fluent
     /// </para>
     /// <para>
     /// An alternative that cannot fail makes everything after it unreachable, so a boundary such as
-    /// <c>Optional</c> belongs around the choice rather than inside one of its arms. A failed
+    /// <c>ElseDefault</c> belongs around the choice rather than inside one of its arms. A failed
     /// attempt's diagnostics are rolled back, but nothing else about it is: alternatives are tried
     /// for real, and must not have side effects worth undoing. A projection that broke rather than
     /// disagreed — a null reference, a bad index — is a bug in the reading code and stops the

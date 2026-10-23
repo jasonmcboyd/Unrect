@@ -163,11 +163,11 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void AFaultIsNotAbsorbedByOptional()
+    public void AFaultIsNotAbsorbedByElseDefault()
     {
       // The crucial property: a Fault is malformed data, not an absent section, so a tolerance
-      // boundary must let it through. .Optional() would turn an absorbable failure into null.
-      var failure = Assert.Throws<ProjectionException>(() => Lines(BlankRowStrategy.Fault).Optional().Map(Gapped()));
+      // boundary must let it through. .ElseDefault() would turn an absorbable failure into null.
+      var failure = Assert.Throws<ProjectionException>(() => Lines(BlankRowStrategy.Fault).ElseDefault().Map(Gapped()));
 
       Assert.True(failure.IsFault);
     }

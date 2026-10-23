@@ -137,8 +137,8 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ACaptionMissIsAbsorbedByAToleranceBoundary()
     {
-      // A section whose caption is absent is an absent section, which is what Optional is for.
-      Assert.Null(Caption("Nope").Optional().Map(Sheet()));
+      // A section whose caption is absent is an absent section, which is what ElseDefault is for.
+      Assert.Null(Caption("Nope").ElseDefault().Map(Sheet()));
     }
 
     [Fact]

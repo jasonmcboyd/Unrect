@@ -19,7 +19,7 @@ namespace Unrect.Fluent
   /// </para>
   /// <para>
   /// <b>What stays public here is not geometry.</b> <c>Named</c> labels; <c>Select</c> transforms;
-  /// <c>Else</c>, <c>Optional</c> and <c>OrBlank</c> declare tolerance. And <c>Padded</c> — the lone
+  /// <c>Else</c>, <c>ElseDefault</c> and <c>OrBlank</c> declare tolerance. And <c>Padded</c> — the lone
   /// documented exception: it is extent-geometry, but it <em>nests</em> rather than erases
   /// (<c>x.Padded(1).Padded(2)</c> is two insets both in force, losing nothing), so it is not an
   /// erasure vector and needs no pipeline stage to be made safe.
@@ -28,7 +28,7 @@ namespace Unrect.Fluent
   /// <b>A modifier keeps the space it is applied to.</b> Each one is generic in the
   /// <em>projection's own type</em> and hands that type back, so <c>Text().Named("t")</c> is the
   /// same <c>IProjectionDefinition&lt;TSpace, string&gt;</c> it was. The three that cannot —
-  /// <c>Optional</c>, <c>Select</c> and <c>Else(value)</c> — read the space as a separate type
+  /// <c>ElseDefault</c>, <c>Select</c> and <c>Else(value)</c> — read the space as a separate type
   /// parameter, because C# has no way to say "this projection with its result swapped".
   /// </para>
   /// </summary>
@@ -132,7 +132,7 @@ namespace Unrect.Fluent
       => new FallbackDefinition<TSpace, TResult>(
         NotNull(projection),
         NotNull(fallback, nameof(fallback)),
-        default!,
+        default(TResult)!,
         Placement<TSpace>.Default,
         "Else",
         UseSite.From(declared, null));
@@ -147,7 +147,7 @@ namespace Unrect.Fluent
     /// siblings so what comes next finds itself by content instead of by arithmetic.
     /// </para>
     /// <para>
-    /// That makes <c>VerticalRepeat(x.Optional())</c> a trap: an absorbed item advances the
+    /// That makes <c>VerticalRepeat(x.ElseDefault())</c> a trap: an absorbed item advances the
     /// repetition by nothing, which ends it. A repeat recovers by consuming the malformed section
     /// instead — see the recipe on <c>VerticalRepeat</c> — and only a fallback that reads rows can
     /// do that.
@@ -173,28 +173,45 @@ namespace Unrect.Fluent
       => new FallbackDefinition<TSpace, T>(NotNull(projection), null, fallbackValue, Placement<TSpace>.Default, "Else");
 
     /// <summary>
-    /// Yields the default value when this projection fails, recording a <c>Warning</c> that carries
-    /// the failing projection's own path, location, and problem — the spelling for a section that
-    /// may simply not be there.
+    /// Yields what <paramref name="fallback"/> builds when this projection fails, recording a
+    /// <c>Warning</c> that carries the failing projection's own path, location, and problem. The
+    /// filler is built when it is needed — once per absence, and never when the projection succeeds
+    /// — for a value that is costly to make, or that must be fresh each time.
     /// <para>
-    /// Like <see cref="Else{TSpace, T}(IProjectionDefinition{TSpace, T}, T)"/>, an absorbed projection consumes nothing. For
-    /// a value type the filler is <c>default</c> — <c>0</c>, not null — so where the difference
-    /// between "absent" and "zero" matters, either give the filler explicitly with
-    /// <c>Else(value)</c> or project to a nullable first.
+    /// Everything else is as for <see cref="Else{TSpace, T}(IProjectionDefinition{TSpace, T}, T)"/>: an
+    /// absorbed projection consumes nothing, and a fault comes through undiminished.
     /// </para>
     /// </summary>
     /// <typeparam name="TSpace">The space the projection is written over.</typeparam>
     /// <typeparam name="T">What the projection reads.</typeparam>
     /// <param name="projection">The declaration.</param>
-    public static IProjectionDefinition<TSpace, T?> Optional<TSpace, T>(this IProjectionDefinition<TSpace, T> projection)
+    /// <param name="fallback">Builds what to yield instead.</param>
+    public static IProjectionDefinition<TSpace, T> Else<TSpace, T>(this IProjectionDefinition<TSpace, T> projection, Func<T> fallback)
       where TSpace : class, ISpace
-      => new FallbackDefinition<TSpace, T?>(NotNull(projection).Select(value => (T?)value), null, default, Placement<TSpace>.Default, "Optional");
+      => new FallbackDefinition<TSpace, T>(NotNull(projection), null, NotNull(fallback, nameof(fallback)), Placement<TSpace>.Default, "Else");
+
+    /// <summary>
+    /// Yields <c>default(T)</c> when this projection fails, recording a <c>Warning</c> that carries
+    /// the failing projection's own path, location, and problem — <c>null</c> for a reference type,
+    /// <c>0</c>, <c>false</c> or an all-default struct for a value type, exactly as C#'s
+    /// <c>default</c>. The spelling for a section that may simply not be there, when the default is
+    /// the right stand-in; name the filler with <c>Else(value)</c> when it is not.
+    /// <para>
+    /// Like <see cref="Else{TSpace, T}(IProjectionDefinition{TSpace, T}, T)"/>, an absorbed projection consumes nothing.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="TSpace">The space the projection is written over.</typeparam>
+    /// <typeparam name="T">What the projection reads.</typeparam>
+    /// <param name="projection">The declaration.</param>
+    public static IProjectionDefinition<TSpace, T?> ElseDefault<TSpace, T>(this IProjectionDefinition<TSpace, T> projection)
+      where TSpace : class, ISpace
+      => new FallbackDefinition<TSpace, T?>(NotNull(projection).Select(value => (T?)value), null, default(T?), Placement<TSpace>.Default, "ElseDefault");
 
     /// <summary>
     /// Reads a blank cell as null, quietly — the leaf's way of saying "this field may be absent".
     /// <para>
     /// It is not tolerance and it records nothing: an expected blank is a value the declaration
-    /// allowed for, where <see cref="Optional{TSpace, T}"/> absorbs a <em>failure</em> and says so with a
+    /// allowed for, where <see cref="ElseDefault{TSpace, T}"/> absorbs a <em>failure</em> and says so with a
     /// <c>Warning</c>. Everything else about the leaf is unchanged — a cell of the wrong kind fails
     /// exactly as loudly, and a number that will not fit still fails as a conversion. Blankness is
     /// about the data; a kind is about the format, and no format tolerates the wrong one.

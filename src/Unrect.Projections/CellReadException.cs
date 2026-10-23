@@ -13,7 +13,7 @@ namespace Unrect.Projections
   /// <b>It is not a fault, unless it says it is.</b> A cell of the wrong kind is a statement about
   /// the data, so a tolerance boundary may absorb it. A read that failed because of the SOURCE —
   /// a streamed row that has already been released — says nothing about the data at all, and is
-  /// raised with <see cref="IsFault"/> set: <c>Optional</c>, <c>Else</c> and <c>Choice</c> let it
+  /// raised with <see cref="IsFault"/> set: <c>ElseDefault</c>, <c>Else</c> and <c>Choice</c> let it
   /// through, because absorbing it would report a read that could not be made as a section that
   /// is not there.
   /// </para>

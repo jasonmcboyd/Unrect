@@ -100,10 +100,10 @@ var section = Range(Rows.WhileAnyIsNotBlank(), b => b.Rows.Select(r => r.ToArray
 
 var k1Lines = Heading("K-1 Lines 1-21").Of(section);
 
-// The production posture: this section is best-effort. On a clean file Optional changes nothing;
+// The production posture: this section is best-effort. On a clean file ElseDefault changes nothing;
 // on a broken one the import survives with null here and a Warning in the diagnostics citing
 // exactly where and why the section failed.
-var portfolio = Heading("Portfolio Income").Of(section).Optional();
+var portfolio = Heading("Portfolio Income").Of(section).ElseDefault();
 
 var report = VerticalFlow(v => new
 {

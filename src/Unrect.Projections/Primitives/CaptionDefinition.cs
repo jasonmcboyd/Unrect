@@ -12,7 +12,7 @@ namespace Unrect.Projections
   /// <para>
   /// It is a leaf projection and not an attribute on the section below it, because a node gets the
   /// whole algebra for nothing: it is placed by the one engine path, bounded by <c>Until</c>,
-  /// tolerated by <c>Optional</c>, labelled by the naming ladder, rendered into every path, and
+  /// tolerated by <c>ElseDefault</c>, labelled by the naming ladder, rendered into every path, and
   /// counted in what a flow consumed. A caption carried as a property would need each of those
   /// written again.
   /// </para>

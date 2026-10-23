@@ -177,7 +177,7 @@ namespace Unrect.Tests.Projections
       var space = Mixed(new object?[,] { { "x" }, { 5 } });
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v => $"{v.Next(IntCell().Optional())}|{v.Next(IntCell())}").Map(space));
+        VerticalFlow(v => $"{v.Next(IntCell().ElseDefault())}|{v.Next(IntCell())}").Map(space));
 
       Assert.Contains("note: the preceding sibling consumed nothing at this position", failure.Message);
     }
@@ -188,7 +188,7 @@ namespace Unrect.Tests.Projections
       var space = Mixed(new object?[,] { { "x" }, { null }, { null }, { 5 }, { 6 } });
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v => $"{v.Next(IntCell().Optional())}|{v.Next(OffsetBy(Rows.SkipBlank()).Down(2).Of(StringCell()))}").Map(space));
+        VerticalFlow(v => $"{v.Next(IntCell().ElseDefault())}|{v.Next(OffsetBy(Rows.SkipBlank()).Down(2).Of(StringCell()))}").Map(space));
 
       Assert.DoesNotContain("note:", failure.Message);
       Assert.Equal("A3", failure.Location.A1);
@@ -290,7 +290,7 @@ namespace Unrect.Tests.Projections
     {
       var deep = VerticalFlow(v => $"{v.Next(IntCell())}|{v.Next(VerticalFlow(w => $"{w.Next(IntCell())}{w.Next(StringCell().Named("deep"))}"))}");
 
-      var result = deep.Optional().MapWithDiagnostics(Ladder());
+      var result = deep.ElseDefault().MapWithDiagnostics(Ladder());
 
       Assert.Null(result.Value);
 
@@ -354,7 +354,7 @@ namespace Unrect.Tests.Projections
     {
       var failure = Assert.Throws<ProjectionException>(() =>
         VerticalFlow(v => v.Next(IntCell()) == 1 ? throw new NullReferenceException("boom") : 0)
-          .Optional()
+          .ElseDefault()
           .Map(Ladder()));
 
       Assert.IsType<NullReferenceException>(failure.GetBaseException());
@@ -366,7 +366,7 @@ namespace Unrect.Tests.Projections
       // A parse that disagreed with the data is what tolerance is for; only the broken-code
       // exceptions are exempt.
       var result = VerticalFlow(v => v.Next(IntCell()) == 1 ? throw new ArgumentException("bad") : 0)
-        .Optional()
+        .ElseDefault()
         .MapWithDiagnostics(Ladder());
 
       Assert.Equal(0, result.Value);
@@ -436,7 +436,7 @@ namespace Unrect.Tests.Projections
       var b = IntCell().Named("b");
       var shifting = VerticalFlow(v => v.Next(IntCell()) >= 1 ? v.Next(a) : v.Next(b));
 
-      var failure = Assert.Throws<ProjectionException>(() => shifting.Optional().Map(Ladder()));
+      var failure = Assert.Throws<ProjectionException>(() => shifting.ElseDefault().Map(Ladder()));
 
       Assert.True(failure.IsFault);
       Assert.Contains("asked for 'a' as child 2, where it declared 'b'", failure.Message);

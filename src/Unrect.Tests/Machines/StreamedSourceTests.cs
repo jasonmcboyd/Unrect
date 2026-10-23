@@ -91,12 +91,12 @@ namespace Unrect.Tests.Machines
     {
       // A block lambda reads its extent at random, so it holds every row it is offered: fifty
       // valued rows, no blank to end the block. A cap smaller than that is a fault naming it, and
-      // the Optional around it does not absorb a fault into an absent section.
+      // the ElseDefault around it does not absorb a fault into an absent section.
       var sheet = new FakeSheet("Data", 50, 2);
 
       using var book = Workbook.Over(new FakeRowSource(sheet), new WorkbookOptions { BufferRows = 5 });
       {
-        var failure = Assert.Throws<ProjectionException>(() => Range(b => b.Height).Optional().Map(book.Sheet("Data")));
+        var failure = Assert.Throws<ProjectionException>(() => Range(b => b.Height).ElseDefault().Map(book.Sheet("Data")));
 
         Assert.True(failure.IsFault);
         Assert.Contains("Range is holding", failure.Message);
@@ -138,14 +138,14 @@ namespace Unrect.Tests.Machines
     {
       // A row that has gone is a read the SOURCE could not serve: the declaration read late, the
       // pass was already spent, or a machine under-reported what it retains. None of those is "this
-      // section is absent", so Optional, Else and Choice let it through — absorbing it would hide
+      // section is absent", so ElseDefault, Else and Choice let it through — absorbing it would hide
       // the failure. (A boundary holds the rows of its own attempt, so a late read INSIDE one simply
       // succeeds; what reaches a boundary is a read of rows released before it began, as here,
       // where the sheet's one pass has been spent.)
       var sheet = Blocks(blocks: 30, blockRows: 3);
       var first = Down(0).Of(Point().AsText());
 
-      foreach (var tolerant in new[] { first.Optional()!, first.Else("absent"), first.Else(Down(1).Of(Point().AsText())), Choice(first, Down(1).Of(Point().AsText())) })
+      foreach (var tolerant in new[] { first.ElseDefault()!, first.Else("absent"), first.Else(Down(1).Of(Point().AsText())), Choice(first, Down(1).Of(Point().AsText())) })
       {
         using var book = Workbook.Over(new FakeRowSource(sheet), new WorkbookOptions());
         var spent = book.Sheet("Data");

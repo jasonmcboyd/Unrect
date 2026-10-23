@@ -68,10 +68,10 @@ namespace Unrect.Tests.Projections
       // saying anything happened, and it is the whole of what is said.
       //
       // BOTH HALVES ARE PRESENT HERE, and that is why the note fires: the item was Absorbed AND it
-      // stood still, since a bare Optional consumes nothing to absorb into. Drop either half and the
+      // stood still, since a bare ElseDefault consumes nothing to absorb into. Drop either half and the
       // note goes: ARepetitionThatRanOutOfContentSaysNothing is a standstill without tolerance, and
       // AnAbsorbedItemThatStillConsumedItsExtentGoesOnRepeating is tolerance without a standstill.
-      var item = Title().Optional();
+      var item = Title().ElseDefault();
 
       var result = VerticalRepeat(item).MapWithDiagnostics(TwoNamesThenANumber());
 
@@ -101,12 +101,12 @@ namespace Unrect.Tests.Projections
     {
       // The across-axis guard, pinned on the case it was added for. A horizontal repeat over a band
       // with zero width has no across-extent to hand any occurrence, so the walk must END before the
-      // item is attempted. Without the guard the item runs against a zero-across slice, its Optional
+      // item is attempted. Without the guard the item runs against a zero-across slice, its ElseDefault
       // absorbs the failure, the productivity guard trips on the standstill, and a spurious Info
       // fires — an item nobody could have read is reported as a tolerated ending.
       var band = SheetGrid.Of(new CellValue[0, 3]);
 
-      var horizontal = HorizontalRepeat(Point().Text().Optional()).MapWithDiagnostics(band);
+      var horizontal = HorizontalRepeat(Point().Text().ElseDefault()).MapWithDiagnostics(band);
 
       Assert.Empty(horizontal.Value);
       Assert.DoesNotContain(horizontal.Diagnostics, d => d.Message.Contains("absorbed"));
@@ -115,7 +115,7 @@ namespace Unrect.Tests.Projections
       // band ends the same quiet way, so the guard reads the same on both axes.
       var column = SheetGrid.Of(new CellValue[0, 1]);
 
-      var vertical = VerticalRepeat(Point().Text().Optional()).MapWithDiagnostics(column);
+      var vertical = VerticalRepeat(Point().Text().ElseDefault()).MapWithDiagnostics(column);
 
       Assert.Empty(vertical.Value);
       Assert.DoesNotContain(vertical.Diagnostics, d => d.Message.Contains("absorbed"));
@@ -126,7 +126,7 @@ namespace Unrect.Tests.Projections
     {
       // The occurrence count is what atLeast is about, and an ending explained is still an ending.
       var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalRepeat(Title().Optional(), atLeast: 1).Map(Numbers()));
+        VerticalRepeat(Title().ElseDefault(), atLeast: 1).Map(Numbers()));
 
       Assert.Equal("expected at least 1 occurrences but found 0", Problem(failure));
     }
@@ -144,7 +144,7 @@ namespace Unrect.Tests.Projections
     /// whatever the boundary made of it. One row per occurrence, whether the row read or was
     /// tolerated.
     /// </summary>
-    private static IProjectionDefinition<ICellSpace, int> ToleratedRow() => Sized(Extent.Of(1, 1)).Of(Point().Integer().Optional());
+    private static IProjectionDefinition<ICellSpace, int> ToleratedRow() => Sized(Extent.Of(1, 1)).Of(Point().Integer().ElseDefault());
 
     [Fact]
     public void AnAbsorbedItemThatStillConsumedItsExtentGoesOnRepeating()
@@ -197,7 +197,7 @@ namespace Unrect.Tests.Projections
       // rather than about one modifier: padding is added outside the boundary, so an absorbed
       // occupant still occupies its padding. Two rows per occurrence — the inner reading contributes
       // nothing and the padding contributes the rest — so six rows make three occurrences.
-      var padded = Point().Integer().Optional().Padded(1);
+      var padded = Point().Integer().ElseDefault().Padded(1);
       var sheet = Mixed(new object?[,]
       {
         { "a", "b", "c" },
