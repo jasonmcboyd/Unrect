@@ -238,17 +238,15 @@ namespace Unrect.Tests.Projections
 
     // --- C. The reflection rungs carry the knob too ------------------------------------------------
 
-    // The production gap this pin was Skipped for is closed: when the kinded family moved to
-    // ProjectionBuilders<TSpace> it published only Table<T>() and Table<T>(bind), leaving the
-    // onBlank twins with no spelling at all. Both are back, on both kinded vocabularies, so the knob
-    // threads through the reflection binder exactly as documented — which is what this says.
+    // The blank-row knob threads through the reflection binder exactly as documented; since the
+    // reflective rung is one signature with optional parameters, a policy alone is spelled by name.
 
     [Fact]
     public void TheTypedBindRungSkipsInteriorBlanks()
     {
       Assert.Equal(
         new[] { new Entry("Alpha", 100m), new Entry("Gamma", 300m) },
-        Table<Entry>(BlankRowStrategy.Skip).Map(Gapped()));
+        Table<Entry>(onBlank: BlankRowStrategy.Skip).Map(Gapped()));
     }
 
     [Fact]

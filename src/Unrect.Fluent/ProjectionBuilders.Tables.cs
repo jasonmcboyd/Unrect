@@ -59,26 +59,35 @@ namespace Unrect.Fluent
     /// a loud failure listing the table's captions. A column no member claims is fine — real reports
     /// carry columns a consumer does not want.
     /// </para>
+    /// <para>
+    /// With <paramref name="headerRows"/> above 1 the header is that many rows tall: the captions, under
+    /// <paramref name="headerRows"/> − 1 rows of bands. Members bind to a caption that is unique as
+    /// they always have; a column under a band that shares its caption with another is bound by its
+    /// path — <c>bind.Column(t =&gt; t.FromId, "From", "Id")</c> — because a flat member never
+    /// binds across a band by itself.
+    /// </para>
     /// </summary>
     /// <typeparam name="T">What one record reads.</typeparam>
-    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>()
-      => Bound<T>(RowBinding<T>.Create<TSpace>(null, typeof(TSpace)), BlankRowStrategy.Stop);
+    /// <param name="headerRows">How many rows the header is; at least 1, since members bind by what it says.</param>
+    /// <param name="bind">The per-member declarations, or null for none.</param>
+    /// <param name="onBlank">
+    /// How a fully-blank body row is treated: <c>Stop</c> (the default, self-bounding), <c>Skip</c>,
+    /// <c>Fault</c>, or <c>Tolerate</c>. Every non-<c>Stop</c> policy is not self-bounding, so the
+    /// table runs to the enclosing edge (declare <c>Until</c> or a count to bound it sooner).
+    /// </param>
+    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(
+      int headerRows = 1,
+      Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>>? bind = null,
+      BlankRowStrategy? onBlank = null)
+      => Bound<T>(
+        bind is null ? RowBinding<T>.Create<TSpace>(null, typeof(TSpace)) : Planned<T>(bind, headerRows),
+        onBlank ?? BlankRowStrategy.Stop,
+        loose: false,
+        headerRows);
 
     /// <summary>
-    /// <see cref="Table{T}()"/> with a blank-row strategy: <paramref name="onBlank"/> says
-    /// how a fully-blank body row is treated — <c>Stop</c> (the default, self-bounding),
-    /// <c>Skip</c>, <c>Fault</c>, or <c>Tolerate</c>. Every non-<c>Stop</c> policy is not
-    /// self-bounding, so the table runs to the enclosing edge (declare <c>Until</c> or a count to
-    /// bound it sooner).
-    /// </summary>
-    /// <typeparam name="T">What one record reads.</typeparam>
-    /// <param name="onBlank">How a fully-blank body row is treated.</param>
-    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(BlankRowStrategy onBlank)
-      => Bound<T>(RowBinding<T>.Create<TSpace>(null, typeof(TSpace)), onBlank);
-
-    /// <summary>
-    /// <see cref="Table{T}()"/> with per-member declarations: <c>Column</c> for a caption
-    /// the comparer would not have found, <c>Ignore</c> for a member this table does not carry.
+    /// <inheritdoc cref="Table{T}(int, Func{TableBinding{TSpace, T}, TableBinding{TSpace, T}}, BlankRowStrategy?)"/>
+    /// The same table, with the per-member declarations first:
     /// <code>
     /// Table&lt;Transaction&gt;(bind =&gt; bind
     ///   .Column(t =&gt; t.Date, "Transaction Date")
@@ -87,42 +96,13 @@ namespace Unrect.Fluent
     /// </summary>
     /// <typeparam name="T">What one record reads.</typeparam>
     /// <param name="bind">The per-member declarations applied to what reflection would have written.</param>
-    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>> bind)
-      => Bound<T>(Planned<T>(bind), BlankRowStrategy.Stop);
-
-    /// <summary>
-    /// <see cref="Table{T}(Func{TableBinding{TSpace, T}, TableBinding{TSpace, T}})"/> with a blank-row
-    /// strategy: <paramref name="onBlank"/> says how a fully-blank body row is treated — <c>Stop</c>
-    /// (the default, self-bounding), <c>Skip</c>, <c>Fault</c>, or <c>Tolerate</c>. Every
-    /// non-<c>Stop</c> policy is not self-bounding, so the table runs to the enclosing edge (declare
-    /// <c>Until</c> or a count to bound it sooner).
-    /// </summary>
-    /// <typeparam name="T">What one record reads.</typeparam>
-    /// <param name="bind">The per-member declarations applied to what reflection would have written.</param>
-    /// <param name="onBlank">How a fully-blank body row is treated.</param>
-    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>> bind, BlankRowStrategy onBlank)
-      => Bound<T>(Planned<T>(bind), onBlank);
-
-    /// <summary>
-    /// A table whose header is <paramref name="headerRows"/> rows tall: the captions, under
-    /// <paramref name="headerRows"/> − 1 rows of bands. Members bind to a caption that is unique as
-    /// they always have; a column under a band that shares its caption with another is bound by its
-    /// path — <c>bind.Column(t =&gt; t.FromId, "From", "Id")</c> — because a flat member never
-    /// binds across a band by itself.
-    /// </summary>
-    /// <typeparam name="T">What one record reads.</typeparam>
-    /// <param name="headerRows">How many rows the header is; at least 1, since members bind by what it says.</param>
-    /// <param name="bind">The per-member declarations, or null for none.</param>
     /// <param name="onBlank">How a fully-blank body row is treated; <c>Stop</c> where omitted.</param>
+    /// <param name="headerRows">How many rows the header is; 1 where omitted.</param>
     public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(
-      int headerRows,
-      Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>>? bind = null,
-      BlankRowStrategy? onBlank = null)
-      => Bound<T>(
-        bind is null ? RowBinding<T>.Create<TSpace>(null, typeof(TSpace)) : Planned<T>(bind, headerRows),
-        onBlank ?? BlankRowStrategy.Stop,
-        loose: false,
-        headerRows);
+      Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>> bind,
+      BlankRowStrategy? onBlank = null,
+      int headerRows = 1)
+      => Table<T>(headerRows, bind ?? throw new ArgumentNullException(nameof(bind)), onBlank);
 
     private static RowBinding<T> Planned<T>(Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>> bind, int headerRows = 1)
     {
@@ -144,7 +124,7 @@ namespace Unrect.Fluent
 
     /// <summary>
     /// The exploratory table <c>Unrect.Interactive</c> offers: the same projection as
-    /// <see cref="Table{T}(Func{TableBinding{TSpace, T}, TableBinding{TSpace, T}}, BlankRowStrategy)"/>
+    /// <see cref="Table{T}(Func{TableBinding{TSpace, T}, TableBinding{TSpace, T}}, BlankRowStrategy?, int)"/>
     /// with its one strictness switched. A member no column binds is left at its default and said
     /// so in a Warning, and the columns no member reads are listed in an Info — the two things a
     /// type still being written wants to be told. Everything else fails as it always does.

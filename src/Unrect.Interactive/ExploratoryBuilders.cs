@@ -34,39 +34,26 @@ namespace Unrect.Interactive
   public static class ExploratoryBuilders<TSpace>
     where TSpace : class, ISpace
   {
-    /// <summary><c>Table&lt;T&gt;()</c>, forgiving a member no column binds.</summary>
+    /// <summary><c>Table&lt;T&gt;(headerRows, bind, onBlank)</c>, forgiving a member no column binds.</summary>
     /// <typeparam name="T">What one record reads.</typeparam>
-    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> LooseTable<T>()
-      => ProjectionBuilders<TSpace>.LooseTable<T>(null, BlankRowStrategy.Stop);
-
-    /// <summary><c>Table&lt;T&gt;(onBlank)</c>, forgiving a member no column binds.</summary>
-    /// <typeparam name="T">What one record reads.</typeparam>
-    /// <param name="onBlank">How a fully-blank body row is treated.</param>
-    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> LooseTable<T>(BlankRowStrategy onBlank)
-      => ProjectionBuilders<TSpace>.LooseTable<T>(null, onBlank);
-
-    /// <summary><c>Table&lt;T&gt;(bind =&gt; …)</c>, forgiving a member no column binds.</summary>
-    /// <typeparam name="T">What one record reads.</typeparam>
-    /// <param name="bind">The per-member declarations, exactly as <c>Table&lt;T&gt;</c> takes them.</param>
-    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> LooseTable<T>(Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>> bind)
-      => ProjectionBuilders<TSpace>.LooseTable<T>(bind ?? throw new ArgumentNullException(nameof(bind)), BlankRowStrategy.Stop);
-
-    /// <summary><c>Table&lt;T&gt;(bind =&gt; …, onBlank)</c>, forgiving a member no column binds.</summary>
-    /// <typeparam name="T">What one record reads.</typeparam>
-    /// <param name="bind">The per-member declarations, exactly as <c>Table&lt;T&gt;</c> takes them.</param>
-    /// <param name="onBlank">How a fully-blank body row is treated.</param>
-    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> LooseTable<T>(Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>> bind, BlankRowStrategy onBlank)
-      => ProjectionBuilders<TSpace>.LooseTable<T>(bind ?? throw new ArgumentNullException(nameof(bind)), onBlank);
-
-    /// <summary><c>Table&lt;T&gt;(headerRows, …)</c> — a header of captions under rows of bands — forgiving a member no column binds.</summary>
-    /// <typeparam name="T">What one record reads.</typeparam>
-    /// <param name="headerRows">How many rows the header is.</param>
-    /// <param name="bind">The per-member declarations, or null for none.</param>
+    /// <param name="headerRows">How many rows the header is; 1 where omitted.</param>
+    /// <param name="bind">The per-member declarations, exactly as <c>Table&lt;T&gt;</c> takes them, or null for none.</param>
     /// <param name="onBlank">How a fully-blank body row is treated; <c>Stop</c> where omitted.</param>
     public static IProjectionDefinition<TSpace, IReadOnlyList<T>> LooseTable<T>(
-      int headerRows,
+      int headerRows = 1,
       Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>>? bind = null,
       BlankRowStrategy? onBlank = null)
       => ProjectionBuilders<TSpace>.LooseTable<T>(bind, onBlank ?? BlankRowStrategy.Stop, headerRows);
+
+    /// <summary><c>Table&lt;T&gt;(bind =&gt; …, onBlank, headerRows)</c>, forgiving a member no column binds.</summary>
+    /// <typeparam name="T">What one record reads.</typeparam>
+    /// <param name="bind">The per-member declarations, exactly as <c>Table&lt;T&gt;</c> takes them.</param>
+    /// <param name="onBlank">How a fully-blank body row is treated; <c>Stop</c> where omitted.</param>
+    /// <param name="headerRows">How many rows the header is; 1 where omitted.</param>
+    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> LooseTable<T>(
+      Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>> bind,
+      BlankRowStrategy? onBlank = null,
+      int headerRows = 1)
+      => ProjectionBuilders<TSpace>.LooseTable<T>(bind ?? throw new ArgumentNullException(nameof(bind)), onBlank ?? BlankRowStrategy.Stop, headerRows);
   }
 }

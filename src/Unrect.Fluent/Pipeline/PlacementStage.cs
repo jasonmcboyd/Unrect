@@ -114,16 +114,18 @@ namespace Unrect.Fluent
 
     // --- Tables ------------------------------------------------------------------------------------
 
-    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Table{T}(int, Func{LabelMap, IProjectionDefinition{TSpace, T}}, string)"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Table{T}(int, Func{LabelMap, IProjectionDefinition{TSpace, T}}, BlankRowStrategy?, string)"/>
     /// <typeparam name="T">What one record reads.</typeparam>
     /// <param name="headerRows">How many rows to read as the header; a bind needs 1.</param>
     /// <param name="eachRow">Given this file's captions, the projection that reads one record.</param>
+    /// <param name="onBlank">How a fully-blank body row is treated; <c>Stop</c> where omitted.</param>
     /// <param name="declared">Supplied by the compiler as the text of the <paramref name="eachRow"/> argument.</param>
     public IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(
       int headerRows,
       Func<LabelMap, IProjectionDefinition<TSpace, T>> eachRow,
+      BlankRowStrategy? onBlank = null,
       [CallerArgumentExpression("eachRow")] string? declared = null)
-      => Close(ProjectionBuilders<TSpace>.Table(headerRows, eachRow, declared));
+      => Close(ProjectionBuilders<TSpace>.Table(headerRows, eachRow, onBlank, declared));
 
     /// <inheritdoc cref="ProjectionBuilders{TSpace}.Table{T}(int, IProjectionDefinition{TSpace, T}, string)"/>
     /// <typeparam name="T">What one record reads.</typeparam>
@@ -140,18 +142,29 @@ namespace Unrect.Fluent
     public IProjectionDefinition<TSpace, IReadOnlyList<IReadOnlyDictionary<string, Point<TSpace>>>> Table()
       => Close<IReadOnlyList<IReadOnlyDictionary<string, Point<TSpace>>>>(ProjectionBuilders<TSpace>.Table());
 
-    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Table{T}(Func{TableRow{TSpace}, T})"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Table{T}(Func{TableRow{TSpace}, T}, BlankRowStrategy?, Func{TableRow{TSpace}, T})"/>
     /// <typeparam name="T">What one row reads.</typeparam>
     /// <param name="project">The reading applied to each body row.</param>
-    public IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(Func<TableRow<TSpace>, T> project)
-      => Close<IReadOnlyList<T>>(ProjectionBuilders<TSpace>.Table(project));
+    /// <param name="onBlank">How a fully-blank body row is treated.</param>
+    /// <param name="blankRecord">The record produced for a fully-blank body row, in place of a policy.</param>
+    public IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(
+      Func<TableRow<TSpace>, T> project,
+      BlankRowStrategy? onBlank = null,
+      Func<TableRow<TSpace>, T>? blankRecord = null)
+      => Close<IReadOnlyList<T>>(ProjectionBuilders<TSpace>.Table(project, onBlank, blankRecord));
 
-    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Table{T}(int, Func{TableRow{TSpace}, T})"/>
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Table{T}(int, Func{TableRow{TSpace}, T}, BlankRowStrategy?, Func{TableRow{TSpace}, T})"/>
     /// <typeparam name="T">What one row reads.</typeparam>
     /// <param name="headerRows">How many rows to consume as the header, 0 or 1.</param>
     /// <param name="project">The reading applied to each body row.</param>
-    public IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(int headerRows, Func<TableRow<TSpace>, T> project)
-      => Close<IReadOnlyList<T>>(ProjectionBuilders<TSpace>.Table(headerRows, project));
+    /// <param name="onBlank">How a fully-blank body row is treated.</param>
+    /// <param name="blankRecord">The record produced for a fully-blank body row, in place of a policy.</param>
+    public IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(
+      int headerRows,
+      Func<TableRow<TSpace>, T> project,
+      BlankRowStrategy? onBlank = null,
+      Func<TableRow<TSpace>, T>? blankRecord = null)
+      => Close<IReadOnlyList<T>>(ProjectionBuilders<TSpace>.Table(headerRows, project, onBlank, blankRecord));
 
     /// <inheritdoc cref="ProjectionBuilders{TSpace}.Table{T}(Func{TableView{TSpace}, T})"/>
     /// <typeparam name="T">What the table reads.</typeparam>
@@ -165,40 +178,27 @@ namespace Unrect.Fluent
     public IProjectionDefinition<TSpace, T> Table<T>(int headerRows, Func<TableView<TSpace>, T> project)
       => Close<T>(ProjectionBuilders<TSpace>.Table(headerRows, project));
 
-    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Table{T}()"/>
-    /// <typeparam name="T">The record type whose members the captions bind to.</typeparam>
-    public IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>()
-      => Close<IReadOnlyList<T>>(ProjectionBuilders<TSpace>.Table<T>());
-
-    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Table{T}(BlankRowStrategy)"/>
-    /// <typeparam name="T">The record type whose members the captions bind to.</typeparam>
-    /// <param name="onBlank">What a fully blank body row means.</param>
-    public IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(BlankRowStrategy onBlank)
-      => Close<IReadOnlyList<T>>(ProjectionBuilders<TSpace>.Table<T>(onBlank));
-
-    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Table{T}(Func{TableBinding{TSpace, T}, TableBinding{TSpace, T}})"/>
-    /// <typeparam name="T">The record type whose members the captions bind to.</typeparam>
-    /// <param name="bind">The members bound by hand; every other member still binds by caption.</param>
-    public IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>> bind)
-      => Close<IReadOnlyList<T>>(ProjectionBuilders<TSpace>.Table<T>(bind));
-
-    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Table{T}(Func{TableBinding{TSpace, T}, TableBinding{TSpace, T}}, BlankRowStrategy)"/>
-    /// <typeparam name="T">The record type whose members the captions bind to.</typeparam>
-    /// <param name="bind">The members bound by hand; every other member still binds by caption.</param>
-    /// <param name="onBlank">What a fully blank body row means.</param>
-    public IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>> bind, BlankRowStrategy onBlank)
-      => Close<IReadOnlyList<T>>(ProjectionBuilders<TSpace>.Table<T>(bind, onBlank));
-
     /// <inheritdoc cref="ProjectionBuilders{TSpace}.Table{T}(int, Func{TableBinding{TSpace, T}, TableBinding{TSpace, T}}, BlankRowStrategy?)"/>
     /// <typeparam name="T">The record type whose members the captions bind to.</typeparam>
-    /// <param name="headerRows">How many rows the header is tall; the last holds the captions.</param>
-    /// <param name="bind">The members bound by hand; every other member still binds by caption.</param>
-    /// <param name="onBlank">What a fully blank body row means.</param>
+    /// <param name="headerRows">How many rows the header is; 1 where omitted.</param>
+    /// <param name="bind">The members bound by hand, or null for none.</param>
+    /// <param name="onBlank">What a fully blank body row means; <c>Stop</c> where omitted.</param>
     public IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(
-      int headerRows,
+      int headerRows = 1,
       Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>>? bind = null,
       BlankRowStrategy? onBlank = null)
       => Close<IReadOnlyList<T>>(ProjectionBuilders<TSpace>.Table<T>(headerRows, bind, onBlank));
+
+    /// <inheritdoc cref="ProjectionBuilders{TSpace}.Table{T}(Func{TableBinding{TSpace, T}, TableBinding{TSpace, T}}, BlankRowStrategy?, int)"/>
+    /// <typeparam name="T">The record type whose members the captions bind to.</typeparam>
+    /// <param name="bind">The members bound by hand; every other member still binds by caption.</param>
+    /// <param name="onBlank">What a fully blank body row means; <c>Stop</c> where omitted.</param>
+    /// <param name="headerRows">How many rows the header is; 1 where omitted.</param>
+    public IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(
+      Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>> bind,
+      BlankRowStrategy? onBlank = null,
+      int headerRows = 1)
+      => Close<IReadOnlyList<T>>(ProjectionBuilders<TSpace>.Table<T>(bind, onBlank, headerRows));
 
     // --- Leaves ------------------------------------------------------------------------------------
 
