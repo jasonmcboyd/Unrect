@@ -41,4 +41,9 @@
     <ProjectReference Include="..\Unrect.Strategies\Unrect.Strategies.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- A compiler polyfill is per assembly: one source file under src/Polyfills, compiled into
+         every project that needs it, never shared through a reference. -->
+    <Compile Include="..\Polyfills\CallerArgumentExpressionAttribute.cs" Link="Polyfills\CallerArgumentExpressionAttribute.cs" />
+  </ItemGroup>
 </Project>

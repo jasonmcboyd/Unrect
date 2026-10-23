@@ -9,6 +9,14 @@
   <PropertyGroup>
     <PackageId>Unrect.Fluent</PackageId>
   </PropertyGroup>
+  <!-- CS0436: this assembly compiles its own copy of the CallerArgumentExpressionAttribute polyfill
+       (a compiler polyfill is per assembly by nature), and the model's internal copy is ALSO visible
+       here through the InternalsVisibleTo grant below the table seams still need. The compiler takes
+       the local copy, which is the one meant; the warning only says the imported one was shadowed.
+       The suppression leaves with the grant. -->
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);CS0436</NoWarn>
+  </PropertyGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Unrect.Tests" />
     <!-- A backend's own vocabulary is a first-class part of this one: its terminals close the
@@ -23,5 +31,10 @@
     <ProjectReference Include="..\Unrect.Projections\Unrect.Projections.csproj" />
     <ProjectReference Include="..\Unrect.Core\Unrect.Core.csproj" />
     <ProjectReference Include="..\Unrect.Strategies\Unrect.Strategies.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- A compiler polyfill is per assembly: one source file under src/Polyfills, compiled into
+         every project that needs it, never shared through a reference. -->
+    <Compile Include="..\Polyfills\CallerArgumentExpressionAttribute.cs" Link="Polyfills\CallerArgumentExpressionAttribute.cs" />
   </ItemGroup>
 </Project>
