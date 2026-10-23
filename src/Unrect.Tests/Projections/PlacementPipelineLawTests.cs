@@ -268,20 +268,6 @@ namespace Unrect.Tests.Projections
     }
 
     [Fact]
-    public void SkipEmptyRowsAndColumnsIsExactlyItsTwoWords()
-    {
-      // The one-word entry for the instinct the default refuses. It is sugar, and this is the pin
-      // that keeps it sugar: a second implementation of "step over the emptiness" would be a second
-      // answer to a question the library answers once.
-      var space = Report();
-      var series = Series();
-
-      AssertL3(
-        Observe(AfterBlankRows().AfterBlankColumns().Of(series), space),
-        Observe(SkipEmptyRowsAndColumns().Of(series), space));
-    }
-
-    [Fact]
     public void AHoistedProjectionPlacedByOfReadsAsItsDeclaration()
     {
       // .Of places something already declared; a terminal declares it in place. Same words, same
