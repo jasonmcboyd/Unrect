@@ -24,7 +24,7 @@ namespace Unrect.Benchmarks
     // One range over a band, swept five times — once per column read. A block lambda reads its
     // extent at random, so the whole band is held for the pass: the access pattern a forward pass
     // pays for, and the one a HorizontalFlow of five children over a band produces.
-    private static readonly IProjectionDefinition<ICellSpace, long> Band = Range(Extent(StreamingSpaces.Columns, StreamingSpaces.BandRows), block =>
+    private static readonly IProjectionDefinition<ICellSpace, long> Band = Range(Extent.Of(StreamingSpaces.Columns, StreamingSpaces.BandRows), block =>
     {
       long sum = 0;
 

@@ -31,7 +31,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AGridsExtentCanBeDeclaredByTheValuesItsCellsHold()
     {
-      var small = Sized(RowsWhileAny(cell => cell.Value() < 7))
+      var small = Sized(Rows.WhileAny(cell => cell.Value() < 7))
         .Range(block => block.Rows.Sum(row => row.Sum(cell => cell.Value())));
 
       Assert.Equal(10, small.Map(Numbers()));

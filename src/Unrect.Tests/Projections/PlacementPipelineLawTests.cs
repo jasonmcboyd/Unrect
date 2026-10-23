@@ -93,11 +93,11 @@ namespace Unrect.Tests.Projections
 
     /// <summary>One investor's run of rows, read as its name and its height.</summary>
     private static IProjectionDefinition<ICellSpace, string> InvestorBlock()
-      => Range(RowsWhileAnyIsNotBlank(), block => $"{block[0, 0].Text()}x{block.Height}");
+      => Range(Rows.WhileAnyIsNotBlank(), block => $"{block[0, 0].Text()}x{block.Height}");
 
     /// <summary>The repeated series both headings announce — hoisted, because it is declared once.</summary>
     private static IProjectionDefinition<ICellSpace, IReadOnlyList<string>> Series()
-      => VerticalRepeat(InvestorBlock(), separatedBy: BlankRows());
+      => VerticalRepeat(InvestorBlock(), separatedBy: Rows.SkipBlank());
 
     // --- 1. The denotation sweep: the pipeline against the modifiers it replays ----------------------
     //
@@ -114,7 +114,7 @@ namespace Unrect.Tests.Projections
       var space = Report();
       var series = Series();
 
-      var pipeline = Until(RowContaining(Inception)).Heading("IRR Details").Heading(Transfer).Of(series);
+      var pipeline = Until(Rows.Containing(Inception)).Heading("IRR Details").Heading(Transfer).Of(series);
 
       // Non-vacuity: the declaration really does read the first series and stop before the second.
       Assert.Equal(new[] { "Alphax2", "Beaconx1" }, pipeline.Map(space));
@@ -141,7 +141,7 @@ namespace Unrect.Tests.Projections
       var space = Report();
       var series = Series();
 
-      var leading = Until(RowContaining(Inception)).Heading("IRR Details").Heading(Transfer).Of(series);
+      var leading = Until(Rows.Containing(Inception)).Heading("IRR Details").Heading(Transfer).Of(series);
 
       Assert.Equal(new[] { "Alphax2", "Beaconx1" }, leading.Map(space));
     }
@@ -153,7 +153,7 @@ namespace Unrect.Tests.Projections
       // placement wrong, and the value pin above would not catch it.
       var space = Report();
 
-      var pipeline = Until(RowContaining(Inception)).Heading("IRR Details").Heading(Transfer).Of(Series());
+      var pipeline = Until(Rows.Containing(Inception)).Heading("IRR Details").Heading(Transfer).Of(Series());
       var applied = pipeline.Apply(space);
 
       Assert.Equal("0x0", $"{applied.Offset.Column}x{applied.Offset.Row}");
@@ -192,7 +192,7 @@ namespace Unrect.Tests.Projections
       var pipelineReport = VerticalFlow(v => new
       {
         Title = v.Text(),
-        ByTransferDate = v.Next(Until(RowContaining(Inception)).Heading("IRR Details").Heading(Transfer).Of(series)),
+        ByTransferDate = v.Next(Until(Rows.Containing(Inception)).Heading("IRR Details").Heading(Transfer).Of(series)),
         ByInception = v.Next(Heading(Inception).Of(series)),
       });
 
@@ -213,7 +213,7 @@ namespace Unrect.Tests.Projections
       var space = Report();
       var series = Series();
 
-      var pipeline = Until(RowContaining(Inception)).Heading("IRR Details").Heading(Transfer).Of(series);
+      var pipeline = Until(Rows.Containing(Inception)).Heading("IRR Details").Heading(Transfer).Of(series);
 
       var mapped = pipeline.MapWithDiagnostics(space);
 
@@ -229,14 +229,14 @@ namespace Unrect.Tests.Projections
       // reads before, which is what Steps.Before exists for.
       var space = Report();
       var block = InvestorBlock();
-      var mark = RowContaining("IRR Details");
+      var mark = Rows.Containing("IRR Details");
 
       // The anchor leads, so it lands on the heading-and-content FLOW: On(mark).Heading(...).Of(block).
       var pipelineSection = On(mark).Heading("IRR Details").Of(block);
 
       Assert.Equal(
         new[] { "Cash Flows Using Transfer Datex3" },
-        VerticalRepeat(pipelineSection, separatedBy: BlankRows()).Map(space));
+        VerticalRepeat(pipelineSection, separatedBy: Rows.SkipBlank()).Map(space));
     }
 
     [Fact]
@@ -249,10 +249,10 @@ namespace Unrect.Tests.Projections
       // content-anchored spelling is only reachable by nesting the anchor inside the heading.
       var space = Report();
       var block = InvestorBlock();
-      var mark = RowContaining("IRR Details");
+      var mark = Rows.Containing("IRR Details");
 
-      var recipe = VerticalRepeat(On(mark).Heading("IRR Details").Of(block), separatedBy: BlankRows());
-      var inside = VerticalRepeat(Heading("IRR Details").Of(On(mark).Of(block)), separatedBy: BlankRows());
+      var recipe = VerticalRepeat(On(mark).Heading("IRR Details").Of(block), separatedBy: Rows.SkipBlank());
+      var inside = VerticalRepeat(Heading("IRR Details").Of(On(mark).Of(block)), separatedBy: Rows.SkipBlank());
 
       // One occurrence: the caption owns r1, the block runs to the first blank row, and the next
       // iteration finds no second "IRR Details" to anchor on and stops — quietly, which is the recipe.
@@ -288,11 +288,11 @@ namespace Unrect.Tests.Projections
       // reading — which is what lets a declaration move between the two spellings freely.
       var space = Report();
       var block = InvestorBlock();
-      var mark = RowContaining(Transfer);
+      var mark = Rows.Containing(Transfer);
 
       AssertL3(
-        Observe(On(mark).Of(VerticalRepeat(block, separatedBy: BlankRows())), space),
-        Observe(On(mark).VerticalRepeat(block, separatedBy: BlankRows()), space));
+        Observe(On(mark).Of(VerticalRepeat(block, separatedBy: Rows.SkipBlank())), space),
+        Observe(On(mark).VerticalRepeat(block, separatedBy: Rows.SkipBlank()), space));
     }
 
     // --- 2. Name capture through a terminal, per site and per hierarchy -----------------------------
@@ -311,7 +311,7 @@ namespace Unrect.Tests.Projections
       { "Beta", 250m },
     });
 
-    private static ILineLandmark<ICellSpace> Header() => RowContaining("Fund");
+    private static ILineLandmark<ICellSpace> Header() => Rows.Containing("Fund");
 
     /// <summary>A bind pointed at the column of fund names, so every record fails.</summary>
     private static IProjectionDefinition<ICellSpace, decimal> FundColumnAsANumber(LabelMap captions) => Right(captions["Fund"]).Of(Point().Decimal());
@@ -428,7 +428,7 @@ namespace Unrect.Tests.Projections
         Assert.Throws<ArgumentException>(() => Heading(text!)),
         Assert.Throws<ArgumentException>(() => ProjectionBuilders<ICellSpace>.Heading(text!)),
         Assert.Throws<ArgumentException>(() => Heading("IRR Details").Heading(text!)),
-        Assert.Throws<ArgumentException>(() => Until(RowContaining(Inception)).Heading(text!)),
+        Assert.Throws<ArgumentException>(() => Until(Rows.Containing(Inception)).Heading(text!)),
       })
       {
         Assert.Equal("text", refusal.ParamName);
@@ -447,12 +447,12 @@ namespace Unrect.Tests.Projections
       // reading.
       var space = Report();
       var series = Series();
-      var mark = RowContaining("IRR Details");
+      var mark = Rows.Containing("IRR Details");
 
       var pipeline = On(mark)
         .Down(1)
-        .Sized(Extent(3, 5))
-        .Until(RowContaining("Nowhere"), orEnd: true)
+        .Sized(Extent.Of(3, 5))
+        .Until(Rows.Containing("Nowhere"), orEnd: true)
         .Heading(Transfer)
         .Of(series);
 
@@ -491,8 +491,8 @@ namespace Unrect.Tests.Projections
         ["PlacementStage"] = (typeof(PlacementStage<ICellSpace>), Down(1)),
         ["UnboundedStage"] = (typeof(UnboundedStage<ICellSpace>), Down(1)),
         ["OffsetStage"] = (typeof(OffsetStage<ICellSpace>), Down(1)),
-        ["OffsetAndSizeStage"] = (typeof(OffsetAndSizeStage<ICellSpace>), Down(1).Sized(WholeExtent())),
-        ["BoundStage"] = (typeof(BoundStage<ICellSpace>), Until(RowContaining("IRR Details"))),
+        ["OffsetAndSizeStage"] = (typeof(OffsetAndSizeStage<ICellSpace>), Down(1).Sized(Extent.Whole())),
+        ["BoundStage"] = (typeof(BoundStage<ICellSpace>), Until(Rows.Containing("IRR Details"))),
         ["HeadingStage"] = (typeof(HeadingStage<ICellSpace>), Heading("IRR Details")),
       };
 

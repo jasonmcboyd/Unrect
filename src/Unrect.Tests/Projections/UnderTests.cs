@@ -192,7 +192,7 @@ namespace Unrect.Tests.Projections
         { "c" },
       });
 
-      var section = Until(RowContaining("Next Section")).Heading("Detail").Of(Lines());
+      var section = Until(Rows.Containing("Next Section")).Heading("Detail").Of(Lines());
 
       Assert.Equal(2, section.Map(space));
     }

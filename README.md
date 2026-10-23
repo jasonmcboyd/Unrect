@@ -111,7 +111,7 @@ const string Inception = "Cash Flows using inception date";
 
 var byTransferDate = series
     .Under(Caption("Cash Flows Using Transfer Date"))
-    .Until(RowContaining(Inception));
+    .Until(Rows.Containing(Inception));
 
 var byInception = series.Under(Caption(Inception));
 

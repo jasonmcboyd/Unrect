@@ -68,8 +68,8 @@ namespace Unrect.Tests.Projections
       var space = Mixed(new object?[,] { { "a" }, { null }, { "b" }, { null }, { "c" } });
       var item = Point().Text();
 
-      var plain = VerticalRepeat(item, separatedBy: BlankRows());
-      var named = VerticalRepeat(item.Named("detail"), separatedBy: BlankRows());
+      var plain = VerticalRepeat(item, separatedBy: Rows.SkipBlank());
+      var named = VerticalRepeat(item.Named("detail"), separatedBy: Rows.SkipBlank());
 
       AssertL2(Observe(plain, space), Observe(named, space));
     }

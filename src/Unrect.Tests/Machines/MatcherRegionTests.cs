@@ -25,7 +25,7 @@ namespace Unrect.Tests.Machines
       var origins = new List<Offset>();
       var rows = new List<int>();
 
-      var anchored = On(RowWhere((plane, row) =>
+      var anchored = On(Rows.Where((plane, row) =>
       {
         origins.Add(plane.Origin);
         rows.Add(row);

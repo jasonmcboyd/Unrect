@@ -110,7 +110,7 @@ namespace Unrect.Tests.Spreadsheets
     public void TheLeafReadsAFormulaWhereTheCellReadsAValue()
     {
       // A cell has both, so reading both is an overlay's job: the same cell, twice.
-      var cell = On(RowContaining("Text")).Right(1).Of(Overlay(o => (Value: o.Text(), Formula: o.Formula())));
+      var cell = On(Rows.Containing("Text")).Right(1).Of(Overlay(o => (Value: o.Text(), Formula: o.Formula())));
 
       var read = cell.Map(Sheet());
 
@@ -124,7 +124,7 @@ namespace Unrect.Tests.Spreadsheets
       // Sizing by a strategy hands the projection a region whose height is not yet settled. Its
       // points are still the SHEET's cells at the sheet's own coordinates, so reading a formula off
       // one needs nothing looked up and nothing unwrapped — which is what replaced the seam.
-      var scaled = On(RowContaining("Scaled")).Of(Range(RowsWhileAnyIsNotBlank(), block => FormulaOf(block[1, 0])));
+      var scaled = On(Rows.Containing("Scaled")).Of(Range(Rows.WhileAnyIsNotBlank(), block => FormulaOf(block[1, 0])));
 
       Assert.Equal("LOG10(B8)+B8", scaled.Map(Sheet()));
     }
@@ -141,7 +141,7 @@ namespace Unrect.Tests.Spreadsheets
       // tail whose coordinates had shifted would find the capability and answer about the wrong
       // cell. Rows 2 and 3 of this file carry the same shared expression one row apart, so a
       // one-row slip has a plausible-looking answer waiting for it.
-      var lines = Sized(RowsWhileAnyIsNotBlank()).Of(VerticalFlow(v =>
+      var lines = Sized(Rows.WhileAnyIsNotBlank()).Of(VerticalFlow(v =>
       {
         v.Next(Row(cells => cells.Count));
 
@@ -170,11 +170,11 @@ return (
       // The boundary site's door through the same two charts: the matcher demands the capability of
       // the space it is handed, which by then is a tail of a discovered bound. The first computed row
       // past the consumed header is row 2, whose first cell says which one it found.
-      var firstComputed = Sized(RowsWhileAnyIsNotBlank()).Of(VerticalFlow(v =>
+      var firstComputed = Sized(Rows.WhileAnyIsNotBlank()).Of(VerticalFlow(v =>
       {
         v.Next(Row(cells => cells.Count));
 
-        var on = v.Next(On(RowWithCell(p => p.HasFormula())).Of(Row(cells => cells[0].Text())));
+        var on = v.Next(On(Rows.WithCell(p => p.HasFormula())).Of(Row(cells => cells[0].Text())));
 
         return on;
       }));

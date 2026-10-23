@@ -59,7 +59,7 @@ var irrDetails = VerticalRepeat(investorBlock);
 // missing heading still fails in the caption's own words. Chained headings read in document order,
 // both above the one section; left to right is the sheet top to bottom — where the series stops,
 // what announces it, then what it reads, which is the hoisted declaration placed with .Of.
-var byTransferDate = Until(RowContaining(Inception))
+var byTransferDate = Until(Rows.Containing(Inception))
 	.Heading("IRR Details")
 	.Heading("Cash Flows Using Transfer Date")
 	.Of(irrDetails);

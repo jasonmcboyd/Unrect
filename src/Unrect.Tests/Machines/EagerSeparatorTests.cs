@@ -34,14 +34,14 @@ namespace Unrect.Tests.Machines
     };
 
     private static IProjectionDefinition<ICellSpace, IReadOnlyList<string>> Block()
-      => Sized(RowsWhileAnyIsNotBlank()).Of(Range(block => (IReadOnlyList<string>)block.Rows.Select(row => row[0].AsText()!).ToList()));
+      => Sized(Rows.WhileAnyIsNotBlank()).Of(Range(block => (IReadOnlyList<string>)block.Rows.Select(row => row[0].AsText()!).ToList()));
 
     private static IProjectionDefinition<ICellSpace, IReadOnlyList<IReadOnlyList<string>>> Repeat(IOffsetStrategy<ICellSpace> separator)
       => VerticalRepeat(Block(), separatedBy: separator);
 
     /// <summary>The gap is however many leading rows are wholly blank — spelled as a lambda, so it has no per-span form.</summary>
     private static IOffsetStrategy<ICellSpace> BlankGap()
-      => SelectOffset(plane =>
+      => Extent.Offset(plane =>
       {
         var rows = 0;
 
@@ -57,7 +57,7 @@ namespace Unrect.Tests.Machines
       var space = Mixed(Blocks);
 
       var eager = Repeat(BlankGap()).Map(space);
-      var streamed = Repeat(BlankRows()).Map(space);
+      var streamed = Repeat(Rows.SkipBlank()).Map(space);
 
       Assert.Equal(streamed.Select(block => string.Join(",", block)), eager.Select(block => string.Join(",", block)));
       Assert.Equal(new[] { "a,b", "c", "d", "x" }, eager.Select(block => string.Join(",", block)));
@@ -68,7 +68,7 @@ namespace Unrect.Tests.Machines
     {
       // A separator that always asks for more rows than remain: the first occurrence stands alone.
       var space = Mixed(Blocks);
-      var greedy = Repeat(SelectOffset(plane => new Size(0, plane.Extent.Height + 1)));
+      var greedy = Repeat(Extent.Offset(plane => new Size(0, plane.Extent.Height + 1)));
 
       Assert.Equal(new[] { "a,b" }, greedy.Map(space).Select(block => string.Join(",", block)));
     }
@@ -77,7 +77,7 @@ namespace Unrect.Tests.Machines
     public void TheCostReportNamesTheHold()
     {
       var held = CostReport.Of(Repeat(BlankGap())).Lines[0];
-      var streamed = CostReport.Of(Repeat(BlankRows())).Lines[0];
+      var streamed = CostReport.Of(Repeat(Rows.SkipBlank())).Lines[0];
 
       Assert.False(held.Streams);
       Assert.Equal("its separator has no per-span form", held.Hold);

@@ -100,7 +100,7 @@ Two notes the ladder earns:
 
 - **A record projection that discovers its own extent measures itself, not the band.**
   `Row(cells => ...)` as an `eachRow` is "as wide as the leading columns that carry values", which
-  over a sparse export is width 0. `Range(WholeExtent(), ...)`, or an `Overlay` whose children
+  over a sparse export is width 0. `Range(Extent.Whole(), ...)`, or an `Overlay` whose children
   place themselves, reads the band as it was handed over.
 - **A lambda that touches nothing distinctive is ambiguous between the two lambda rungs**
   (`Table(x => 0)` — `TableRow<TSpace>` and `TableView<TSpace>` both have a `Location`). Type the
@@ -171,9 +171,9 @@ The strategy vocabulary `.OffsetBy` takes:
 
 | Operator | Meaning |
 |---|---|
-| `SkipRows(n)` `SkipColumns(n)` `BlankRows()` `BlankColumns()` | Fixed and blank-skipping offsets |
-| `Then(a, b, ...)` | Sequence offsets; each searches only the space the previous shift left |
-| `FromRight(w)` / `FromBottom(h)` | From-end anchoring |
+| `Rows.Skip(n)` `Columns.Skip(n)` `Rows.SkipBlank()` `Columns.SkipBlank()` | Fixed and blank-skipping offsets |
+| `Extent.Then(a, b, ...)` | Sequence offsets; each searches only the space the previous shift left |
+| `Extent.FromRight(w)` / `Extent.FromBottom(h)` | From-end anchoring |
 | `OffsetStrategies.To(m)` / `Past(m)` | The lifts `.On` / `.Below` / `.RightOf` are built on; public in `Unrect.Strategies`, deliberately NOT re-exported on `ProjectionBuilders<TSpace>` |
 
 ### The pipeline's stages and terminals
@@ -190,7 +190,7 @@ backend's own leaf: `Below(mark).Of(Point().Formula())`).
 
 **A matcher is written over the space it reads, and so is the pipeline it opens.** `On(landmark)` and
 `Below(landmark)` take an `ILineLandmark<TSpace>` over the file's own space (a landmark carries its
-own axis; `Below` refuses a column landmark where it is written), so `On(RowWithCell(p => p.HasFormula()))` compiles
+own axis; `Below` refuses a column landmark where it is written), so `On(Rows.WithCell(p => p.HasFormula()))` compiles
 only in a file closed over a space with formulas — see "Rules name their space" under Matchers, below.
 
 ## Extent — where things end
@@ -199,17 +199,17 @@ only in a file closed over a space with formulas — see "Rules name their space
 |---|---|
 | `.Sized(area)` | Declared extent, consumed in full; replaces a shape's own default extent, refuses a second `.Sized` |
 | `.Until(matcher)` / `.Until(matcher, orEnd: true)` | Extent ends just BEFORE a forward landmark; the bound is consumed in full so the next sibling starts AT the landmark |
-| `Extent(w, h)` `WholeExtent()` `NoExtent()` `RowsWhileAnyIsNotBlank()` `RowsWhileAny(p)` `ColumnsWhileAnyIsNotBlank()` `ColumnsWhileAny(p)` | The area vocabulary, mirrored on both axes; `p` is `Func<Point<TSpace>, bool>` over the file's own space, so it may ask a cell's kind or its value |
-| `TakeRows(n)` `TakeColumns(n)` `AllRows()` `AllColumns()` | Axis selectors, not area strategies — for `Row(AllColumns(), ...)` and for composing an extent from its two axes |
-| `TakeRowsWhile(p)` `TakeRowsTo(p)` `TakeRowsWhileAll(p)` `TakeRowsWhileAny(p)` and the four `TakeColumns…` twins | Predicate-driven axis selectors, over the file's space |
-| `RowsThenColumns(rows, columns)` / `ColumnsThenRows(columns, rows)` | The two axes as one extent; each axis is taken as it comes, demanding or not |
-| `SelectSize(f)` `SelectOffset(f)` | Measured by hand, `f` being `Func<Plane<TSpace>, Size>` |
-| `SkipRowsWhileAll(p)` `SkipRowsWhileAny(p)` and the column twins | Offsets past a leading band, over the file's space |
+| `Extent.Of(w, h)` `Extent.Whole()` `Extent.None()` `Rows.WhileAnyIsNotBlank()` `Rows.WhileAny(p)` `Columns.WhileAnyIsNotBlank()` `Columns.WhileAny(p)` | The area vocabulary, mirrored on both axes; `p` is `Func<Point<TSpace>, bool>` over the file's own space, so it may ask a cell's kind or its value |
+| `Rows.Take(n)` `Columns.Take(n)` `Rows.All()` `Columns.All()` | Axis selectors, not area strategies — for `Row(Columns.All(), ...)` and for composing an extent from its two axes |
+| `Rows.TakeWhile(p)` `Rows.TakeTo(p)` `Rows.TakeWhileAll(p)` `Rows.TakeWhileAny(p)` and the four `TakeColumns…` twins | Predicate-driven axis selectors, over the file's space |
+| `Rows.ThenColumns(rows, columns)` / `Columns.ThenRows(columns, rows)` | The two axes as one extent; each axis is taken as it comes, demanding or not |
+| `Extent.Select(f)` `Extent.Offset(f)` | Measured by hand, `f` being `Func<Plane<TSpace>, Size>` |
+| `Rows.SkipWhileAll(p)` `Rows.SkipWhileAny(p)` and the column twins | Offsets past a leading band, over the file's space |
 
 ## Matchers — one family, four rules, four modifiers
 
-`RowSaying(text)` · `RowWhere(spacePredicate)` · `RowWithCell(cellPredicate)` — and the three
-column twins — and `RowContaining(text)` and its column twin, over the text a cell HOLDS, with
+`Rows.Saying(text)` · `Rows.Where(spacePredicate)` · `Rows.WithCell(cellPredicate)` — and the three
+column twins — and `Rows.Containing(text)` and its column twin, over the text a cell HOLDS, with
 `TakeRowsToText`/`TakeColumnsToText` beside them; one vocabulary, over any space.
 Predicates read the file's own space:
 `Func<Plane<TSpace>, int, bool>` for `Where`, `Func<Point<TSpace>, bool>` for `WithCell`, so a
@@ -226,7 +226,7 @@ question about the value's kind, which is why `Containing` is the sheet's.
 
 A matcher only *locates* and reports absence; what absence means belongs to the modifier that
 takes it — `.On` (own the match), `.Below` / `.RightOf` (one beyond), `.Until` (bound by it).
-Because a section can start at `.On(RowContaining("A"))` and end at `.Until(RowContaining("B"))`
+Because a section can start at `.On(Rows.Containing("A"))` and end at `.Until(Rows.Containing("B"))`
 through the same matcher, the start and the end cannot disagree about what a caption is.
 
 Three matching rules exist in the library and deliberately never unify: the **content rule**
@@ -251,7 +251,7 @@ public interface ILineLandmark<TSpace>   where TSpace : class, ISpace { Orientat
 A scan is shown `Plane<TSpace>` and mints `Point<TSpace>`, so a predicate inside it may ask whatever
 that space answers — `p.IsDouble()` over `ICellSpace`, `p.Formula()` over `ISpreadsheetSpace` —
 and a rule that asks more than a space offers does not compile over it. The vocabulary's factories
-build rules over the file's space: `RowsWhileAny(p => p.IsDouble())` in a file closed over
+build rules over the file's space: `Rows.WhileAny(p => p.IsDouble())` in a file closed over
 `ProjectionBuilders<ICellSpace>` hands back an `ISizeStrategy<ICellSpace>`, and every member that
 takes a rule (`Sized`, `OffsetBy`, `Row`, `Column`, `Range`, the repeats' `separatedBy:`, `On`,
 `Below`, `RightOf`, `Until`) takes one over that same space. Nothing is lowered, wrapped or cast:
@@ -270,7 +270,7 @@ var header = Sized(Populated<ICellSpace>()).Row(r => r[0].Text());   // in an IC
 
 A capability-demanding *matcher* is the same rule from the other end:
 `ProjectionBuilders<TSpace>.RowWithCell(p => p.HasFormula())` is generic over any `IFormulaSpace`, so
-`On(RowWithCell(p => p.HasFormula()))` in `ProjectionBuilders<ISpreadsheetSpace>` hands back a pipeline
+`On(Rows.WithCell(p => p.HasFormula()))` in `ProjectionBuilders<ISpreadsheetSpace>` hands back a pipeline
 over the spreadsheet space and refuses to compile in a file closed over a sheet without formulas.
 
 ## Wrappers and boundaries
@@ -399,7 +399,7 @@ declaration composes or a `Map` call is made — there is no runtime capability 
 | Operator | Meaning |
 |---|---|
 | `Point().Formula()` | One cell, read as the formula behind it — the file's own expression without the `=`, null where the cell is a plain value. A cell has a value *and* a formula, so reading both is an `Overlay`, never a flow |
-| `RowWithCell(p => p.HasFormula())` / `RowWithCell(p => p.Formula() is string f && f.IndexOf(containing, StringComparison.OrdinalIgnoreCase) >= 0)` and the column twins | Matchers over formulas — see "Rules name their space," above, for how they carry their demand through `On`/`Below`/`Until` with nothing annotated. `containing` is a **substring, case-insensitively** |
+| `Rows.WithCell(p => p.HasFormula())` / `Rows.WithCell(p => p.Formula() is string f && f.IndexOf(containing, StringComparison.OrdinalIgnoreCase) >= 0)` and the column twins | Matchers over formulas — see "Rules name their space," above, for how they carry their demand through `On`/`Below`/`Until` with nothing annotated. `containing` is a **substring, case-insensitively** |
 | `IFormulaSpace` / `ISpreadsheetSpace` | The capability, and the bundle a declaration written over "a spreadsheet" demands |
 
 **Where they come from.** `SpreadsheetSpace.Create(path, sheet)` hands back an

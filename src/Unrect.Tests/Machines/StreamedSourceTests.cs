@@ -51,8 +51,8 @@ namespace Unrect.Tests.Machines
 
     private static IProjectionDefinition<ICellSpace, IReadOnlyList<IReadOnlyList<decimal>>> BlockTotals()
       => VerticalRepeat(
-        Sized(RowsWhileAnyIsNotBlank()).Of(Range(block => (IReadOnlyList<decimal>)block.Rows.Select(row => row[1].Decimal()).ToList())),
-        separatedBy: BlankRows());
+        Sized(Rows.WhileAnyIsNotBlank()).Of(Range(block => (IReadOnlyList<decimal>)block.Rows.Select(row => row[1].Decimal()).ToList())),
+        separatedBy: Rows.SkipBlank());
 
     [Fact]
     public void AStreamedSheetReadsWhatTheEagerSheetReads()

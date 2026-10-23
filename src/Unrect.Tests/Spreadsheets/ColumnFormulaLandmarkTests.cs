@@ -13,7 +13,7 @@ using static Unrect.Tests.ProjectionTestSpaces;
 namespace Unrect.Tests.Spreadsheets
 {
   /// <summary>
-  /// <c>ColumnWithCell(p => p.HasFormula())</c>, the declared twin of <c>RowWithCell(p => p.HasFormula())</c>.
+  /// <c>Columns.WithCell(p => p.HasFormula())</c>, the declared twin of <c>Rows.WithCell(p => p.HasFormula())</c>.
   /// <para>
   /// It exists because the mirror is law, not because a caller asked for it — which is exactly the
   /// shape that goes untested and rots. Everything the row half is pinned for lives in three other
@@ -87,7 +87,7 @@ namespace Unrect.Tests.Spreadsheets
     {
       // C is the first computed column, and On owns it: offset 2, not 3. The heading is read from the
       // matched column itself, which is what distinguishes On from RightOf below.
-      var applied = On(ColumnWithCell(p => p.HasFormula())).Of(Point().Text()).Apply(Sheet());
+      var applied = On(Columns.WithCell(p => p.HasFormula())).Of(Point().Text()).Apply(Sheet());
 
       Assert.Equal("Rate", applied.Value);
       Assert.Equal(2, applied.Offset.Column);
@@ -97,14 +97,14 @@ namespace Unrect.Tests.Spreadsheets
     [Fact]
     public void RightOf_StartsExactlyOneColumnRightOfTheMatch()
     {
-      var applied = RightOf(ColumnWithCell(p => p.HasFormula())).Of(Point().Text()).Apply(Sheet());
+      var applied = RightOf(Columns.WithCell(p => p.HasFormula())).Of(Point().Text()).Apply(Sheet());
 
       Assert.Equal("Total", applied.Value);
       Assert.Equal(3, applied.Offset.Column);
 
       // Said the other way, so a regression in either operator shows up here: one more than On.
       Assert.Equal(
-        On(ColumnWithCell(p => p.HasFormula())).Of(Point().Text()).Apply(Sheet()).Offset.Column + 1,
+        On(Columns.WithCell(p => p.HasFormula())).Of(Point().Text()).Apply(Sheet()).Offset.Column + 1,
         applied.Offset.Column);
     }
 
@@ -113,11 +113,11 @@ namespace Unrect.Tests.Spreadsheets
     {
       // C holds a formula and D holds one that mentions SUM. The bare overload stops at C; this one
       // must walk past it. A substring, case-insensitively — the rule the row half documents.
-      Assert.Equal("Total", On(ColumnWithCell(p => p.Formula() is string f && f.IndexOf("SUM", StringComparison.OrdinalIgnoreCase) >= 0)).Of(Point().Text()).Map(Sheet()));
-      Assert.Equal("Total", On(ColumnWithCell(p => p.Formula() is string f && f.IndexOf("sum", StringComparison.OrdinalIgnoreCase) >= 0)).Of(Point().Text()).Map(Sheet()));
+      Assert.Equal("Total", On(Columns.WithCell(p => p.Formula() is string f && f.IndexOf("SUM", StringComparison.OrdinalIgnoreCase) >= 0)).Of(Point().Text()).Map(Sheet()));
+      Assert.Equal("Total", On(Columns.WithCell(p => p.Formula() is string f && f.IndexOf("sum", StringComparison.OrdinalIgnoreCase) >= 0)).Of(Point().Text()).Map(Sheet()));
 
       // ...and the search is genuinely column-major: the reference formula in C matches on its own.
-      Assert.Equal("Rate", On(ColumnWithCell(p => p.Formula() is string f && f.IndexOf("$C$1", StringComparison.OrdinalIgnoreCase) >= 0)).Of(Point().Text()).Map(Sheet()));
+      Assert.Equal("Rate", On(Columns.WithCell(p => p.Formula() is string f && f.IndexOf("$C$1", StringComparison.OrdinalIgnoreCase) >= 0)).Of(Point().Text()).Map(Sheet()));
     }
 
     [Fact]
@@ -127,7 +127,7 @@ namespace Unrect.Tests.Spreadsheets
       // space, and the pipeline accepts this matcher only because that space can answer it — which
       // would not compile if the column lift had been left off the demanding family.
       IProjectionDefinition<ISpreadsheetSpace, string> firstComputedColumn =
-        On(ColumnWithCell(p => p.HasFormula())).Of(Column(cells => cells[0].Text()));
+        On(Columns.WithCell(p => p.HasFormula())).Of(Column(cells => cells[0].Text()));
 
       Assert.Equal("Rate", firstComputedColumn.Map(Sheet()));
     }
@@ -140,7 +140,7 @@ namespace Unrect.Tests.Spreadsheets
       // The half that keeps the test above meaningful. Over a space that CAN answer, "there is no
       // such column" is an ordinary miss, and the ordinary tolerances are exactly what it is for —
       // otherwise "loud" would only mean this matcher is loud about everything.
-      var missing = On(ColumnWithCell(p => p.Formula() is string f && f.IndexOf("MEDIAN", StringComparison.OrdinalIgnoreCase) >= 0)).Of(Point().Text());
+      var missing = On(Columns.WithCell(p => p.Formula() is string f && f.IndexOf("MEDIAN", StringComparison.OrdinalIgnoreCase) >= 0)).Of(Point().Text());
 
       Assert.Null(missing.Optional().Map(Sheet()));
       Assert.Equal("fallback", missing.Else("fallback").Map(Sheet()));

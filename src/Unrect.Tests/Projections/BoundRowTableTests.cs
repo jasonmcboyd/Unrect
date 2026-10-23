@@ -391,7 +391,7 @@ namespace Unrect.Tests.Projections
 
       // The two boundaries that would otherwise report a null bug as "the section was not there".
       Faults(Table(1, NoRow).Optional(), Allocations());
-      Faults(Choice(Table(1, NoRow).Select(rows => rows.Count), Range(WholeExtent(), _ => -1)), Allocations());
+      Faults(Choice(Table(1, NoRow).Select(rows => rows.Count), Range(Extent.Whole(), _ => -1)), Allocations());
     }
 
     [Fact]
@@ -403,7 +403,7 @@ namespace Unrect.Tests.Projections
       Assert.Contains("the share stopped answering", direct.Message, StringComparison.Ordinal);
 
       Faults(Table(1, DiskFailed).Optional(), Allocations());
-      Faults(Choice(Table(1, DiskFailed).Select(rows => rows.Count), Range(WholeExtent(), _ => -1)), Allocations());
+      Faults(Choice(Table(1, DiskFailed).Select(rows => rows.Count), Range(Extent.Whole(), _ => -1)), Allocations());
     }
 
     [Fact]
@@ -420,13 +420,13 @@ namespace Unrect.Tests.Projections
 
       Assert.Equal(
         -1,
-        Choice(Table(1, WrongExport).Select(rows => rows.Count), Range(WholeExtent(), _ => -1)).Map(Allocations()));
+        Choice(Table(1, WrongExport).Select(rows => rows.Count), Range(Extent.Whole(), _ => -1)).Map(Allocations()));
 
       // ...and the control: the same shapes over a bind that works do not reach their fallbacks.
       Assert.Equal(3, Table(1, AccountCell).Optional().Map(Allocations())!.Count);
       Assert.Equal(
         3,
-        Choice(Table(1, AccountCell).Select(rows => rows.Count), Range(WholeExtent(), _ => -1)).Map(Allocations()));
+        Choice(Table(1, AccountCell).Select(rows => rows.Count), Range(Extent.Whole(), _ => -1)).Map(Allocations()));
     }
 
     // --- 5. The demanding bind, and the robustness claim ------------------------------------------------

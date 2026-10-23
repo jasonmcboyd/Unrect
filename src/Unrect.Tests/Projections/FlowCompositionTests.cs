@@ -202,7 +202,7 @@ namespace Unrect.Tests.Projections
       var space = Mixed(new object?[,] { { "preamble" }, { "Section" }, { 7 } });
 
       AssertReads(
-        VerticalFlow(v => $"{v.Next(TextCell())}|{v.Next(On(RowContaining("Section")).Of(TextCell()))}"),
+        VerticalFlow(v => $"{v.Next(TextCell())}|{v.Next(On(Rows.Containing("Section")).Of(TextCell()))}"),
         space,
         "preamble|Section",
         1,
@@ -216,7 +216,7 @@ namespace Unrect.Tests.Projections
     {
       var space = Grid(new[,] { { 1 }, { 2 }, { 0 }, { 3 }, { 4 }, { 0 }, { 0 } });
 
-      var projection = VerticalRepeat(VerticalFlow(v => $"{v.Next(IntCell())}+{v.Next(IntCell())}"), separatedBy: BlankRows())
+      var projection = VerticalRepeat(VerticalFlow(v => $"{v.Next(IntCell())}+{v.Next(IntCell())}"), separatedBy: Rows.SkipBlank())
         .Select(items => string.Join(" ", items));
 
       AssertReads(projection, space, "1+2 3+4", 1, 5);

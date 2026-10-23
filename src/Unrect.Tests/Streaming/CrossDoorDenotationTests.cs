@@ -281,7 +281,7 @@ namespace Unrect.Tests.Streaming
 
     /// <summary>The tall ledger, anchored on its caption and bounded by its terminator.</summary>
     private static IProjectionDefinition<ICellSpace, IReadOnlyList<Ledger>> TallLedger() =>
-      Below(RowContaining("Ledger")).Until(RowContaining("End")).Of(Table<Ledger>());
+      Below(Rows.Containing("Ledger")).Until(Rows.Containing("End")).Of(Table<Ledger>());
 
     // --- The matrix ----------------------------------------------------------------------------------
 
@@ -324,7 +324,7 @@ namespace Unrect.Tests.Streaming
       // A table bounded by a landmark that is really there: the bound is consumed in full, so what
       // is left over is the totals row and nothing else.
       "a table bounded by a landmark" => Scenario.Of(
-        Until(RowContaining("Totals")).Heading("Quarterly Report").Of(Table<Entry>()),
+        Until(Rows.Containing("Totals")).Heading("Quarterly Report").Of(Table<Entry>()),
         "report"),
 
       // The onBlank knob across the doors: a Skip table (run-to-edge, non-self-bounding) bounded by
@@ -332,25 +332,25 @@ namespace Unrect.Tests.Streaming
       // bound in full, and leave the totals row for the unconsumed-space Info to notice — the same
       // value, extent and diagnostics through either.
       "a bounded skip table over interior blanks" => Scenario.Of(
-        Until(RowContaining("Total")).Of(Table(r => new Entry(r["Client"].Text(), r["Amount"].Decimal()), BlankRowStrategy.Skip)),
+        Until(Rows.Containing("Total")).Of(Table(r => new Entry(r["Client"].Text(), r["Amount"].Decimal()), BlankRowStrategy.Skip)),
         "gapped"),
 
       // Repetition: two blocks with a blank separator between them, and a memo column the
       // declaration never reaches, so the reading is complete down the sheet and short across it.
       "a repeat of blocks" => Scenario.Of(
-        VerticalRepeat(DealBlock(), separatedBy: BlankRows()),
+        VerticalRepeat(DealBlock(), separatedBy: Rows.SkipBlank()),
         "blocks"),
       // The same repeat bounded by a landmark that is not in the file: an Info, and a reading that
       // runs to the end of the space instead of failing.
       "a repeat bounded by an absent landmark" => Scenario.Of(
-        Until(RowContaining("Nowhere"), orEnd: true).Of(VerticalRepeat(DealBlock(), separatedBy: BlankRows())),
+        Until(Rows.Containing("Nowhere"), orEnd: true).Of(VerticalRepeat(DealBlock(), separatedBy: Rows.SkipBlank())),
         "blocks"),
       // The repeat's own rule, which is the sharpest failure path in the matrix: only the item's
       // PLACEMENT ends a repetition, so a third occurrence whose first row reads and whose header
       // then is not there is loud rather than a quiet truncation. Both doors must say it in the same
       // words, about the same cell, at the same occurrence index.
       "a repeat meeting a line it cannot read" => Scenario.Of(
-        VerticalRepeat(DealBlock(), separatedBy: BlankRows()),
+        VerticalRepeat(DealBlock(), separatedBy: Rows.SkipBlank()),
         "drift"),
 
       // The three tolerance boundaries, each absorbing a real failure and saying so.
@@ -373,7 +373,7 @@ namespace Unrect.Tests.Streaming
       // Blankness, which is the adapter's decision and therefore the one most easily made twice: the
       // row-wise rule must stop above the whitespace-only cell through either door.
       "a rule stopped by a whitespace-only cell" => Scenario.Of(
-        Range(RowsWhileAnyIsNotBlank(), block => $"{block.Width}x{block.Height}"),
+        Range(Rows.WhileAnyIsNotBlank(), block => $"{block.Width}x{block.Height}"),
         "whitespace"),
 
       // The measured-by-reading path: a sheet with no valued cell has no width, so the leaf that

@@ -141,14 +141,14 @@ namespace Unrect.Tests.Streaming
     private static IProjectionDefinition<ICellSpace, (string Title, IReadOnlyList<string> Summary, IReadOnlyList<IReadOnlyList<string>> ByTransferDate, IReadOnlyList<IReadOnlyList<string>> ByInception)> InvestorIrr()
     {
       var investorBlock = Table(row => row["Investor Name"].Text()).Named("investor block");
-      var series = VerticalRepeat(investorBlock, separatedBy: BlankRows());
+      var series = VerticalRepeat(investorBlock, separatedBy: Rows.SkipBlank());
 
       const string Inception = "Cash Flows using inception date";
 
       return VerticalFlow(v => (
         Title: v.Next(Column(4, column => column[0].Text()).Named("report header")),
         Summary: v.Next(Table(row => row["Investors"].Text()).Named("summary")),
-        ByTransferDate: v.Next(Until(RowContaining(Inception)).Heading("IRR Details").Heading("Cash Flows Using Transfer Date").Of(series)),
+        ByTransferDate: v.Next(Until(Rows.Containing(Inception)).Heading("IRR Details").Heading("Cash Flows Using Transfer Date").Of(series)),
         ByInception: v.Next(Heading(Inception).Of(series))));
     }
 
@@ -205,7 +205,7 @@ namespace Unrect.Tests.Streaming
         VerticalFlow(v => (
           Deal: v.Next(TextCell()),
           Rows: v.Next(Table(row => row["Name"].Text())))),
-        separatedBy: BlankRows());
+        separatedBy: Rows.SkipBlank());
 
       var eager = declaration.Map(SpreadsheetSpace.CreateValues(Path("investors-by-deal.xlsx"), "Investors"));
 
@@ -251,7 +251,7 @@ namespace Unrect.Tests.Streaming
         Amount: h.Integer(),
         Category: h.Text()));
 
-      return Below(RowContaining("Entry")).Of(Table(headerRows: 0, eachRow: ledgerEntry));
+      return Below(Rows.Containing("Entry")).Of(Table(headerRows: 0, eachRow: ledgerEntry));
     }
 
     [Fact]
@@ -279,7 +279,7 @@ namespace Unrect.Tests.Streaming
         Amount: h.Integer(),
         Category: h.Text()));
 
-      return On(RowContaining("Entry")).Of(Table(headerRows: 1, eachRow: ledgerEntry));
+      return On(Rows.Containing("Entry")).Of(Table(headerRows: 1, eachRow: ledgerEntry));
     }
 
     [Fact]

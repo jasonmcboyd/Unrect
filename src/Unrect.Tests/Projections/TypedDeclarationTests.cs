@@ -37,7 +37,7 @@ namespace Unrect.Tests.Projections
     {
       // Both halves of a typed predicate in one rule: the kind question, which the canonical four
       // cannot ask at all, and the value question, which they could only ask through the rendering.
-      var smallLots = Sized(RowsWhileAny(cell => cell.IsDouble() && cell.Decimal() < 7))
+      var smallLots = Sized(Rows.WhileAny(cell => cell.IsDouble() && cell.Decimal() < 7))
         .Of(Range(block => block.Height));
 
       Assert.Equal(2, smallLots.Map(Lots()));
@@ -54,7 +54,7 @@ namespace Unrect.Tests.Projections
         { 5m, 6m },
       });
 
-      var body = On(RowWithCell(cell => cell.IsDouble())).Of(Row(row => row[0].Decimal()));
+      var body = On(Rows.WithCell(cell => cell.IsDouble())).Of(Row(row => row[0].Decimal()));
 
       Assert.Equal(5m, body.Map(sheet));
     }
@@ -65,7 +65,7 @@ namespace Unrect.Tests.Projections
     /// </summary>
     private static ISizeStrategy<TSpace> Populated<TSpace>()
       where TSpace : class, ISpace
-      => ProjectionBuilders<TSpace>.RowsWhileAny(cell => !cell.IsBlank());
+      => ProjectionBuilders<TSpace>.Rows.WhileAny(cell => !cell.IsBlank());
 
     [Fact]
     public void ARuleBuiltAtTheLeastDemandingSpaceFlowsIntoAFileScopedToMore()
@@ -88,11 +88,11 @@ namespace Unrect.Tests.Projections
     /// <summary>The matcher and row-rule halves of the same helper, at the same least demanding space.</summary>
     private static ILineLandmark<TSpace> FirstPopulatedRow<TSpace>()
       where TSpace : class, ISpace
-      => ProjectionBuilders<TSpace>.RowWithCell(cell => !cell.IsBlank());
+      => ProjectionBuilders<TSpace>.Rows.WithCell(cell => !cell.IsBlank());
 
     private static ILineStrategy<TSpace> PopulatedRows<TSpace>()
       where TSpace : class, ISpace
-      => ProjectionBuilders<TSpace>.TakeRowsWhileAny(cell => !cell.IsBlank());
+      => ProjectionBuilders<TSpace>.Rows.TakeWhileAny(cell => !cell.IsBlank());
 
     [Fact]
     public void AndSoDoAMatcherAndAnAxisRuleBuiltTheSameWay()
@@ -125,8 +125,8 @@ namespace Unrect.Tests.Projections
 
       // Captions, then five records whose amounts are 100, 150, 400, 500, 1500. The section is the
       // records under 200: found by the first row holding a number, sized by the amounts.
-      var small = On(RowWithCell(cell => cell.IsDouble()))
-        .Sized(RowsWhileAny(cell => cell.IsDouble() && cell.Decimal() < 200))
+      var small = On(Rows.WithCell(cell => cell.IsDouble()))
+        .Sized(Rows.WhileAny(cell => cell.IsDouble() && cell.Decimal() < 200))
         .Of(Range(block => block.Height));
 
       Assert.Equal(2, small.Map(book.Sheet("Detail")));

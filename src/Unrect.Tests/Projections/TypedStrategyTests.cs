@@ -124,10 +124,10 @@ namespace Unrect.Tests.Projections
       // A compiling test IS the pin here: the four spellings below are the four that have to keep
       // working, bare, named, positional and with a count.
       var block = Range(ValueRows(), region => region.Height);
-      var blankRows = SkipRowsWhileAll(cell => cell.IsBlank());
+      var blankRows = Rows.SkipWhileAll(cell => cell.IsBlank());
 
       var bare = VerticalRepeat(block);
-      var named0 = VerticalRepeat(block, separatedBy: BlankRows());
+      var named0 = VerticalRepeat(block, separatedBy: Rows.SkipBlank());
       var typed = VerticalRepeat(block, blankRows);
       var named = VerticalRepeat(block, separatedBy: blankRows, atLeast: 1);
 
@@ -174,14 +174,14 @@ namespace Unrect.Tests.Projections
       // is the caller's own parameter, because that is the argument a reader has to go back and write.
       Action call = factory switch
       {
-        "RowWhere" => () => RowWhere(null!),
-        "RowWithCell" => () => RowWithCell(null!),
-        "ColumnWhere" => () => ColumnWhere(null!),
-        "ColumnWithCell" => () => ColumnWithCell(null!),
-        "RowsWhileAny" => () => RowsWhileAny(null!),
-        "TakeRowsWhileAny" => () => TakeRowsWhileAny(null!),
-        "SkipRowsWhileAny" => () => SkipRowsWhileAny(null!),
-        _ => () => SelectSize(null!),
+        "RowWhere" => () => Rows.Where(null!),
+        "RowWithCell" => () => Rows.WithCell(null!),
+        "ColumnWhere" => () => Columns.Where(null!),
+        "ColumnWithCell" => () => Columns.WithCell(null!),
+        "RowsWhileAny" => () => Rows.WhileAny(null!),
+        "TakeRowsWhileAny" => () => Rows.TakeWhileAny(null!),
+        "SkipRowsWhileAny" => () => Rows.SkipWhileAny(null!),
+        _ => () => Extent.Select(null!),
       };
 
       Assert.Equal(parameter, Assert.Throws<ArgumentNullException>(call).ParamName);
@@ -191,7 +191,7 @@ namespace Unrect.Tests.Projections
     public static TheoryData<string> TheUnwrappingMembers => new TheoryData<string>
     {
       "Sized(extent)", "OffsetBy(offset)", "Range(extent)", "Row(columns)", "Column(rows)",
-      "RowsThenColumns(rows)", "RowsThenColumns(columns)", "ColumnsThenRows(columns)", "ColumnsThenRows(rows)",
+      "Rows.ThenColumns(rows)", "Rows.ThenColumns(columns)", "Columns.ThenRows(columns)", "Columns.ThenRows(rows)",
       "On(landmark)", "Below(landmark)", "RightOf(landmark)",
       "Until(landmark)",
       "stage Sized(extent)", "stage Range(extent)", "stage Row(columns)", "stage Column(rows)",
@@ -213,10 +213,10 @@ namespace Unrect.Tests.Projections
         "Range(extent)" => () => Range((ISizeStrategy<ICellSpace>)null!, block => block.Height),
         "Row(columns)" => () => Row((ILineStrategy<ICellSpace>)null!, strip => strip.Count),
         "Column(rows)" => () => Column((ILineStrategy<ICellSpace>)null!, strip => strip.Count),
-        "RowsThenColumns(rows)" => () => RowsThenColumns((ILineStrategy<ICellSpace>)null!, ValueColumns()),
-        "RowsThenColumns(columns)" => () => RowsThenColumns(ValueRowCount(), (ILineStrategy<ICellSpace>)null!),
-        "ColumnsThenRows(columns)" => () => ColumnsThenRows((ILineStrategy<ICellSpace>)null!, ValueRowCount()),
-        "ColumnsThenRows(rows)" => () => ColumnsThenRows(ValueColumns(), (ILineStrategy<ICellSpace>)null!),
+        "Rows.ThenColumns(rows)" => () => Rows.ThenColumns((ILineStrategy<ICellSpace>)null!, ValueColumns()),
+        "Rows.ThenColumns(columns)" => () => Rows.ThenColumns(ValueRowCount(), (ILineStrategy<ICellSpace>)null!),
+        "Columns.ThenRows(columns)" => () => Columns.ThenRows((ILineStrategy<ICellSpace>)null!, ValueRowCount()),
+        "Columns.ThenRows(rows)" => () => Columns.ThenRows(ValueColumns(), (ILineStrategy<ICellSpace>)null!),
         "On(landmark)" => () => On((ILineLandmark<ICellSpace>)null!),
         "Below(landmark)" => () => Below((ILineLandmark<ICellSpace>)null!),
         "RightOf(landmark)" => () => RightOf((ILineLandmark<ICellSpace>)null!),

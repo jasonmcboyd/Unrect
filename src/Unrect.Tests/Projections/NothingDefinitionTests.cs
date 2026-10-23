@@ -25,7 +25,7 @@ namespace Unrect.Tests.Projections
 
 
     /// <summary>The discovered extent: full width, and as many leading rows as hold anything.</summary>
-    private static IProjectionDefinition<ICellSpace, int> Rows() => Range(RowsWhileAnyIsNotBlank(), b => b.Height);
+    private static IProjectionDefinition<ICellSpace, int> RowCount() => Range(Rows.WhileAnyIsNotBlank(), b => b.Height);
 
     /// <summary>A cell read as text — which is a failure over <see cref="Numbers"/>, and an absorbable one.</summary>
     private static IProjectionDefinition<ICellSpace, string> Title() => TextCell();
@@ -74,7 +74,7 @@ namespace Unrect.Tests.Projections
       // diagnostics in order, subject and path included. The children are named by their use site,
       // which is why L3 reaches — see the negative pin below for the one thing the extra child does
       // move.
-      var x = Rows();
+      var x = RowCount();
       var plain = VerticalFlow(v =>
       {
         var x2 = v.Next(x);
@@ -122,7 +122,7 @@ namespace Unrect.Tests.Projections
       // x · ε ≡ x, the mirror. A unit taken after the cursor has moved slices the remainder it is
       // handed and adds nothing to the advance, so a following sibling — or an enclosing repeat —
       // steps by exactly what x consumed.
-      var x = Rows();
+      var x = RowCount();
       var plain = VerticalFlow(v =>
       {
         var x2 = v.Next(x);

@@ -52,10 +52,10 @@ namespace Unrect.Benchmarks
     private static readonly IProjectionDefinition<ICellSpace, IReadOnlyList<CashFlow>> InvestorBlock = Table<CashFlow>();
 
     private static readonly IProjectionDefinition<ICellSpace, IReadOnlyList<IReadOnlyList<CashFlow>>> Series =
-      VerticalRepeat(InvestorBlock, separatedBy: BlankRows());
+      VerticalRepeat(InvestorBlock, separatedBy: Rows.SkipBlank());
 
     private static readonly IProjectionDefinition<ICellSpace, IReadOnlyList<IReadOnlyList<CashFlow>>> ByTransferDate =
-      Until(RowContaining(CanonicalSpaces.InceptionCaption))
+      Until(Rows.Containing(CanonicalSpaces.InceptionCaption))
         .Heading(CanonicalSpaces.DetailsCaption)
         .Heading(CanonicalSpaces.TransferDateCaption)
         .Of(Series);

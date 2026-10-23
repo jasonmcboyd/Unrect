@@ -38,7 +38,7 @@ namespace Unrect.Tests.Projections
       // so a declaration means what it reads wherever it sits.
       Assert.Equal(11, Down(1).Of(IntCell()).Map(CoordinateGrid()));
       Assert.Equal(2, Right(1).Of(IntCell()).Map(CoordinateGrid()));
-      Assert.Equal(12, OffsetBy(Then(SkipRows(1), SkipColumns(1))).Of(IntCell()).Map(CoordinateGrid()));
+      Assert.Equal(12, OffsetBy(Extent.Then(Rows.Skip(1), Columns.Skip(1))).Of(IntCell()).Map(CoordinateGrid()));
     }
 
     [Fact]
@@ -103,7 +103,7 @@ namespace Unrect.Tests.Projections
       // The same declaration inside a discovered bound of exactly the same 3x4, walked a row at a
       // time. RowsWhileAnyIsNotBlank takes every row of the coordinate grid, so the two spaces differ in
       // how their extent is arrived at and in nothing else.
-      AssertFit(fits, extent, Sized(RowsWhileAnyIsNotBlank()).Of(VerticalFlow(v =>
+      AssertFit(fits, extent, Sized(Rows.WhileAnyIsNotBlank()).Of(VerticalFlow(v =>
       {
         var block2 = v.Next(block);
 
@@ -201,8 +201,8 @@ namespace Unrect.Tests.Projections
       // does not matter which side of the Select the modifier lands on.
       var space = Grid(new[,] { { 0 }, { 5 }, { 9 } });
 
-      var selectThenOffset = OffsetBy(SkipRows(1)).Of(IntCell().Select(v => v * 2)).Apply(space);
-      var offsetThenSelect = OffsetBy(SkipRows(1)).Of(IntCell()).Select(v => v * 2).Apply(space);
+      var selectThenOffset = OffsetBy(Rows.Skip(1)).Of(IntCell().Select(v => v * 2)).Apply(space);
+      var offsetThenSelect = OffsetBy(Rows.Skip(1)).Of(IntCell()).Select(v => v * 2).Apply(space);
 
       Assert.Equal(10, selectThenOffset.Value);
       Assert.Equal(10, offsetThenSelect.Value);
@@ -247,7 +247,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AMovementDeclaresThePositionOnceAndComposesFromThere()
     {
-      // A second statement of a position over a movement — Down(1).OffsetBy(SkipRows(2)) — was a
+      // A second statement of a position over a movement — Down(1).OffsetBy(Rows.Skip(2)) — was a
       // runtime refusal while placement rode postfix modifiers; it is now a COMPILE-time refusal
       // (OffsetBy is an entry, not a stage), pinned in
       // spike/PlacementGauntlet/MustNotCompilePipeline.cs (AA). What survives is the composing
@@ -278,7 +278,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal(new[] { "Investor", "Amount" }, Down(1).Of(Table(t => t.ColumnNames)).Map(space));
 
       // ...and OffsetBy discards the default outright likewise, landing exactly one row down.
-      Assert.Equal(new[] { "Investor", "Amount" }, OffsetBy(SkipRows(1)).Of(Table(t => t.ColumnNames)).Map(space));
+      Assert.Equal(new[] { "Investor", "Amount" }, OffsetBy(Rows.Skip(1)).Of(Table(t => t.ColumnNames)).Map(space));
 
       // The other half of the law: composition happens only when offsets are explicitly chained in
       // the pipeline. Making the self-locate explicit marks the offset declared, so Down(1) then
@@ -324,7 +324,7 @@ namespace Unrect.Tests.Projections
     {
       // Spec §7: "The law applies to EVERY one of them uniformly." Exactly three shapes carry a
       // non-trivial constructor default — Table (SkipToFirstNonBlankCell), Caption (To(RowContaining))
-      // and Fields (Then(To(ColumnWhere), To(RowWhere))) — and all three obey the one rule: a bare
+      // and Fields (Extent.Then(To(ColumnWhere), To(RowWhere))) — and all three obey the one rule: a bare
       // declared movement REPLACES the default and starts the chain from the origin. Pinned side by
       // side here so the "uniform across defaulted shapes" claim lives in one place (Caption and
       // Fields each also carry their own pin in their own suites).
@@ -473,13 +473,13 @@ namespace Unrect.Tests.Projections
       // "Past the blank band, then one row further."
       var space = Grid(new[,] { { 0 }, { 0 }, { 9 }, { 7 } });
 
-      Assert.Equal(7, OffsetBy(Then(BlankRows(), SkipRows(1))).Of(IntCell()).Map(space));
+      Assert.Equal(7, OffsetBy(Extent.Then(Rows.SkipBlank(), Rows.Skip(1))).Of(IntCell()).Map(space));
     }
 
     [Fact]
     public void Then_WithNoOffsets_IsTheOrigin()
     {
-      Assert.Equal(1, OffsetBy(Then()).Of(IntCell()).Map(CoordinateGrid()));
+      Assert.Equal(1, OffsetBy(Extent.Then()).Of(IntCell()).Map(CoordinateGrid()));
     }
 
     // --- Projections are immutable values ----------------------------------------------------------------
@@ -606,7 +606,7 @@ namespace Unrect.Tests.Projections
       Assert.Equal("projection", Assert.Throws<ArgumentNullException>(() => ((IProjectionDefinition<ICellSpace, int>)null!).Select(v => v)).ParamName);
       Assert.Equal(
         "projection",
-        Assert.Throws<ArgumentNullException>(() => OffsetBy(SkipRows(1)).Of<int>(null!)).ParamName);
+        Assert.Throws<ArgumentNullException>(() => OffsetBy(Rows.Skip(1)).Of<int>(null!)).ParamName);
       Assert.Equal(
         "projection",
         Assert.Throws<ArgumentNullException>(() => Sized(SizeStrategies.ExplicitSize<ICellSpace>(1, 1)).Of<int>(null!)).ParamName);
@@ -617,8 +617,8 @@ namespace Unrect.Tests.Projections
     {
       Assert.Equal("rows", Assert.Throws<ArgumentOutOfRangeException>(() => Down(-1).Of(IntCell())).ParamName);
       Assert.Equal("columns", Assert.Throws<ArgumentOutOfRangeException>(() => Right(-1).Of(IntCell())).ParamName);
-      Assert.Equal("count", Assert.Throws<ArgumentOutOfRangeException>(() => SkipRows(-1)).ParamName);
-      Assert.Equal("count", Assert.Throws<ArgumentOutOfRangeException>(() => SkipColumns(-1)).ParamName);
+      Assert.Equal("count", Assert.Throws<ArgumentOutOfRangeException>(() => Rows.Skip(-1)).ParamName);
+      Assert.Equal("count", Assert.Throws<ArgumentOutOfRangeException>(() => Columns.Skip(-1)).ParamName);
     }
 
     [Fact]

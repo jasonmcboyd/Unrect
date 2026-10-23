@@ -44,7 +44,7 @@ namespace Unrect.Tests.Projections
       var space = Grid(new[,] { { 1 }, { 2 }, { 3 }, { 4 } });
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        OffsetBy(Then(SkipRows(3), SkipRows(3))).Of(IntCell()).Map(space));
+        OffsetBy(Extent.Then(Rows.Skip(3), Rows.Skip(3))).Of(IntCell()).Map(space));
 
       Assert.Contains("its offset ran past the available space", failure.Message);
       Assert.IsType<OutOfBoundsException>(failure.InnerException);
@@ -58,7 +58,7 @@ namespace Unrect.Tests.Projections
       var space = Mixed(new object?[,] { { "nothing", null }, { "relevant", null } });
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        On(RowContaining("Taxable Income")).Of(TextCell().Named("taxable income")).Map(space));
+        On(Rows.Containing("Taxable Income")).Of(TextCell().Named("taxable income")).Map(space));
 
       Assert.Equal("'taxable income'", failure.Subject);
       Assert.Contains("no row containing 'Taxable Income' exists in the available space", failure.Message);
@@ -72,12 +72,12 @@ namespace Unrect.Tests.Projections
     {
       var space = Mixed(new object?[,] { { "nothing", null }, { "relevant", null } });
 
-      Assert.Contains("no row containing 'Total' exists", Missing(OffsetStrategies.To(RowContaining("Total")), space));
-      Assert.Contains("no column containing 'Total' exists", Missing(OffsetStrategies.To(ColumnContaining("Total")), space));
-      Assert.Contains("no row with a matching cell exists", Missing(OffsetStrategies.To(RowWithCell(_ => false)), space));
-      Assert.Contains("no column with a matching cell exists", Missing(OffsetStrategies.To(ColumnWithCell(_ => false)), space));
-      Assert.Contains("no matching row exists", Missing(OffsetStrategies.To(RowWhere((_, _) => false)), space));
-      Assert.Contains("no matching column exists", Missing(OffsetStrategies.To(ColumnWhere((_, _) => false)), space));
+      Assert.Contains("no row containing 'Total' exists", Missing(OffsetStrategies.To(Rows.Containing("Total")), space));
+      Assert.Contains("no column containing 'Total' exists", Missing(OffsetStrategies.To(Columns.Containing("Total")), space));
+      Assert.Contains("no row with a matching cell exists", Missing(OffsetStrategies.To(Rows.WithCell(_ => false)), space));
+      Assert.Contains("no column with a matching cell exists", Missing(OffsetStrategies.To(Columns.WithCell(_ => false)), space));
+      Assert.Contains("no matching row exists", Missing(OffsetStrategies.To(Rows.Where((_, _) => false)), space));
+      Assert.Contains("no matching column exists", Missing(OffsetStrategies.To(Columns.Where((_, _) => false)), space));
     }
 
     [Fact]
@@ -85,9 +85,9 @@ namespace Unrect.Tests.Projections
     {
       var space = Mixed(new object?[,] { { "nothing", null } });
 
-      Assert.Throws<ProjectionException>(() => On(RowContaining("Total")).Of(IntCell()).Map(space));
-      Assert.Throws<ProjectionException>(() => OffsetBy(FromRight(9)).Of(IntCell()).Map(space));
-      Assert.Throws<ProjectionException>(() => OffsetBy(FromBottom(9)).Of(IntCell()).Map(space));
+      Assert.Throws<ProjectionException>(() => On(Rows.Containing("Total")).Of(IntCell()).Map(space));
+      Assert.Throws<ProjectionException>(() => OffsetBy(Extent.FromRight(9)).Of(IntCell()).Map(space));
+      Assert.Throws<ProjectionException>(() => OffsetBy(Extent.FromBottom(9)).Of(IntCell()).Map(space));
     }
 
     [Fact]
@@ -96,7 +96,7 @@ namespace Unrect.Tests.Projections
       // The seek description replaces the generic wording only when there was an anchor to name.
       var space = Mixed(new object?[,] { { "nothing", null } });
 
-      Assert.Contains("its offset ran past the available space", Missing(FromRight(9), space));
+      Assert.Contains("its offset ran past the available space", Missing(Extent.FromRight(9), space));
     }
 
     private static string Missing(IOffsetStrategy<ICellSpace> offset, ICellSpace space)
@@ -427,7 +427,7 @@ return horizontalFlow;
 
       values[row - 1, column - 1] = 0;   // the blank the projection will trip over
 
-      var projection = OffsetBy(Then(SkipColumns(column - 1), SkipRows(row - 1))).Of(IntCell());
+      var projection = OffsetBy(Extent.Then(Columns.Skip(column - 1), Rows.Skip(row - 1))).Of(IntCell());
       var failure = Assert.Throws<ProjectionException>(() => projection.Map(Grid(values)));
 
       Assert.Equal(expected, failure.Location.A1);

@@ -171,7 +171,7 @@ namespace Unrect.Tests.Projections
       // The uniform offset-replace law:
       // a bare declared movement REPLACES a shape's own constructor default and starts the chain from
       // the origin — it does not compose onto the default. Fields' default self-anchors on its first
-      // label (Then(To(ColumnWhere), To(RowWhere))), so this pins the law for Fields the same way
+      // label (Extent.Then(To(ColumnWhere), To(RowWhere))), so this pins the law for Fields the same way
       // PlacementTests pins it for Table.
       //
       // The fixture is DISCRIMINATING — the anchor is NOT at row 0. Row 0 is blank; the first "EIN:"
@@ -199,7 +199,7 @@ namespace Unrect.Tests.Projections
     {
       // The other half of the same law (spec §7 scenario 3, mirroring the Table
       // SkipToFirstNonBlankCell().Right(1) compose pin in PlacementTests): a movement composes only
-      // onto an offset the pipeline actually declared. OffsetBy(SkipRows(1)) replaces the self-anchor
+      // onto an offset the pipeline actually declared. OffsetBy(Rows.Skip(1)) replaces the self-anchor
       // AND marks the offset declared, so Down(1) then composes onto it rather than replacing it.
       var space = Mixed(new object?[,]
       {
@@ -208,11 +208,11 @@ namespace Unrect.Tests.Projections
         { "EIN:", "other" },
       });
 
-      // SkipRows(1) -> row 1, then Down(1) COMPOSES -> row 2 -> "other". Were each step to replace,
+      // Rows.Skip(1) -> row 1, then Down(1) COMPOSES -> row 2 -> "other". Were each step to replace,
       // only the last (row 1 -> "target") would stand, so the composition is observable here.
       Assert.Equal(
         "other",
-        OffsetBy(SkipRows(1)).Down(1).Of(Fields(Field("EIN"))).Map(space).Values.Single().Text());
+        OffsetBy(Rows.Skip(1)).Down(1).Of(Fields(Field("EIN"))).Map(space).Values.Single().Text());
     }
 
     [Fact]
@@ -224,7 +224,7 @@ namespace Unrect.Tests.Projections
         { "EIN:", "12-3456789" },
       });
 
-      Assert.Equal("12-3456789", OffsetBy(SkipRows(1)).Of(Fields(Field("EIN"))).Map(space).Values.Single().Text());
+      Assert.Equal("12-3456789", OffsetBy(Rows.Skip(1)).Of(Fields(Field("EIN"))).Map(space).Values.Single().Text());
     }
 
     [Fact]
@@ -267,7 +267,7 @@ namespace Unrect.Tests.Projections
       // one. The failure is the engine's — the field does not fit the extent it was handed — and
       // it names the field that could not be placed.
       var failure = Assert.Throws<ProjectionException>(() =>
-        Sized(Extent(1, 1)).Of(Fields(Field("EIN"))).Map(Card()));
+        Sized(Extent.Of(1, 1)).Of(Fields(Field("EIN"))).Map(Card()));
 
       Assert.Contains("an extent of 2x1 does not fit here", failure.Message);
       Assert.Equal("Field(\"EIN\")#1", failure.Subject);

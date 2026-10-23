@@ -118,7 +118,7 @@ namespace Unrect.Fluent
     /// <summary>A fresh one-cell leaf of <paramref name="kind"/>, placed as <c>Point()</c> is.</summary>
     internal static IProjectionDefinition<TSpace, T> Leaf<TSpace, T>(string kind, CellRead<TSpace, T> read)
       where TSpace : class, ISpace
-      => new ReadDefinition<TSpace, T>(kind, read, Placement<TSpace>.Of(ProjectionBuilders<TSpace>.Extent(1, 1)), blankIsNull: false);
+      => new ReadDefinition<TSpace, T>(kind, read, Placement<TSpace>.Of(ProjectionBuilders<TSpace>.Extent.Of(1, 1)), blankIsNull: false);
 
     /// <summary><paramref name="point"/>'s cell read as <paramref name="kind"/>, keeping whatever the point was given.</summary>
     internal static IProjectionDefinition<TSpace, T> Over<TSpace, T>(IProjectionDefinition<TSpace, Point<TSpace>> point, string kind, CellRead<TSpace, T> read)

@@ -47,7 +47,7 @@ namespace Unrect.Fluent
 
     /// <summary>One row, as wide as <paramref name="columns"/> selects.</summary>
     public static IProjectionDefinition<TSpace, T> Row<T>(ILineStrategy<TSpace> columns, Func<CellStrip<TSpace>, T> project)
-      => Strip(Orientation.Horizontal, project, RowsThenColumns(RowStrategies.TakeRows<TSpace>(1), LineAxis.Require(columns, Orientation.Horizontal, nameof(columns))), "Row");
+      => Strip(Orientation.Horizontal, project, Rows.ThenColumns(RowStrategies.TakeRows<TSpace>(1), LineAxis.Require(columns, Orientation.Horizontal, nameof(columns))), "Row");
 
     /// <summary>One column, as tall as the leading rows that carry values.</summary>
     public static IProjectionDefinition<TSpace, T> Column<T>(Func<CellStrip<TSpace>, T> project)
@@ -59,7 +59,7 @@ namespace Unrect.Fluent
 
     /// <summary>One column, as tall as <paramref name="rows"/> selects.</summary>
     public static IProjectionDefinition<TSpace, T> Column<T>(ILineStrategy<TSpace> rows, Func<CellStrip<TSpace>, T> project)
-      => Strip(Orientation.Vertical, project, ColumnsThenRows(ColumnStrategies.TakeColumns<TSpace>(1), LineAxis.Require(rows, Orientation.Vertical, nameof(rows))), "Column");
+      => Strip(Orientation.Vertical, project, Columns.ThenRows(ColumnStrategies.TakeColumns<TSpace>(1), LineAxis.Require(rows, Orientation.Vertical, nameof(rows))), "Column");
 
     /// <summary>
     /// A rectangular region, read through a <see cref="CellBlock{TSpace}"/>: the maximal leading block of
@@ -88,15 +88,15 @@ namespace Unrect.Fluent
     /// consumed once, and rendered into failure paths like anything else. Put a section under one
     /// with <c>Under</c>:
     /// <code>
-    /// var lines   = Range(RowsWhileAnyIsNotBlank(), b =&gt; b.Rows);
+    /// var lines   = Range(Rows.WhileAnyIsNotBlank(), b =&gt; b.Rows);
     /// var section = lines.Under(Caption("K-1 Lines 1-21"))
-    ///                    .Until(RowContaining("Portfolio Income"), orEnd: true);
+    ///                    .Until(Rows.Containing("Portfolio Income"), orEnd: true);
     /// </code>
     /// </para>
     /// <para>
     /// Matching is on what the cell SAYS, whole-cell, trimmed and case-insensitive, whatever the
     /// cell's kind — a caption that is a year matches "2024" — and it is the same rule
-    /// <see cref="RowSaying"/> uses, so a caption and a bound written from the same literal cannot
+    /// <see cref="Rows.Saying"/> uses, so a caption and a bound written from the same literal cannot
     /// disagree. Share the literal with a <c>const</c> when both are needed.
     /// </para>
     /// </summary>
@@ -236,8 +236,8 @@ namespace Unrect.Fluent
     ///
     ///   return o.Build(read =&gt; new Allocation(Fund: read.Of(fund), Primary: read.Of(primary)));
     /// }))
-    ///   .Below(RowContaining("ACCOUNT"))
-    ///   .Sized(RowsWhileAnyIsNotBlank())
+    ///   .Below(Rows.Containing("ACCOUNT"))
+    ///   .Sized(Rows.WhileAnyIsNotBlank())
     /// </code>
     /// A flow full of <c>Right(n)</c>, or an overlay with none, is worth a second look: flows are
     /// relative and overlays are grid-absolute, and reading both value and formula out of one cell
@@ -248,7 +248,7 @@ namespace Unrect.Fluent
     /// the table; a projection that discovers its own extent measures <em>itself</em> inside that
     /// band rather than reporting it — <c>Row(cells =&gt; cells.Count)</c> is "as wide as the
     /// leading columns that carry values", which over a sparse export whose first column is empty
-    /// is zero. To read the band as it was handed over, say so: <c>Range(WholeExtent(), …)</c>, or
+    /// is zero. To read the band as it was handed over, say so: <c>Range(Extent.Whole(), …)</c>, or
     /// an <c>Overlay</c> whose children place themselves in it.
     /// </para>
     /// <para>
@@ -614,7 +614,7 @@ namespace Unrect.Fluent
     /// </para>
     /// <para>
     /// A run ends where the item stops placing, or where <c>.Until(landmark)</c> bounds it —
-    /// including <c>.Until(RowWhere(...), orEnd: true)</c> for "stop at a blank row", where
+    /// including <c>.Until(Rows.Where(...), orEnd: true)</c> for "stop at a blank row", where
     /// <c>orEnd</c> lets a run that reaches the sheet's edge without meeting one end there rather
     /// than fail for want of the landmark. A landmark is located before the walk begins, so such a
     /// bound reads ahead to it and the walk then reads behind that point. A blank band between
@@ -638,7 +638,7 @@ namespace Unrect.Fluent
     /// var item =
     ///   section.Select(s => (Section?)s)          // the section as it should be
     ///     .Else(Row(_ => (Section?)null))         // ... or just its label row, and a warning
-    ///     .On(RowContaining("Section"));          // ... starting at the next section label
+    ///     .On(Rows.Containing("Section"));          // ... starting at the next section label
     ///
     /// var sections = VerticalRepeat(item).Select(all => all.Where(s => s is not null).ToList());
     ///
@@ -820,7 +820,7 @@ namespace Unrect.Fluent
 
     /// <summary>One row, at the full available width — a caption row spans the sheet.</summary>
     private static ISizeStrategy<TSpace> FullRow()
-      => RowsThenColumns(RowStrategies.TakeRows<TSpace>(1), ColumnStrategies.AllColumns<TSpace>());
+      => Rows.ThenColumns(RowStrategies.TakeRows<TSpace>(1), ColumnStrategies.AllColumns<TSpace>());
 
     private static int NotNegative(int count, string parameter)
       => count >= 0 ? count : throw new ArgumentOutOfRangeException(parameter, count, "An offset cannot be negative.");

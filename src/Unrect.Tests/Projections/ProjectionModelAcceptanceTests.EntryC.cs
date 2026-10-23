@@ -150,14 +150,14 @@ namespace Unrect.Tests.Projections
         Primary: o.Next(Right(6).Of(Point().Decimal().OrBlank())),
         Fep: o.Next(Right(9).Of(Point().Decimal().OrBlank()))));
 
-      var allocations = Below(RowContaining("ACCOUNT"))
-        .Sized(RowsWhileAnyIsNotBlank())
+      var allocations = Below(Rows.Containing("ACCOUNT"))
+        .Sized(Rows.WhileAnyIsNotBlank())
         .Table(headerRows: 0, eachRow: allocation);
 
       return VerticalFlow(v => new BuyingPowerAllocation(
         Title: v.Text(),
         Allocations: v.Next(allocations),
-        Total: v.Next(On(RowContaining("TOTAL")).Right(6).Point().Decimal())));
+        Total: v.Next(On(Rows.Containing("TOTAL")).Right(6).Point().Decimal())));
     }
 
     [Fact]
@@ -228,7 +228,7 @@ namespace Unrect.Tests.Projections
       var investorBlock = Table<CashFlow>();
 
       // Declared once, placed twice — and the placements are what changed, not the series.
-      var series = VerticalRepeat(investorBlock, separatedBy: BlankRows());
+      var series = VerticalRepeat(investorBlock, separatedBy: Rows.SkipBlank());
 
       const string Inception = "Cash Flows using inception date";
 
@@ -239,7 +239,7 @@ namespace Unrect.Tests.Projections
           AsOf: h.Date(),
           Id: h.Text())).Named("report header")),
         Summary: v.Next(Table<InvestorSummary>().Named("summary")),
-        ByTransferDate: v.Next(Until(RowContaining(Inception))
+        ByTransferDate: v.Next(Until(Rows.Containing(Inception))
           .Heading("IRR Details")
           .Heading("Cash Flows Using Transfer Date")
           .Of(series)),

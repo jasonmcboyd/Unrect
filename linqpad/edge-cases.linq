@@ -84,7 +84,7 @@ new
 // by default, but includes it under strict fidelity. The window is declared, not sliced off the
 // space: an overlay hands its whole extent to its child, so the Range keeps its own discovery and
 // only has less to discover in. (Sized ON the Range would replace that discovery with the 4x4.)
-var block = Sized(Extent(4, 4)).Of(Overlay(o =>
+var block = Sized(Extent.Of(4, 4)).Of(Overlay(o =>
 {
 	var extent = o.Next(Range(b => $"{b.Width}x{b.Height}"));
 	return  extent;
@@ -108,10 +108,10 @@ string Message<T>(IProjectionDefinition<ISpreadsheetSpace, T> projection)
 // leaf that closes it is the subject of the sentence.
 new
 {
-	DecimalOverAnError = Message(OffsetBy(SkipRows(1)).Decimal()),      // A2 is #VALUE!
-	TextOverANumber = Message(OffsetBy(SkipColumns(1)).Of(Point().Text())),         // B1 is 42
-	IntegerOverAFraction = Message(OffsetBy(SkipColumns(2)).Integer()), // C1 is 3.14
-	AsTextOverTheSameNumber = Message(OffsetBy(SkipColumns(1)).AsText()),
+	DecimalOverAnError = Message(OffsetBy(Rows.Skip(1)).Decimal()),      // A2 is #VALUE!
+	TextOverANumber = Message(OffsetBy(Columns.Skip(1)).Of(Point().Text())),         // B1 is 42
+	IntegerOverAFraction = Message(OffsetBy(Columns.Skip(2)).Integer()), // C1 is 3.14
+	AsTextOverTheSameNumber = Message(OffsetBy(Columns.Skip(1)).AsText()),
 }.Dump("typed-leaf diagnostics");
 
 // 6. The two leaves are different words for a reason. Point().Text() asserts the cell IS words, so a Choice
@@ -124,8 +124,8 @@ var wordsOrNumber = Choice(
 new
 {
 	AtA1 = wordsOrNumber.Map(defaultSpace),                                 // the word "text"
-	AtB1 = OffsetBy(SkipColumns(1)).Of(wordsOrNumber).Map(defaultSpace),    // the number 42
-	AsTextAtB1 = OffsetBy(SkipColumns(1)).AsText().Map(defaultSpace),       // "42", asserting nothing
+	AtB1 = OffsetBy(Columns.Skip(1)).Of(wordsOrNumber).Map(defaultSpace),    // the number 42
+	AsTextAtB1 = OffsetBy(Columns.Skip(1)).AsText().Map(defaultSpace),       // "42", asserting nothing
 }.Dump("a kind assertion discriminates; a total reading cannot");
 
 // 7. The same split, one level up, in the matchers. RowContaining asks the text cells, because a row
@@ -133,6 +133,6 @@ new
 // finds the row whose 42 is a number — the opt-in widening, marked at the use site.
 new
 {
-	ContainingANumericFortyTwo = Message(On(RowContaining("42")).AsText()),                // no text cell says it
-	SayingFindsThatRow = On(RowSaying("42")).Row(r => r.Location.A1).Map(defaultSpace),    // row 1, where B1 is the number
+	ContainingANumericFortyTwo = Message(On(Rows.Containing("42")).AsText()),                // no text cell says it
+	SayingFindsThatRow = On(Rows.Saying("42")).Row(r => r.Location.A1).Map(defaultSpace),    // row 1, where B1 is the number
 }.Dump("RowContaining is about text; RowSaying is about what a cell says");

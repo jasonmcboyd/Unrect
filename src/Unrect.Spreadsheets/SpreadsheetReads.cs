@@ -13,7 +13,7 @@ namespace Unrect.Spreadsheets
   /// be applied to a space that has none. That is a compile error, not a run-time surprise.
   /// <para>
   /// A matcher for a formula is spelled with the point reads it already has:
-  /// <c>RowWithCell(p =&gt; p.HasFormula())</c>, or <c>RowWithCell(p =&gt; p.Formula() is string f
+  /// <c>Rows.WithCell(p =&gt; p.HasFormula())</c>, or <c>Rows.WithCell(p =&gt; p.Formula() is string f
   /// &amp;&amp; f.IndexOf("SUBTOTAL", StringComparison.OrdinalIgnoreCase) &gt;= 0)</c> for one that
   /// mentions something.
   /// </para>

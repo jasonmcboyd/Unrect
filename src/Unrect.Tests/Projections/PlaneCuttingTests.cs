@@ -68,7 +68,7 @@ namespace Unrect.Tests.Projections
       // space's, unqualified, so nothing is hidden from a declaration before it has said anything.
       var space = CoordinateGrid(4, 10);
 
-      var root = Range(WholeExtent(), block => block.Space).Map(space);
+      var root = Range(Extent.Whole(), block => block.Space).Map(space);
 
       Assert.Same(space, root.Space);
       Assert.Equal(default(Offset).Column, root.Origin.Column);
@@ -94,7 +94,7 @@ namespace Unrect.Tests.Projections
         v.Next(Row(cells => cells.Count));
         v.Next(Row(cells => cells.Count));
 
-        var rangeSlot = v.Next(Range(WholeExtent(), block => block.Space.Origin));
+        var rangeSlot = v.Next(Range(Extent.Whole(), block => block.Space.Origin));
 
         return rangeSlot;
       }).Map(CoordinateGrid(4, 10));

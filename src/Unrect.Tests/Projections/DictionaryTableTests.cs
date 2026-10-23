@@ -33,20 +33,20 @@ namespace Unrect.Tests.Projections
       { "Beta", null, 20m },
     });
 
-    private static IReadOnlyList<IReadOnlyDictionary<string, Point<ICellSpace>>> Rows() => Table().Map(Sheet());
+    private static IReadOnlyList<IReadOnlyDictionary<string, Point<ICellSpace>>> BodyRows() => Table().Map(Sheet());
 
     // --- Keys and values ---------------------------------------------------------------------------
 
     [Fact]
     public void TheKeysAreTheHeadersCaptions()
     {
-      Assert.Equal(new[] { "Investor Name", "Transaction Date", "Amount" }, Rows()[0].Keys.ToArray());
+      Assert.Equal(new[] { "Investor Name", "Transaction Date", "Amount" }, BodyRows()[0].Keys.ToArray());
     }
 
     [Fact]
     public void NothingIsStringified()
     {
-      var rows = Rows();
+      var rows = BodyRows();
 
       Assert.Equal("Acme", rows[0]["Investor Name"].Text());
       Assert.Equal(new DateTime(2026, 3, 4), rows[0]["Transaction Date"].Date());
@@ -79,7 +79,7 @@ namespace Unrect.Tests.Projections
     public void LookupsGoThroughTheCaptionComparer()
     {
       // The exploratory spelling should not make a reader retype a caption exactly.
-      var row = Rows()[0];
+      var row = BodyRows()[0];
 
       Assert.Equal("Acme", row["investorname"].Text());
       Assert.Equal("Acme", row["  Investor  Name  "].Text());
@@ -110,7 +110,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void TheDictionaryIsReadOnlyAndCarriesTheComparer()
     {
-      var row = Rows()[0];
+      var row = BodyRows()[0];
 
       Assert.IsAssignableFrom<IReadOnlyDictionary<string, Point<ICellSpace>>>(row);
       Assert.True(row.ContainsKey("TRANSACTIONDATE"));

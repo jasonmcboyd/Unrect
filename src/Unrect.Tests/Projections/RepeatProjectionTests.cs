@@ -30,7 +30,7 @@ namespace Unrect.Tests.Projections
     {
       // A one-row separator on a dense ladder: if it were applied before the first item too, this
       // would read 2 and 4 rather than 1 and 3.
-      var items = VerticalRepeat(IntCell(), separatedBy: SkipRows(1)).Map(Ladder(4));
+      var items = VerticalRepeat(IntCell(), separatedBy: Rows.Skip(1)).Map(Ladder(4));
 
       Assert.Equal(new[] { 1, 3 }, items);
     }
@@ -40,7 +40,7 @@ namespace Unrect.Tests.Projections
     {
       var space = Grid(new[,] { { 1 }, { 0 }, { 2 }, { 0 }, { 3 } });
 
-      Assert.Equal(new[] { 1, 2, 3 }, VerticalRepeat(IntCell(), separatedBy: BlankRows()).Map(space));
+      Assert.Equal(new[] { 1, 2, 3 }, VerticalRepeat(IntCell(), separatedBy: Rows.SkipBlank()).Map(space));
     }
 
     [Fact]
@@ -54,7 +54,7 @@ namespace Unrect.Tests.Projections
     {
       var space = Grid(new[,] { { 0 }, { 1 }, { 0 }, { 2 } });
 
-      var items = AfterBlankRows().Of(VerticalRepeat(IntCell(), separatedBy: BlankRows())).Map(space);
+      var items = AfterBlankRows().Of(VerticalRepeat(IntCell(), separatedBy: Rows.SkipBlank())).Map(space);
 
       Assert.Equal(new[] { 1, 2 }, items);
     }
@@ -66,7 +66,7 @@ namespace Unrect.Tests.Projections
     {
       var space = Grid(new[,] { { 1 }, { 0 }, { 2 }, { 0 }, { 0 } });
 
-      Assert.Equal(new[] { 1, 2 }, VerticalRepeat(IntCell(), separatedBy: BlankRows()).Map(space));
+      Assert.Equal(new[] { 1, 2 }, VerticalRepeat(IntCell(), separatedBy: Rows.SkipBlank()).Map(space));
     }
 
     [Fact]
@@ -77,7 +77,7 @@ namespace Unrect.Tests.Projections
       // therefore consume three, not five.
       var space = Grid(new[,] { { 1 }, { 0 }, { 2 }, { 0 }, { 0 } });
 
-      var applied = VerticalRepeat(Range(1, 1, b => b.Width), separatedBy: BlankRows()).Apply(space);
+      var applied = VerticalRepeat(Range(1, 1, b => b.Width), separatedBy: Rows.SkipBlank()).Apply(space);
 
       Assert.Equal(2, applied.Value.Count);
       Assert.Equal(3, applied.Consumed.Height);
@@ -92,7 +92,7 @@ namespace Unrect.Tests.Projections
       // repeat stopped is the row after the band.
       var space = Mixed(new object?[,] { { 1 }, { null }, { 2 }, { null }, { null }, { "end" } });
 
-      var items = Until(RowContaining("end")).Of(VerticalRepeat(Range(1, 1, b => b[0, 0].Integer())));
+      var items = Until(Rows.Containing("end")).Of(VerticalRepeat(Range(1, 1, b => b[0, 0].Integer())));
 
       var read = VerticalFlow(v => $"{string.Join(",", v.Next(items))}|{v.Text()}").Map(space);
 
@@ -102,12 +102,12 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void Repeat_TreatsAValueAfterABlankBandAsAnotherItemNotAsTheEnd()
     {
-      // A blank band is a separator, never a terminator: with separatedBy: BlankRows() the repeat
+      // A blank band is a separator, never a terminator: with separatedBy: Rows.SkipBlank() the repeat
       // steps over a gap of any width and keeps going. "Stop at the first big gap" is not something
       // a separator can express — bound the repeat's own extent if that is what the format means.
       var space = Grid(new[,] { { 1 }, { 0 }, { 2 }, { 0 }, { 0 }, { 9 } });
 
-      var items = VerticalRepeat(Range(1, 1, b => b[0, 0].Integer()), separatedBy: BlankRows()).Map(space);
+      var items = VerticalRepeat(Range(1, 1, b => b[0, 0].Integer()), separatedBy: Rows.SkipBlank()).Map(space);
 
       Assert.Equal(new[] { 1, 2, 9 }, items);
     }
@@ -240,7 +240,7 @@ namespace Unrect.Tests.Projections
       });
 
       Assert.Equal(new[] { "A-1" }, VerticalRepeat(item).Map(space));
-      Assert.Equal(new[] { "A-1" }, VerticalRepeat(item, separatedBy: BlankRows()).Map(space));
+      Assert.Equal(new[] { "A-1" }, VerticalRepeat(item, separatedBy: Rows.SkipBlank()).Map(space));
     }
 
     // --- Seeking as the stopping condition ---------------------------------------------------------------------
@@ -262,7 +262,7 @@ namespace Unrect.Tests.Projections
         { "with no section label", null },
       });
 
-      var section = On(RowContaining("Section")).Of(VerticalFlow(v =>
+      var section = On(Rows.Containing("Section")).Of(VerticalFlow(v =>
       {
         v.Next(TextCell().Named("label"));
         var right = v.Next(Right(1).Of(IntCell()).Named("amount"));
@@ -290,7 +290,7 @@ namespace Unrect.Tests.Projections
         { "b", 2 },
       });
 
-      var section = On(RowContaining("Section")).Of(VerticalFlow(v =>
+      var section = On(Rows.Containing("Section")).Of(VerticalFlow(v =>
       {
         v.Next(TextCell().Named("label"));
         var right = v.Next(Right(1).Of(IntCell()).Named("amount"));
@@ -306,7 +306,7 @@ namespace Unrect.Tests.Projections
     {
       var space = Mixed(new object?[,] { { "nothing", null }, { "here", null } });
 
-      var section = On(RowContaining("Section")).Of(TextCell());
+      var section = On(Rows.Containing("Section")).Of(TextCell());
 
       Assert.Empty(VerticalRepeat(section).Map(space));
     }
@@ -319,7 +319,7 @@ namespace Unrect.Tests.Projections
       var space = Mixed(new object?[,] { { "nothing", null }, { "here", null } });
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        On(RowContaining("Section")).Of(TextCell()).Map(space));
+        On(Rows.Containing("Section")).Of(TextCell()).Map(space));
 
       Assert.Contains("no row containing 'Section' exists in the available space", failure.Message);
     }
@@ -351,7 +351,7 @@ namespace Unrect.Tests.Projections
       var section = Heading("Detail").Of(Range(b => b.Height));
 
       var hoisted = Assert.Throws<ProjectionException>(() =>
-        VerticalRepeat(section, separatedBy: BlankRows()).Map(CaptionedSections()));
+        VerticalRepeat(section, separatedBy: Rows.SkipBlank()).Map(CaptionedSections()));
 
       // The repeat's own index, then the item — labelled by the local it was hoisted into — then
       // the caption that was not found, at its ordinal inside the desugared flow.
@@ -360,7 +360,7 @@ namespace Unrect.Tests.Projections
 
       // Written inline there is no identifier to capture, and the flow renders by its description.
       var inline = Assert.Throws<ProjectionException>(() =>
-        VerticalRepeat(Heading("Detail").Of(Range(b => b.Height)), separatedBy: BlankRows()).Map(CaptionedSections()));
+        VerticalRepeat(Heading("Detail").Of(Range(b => b.Height)), separatedBy: Rows.SkipBlank()).Map(CaptionedSections()));
 
       Assert.Equal("VerticalRepeat[2] -> Heading -> Caption(\"Detail\")#1", inline.Path);
     }
@@ -371,10 +371,10 @@ namespace Unrect.Tests.Projections
       // The recipe: hoist the matcher and put it on the item's placement as well. The seek is
       // idempotent — the flow lands ON the caption row and the caption inside finds it at distance
       // zero — so the item's own placement is what runs out, which is a stop.
-      var detail = RowContaining("Detail");
+      var detail = Rows.Containing("Detail");
       var section = On(detail).Heading("Detail").Of(Range(b => b.Height));
 
-      var result = VerticalRepeat(section, separatedBy: BlankRows()).MapWithDiagnostics(CaptionedSections());
+      var result = VerticalRepeat(section, separatedBy: Rows.SkipBlank()).MapWithDiagnostics(CaptionedSections());
 
       Assert.Equal(new[] { 1, 1 }, result.Value);
 
@@ -388,7 +388,7 @@ namespace Unrect.Tests.Projections
     {
       // Below anchors on a landmark exactly as On does, so it fails the same way, so a repeat reads
       // it the same way: a missing landmark is how the sections ran out, not a broken declaration.
-      var item = Below(RowContaining("Detail")).Of(TextCell());
+      var item = Below(Rows.Containing("Detail")).Of(TextCell());
 
       var items = VerticalRepeat(item).Map(Mixed(new object?[,] { { "Detail" }, { "a" }, { "Detail" }, { "b" } }));
 
@@ -451,7 +451,7 @@ namespace Unrect.Tests.Projections
     {
       var space = Grid(new[,] { { 1, 0, 2, 0, 3 } });
 
-      Assert.Equal(new[] { 1, 2, 3 }, HorizontalRepeat(IntCell(), separatedBy: BlankColumns()).Map(space));
+      Assert.Equal(new[] { 1, 2, 3 }, HorizontalRepeat(IntCell(), separatedBy: Columns.SkipBlank()).Map(space));
     }
 
     [Fact]
@@ -492,7 +492,7 @@ namespace Unrect.Tests.Projections
 
     /// <summary>A landmark for "a row with nothing on it", spelled through the space predicate.</summary>
     private static ILineLandmark<ICellSpace> BlankRow()
-      => RowWhere((space, row) => Enumerable.Range(0, space.Extent.Width).All(column => space[column, row].IsBlank()));
+      => Rows.Where((space, row) => Enumerable.Range(0, space.Extent.Width).All(column => space[column, row].IsBlank()));
 
     [Fact]
     public void Repeat_OfRecords_IsEndedByALandmarkAndNotByABlankRow()
@@ -520,7 +520,7 @@ namespace Unrect.Tests.Projections
     {
       var space = Grid(new[,] { { 1 }, { 0 }, { 2 } });
 
-      var applied = VerticalRepeat(IntCell(), separatedBy: BlankRows()).Apply(space);
+      var applied = VerticalRepeat(IntCell(), separatedBy: Rows.SkipBlank()).Apply(space);
 
       Assert.Equal(1, applied.Consumed.Width);
       Assert.Equal(3, applied.Consumed.Height);
@@ -558,7 +558,7 @@ namespace Unrect.Tests.Projections
         Amounts: v.Next(Table(r => r["Amount"].Integer()).Named("amounts"))))
         .Named("block");
 
-      var blocks = VerticalRepeat(block, separatedBy: BlankRows()).Map(space);
+      var blocks = VerticalRepeat(block, separatedBy: Rows.SkipBlank()).Map(space);
 
       Assert.Equal(2, blocks.Count);
       Assert.Equal("A-1", blocks[0].Code);

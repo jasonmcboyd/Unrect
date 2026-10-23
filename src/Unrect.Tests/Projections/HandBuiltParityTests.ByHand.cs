@@ -49,7 +49,7 @@ namespace Unrect.Tests.Projections
           Placement<ICellSpace>.Default);
 
       /// <summary>
-      /// Fluent: <c>Below(RowSaying("Items")).Sized(RowsWhileAnyIsNotBlank()).Of(TableFluent: <c>Below(RowSaying("Items")).Sized(RowsWhileAnyIsNotBlank()).Table&lt;Line&gt;()</c>lt;LineFluent: <c>Below(RowSaying("Items")).Sized(RowsWhileAnyIsNotBlank()).Table&lt;Line&gt;()</c>gt;())</c>.
+      /// Fluent: <c>Below(Rows.Saying("Items")).Sized(Rows.WhileAnyIsNotBlank()).Of(TableFluent: <c>Below(Rows.Saying("Items")).Sized(Rows.WhileAnyIsNotBlank()).Table&lt;Line&gt;()</c>lt;LineFluent: <c>Below(Rows.Saying("Items")).Sized(Rows.WhileAnyIsNotBlank()).Table&lt;Line&gt;()</c>gt;())</c>.
       /// The reflective table is the one shape whose only public spelling is the fluent one — it
       /// is a composition the binder writes — so it is taken from the vocabulary and PLACED by hand.
       /// </summary>
@@ -63,7 +63,7 @@ namespace Unrect.Tests.Projections
             .WithOffset(OffsetStrategies.Past(RowLandmarks.RowSaying<ICellSpace>("Items")))));
       }
 
-      /// <summary>Fluent: <c>VerticalRepeat(item, separatedBy: BlankRows())</c>.</summary>
+      /// <summary>Fluent: <c>VerticalRepeat(item, separatedBy: Rows.SkipBlank())</c>.</summary>
       public static IProjectionDefinition<ICellSpace, IReadOnlyList<int>> Repeated(IProjectionDefinition<ICellSpace, int> item)
         => new RepeatDefinition<ICellSpace, int>(
           item,

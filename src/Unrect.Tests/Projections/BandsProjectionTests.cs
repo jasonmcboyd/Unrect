@@ -28,10 +28,10 @@ namespace Unrect.Tests.Projections
   public class BandsProjectionTests
   {
     /// <summary>The extent a band projection was handed, as "WxH" — the whole of what a band is.</summary>
-    private static IProjectionDefinition<ICellSpace, string> BandExtent() => Range(WholeExtent(), block => $"{block.Width}x{block.Height}");
+    private static IProjectionDefinition<ICellSpace, string> BandExtent() => Range(Extent.Whole(), block => $"{block.Width}x{block.Height}");
 
     /// <summary>The first cell of a band, so an assertion reads as the row or column it was cut from.</summary>
-    private static IProjectionDefinition<ICellSpace, int> FirstCell() => Range(WholeExtent(), block => block.Space[0, 0].IntegerOrBlank() ?? -1);
+    private static IProjectionDefinition<ICellSpace, int> FirstCell() => Range(Extent.Whole(), block => block.Space[0, 0].IntegerOrBlank() ?? -1);
 
     // --- 1. What one band is -----------------------------------------------------------------------
 
@@ -80,7 +80,7 @@ namespace Unrect.Tests.Projections
 
       var observations = new List<int>();
 
-      IReadOnlyList<string> bands = Sized(RowsWhileAnyIsNotBlank()).Of(VerticalBands(1, Range(WholeExtent(), block =>
+      IReadOnlyList<string> bands = Sized(Rows.WhileAnyIsNotBlank()).Of(VerticalBands(1, Range(Extent.Whole(), block =>
       {
         observations.Add(counter.RowsTouched);
 

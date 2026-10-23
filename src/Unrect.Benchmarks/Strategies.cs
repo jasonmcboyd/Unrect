@@ -22,18 +22,18 @@ namespace Unrect.Benchmarks
   [BenchmarkCategory("Strategies")]
   public class Strategies
   {
-    private static readonly IProjectionDefinition<ICellSpace, int> WholeHeight = Range(RowsWhileAnyIsNotBlank(), b => b.Height);
+    private static readonly IProjectionDefinition<ICellSpace, int> WholeHeight = Range(Rows.WhileAnyIsNotBlank(), b => b.Height);
 
     private static readonly IProjectionDefinition<ICellSpace, int> Seek =
-      On(RowContaining(CanonicalSpaces.Landmark)).Row(r => r.Count);
+      On(Rows.Containing(CanonicalSpaces.Landmark)).Row(r => r.Count);
 
     // The miss: absorbed, so the row measures the full-grid scan and not the throw.
     private static readonly IProjectionDefinition<ICellSpace, int> SeekMiss = Seek.Optional();
 
     private static readonly IProjectionDefinition<ICellSpace, int> Bounded =
-      Until(RowContaining(CanonicalSpaces.Landmark)).Range(RowsWhileAnyIsNotBlank(), b => b.Height);
+      Until(Rows.Containing(CanonicalSpaces.Landmark)).Range(Rows.WhileAnyIsNotBlank(), b => b.Height);
 
-    private static readonly IProjectionDefinition<ICellSpace, int> SkipBlanks = OffsetBy(BlankRows()).Row(r => r.Count);
+    private static readonly IProjectionDefinition<ICellSpace, int> SkipBlanks = OffsetBy(Rows.SkipBlank()).Row(r => r.Count);
 
     private ICellSpace _dense = default!;
     private ICellSpace _sparse = default!;

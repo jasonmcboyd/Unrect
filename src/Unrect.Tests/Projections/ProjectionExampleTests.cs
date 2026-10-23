@@ -295,7 +295,7 @@ namespace Unrect.Tests.Projections
       return VerticalFlow(v => new IrrReport(
         Title: v.Next(Column(4, c => c[0].Text()).Named("report header")),
         Summary: v.Next(Table(r => r["Investors"].Text()).Named("summary")),
-        ByTransferDate: v.Next(Until(RowContaining(Inception)).Heading("IRR Details").Heading("Cash Flows Using Transfer Date").Of(series)),
+        ByTransferDate: v.Next(Until(Rows.Containing(Inception)).Heading("IRR Details").Heading("Cash Flows Using Transfer Date").Of(series)),
         ByInception: v.Next(Heading(Inception).Of(series))));
     }
 
@@ -365,7 +365,7 @@ namespace Unrect.Tests.Projections
 
       var report = VerticalFlow(v => new
       {
-        Ordinary = v.Next(Until(RowContaining("Foreign transactions")).Heading("K-1 Lines 1-21").Of(lines)),
+        Ordinary = v.Next(Until(Rows.Containing("Foreign transactions")).Heading("K-1 Lines 1-21").Of(lines)),
         Foreign = v.Next(Heading("Foreign transactions").Of(lines)),
       }).Map(CaptionedSheet());
 
@@ -382,7 +382,7 @@ namespace Unrect.Tests.Projections
 
       var report = VerticalFlow(v => new
       {
-        Ordinary = v.Next(Until(RowContaining("Foreign transactions")).Heading("K-1 Lines 1-21").Of(lines)),
+        Ordinary = v.Next(Until(Rows.Containing("Foreign transactions")).Heading("K-1 Lines 1-21").Of(lines)),
         Foreign = v.Next(Heading("Foreign transactions").Of(lines)),
       }).Map(CaptionedSheet());
 
@@ -400,7 +400,7 @@ namespace Unrect.Tests.Projections
 
       var report = VerticalFlow(v => new
       {
-        Ordinary = v.Next(Until(RowContaining("Foreign transactions")).Heading("K-1 Lines 1-21").Of(lines)),
+        Ordinary = v.Next(Until(Rows.Containing("Foreign transactions")).Heading("K-1 Lines 1-21").Of(lines)),
         Foreign = v.Next(Heading("Foreign transactions").Of(lines)),
       });
 

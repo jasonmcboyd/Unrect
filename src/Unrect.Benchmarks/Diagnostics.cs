@@ -33,7 +33,7 @@ namespace Unrect.Benchmarks
   [BenchmarkCategory("Diagnostics")]
   public class Diagnostics
   {
-    private static readonly IProjectionDefinition<ICellSpace, int> Section = Range(RowsWhileAnyIsNotBlank(), b => b.Height);
+    private static readonly IProjectionDefinition<ICellSpace, int> Section = Range(Rows.WhileAnyIsNotBlank(), b => b.Height);
 
     // The loser goes first: a caption that is not in the document, so the choice pays for a full
     // failed attempt before the second alternative succeeds.
