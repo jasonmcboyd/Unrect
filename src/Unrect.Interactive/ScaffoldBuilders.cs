@@ -83,7 +83,7 @@ namespace Unrect.Interactive
         throw new ArgumentException("Rows of bands over the captions are read along a row; a header down a column has one line of labels.", nameof(headerRows));
 
       string Source(Plane<TSpace> region, IReadOnlyList<IReadOnlyList<string>>? paths = null)
-        => write(Scaffolding.Read(Scaffolding.Region.Of(region), typeName, labels, at: headerRows - 1, samples, headerRows, Shifted(paths, region)), typeName, labels, headerRows);
+        => write(Scaffolding.Read(Scaffolding.Region.Of(region), typeName, labels, at: 0, samples, headerRows, Shifted(paths, region)), typeName, labels, headerRows);
 
       // The view's paths count from the table's left edge; the scaffolder's from the sheet's.
       static IReadOnlyList<IReadOnlyList<string>>? Shifted(IReadOnlyList<IReadOnlyList<string>>? paths, Plane<TSpace> region)

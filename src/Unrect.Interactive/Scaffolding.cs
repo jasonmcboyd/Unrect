@@ -63,7 +63,7 @@ namespace Unrect.Interactive
     /// a table, or one record laid out across) or of one column (<see cref="LabelsIn.Column"/> —
     /// a card, its values to the right). Which row or column is found rather than asked: the first
     /// whose cells are all text and which is at least half as full as the fullest, which steps over
-    /// a title block. <paramref name="at"/> says it outright where that guess is wrong. A blank
+    /// a title block. <paramref name="at"/> says where the header starts outright where that guess is wrong. A blank
     /// label cell, and one that is not text, is skipped rather than named.
     /// </para>
     /// <para>
@@ -89,20 +89,21 @@ namespace Unrect.Interactive
     /// <param name="space">The space to read labels and samples from.</param>
     /// <param name="typeName">The type's name.</param>
     /// <param name="labels">Whether the labels run along a row or down a column.</param>
-    /// <param name="at">The 0-based row, or column, the labels are on; found when omitted. With bands above the captions (<paramref name="headerRows"/> above 1) it names the row of CAPTIONS, the header's last, and the bands are read from the rows above it.</param>
+    /// <param name="at">The 0-based row, or column, the header starts on — where a <c>Table&lt;T&gt;(headerRows)</c> placed with <c>Down(at)</c> would start; found when omitted. With bands (<paramref name="headerRows"/> above 1) the captions are the last of the <paramref name="headerRows"/> rows from there, read exactly as the table reads them. A title sitting directly above a banded header is a row of text the search cannot tell from a band, and wants <paramref name="at"/> said.</param>
     /// <param name="samples">How many cells beside each label to type the member from.</param>
     /// <param name="headerRows">
     /// How many rows the header is: the captions, under any rows of bands. With bands a member is
     /// named as <c>Table&lt;T&gt;(headerRows)</c> will match it — its band and caption run
     /// together, <c>FromId</c> for the column at From, Id — and typed from the cells under the
-    /// whole header. The row of captions is what is found (or named by <paramref name="at"/>) and
-    /// the bands are read from the rows above it: a band row is often one merged cell, far emptier
-    /// than the captions beneath, so the search settles on the captions and counts up. Along a row only.
+    /// whole header, read by position from the header's top as <c>Table&lt;T&gt;(headerRows)</c>
+    /// reads it. When the top is found rather than named, the search settles on a row of labels and
+    /// the bands are the rows above it when they exist and hold text — a band row is often one
+    /// merged cell, far emptier than the captions beneath, which the search steps over. Along a row only.
     /// </param>
     /// <exception cref="ArgumentNullException"><paramref name="space"/> or <paramref name="typeName"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="typeName"/> is blank.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="at"/> or <paramref name="samples"/> is negative.</exception>
-    /// <exception cref="OutOfBoundsException"><paramref name="at"/> is past the end of the space.</exception>
+    /// <exception cref="OutOfBoundsException"><paramref name="at"/> is past the end of the space, or the <paramref name="headerRows"/> rows from the header's top do not fit in it.</exception>
     /// <exception cref="InvalidOperationException">No labels were found and <paramref name="at"/> was not given.</exception>
     public static string ScaffoldRecord<TSpace>(this TSpace space, string typeName, LabelsIn labels = LabelsIn.Row, int? at = null, int samples = 5, int headerRows = 1)
       where TSpace : class, ICellSpace
@@ -158,20 +159,21 @@ namespace Unrect.Interactive
     /// <param name="space">The space to read labels and samples from.</param>
     /// <param name="typeName">The type's name.</param>
     /// <param name="labels">Whether the labels run along a row or down a column.</param>
-    /// <param name="at">The 0-based row, or column, the labels are on; found when omitted. With bands above the captions (<paramref name="headerRows"/> above 1) it names the row of CAPTIONS, the header's last, and the bands are read from the rows above it.</param>
+    /// <param name="at">The 0-based row, or column, the header starts on — where a <c>Table&lt;T&gt;(headerRows)</c> placed with <c>Down(at)</c> would start; found when omitted. With bands (<paramref name="headerRows"/> above 1) the captions are the last of the <paramref name="headerRows"/> rows from there, read exactly as the table reads them. A title sitting directly above a banded header is a row of text the search cannot tell from a band, and wants <paramref name="at"/> said.</param>
     /// <param name="samples">How many cells beside each label to type the member from.</param>
     /// <param name="headerRows">
     /// How many rows the header is: the captions, under any rows of bands. With bands a member is
     /// named as <c>Table&lt;T&gt;(headerRows)</c> will match it — its band and caption run
     /// together, <c>FromId</c> for the column at From, Id — and typed from the cells under the
-    /// whole header. The row of captions is what is found (or named by <paramref name="at"/>) and
-    /// the bands are read from the rows above it: a band row is often one merged cell, far emptier
-    /// than the captions beneath, so the search settles on the captions and counts up. Along a row only.
+    /// whole header, read by position from the header's top as <c>Table&lt;T&gt;(headerRows)</c>
+    /// reads it. When the top is found rather than named, the search settles on a row of labels and
+    /// the bands are the rows above it when they exist and hold text — a band row is often one
+    /// merged cell, far emptier than the captions beneath, which the search steps over. Along a row only.
     /// </param>
     /// <exception cref="ArgumentNullException"><paramref name="space"/> or <paramref name="typeName"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="typeName"/> is blank.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="at"/> or <paramref name="samples"/> is negative.</exception>
-    /// <exception cref="OutOfBoundsException"><paramref name="at"/> is past the end of the space.</exception>
+    /// <exception cref="OutOfBoundsException"><paramref name="at"/> is past the end of the space, or the <paramref name="headerRows"/> rows from the header's top do not fit in it.</exception>
     /// <param name="style">
     /// The setter each property gets, or none. Null takes the runtime's default: <see cref="MemberStyle.Set"/>
     /// on .NET Framework, whose in-box compilers do not know <c>init</c>, and <see cref="MemberStyle.Init"/>
@@ -305,10 +307,16 @@ namespace Unrect.Interactive
 
       if (headerRows > 1)
       {
-        // With bands the line found (or named) is the CAPTIONS, the header's last row, and the bands
-        // are the rows above it; `labelLine` becomes the header's top.
-        var captions = at is int named ? NamedCaptions(named, headerRows) : Captions(grid, labelLine, headerRows);
-        labelLine = captions - (headerRows - 1);
+        // `labelLine` is the header's top, where a table placed there would start: named by `at`, or
+        // found — the search settles on a row of labels, and the bands are the rows above it when
+        // they exist and hold nothing but text (and something), so a one-cell merged band the search
+        // stepped over is counted in and a blank row above the header is not.
+        if (at is null)
+          labelLine = Top(grid, labelLine, headerRows);
+
+        // A table placed here reads headerRows rows; the captions, the header's last, must exist.
+        if (labelLine + headerRows > grid.Lines)
+          throw new OutOfBoundsException();
 
         // The header parse is the table's own, so what is scaffolded is what will bind: the paths a
         // Table<T>(headerRows) would see, read from the same rows.
@@ -466,43 +474,27 @@ namespace Unrect.Interactive
     }
 
     /// <summary>
-    /// The row of captions under bands, given the line the label search settled on. That line is
-    /// either the header's top or its captions, and which is decided by what lies around it: a
-    /// candidate is possible when the header fits that way, and between two possible candidates the
-    /// row of captions is the one that is all text, then the fuller one, then the line found itself —
-    /// a band row is often one merged cell over many captions, which the search steps over as too
-    /// empty, and a title over a band row is emptier still.
+    /// The header's top under bands, given the line the label search settled on. The search finds a
+    /// row of labels, which is the captions when the band row above them is one merged cell the
+    /// search stepped over as too empty, and the top when the band row was full enough to be found
+    /// first; so the rows that would be bands above the found line are counted in when they exist
+    /// and hold nothing but text, and the found line is the top otherwise. A title sitting directly
+    /// above a banded header is a row of text too, and cannot be told from a band: <c>at</c> says it.
     /// </summary>
-    /// <exception cref="OutOfBoundsException">The header does not fit either way.</exception>
-    private static int Captions(Axes grid, int found, int headerRows)
+    private static int Top(Axes grid, int found, int headerRows)
     {
-      var below = found + headerRows - 1;
-      var fitsBelow = below < grid.Lines;
-      var fitsAbove = found - (headerRows - 1) >= 0;
+      var top = found - (headerRows - 1);
 
-      if (!fitsBelow && !fitsAbove)
-        throw new OutOfBoundsException();
-
-      if (!fitsAbove)
-        return below;
-
-      if (!fitsBelow)
+      if (top < 0)
         return found;
 
-      var belowIsText = IsAllText(grid, below);
-      var foundIsText = IsAllText(grid, found);
+      // A band row holds at least one label: a blank row above the found line is a gap, not a band.
+      for (var line = top; line < found; line++)
+        if (Filled(grid, line) == 0 || !IsAllText(grid, line))
+          return found;
 
-      if (belowIsText != foundIsText)
-        return belowIsText ? below : found;
-
-      return Filled(grid, below) > Filled(grid, found) ? below : found;
+      return top;
     }
-
-    /// <summary>With bands, <c>at</c> names the row of captions; the bands must fit above it.</summary>
-    private static int NamedCaptions(int at, int headerRows)
-      => at - (headerRows - 1) >= 0
-        ? at
-        : throw new ArgumentOutOfRangeException(nameof(at), at, $"With {headerRows} header rows, at names the row of captions, and {headerRows - 1} rows of bands must lie above it.");
 
     /// <summary>
     /// The line the labels are on: the first whose cells are all text and which is at least half as
