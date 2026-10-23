@@ -30,7 +30,7 @@ namespace Unrect.Interactive
   }
 
   /// <summary>
-  /// A first type declaration, read off a sheet and handed back as C# source to paste.
+  /// A first type declaration, read off a space of typed cells and handed back as C# source to paste.
   /// <para>
   /// Exploratory, like everything in <c>Unrect.Interactive</c>: nothing in the library calls it, and
   /// what it returns is text, never a projection. C# has no type providers, so the way a script
@@ -54,7 +54,7 @@ namespace Unrect.Interactive
     private const int LineLimit = 120;
 
     /// <summary>
-    /// The C# source of a positional record matching <paramref name="sheet"/>'s labels:
+    /// The C# source of a positional record matching <paramref name="space"/>'s labels:
     /// <code>
     /// public sealed record Transaction(string Client, DateTime TransactionDate, decimal Amount);
     /// </code>
@@ -85,26 +85,28 @@ namespace Unrect.Interactive
     /// than a value), makes the member nullable; a label with no samples at all is <c>string?</c>.
     /// </para>
     /// </summary>
-    /// <typeparam name="TSpace">The sheet being read.</typeparam>
-    /// <param name="sheet">The sheet to read labels and samples from.</param>
+    /// <typeparam name="TSpace">The space being read: any space of typed cells.</typeparam>
+    /// <param name="space">The space to read labels and samples from.</param>
     /// <param name="typeName">The type's name.</param>
     /// <param name="labels">Whether the labels run along a row or down a column.</param>
-    /// <param name="at">The 0-based row, or column, the labels are on; found when omitted.</param>
+    /// <param name="at">The 0-based row, or column, the labels are on; found when omitted. With bands above the captions (<paramref name="headerRows"/> above 1) it names the row of CAPTIONS, the header's last, and the bands are read from the rows above it.</param>
     /// <param name="samples">How many cells beside each label to type the member from.</param>
     /// <param name="headerRows">
     /// How many rows the header is: the captions, under any rows of bands. With bands a member is
     /// named as <c>Table&lt;T&gt;(headerRows)</c> will match it — its band and caption run
     /// together, <c>FromId</c> for the column at From, Id — and typed from the cells under the
-    /// whole header. Along a row only.
+    /// whole header. The row of captions is what is found (or named by <paramref name="at"/>) and
+    /// the bands are read from the rows above it: a band row is often one merged cell, far emptier
+    /// than the captions beneath, so the search settles on the captions and counts up. Along a row only.
     /// </param>
-    /// <exception cref="ArgumentNullException"><paramref name="sheet"/> or <paramref name="typeName"/> is null.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="space"/> or <paramref name="typeName"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="typeName"/> is blank.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="at"/> or <paramref name="samples"/> is negative.</exception>
-    /// <exception cref="OutOfBoundsException"><paramref name="at"/> is past the end of the sheet.</exception>
+    /// <exception cref="OutOfBoundsException"><paramref name="at"/> is past the end of the space.</exception>
     /// <exception cref="InvalidOperationException">No labels were found and <paramref name="at"/> was not given.</exception>
-    public static string ScaffoldRecord<TSpace>(this TSpace sheet, string typeName, LabelsIn labels = LabelsIn.Row, int? at = null, int samples = 5, int headerRows = 1)
+    public static string ScaffoldRecord<TSpace>(this TSpace space, string typeName, LabelsIn labels = LabelsIn.Row, int? at = null, int samples = 5, int headerRows = 1)
       where TSpace : class, ICellSpace
-      => Record(Read(Region.Of(sheet), typeName, labels, at, samples, headerRows), typeName, labels, headerRows);
+      => Record(Read(Region.Of(space), typeName, labels, at, samples, headerRows), typeName, labels, headerRows);
 
     internal static string Record(List<Member> members, string typeName, LabelsIn labels, int headerRows = 1)
     {
@@ -152,22 +154,24 @@ namespace Unrect.Interactive
     /// constructor. A label that does not bind back to its member is noted in a comment above that
     /// property.
     /// </summary>
-    /// <typeparam name="TSpace">The sheet being read.</typeparam>
-    /// <param name="sheet">The sheet to read labels and samples from.</param>
+    /// <typeparam name="TSpace">The space being read: any space of typed cells.</typeparam>
+    /// <param name="space">The space to read labels and samples from.</param>
     /// <param name="typeName">The type's name.</param>
     /// <param name="labels">Whether the labels run along a row or down a column.</param>
-    /// <param name="at">The 0-based row, or column, the labels are on; found when omitted.</param>
+    /// <param name="at">The 0-based row, or column, the labels are on; found when omitted. With bands above the captions (<paramref name="headerRows"/> above 1) it names the row of CAPTIONS, the header's last, and the bands are read from the rows above it.</param>
     /// <param name="samples">How many cells beside each label to type the member from.</param>
     /// <param name="headerRows">
     /// How many rows the header is: the captions, under any rows of bands. With bands a member is
     /// named as <c>Table&lt;T&gt;(headerRows)</c> will match it — its band and caption run
     /// together, <c>FromId</c> for the column at From, Id — and typed from the cells under the
-    /// whole header. Along a row only.
+    /// whole header. The row of captions is what is found (or named by <paramref name="at"/>) and
+    /// the bands are read from the rows above it: a band row is often one merged cell, far emptier
+    /// than the captions beneath, so the search settles on the captions and counts up. Along a row only.
     /// </param>
-    /// <exception cref="ArgumentNullException"><paramref name="sheet"/> or <paramref name="typeName"/> is null.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="space"/> or <paramref name="typeName"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="typeName"/> is blank.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="at"/> or <paramref name="samples"/> is negative.</exception>
-    /// <exception cref="OutOfBoundsException"><paramref name="at"/> is past the end of the sheet.</exception>
+    /// <exception cref="OutOfBoundsException"><paramref name="at"/> is past the end of the space.</exception>
     /// <param name="style">
     /// The setter each property gets, or none. Null takes the runtime's default: <see cref="MemberStyle.Set"/>
     /// on .NET Framework, whose in-box compilers do not know <c>init</c>, and <see cref="MemberStyle.Init"/>
@@ -175,9 +179,9 @@ namespace Unrect.Interactive
     /// overrides it.
     /// </param>
     /// <exception cref="InvalidOperationException">No labels were found and <paramref name="at"/> was not given.</exception>
-    public static string ScaffoldClass<TSpace>(this TSpace sheet, string typeName, LabelsIn labels = LabelsIn.Row, int? at = null, int samples = 5, int headerRows = 1, MemberStyle? style = null)
+    public static string ScaffoldClass<TSpace>(this TSpace space, string typeName, LabelsIn labels = LabelsIn.Row, int? at = null, int samples = 5, int headerRows = 1, MemberStyle? style = null)
       where TSpace : class, ICellSpace
-      => Class(Read(Region.Of(sheet), typeName, labels, at, samples, headerRows), typeName, labels, headerRows, style);
+      => Class(Read(Region.Of(space), typeName, labels, at, samples, headerRows), typeName, labels, headerRows, style);
 
     internal static string Class(List<Member> members, string typeName, LabelsIn labels, int headerRows = 1, MemberStyle? style = null)
     {
@@ -238,7 +242,7 @@ namespace Unrect.Interactive
     private static string Parameter(string member)
       => member.Length == 0 ? member : char.ToLowerInvariant(member[0]) + member.Substring(1);
 
-    // --- Reading the sheet ---------------------------------------------------------------------------
+    // --- Reading the space ---------------------------------------------------------------------------
 
     /// <summary>One member of the scaffolded type: the label it came from, what it is called, and what its samples argued for.</summary>
     internal sealed class Member
@@ -289,7 +293,7 @@ namespace Unrect.Interactive
 
       var grid = new Axes(region, labels);
 
-      // Checked here rather than left to the first cell read: a sheet with no cells along the label
+      // Checked here rather than left to the first cell read: a space with no cells along the label
       // line reads none at all, and would otherwise scaffold an empty type from a line that does not
       // exist.
       if (at is int line && line >= grid.Lines)
@@ -301,15 +305,17 @@ namespace Unrect.Interactive
 
       if (headerRows > 1)
       {
-        if (labelLine + headerRows > grid.Lines)
-          throw new OutOfBoundsException();
+        // With bands the line found (or named) is the CAPTIONS, the header's last row, and the bands
+        // are the rows above it; `labelLine` becomes the header's top.
+        var captions = at is int named ? NamedCaptions(named, headerRows) : Captions(grid, labelLine, headerRows);
+        labelLine = captions - (headerRows - 1);
 
         // The header parse is the table's own, so what is scaffolded is what will bind: the paths a
         // Table<T>(headerRows) would see, read from the same rows.
         paths ??= ProjectionBuilders<ICellSpace>
           .Down(region.Row + labelLine)
           .Of(ProjectionBuilders<ICellSpace>.ColumnLabels(headerRows))
-          .Map(region.Sheet)
+          .Map(region.Space)
           .Paths;
 
         for (var position = 0; position < grid.Length && region.Column + position < paths.Count; position++)
@@ -351,19 +357,19 @@ namespace Unrect.Interactive
         throw new ArgumentException("A scaffolded type needs a name.", nameof(typeName));
     }
 
-    /// <summary>The cells a scaffold reads: a whole sheet, or the region a declaration handed it.</summary>
+    /// <summary>The cells a scaffold reads: a whole space, or the region a declaration handed it.</summary>
     internal readonly struct Region
     {
-      public Region(ICellSpace sheet, int column, int row, int width, int height)
+      public Region(ICellSpace space, int column, int row, int width, int height)
       {
-        Sheet = sheet;
+        Space = space;
         Column = column;
         Row = row;
         Width = width;
         Height = height;
       }
 
-      public ICellSpace Sheet { get; }
+      public ICellSpace Space { get; }
 
       public int Column { get; }
 
@@ -373,10 +379,10 @@ namespace Unrect.Interactive
 
       public int Height { get; }
 
-      public static Region Of(ICellSpace sheet)
-        => sheet is null
-          ? throw new ArgumentNullException(nameof(sheet))
-          : new Region(sheet, 0, 0, sheet.Extent.Width, sheet.Extent.Height);
+      public static Region Of(ICellSpace space)
+        => space is null
+          ? throw new ArgumentNullException(nameof(space))
+          : new Region(space, 0, 0, space.Extent.Width, space.Extent.Height);
 
       public static Region Of<TSpace>(Plane<TSpace> plane)
         where TSpace : class, ICellSpace
@@ -384,20 +390,20 @@ namespace Unrect.Interactive
     }
 
     /// <summary>
-    /// The sheet read along the label axis: a <em>line</em> is a row when the labels run along one
+    /// The space read along the label axis: a <em>line</em> is a row when the labels run along one
     /// and a column when they run down one, and a <em>position</em> is how far along that line.
     /// The samples for a label sit on the lines after the label's own, at the same position.
     /// </summary>
     private readonly struct Axes
     {
       private readonly Region _region;
-      private readonly ICellSpace _sheet;
+      private readonly ICellSpace _space;
       private readonly bool _rows;
 
       public Axes(Region region, LabelsIn labels)
       {
         _region = region;
-        _sheet = region.Sheet;
+        _space = region.Space;
         _rows = labels == LabelsIn.Row;
       }
 
@@ -411,13 +417,13 @@ namespace Unrect.Interactive
 
       private int Row(int line, int position) => _region.Row + (_rows ? line : position);
 
-      public bool IsBlank(int line, int position) => _sheet.IsBlankAt(Column(line, position), Row(line, position));
+      public bool IsBlank(int line, int position) => _space.IsBlankAt(Column(line, position), Row(line, position));
 
-      public bool IsText(int line, int position) => _sheet.ValueAt(Column(line, position), Row(line, position)).Kind == CellKind.Text;
+      public bool IsText(int line, int position) => _space.ValueAt(Column(line, position), Row(line, position)).Kind == CellKind.Text;
 
-      public bool IsError(int line, int position) => _sheet.ValueAt(Column(line, position), Row(line, position)).Kind == CellKind.Error;
+      public bool IsError(int line, int position) => _space.ValueAt(Column(line, position), Row(line, position)).Kind == CellKind.Error;
 
-      public bool Text(int line, int position, out string text) => _sheet.ValueAt(Column(line, position), Row(line, position)).TryGetText(out text);
+      public bool Text(int line, int position, out string text) => _space.ValueAt(Column(line, position), Row(line, position)).TryGetText(out text);
 
       private static bool IsWhole(double number)
         => number >= int.MinValue && number <= int.MaxValue && Math.Floor(number) == number;
@@ -425,7 +431,7 @@ namespace Unrect.Interactive
       /// <summary>The type one cell reads as, narrowest first — a whole number is an <c>int</c> until another sample says otherwise.</summary>
       public string Reads(int line, int position)
       {
-        var value = _sheet.ValueAt(Column(line, position), Row(line, position));
+        var value = _space.ValueAt(Column(line, position), Row(line, position));
 
         return value.Kind switch
         {
@@ -436,6 +442,67 @@ namespace Unrect.Interactive
         };
       }
     }
+
+    /// <summary>How many cells of <paramref name="line"/> hold anything.</summary>
+    private static int Filled(Axes grid, int line)
+    {
+      var filled = 0;
+
+      for (var position = 0; position < grid.Length; position++)
+        if (!grid.IsBlank(line, position))
+          filled++;
+
+      return filled;
+    }
+
+    /// <summary>Whether every cell of <paramref name="line"/> that holds anything holds text.</summary>
+    private static bool IsAllText(Axes grid, int line)
+    {
+      for (var position = 0; position < grid.Length; position++)
+        if (!grid.IsBlank(line, position) && !grid.IsText(line, position))
+          return false;
+
+      return true;
+    }
+
+    /// <summary>
+    /// The row of captions under bands, given the line the label search settled on. That line is
+    /// either the header's top or its captions, and which is decided by what lies around it: a
+    /// candidate is possible when the header fits that way, and between two possible candidates the
+    /// row of captions is the one that is all text, then the fuller one, then the line found itself —
+    /// a band row is often one merged cell over many captions, which the search steps over as too
+    /// empty, and a title over a band row is emptier still.
+    /// </summary>
+    /// <exception cref="OutOfBoundsException">The header does not fit either way.</exception>
+    private static int Captions(Axes grid, int found, int headerRows)
+    {
+      var below = found + headerRows - 1;
+      var fitsBelow = below < grid.Lines;
+      var fitsAbove = found - (headerRows - 1) >= 0;
+
+      if (!fitsBelow && !fitsAbove)
+        throw new OutOfBoundsException();
+
+      if (!fitsAbove)
+        return below;
+
+      if (!fitsBelow)
+        return found;
+
+      var belowIsText = IsAllText(grid, below);
+      var foundIsText = IsAllText(grid, found);
+
+      if (belowIsText != foundIsText)
+        return belowIsText ? below : found;
+
+      return Filled(grid, below) > Filled(grid, found) ? below : found;
+    }
+
+    /// <summary>With bands, <c>at</c> names the row of captions; the bands must fit above it.</summary>
+    private static int NamedCaptions(int at, int headerRows)
+      => at - (headerRows - 1) >= 0
+        ? at
+        : throw new ArgumentOutOfRangeException(nameof(at), at, $"With {headerRows} header rows, at names the row of captions, and {headerRows - 1} rows of bands must lie above it.");
 
     /// <summary>
     /// The line the labels are on: the first whose cells are all text and which is at least half as
@@ -452,17 +519,8 @@ namespace Unrect.Interactive
 
       for (var line = 0; line < search; line++)
       {
-        allText[line] = true;
-
-        for (var position = 0; position < grid.Length; position++)
-        {
-          if (grid.IsBlank(line, position))
-            continue;
-
-          filled[line]++;
-          allText[line] &= grid.IsText(line, position);
-        }
-
+        filled[line] = Filled(grid, line);
+        allText[line] = IsAllText(grid, line);
         fullest = Math.Max(fullest, filled[line]);
       }
 

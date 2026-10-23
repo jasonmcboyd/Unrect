@@ -37,7 +37,7 @@ namespace Unrect.Interactive
   /// its types are real.
   /// </para>
   /// </summary>
-  /// <typeparam name="TSpace">The sheet every declaration in the file is written against.</typeparam>
+  /// <typeparam name="TSpace">The space every declaration in the file is written against.</typeparam>
   public static class ScaffoldBuilders<TSpace>
     where TSpace : class, ICellSpace
   {
@@ -83,15 +83,15 @@ namespace Unrect.Interactive
         throw new ArgumentException("Rows of bands over the captions are read along a row; a header down a column has one line of labels.", nameof(headerRows));
 
       string Source(Plane<TSpace> region, IReadOnlyList<IReadOnlyList<string>>? paths = null)
-        => write(Scaffolding.Read(Scaffolding.Region.Of(region), typeName, labels, at: 0, samples, headerRows, Shifted(paths, region)), typeName, labels, headerRows);
+        => write(Scaffolding.Read(Scaffolding.Region.Of(region), typeName, labels, at: headerRows - 1, samples, headerRows, Shifted(paths, region)), typeName, labels, headerRows);
 
       // The view's paths count from the table's left edge; the scaffolder's from the sheet's.
       static IReadOnlyList<IReadOnlyList<string>>? Shifted(IReadOnlyList<IReadOnlyList<string>>? paths, Plane<TSpace> region)
         => paths is null ? null : Enumerable.Repeat((IReadOnlyList<string>)Array.Empty<string>(), region.Origin.Column).Concat(paths).ToList();
 
       // The labels are the first line of whatever region the declaration hands over, so there is no
-      // search and no `at`: along a row that region is the table's own; down a column it is the
-      // card's — the full width, for as many rows as carry a value.
+      // search: along a row that region is the table's own and `at` is its caption row, the last of
+      // the header; down a column it is the card's — the full width, for as many rows as carry a value.
       var leaf = labels == LabelsIn.Row
         ? ProjectionBuilders<TSpace>.Table(headerRows, (TableView<TSpace> view) => Source(view.Space, view.ColumnPaths))
         : ProjectionBuilders<TSpace>.AfterBlankRows().Range(ProjectionBuilders<TSpace>.Rows.WhileAnyIsNotBlank(), block => Source(block.Space));
