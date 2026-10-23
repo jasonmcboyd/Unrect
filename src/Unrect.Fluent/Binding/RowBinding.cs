@@ -14,8 +14,14 @@ namespace Unrect.Fluent
   /// type each carries, and a compiled materializer. Everything reflective happens once, at projection
   /// construction — no reflection runs per <c>Map</c> and none per row, so the projection stays
   /// immutable and safe to apply to many workbooks at once.
+  /// <para>
+  /// A plan is also the hand door to the reflective table: <see cref="Create{TSpace}"/> matches a
+  /// type's members to captions once, and <see cref="Project{TSpace}(LabelMap)"/> is the record
+  /// projection a table's bind rung applies to every row.
+  /// </para>
   /// </summary>
-  internal sealed class RowBinding<T>
+  /// <typeparam name="T">The record type the plan fills.</typeparam>
+  public sealed class RowBinding<T>
   {
     private readonly Func<object?[], T> _materialize;
 
@@ -26,13 +32,49 @@ namespace Unrect.Fluent
     }
 
     /// <summary>The members that must find a caption, in materialization order.</summary>
-    public IReadOnlyList<MemberPlan> Members { get; }
+    internal IReadOnlyList<MemberPlan> Members { get; }
 
-    public T Materialize(object?[] values) => _materialize(values);
+    internal T Materialize(object?[] values) => _materialize(values);
 
     /// <summary>
-    /// The plan for filling a <typeparamref name="T"/> from a labelled row, resolved once here.
+    /// The plan projected over one row's labels: the record projection the reflective table applies
+    /// per row. The captions are resolved here, once per application of the table — each member is
+    /// placed at the column its caption names and read as the member's own type declares — and every
+    /// member that found no column is reported together, naming the table's captions.
+    /// <para>Fluent: <c>Table&lt;T&gt;()</c> — the whole table; <c>Record&lt;T&gt;(labels)</c> — one row.</para>
+    /// <para>
+    /// By hand, the table the fluent rung composes is the bind node over a header and this projection:
+    /// <code>
+    /// var plan = RowBinding&lt;Line&gt;.Create&lt;ICellSpace&gt;(null, typeof(ICellSpace));
+    /// new LabelledDefinition&lt;ICellSpace, IReadOnlyList&lt;Line&gt;&gt;(
+    ///   LabelAxis.Column,
+    ///   new ColumnLabelsDefinition&lt;ICellSpace&gt;(1, Placement&lt;ICellSpace&gt;.Default),
+    ///   labels =&gt; new BandsDefinition&lt;ICellSpace, Line&gt;(plan.Project&lt;ICellSpace&gt;(labels), Orientation.Vertical, 1, default, null, Placement&lt;ICellSpace&gt;.Default),
+    ///   opacity, Placement&lt;ICellSpace&gt;.Default)
+    /// </code>
+    /// </para>
     /// </summary>
+    /// <typeparam name="TSpace">The space the row is read over; the one the plan was created for.</typeparam>
+    /// <param name="labels">The header's captions, as the bind rung hands them to its row.</param>
+    public IProjectionDefinition<TSpace, T> Project<TSpace>(LabelMap labels)
+      where TSpace : class, ISpace
+      => Project<TSpace>(labels ?? throw new ArgumentNullException(nameof(labels)), loose: false);
+
+    /// <summary>
+    /// <see cref="Project{TSpace}(LabelMap)"/> with the one strictness the exploratory table
+    /// switches: a member no column binds is left at its default and said so in a Warning, and the
+    /// columns no member reads are listed in an Info.
+    /// </summary>
+    internal IProjectionDefinition<TSpace, T> Project<TSpace>(LabelMap labels, bool loose)
+      where TSpace : class, ISpace
+      => RecordRows.Project<TSpace, T>(this, labels, loose);
+
+    /// <summary>
+    /// The plan for filling a <typeparamref name="T"/> from a labelled row, resolved once here:
+    /// every member's caption, CLR type and reading, and a compiled materializer. A plan is immutable
+    /// and reusable, so one serves every row of every application of a table.
+    /// </summary>
+    /// <typeparam name="TSpace">The space the record is declared over.</typeparam>
     /// <param name="binding">The per-member declarations, or null for what reflection writes.</param>
     /// <param name="space">
     /// The space the record is declared over, and which point type a member may therefore ask for:
@@ -40,6 +82,7 @@ namespace Unrect.Fluent
     /// by. A point is invariant in its space, so a plan checked against one space and read through
     /// another would refuse the member it had just accepted.
     /// </param>
+    /// <returns>The plan, or an <see cref="ArgumentException"/> where a member cannot be filled: no public constructor, a type no reading yields, a declaration naming a member the type has not got.</returns>
     public static RowBinding<T> Create<TSpace>(TableBinding<TSpace, T>? binding, Type space)
       where TSpace : class, ISpace
     {

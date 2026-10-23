@@ -1,13 +1,15 @@
+using System;
 using System.Collections.Generic;
 
 using Unrect.Core;
+using Unrect.Fluent;
 using Unrect.Projections;
 using Unrect.Spreadsheets;
 using Unrect.Strategies;
 
 // No `using static …ProjectionBuilders<…>` in this file, on purpose: everything below is built from
-// the model's public constructors, the Placement value and the Strategies factories alone. The one
-// exception is marked where it stands.
+// the model's public constructors, the Placement value, the Strategies factories and the binder's
+// public plan alone — nothing the vocabulary alone can spell.
 namespace Unrect.Tests.Projections
 {
   public sealed partial class HandBuiltParityTests
@@ -49,19 +51,39 @@ namespace Unrect.Tests.Projections
           Placement<ICellSpace>.Default);
 
       /// <summary>
-      /// Fluent: <c>Below(Rows.Saying("Items")).Sized(Rows.WhileAnyIsNotBlank()).Of(TableFluent: <c>Below(Rows.Saying("Items")).Sized(Rows.WhileAnyIsNotBlank()).Table&lt;Line&gt;()</c>lt;LineFluent: <c>Below(Rows.Saying("Items")).Sized(Rows.WhileAnyIsNotBlank()).Table&lt;Line&gt;()</c>gt;())</c>.
-      /// The reflective table is the one shape whose only public spelling is the fluent one — it
-      /// is a composition the binder writes — so it is taken from the vocabulary and PLACED by hand.
+      /// Fluent: <c>Below(Rows.Saying("Items")).Sized(Rows.WhileAnyIsNotBlank()).Table&lt;Line&gt;()</c>.
+      /// The reflective table is the bind node over a one-row header, its row a plan projected over
+      /// the header's labels, wrapped as one unit named for the record — then placed.
       /// </summary>
       public static IProjectionDefinition<ICellSpace, IReadOnlyList<Line>> PlacedTable()
       {
-        var table = Unrect.Fluent.ProjectionBuilders<ICellSpace>.Table<Line>();
+        var plan = RowBinding<Line>.Create<ICellSpace>(null, typeof(ICellSpace));
 
-        return table.With(table.Annotations.WithPlacement(
-          table.Placement
+        var composed = Scaffolding(new LabelledDefinition<ICellSpace, IReadOnlyList<Line>>(
+          LabelAxis.Column,
+          Scaffolding(new ColumnLabelsDefinition<ICellSpace>(1, Placement<ICellSpace>.Default)),
+          labels => Scaffolding(new BandsDefinition<ICellSpace, Line>(
+            plan.Project<ICellSpace>(labels), Orientation.Vertical, 1, UseSite.From(null, null), onBlank: null, Placement<ICellSpace>.Default)),
+          "the row projection is built from the header's captions; it is known only once a header is read",
+          Placement<ICellSpace>.Default));
+
+        IProjectionDefinition<ICellSpace, IReadOnlyList<Line>> table = new UnitDefinition<ICellSpace, IReadOnlyList<Line>>(
+          composed,
+          Array.Empty<Child>(),
+          "Table",
+          Placement<ICellSpace>.Of(SizeStrategies.RowsThenColumns(
+            RowStrategies.TakeRowsWhileAnyIsNotBlank<ICellSpace>(), ColumnStrategies.TakeTableColumns<ICellSpace>())));
+
+        return table.With(table.Annotations
+          .WithUnitName("Table<Line>")
+          .WithPlacement(table.Placement
             .WithExtent(SizeStrategies.RowsWhileAnyIsNotBlank<ICellSpace>())
             .WithOffset(OffsetStrategies.Past(RowLandmarks.RowSaying<ICellSpace>("Items")))));
       }
+
+      /// <summary>What the vocabulary marks as its own plumbing, so it contributes no path segment.</summary>
+      private static IProjectionDefinition<ICellSpace, T> Scaffolding<T>(IProjectionDefinition<ICellSpace, T> definition)
+        => definition.With(definition.Annotations.AsScaffolding());
 
       /// <summary>Fluent: <c>VerticalRepeat(item, separatedBy: Rows.SkipBlank())</c>.</summary>
       public static IProjectionDefinition<ICellSpace, IReadOnlyList<int>> Repeated(IProjectionDefinition<ICellSpace, int> item)
