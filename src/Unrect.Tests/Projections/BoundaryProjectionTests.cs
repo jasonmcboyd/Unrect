@@ -233,7 +233,7 @@ namespace Unrect.Tests.Projections
       // inside it is inside the try block.
       var space = Mixed(new object?[,] { { "nothing" }, { "here" } });
 
-      var result = On(RowContaining("Section")).Of(TextCell()).Optional().MapWithDiagnostics(space);
+      var result = On(Rows.Containing("Section")).Of(TextCell()).Optional().MapWithDiagnostics(space);
 
       Assert.Null(result.Value);
       Assert.Contains(
@@ -249,7 +249,7 @@ namespace Unrect.Tests.Projections
       var space = Mixed(new object?[,] { { "nothing" }, { "here" } });
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        On(RowContaining("Section")).Of(TextCell().Optional()).Map(space));
+        On(Rows.Containing("Section")).Of(TextCell().Optional()).Map(space));
 
       Assert.Contains("no row containing 'Section'", failure.Message);
     }
@@ -462,7 +462,7 @@ namespace Unrect.Tests.Projections
       var space = Mixed(new object?[,] { { "x" }, { null }, { null }, { 5 }, { 6 } });
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalFlow(v => $"{v.Next(IntCell().Optional())}|{v.Next(OffsetBy(BlankRows()).Down(2).Of(TextCell()))}")
+        VerticalFlow(v => $"{v.Next(IntCell().Optional())}|{v.Next(OffsetBy(Rows.SkipBlank()).Down(2).Of(TextCell()))}")
           .Map(space));
 
       Assert.DoesNotContain("note:", failure.Message);

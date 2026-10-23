@@ -142,7 +142,7 @@ namespace Unrect.Tests.Projections
     {
       // With a boundary, the run ends at the landmark; the interior blank is still skipped, and the
       // bound is consumed in full so a following sibling lands ON the landmark.
-      var report = VerticalFlow(v => (Lines: v.Next(Until(RowContaining("Total")).Of(Lines(BlankRowStrategy.Skip))), Total: v.Next(HorizontalFlow(h => new Line(h.Text(), h.Decimal())))));
+      var report = VerticalFlow(v => (Lines: v.Next(Until(Rows.Containing("Total")).Of(Lines(BlankRowStrategy.Skip))), Total: v.Next(HorizontalFlow(h => new Line(h.Text(), h.Decimal())))));
 
       var read = report.Map(GappedWithTotal());
 
@@ -238,17 +238,15 @@ namespace Unrect.Tests.Projections
 
     // --- C. The reflection rungs carry the knob too ------------------------------------------------
 
-    // The production gap this pin was Skipped for is closed: when the kinded family moved to
-    // ProjectionBuilders<TSpace> it published only Table<T>() and Table<T>(bind), leaving the
-    // onBlank twins with no spelling at all. Both are back, on both kinded vocabularies, so the knob
-    // threads through the reflection binder exactly as documented — which is what this says.
+    // The blank-row knob threads through the reflection binder exactly as documented; since the
+    // reflective rung is one signature with optional parameters, a policy alone is spelled by name.
 
     [Fact]
     public void TheTypedBindRungSkipsInteriorBlanks()
     {
       Assert.Equal(
         new[] { new Entry("Alpha", 100m), new Entry("Gamma", 300m) },
-        Table<Entry>(BlankRowStrategy.Skip).Map(Gapped()));
+        Table<Entry>(onBlank: BlankRowStrategy.Skip).Map(Gapped()));
     }
 
     [Fact]

@@ -238,7 +238,7 @@ namespace Unrect.Tests.Streaming
       // ObjectDisposedException off a value that outlived the call is proof the close happened.
       // (Reopening the file would prove nothing: the reader shares for reading, so a leaked handle
       // does not block a second open.)
-      var space = Range(WholeExtent(), block => block.Space).MapWorkbook(Path("multi-sheet.xlsx"), "Detail");
+      var space = Range(Extent.Whole(), block => block.Space).MapWorkbook(Path("multi-sheet.xlsx"), "Detail");
 
       Assert.Throws<ObjectDisposedException>(() => space[0, 0].AsText());
     }

@@ -20,7 +20,7 @@ namespace Unrect.Tests.Projections
   public class PadProjectionTests
   {
     // Values are (row * 10 + column + 1): 1 2 3 4 / 11 12 13 14 / 21 22 23 24 (/ 31 ... / 41 ...).
-    private static IProjectionDefinition<ICellSpace, (int Width, int Height, int TopLeft)> Extent()
+    private static IProjectionDefinition<ICellSpace, (int Width, int Height, int TopLeft)> Measured()
       => Range(b => (b.Width, b.Height, b[0, 0].Integer()));
 
     // --- Inset arithmetic ------------------------------------------------------------------------
@@ -29,29 +29,29 @@ namespace Unrect.Tests.Projections
     public void Padded_WithOneAmount_InsetsEverySide()
     {
       // A 4x3 extent inset by one on all four sides leaves the 2x1 middle, starting at B2.
-      Assert.Equal((2, 1, 12), Extent().Padded(1).Map(CoordinateGrid()));
+      Assert.Equal((2, 1, 12), Measured().Padded(1).Map(CoordinateGrid()));
     }
 
     [Fact]
     public void Padded_WithTwoAmounts_InsetsHorizontallyThenVertically()
     {
       // One column off each side, no rows: the full height of the middle two columns.
-      Assert.Equal((2, 3, 2), Extent().Padded(1, 0).Map(CoordinateGrid()));
+      Assert.Equal((2, 3, 2), Measured().Padded(1, 0).Map(CoordinateGrid()));
     }
 
     [Fact]
     public void Padded_WithFourAmounts_InsetsEachSideIndependently()
     {
       // Left 1, top 2, right 0, bottom 0: the bottom-right 3x1 corner, starting at B3.
-      Assert.Equal((3, 1, 22), Extent().Padded(1, 2, 0, 0).Map(CoordinateGrid()));
+      Assert.Equal((3, 1, 22), Measured().Padded(1, 2, 0, 0).Map(CoordinateGrid()));
     }
 
     [Fact]
     public void Padded_WithZero_ChangesNothing()
     {
-      Assert.Equal((4, 3, 1), Extent().Padded(0).Map(CoordinateGrid()));
-      Assert.Equal((4, 3, 1), Extent().Padded(0, 0).Map(CoordinateGrid()));
-      Assert.Equal((4, 3, 1), Extent().Padded(0, 0, 0, 0).Map(CoordinateGrid()));
+      Assert.Equal((4, 3, 1), Measured().Padded(0).Map(CoordinateGrid()));
+      Assert.Equal((4, 3, 1), Measured().Padded(0, 0).Map(CoordinateGrid()));
+      Assert.Equal((4, 3, 1), Measured().Padded(0, 0, 0, 0).Map(CoordinateGrid()));
     }
 
     // --- What a padded projection consumes ----------------------------------------------------------------
@@ -70,7 +70,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void Padded_ConsumesTheWholeExtentWhenTheInnerProjectionFillsIt()
     {
-      var applied = Extent().Padded(1).Apply(CoordinateGrid());
+      var applied = Measured().Padded(1).Apply(CoordinateGrid());
 
       Assert.Equal(4, applied.Consumed.Width);
       Assert.Equal(3, applied.Consumed.Height);
@@ -122,7 +122,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AnInsetLargerThanTheExtent_Throws()
     {
-      var failure = Assert.Throws<ProjectionException>(() => Extent().Padded(5).Map(CoordinateGrid()));
+      var failure = Assert.Throws<ProjectionException>(() => Measured().Padded(5).Map(CoordinateGrid()));
 
       Assert.Contains("a padding of 5 left, 5 top, 5 right, 5 bottom does not fit an extent of 4x3", failure.Message);
     }
@@ -132,7 +132,7 @@ namespace Unrect.Tests.Projections
     {
       // An unnamed pad is transparent, so without blaming itself explicitly the enclosing
       // projection would be named for a failure that is the padding's own.
-      var failure = Assert.Throws<ProjectionException>(() => Extent().Padded(0, 9).Map(CoordinateGrid()));
+      var failure = Assert.Throws<ProjectionException>(() => Measured().Padded(0, 9).Map(CoordinateGrid()));
 
       Assert.Equal("Padded", failure.Subject);
       Assert.Contains("does not fit an extent of 4x3", failure.Message);
@@ -185,23 +185,23 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void Padded_WithOneAmount_RejectsANegative()
     {
-      Assert.Equal("all", Assert.Throws<ArgumentOutOfRangeException>(() => Extent().Padded(-1)).ParamName);
+      Assert.Equal("all", Assert.Throws<ArgumentOutOfRangeException>(() => Measured().Padded(-1)).ParamName);
     }
 
     [Fact]
     public void Padded_WithTwoAmounts_BlamesTheAxisThatWasNegative()
     {
-      Assert.Equal("horizontal", Assert.Throws<ArgumentOutOfRangeException>(() => Extent().Padded(-1, 0)).ParamName);
-      Assert.Equal("vertical", Assert.Throws<ArgumentOutOfRangeException>(() => Extent().Padded(0, -1)).ParamName);
+      Assert.Equal("horizontal", Assert.Throws<ArgumentOutOfRangeException>(() => Measured().Padded(-1, 0)).ParamName);
+      Assert.Equal("vertical", Assert.Throws<ArgumentOutOfRangeException>(() => Measured().Padded(0, -1)).ParamName);
     }
 
     [Fact]
     public void Padded_WithFourAmounts_BlamesTheSideThatWasNegative()
     {
-      Assert.Equal("left", Assert.Throws<ArgumentOutOfRangeException>(() => Extent().Padded(-1, 0, 0, 0)).ParamName);
-      Assert.Equal("top", Assert.Throws<ArgumentOutOfRangeException>(() => Extent().Padded(0, -1, 0, 0)).ParamName);
-      Assert.Equal("right", Assert.Throws<ArgumentOutOfRangeException>(() => Extent().Padded(0, 0, -1, 0)).ParamName);
-      Assert.Equal("bottom", Assert.Throws<ArgumentOutOfRangeException>(() => Extent().Padded(0, 0, 0, -1)).ParamName);
+      Assert.Equal("left", Assert.Throws<ArgumentOutOfRangeException>(() => Measured().Padded(-1, 0, 0, 0)).ParamName);
+      Assert.Equal("top", Assert.Throws<ArgumentOutOfRangeException>(() => Measured().Padded(0, -1, 0, 0)).ParamName);
+      Assert.Equal("right", Assert.Throws<ArgumentOutOfRangeException>(() => Measured().Padded(0, 0, -1, 0)).ParamName);
+      Assert.Equal("bottom", Assert.Throws<ArgumentOutOfRangeException>(() => Measured().Padded(0, 0, 0, -1)).ParamName);
     }
 
     [Fact]

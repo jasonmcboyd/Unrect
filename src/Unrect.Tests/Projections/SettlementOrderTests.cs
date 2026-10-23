@@ -63,9 +63,9 @@ namespace Unrect.Tests.Projections
       // This item asks its extent for nothing at all, and the repetition still finds two occurrences
       // and consumes both blocks and the gap: the run steps by the extent the item's rule
       // discovered, whether or not the item read a cell of it.
-      var item = Range(RowsWhileAnyIsNotBlank(), _ => 0);
+      var item = Range(Rows.WhileAnyIsNotBlank(), _ => 0);
 
-      var applied = VerticalRepeat(item, separatedBy: BlankRows()).Apply(TwoBlocks());
+      var applied = VerticalRepeat(item, separatedBy: Rows.SkipBlank()).Apply(TwoBlocks());
 
       Assert.Equal(2, applied.Value.Count);
       Assert.Equal(2, applied.Consumed.Width);
@@ -89,7 +89,7 @@ namespace Unrect.Tests.Projections
 
       var flow = VerticalFlow(v =>
       {
-        v.Next(Range(RowsWhileAnyIsNotBlank(), _ => 0).Named("body"));
+        v.Next(Range(Rows.WhileAnyIsNotBlank(), _ => 0).Named("body"));
 
         var afterBlankRows = v.Next(AfterBlankRows().Of(Point().Select(point =>
         {
@@ -115,7 +115,7 @@ namespace Unrect.Tests.Projections
 
       var flow = VerticalFlow(v =>
       {
-        v.Next(Range(RowsWhileAny(BreaksOn(MarkerInTheThirdRow)), _ => 0).Named("body"));
+        v.Next(Range(Rows.WhileAny(BreaksOn(MarkerInTheThirdRow)), _ => 0).Named("body"));
 
         var pointSlot = v.Next(Point().Select(point =>
         {
@@ -145,8 +145,8 @@ namespace Unrect.Tests.Projections
       var rowsReadWhenTheWinnerBegan = -1;
 
       var choice = Choice(
-        Range(RowsWhileAny(BreaksOn(MarkerInTheThirdRow)), _ => 0).Named("first"),
-        Range(WholeExtent(), _ =>
+        Range(Rows.WhileAny(BreaksOn(MarkerInTheThirdRow)), _ => 0).Named("first"),
+        Range(Extent.Whole(), _ =>
         {
           rowsReadWhenTheWinnerBegan = counter.RowsTouched;
 

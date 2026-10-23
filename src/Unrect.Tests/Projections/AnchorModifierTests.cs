@@ -24,21 +24,21 @@ namespace Unrect.Tests.Projections
   /// <para>
   /// The axis is carried by the argument's type and enforced by overload resolution:
   /// <c>.Below</c> takes an <c>ILineLandmark</c> and <c>.RightOf</c> an <c>ILineLandmark</c>, so
-  /// <c>.Below(ColumnContaining("x"))</c> does not compile. There is no runtime behaviour to pin
+  /// <c>.Below(Columns.Containing("x"))</c> does not compile. There is no runtime behaviour to pin
   /// there — a test could only assert that something the compiler already refused stays refused.
   /// </para>
   /// </summary>
   public class AnchorModifierTests
   {
     // A junk row, the landmark row, two rows under it.
-    private static ICellSpace Rows() => Mixed(new object?[,] { { "junk" }, { "Detail" }, { "a" }, { "b" } });
+    private static ICellSpace RowSheet() => Mixed(new object?[,] { { "junk" }, { "Detail" }, { "a" }, { "b" } });
 
     // The same four cells turned on their side, so the column twins read identically.
-    private static ICellSpace Columns() => Mixed(new object?[,] { { "junk", "Detail", "a", "b" } });
+    private static ICellSpace ColumnSheet() => Mixed(new object?[,] { { "junk", "Detail", "a", "b" } });
 
-    private static ILineLandmark<ICellSpace> Detail() => RowContaining("Detail");
+    private static ILineLandmark<ICellSpace> Detail() => Rows.Containing("Detail");
 
-    private static ILineLandmark<ICellSpace> DetailColumn() => ColumnContaining("Detail");
+    private static ILineLandmark<ICellSpace> DetailColumn() => Columns.Containing("Detail");
 
     // --- On: the projection lands on the match and owns it -------------------------------------------------
 
@@ -47,26 +47,26 @@ namespace Unrect.Tests.Projections
     {
       // Owning it is the whole difference from Below: the matched row is inside the extent, which
       // is how a caption becomes content the projection reads rather than a gap it steps over.
-      var applied = On(Detail()).Of(Point().Text()).Apply(Rows());
+      var applied = On(Detail()).Of(Point().Text()).Apply(RowSheet());
 
       Assert.Equal("Detail", applied.Value);
       Assert.Equal(1, applied.Offset.Row);
       Assert.Equal(0, applied.Offset.Column);
 
-      Assert.Equal(3, On(Detail()).Of(Range(b => b.Height)).Map(Rows()));
+      Assert.Equal(3, On(Detail()).Of(Range(b => b.Height)).Map(RowSheet()));
     }
 
     [Fact]
     public void On_LandsOnTheMatchedColumnAndOwnsIt()
     {
       // One word, both axes: occupancy has no direction, so the argument's type is what says which.
-      var applied = On(DetailColumn()).Of(Point().Text()).Apply(Columns());
+      var applied = On(DetailColumn()).Of(Point().Text()).Apply(ColumnSheet());
 
       Assert.Equal("Detail", applied.Value);
       Assert.Equal(1, applied.Offset.Column);
       Assert.Equal(0, applied.Offset.Row);
 
-      Assert.Equal(3, On(DetailColumn()).Of(Range(b => b.Width)).Map(Columns()));
+      Assert.Equal(3, On(DetailColumn()).Of(Range(b => b.Width)).Map(ColumnSheet()));
     }
 
     // --- Below and RightOf: exactly one beyond ---------------------------------------------------------
@@ -76,7 +76,7 @@ namespace Unrect.Tests.Projections
     {
       // The doc pins what the English leaves loose. "Below" could mean anywhere under the match; it
       // means the very next row — the matched row's own height, never a step the declaration chose.
-      var applied = Below(Detail()).Of(Point().Text()).Apply(Rows());
+      var applied = Below(Detail()).Of(Point().Text()).Apply(RowSheet());
 
       Assert.Equal("a", applied.Value);
       Assert.Equal(2, applied.Offset.Row);
@@ -84,27 +84,27 @@ namespace Unrect.Tests.Projections
 
       // Said the other way, so a regression in either operator shows up here: one more than On.
       Assert.Equal(
-        On(Detail()).Of(Point().Text()).Apply(Rows()).Offset.Row + 1,
+        On(Detail()).Of(Point().Text()).Apply(RowSheet()).Offset.Row + 1,
         applied.Offset.Row);
 
       // ...and the matched row is outside the extent, where On had it inside.
-      Assert.Equal(2, Below(Detail()).Of(Range(b => b.Height)).Map(Rows()));
+      Assert.Equal(2, Below(Detail()).Of(Range(b => b.Height)).Map(RowSheet()));
     }
 
     [Fact]
     public void RightOf_StartsExactlyOneColumnRightOfTheMatch()
     {
-      var applied = RightOf(DetailColumn()).Of(Point().Text()).Apply(Columns());
+      var applied = RightOf(DetailColumn()).Of(Point().Text()).Apply(ColumnSheet());
 
       Assert.Equal("a", applied.Value);
       Assert.Equal(2, applied.Offset.Column);
       Assert.Equal(0, applied.Offset.Row);
 
       Assert.Equal(
-        On(DetailColumn()).Of(Point().Text()).Apply(Columns()).Offset.Column + 1,
+        On(DetailColumn()).Of(Point().Text()).Apply(ColumnSheet()).Offset.Column + 1,
         applied.Offset.Column);
 
-      Assert.Equal(2, RightOf(DetailColumn()).Of(Range(b => b.Width)).Map(Columns()));
+      Assert.Equal(2, RightOf(DetailColumn()).Of(Range(b => b.Width)).Map(ColumnSheet()));
     }
 
     // --- The direction is the sheet's, not the flow's ---------------------------------------------------
@@ -157,8 +157,8 @@ namespace Unrect.Tests.Projections
       // The half of the old replacement pin that survives the refusal, and the vocabulary's answer
       // to "start there, then go on a bit": movements compose, so the anchor remains the
       // projection's one statement of where it starts and the step is measured from it.
-      Assert.Equal("b", Below(Detail()).Down(1).Of(Point().Text()).Map(Rows()));
-      Assert.Equal("a", On(Detail()).Down(1).Of(Point().Text()).Map(Rows()));
+      Assert.Equal("b", Below(Detail()).Down(1).Of(Point().Text()).Map(RowSheet()));
+      Assert.Equal("a", On(Detail()).Down(1).Of(Point().Text()).Map(RowSheet()));
     }
 
     // A second placement over an anchor — Below(m).OffsetBy(…), On(m).OffsetBy(…) — was likewise a
@@ -181,7 +181,7 @@ namespace Unrect.Tests.Projections
       });
 
       Assert.Equal(new[] { "Investor", "Amount" }, Table(t => t.ColumnNames).Map(space));
-      Assert.Equal(new[] { "Acme", "10" }, On(RowContaining("Acme")).Of(Table(t => t.ColumnNames)).Map(space));
+      Assert.Equal(new[] { "Acme", "10" }, On(Rows.Containing("Acme")).Of(Table(t => t.ColumnNames)).Map(space));
     }
 
     [Fact]
@@ -190,15 +190,15 @@ namespace Unrect.Tests.Projections
       // An anchor replaces the OFFSET and nothing else. Placement is two independent halves, and
       // .Sized is the other half's own replace — so an extent the projection declared is still its
       // extent wherever the landmark puts it.
-      var tall = Sized(Extent(1, 2)).Of(Range(b => (b.Width, b.Height)));
+      var tall = Sized(Extent.Of(1, 2)).Of(Range(b => (b.Width, b.Height)));
 
-      Assert.Equal((1, 2), On(Detail()).Of(tall).Map(Rows()));
-      Assert.Equal((1, 2), Below(Detail()).Of(tall).Map(Rows()));
+      Assert.Equal((1, 2), On(Detail()).Of(tall).Map(RowSheet()));
+      Assert.Equal((1, 2), Below(Detail()).Of(tall).Map(RowSheet()));
 
-      var wide = Sized(Extent(2, 1)).Of(Range(b => (b.Width, b.Height)));
+      var wide = Sized(Extent.Of(2, 1)).Of(Range(b => (b.Width, b.Height)));
 
-      Assert.Equal((2, 1), On(DetailColumn()).Of(wide).Map(Columns()));
-      Assert.Equal((2, 1), RightOf(DetailColumn()).Of(wide).Map(Columns()));
+      Assert.Equal((2, 1), On(DetailColumn()).Of(wide).Map(ColumnSheet()));
+      Assert.Equal((2, 1), RightOf(DetailColumn()).Of(wide).Map(ColumnSheet()));
     }
 
     // --- A landmark that matches nothing ------------------------------------------------------------------
@@ -209,19 +209,19 @@ namespace Unrect.Tests.Projections
       // Loud because it means the section the declaration describes is not the section in the file.
       Assert.Contains(
         "no row containing 'Nope' exists in the available space",
-        Miss(On(RowContaining("Nope")).Of(Point().Text()), Rows()));
+        Miss(On(Rows.Containing("Nope")).Of(Point().Text()), RowSheet()));
 
       Assert.Contains(
         "no row containing 'Nope' exists in the available space",
-        Miss(Below(RowContaining("Nope")).Of(Point().Text()), Rows()));
+        Miss(Below(Rows.Containing("Nope")).Of(Point().Text()), RowSheet()));
 
       Assert.Contains(
         "no column containing 'Nope' exists in the available space",
-        Miss(On(ColumnContaining("Nope")).Of(Point().Text()), Columns()));
+        Miss(On(Columns.Containing("Nope")).Of(Point().Text()), ColumnSheet()));
 
       Assert.Contains(
         "no column containing 'Nope' exists in the available space",
-        Miss(RightOf(ColumnContaining("Nope")).Of(Point().Text()), Columns()));
+        Miss(RightOf(Columns.Containing("Nope")).Of(Point().Text()), ColumnSheet()));
     }
 
     [Fact]
@@ -230,24 +230,24 @@ namespace Unrect.Tests.Projections
       // Message identity, not merely a shared phrase: the renovation moved the spelling and must
       // not have moved the diagnostic. A matcher only locates and reports absence, and it reports
       // the same absence whether a modifier or a raw lift asked it.
-      var row = RowContaining("Nope");
-      var column = ColumnContaining("Nope");
+      var row = Rows.Containing("Nope");
+      var column = Columns.Containing("Nope");
 
       Assert.Equal(
-        Miss(OffsetBy(OffsetStrategies.To(row)).Of(Point().Text()), Rows()),
-        Miss(On(row).Of(Point().Text()), Rows()));
+        Miss(OffsetBy(OffsetStrategies.To(row)).Of(Point().Text()), RowSheet()),
+        Miss(On(row).Of(Point().Text()), RowSheet()));
 
       Assert.Equal(
-        Miss(OffsetBy(OffsetStrategies.Past(row)).Of(Point().Text()), Rows()),
-        Miss(Below(row).Of(Point().Text()), Rows()));
+        Miss(OffsetBy(OffsetStrategies.Past(row)).Of(Point().Text()), RowSheet()),
+        Miss(Below(row).Of(Point().Text()), RowSheet()));
 
       Assert.Equal(
-        Miss(OffsetBy(OffsetStrategies.To(column)).Of(Point().Text()), Columns()),
-        Miss(On(column).Of(Point().Text()), Columns()));
+        Miss(OffsetBy(OffsetStrategies.To(column)).Of(Point().Text()), ColumnSheet()),
+        Miss(On(column).Of(Point().Text()), ColumnSheet()));
 
       Assert.Equal(
-        Miss(OffsetBy(OffsetStrategies.Past(column)).Of(Point().Text()), Columns()),
-        Miss(RightOf(column).Of(Point().Text()), Columns()));
+        Miss(OffsetBy(OffsetStrategies.Past(column)).Of(Point().Text()), ColumnSheet()),
+        Miss(RightOf(column).Of(Point().Text()), ColumnSheet()));
     }
 
     [Fact]
@@ -255,7 +255,7 @@ namespace Unrect.Tests.Projections
     {
       // A disagreement about the data rather than a broken projection, so a tolerance boundary is
       // allowed to take it — as a Warning that still carries the matcher's own words.
-      var result = Below(RowContaining("Nope")).Of(Point().Text()).Optional().MapWithDiagnostics(Rows());
+      var result = Below(Rows.Containing("Nope")).Of(Point().Text()).Optional().MapWithDiagnostics(RowSheet());
 
       Assert.Null(result.Value);
       Assert.Contains(
@@ -273,10 +273,10 @@ namespace Unrect.Tests.Projections
       var row = Detail();
       var column = DetailColumn();
 
-      AssertSameOffset(OffsetBy(OffsetStrategies.To(row)).Of(Point().Text()), On(row).Of(Point().Text()), Rows());
-      AssertSameOffset(OffsetBy(OffsetStrategies.Past(row)).Of(Point().Text()), Below(row).Of(Point().Text()), Rows());
-      AssertSameOffset(OffsetBy(OffsetStrategies.To(column)).Of(Point().Text()), On(column).Of(Point().Text()), Columns());
-      AssertSameOffset(OffsetBy(OffsetStrategies.Past(column)).Of(Point().Text()), RightOf(column).Of(Point().Text()), Columns());
+      AssertSameOffset(OffsetBy(OffsetStrategies.To(row)).Of(Point().Text()), On(row).Of(Point().Text()), RowSheet());
+      AssertSameOffset(OffsetBy(OffsetStrategies.Past(row)).Of(Point().Text()), Below(row).Of(Point().Text()), RowSheet());
+      AssertSameOffset(OffsetBy(OffsetStrategies.To(column)).Of(Point().Text()), On(column).Of(Point().Text()), ColumnSheet());
+      AssertSameOffset(OffsetBy(OffsetStrategies.Past(column)).Of(Point().Text()), RightOf(column).Of(Point().Text()), ColumnSheet());
     }
 
     [Fact]
@@ -284,10 +284,10 @@ namespace Unrect.Tests.Projections
     {
       // The guard on the test above: if both modifiers were wired to the same lift it would still
       // pass, so pin that the two genuinely disagree on this grid.
-      Assert.Equal("Detail", On(Detail()).Of(Point().Text()).Map(Rows()));
-      Assert.Equal("a", Below(Detail()).Of(Point().Text()).Map(Rows()));
-      Assert.Equal("Detail", On(DetailColumn()).Of(Point().Text()).Map(Columns()));
-      Assert.Equal("a", RightOf(DetailColumn()).Of(Point().Text()).Map(Columns()));
+      Assert.Equal("Detail", On(Detail()).Of(Point().Text()).Map(RowSheet()));
+      Assert.Equal("a", Below(Detail()).Of(Point().Text()).Map(RowSheet()));
+      Assert.Equal("Detail", On(DetailColumn()).Of(Point().Text()).Map(ColumnSheet()));
+      Assert.Equal("a", RightOf(DetailColumn()).Of(Point().Text()).Map(ColumnSheet()));
     }
 
     // --- Guards ---------------------------------------------------------------------------------------------

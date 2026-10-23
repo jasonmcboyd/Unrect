@@ -27,7 +27,7 @@ namespace Unrect.Tests.Machines
     {
       var cells = new object?[,] { { "A" }, { "---" }, { "B" }, { "---" }, { "C" } };
 
-      Assert.Equal(new[] { "A", "B", "C" }, Items(cells, OffsetStrategies.Past(RowSaying("---"))));
+      Assert.Equal(new[] { "A", "B", "C" }, Items(cells, OffsetStrategies.Past(Rows.Saying("---"))));
     }
 
     [Fact]

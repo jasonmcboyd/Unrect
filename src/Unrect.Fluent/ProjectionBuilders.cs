@@ -125,18 +125,6 @@ namespace Unrect.Fluent
     public static OffsetStage<TSpace> SkipToFirstNonBlankCell() => Enter(Step.SkipToFirstNonBlankCell());
 
     /// <summary>
-    /// Steps over the blank rows and then the blank columns in front of the section — the one-word
-    /// entry for the instinct the default deliberately refuses.
-    /// <para>
-    /// Silence is adjacency: a declaration that says nothing starts exactly where the one before it
-    /// left off, because the blank bands a <c>separatedBy</c> counts on, and the empty region an
-    /// <c>Optional</c> section needs to see, are content rather than noise. Skipping them is
-    /// therefore a declared exception like any other, and this is how it is declared.
-    /// </para>
-    /// </summary>
-    public static OffsetStage<TSpace> SkipEmptyRowsAndColumns() => AfterBlankRows().AfterBlankColumns();
-
-    /// <summary>
     /// Opens a pipeline whose section starts <paramref name="rows"/> rows down. A movement composes onto
     /// an offset an earlier stage declared, so <c>Down(1).On(mark)</c> is refused (an anchor is a root)
     /// while <c>On(mark).Down(1)</c> reads cumulatively; a movement with nothing before it —

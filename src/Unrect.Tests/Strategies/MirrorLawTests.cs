@@ -205,8 +205,8 @@ namespace Unrect.Tests.Strategies
       // ...and the by-text spelling of the same pair, which addresses its own cell.
       Mirrored(
         WithCells,
-        ProjectionBuilders<ICellSpace>.TakeRowsToText(0, "m").SelectLines,
-        ProjectionBuilders<ICellSpace>.TakeColumnsToText(0, "m").SelectLines);
+        ProjectionBuilders<ICellSpace>.Rows.TakeToText(0, "m").SelectLines,
+        ProjectionBuilders<ICellSpace>.Columns.TakeToText(0, "m").SelectLines);
     }
 
     // --- Explicit counts ---------------------------------------------------------------------------------

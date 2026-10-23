@@ -88,7 +88,7 @@ namespace Unrect.Tests.Streaming
       // The site the old code got wrong. RowsWhileAnyIsNotBlank scans rows to decide how tall the region
       // is — reading cells to make a PLACEMENT decision, which the fault flag did not used to
       // cover.
-      AssertSurfacedAsAFault(fault, space => Sized(RowsWhileAnyIsNotBlank()).Of(Range(block => block.Height)).Map(space));
+      AssertSurfacedAsAFault(fault, space => Sized(Rows.WhileAnyIsNotBlank()).Of(Range(block => block.Height)).Map(space));
     }
 
     [Theory]
@@ -106,7 +106,7 @@ namespace Unrect.Tests.Streaming
     {
       // A landmark searches for a row, so it reads its way down the sheet; a search that fails
       // because the disk did is not the same as a search that finished and found nothing.
-      AssertSurfacedAsAFault(fault, space => On(RowContaining("nowhere")).Of(TextCell()).Map(space));
+      AssertSurfacedAsAFault(fault, space => On(Rows.Containing("nowhere")).Of(TextCell()).Map(space));
     }
 
     [Theory]
@@ -115,7 +115,7 @@ namespace Unrect.Tests.Streaming
     {
       // The fourth wrapping site, and the one that needed a fault-carrying overload of Failure to
       // reach at all.
-      AssertSurfacedAsAFault(fault, space => VerticalRepeat(Row(row => row[0].Text()), separatedBy: BlankRows()).Map(space));
+      AssertSurfacedAsAFault(fault, space => VerticalRepeat(Row(row => row[0].Text()), separatedBy: Rows.SkipBlank()).Map(space));
     }
 
     [Theory]
@@ -180,15 +180,15 @@ namespace Unrect.Tests.Streaming
       // wrong answer.
       AssertSurfacedAsAFault(
         fault,
-        space => Sized(RowsWhileAnyIsNotBlank()).Of(Range(block => block.Height)).Optional().Map(space));
+        space => Sized(Rows.WhileAnyIsNotBlank()).Of(Range(block => block.Height)).Optional().Map(space));
 
       AssertSurfacedAsAFault(
         fault,
-        space => On(RowContaining("nowhere")).Of(TextCell()).Optional().Map(space));
+        space => On(Rows.Containing("nowhere")).Of(TextCell()).Optional().Map(space));
 
       AssertSurfacedAsAFault(
         fault,
-        space => VerticalRepeat(Row(row => row[0].Text()), separatedBy: BlankRows()).Optional().Map(space));
+        space => VerticalRepeat(Row(row => row[0].Text()), separatedBy: Rows.SkipBlank()).Optional().Map(space));
     }
 
     [Fact]
@@ -238,7 +238,7 @@ namespace Unrect.Tests.Streaming
     [Fact]
     public void AMissingAnchorIsStillAbsorbed()
     {
-      var value = On(RowContaining("absent")).Of(TextCell()).Optional().Map(Sound());
+      var value = On(Rows.Containing("absent")).Of(TextCell()).Optional().Map(Sound());
 
       Assert.Null(value);
     }
@@ -246,7 +246,7 @@ namespace Unrect.Tests.Streaming
     [Fact]
     public void AnExtentLargerThanTheSpaceIsStillAbsorbed()
     {
-      var value = Sized(Extent(9, 9)).Of(Range(block => block.Height)).Optional().Map(Sound());
+      var value = Sized(Extent.Of(9, 9)).Of(Range(block => block.Height)).Optional().Map(Sound());
 
       Assert.Equal(0, value);
     }

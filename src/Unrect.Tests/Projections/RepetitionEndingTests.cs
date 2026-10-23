@@ -32,7 +32,7 @@ namespace Unrect.Tests.Projections
 
 
     /// <summary>The discovered extent: full width, and as many leading rows as hold anything.</summary>
-    private static IProjectionDefinition<ICellSpace, int> Rows() => Range(RowsWhileAnyIsNotBlank(), b => b.Height);
+    private static IProjectionDefinition<ICellSpace, int> RowCount() => Range(Rows.WhileAnyIsNotBlank(), b => b.Height);
 
     /// <summary>A cell read as text — which is a failure over <see cref="Numbers"/>, and an absorbable one.</summary>
     private static IProjectionDefinition<ICellSpace, string> Title() => TextCell();
@@ -90,7 +90,7 @@ namespace Unrect.Tests.Projections
     {
       // This run ends for the same arithmetic reason as the one above — an item that consumed
       // nothing — and says nothing, because the item looked and the data held none of these.
-      var result = VerticalRepeat(Rows()).MapWithDiagnostics(Blank());
+      var result = VerticalRepeat(RowCount()).MapWithDiagnostics(Blank());
 
       Assert.Empty(result.Value);
       Assert.DoesNotContain(result.Diagnostics, d => d.Message.Contains("absorbed"));
@@ -144,7 +144,7 @@ namespace Unrect.Tests.Projections
     /// whatever the boundary made of it. One row per occurrence, whether the row read or was
     /// tolerated.
     /// </summary>
-    private static IProjectionDefinition<ICellSpace, int> ToleratedRow() => Sized(Extent(1, 1)).Of(Point().Integer().Optional());
+    private static IProjectionDefinition<ICellSpace, int> ToleratedRow() => Sized(Extent.Of(1, 1)).Of(Point().Integer().Optional());
 
     [Fact]
     public void AnAbsorbedItemThatStillConsumedItsExtentGoesOnRepeating()

@@ -178,7 +178,7 @@ namespace Unrect.Tests.Projections
       // not a wrapper segment followed by an anonymous child.
       var selected = Point().Text().Select(s => s);
       var padded = Point().Text().Padded(0);
-      var bounded = Until(RowContaining("Nothing here"), orEnd: true).Of(Point().Text());
+      var bounded = Until(Rows.Containing("Nothing here"), orEnd: true).Of(Point().Text());
 
       Assert.Equal("VerticalFlow -> 'selected' (Text)", Failure(VerticalFlow(v =>
       {
@@ -300,7 +300,7 @@ namespace Unrect.Tests.Projections
       var space = Mixed(new object?[,] { { "a" }, { null }, { "b" }, { null }, { 9 } });
 
       var detail = Point().Text();
-      var details = VerticalRepeat(detail, separatedBy: BlankRows());
+      var details = VerticalRepeat(detail, separatedBy: Rows.SkipBlank());
 
       var failure = Assert.Throws<ProjectionException>(() =>
         VerticalFlow(v => string.Join(",", v.Next(details))).Map(space));
@@ -333,9 +333,9 @@ namespace Unrect.Tests.Projections
 
       var detail = Point().Text();
 
-      Assert.Equal(new[] { "a", "b" }, VerticalRepeat(detail, separatedBy: BlankRows(), atLeast: 1).Map(space));
-      Assert.Equal(new[] { "a", "b" }, VerticalRepeat(detail, separatedBy: BlankRows()).Map(space));
-      Assert.Equal(new[] { "a", "b" }, VerticalRepeat(detail, atLeast: 1, separatedBy: BlankRows()).Map(space));
+      Assert.Equal(new[] { "a", "b" }, VerticalRepeat(detail, separatedBy: Rows.SkipBlank(), atLeast: 1).Map(space));
+      Assert.Equal(new[] { "a", "b" }, VerticalRepeat(detail, separatedBy: Rows.SkipBlank()).Map(space));
+      Assert.Equal(new[] { "a", "b" }, VerticalRepeat(detail, atLeast: 1, separatedBy: Rows.SkipBlank()).Map(space));
     }
 
     // --- Capture reaches a fallback as well -----------------------------------------------------------------------

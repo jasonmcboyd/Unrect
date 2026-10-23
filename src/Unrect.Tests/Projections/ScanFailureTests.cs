@@ -59,7 +59,7 @@ namespace Unrect.Tests.Projections
       // The sentence names the area strategy, even though the break surfaced while the projection's
       // region was being placed. If this ever read "the projection threw", a declaration would be
       // blamed for its data source's rule.
-      var failure = Failure(Range(RowsWhileAny(BreaksOn(LateMarker)), _ => 0));
+      var failure = Failure(Range(Rows.WhileAny(BreaksOn(LateMarker)), _ => 0));
 
       Assert.Equal("its extent strategy threw InvalidOperationException: no", Problem(failure));
       Assert.Equal("Range", failure.Path);
@@ -69,7 +69,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ABreakInsideAFlowChildCarriesTheChildsPath()
     {
-      var projection = VerticalFlow(v => v.Next(Range(1, 1, b => b[0, 0].Integer())) + v.Next(Range(RowsWhileAny(BreaksOn(LateMarker)), _ => 0).Named("body")));
+      var projection = VerticalFlow(v => v.Next(Range(1, 1, b => b[0, 0].Integer())) + v.Next(Range(Rows.WhileAny(BreaksOn(LateMarker)), _ => 0).Named("body")));
 
       // The last segment carries the kind alongside the name because the failure is the leaf's own.
       Assert.Equal("VerticalFlow -> 'body' (Range)", Failure(projection).Path);
@@ -83,13 +83,13 @@ namespace Unrect.Tests.Projections
     [InlineData("Choice")]
     public void AnIoFaultInAScanIsNotAbsorbedByAToleranceBoundary(string boundary)
     {
-      var broken = Range(RowsWhileAny(FaultsOn(LateMarker)), b => b.Height);
+      var broken = Range(Rows.WhileAny(FaultsOn(LateMarker)), b => b.Height);
 
       IProjectionDefinition<ICellSpace, int> projection = boundary switch
       {
         "Optional" => broken.Optional(),
         "Else" => broken.Else(-1),
-        "Choice" => Choice(broken, Range(WholeExtent(), b => b.Height)),
+        "Choice" => Choice(broken, Range(Extent.Whole(), b => b.Height)),
 
         _ => throw new ArgumentOutOfRangeException(nameof(boundary), boundary, "No such boundary."),
       };
@@ -108,7 +108,7 @@ namespace Unrect.Tests.Projections
     public void AnAbsorbableBreakInAScanIsAbsorbed(string boundary)
     {
       // The warning names the projection that failed, not the boundary that caught it.
-      var broken = Range(RowsWhileAny(BreaksOn(LateMarker)), _ => 0);
+      var broken = Range(Rows.WhileAny(BreaksOn(LateMarker)), _ => 0);
       var projection = boundary == "Optional" ? broken.Optional() : broken.Else(-1);
 
       var result = projection.MapWithDiagnostics(Sheet());
@@ -126,8 +126,8 @@ namespace Unrect.Tests.Projections
       // broke, so if the collector were not rewound its near-miss would be joined by whatever it
       // noticed on the way.
       var projection = Choice(
-        Range(RowsWhileAny(BreaksOn(LateMarker)), _ => 0).Named("first"),
-        Range(WholeExtent(), b => b.Height).Named("second"));
+        Range(Rows.WhileAny(BreaksOn(LateMarker)), _ => 0).Named("first"),
+        Range(Extent.Whole(), b => b.Height).Named("second"));
 
       var result = projection.MapWithDiagnostics(Sheet());
 
@@ -155,7 +155,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ARepeatOfDiscoveredItemsStopsRatherThanThrowing()
     {
-      var repeat = VerticalRepeat(Range(RowsWhileAnyIsNotBlank(), b => b.Height), separatedBy: BlankRows());
+      var repeat = VerticalRepeat(Range(Rows.WhileAnyIsNotBlank(), b => b.Height), separatedBy: Rows.SkipBlank());
 
       IReadOnlyList<int> items = repeat.Map(TwoBlocks());
 

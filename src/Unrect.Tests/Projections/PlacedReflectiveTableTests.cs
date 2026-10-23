@@ -37,7 +37,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void BelowAMarkThenTableWithABindReadsTheSameRecords()
     {
-      var placed = Below(RowSaying("Report")).Table<Line>(bind => bind.Column(l => l.Amount, "Amount"));
+      var placed = Below(Rows.Saying("Report")).Table<Line>(bind => bind.Column(l => l.Amount, "Amount"));
       var bare = Down(1).Table<Line>();
 
       Assert.Equal(bare.Map(Mixed(Sheet)), placed.Map(Mixed(Sheet)));

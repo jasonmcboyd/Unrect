@@ -47,7 +47,7 @@ namespace Unrect.Fluent
 
     /// <summary>One row, as wide as <paramref name="columns"/> selects.</summary>
     public static IProjectionDefinition<TSpace, T> Row<T>(ILineStrategy<TSpace> columns, Func<CellStrip<TSpace>, T> project)
-      => Strip(Orientation.Horizontal, project, RowsThenColumns(RowStrategies.TakeRows<TSpace>(1), LineAxis.Require(columns, Orientation.Horizontal, nameof(columns))), "Row");
+      => Strip(Orientation.Horizontal, project, Rows.ThenColumns(RowStrategies.TakeRows<TSpace>(1), LineAxis.Require(columns, Orientation.Horizontal, nameof(columns))), "Row");
 
     /// <summary>One column, as tall as the leading rows that carry values.</summary>
     public static IProjectionDefinition<TSpace, T> Column<T>(Func<CellStrip<TSpace>, T> project)
@@ -59,7 +59,7 @@ namespace Unrect.Fluent
 
     /// <summary>One column, as tall as <paramref name="rows"/> selects.</summary>
     public static IProjectionDefinition<TSpace, T> Column<T>(ILineStrategy<TSpace> rows, Func<CellStrip<TSpace>, T> project)
-      => Strip(Orientation.Vertical, project, ColumnsThenRows(ColumnStrategies.TakeColumns<TSpace>(1), LineAxis.Require(rows, Orientation.Vertical, nameof(rows))), "Column");
+      => Strip(Orientation.Vertical, project, Columns.ThenRows(ColumnStrategies.TakeColumns<TSpace>(1), LineAxis.Require(rows, Orientation.Vertical, nameof(rows))), "Column");
 
     /// <summary>
     /// A rectangular region, read through a <see cref="CellBlock{TSpace}"/>: the maximal leading block of
@@ -88,15 +88,15 @@ namespace Unrect.Fluent
     /// consumed once, and rendered into failure paths like anything else. Put a section under one
     /// with <c>Under</c>:
     /// <code>
-    /// var lines   = Range(RowsWhileAnyIsNotBlank(), b =&gt; b.Rows);
+    /// var lines   = Range(Rows.WhileAnyIsNotBlank(), b =&gt; b.Rows);
     /// var section = lines.Under(Caption("K-1 Lines 1-21"))
-    ///                    .Until(RowContaining("Portfolio Income"), orEnd: true);
+    ///                    .Until(Rows.Containing("Portfolio Income"), orEnd: true);
     /// </code>
     /// </para>
     /// <para>
     /// Matching is on what the cell SAYS, whole-cell, trimmed and case-insensitive, whatever the
     /// cell's kind — a caption that is a year matches "2024" — and it is the same rule
-    /// <see cref="RowSaying"/> uses, so a caption and a bound written from the same literal cannot
+    /// <see cref="Rows.Saying"/> uses, so a caption and a bound written from the same literal cannot
     /// disagree. Share the literal with a <c>const</c> when both are needed.
     /// </para>
     /// </summary>
@@ -162,6 +162,11 @@ namespace Unrect.Fluent
     /// no header row has none to hand it, and declaring one is an error where it is written.
     /// </param>
     /// <param name="eachRow">Given this file's captions, the projection that reads one record.</param>
+    /// <param name="onBlank">
+    /// How a fully-blank body row is treated: <c>Stop</c> (the default, self-bounding), <c>Skip</c>,
+    /// <c>Fault</c>, or <c>Tolerate</c>. Every non-<c>Stop</c> policy is not self-bounding, so the
+    /// table runs to the enclosing edge (declare <c>Until</c> or a count to bound it sooner).
+    /// </param>
     /// <param name="declared">
     /// Supplied by the compiler as the text of the <paramref name="eachRow"/> argument, so a bind
     /// passed as a method group labels every record with its name.
@@ -169,31 +174,14 @@ namespace Unrect.Fluent
     public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(
       int headerRows,
       Func<LabelMap, IProjectionDefinition<TSpace, T>> eachRow,
-      [CallerArgumentExpression("eachRow")] string? declared = null)
-      => Table(headerRows, eachRow, BlankRowStrategy.Stop, declared);
-
-    /// <summary>
-    /// <inheritdoc cref="Table{T}(int, Func{LabelMap, IProjectionDefinition{TSpace, T}}, string)"/> The
-    /// <paramref name="onBlank"/> strategy says how a fully-blank body row is treated: <c>Stop</c>
-    /// (the default, self-bounding), <c>Skip</c>, <c>Fault</c>, or <c>Tolerate</c>. Every
-    /// non-<c>Stop</c> policy is not self-bounding, so the table runs to the enclosing edge (declare
-    /// <c>Until</c> or a count to bound it sooner).
-    /// </summary>
-    /// <typeparam name="T">What one record reads.</typeparam>
-    /// <param name="headerRows">How many rows to read as the header; a bind needs captions, so this must be 1.</param>
-    /// <param name="eachRow">Given this file's captions, the projection that reads one record.</param>
-    /// <param name="onBlank">How a fully-blank body row is treated.</param>
-    /// <param name="declared">Supplied by the compiler as the text of the <paramref name="eachRow"/> argument.</param>
-    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(
-      int headerRows,
-      Func<LabelMap, IProjectionDefinition<TSpace, T>> eachRow,
-      BlankRowStrategy onBlank,
+      BlankRowStrategy? onBlank = null,
       [CallerArgumentExpression("eachRow")] string? declared = null)
     {
       if (eachRow is null)
         throw new ArgumentNullException(nameof(eachRow));
 
       var rows = ValidateBindHeaderRows(headerRows);
+      var blank = onBlank ?? BlankRowStrategy.Stop;
 
       // The bind runs when the header closes, inside the labelled composite's machine, so a bind
       // that throws is wrapped exactly as any other user code the engine calls: a broken read — an
@@ -202,11 +190,11 @@ namespace Unrect.Fluent
       var composed = new LabelledDefinition<TSpace, IReadOnlyList<T>>(
         LabelAxis.Column,
         ColumnLabels(rows).AsScaffolding(),
-        labels => eachRow(labels) is { } row ? VerticalBands(1, row, onBlank.IsStop ? null : onBlank, declared).AsScaffolding() : null,
+        labels => eachRow(labels) is { } row ? VerticalBands(1, row, blank.IsStop ? null : blank, declared).AsScaffolding() : null,
         "the row projection is built from the header's captions; it is known only once a header is read",
         Placement<TSpace>.Default).AsScaffolding();
 
-      return new UnitDefinition<TSpace, IReadOnlyList<T>>(composed, Array.Empty<Child>(), "Table", TablePlacement(onBlank));
+      return new UnitDefinition<TSpace, IReadOnlyList<T>>(composed, Array.Empty<Child>(), "Table", TablePlacement(blank));
     }
 
     /// <summary>
@@ -236,8 +224,8 @@ namespace Unrect.Fluent
     ///
     ///   return o.Build(read =&gt; new Allocation(Fund: read.Of(fund), Primary: read.Of(primary)));
     /// }))
-    ///   .Below(RowContaining("ACCOUNT"))
-    ///   .Sized(RowsWhileAnyIsNotBlank())
+    ///   .Below(Rows.Containing("ACCOUNT"))
+    ///   .Sized(Rows.WhileAnyIsNotBlank())
     /// </code>
     /// A flow full of <c>Right(n)</c>, or an overlay with none, is worth a second look: flows are
     /// relative and overlays are grid-absolute, and reading both value and formula out of one cell
@@ -248,7 +236,7 @@ namespace Unrect.Fluent
     /// the table; a projection that discovers its own extent measures <em>itself</em> inside that
     /// band rather than reporting it — <c>Row(cells =&gt; cells.Count)</c> is "as wide as the
     /// leading columns that carry values", which over a sparse export whose first column is empty
-    /// is zero. To read the band as it was handed over, say so: <c>Range(WholeExtent(), …)</c>, or
+    /// is zero. To read the band as it was handed over, say so: <c>Range(Extent.Whole(), …)</c>, or
     /// an <c>Overlay</c> whose children place themselves in it.
     /// </para>
     /// <para>
@@ -260,7 +248,7 @@ namespace Unrect.Fluent
     /// </para>
     /// <para>
     /// A header is consumed here rather than read: a row that reads <em>this file's</em> captions is
-    /// the rung above, <see cref="Table{T}(int, Func{LabelMap, IProjectionDefinition{TSpace, T}}, string)"/>, and
+    /// the rung above, <see cref="Table{T}(int, Func{LabelMap, IProjectionDefinition{TSpace, T}}, BlankRowStrategy?, string)"/>, and
     /// here a headered table means "skip that row".
     /// </para>
     /// </summary>
@@ -329,89 +317,68 @@ namespace Unrect.Fluent
     /// handed over and the reading is yours. What a lambda does is invisible to the type system, to
     /// tooling and to any analysis of the declaration; that is the standing trade, and this is
     /// where it is paid.
-    /// </summary>
-    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(Func<TableRow<TSpace>, T> project) => Table(1, project);
-
-    /// <inheritdoc cref="Table{T}(Func{TableRow{TSpace}, T})"/>
-    /// <typeparam name="T">What one row reads.</typeparam>
-    /// <param name="headerRows">How many rows to consume as the header, 0 or 1.</param>
-    /// <param name="project">The reading applied to each body row.</param>
-    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(int headerRows, Func<TableRow<TSpace>, T> project)
-    {
-      if (project is null)
-        throw new ArgumentNullException(nameof(project));
-
-      return new TableViewDefinition<TSpace, IReadOnlyList<T>>(
-        ValidateHeaderRows(headerRows),
-        table => (IReadOnlyList<T>)table.Rows.Select(project).ToList(),
-        TablePlacement(),
-        "Table");
-    }
-
-    /// <summary>
-    /// <inheritdoc cref="Table{T}(Func{TableRow{TSpace}, T})"/> The <paramref name="onBlank"/> strategy says
-    /// how a fully-blank body row is treated: <c>Stop</c> (the default, self-bounding), <c>Skip</c>,
-    /// <c>Fault</c>, or <c>Tolerate</c>. Every non-<c>Stop</c> policy is not self-bounding, so the
-    /// table runs to the enclosing edge (declare <c>Until</c> or a count to bound it sooner).
+    /// <para>
+    /// A fully-blank body row is decided by one of two things, never both: <paramref name="onBlank"/>
+    /// says what the row IS — <c>Stop</c> (the default, self-bounding), <c>Skip</c>, <c>Fault</c>, or
+    /// <c>Tolerate</c>, every non-<c>Stop</c> policy running the table to the enclosing edge (declare
+    /// <c>Until</c> or a count to bound it sooner) — and <paramref name="blankRecord"/> says what it
+    /// BECOMES, a record usually built from the row's <see cref="TableRow{TSpace}.Index"/>, where
+    /// <c>Skip</c> would omit one.
+    /// </para>
     /// </summary>
     /// <typeparam name="T">What one row reads.</typeparam>
     /// <param name="project">The reading applied to each body row.</param>
     /// <param name="onBlank">How a fully-blank body row is treated.</param>
-    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(Func<TableRow<TSpace>, T> project, BlankRowStrategy onBlank)
-      => Table(1, project, onBlank);
+    /// <param name="blankRecord">The record produced for a fully-blank body row, in place of a policy.</param>
+    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(
+      Func<TableRow<TSpace>, T> project,
+      BlankRowStrategy? onBlank = null,
+      Func<TableRow<TSpace>, T>? blankRecord = null)
+      => Table(1, project, onBlank, blankRecord);
 
-    /// <inheritdoc cref="Table{T}(Func{TableRow{TSpace}, T}, BlankRowStrategy)"/>
+    /// <inheritdoc cref="Table{T}(Func{TableRow{TSpace}, T}, BlankRowStrategy?, Func{TableRow{TSpace}, T})"/>
     /// <typeparam name="T">What one row reads.</typeparam>
     /// <param name="headerRows">How many rows to consume as the header, 0 or 1.</param>
     /// <param name="project">The reading applied to each body row.</param>
     /// <param name="onBlank">How a fully-blank body row is treated.</param>
-    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(int headerRows, Func<TableRow<TSpace>, T> project, BlankRowStrategy onBlank)
+    /// <param name="blankRecord">The record produced for a fully-blank body row, in place of a policy.</param>
+    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(
+      int headerRows,
+      Func<TableRow<TSpace>, T> project,
+      BlankRowStrategy? onBlank = null,
+      Func<TableRow<TSpace>, T>? blankRecord = null)
     {
       if (project is null)
         throw new ArgumentNullException(nameof(project));
 
-      if (onBlank.IsStop)
-        return Table(headerRows, project);
+      if (blankRecord is not null)
+      {
+        if (onBlank is not null)
+          throw new ArgumentException("A blank row is either treated by a policy or projected to a record, not both.", nameof(blankRecord));
+
+        // Project continues past blanks, so it needs the run-to-edge extent; any non-Stop strategy
+        // selects ToEdgeBlock().
+        return new TableViewDefinition<TSpace, IReadOnlyList<T>>(
+          ValidateHeaderRows(headerRows),
+          table => (IReadOnlyList<T>)table.ClassifiedRows()
+            .Select(r => r.IsBlank ? blankRecord(r.Row) : project(r.Row)).ToList(),
+          TablePlacement(BlankRowStrategy.Skip),
+          "Table");
+      }
+
+      var blank = onBlank ?? BlankRowStrategy.Stop;
+
+      if (blank.IsStop)
+        return new TableViewDefinition<TSpace, IReadOnlyList<T>>(
+          ValidateHeaderRows(headerRows),
+          table => (IReadOnlyList<T>)table.Rows.Select(project).ToList(),
+          TablePlacement(),
+          "Table");
 
       return new TableViewDefinition<TSpace, IReadOnlyList<T>>(
         ValidateHeaderRows(headerRows),
-        table => (IReadOnlyList<T>)table.BodyRows(onBlank).Select(project).ToList(),
-        TablePlacement(onBlank),
-        "Table");
-    }
-
-    /// <summary>
-    /// <inheritdoc cref="Table{T}(Func{TableRow{TSpace}, T})"/> A fully-blank body row is projected to a
-    /// record by <paramref name="blankRecord"/> rather than skipped — where <c>Skip</c> omits an
-    /// entry, this includes one, usually built from the row's <see cref="TableRow{TSpace}.Index"/>. The
-    /// table runs to the enclosing edge (declare <c>Until</c> or a count to bound it sooner).
-    /// </summary>
-    /// <typeparam name="T">What one row reads.</typeparam>
-    /// <param name="project">The reading applied to each non-blank body row.</param>
-    /// <param name="blankRecord">The record produced for a fully-blank body row.</param>
-    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(Func<TableRow<TSpace>, T> project, Func<TableRow<TSpace>, T> blankRecord)
-      => Table(1, project, blankRecord);
-
-    /// <inheritdoc cref="Table{T}(Func{TableRow{TSpace}, T}, Func{TableRow{TSpace}, T})"/>
-    /// <typeparam name="T">What one row reads.</typeparam>
-    /// <param name="headerRows">How many rows to consume as the header, 0 or 1.</param>
-    /// <param name="project">The reading applied to each non-blank body row.</param>
-    /// <param name="blankRecord">The record produced for a fully-blank body row.</param>
-    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(int headerRows, Func<TableRow<TSpace>, T> project, Func<TableRow<TSpace>, T> blankRecord)
-    {
-      if (project is null)
-        throw new ArgumentNullException(nameof(project));
-
-      if (blankRecord is null)
-        throw new ArgumentNullException(nameof(blankRecord));
-
-      // Project continues past blanks, so it needs the run-to-edge extent; any non-Stop strategy
-      // selects ToEdgeBlock().
-      return new TableViewDefinition<TSpace, IReadOnlyList<T>>(
-        ValidateHeaderRows(headerRows),
-        table => (IReadOnlyList<T>)table.ClassifiedRows()
-          .Select(r => r.IsBlank ? blankRecord(r.Row) : project(r.Row)).ToList(),
-        TablePlacement(BlankRowStrategy.Skip),
+        table => (IReadOnlyList<T>)table.BodyRows(blank).Select(project).ToList(),
+        TablePlacement(blank),
         "Table");
     }
 
@@ -614,7 +581,7 @@ namespace Unrect.Fluent
     /// </para>
     /// <para>
     /// A run ends where the item stops placing, or where <c>.Until(landmark)</c> bounds it —
-    /// including <c>.Until(RowWhere(...), orEnd: true)</c> for "stop at a blank row", where
+    /// including <c>.Until(Rows.Where(...), orEnd: true)</c> for "stop at a blank row", where
     /// <c>orEnd</c> lets a run that reaches the sheet's edge without meeting one end there rather
     /// than fail for want of the landmark. A landmark is located before the walk begins, so such a
     /// bound reads ahead to it and the walk then reads behind that point. A blank band between
@@ -638,7 +605,7 @@ namespace Unrect.Fluent
     /// var item =
     ///   section.Select(s => (Section?)s)          // the section as it should be
     ///     .Else(Row(_ => (Section?)null))         // ... or just its label row, and a warning
-    ///     .On(RowContaining("Section"));          // ... starting at the next section label
+    ///     .On(Rows.Containing("Section"));          // ... starting at the next section label
     ///
     /// var sections = VerticalRepeat(item).Select(all => all.Where(s => s is not null).ToList());
     ///
@@ -820,7 +787,7 @@ namespace Unrect.Fluent
 
     /// <summary>One row, at the full available width — a caption row spans the sheet.</summary>
     private static ISizeStrategy<TSpace> FullRow()
-      => RowsThenColumns(RowStrategies.TakeRows<TSpace>(1), ColumnStrategies.AllColumns<TSpace>());
+      => Rows.ThenColumns(RowStrategies.TakeRows<TSpace>(1), ColumnStrategies.AllColumns<TSpace>());
 
     private static int NotNegative(int count, string parameter)
       => count >= 0 ? count : throw new ArgumentOutOfRangeException(parameter, count, "An offset cannot be negative.");

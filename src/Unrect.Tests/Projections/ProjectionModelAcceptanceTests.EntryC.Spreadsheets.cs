@@ -39,7 +39,7 @@ namespace Unrect.Tests.Projections
     /// <summary>
     /// The audited ledger, and the fourth acceptance declaration. Three column offsets written
     /// position-first, and the total line's anchor-then-movement read as one phrase —
-    /// <c>On(RowContaining("Total")).Right(3).Of(Point().Formula())</c>, which is where the section is,
+    /// <c>On(Rows.Containing("Total")).Right(3).Of(Point().Formula())</c>, which is where the section is,
     /// then what it reads.
     /// <para>
     /// <c>.Of</c> carries the backend's leaf here, and that is the boundary working as designed
@@ -58,7 +58,7 @@ namespace Unrect.Tests.Projections
         Formula: o.Next(Right(3).Of(Point().Formula()))));
 
       var lines = Table(headerRows: 1, eachRow: line);
-      var total = On(RowContaining("Total")).Right(3).Of(Point().Formula());
+      var total = On(Rows.Containing("Total")).Right(3).Of(Point().Formula());
 
       return VerticalFlow(v => new AuditedLedger(
         Lines: v.Next(lines),
@@ -75,7 +75,7 @@ namespace Unrect.Tests.Projections
       var sheet = SpreadsheetSpace.Create(TestData("formulas.xlsx"), "Formulas");
 
       IProjectionDefinition<ISpreadsheetSpace, string?> demanding =
-        On(RowContaining("Widget")).Right(3).Of(Point().Formula().Named("line formula"));
+        On(Rows.Containing("Widget")).Right(3).Of(Point().Formula().Named("line formula"));
 
       Assert.Equal(@"IF(B2>0,ROUND(B2*$C$2,2)+SUM($B$2:B2),""B2"")", demanding.Map(sheet));
       Assert.Equal("line formula", demanding.Name);

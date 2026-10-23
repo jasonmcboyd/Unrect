@@ -84,7 +84,7 @@ namespace Unrect.Tests.Projections
         { "bolt", "three" },
       });
 
-      var fluent = Below(RowSaying("Items")).Sized(RowsWhileAnyIsNotBlank()).Of(Table<Line>());
+      var fluent = Below(Rows.Saying("Items")).Sized(Rows.WhileAnyIsNotBlank()).Of(Table<Line>());
       var expected = new[] { new Line("bolt", 3), new Line("nut", 5) };
 
       AssertAgree(fluent, ByHand.PlacedTable(), sheet, expected, broken, (a, b) => a.SequenceEqual(b));
@@ -94,7 +94,7 @@ namespace Unrect.Tests.Projections
     public void ARepeatWithASeparatorAgrees()
     {
       var item = IntCell();
-      var fluent = VerticalRepeat(item, separatedBy: BlankRows());
+      var fluent = VerticalRepeat(item, separatedBy: Rows.SkipBlank());
 
       AssertAgree(
         fluent, ByHand.Repeated(ByHand.IntegerCell()),

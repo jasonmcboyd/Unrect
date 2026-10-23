@@ -39,7 +39,7 @@ namespace Unrect.Tests.Machines
       // function of the whole plane, its scan answers only at the end, and the block that carries
       // it is held and placed at close.
       var discovered = CostReport.Of(Range(b => b.Height));
-      var opaque = CostReport.Of(Sized(SelectSize(plane => new Size(1, 1))).Of(Range(b => b.Height)));
+      var opaque = CostReport.Of(Sized(Extent.Select(plane => new Size(1, 1))).Of(Range(b => b.Height)));
 
       Assert.True(discovered.Lines[0].Streams);
       Assert.Null(discovered.Lines[0].Hold);
@@ -68,7 +68,7 @@ namespace Unrect.Tests.Machines
     [Fact]
     public void AColumnLandmarkHoldsBecauseItsPlacementHasNoPerSpanFormAlongRows()
     {
-      var report = CostReport.Of(RightOf(ColumnContaining("Investor")).Of(Point().Text()));
+      var report = CostReport.Of(RightOf(Columns.Containing("Investor")).Of(Point().Text()));
 
       Assert.False(report.Lines[0].Streams);
       Assert.Equal("its placement answers only over its whole extent under a row driver", report.Lines[0].Hold);
@@ -95,7 +95,7 @@ namespace Unrect.Tests.Machines
       var report = CostReport.Of(VerticalFlow(v =>
       {
         var one = v.Next(Point().Text().Named("one"));
-        var many = v.Next(VerticalRepeat(Point().Text(), separatedBy: BlankRows()).Optional().Named("many"));
+        var many = v.Next(VerticalRepeat(Point().Text(), separatedBy: Rows.SkipBlank()).Optional().Named("many"));
 
         return $"{one}:{many?.Count}";
       }));

@@ -53,7 +53,7 @@ namespace Unrect.Tests.Projections
 
     /// <summary>The outer rule: rows while any cell of them is a number, which stops after row 2.</summary>
     private static ISizeStrategy<ICellSpace> NumericRowsOnly()
-      => RowsWhileAny(cell => cell.IsDouble());
+      => Rows.WhileAny(cell => cell.IsDouble());
 
     /// <summary>
     /// The same rule as a row-and-column pair, which resolves to the interleaved strategy — the one
@@ -61,9 +61,9 @@ namespace Unrect.Tests.Projections
     /// rather than the space it is handed per row.
     /// </summary>
     private static ISizeStrategy<ICellSpace> NumericRowsAndValuedColumns()
-      => RowsThenColumns(
-        TakeRowsWhileAny(cell => cell.IsDouble()),
-        TakeColumnsWhileAny(cell => !cell.IsBlank()));
+      => Rows.ThenColumns(
+        Rows.TakeWhileAny(cell => cell.IsDouble()),
+        Columns.TakeWhileAny(cell => !cell.IsBlank()));
 
     [Fact]
     public void AChildTakingTheWholeExtentTakesItsParentsAndNotTheSheets()
@@ -77,7 +77,7 @@ namespace Unrect.Tests.Projections
       var rows = Sized(NumericRowsOnly()).Of(
         VerticalFlow(v =>
         {
-          var rangeSlot = v.Next(Range(WholeExtent(), block => block.Rows.Count));
+          var rangeSlot = v.Next(Range(Extent.Whole(), block => block.Rows.Count));
 
           return rangeSlot;
         }));
@@ -95,7 +95,7 @@ namespace Unrect.Tests.Projections
       var rows = Sized(NumericRowsOnly()).Of(
         VerticalFlow(v =>
         {
-          var rangeSlot = v.Next(Range(RowsWhileAnyIsNotBlank(), block => block.Rows.Count));
+          var rangeSlot = v.Next(Range(Rows.WhileAnyIsNotBlank(), block => block.Rows.Count));
 
           return rangeSlot;
         }));
@@ -112,7 +112,7 @@ namespace Unrect.Tests.Projections
       var rows = Sized(NumericRowsAndValuedColumns()).Of(
         VerticalFlow(v =>
         {
-          var rangeSlot = v.Next(Range(RowsWhileAnyIsNotBlank(), block => block.Rows.Count));
+          var rangeSlot = v.Next(Range(Rows.WhileAnyIsNotBlank(), block => block.Rows.Count));
 
           return rangeSlot;
         }));
@@ -126,10 +126,10 @@ namespace Unrect.Tests.Projections
       // The control, without which every number above could be right for the wrong reason: the outer
       // rule really does stop at three, and the sheet really does have six valued rows for a child
       // to run on to.
-      var outer = Sized(NumericRowsOnly()).Of(Range(WholeExtent(), block => block.Rows.Count));
+      var outer = Sized(NumericRowsOnly()).Of(Range(Extent.Whole(), block => block.Rows.Count));
 
       Assert.Equal(NumericRows, Read(outer));
-      Assert.Equal(ValuedRows, Read(Range(RowsWhileAnyIsNotBlank(), block => block.Rows.Count)));
+      Assert.Equal(ValuedRows, Read(Range(Rows.WhileAnyIsNotBlank(), block => block.Rows.Count)));
       Assert.Equal(8, Disagreeing().Extent.Height);
     }
   }

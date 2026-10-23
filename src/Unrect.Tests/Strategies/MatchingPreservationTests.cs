@@ -24,7 +24,7 @@ namespace Unrect.Tests.Strategies
   /// reader sees: a heading that is a year is still the heading.
   /// <para>
   /// Pinned because a change either way would silently re-anchor real declarations — a section
-  /// bounded by <c>RowContaining("2026")</c> starting to find date cells, or a caption that is a
+  /// bounded by <c>Rows.Containing("2026")</c> starting to find date cells, or a caption that is a
   /// year starting to miss — so each rule is stated positively, one per matcher, rather than left
   /// to be inferred from which read it happens to go through.
   /// </para>
@@ -153,14 +153,14 @@ namespace Unrect.Tests.Strategies
     [MemberData(nameof(Needles))]
     public void RowContaining_DoesNotMatchANonTextCellsText(string kind, string text)
     {
-      Assert.Null(RowContaining(text).Find(RowsHolding(CellOf(kind))));
+      Assert.Null(Rows.Containing(text).Find(RowsHolding(CellOf(kind))));
     }
 
     [Theory]
     [MemberData(nameof(NeedleTexts))]
     public void RowContaining_MatchesATextCellSpellingTheSameThing(string text)
     {
-      Assert.Equal(1, RowContaining(text).Find(RowsHolding(text)));
+      Assert.Equal(1, Rows.Containing(text).Find(RowsHolding(text)));
     }
 
     // --- RowWithCell --------------------------------------------------------------------------------
@@ -169,14 +169,14 @@ namespace Unrect.Tests.Strategies
     [MemberData(nameof(Needles))]
     public void RowWithCell_DoesNotMatchANonTextCellsText(string kind, string text)
     {
-      Assert.Null(RowWithCell(Holds(text)).Find(RowsHolding(CellOf(kind))));
+      Assert.Null(Rows.WithCell(Holds(text)).Find(RowsHolding(CellOf(kind))));
     }
 
     [Theory]
     [MemberData(nameof(NeedleTexts))]
     public void RowWithCell_MatchesATextCellSpellingTheSameThing(string text)
     {
-      Assert.Equal(1, RowWithCell(Holds(text)).Find(RowsHolding(text)));
+      Assert.Equal(1, Rows.WithCell(Holds(text)).Find(RowsHolding(text)));
     }
 
     // --- ColumnContaining ---------------------------------------------------------------------------
@@ -185,14 +185,14 @@ namespace Unrect.Tests.Strategies
     [MemberData(nameof(Needles))]
     public void ColumnContaining_DoesNotMatchANonTextCellsText(string kind, string text)
     {
-      Assert.Null(ColumnContaining(text).Find(ColumnsHolding(CellOf(kind))));
+      Assert.Null(Columns.Containing(text).Find(ColumnsHolding(CellOf(kind))));
     }
 
     [Theory]
     [MemberData(nameof(NeedleTexts))]
     public void ColumnContaining_MatchesATextCellSpellingTheSameThing(string text)
     {
-      Assert.Equal(1, ColumnContaining(text).Find(ColumnsHolding(text)));
+      Assert.Equal(1, Columns.Containing(text).Find(ColumnsHolding(text)));
     }
 
     // --- ColumnWithCell -----------------------------------------------------------------------------
@@ -201,14 +201,14 @@ namespace Unrect.Tests.Strategies
     [MemberData(nameof(Needles))]
     public void ColumnWithCell_DoesNotMatchANonTextCellsText(string kind, string text)
     {
-      Assert.Null(ColumnWithCell(Holds(text)).Find(ColumnsHolding(CellOf(kind))));
+      Assert.Null(Columns.WithCell(Holds(text)).Find(ColumnsHolding(CellOf(kind))));
     }
 
     [Theory]
     [MemberData(nameof(NeedleTexts))]
     public void ColumnWithCell_MatchesATextCellSpellingTheSameThing(string text)
     {
-      Assert.Equal(1, ColumnWithCell(Holds(text)).Find(ColumnsHolding(text)));
+      Assert.Equal(1, Columns.WithCell(Holds(text)).Find(ColumnsHolding(text)));
     }
 
     // --- Caption ------------------------------------------------------------------------------------
@@ -273,7 +273,7 @@ namespace Unrect.Tests.Strategies
       Assert.Equal(1, RowLandmarks.RowSaying<ICellSpace>(text).Find(cells));
 
       // The other half, restated here so the pair reads as one fact rather than two files apart.
-      Assert.Null(RowContaining(text).Find(cells));
+      Assert.Null(Rows.Containing(text).Find(cells));
     }
 
     [Theory]
@@ -283,7 +283,7 @@ namespace Unrect.Tests.Strategies
       var cells = ColumnsHolding(CellOf(kind));
 
       Assert.Equal(1, ColumnLandmarks.ColumnSaying<ICellSpace>(text).Find(cells));
-      Assert.Null(ColumnContaining(text).Find(cells));
+      Assert.Null(Columns.Containing(text).Find(cells));
     }
 
     [Theory]
@@ -294,10 +294,10 @@ namespace Unrect.Tests.Strategies
       // the narrow rule finds as well as the kinds it refuses. A rule that had somehow swapped the
       // two would pass every theory above and fail here.
       Assert.Equal(1, RowLandmarks.RowSaying<ICellSpace>(text).Find(RowsHolding(text)));
-      Assert.Equal(1, RowContaining(text).Find(RowsHolding(text)));
+      Assert.Equal(1, Rows.Containing(text).Find(RowsHolding(text)));
 
       Assert.Equal(1, ColumnLandmarks.ColumnSaying<ICellSpace>(text).Find(ColumnsHolding(text)));
-      Assert.Equal(1, ColumnContaining(text).Find(ColumnsHolding(text)));
+      Assert.Equal(1, Columns.Containing(text).Find(ColumnsHolding(text)));
     }
 
     [Theory]
@@ -336,18 +336,18 @@ namespace Unrect.Tests.Strategies
       // wrong thing.
       var sheet = RowsHolding(42);
 
-      var row = Assert.Throws<ProjectionException>(() => On(RowSaying("nope")).Of(Point().Text()).Map(sheet));
+      var row = Assert.Throws<ProjectionException>(() => On(Rows.Saying("nope")).Of(Point().Text()).Map(sheet));
 
       Assert.Equal("no row saying 'nope' exists in the available space", Problem(row));
 
       var column = Assert.Throws<ProjectionException>(
-        () => On(ColumnSaying("nope")).Of(Point().Text()).Map(ColumnsHolding(42)));
+        () => On(Columns.Saying("nope")).Of(Point().Text()).Map(ColumnsHolding(42)));
 
       Assert.Equal("no column saying 'nope' exists in the available space", Problem(column));
 
       // ...and the narrow matcher's sentence differs by exactly the one word, which is what makes
       // the pair readable as a choice rather than as two unrelated messages.
-      var containing = Assert.Throws<ProjectionException>(() => On(RowContaining("nope")).Of(Point().Text()).Map(sheet));
+      var containing = Assert.Throws<ProjectionException>(() => On(Rows.Containing("nope")).Of(Point().Text()).Map(sheet));
 
       Assert.Equal("no row containing 'nope' exists in the available space", Problem(containing));
     }
@@ -371,14 +371,14 @@ namespace Unrect.Tests.Strategies
     {
       // Occupancy: the section starts at the matched row and reads it. One pipeline, anchor first
       // and the step after it, because an anchor is a root and a movement composes onto it.
-      Assert.Equal("the anchor row", On(RowSaying("42")).Right(1).Of(Point().Text()).Map(NumericAnchor()));
+      Assert.Equal("the anchor row", On(Rows.Saying("42")).Right(1).Of(Point().Text()).Map(NumericAnchor()));
     }
 
     [Fact]
     public void BelowASayingMatchStartsOneRowBeyondIt()
     {
       // Adjacency: exactly one row past the match, never a distance the declaration chose.
-      Assert.Equal("below", Below(RowSaying("42")).Of(Point().Text()).Map(NumericAnchor()));
+      Assert.Equal("below", Below(Rows.Saying("42")).Of(Point().Text()).Map(NumericAnchor()));
     }
 
     [Fact]
@@ -386,7 +386,7 @@ namespace Unrect.Tests.Strategies
     {
       // The bound, which consumes in full: the header alone is inside it, so the section is one row
       // tall and the row after it is the anchor.
-      var band = Until(RowSaying("42")).Of(Range(WholeExtent(), block => block.Height)).Map(NumericAnchor());
+      var band = Until(Rows.Saying("42")).Of(Range(Extent.Whole(), block => block.Height)).Map(NumericAnchor());
 
       Assert.Equal(1, band);
     }
@@ -402,8 +402,8 @@ namespace Unrect.Tests.Strategies
         { null, "x", "y" },
       });
 
-      Assert.Equal("right of it", RightOf(ColumnSaying("42")).Of(Point().Text()).Map(sheet));
-      Assert.Equal("42", On(ColumnSaying("42")).Of(AsSaid()).Map(sheet));
+      Assert.Equal("right of it", RightOf(Columns.Saying("42")).Of(Point().Text()).Map(sheet));
+      Assert.Equal("42", On(Columns.Saying("42")).Of(AsSaid()).Map(sheet));
     }
 
     /// <summary>A cell read as whatever it says, so an anchored column can report a non-text cell.</summary>

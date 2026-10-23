@@ -54,9 +54,9 @@ namespace Unrect.Tests.Projections
       return Mixed(values);
     }
 
-    private static ILineLandmark<ICellSpace> Detail() => RowContaining("Detail");
+    private static ILineLandmark<ICellSpace> Detail() => Rows.Containing("Detail");
 
-    private static ILineLandmark<ICellSpace> DetailColumn() => ColumnContaining("Detail");
+    private static ILineLandmark<ICellSpace> DetailColumn() => Columns.Containing("Detail");
 
     // --- The law, wherever the landmark sits ---------------------------------------------------------
 
@@ -114,7 +114,7 @@ namespace Unrect.Tests.Projections
       // is the matcher's own in both spellings and nothing about the movement written after it
       // leaks into the message.
       var space = RowsWithLandmarkAt(1);
-      var missing = RowContaining("Nope");
+      var missing = Rows.Containing("Nope");
 
       AssertL3(
         Observe(Below(missing).Of(Point().Text()), space),
@@ -135,7 +135,7 @@ namespace Unrect.Tests.Projections
       // that declared its own extent keeps it — and keeps the same one — wherever the landmark puts
       // it. A composite offset that leaked into the area would show up here first.
       var space = RowsWithLandmarkAt(1);
-      var sized = Sized(Extent(1, 2)).Of(Range(b => $"{b.Width}x{b.Height}"));
+      var sized = Sized(Extent.Of(1, 2)).Of(Range(b => $"{b.Width}x{b.Height}"));
 
       AssertL3(
         Observe(Below(Detail()).Of(sized), space),

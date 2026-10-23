@@ -34,8 +34,8 @@ namespace Unrect.Tests.Strategies
     public void BelowWantsARowLandmarkAndRightOfWantsAColumnLandmark()
     {
       // Refused where written, before any space is opened, naming what was handed and what was wanted.
-      var below = Assert.Throws<ArgumentException>(() => Below(ColumnSaying("x")));
-      var rightOf = Assert.Throws<ArgumentException>(() => RightOf(RowSaying("x")));
+      var below = Assert.Throws<ArgumentException>(() => Below(Columns.Saying("x")));
+      var rightOf = Assert.Throws<ArgumentException>(() => RightOf(Rows.Saying("x")));
 
       Assert.Contains("finds a column where one that finds a row was wanted", below.Message);
       Assert.Equal("landmark", below.ParamName);
@@ -46,18 +46,18 @@ namespace Unrect.Tests.Strategies
     public void OnAndUntilTakeEitherAxisAndFollowTheLandmarks()
     {
       // Occupancy and a bound have no direction of their own: the landmark carries it.
-      Assert.Equal("3", On(RowSaying("3")).Of(Point().AsText()).Map(Sheet()));
-      Assert.Equal("2", On(ColumnSaying("2")).Of(Point().AsText()).Map(Sheet()));
-      Assert.Equal(1, Until(ColumnSaying("2")).Of(Row(strip => strip.Count)).Map(Sheet()));
-      Assert.Equal(1, Until(RowSaying("3")).Of(Column(strip => strip.Count)).Map(Sheet()));
+      Assert.Equal("3", On(Rows.Saying("3")).Of(Point().AsText()).Map(Sheet()));
+      Assert.Equal("2", On(Columns.Saying("2")).Of(Point().AsText()).Map(Sheet()));
+      Assert.Equal(1, Until(Columns.Saying("2")).Of(Row(strip => strip.Count)).Map(Sheet()));
+      Assert.Equal(1, Until(Rows.Saying("3")).Of(Column(strip => strip.Count)).Map(Sheet()));
     }
 
     [Fact]
     public void AStripAndACompositionWantTheAxisTheirParameterNames()
     {
-      var row = Assert.Throws<ArgumentException>(() => Row(TakeRows(1), strip => strip.Count));
-      var column = Assert.Throws<ArgumentException>(() => Column(TakeColumns(1), strip => strip.Count));
-      var composed = Assert.Throws<ArgumentException>(() => RowsThenColumns(TakeColumns(1), TakeRows(1)));
+      var row = Assert.Throws<ArgumentException>(() => Row(Rows.Take(1), strip => strip.Count));
+      var column = Assert.Throws<ArgumentException>(() => Column(Columns.Take(1), strip => strip.Count));
+      var composed = Assert.Throws<ArgumentException>(() => Rows.ThenColumns(Columns.Take(1), Rows.Take(1)));
 
       Assert.Equal("columns", row.ParamName);
       Assert.Equal("rows", column.ParamName);

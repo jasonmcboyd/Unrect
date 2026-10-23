@@ -179,7 +179,7 @@ namespace Unrect.Tests.Projections
       // The annotated local is the assertion; that it reads its sheet is the proof the type is not
       // the only thing that survived. (The demanding twin of this very chain is in
       // ProjectionModelAcceptanceTests.EntryC.Spreadsheets.cs, because its space is not this file's.)
-      IProjectionDefinition<ICellSpace, decimal> plain = On(RowContaining("Total")).Right(2).Of(Point().Decimal()
+      IProjectionDefinition<ICellSpace, decimal> plain = On(Rows.Containing("Total")).Right(2).Of(Point().Decimal()
         .Named("total"));
 
       Assert.Equal(1.00m, plain.Map(PlainAllocations()));
@@ -198,7 +198,7 @@ namespace Unrect.Tests.Projections
       // signature, so `in TSpace` survives there — which is what lets a matcher published for
       // IFormulaSpace stand in a pipeline closed over the bundle.
       IProjectionDefinition<ISpreadsheetSpace, string> firstFormulaRow =
-        ProjectionBuilders<ISpreadsheetSpace>.On(ProjectionBuilders<ISpreadsheetSpace>.RowWithCell(p => p.HasFormula()))
+        ProjectionBuilders<ISpreadsheetSpace>.On(ProjectionBuilders<ISpreadsheetSpace>.Rows.WithCell(p => p.HasFormula()))
           .Of(ProjectionBuilders<ISpreadsheetSpace>.Row(cells => cells[0].Text()));
 
       Assert.Equal("A-1", firstFormulaRow.Map(CapableAllocations()));
@@ -240,7 +240,7 @@ namespace Unrect.Tests.Projections
     /// <summary>A helper generic in whatever space its caller names — the shape that replaced variance.</summary>
     private static IProjectionDefinition<TSpace, IReadOnlyList<T>> Sections<TSpace, T>(IProjectionDefinition<TSpace, T> item)
       where TSpace : class, ICellSpace
-      => ProjectionBuilders<TSpace>.VerticalRepeat(item, separatedBy: ProjectionBuilders<TSpace>.BlankRows());
+      => ProjectionBuilders<TSpace>.VerticalRepeat(item, separatedBy: ProjectionBuilders<TSpace>.Rows.SkipBlank());
 
     [Fact]
     public void AHoistedHelperSaysWhatItRequiresInItsReturnType()
@@ -253,13 +253,13 @@ namespace Unrect.Tests.Projections
 
       // Both read the same capable sheet — the plain one because Map's argument converts, the
       // demanding one because the sheet answers what it asks.
-      var rows = On(RowContaining("A-1")).Of(AllocationRow()).Map(CapableAllocations());
+      var rows = On(Rows.Containing("A-1")).Of(AllocationRow()).Map(CapableAllocations());
 
       Assert.Equal(new Allocation("A-1", "SPY", 0.25m), rows);
       Assert.Equal("VerticalRepeat", plainSections.Description);
       Assert.Equal("VerticalRepeat", demandingSections.Description);
 
-      var sourced = ProjectionBuilders<ISpreadsheetSpace>.On(ProjectionBuilders<ISpreadsheetSpace>.RowContaining("A-1"))
+      var sourced = ProjectionBuilders<ISpreadsheetSpace>.On(ProjectionBuilders<ISpreadsheetSpace>.Rows.Containing("A-1"))
         .Of(SourcedRow())
         .Map(CapableAllocations());
 
@@ -329,12 +329,12 @@ namespace Unrect.Tests.Projections
         Primary: o.Next(Right(6).Of(Point().Decimal().OrBlank())),
         Fep: o.Next(Right(9).Of(Point().Decimal().OrBlank()))));
 
-      var allocations = Below(RowContaining("ACCOUNT")).Sized(RowsWhileAnyIsNotBlank()).Of(Table(headerRows: 0, eachRow: allocation));
+      var allocations = Below(Rows.Containing("ACCOUNT")).Sized(Rows.WhileAnyIsNotBlank()).Of(Table(headerRows: 0, eachRow: allocation));
 
       return VerticalFlow(v => new BuyingPowerAllocation(
         Title: v.Text(),
         Allocations: v.Next(allocations),
-        Total: v.Next(On(RowContaining("TOTAL")).Right(6).Of(Point().Decimal()))));
+        Total: v.Next(On(Rows.Containing("TOTAL")).Right(6).Of(Point().Decimal()))));
     }
 
     [Fact]
@@ -435,7 +435,7 @@ namespace Unrect.Tests.Projections
       var investorBlock = Table<CashFlow>();
 
       // Declared once, placed twice.
-      var series = VerticalRepeat(investorBlock, separatedBy: BlankRows());
+      var series = VerticalRepeat(investorBlock, separatedBy: Rows.SkipBlank());
 
       const string Inception = "Cash Flows using inception date";
 
@@ -446,7 +446,7 @@ namespace Unrect.Tests.Projections
           AsOf: h.Date(),
           Id: h.Text())).Named("report header")),
         Summary: v.Next(Table<InvestorSummary>().Named("summary")),
-        ByTransferDate: v.Next(Until(RowContaining(Inception)).Heading("IRR Details").Heading("Cash Flows Using Transfer Date").Of(series)),
+        ByTransferDate: v.Next(Until(Rows.Containing(Inception)).Heading("IRR Details").Heading("Cash Flows Using Transfer Date").Of(series)),
         ByInception: v.Next(Heading(Inception).Of(series))));
     }
 

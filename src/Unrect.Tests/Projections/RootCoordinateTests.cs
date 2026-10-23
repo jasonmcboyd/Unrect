@@ -63,9 +63,9 @@ namespace Unrect.Tests.Projections
     private static ICellSpace Sheet(string door)
       => door == "grid"
         ? CoordinateGrid(5, 8)
-        : Streamed(FakeSheet.Of("Data", Rows()));
+        : Streamed(FakeSheet.Of("Data", RowData()));
 
-    private static object?[][] Rows()
+    private static object?[][] RowData()
     {
       var rows = new object?[8][];
 
@@ -174,15 +174,15 @@ namespace Unrect.Tests.Projections
       // report an honest, wrong "not found".
       var band = Plane<ISpreadsheetSpace>.Of(FormulaSheet()).Slice(new Offset(1, 6), new Size(3, 4));
 
-      Assert.Equal(2, ProjectionBuilders<ISpreadsheetSpace>.RowWithCell(p => p.Formula() is string f && f.IndexOf("LOG10", StringComparison.OrdinalIgnoreCase) >= 0).Find(band));
+      Assert.Equal(2, ProjectionBuilders<ISpreadsheetSpace>.Rows.WithCell(p => p.Formula() is string f && f.IndexOf("LOG10", StringComparison.OrdinalIgnoreCase) >= 0).Find(band));
 
       // Non-vacuity, twice over. The whole sheet puts the same formula at row 8, so the band's
       // answer is the same cell reached from a different corner...
-      Assert.Equal(8, ProjectionBuilders<ISpreadsheetSpace>.RowWithCell(p => p.Formula() is string f && f.IndexOf("LOG10", StringComparison.OrdinalIgnoreCase) >= 0).Find(Plane<ISpreadsheetSpace>.Of(FormulaSheet())));
+      Assert.Equal(8, ProjectionBuilders<ISpreadsheetSpace>.Rows.WithCell(p => p.Formula() is string f && f.IndexOf("LOG10", StringComparison.OrdinalIgnoreCase) >= 0).Find(Plane<ISpreadsheetSpace>.Of(FormulaSheet())));
 
       // ...and the coordinates the untranslated reading would have used hold a formula too, so the
       // wrong answer would not have been an obvious zero: D7's SUM sits at the band's own (2, 0).
-      Assert.Equal(0, ProjectionBuilders<ISpreadsheetSpace>.RowWithCell(p => p.Formula() is string f && f.IndexOf("SUM(D2:D5)", StringComparison.OrdinalIgnoreCase) >= 0).Find(band));
+      Assert.Equal(0, ProjectionBuilders<ISpreadsheetSpace>.Rows.WithCell(p => p.Formula() is string f && f.IndexOf("SUM(D2:D5)", StringComparison.OrdinalIgnoreCase) >= 0).Find(band));
     }
 
     [Fact]
@@ -192,11 +192,11 @@ namespace Unrect.Tests.Projections
       // band that carries one is the band's column 0 — which is the sheet's column 1.
       var band = Plane<ISpreadsheetSpace>.Of(FormulaSheet()).Slice(new Offset(1, 6), new Size(3, 4));
 
-      Assert.Equal(0, ProjectionBuilders<ISpreadsheetSpace>.ColumnWithCell(p => p.Formula() is string f && f.IndexOf("LOG10", StringComparison.OrdinalIgnoreCase) >= 0).Find(band));
+      Assert.Equal(0, ProjectionBuilders<ISpreadsheetSpace>.Columns.WithCell(p => p.Formula() is string f && f.IndexOf("LOG10", StringComparison.OrdinalIgnoreCase) >= 0).Find(band));
 
       // And a needle that only column 2 of the band carries, so the answer is not the corner by
       // accident: C9's formula mentions C8 and no other does.
-      Assert.Equal(1, ProjectionBuilders<ISpreadsheetSpace>.ColumnWithCell(p => p.Formula() is string f && f.IndexOf("LOG10(C8)", StringComparison.OrdinalIgnoreCase) >= 0).Find(band));
+      Assert.Equal(1, ProjectionBuilders<ISpreadsheetSpace>.Columns.WithCell(p => p.Formula() is string f && f.IndexOf("LOG10(C8)", StringComparison.OrdinalIgnoreCase) >= 0).Find(band));
     }
 
     [Fact]

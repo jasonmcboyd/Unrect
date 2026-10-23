@@ -67,7 +67,7 @@ namespace Unrect.Tests.Projections
     {
       // The uniform offset-replace law:
       // a bare declared movement REPLACES a shape's own constructor default and starts from the
-      // origin. Caption's default seeks the row containing its text (To(RowContaining(text))), so a
+      // origin. Caption's default seeks the row containing its text (To(Rows.Containing(text))), so a
       // bare Down(1) discards the seek and lands one row down from the origin — where the caption
       // then asserts the row it landed on. (ACaptionPlacedSomewhereElse_AssertsWhereItLanded pins the
       // strategy-door replace via OffsetBy; this is its bare-movement twin, and the positive case
@@ -148,7 +148,7 @@ namespace Unrect.Tests.Projections
       // the assertion half: the row it was pointed at is not the row it was promised.
       var space = Mixed(new object?[,] { { "x" }, { "y" } });
 
-      var failure = Assert.Throws<ProjectionException>(() => OffsetBy(SkipRows(1)).Of(Caption("ein:")).Map(space));
+      var failure = Assert.Throws<ProjectionException>(() => OffsetBy(Rows.Skip(1)).Of(Caption("ein:")).Map(space));
 
       Assert.Contains("expected a row saying 'ein:' here", failure.Message);
       Assert.Equal("A2", failure.Location.A1);
@@ -157,7 +157,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ACaptionForcedToMoreThanOneRow_Throws()
     {
-      var failure = Assert.Throws<ProjectionException>(() => Sized(WholeExtent()).Of(Caption("ein:")).Map(Sheet()));
+      var failure = Assert.Throws<ProjectionException>(() => Sized(Extent.Whole()).Of(Caption("ein:")).Map(Sheet()));
 
       Assert.Contains("a Caption must be exactly one row tall; this one is 3 rows tall", failure.Message);
     }

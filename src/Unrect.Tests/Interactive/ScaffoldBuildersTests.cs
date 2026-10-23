@@ -129,7 +129,7 @@ namespace Unrect.Tests.Interactive
         { 2.5m },
       });
 
-      var guesses = VerticalRepeat(ScaffoldRecord("Row"), separatedBy: BlankRows()).Map(sheet);
+      var guesses = VerticalRepeat(ScaffoldRecord("Row"), separatedBy: Rows.SkipBlank()).Map(sheet);
 
       Assert.Equal(
         new[] { "public sealed record Row(int Amount);", "public sealed record Row(decimal Amount);" },

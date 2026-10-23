@@ -4,7 +4,6 @@ using System.Linq;
 
 using Unrect.Core;
 using Unrect.Projections;
-using Unrect.Strategies;
 
 namespace Unrect.Fluent
 {
@@ -22,52 +21,6 @@ namespace Unrect.Fluent
   public static partial class ProjectionBuilders<TSpace>
     where TSpace : class, ISpace
   {
-    // --- Held-text matching -----------------------------------------------------------------------
-    //
-    // The generic matchers ask what a cell SAYS, which every space answers. These ask what a cell
-    // HOLDS — text cells alone, so a numeric 2024 is not a row containing "2024" — which is a
-    // question about the value's kind, and so a sheet's to ask. The comparison is the one every
-    // matcher and caption shares (CellMatching.TextComparer): whole-cell, trimmed, case-insensitive.
-
-    /// <summary>
-    /// The first row holding <paramref name="text"/> as a whole cell value, trimmed and
-    /// case-insensitively — text cells alone; <c>RowSaying</c> is the same comparison against what
-    /// every cell says.
-    /// </summary>
-    public static ILineLandmark<TSpace> RowContaining(string text)
-      => (RowLandmarks.RowWhere(
-        CellMatching.AnyCellInRow(Holding(NotNullText(text))), $"no row containing '{text}'"));
-
-    /// <summary>The column twin of <see cref="RowContaining"/>, with the same rule.</summary>
-    public static ILineLandmark<TSpace> ColumnContaining(string text)
-      => (ColumnLandmarks.ColumnWhere(
-        CellMatching.AnyCellInColumn(Holding(NotNullText(text))), $"no column containing '{text}'"));
-
-    /// <summary>
-    /// Rows up to and including the first whose cell in <paramref name="column"/> holds
-    /// <paramref name="text"/> — whole-cell, trimmed, case-insensitive, text cells alone.
-    /// </summary>
-    public static ILineStrategy<TSpace> TakeRowsToText(int column, string text)
-    {
-      var matches = Holding(NotNullText(text));
-
-      return RowStrategies.TakeRowsTo<TSpace>((space, row) => matches(space[column, row]));
-    }
-
-    /// <summary>The column twin of <see cref="TakeRowsToText"/>: columns up to and including the first whose cell in <paramref name="row"/> holds <paramref name="text"/>.</summary>
-    public static ILineStrategy<TSpace> TakeColumnsToText(int row, string text)
-    {
-      var matches = Holding(NotNullText(text));
-
-      return ColumnStrategies.TakeColumnsTo<TSpace>((space, column) => matches(space[column, row]));
-    }
-
-    /// <summary>A cell holding <paramref name="text"/>, lowered to the calculus: the value's own text, compared by the shared rule.</summary>
-    private static Func<Point<TSpace>, bool> Holding(string text)
-      => point => point.TryGetText(out var held) && CellMatching.TextComparer.Equals(held, text);
-
-    private static string NotNullText(string text) => text ?? throw new ArgumentNullException(nameof(text));
-
     /// <summary>
     /// One record of <typeparamref name="T"/>, each member filled from the column whose caption
     /// matches its name and read as the member's own type declares.
@@ -106,26 +59,35 @@ namespace Unrect.Fluent
     /// a loud failure listing the table's captions. A column no member claims is fine — real reports
     /// carry columns a consumer does not want.
     /// </para>
+    /// <para>
+    /// With <paramref name="headerRows"/> above 1 the header is that many rows tall: the captions, under
+    /// <paramref name="headerRows"/> − 1 rows of bands. Members bind to a caption that is unique as
+    /// they always have; a column under a band that shares its caption with another is bound by its
+    /// path — <c>bind.Column(t =&gt; t.FromId, "From", "Id")</c> — because a flat member never
+    /// binds across a band by itself.
+    /// </para>
     /// </summary>
     /// <typeparam name="T">What one record reads.</typeparam>
-    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>()
-      => Bound<T>(RowBinding<T>.Create<TSpace>(null, typeof(TSpace)), BlankRowStrategy.Stop);
+    /// <param name="headerRows">How many rows the header is; at least 1, since members bind by what it says.</param>
+    /// <param name="bind">The per-member declarations, or null for none.</param>
+    /// <param name="onBlank">
+    /// How a fully-blank body row is treated: <c>Stop</c> (the default, self-bounding), <c>Skip</c>,
+    /// <c>Fault</c>, or <c>Tolerate</c>. Every non-<c>Stop</c> policy is not self-bounding, so the
+    /// table runs to the enclosing edge (declare <c>Until</c> or a count to bound it sooner).
+    /// </param>
+    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(
+      int headerRows = 1,
+      Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>>? bind = null,
+      BlankRowStrategy? onBlank = null)
+      => Bound<T>(
+        bind is null ? RowBinding<T>.Create<TSpace>(null, typeof(TSpace)) : Planned<T>(bind, headerRows),
+        onBlank ?? BlankRowStrategy.Stop,
+        loose: false,
+        headerRows);
 
     /// <summary>
-    /// <see cref="Table{T}()"/> with a blank-row strategy: <paramref name="onBlank"/> says
-    /// how a fully-blank body row is treated — <c>Stop</c> (the default, self-bounding),
-    /// <c>Skip</c>, <c>Fault</c>, or <c>Tolerate</c>. Every non-<c>Stop</c> policy is not
-    /// self-bounding, so the table runs to the enclosing edge (declare <c>Until</c> or a count to
-    /// bound it sooner).
-    /// </summary>
-    /// <typeparam name="T">What one record reads.</typeparam>
-    /// <param name="onBlank">How a fully-blank body row is treated.</param>
-    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(BlankRowStrategy onBlank)
-      => Bound<T>(RowBinding<T>.Create<TSpace>(null, typeof(TSpace)), onBlank);
-
-    /// <summary>
-    /// <see cref="Table{T}()"/> with per-member declarations: <c>Column</c> for a caption
-    /// the comparer would not have found, <c>Ignore</c> for a member this table does not carry.
+    /// <inheritdoc cref="Table{T}(int, Func{TableBinding{TSpace, T}, TableBinding{TSpace, T}}, BlankRowStrategy?)"/>
+    /// The same table, with the per-member declarations first:
     /// <code>
     /// Table&lt;Transaction&gt;(bind =&gt; bind
     ///   .Column(t =&gt; t.Date, "Transaction Date")
@@ -134,42 +96,13 @@ namespace Unrect.Fluent
     /// </summary>
     /// <typeparam name="T">What one record reads.</typeparam>
     /// <param name="bind">The per-member declarations applied to what reflection would have written.</param>
-    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>> bind)
-      => Bound<T>(Planned<T>(bind), BlankRowStrategy.Stop);
-
-    /// <summary>
-    /// <see cref="Table{T}(Func{TableBinding{TSpace, T}, TableBinding{TSpace, T}})"/> with a blank-row
-    /// strategy: <paramref name="onBlank"/> says how a fully-blank body row is treated — <c>Stop</c>
-    /// (the default, self-bounding), <c>Skip</c>, <c>Fault</c>, or <c>Tolerate</c>. Every
-    /// non-<c>Stop</c> policy is not self-bounding, so the table runs to the enclosing edge (declare
-    /// <c>Until</c> or a count to bound it sooner).
-    /// </summary>
-    /// <typeparam name="T">What one record reads.</typeparam>
-    /// <param name="bind">The per-member declarations applied to what reflection would have written.</param>
-    /// <param name="onBlank">How a fully-blank body row is treated.</param>
-    public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>> bind, BlankRowStrategy onBlank)
-      => Bound<T>(Planned<T>(bind), onBlank);
-
-    /// <summary>
-    /// A table whose header is <paramref name="headerRows"/> rows tall: the captions, under
-    /// <paramref name="headerRows"/> − 1 rows of bands. Members bind to a caption that is unique as
-    /// they always have; a column under a band that shares its caption with another is bound by its
-    /// path — <c>bind.Column(t =&gt; t.FromId, "From", "Id")</c> — because a flat member never
-    /// binds across a band by itself.
-    /// </summary>
-    /// <typeparam name="T">What one record reads.</typeparam>
-    /// <param name="headerRows">How many rows the header is; at least 1, since members bind by what it says.</param>
-    /// <param name="bind">The per-member declarations, or null for none.</param>
     /// <param name="onBlank">How a fully-blank body row is treated; <c>Stop</c> where omitted.</param>
+    /// <param name="headerRows">How many rows the header is; 1 where omitted.</param>
     public static IProjectionDefinition<TSpace, IReadOnlyList<T>> Table<T>(
-      int headerRows,
-      Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>>? bind = null,
-      BlankRowStrategy? onBlank = null)
-      => Bound<T>(
-        bind is null ? RowBinding<T>.Create<TSpace>(null, typeof(TSpace)) : Planned<T>(bind, headerRows),
-        onBlank ?? BlankRowStrategy.Stop,
-        loose: false,
-        headerRows);
+      Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>> bind,
+      BlankRowStrategy? onBlank = null,
+      int headerRows = 1)
+      => Table<T>(headerRows, bind ?? throw new ArgumentNullException(nameof(bind)), onBlank);
 
     private static RowBinding<T> Planned<T>(Func<TableBinding<TSpace, T>, TableBinding<TSpace, T>> bind, int headerRows = 1)
     {
@@ -191,7 +124,7 @@ namespace Unrect.Fluent
 
     /// <summary>
     /// The exploratory table <c>Unrect.Interactive</c> offers: the same projection as
-    /// <see cref="Table{T}(Func{TableBinding{TSpace, T}, TableBinding{TSpace, T}}, BlankRowStrategy)"/>
+    /// <see cref="Table{T}(Func{TableBinding{TSpace, T}, TableBinding{TSpace, T}}, BlankRowStrategy?, int)"/>
     /// with its one strictness switched. A member no column binds is left at its default and said
     /// so in a Warning, and the columns no member reads are listed in an Info — the two things a
     /// type still being written wants to be told. Everything else fails as it always does.
@@ -227,7 +160,7 @@ namespace Unrect.Fluent
     /// </summary>
     private static IProjectionDefinition<TSpace, T> RecordRow<T>(RowBinding<T> plan, LabelMap labels, bool loose = false)
     {
-      var columns = Columns<T>(plan, labels, loose);
+      var columns = BoundColumns<T>(plan, labels, loose);
       var members = new IProjectionDefinition<TSpace, object?>[plan.Members.Count];
 
       for (var member = 0; member < members.Length; member++)
@@ -284,7 +217,7 @@ namespace Unrect.Fluent
       return Record(_ => value).AsUnit($"member '{member.Name}'");
     }
 
-    private static int[] Columns<T>(RowBinding<T> plan, LabelMap labels, bool loose = false)
+    private static int[] BoundColumns<T>(RowBinding<T> plan, LabelMap labels, bool loose = false)
     {
       var columns = new int[plan.Members.Count];
       var unbound = new List<string>();
@@ -349,7 +282,7 @@ namespace Unrect.Fluent
         return columns;
 
       throw labels.Failure(
-        $"no column binds {Join(unbound.Select(name => $"{typeof(T).Name}.{name}").ToList())}; {Columns(labels)}. "
+        $"no column binds {Join(unbound.Select(name => $"{typeof(T).Name}.{name}").ToList())}; {CaptionsOf(labels)}. "
         + $"Bind one with Column(t => t.{unbound[0]}, \"…\") or drop it with Ignore(t => t.{unbound[0]})");
     }
 
@@ -363,7 +296,7 @@ namespace Unrect.Fluent
         labels.Note(
           DiagnosticSeverity.Warning,
           $"no column binds {Join(unbound.Select(name => $"{typeof(T).Name}.{name}").ToList())}, left at "
-          + $"{(unbound.Count == 1 ? "its default" : "their defaults")}; {Columns(labels)}");
+          + $"{(unbound.Count == 1 ? "its default" : "their defaults")}; {CaptionsOf(labels)}");
 
       var unread = Enumerable.Range(0, labels.Labels.Count)
         .Where(column => labels.Labels[column].Length > 0 && !columns.Contains(column))
@@ -404,7 +337,7 @@ namespace Unrect.Fluent
     /// What a table holds, for the failure that has to say so: its captions, or — under bands — its
     /// columns' paths, which are what a flat member's name is matched against run together.
     /// </summary>
-    private static string Columns(LabelMap labels)
+    private static string CaptionsOf(LabelMap labels)
       => labels.Depth > 1 && labels.Paths.Any(path => path.Count > 1)
         ? "the table's columns are " + string.Join(", ", Enumerable.Range(0, labels.Labels.Count).Where(column => labels.Labels[column].Length > 0).Select(column => Said(labels, column)))
           + " — a member binds to a caption, or to a whole path run together (FromId for [\"From\", \"Id\"])"

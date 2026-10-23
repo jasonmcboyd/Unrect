@@ -30,7 +30,7 @@ namespace Unrect.Tests.Streaming
 
     /// <summary>The tall ledger's body, one band per row: what a forward pass streams without holding.</summary>
     private static IProjectionDefinition<ICellSpace, IReadOnlyList<string>> LedgerRows()
-      => On(RowContaining("Entry")).Of(Table(headerRows: 1, eachRow: Row(3, cells => cells[2].AsText()!)));
+      => On(Rows.Containing("Entry")).Of(Table(headerRows: 1, eachRow: Row(3, cells => cells[2].AsText()!)));
 
     // --- Vending ----------------------------------------------------------------------------------
 

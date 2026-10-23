@@ -297,7 +297,7 @@ namespace Unrect.Tests.Projections
           return (string?)rowSlot;
         });
 
-      var item = On(RowContaining("Section")).Of(section
+      var item = On(Rows.Containing("Section")).Of(section
         .Else(Row(2, _ => (string?)null).Named("unreadable section")));
 
       return VerticalRepeat(item).Select(all => (IReadOnlyList<string>)all.Where(s => s is not null).ToList()!);

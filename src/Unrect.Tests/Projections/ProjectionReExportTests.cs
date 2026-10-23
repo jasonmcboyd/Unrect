@@ -53,9 +53,9 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void TheExtentReExportsForwardToTheirStrategies()
     {
-      Assert.Equal(Measure(SizeStrategies.MaxSize<ICellSpace>()), Measure(WholeExtent()));
-      Assert.Equal(Measure(SizeStrategies.MinSize<ICellSpace>()), Measure(NoExtent()));
-      Assert.Equal(Measure(SizeStrategies.ExplicitSize<ICellSpace>(2, 1)), Measure(Extent(2, 1)));
+      Assert.Equal(Measure(SizeStrategies.MaxSize<ICellSpace>()), Measure(Extent.Whole()));
+      Assert.Equal(Measure(SizeStrategies.MinSize<ICellSpace>()), Measure(Extent.None()));
+      Assert.Equal(Measure(SizeStrategies.ExplicitSize<ICellSpace>(2, 1)), Measure(Extent.Of(2, 1)));
     }
 
     [Fact]
@@ -63,7 +63,7 @@ namespace Unrect.Tests.Projections
     {
       Assert.Equal(
         Measure(SizeStrategies.RowsWhileAnyIsNotBlank<ICellSpace>()),
-        Measure(RowsWhileAnyIsNotBlank()));
+        Measure(Rows.WhileAnyIsNotBlank()));
     }
 
     [Fact]
@@ -71,7 +71,7 @@ namespace Unrect.Tests.Projections
     {
       Assert.Equal(
         Measure(SizeStrategies.ColumnsWhileAnyIsNotBlank<ICellSpace>()),
-        Measure(ColumnsWhileAnyIsNotBlank()));
+        Measure(Columns.WhileAnyIsNotBlank()));
     }
 
     [Fact]
@@ -79,8 +79,8 @@ namespace Unrect.Tests.Projections
     {
       // The guard on the two tests above: if both re-exports were wired to the same strategy they
       // would still pass, so pin that the two axes genuinely see different things here.
-      Assert.Equal("3x2", Measure(RowsWhileAnyIsNotBlank()));
-      Assert.Equal("1x2", Measure(ColumnsWhileAnyIsNotBlank()));
+      Assert.Equal("3x2", Measure(Rows.WhileAnyIsNotBlank()));
+      Assert.Equal("1x2", Measure(Columns.WhileAnyIsNotBlank()));
     }
 
     // --- The transparency law -----------------------------------------------------------------------
@@ -115,18 +115,18 @@ namespace Unrect.Tests.Projections
     private static (ISizeStrategy<ICellSpace> Typed, ISizeStrategy<ICellSpace> Erased) Extents(string name) => name switch
     {
       "RowsWhileAny" => (
-        RowsWhileAny(cell => !cell.IsBlank()),
+        Rows.WhileAny(cell => !cell.IsBlank()),
         SizeStrategies.RowsWhileAny<ICellSpace>(Valued)),
       "ColumnsWhileAny" => (
-        ColumnsWhileAny(cell => !cell.IsBlank()),
+        Columns.WhileAny(cell => !cell.IsBlank()),
         SizeStrategies.ColumnsWhileAny<ICellSpace>(Valued)),
       "RowsThenColumns" => (
-        RowsThenColumns(TakeRowsWhileAny(cell => !cell.IsBlank()), TakeColumnsWhileAny(cell => !cell.IsBlank())),
+        Rows.ThenColumns(Rows.TakeWhileAny(cell => !cell.IsBlank()), Columns.TakeWhileAny(cell => !cell.IsBlank())),
         SizeStrategies.RowsThenColumns(
           RowStrategies.TakeRowsWhileAny<ICellSpace>(Valued),
           ColumnStrategies.TakeColumnsWhileAny<ICellSpace>(Valued))),
       "ColumnsThenRows" => (
-        ColumnsThenRows(TakeColumnsWhileAny(cell => !cell.IsBlank()), TakeRowsWhileAny(cell => !cell.IsBlank())),
+        Columns.ThenRows(Columns.TakeWhileAny(cell => !cell.IsBlank()), Rows.TakeWhileAny(cell => !cell.IsBlank())),
         SizeStrategies.ColumnsThenRows(
           ColumnStrategies.TakeColumnsWhileAny<ICellSpace>(Valued),
           RowStrategies.TakeRowsWhileAny<ICellSpace>(Valued))),
@@ -138,10 +138,10 @@ namespace Unrect.Tests.Projections
     private static readonly string[] TheExtents =
       { "RowsWhileAny", "ColumnsWhileAny", "RowsThenColumns", "ColumnsThenRows" };
 
-    public static TheoryData<string> Extent => Data(TheExtents);
+    public static TheoryData<string> ExtentNames => Data(TheExtents);
 
     [Theory]
-    [MemberData(nameof(Extent))]
+    [MemberData(nameof(ExtentNames))]
     public void ATypedExtentIsTheExtentItBoxes(string name)
     {
       var (typed, erased) = Extents(name);
@@ -153,31 +153,31 @@ namespace Unrect.Tests.Projections
     private static (ILineStrategy<ICellSpace> Typed, ILineStrategy<ICellSpace> Erased) RowRules(string name) => name switch
     {
       "TakeRowsWhile" => (
-        TakeRowsWhile((region, row) => !region[0, row].IsBlank()),
+        Rows.TakeWhile((region, row) => !region[0, row].IsBlank()),
         RowStrategies.TakeRowsWhile<ICellSpace>((region, row) => !region[0, row].IsBlank())),
-      "TakeRowsWhile(column)" => (
-        TakeRowsWhile(0, (cell, _) => !cell.IsBlank()),
+      "Rows.TakeWhile(column)" => (
+        Rows.TakeWhile(0, (cell, _) => !cell.IsBlank()),
         RowStrategies.TakeRowsWhile<ICellSpace>(0, (cell, _) => !cell.IsBlank())),
       "TakeRowsTo" => (
-        TakeRowsTo((region, row) => !region[2, row].IsBlank()),
+        Rows.TakeTo((region, row) => !region[2, row].IsBlank()),
         RowStrategies.TakeRowsTo<ICellSpace>((region, row) => !region[2, row].IsBlank())),
       "TakeRowsWhileAll" => (
-        TakeRowsWhileAll(cell => !cell.IsBlank()),
+        Rows.TakeWhileAll(cell => !cell.IsBlank()),
         RowStrategies.TakeRowsWhileAll<ICellSpace>(Valued)),
       "TakeRowsWhileAny" => (
-        TakeRowsWhileAny(cell => !cell.IsBlank()),
+        Rows.TakeWhileAny(cell => !cell.IsBlank()),
         RowStrategies.TakeRowsWhileAny<ICellSpace>(Valued)),
 
       _ => throw new ArgumentOutOfRangeException(nameof(name), name, "No such rule."),
     };
 
     private static readonly string[] TheRowRules =
-      { "TakeRowsWhile", "TakeRowsWhile(column)", "TakeRowsTo", "TakeRowsWhileAll", "TakeRowsWhileAny" };
+      { "TakeRowsWhile", "Rows.TakeWhile(column)", "TakeRowsTo", "TakeRowsWhileAll", "TakeRowsWhileAny" };
 
-    public static TheoryData<string> RowRule => Data(TheRowRules);
+    public static TheoryData<string> RowRuleNames => Data(TheRowRules);
 
     [Theory]
-    [MemberData(nameof(RowRule))]
+    [MemberData(nameof(RowRuleNames))]
     public void ATypedRowRuleIsTheRuleItBoxes(string name)
     {
       var (typed, erased) = RowRules(name);
@@ -189,31 +189,31 @@ namespace Unrect.Tests.Projections
     private static (ILineStrategy<ICellSpace> Typed, ILineStrategy<ICellSpace> Erased) ColumnRules(string name) => name switch
     {
       "TakeColumnsWhile" => (
-        TakeColumnsWhile((region, column) => !region[column, 0].IsBlank()),
+        Columns.TakeWhile((region, column) => !region[column, 0].IsBlank()),
         ColumnStrategies.TakeColumnsWhile<ICellSpace>((region, column) => !region[column, 0].IsBlank())),
-      "TakeColumnsWhile(row)" => (
-        TakeColumnsWhile(0, (cell, _) => !cell.IsBlank()),
+      "Columns.TakeWhile(row)" => (
+        Columns.TakeWhile(0, (cell, _) => !cell.IsBlank()),
         ColumnStrategies.TakeColumnsWhile<ICellSpace>(0, (cell, _) => !cell.IsBlank())),
       "TakeColumnsTo" => (
-        TakeColumnsTo((region, column) => !region[column, 1].IsBlank()),
+        Columns.TakeTo((region, column) => !region[column, 1].IsBlank()),
         ColumnStrategies.TakeColumnsTo<ICellSpace>((region, column) => !region[column, 1].IsBlank())),
       "TakeColumnsWhileAll" => (
-        TakeColumnsWhileAll(cell => !cell.IsBlank()),
+        Columns.TakeWhileAll(cell => !cell.IsBlank()),
         ColumnStrategies.TakeColumnsWhileAll<ICellSpace>(Valued)),
       "TakeColumnsWhileAny" => (
-        TakeColumnsWhileAny(cell => !cell.IsBlank()),
+        Columns.TakeWhileAny(cell => !cell.IsBlank()),
         ColumnStrategies.TakeColumnsWhileAny<ICellSpace>(Valued)),
 
       _ => throw new ArgumentOutOfRangeException(nameof(name), name, "No such rule."),
     };
 
     private static readonly string[] TheColumnRules =
-      { "TakeColumnsWhile", "TakeColumnsWhile(row)", "TakeColumnsTo", "TakeColumnsWhileAll", "TakeColumnsWhileAny" };
+      { "TakeColumnsWhile", "Columns.TakeWhile(row)", "TakeColumnsTo", "TakeColumnsWhileAll", "TakeColumnsWhileAny" };
 
-    public static TheoryData<string> ColumnRule => Data(TheColumnRules);
+    public static TheoryData<string> ColumnRuleNames => Data(TheColumnRules);
 
     [Theory]
-    [MemberData(nameof(ColumnRule))]
+    [MemberData(nameof(ColumnRuleNames))]
     public void ATypedColumnRuleIsTheRuleItBoxes(string name)
     {
       var (typed, erased) = ColumnRules(name);
@@ -225,19 +225,19 @@ namespace Unrect.Tests.Projections
     private static (IOffsetStrategy<ICellSpace> Typed, IOffsetStrategy<ICellSpace> Erased) Offsets(string name) => name switch
     {
       "SkipRowsWhileAll" => (
-        SkipRowsWhileAll(cell => !cell.IsBlank()),
+        Rows.SkipWhileAll(cell => !cell.IsBlank()),
         OffsetStrategies.SkipRowsWhileAll<ICellSpace>(Valued)),
       "SkipRowsWhileAny" => (
-        SkipRowsWhileAny(cell => !cell.IsBlank()),
+        Rows.SkipWhileAny(cell => !cell.IsBlank()),
         OffsetStrategies.SkipRowsWhileAny<ICellSpace>(Valued)),
       "SkipColumnsWhileAll" => (
-        SkipColumnsWhileAll(cell => !cell.IsBlank()),
+        Columns.SkipWhileAll(cell => !cell.IsBlank()),
         OffsetStrategies.SkipColumnsWhileAll<ICellSpace>(Valued)),
       "SkipColumnsWhileAny" => (
-        SkipColumnsWhileAny(cell => !cell.IsBlank()),
+        Columns.SkipWhileAny(cell => !cell.IsBlank()),
         OffsetStrategies.SkipColumnsWhileAny<ICellSpace>(Valued)),
       "SelectOffset" => (
-        SelectOffset(region => new Size(1, region.Extent.Height)),
+        Extent.Offset(region => new Size(1, region.Extent.Height)),
         OffsetStrategies.SelectOffset<ICellSpace>(region => new Size(1, region.Extent.Height))),
 
       _ => throw new ArgumentOutOfRangeException(nameof(name), name, "No such offset."),
@@ -246,10 +246,10 @@ namespace Unrect.Tests.Projections
     private static readonly string[] TheOffsets =
       { "SkipRowsWhileAll", "SkipRowsWhileAny", "SkipColumnsWhileAll", "SkipColumnsWhileAny", "SelectOffset" };
 
-    public static TheoryData<string> Offset => Data(TheOffsets);
+    public static TheoryData<string> OffsetNames => Data(TheOffsets);
 
     [Theory]
-    [MemberData(nameof(Offset))]
+    [MemberData(nameof(OffsetNames))]
     public void ATypedOffsetIsTheOffsetItBoxes(string name)
     {
       var (typed, erased) = Offsets(name);
@@ -261,7 +261,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ATypedSizeIsTheSizeItBoxes()
     {
-      var typed = SelectSize(region => new Size(region.Width, 1));
+      var typed = Extent.Select(region => new Size(region.Width, 1));
       var erased = SizeStrategies.SelectSize<ICellSpace>(region => new Size(region.Width, 1));
 
       Assert.Equal(erased.GetSize(Patchy()), typed.GetSize(Patchy()));
@@ -270,16 +270,16 @@ namespace Unrect.Tests.Projections
 
     private static readonly string[] TheRowMatchers = { "RowWhere", "RowWithCell" };
 
-    public static TheoryData<string> RowMatcher => Data(TheRowMatchers);
+    public static TheoryData<string> RowMatcherNames => Data(TheRowMatchers);
 
     [Theory]
-    [MemberData(nameof(RowMatcher))]
+    [MemberData(nameof(RowMatcherNames))]
     public void ATypedRowMatcherIsTheMatcherItBoxes(string name)
     {
       var (typed, erased) = name == "RowWhere"
-        ? (RowWhere((region, row) => !region[2, row].IsBlank()),
+        ? (Rows.Where((region, row) => !region[2, row].IsBlank()),
            RowLandmarks.RowWhere<ICellSpace>((region, row) => !region[2, row].IsBlank()))
-        : (RowWithCell(cell => !cell.IsBlank()),
+        : (Rows.WithCell(cell => !cell.IsBlank()),
            RowLandmarks.RowWithCell<ICellSpace>(Valued));
 
       Assert.Equal(erased.Find(Patchy()), typed.Find(Patchy()));
@@ -289,16 +289,16 @@ namespace Unrect.Tests.Projections
 
     private static readonly string[] TheColumnMatchers = { "ColumnWhere", "ColumnWithCell" };
 
-    public static TheoryData<string> ColumnMatcher => Data(TheColumnMatchers);
+    public static TheoryData<string> ColumnMatcherNames => Data(TheColumnMatchers);
 
     [Theory]
-    [MemberData(nameof(ColumnMatcher))]
+    [MemberData(nameof(ColumnMatcherNames))]
     public void ATypedColumnMatcherIsTheMatcherItBoxes(string name)
     {
       var (typed, erased) = name == "ColumnWhere"
-        ? (ColumnWhere((region, column) => !region[column, 0].IsBlank()),
+        ? (Columns.Where((region, column) => !region[column, 0].IsBlank()),
            ColumnLandmarks.ColumnWhere<ICellSpace>((region, column) => !region[column, 0].IsBlank()))
-        : (ColumnWithCell(cell => !cell.IsBlank()),
+        : (Columns.WithCell(cell => !cell.IsBlank()),
            ColumnLandmarks.ColumnWithCell<ICellSpace>(Valued));
 
       Assert.Equal(erased.Find(Patchy()), typed.Find(Patchy()));
@@ -311,12 +311,12 @@ namespace Unrect.Tests.Projections
     {
       // The combinators take each axis as it comes, so a rule from this vocabulary pairs with one
       // from the calculus without either being unwrapped — which is what lets a one-import file
-      // write RowsThenColumns(TakeRows(3), AllColumns()) at all. All four spellings measure the same
+      // write Rows.ThenColumns(Rows.Take(3), Columns.All()) at all. All four spellings measure the same
       // region; only the demand they carry differs, and that is a compile-time matter.
-      var typed = RowsThenColumns(TakeRowsWhileAny(cell => !cell.IsBlank()), TakeColumnsWhileAny(cell => !cell.IsBlank()));
-      var erased = RowsThenColumns(RowStrategies.TakeRowsWhileAny<ICellSpace>(Valued), ColumnStrategies.TakeColumnsWhileAny<ICellSpace>(Valued));
-      var typedRows = RowsThenColumns(TakeRowsWhileAny(cell => !cell.IsBlank()), ColumnStrategies.TakeColumnsWhileAny<ICellSpace>(Valued));
-      var typedColumns = RowsThenColumns(RowStrategies.TakeRowsWhileAny<ICellSpace>(Valued), TakeColumnsWhileAny(cell => !cell.IsBlank()));
+      var typed = Rows.ThenColumns(Rows.TakeWhileAny(cell => !cell.IsBlank()), Columns.TakeWhileAny(cell => !cell.IsBlank()));
+      var erased = Rows.ThenColumns(RowStrategies.TakeRowsWhileAny<ICellSpace>(Valued), ColumnStrategies.TakeColumnsWhileAny<ICellSpace>(Valued));
+      var typedRows = Rows.ThenColumns(Rows.TakeWhileAny(cell => !cell.IsBlank()), ColumnStrategies.TakeColumnsWhileAny<ICellSpace>(Valued));
+      var typedColumns = Rows.ThenColumns(RowStrategies.TakeRowsWhileAny<ICellSpace>(Valued), Columns.TakeWhileAny(cell => !cell.IsBlank()));
 
       Assert.Equal("1x2", Measure(erased));
       Assert.Equal(Measure(erased), Measure(typed));
@@ -325,8 +325,8 @@ namespace Unrect.Tests.Projections
 
       // The spelling the erased/erased overload exists for: both axes from the re-exported
       // selectors, which name no space at all.
-      Assert.Equal("3x2", Measure(RowsThenColumns(TakeRows(2), AllColumns())));
-      Assert.Equal("3x2", Measure(ColumnsThenRows(AllColumns(), TakeRows(2))));
+      Assert.Equal("3x2", Measure(Rows.ThenColumns(Rows.Take(2), Columns.All())));
+      Assert.Equal("3x2", Measure(Columns.ThenRows(Columns.All(), Rows.Take(2))));
     }
 
     // --- Axis selectors -----------------------------------------------------------------------------
@@ -334,17 +334,17 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void TheSelectorReExportsForwardToTheirStrategies()
     {
-      Assert.Equal(RowStrategies.TakeRows<ICellSpace>(1).SelectLines(Block()), TakeRows(1).SelectLines(Block()));
-      Assert.Equal(ColumnStrategies.TakeColumns<ICellSpace>(2).SelectLines(Block()), TakeColumns(2).SelectLines(Block()));
-      Assert.Equal(RowStrategies.AllRows<ICellSpace>().SelectLines(Block()), AllRows().SelectLines(Block()));
-      Assert.Equal(ColumnStrategies.AllColumns<ICellSpace>().SelectLines(Block()), AllColumns().SelectLines(Block()));
+      Assert.Equal(RowStrategies.TakeRows<ICellSpace>(1).SelectLines(Block()), Rows.Take(1).SelectLines(Block()));
+      Assert.Equal(ColumnStrategies.TakeColumns<ICellSpace>(2).SelectLines(Block()), Columns.Take(2).SelectLines(Block()));
+      Assert.Equal(RowStrategies.AllRows<ICellSpace>().SelectLines(Block()), Rows.All().SelectLines(Block()));
+      Assert.Equal(ColumnStrategies.AllColumns<ICellSpace>().SelectLines(Block()), Columns.All().SelectLines(Block()));
     }
 
     [Fact]
     public void AllRowsAndAllColumnsSeeTheWholeExtent()
     {
-      Assert.Equal(2, AllRows().SelectLines(Block()));
-      Assert.Equal(3, AllColumns().SelectLines(Block()));
+      Assert.Equal(2, Rows.All().SelectLines(Block()));
+      Assert.Equal(3, Columns.All().SelectLines(Block()));
     }
 
     // --- The spellings the re-exports exist for --------------------------------------------------------
@@ -354,7 +354,7 @@ namespace Unrect.Tests.Projections
     {
       // The spelling that replaced an opaque (space, column) => true at the call site: a leaf
       // overload that already takes a column strategy, handed the one that means "all of them".
-      Assert.Equal(3, Row(AllColumns(), s => s.Count).Map(Patchy()));
+      Assert.Equal(3, Row(Columns.All(), s => s.Count).Map(Patchy()));
 
       // ...where the discovered default would have stopped at the blank column.
       Assert.Equal(1, Row(s => s.Count).Map(Patchy()));
@@ -365,7 +365,7 @@ namespace Unrect.Tests.Projections
     {
       var space = Grid(new[,] { { 1 }, { 0 }, { 3 } });
 
-      Assert.Equal(3, Column(AllRows(), s => s.Count).Map(space));
+      Assert.Equal(3, Column(Rows.All(), s => s.Count).Map(space));
       Assert.Equal(1, Column(s => s.Count).Map(space));
     }
 
@@ -387,11 +387,11 @@ namespace Unrect.Tests.Projections
       });
 
       var section = Heading("Detail").Of(Range(b => b.Height));
-      var anchored = Below(RowContaining("Detail")).Of(TextCell());
+      var anchored = Below(Rows.Containing("Detail")).Of(TextCell());
 
       Assert.Equal(2, section.Map(space));
       Assert.Equal("a", anchored.Map(space));
-      Assert.Equal("Detail", On(RowContaining("Detail")).Of(TextCell()).Map(space));
+      Assert.Equal("Detail", On(Rows.Containing("Detail")).Of(TextCell()).Map(space));
     }
 
     [Fact]
@@ -428,11 +428,11 @@ namespace Unrect.Tests.Projections
     {
       // The single-import claim where it is most load-bearing: the Sized entry taking an
       // ISizeStrategy<ICellSpace>, handed a re-export, with no strategies import in scope at the call site.
-      var projection = Sized(ColumnsWhileAnyIsNotBlank()).Of(Range(b => $"{b.Width}x{b.Height}"));
+      var projection = Sized(Columns.WhileAnyIsNotBlank()).Of(Range(b => $"{b.Width}x{b.Height}"));
 
       Assert.Equal("1x2", projection.Map(Patchy()));
-      Assert.Equal("3x2", Sized(RowsWhileAnyIsNotBlank()).Of(Range(b => $"{b.Width}x{b.Height}")).Map(Patchy()));
-      Assert.Equal("2x1", Sized(Extent(2, 1)).Of(Range(b => $"{b.Width}x{b.Height}")).Map(Patchy()));
+      Assert.Equal("3x2", Sized(Rows.WhileAnyIsNotBlank()).Of(Range(b => $"{b.Width}x{b.Height}")).Map(Patchy()));
+      Assert.Equal("2x1", Sized(Extent.Of(2, 1)).Of(Range(b => $"{b.Width}x{b.Height}")).Map(Patchy()));
     }
   }
 }

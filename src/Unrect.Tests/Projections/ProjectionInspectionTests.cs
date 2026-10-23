@@ -219,11 +219,11 @@ namespace Unrect.Tests.Projections
       // whether a path shows it (the renderer's rule), never what it is.
       Assert.True(IntCell().Select(v => v + 1).IsWrapper);
       Assert.True(IntCell().Padded(1).IsWrapper);
-      Assert.True(Until(RowContaining("Total")).Of(IntCell()).IsWrapper);
+      Assert.True(Until(Rows.Containing("Total")).Of(IntCell()).IsWrapper);
 
       Assert.True(IntCell().Select(v => v + 1).Named("named").IsWrapper);
       Assert.True(IntCell().Padded(1).Named("named").IsWrapper);
-      Assert.True(Until(RowContaining("Total")).Of(IntCell()).Named("named").IsWrapper);
+      Assert.True(Until(Rows.Containing("Total")).Of(IntCell()).Named("named").IsWrapper);
 
       // Projections that are levels of the tree in their own right never are.
       Assert.False(IntCell().IsWrapper);
@@ -258,7 +258,7 @@ namespace Unrect.Tests.Projections
       // repeat happily, and stops where a layout composite is — reporting why rather than
       // pretending the layout is a leaf.
       var projection = VerticalRepeat(
-        Until(RowContaining("Total")).Of(Table(r => r[0])
+        Until(Rows.Containing("Total")).Of(Table(r => r[0])
           .Named("rows"))
           .Select(rows => rows.Count)
           .Named("block"))

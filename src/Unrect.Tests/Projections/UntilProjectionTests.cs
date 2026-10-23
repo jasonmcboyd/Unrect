@@ -33,7 +33,7 @@ namespace Unrect.Tests.Projections
     public void TheBoundedProjectionStopsBeforeTheLandmark()
     {
       // The landmark row is never inside what the projection may read.
-      var applied = Until(RowContaining("Total")).Of(Lines()).Apply(Sections());
+      var applied = Until(Rows.Containing("Total")).Of(Lines()).Apply(Sections());
 
       Assert.Equal(new[] { "A", "B" }, applied.Value);
       Assert.Equal(2, applied.Consumed.Height);
@@ -45,8 +45,8 @@ namespace Unrect.Tests.Projections
     {
       // Consumed is the bound, not what the inner projection read, so the next child's own seek
       // finds the caption at distance zero. This is what Until is for.
-      var section = Until(RowContaining("Total")).Of(Lines());
-      var caption = On(RowContaining("Total")).Of(TextCell());
+      var section = Until(Rows.Containing("Total")).Of(Lines());
+      var caption = On(Rows.Containing("Total")).Of(TextCell());
 
       var read = VerticalFlow(v => $"[{string.Join(",", v.Next(section))}]+{v.Next(caption)}").Map(Sections());
 
@@ -60,12 +60,12 @@ namespace Unrect.Tests.Projections
       // extent does not fit in a zero-row one. Both are correct.
       var space = Mixed(new object?[,] { { "Total" }, { "A" } });
 
-      var applied = Until(RowContaining("Total")).Of(Lines()).Apply(space);
+      var applied = Until(Rows.Containing("Total")).Of(Lines()).Apply(space);
 
       Assert.Empty(applied.Value);
       Assert.Equal(0, applied.Consumed.Height);
 
-      Assert.Throws<ProjectionException>(() => Until(RowContaining("Total")).Of(TextCell()).Map(space));
+      Assert.Throws<ProjectionException>(() => Until(Rows.Containing("Total")).Of(TextCell()).Map(space));
     }
 
     [Fact]
@@ -78,11 +78,11 @@ namespace Unrect.Tests.Projections
 
       Assert.Equal(
         new[] { "A", "B", "Total", "C" },
-        VerticalRepeat(TextCell(), separatedBy: BlankRows()).Map(space));
+        VerticalRepeat(TextCell(), separatedBy: Rows.SkipBlank()).Map(space));
 
       Assert.Equal(
         new[] { "A", "B" },
-        Until(RowContaining("Total")).Of(VerticalRepeat(TextCell(), separatedBy: BlankRows())).Map(space));
+        Until(Rows.Containing("Total")).Of(VerticalRepeat(TextCell(), separatedBy: Rows.SkipBlank())).Map(space));
     }
 
     // --- A missing landmark ----------------------------------------------------------------------------
@@ -93,7 +93,7 @@ namespace Unrect.Tests.Projections
       // "Until" is not what the user was looking for; the bound is part of the bounded projection's
       // declaration, so the bounded projection owns the failure.
       var failure = Assert.Throws<ProjectionException>(() =>
-        Until(RowContaining("Nope")).Of(Lines().Named("items")).Map(Sections()));
+        Until(Rows.Containing("Nope")).Of(Lines().Named("items")).Map(Sections()));
 
       Assert.Equal("'items'", failure.Subject);
       Assert.Equal("'items' (VerticalRepeat)", failure.Path);
@@ -104,7 +104,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AnUnnamedBoundIsTransparentAndBlamesTheInnerProjection()
     {
-      var failure = Assert.Throws<ProjectionException>(() => Until(RowContaining("Nope")).Of(Lines()).Map(Sections()));
+      var failure = Assert.Throws<ProjectionException>(() => Until(Rows.Containing("Nope")).Of(Lines()).Map(Sections()));
 
       Assert.Equal("VerticalRepeat", failure.Subject);
       Assert.Equal("VerticalRepeat", failure.Path);
@@ -115,7 +115,7 @@ namespace Unrect.Tests.Projections
     public void ANamedBoundSpeaksForItself()
     {
       var failure = Assert.Throws<ProjectionException>(() =>
-        Until(RowContaining("Nope")).Of(Lines()).Named("section").Map(Sections()));
+        Until(Rows.Containing("Nope")).Of(Lines()).Named("section").Map(Sections()));
 
       Assert.Equal("'section'", failure.Subject);
       Assert.Equal("'section' (Until)", failure.Path);
@@ -126,7 +126,7 @@ namespace Unrect.Tests.Projections
     {
       // A landmark that is not there is a disagreement about the shape of the data, which is
       // precisely what a tolerance boundary is for — not a bug in the reading code.
-      Assert.Null(Until(RowContaining("Nope")).Of(Lines()).Optional().Map(Sections()));
+      Assert.Null(Until(Rows.Containing("Nope")).Of(Lines()).Optional().Map(Sections()));
     }
 
     [Fact]
@@ -135,7 +135,7 @@ namespace Unrect.Tests.Projections
       // A missing start is exhaustion; a missing end is drift. The item was found, so the failure
       // is deeper than the item's own placement.
       var failure = Assert.Throws<ProjectionException>(() =>
-        VerticalRepeat(Until(RowContaining("Nope")).Of(TextCell())).Map(Sections()));
+        VerticalRepeat(Until(Rows.Containing("Nope")).Of(TextCell())).Map(Sections()));
 
       Assert.Contains("VerticalRepeat[0]", failure.Path);
       Assert.Contains("no row containing 'Nope' exists to end this projection", failure.Message);
@@ -146,7 +146,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void OrEnd_RunsToTheEndOfTheSpaceAndSaysSo()
     {
-      var projection = Until(RowContaining("Nope"), orEnd: true).Of(Lines());
+      var projection = Until(Rows.Containing("Nope"), orEnd: true).Of(Lines());
       var result = projection.MapWithDiagnostics(Sections());
 
       Assert.Equal(new[] { "A", "B", "Total", "C", "End" }, result.Value);
@@ -167,7 +167,7 @@ namespace Unrect.Tests.Projections
     {
       // Only the ordinary unconsumed-space Info remains, which is about the rows after the bound
       // rather than about the bound itself.
-      var result = Until(RowContaining("Total"), orEnd: true).Of(Lines()).MapWithDiagnostics(Sections());
+      var result = Until(Rows.Containing("Total"), orEnd: true).Of(Lines()).MapWithDiagnostics(Sections());
 
       Assert.Equal(new[] { "A", "B" }, result.Value);
       Assert.DoesNotContain(result.Diagnostics, d => d.Message.Contains("exists to end this projection"));
@@ -178,7 +178,7 @@ namespace Unrect.Tests.Projections
     {
       // Info, not Warning: nothing failed and nothing was absorbed. The declaration said this was
       // allowed to happen.
-      var result = Until(RowContaining("Nope"), orEnd: true).Of(Lines()).MapWithDiagnostics(Sections());
+      var result = Until(Rows.Containing("Nope"), orEnd: true).Of(Lines()).MapWithDiagnostics(Sections());
 
       Assert.DoesNotContain(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Warning);
     }
@@ -203,7 +203,7 @@ namespace Unrect.Tests.Projections
       // runtime guard survives on the nested spelling, where the outer bound meets an already-bounded
       // projection.
       var failure = Assert.Throws<ArgumentException>(() =>
-        Until(RowContaining("Total")).Of(Until(RowContaining("End")).Of(Lines())));
+        Until(Rows.Containing("Total")).Of(Until(Rows.Containing("End")).Of(Lines())));
 
       Assert.Equal("projection", failure.ParamName);
       Assert.Contains("already ends at a landmark, and Until would replace that end", failure.Message);
@@ -218,7 +218,7 @@ namespace Unrect.Tests.Projections
       // still meets the bound wrapper itself and is refused — and the refusal borrows the user's own
       // word for the projection, which is the whole of what a name is worth at construction time.
       var failure = Assert.Throws<ArgumentException>(() =>
-        Until(RowContaining("Total")).Of(Until(RowContaining("End")).Of(Lines()).Named("keep")));
+        Until(Rows.Containing("Total")).Of(Until(Rows.Containing("End")).Of(Lines()).Named("keep")));
 
       Assert.Equal("projection", failure.ParamName);
       Assert.Contains("'keep' already ends at a landmark", failure.Message);
@@ -231,7 +231,7 @@ namespace Unrect.Tests.Projections
       // The extent written OUTSIDE the bound is what the parent consumes: the wrapper has a declared
       // area, so the engine consumes it in full and the landmark search happens inside it. Spelled by
       // nesting, because a size applied after the bound lands on the bound wrapper.
-      var applied = Sized(SizeStrategies.ExplicitSize<ICellSpace>(1, 4)).Of(Until(RowContaining("Total")).Of(Lines())).Apply(Sections());
+      var applied = Sized(SizeStrategies.ExplicitSize<ICellSpace>(1, 4)).Of(Until(Rows.Containing("Total")).Of(Lines())).Apply(Sections());
 
       Assert.Equal(new[] { "A", "B" }, applied.Value);
       Assert.Equal(4, applied.Consumed.Height);
@@ -240,7 +240,7 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void UntilAfterSized_BoundsTheDeclaredExtent()
     {
-      var applied = Sized(SizeStrategies.ExplicitSize<ICellSpace>(1, 2)).Until(RowContaining("Total")).Of(Lines()).Apply(Sections());
+      var applied = Sized(SizeStrategies.ExplicitSize<ICellSpace>(1, 2)).Until(Rows.Containing("Total")).Of(Lines()).Apply(Sections());
 
       Assert.Equal(new[] { "A", "B" }, applied.Value);
       Assert.Equal(2, applied.Consumed.Height);
@@ -253,7 +253,7 @@ namespace Unrect.Tests.Projections
       // its own four-row extent no longer fits. Two halves of one declaration disagreeing is an
       // error.
       var failure = Assert.Throws<ProjectionException>(() =>
-        Sized(SizeStrategies.ExplicitSize<ICellSpace>(1, 4)).Until(RowContaining("Total")).Of(Lines()).Map(Sections()));
+        Sized(SizeStrategies.ExplicitSize<ICellSpace>(1, 4)).Until(Rows.Containing("Total")).Of(Lines()).Map(Sections()));
 
       Assert.Contains("an extent of 1x4 does not fit here", failure.Message);
     }
@@ -266,7 +266,7 @@ namespace Unrect.Tests.Projections
       // declaration, and AnchorModifierTests owns that half.
       var space = Mixed(new object?[,] { { "skip" }, { "A" }, { "B" }, { "Total" } });
 
-      var section = OffsetBy(SkipRows(1)).Until(RowContaining("Total")).Of(Lines());
+      var section = OffsetBy(Rows.Skip(1)).Until(Rows.Containing("Total")).Of(Lines());
 
       Assert.Equal(new[] { "A", "B" }, section.Map(space));
     }
@@ -278,7 +278,7 @@ namespace Unrect.Tests.Projections
     {
       var space = Mixed(new object?[,] { { "a", "b", "Total", "d" } });
 
-      var cells = Until(ColumnContaining("Total")).Of(HorizontalRepeat(TextCell()));
+      var cells = Until(Columns.Containing("Total")).Of(HorizontalRepeat(TextCell()));
       var applied = HorizontalFlow(h => string.Join(",", h.Next(cells))).Apply(space);
 
       Assert.Equal("a,b", applied.Value);
@@ -310,7 +310,7 @@ namespace Unrect.Tests.Projections
       // Was AColumnBoundReplacesARowBound, which read "2x3": the column bound won outright and the
       // row landmark was dropped unsought.
       var failure = Assert.Throws<ArgumentException>(() =>
-        Until(ColumnContaining("Total")).Of(Until(RowContaining("Stop")).Of(BlockExtent())));
+        Until(Columns.Containing("Total")).Of(Until(Rows.Containing("Stop")).Of(BlockExtent())));
 
       Assert.Equal("projection", failure.ParamName);
       Assert.Contains("already ends at a landmark, and Until would replace that end", failure.Message);
@@ -324,7 +324,7 @@ namespace Unrect.Tests.Projections
       // is not about the axis: what a second bound would replace is the projection's one END,
       // whichever direction it happens to cut.
       var failure = Assert.Throws<ArgumentException>(() =>
-        Until(RowContaining("Stop")).Of(Until(ColumnContaining("Total")).Of(BlockExtent())));
+        Until(Rows.Containing("Stop")).Of(Until(Columns.Containing("Total")).Of(BlockExtent())));
 
       Assert.Equal("projection", failure.ParamName);
       Assert.Contains("already ends at a landmark, and Until would replace that end", failure.Message);
@@ -340,7 +340,7 @@ namespace Unrect.Tests.Projections
       // happens at construction, before any space exists to search, so it names the modifier and the
       // receiver and neither landmark's text.
       var failure = Assert.Throws<ArgumentException>(() =>
-        Until(ColumnContaining("Nope")).Of(Until(RowContaining("Stop")).Of(BlockExtent())));
+        Until(Columns.Containing("Nope")).Of(Until(Rows.Containing("Stop")).Of(BlockExtent())));
 
       Assert.Contains("already ends at a landmark, and Until would replace that end", failure.Message);
       Assert.DoesNotContain("Stop", failure.Message);
@@ -356,7 +356,7 @@ namespace Unrect.Tests.Projections
       // does not make it a LAYER, so the second bound still meets the first and is refused, in the
       // user's own word for the projection.
       var failure = Assert.Throws<ArgumentException>(() =>
-        Until(ColumnContaining("Nope")).Of(Until(RowContaining("Stop")).Of(BlockExtent()).Named("band")));
+        Until(Columns.Containing("Nope")).Of(Until(Rows.Containing("Stop")).Of(BlockExtent()).Named("band")));
 
       Assert.Equal("projection", failure.ParamName);
       Assert.Contains("'band' already ends at a landmark, and Until would replace that end", failure.Message);
@@ -369,7 +369,7 @@ namespace Unrect.Tests.Projections
       // for: a wrapper between the two bounds makes the second one bound the FIRST, so both are in
       // force. The column bound leaves columns 0-1 of the whole sheet; the row bound inside it finds
       // "Stop" in what is left and stops before it.
-      var projection = Until(ColumnContaining("Total")).Of(Until(RowContaining("Stop")).Of(BlockExtent()).Select(value => value));
+      var projection = Until(Columns.Containing("Total")).Of(Until(Rows.Containing("Stop")).Of(BlockExtent()).Select(value => value));
 
       var applied = projection.Apply(BothAxes());
 
@@ -391,7 +391,7 @@ namespace Unrect.Tests.Projections
       var space = Mixed(new object?[,] { { "Total" }, { "Start" }, { "a" }, { "b" } });
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        On(RowContaining("Start")).Until(RowContaining("Total")).Of(Lines()).Map(space));
+        On(Rows.Containing("Start")).Until(Rows.Containing("Total")).Of(Lines()).Map(space));
 
       Assert.Contains("no row containing 'Start' exists in the available space", failure.Message);
     }
@@ -421,12 +421,12 @@ namespace Unrect.Tests.Projections
 
       const string Inception = "By inception date";
 
-      var series = VerticalRepeat(TextCell(), separatedBy: BlankRows());
+      var series = VerticalRepeat(TextCell(), separatedBy: Rows.SkipBlank());
 
       var report = VerticalFlow(v => new
       {
-        ByTransferDate = v.Next(Below(RowContaining("By transfer date")).Until(RowContaining(Inception)).Of(series)),
-        ByInception = v.Next(Below(RowContaining(Inception)).Of(series)),
+        ByTransferDate = v.Next(Below(Rows.Containing("By transfer date")).Until(Rows.Containing(Inception)).Of(series)),
+        ByInception = v.Next(Below(Rows.Containing(Inception)).Of(series)),
       });
 
       var result = report.MapWithDiagnostics(space);
@@ -441,12 +441,12 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void ABoundDescribesItselfAndIsAWrapper()
     {
-      var bound = Until(RowContaining("Total")).Of(Lines());
+      var bound = Until(Rows.Containing("Total")).Of(Lines());
 
       Assert.Equal("Until", bound.Description);
       Assert.True(bound.IsWrapper);
       Assert.True(bound.Named("section").IsWrapper);
-      Assert.Equal("Until", Until(ColumnContaining("Total")).Of(Lines()).Description);
+      Assert.Equal("Until", Until(Columns.Containing("Total")).Of(Lines()).Description);
     }
 
     [Fact]
@@ -454,7 +454,7 @@ namespace Unrect.Tests.Projections
     {
       var inner = Lines();
 
-      Assert.Same(inner, Assert.Single(Until(RowContaining("Total")).Of(inner).Children).Definition);
+      Assert.Same(inner, Assert.Single(Until(Rows.Containing("Total")).Of(inner).Children).Definition);
     }
 
     [Fact]

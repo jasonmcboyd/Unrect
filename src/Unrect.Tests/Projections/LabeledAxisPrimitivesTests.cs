@@ -183,8 +183,8 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void PerOccurrenceHeadersUnderAnOuterRepeatReadIdentically()
     {
-      var bespoke = VerticalRepeat(Table(1, ReadLine), separatedBy: BlankRows());
-      var primitives = VerticalRepeat(TableFromPrimitives(1, ReadLine), separatedBy: BlankRows());
+      var bespoke = VerticalRepeat(Table(1, ReadLine), separatedBy: Rows.SkipBlank());
+      var primitives = VerticalRepeat(TableFromPrimitives(1, ReadLine), separatedBy: Rows.SkipBlank());
 
       SameReading(bespoke, primitives, Repeated());
     }
@@ -296,7 +296,7 @@ namespace Unrect.Tests.Projections
       });
 
       var failure = Assert.Throws<ProjectionException>(
-        () => VerticalRepeat(UnitTableFromPrimitives(1, ReadLine), separatedBy: BlankRows()).Map(sheet));
+        () => VerticalRepeat(UnitTableFromPrimitives(1, ReadLine), separatedBy: Rows.SkipBlank()).Map(sheet));
 
       Assert.Equal("VerticalRepeat[1] -> Table[0]", failure.Path);
       Assert.Equal("Table", failure.Subject);
@@ -951,7 +951,7 @@ namespace Unrect.Tests.Projections
       });
 
       var block = TableFromPrimitives(1, (TableRow<ICellSpace> row) => row.Index);
-      IReadOnlyList<IReadOnlyList<int>> blocks = VerticalRepeat(block, separatedBy: BlankRows()).Map(sheet);
+      IReadOnlyList<IReadOnlyList<int>> blocks = VerticalRepeat(block, separatedBy: Rows.SkipBlank()).Map(sheet);
 
       Assert.Equal(new[] { new[] { 0, 1 }, new[] { 0, 1 } }, blocks.Select(b => b.ToArray()));
     }
@@ -1069,7 +1069,7 @@ namespace Unrect.Tests.Projections
     /// can be measured by the same harness. It reads the band it was handed, which is what a record
     /// that measured itself could not do.
     /// </summary>
-    private static IProjectionDefinition<ICellSpace, int> InstrumentedBand() => Range(WholeExtent(), block =>
+    private static IProjectionDefinition<ICellSpace, int> InstrumentedBand() => Range(Extent.Whole(), block =>
     {
       if (_gapAAtFirstRecord < 0)
         _gapAAtFirstRecord = _gapACounter.RowsTouched;

@@ -52,7 +52,7 @@ namespace Unrect.Tests.Projections
       var sheet = CoordinateGrid(4, 6);
       var seen = new List<Point<ICellSpace>>();
 
-      var region = Sized(RowsWhileAny(cell =>
+      var region = Sized(Rows.WhileAny(cell =>
       {
         seen.Add(cell);
 
@@ -80,7 +80,7 @@ namespace Unrect.Tests.Projections
       var sheet = CoordinateGrid(4, 6);
       var spaces = new List<ICellSpace>();
 
-      var inner = Sized(RowsWhileAny(cell =>
+      var inner = Sized(Rows.WhileAny(cell =>
       {
         spaces.Add(cell.Space);
 
@@ -114,7 +114,7 @@ namespace Unrect.Tests.Projections
       var sheet = CoordinateGrid(4, 6);
       var seen = new List<Plane<ICellSpace>>();
 
-      var region = Sized(SelectSize(plane =>
+      var region = Sized(Extent.Select(plane =>
       {
         seen.Add(plane);
 
@@ -138,7 +138,7 @@ namespace Unrect.Tests.Projections
       var sheet = CoordinateGrid(4, 6);
       var read = new List<string?>();
 
-      var region = Sized(SelectSize(plane =>
+      var region = Sized(Extent.Select(plane =>
       {
         read.Add(plane[0, 0].AsText());
         read.Add(plane[2, 1].AsText());
