@@ -134,8 +134,10 @@ record CashFlow(string InvestorName, DateTime Date, string Transaction, double I
 
 - **Projections are reusable, immutable values.** Declare `report` once, apply it to as many
   workbooks as you have — `workbooks.Select(report.Map)`.
-- **Diagnostics carry a declaration path and an A1 cell location** — a failure tells you
-  which projection it came from and exactly where on the sheet it happened.
+- **A run produces a value or throws.** `Map` and `MapWithDiagnostics` differ only in what a
+  *successful* run hands back beside the value: the sections a tolerance absorbed, the space
+  nothing described. A failure throws from both, with the declaration path and the A1 cell it
+  happened on, and what softens it is written in the declaration — never a mode of the call.
 - **Names are inferred from your own identifiers.** The local you assign a projection to
   (`series`, `byTransferDate`) is what shows up in its diagnostics — no separate naming
   step.

@@ -68,10 +68,14 @@ namespace Unrect.Fluent
     }
 
     /// <summary>
-    /// <see cref="Map{TSpace, TResult}"/>, keeping what the decomposition noticed: every tolerance
-    /// boundary that absorbed a failure, every alternative a choice passed over, and space the
-    /// projection did not describe. A failure nothing declared tolerance for still throws —
-    /// declared tolerance is the only thing that ever softens a parse.
+    /// <see cref="Map{TSpace, TResult}"/>, keeping what the decomposition noticed. <b>A run still
+    /// produces a value or throws</b>: the diagnostics are what a SUCCESSFUL run has to report —
+    /// every tolerance boundary that absorbed a failure (a <c>Warning</c>), every alternative a
+    /// choice passed over, and space the projection did not describe (an <c>Info</c>) — and there
+    /// is no <c>Error</c> severity, because an error is never returned. A failure nothing declared
+    /// tolerance for throws exactly as <c>Map</c> does, with the declaration path and the cell;
+    /// what softens a parse is written in the declaration — <c>ElseDefault</c>, <c>Else</c>,
+    /// <c>Choice</c>, <c>onBlank:</c>, a nullable member — never a mode of the call.
     /// <para>
     /// Space nothing described is reported as an <c>Info</c>, except where the entire parse was one
     /// absorbed failure: <c>projection.ElseDefault().MapWithDiagnostics(space)</c> — tolerance
