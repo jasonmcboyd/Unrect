@@ -337,15 +337,16 @@ namespace Unrect.Tests.Projections
         () => Table((TableRow<ICellSpace> r) => r["Amount"].Decimal()).Map(sheet));
 
       Assert.Equal(outside.Message, Problem(inside));
-      Assert.Equal("Table", inside.Path);
+      Assert.Equal("Table[0]", inside.Path);   // the table's row, as every row rung names it
 
       // The cell's own A1 is INSIDE the sentence, which is where the protocol puts it: the backend
       // knows which cell it read, the projection layer knows what to call that place, and the
       // address is filled in at the catch. The location cited beside the path is the extent of the
-      // projection that caught the read — the table's, here — which is a different and also true
-      // fact, and the reason the sentence carries its own address at all.
+      // projection that caught the read — the row's band, here, since a row lambda reads the table
+      // one row at a time — which is a different and also true fact, and the reason the sentence
+      // carries its own address at all.
       Assert.Contains("at B2", inside.Message);
-      Assert.Equal("A1", inside.Location.A1);
+      Assert.Equal("A2", inside.Location.A1);
 
       // And because it is a statement about the data rather than a fault, the located one is
       // absorbable — which the bare one, having no boundary around it, could never be.

@@ -117,14 +117,7 @@ namespace Unrect.Projections
     }
 
     /// <summary>A fully-blank row: every cell blank — the complement of "any value".</summary>
-    private static bool IsBlankRow(TableRow<TSpace> row)
-    {
-      for (var column = 0; column < row.Count; column++)
-        if (!row[column].IsBlank())
-          return false;
-
-      return true;
-    }
+    private static bool IsBlankRow(TableRow<TSpace> row) => row.IsBlank;
 
     private int HeaderRows { get; }
 

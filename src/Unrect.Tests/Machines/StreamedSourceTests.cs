@@ -86,6 +86,47 @@ namespace Unrect.Tests.Machines
       }
     }
 
+    /// <summary>A captioned ledger: a header row over <paramref name="rows"/> body rows, three columns wide.</summary>
+    private static FakeSheet Ledger(int rows)
+      => new FakeSheet("Data", rows + 1, 3, (column, row) =>
+        row == 0
+          ? CellValue.Of(new[] { "Name", "Amount", "Code" }[column])
+          : column switch { 0 => CellValue.Of($"n{row}"), 1 => CellValue.Of(row), _ => CellValue.Of("c") });
+
+    [Fact]
+    public void ARowLambdaTableHoldsOneRowAndItsHeaderAndNoMore()
+    {
+      // A row lambda needs one row and the captions, so the table is read one band per row and the
+      // pass holds the row in hand and the header's few — never the ledger.
+      var sheet = Ledger(200);
+      var expected = Table(r => r["Amount"].Integer()).Map(Eagerly(sheet));
+
+      using var book = Workbook.Over(new FakeRowSource(sheet), new WorkbookOptions());
+      {
+        var streamed = Table(r => r["Amount"].Integer()).Map(book.Sheet("Data"));
+
+        Assert.Equal(expected, streamed);
+
+        var statistics = book.Statistics("Data")!.Value;
+        Assert.True(statistics.PeakRetained <= 6, $"peak retained {statistics.PeakRetained} of {sheet.RowCount}");
+        Assert.Equal(sheet.RowCount, statistics.RowsRead);
+      }
+    }
+
+    [Fact]
+    public void AViewLambdaTableHoldsTheWholeTableOnPurpose()
+    {
+      // A view is the table whole — its row count, its columns, any row by index — so the pass
+      // cannot release a row until the last has arrived. The two rungs are pinned apart here.
+      var sheet = Ledger(200);
+
+      using var book = Workbook.Over(new FakeRowSource(sheet), new WorkbookOptions());
+      {
+        Assert.Equal(200, Table(view => view.RowCount).Map(book.Sheet("Data")));
+        Assert.Equal(sheet.RowCount, book.Statistics("Data")!.Value.PeakRetained);
+      }
+    }
+
     [Fact]
     public void ACapExceededIsAFaultNamingTheHolder()
     {

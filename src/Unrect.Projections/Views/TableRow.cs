@@ -66,6 +66,22 @@ namespace Unrect.Projections
     public Plane<TSpace> Space => Strip.Space;
 
     /// <summary>
+    /// Whether every cell of the row is blank — the one test of a blank body row, shared by the
+    /// table's row classification and the <c>blankRecord</c> rung so the two cannot disagree.
+    /// </summary>
+    public bool IsBlank
+    {
+      get
+      {
+        for (var column = 0; column < Count; column++)
+          if (!this[column].IsBlank())
+            return false;
+
+        return true;
+      }
+    }
+
+    /// <summary>
     /// The address of one cell of the row, for citing it in a message — a data-quality complaint
     /// can then read like a framework one.
     /// </summary>

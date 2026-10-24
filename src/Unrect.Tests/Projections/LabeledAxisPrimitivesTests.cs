@@ -220,9 +220,10 @@ namespace Unrect.Tests.Projections
     //
     // The spec is explicit: message and A1 are identical (asserted), path and subject are not (GAP B).
     // The negative-pin rule forbids a blanket "these differ" — so the actual strings are documented as
-    // specific asserts. Bespoke reports one flat `Table` segment; the reimplementation's failure sits
-    // inside the VerticalBands the primitives compose (the transparent WithColumnLabels is skipped,
-    // and the FlowDefinition's "Table" description keeps the outer segment reading `Table`).
+    // specific asserts. The built-in rung is itself the primitives' composition wrapped as one unit,
+    // so it reports `Table[0]`; the bare reimplementation's failure sits inside the VerticalBands it
+    // composes (the transparent WithColumnLabels is skipped, and the FlowDefinition's "Table"
+    // description keeps the outer segment reading `Table`).
 
     [Fact]
     public void GapB_TheMessageAndA1AgreeButThePathAndSubjectReflectTheDifferentTrees()
@@ -238,21 +239,21 @@ namespace Unrect.Tests.Projections
       Assert.Equal(bespoke.Problem, primitives.Problem);
       Assert.Contains("at B2", bespoke.Problem);
 
-      // The extent citation is NOT equal, and that moved here from the acceptance claim above. The
-      // bespoke rung calls the record inline, so the table catches the read and cites its own corner
-      // (A1); the primitive composition catches it per band and cites the band's (A2). Both are
-      // right about their own tree, which is exactly what GAP B says, so the two are pinned
-      // separately rather than one of them being bent to match the other.
-      Assert.Equal("A1", bespoke.Location.A1);
+      // The extent citation agrees too: both read the table one band per row, so both catch the read
+      // per band and cite the band's corner (A2). The built-in rung once called the record inline over
+      // the table whole and cited the table's corner; it composes the same bands now, which is what
+      // lets a row lambda stream.
+      Assert.Equal("A2", bespoke.Location.A1);
       Assert.Equal("A2", primitives.Location.A1);
 
-      // Documented divergence (GAP B). The exact strings, so a change to either tree is caught here
-      // rather than sliding under a "they differ" that would pass forever after the first drift. The
-      // built-in Table's Func rung calls the record inline, so its failure blames the flat Table; the
-      // reimplementation's failure sits inside the VerticalBands the primitives compose — the "Table"
-      // description on the FlowDefinition keeps the outer segment reading Table, and the transparent
-      // WithColumnLabels is skipped, so the tree between them is VerticalBands -> Record.
-      Assert.Equal("Table", bespoke.Path);
+      // What still differs is the rendering (GAP B, narrowed). The exact strings, so a change to
+      // either tree is caught here rather than sliding under a "they differ" that would pass forever
+      // after the first drift. The built-in rung is one unit, so its interior folds and the row's
+      // index sits on the table; the reimplementation's failure sits inside the VerticalBands the
+      // primitives compose — the "Table" description on the FlowDefinition keeps the outer segment
+      // reading Table, and the transparent WithColumnLabels is skipped, so the tree between them is
+      // VerticalBands -> Record.
+      Assert.Equal("Table[0]", bespoke.Path);
       Assert.Equal("Table", bespoke.Subject);
       Assert.Equal("Table -> VerticalBands#2[0] -> Record", primitives.Path);
       Assert.Equal("Record", primitives.Subject);

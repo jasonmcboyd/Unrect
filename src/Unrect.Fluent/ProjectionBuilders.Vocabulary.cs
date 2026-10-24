@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
 
 using Unrect.Core;
@@ -351,35 +350,37 @@ namespace Unrect.Fluent
       if (project is null)
         throw new ArgumentNullException(nameof(project));
 
+      var rows = ValidateHeaderRows(headerRows);
+
       if (blankRecord is not null)
       {
         if (onBlank is not null)
           throw new ArgumentException("A blank row is either treated by a policy or projected to a record, not both.", nameof(blankRecord));
 
-        // Project continues past blanks, so it needs the run-to-edge extent; any non-Stop strategy
-        // selects ToEdgeBlock().
-        return new TableViewDefinition<TSpace, IReadOnlyList<T>>(
-          ValidateHeaderRows(headerRows),
-          table => (IReadOnlyList<T>)table.ClassifiedRows()
-            .Select(r => r.IsBlank ? blankRecord(r.Row) : project(r.Row)).ToList(),
-          TablePlacement(BlankRowStrategy.Skip),
-          "Table");
+        // Every body row reaches the record, blank or not: the tiler is told nothing about blanks
+        // and the extent runs to the enclosing edge, as it does under any policy that continues.
+        return RowByRow(rows, Record<T>(row => row.IsBlank ? blankRecord(row) : project(row)), null, TablePlacement(BlankRowStrategy.Skip));
       }
 
       var blank = onBlank ?? BlankRowStrategy.Stop;
 
-      if (blank.IsStop)
-        return new TableViewDefinition<TSpace, IReadOnlyList<T>>(
-          ValidateHeaderRows(headerRows),
-          table => (IReadOnlyList<T>)table.Rows.Select(project).ToList(),
-          TablePlacement(),
-          "Table");
+      return RowByRow(rows, Record(project), blank.IsStop ? null : blank, TablePlacement(blank));
+    }
 
-      return new TableViewDefinition<TSpace, IReadOnlyList<T>>(
-        ValidateHeaderRows(headerRows),
-        table => (IReadOnlyList<T>)table.BodyRows(blank).Select(project).ToList(),
-        TablePlacement(blank),
-        "Table");
+    // One band per body row, the record read under the header's captions, and the whole wrapped
+    // as one unit so the failure path is the table's and its row's — the same composition the bind
+    // rung makes, which is what lets a row lambda read one row at a time rather than the table whole.
+    private static IProjectionDefinition<TSpace, IReadOnlyList<T>> RowByRow<T>(int headerRows, IProjectionDefinition<TSpace, T> record, BlankRowStrategy? onBlank, Placement<TSpace> placement)
+    {
+      // The record is the lambda, which the path cannot see into, so it contributes no segment: a
+      // failure reads as the table's row, `Table[2]`, with the cell inside the sentence.
+      var body = VerticalBands(1, record.AsScaffolding(), onBlank, declared: null).AsScaffolding();
+
+      var composed = headerRows == 0
+        ? body
+        : UnderColumnLabels(ColumnLabels(headerRows).AsScaffolding(), body).AsScaffolding();
+
+      return new UnitDefinition<TSpace, IReadOnlyList<T>>(composed, Array.Empty<Child>(), "Table", placement);
     }
 
     /// <summary>
