@@ -193,7 +193,7 @@ namespace Unrect.Fluent
         "the row projection is built from the header's captions; it is known only once a header is read",
         Placement<TSpace>.Default).AsScaffolding();
 
-      return new UnitDefinition<TSpace, IReadOnlyList<T>>(composed, Array.Empty<Child>(), "Table", TablePlacement(blank));
+      return new UnitDefinition<TSpace, IReadOnlyList<T>>(composed, Array.Empty<Child>(), "Table", TablePlacement(blank, rows));
     }
 
     /// <summary>
@@ -272,11 +272,13 @@ namespace Unrect.Fluent
       // that reaches.
       var body = VerticalBands(1, eachRow, onBlank: null, declared).AsScaffolding();
 
-      IProjectionDefinition<TSpace, IReadOnlyList<T>> composed = ValidateHeaderRows(headerRows) == 0
-        ? body
-        : UnderColumnLabels(ColumnLabels(headerRows).AsScaffolding(), body).AsScaffolding();
+      var rows = ValidateHeaderRows(headerRows);
 
-      return new UnitDefinition<TSpace, IReadOnlyList<T>>(composed, new[] { new Child(eachRow, UseSite.From(declared, null)) }, "Table", TablePlacement());
+      IProjectionDefinition<TSpace, IReadOnlyList<T>> composed = rows == 0
+        ? body
+        : UnderColumnLabels(ColumnLabels(rows).AsScaffolding(), body).AsScaffolding();
+
+      return new UnitDefinition<TSpace, IReadOnlyList<T>>(composed, new[] { new Child(eachRow, UseSite.From(declared, null)) }, "Table", TablePlacement(BlankRowStrategy.Stop, rows));
     }
 
     /// <summary>
@@ -308,7 +310,7 @@ namespace Unrect.Fluent
       => new TableViewDefinition<TSpace, IReadOnlyList<IReadOnlyDictionary<string, Point<TSpace>>>>(
         1,
         DictionaryRows,
-        TablePlacement(),
+        TablePlacement(BlankRowStrategy.Stop, 1),
         "Table");
 
     /// <summary>
@@ -359,12 +361,12 @@ namespace Unrect.Fluent
 
         // Every body row reaches the record, blank or not: the tiler is told nothing about blanks
         // and the extent runs to the enclosing edge, as it does under any policy that continues.
-        return RowByRow(rows, Record<T>(row => row.IsBlank ? blankRecord(row) : project(row)), null, TablePlacement(BlankRowStrategy.Skip));
+        return RowByRow(rows, Record<T>(row => row.IsBlank ? blankRecord(row) : project(row)), null, TablePlacement(BlankRowStrategy.Skip, rows));
       }
 
       var blank = onBlank ?? BlankRowStrategy.Stop;
 
-      return RowByRow(rows, Record(project), blank.IsStop ? null : blank, TablePlacement(blank));
+      return RowByRow(rows, Record(project), blank.IsStop ? null : blank, TablePlacement(blank, rows));
     }
 
     // One band per body row, the record read under the header's captions, and the whole wrapped
@@ -396,7 +398,11 @@ namespace Unrect.Fluent
     /// only be read by index.
     /// </summary>
     public static IProjectionDefinition<TSpace, T> Table<T>(int headerRows, Func<TableView<TSpace>, T> project)
-      => new TableViewDefinition<TSpace, T>(ValidateHeaderRows(headerRows), project, TablePlacement(), "Table");
+    {
+      var rows = ValidateHeaderRows(headerRows);
+
+      return new TableViewDefinition<TSpace, T>(rows, project, TablePlacement(BlankRowStrategy.Stop, rows), "Table");
+    }
 
     // --- Labels — the scope-introducer primitives -----------------------------------------------
     //
@@ -793,28 +799,36 @@ namespace Unrect.Fluent
     private static int NotNegative(int count, string parameter)
       => count >= 0 ? count : throw new ArgumentOutOfRangeException(parameter, count, "An offset cannot be negative.");
 
-    private static Placement<TSpace> TablePlacement() => TablePlacement(BlankRowStrategy.Stop);
-
     /// <summary>
     /// The table body's placement. It declares no offset, so a table starts where anything else
-    /// does — past the blank spans in front of it, at the left edge of what it was handed. The extent
-    /// is <see cref="DiscoveredBlock"/> for <c>Stop</c>, otherwise the run-to-edge <see cref="ToEdgeBlock"/>.
+    /// does — past the blank spans in front of it, at the left edge of what it was handed. The
+    /// height is discovered for <c>Stop</c> and runs to the enclosing edge otherwise; the width is
+    /// the header's (<see cref="ColumnStrategies.HeaderColumns{TSpace}(int)"/>) for a headed table,
+    /// and the block's (<see cref="ColumnStrategies.TakeTableColumns{TSpace}"/>) for one with no header.
     /// </summary>
-    private static Placement<TSpace> TablePlacement(BlankRowStrategy onBlank)
-      => Placement<TSpace>.Of(onBlank.IsStop ? DiscoveredBlock() : ToEdgeBlock());
+    private static Placement<TSpace> TablePlacement(BlankRowStrategy onBlank, int headerRows)
+      => Placement<TSpace>.Of(onBlank.IsStop ? DiscoveredBlock(TableColumns(headerRows)) : ToEdgeBlock(TableColumns(headerRows)));
+
+    // A headed table is as wide as its header; a table with no header is as wide as its block. The
+    // header's width settles on its last row, which is what lets a narrow table stream; the block's
+    // settles only when every column has shown a value or the rows have ended.
+    private static ILineStrategy<TSpace> TableColumns(int headerRows)
+      => headerRows > 0 ? ColumnStrategies.HeaderColumns<TSpace>(headerRows) : ColumnStrategies.TakeTableColumns<TSpace>();
 
     // Columns the header leaves blank on the way to its first caption are columns with no label:
     // part of the table, bound to nothing.
-    private static ISizeStrategy<TSpace> DiscoveredBlock()
-      => SizeStrategies.RowsThenColumns(RowStrategies.TakeRowsWhileAnyIsNotBlank<TSpace>(), ColumnStrategies.TakeTableColumns<TSpace>());
+    private static ISizeStrategy<TSpace> DiscoveredBlock() => DiscoveredBlock(ColumnStrategies.TakeTableColumns<TSpace>());
+
+    private static ISizeStrategy<TSpace> DiscoveredBlock(ILineStrategy<TSpace> columns)
+      => SizeStrategies.RowsThenColumns(RowStrategies.TakeRowsWhileAnyIsNotBlank<TSpace>(), columns);
 
     /// <summary>
-    /// The same width rule as <see cref="DiscoveredBlock"/>, but the height runs to the enclosing
+    /// The same width rule as <see cref="DiscoveredBlock(ILineStrategy{TSpace})"/>, but the height runs to the enclosing
     /// edge instead of stopping at the first blank row — the extent a non-self-bounding
     /// <see cref="BlankRowStrategy"/> needs so the walker can see and act on interior blank rows.
     /// </summary>
-    private static ISizeStrategy<TSpace> ToEdgeBlock()
-      => SizeStrategies.RowsThenColumns(RowStrategies.AllRows<TSpace>(), ColumnStrategies.TakeTableColumns<TSpace>());
+    private static ISizeStrategy<TSpace> ToEdgeBlock(ILineStrategy<TSpace> columns)
+      => SizeStrategies.RowsThenColumns(RowStrategies.AllRows<TSpace>(), columns);
 
     private static int ValidateHeaderRows(int headerRows)
       => headerRows >= 0

@@ -78,7 +78,9 @@ namespace Unrect.Fluent
     /// a caption cannot reach: one whose header cell is blank, or one of two that carry the same
     /// caption. The position is counted from the table's left edge, as <c>row[3]</c> counts it, and
     /// whatever caption that column has is not consulted. A position the table turns out not to
-    /// have is a failure when the table is read, citing its header.
+    /// have is a failure when the table is read, citing its header — and a headed table is as wide
+    /// as its header, so a position past the header's last cell is outside it unless the width is
+    /// declared (<c>Sized(…)</c>).
     /// </summary>
     public TableBinding<TSpace, T> Column<TMember>(Expression<Func<T, TMember>> member, int index)
     {

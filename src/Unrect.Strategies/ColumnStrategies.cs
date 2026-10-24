@@ -65,6 +65,19 @@ namespace Unrect.Strategies
       where TSpace : class, ISpace
       => new TakeWhileAnyColumnStrategy<TSpace>(v => !v.IsBlank(), afterLead: true);
 
+    /// <summary>
+    /// A headed table's columns: from the left edge through the last column that holds a cell in any
+    /// of its <paramref name="headerRows"/> header rows. The blank lead before the first caption and a
+    /// blank header cell between two captions are the table's; a column to the right of the header's
+    /// last cell is not, whatever its body holds — a column the header does not name is declared, not
+    /// discovered. Read a row at a time it settles on the last header row, so a table narrower than
+    /// the region it is handed streams. The header is read across the top, for a table whose records
+    /// run down the rows; a header down a column is another rule.
+    /// </summary>
+    public static ILineStrategy<TSpace> HeaderColumns<TSpace>(int headerRows)
+      where TSpace : class, ISpace
+      => new HeaderColumnsStrategy<TSpace>(headerRows);
+
     /// <summary>Combines <paramref name="strategy"/>'s rows with columns selected by <see cref="TakeColumnsWhile{TSpace}(Func{Plane{TSpace}, int, bool})"/>, rows measured first.</summary>
     public static ISizeStrategy<TSpace> TakeColumnsWhile<TSpace>(
       this ILineStrategy<TSpace> strategy,

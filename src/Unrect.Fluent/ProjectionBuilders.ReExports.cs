@@ -158,6 +158,9 @@ namespace Unrect.Fluent
       /// <inheritdoc cref="ColumnStrategies.AllColumns{TSpace}()"/>
       public static ILineStrategy<TSpace> All() => ColumnStrategies.AllColumns<TSpace>();
 
+      /// <inheritdoc cref="ColumnStrategies.HeaderColumns{TSpace}(int)"/>
+      public static ILineStrategy<TSpace> Header(int headerRows) => ColumnStrategies.HeaderColumns<TSpace>(headerRows);
+
       /// <inheritdoc cref="ColumnStrategies.TakeColumnsWhile{TSpace}(Func{Plane{TSpace}, int, bool})"/>
       public static ILineStrategy<TSpace> TakeWhile(Func<Plane<TSpace>, int, bool> predicate)
         => ColumnStrategies.TakeColumnsWhile(Required(predicate));

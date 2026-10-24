@@ -140,10 +140,12 @@ namespace Unrect.Tests.Projections
     [Fact]
     public void AColumnWithNoCaption_IsALoudFailure()
     {
+      // A blank header cell between two captions is the table's — the header reaches past it — and
+      // a column of values nobody can read by name is refused.
       var space = Mixed(new object?[,]
       {
-        { "Amount", null },
-        { 1m, 2m },
+        { "Amount", null, "Code" },
+        { 1m, 2m, "x" },
       });
 
       var failure = Assert.Throws<ProjectionException>(() => Table().Map(space));
@@ -151,6 +153,27 @@ namespace Unrect.Tests.Projections
       Assert.Contains(
         "the column at B1 has no caption and holds values; every column needs a caption to be read by name",
         failure.Message);
+    }
+
+    [Fact]
+    public void AColumnPastTheHeadersLastCell_IsNotTheTables()
+    {
+      // A headed table is as wide as its header: a column of values to the right of the last caption
+      // is outside the table — undescribed space the run reports, not a column the table refuses.
+      var space = Mixed(new object?[,]
+      {
+        { "Amount", null },
+        { 1m, 2m },
+      });
+
+      var result = Table().MapWithDiagnostics(space);
+
+      Assert.Equal(new[] { "Amount" }, Assert.Single(result.Value).Keys);
+
+      var info = Assert.Single(result.Diagnostics);
+      Assert.Equal(DiagnosticSeverity.Info, info.Severity);
+      Assert.Equal("the projection consumed 1 of 2 columns; columns 2+ were not described", info.Message);
+      Assert.Equal("B1", info.Location.A1);
     }
 
     [Fact]

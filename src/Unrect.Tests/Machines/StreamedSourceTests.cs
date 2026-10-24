@@ -113,6 +113,68 @@ namespace Unrect.Tests.Machines
       }
     }
 
+    /// <summary>
+    /// A ledger five columns wide whose header names the first three; the other two are blank, or
+    /// carry values the header does not name when <paramref name="trailingValues"/> is set.
+    /// </summary>
+    private static FakeSheet NarrowLedger(int rows, bool trailingValues = false)
+      => new FakeSheet("Data", rows + 1, 5, (column, row) =>
+        column >= 3
+          ? (row > 0 && trailingValues ? CellValue.Of("stray") : CellValue.Blank)
+          : row == 0
+            ? CellValue.Of(new[] { "Name", "Amount", "Code" }[column])
+            : column switch { 0 => CellValue.Of($"n{row}"), 1 => CellValue.Of(row), _ => CellValue.Of("c") });
+
+    [Fact]
+    public void ANarrowTableHoldsOneRowAndItsHeaderAndNoMore()
+    {
+      // A table whose captions cover three of the region's five columns: its width is the header's,
+      // settled on the header row, so the pass never waits to learn whether the two blank columns
+      // stay blank — it holds the row in hand and the header's few, as a full-width table does.
+      var sheet = NarrowLedger(200);
+      var bound = Table<Line>();
+      var slotted = Table(1, eachRow: Row(3, cells => cells[1].Integer()));
+      var expectedBound = bound.Map(Eagerly(sheet));
+      var expectedSlotted = slotted.Map(Eagerly(sheet));
+
+      using (var book = Workbook.Over(new FakeRowSource(sheet), new WorkbookOptions()))
+      {
+        Assert.Equal(expectedBound, bound.Map(book.Sheet("Data")));
+
+        var statistics = book.Statistics("Data")!.Value;
+        Assert.True(statistics.PeakRetained <= 6, $"peak retained {statistics.PeakRetained} of {sheet.RowCount}");
+        Assert.Equal(sheet.RowCount, statistics.RowsRead);
+      }
+
+      using (var book = Workbook.Over(new FakeRowSource(sheet), new WorkbookOptions()))
+      {
+        Assert.Equal(expectedSlotted, slotted.Map(book.Sheet("Data")));
+        Assert.True(book.Statistics("Data")!.Value.PeakRetained <= 6);
+      }
+    }
+
+    [Fact]
+    public void ValuesPastTheHeadersLastCellAreNotTheTables_AndDoNotMakeItHold()
+    {
+      // Values in the two columns the header does not name: outside the table — the dictionary rung,
+      // which refuses a captionless column of values INSIDE a table, reads this one as three columns
+      // — so the records never see them, and the width still settles on the header row.
+      var sheet = NarrowLedger(200, trailingValues: true);
+      var expected = Table<Line>().Map(Eagerly(NarrowLedger(200)));
+
+      Assert.All(Table().Map(Eagerly(sheet)), row => Assert.Equal(new[] { "Name", "Amount", "Code" }, row.Keys));
+
+      using var book = Workbook.Over(new FakeRowSource(sheet), new WorkbookOptions());
+      {
+        Assert.Equal(expected, Table<Line>().Map(book.Sheet("Data")));
+
+        var statistics = book.Statistics("Data")!.Value;
+        Assert.True(statistics.PeakRetained <= 6, $"peak retained {statistics.PeakRetained}");
+      }
+    }
+
+    public sealed record Line(string Name, int Amount, string Code);
+
     [Fact]
     public void AViewLambdaTableHoldsTheWholeTableOnPurpose()
     {

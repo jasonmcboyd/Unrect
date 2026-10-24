@@ -30,14 +30,30 @@ namespace Unrect.Tests.Projections
     });
 
     [Fact]
-    public void AMemberBindsToAColumnThatHasNoCaption()
+    public void AMemberBindsToAColumnThatHasNoCaption_WhenTheWidthIsDeclared()
     {
-      var transactions = Table<Transaction>(bind => bind
+      // A headed table is as wide as its header, and the header's last cell is "Transaction Type":
+      // the third column is outside the table until the declaration says how wide the table is.
+      var transactions = Sized(Rows.WhileAnyIsNotBlank()).Table<Transaction>(bind => bind
         .Column(t => t.Date, "Transaction Date")
         .Column(t => t.Type, "Transaction Type")
         .Column(t => t.Amount, 2));
 
       Assert.Equal(new[] { 100m, 250m }, transactions.Map(UnlabeledAmount()).Select(t => t.Amount));
+    }
+
+    [Fact]
+    public void AColumnPastTheHeadersLastCellIsOutsideTheTable_UntilTheWidthIsDeclared()
+    {
+      // The same binding with nothing said about the width: the table has the header's two columns,
+      // and position 2 is a position it does not have.
+      var failure = Assert.Throws<ProjectionException>(() =>
+        Table<Transaction>(bind => bind
+          .Column(t => t.Date, "Transaction Date")
+          .Column(t => t.Type, "Transaction Type")
+          .Column(t => t.Amount, 2)).Map(UnlabeledAmount()));
+
+      Assert.Contains("Transaction.Amount is bound to column 2, and the table has 2 columns (0 to 1)", failure.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -53,7 +69,7 @@ namespace Unrect.Tests.Projections
 
       Assert.Contains("no column binds Transaction.Amount", byName.Message, StringComparison.Ordinal);
 
-      var byPosition = Table<Transaction>(bind => bind
+      var byPosition = Sized(Rows.WhileAnyIsNotBlank()).Table<Transaction>(bind => bind
         .Column(t => t.Date, "Transaction Date")
         .Column(t => t.Type, "Transaction Type")
         .Column(t => t.Amount, 2));
@@ -94,14 +110,15 @@ namespace Unrect.Tests.Projections
     public void APositionCountsFromTheTablesLeftEdgeAsARowsIndexDoes()
     {
       // An indented table: the blank column in front of the first caption is position 0, exactly as
-      // row[0] reads it, so Amount is at 3 and not at 2.
+      // row[0] reads it, so Amount is at 3 and not at 2. The width is declared, since the header's
+      // last cell is "Transaction Type" and the fourth column lies past it.
       var sheet = SheetGrid.Of(new object?[,]
       {
         { null, "Transaction Date", "Transaction Type", null },
         { null, new DateTime(2026, 1, 5), "Buy", 100m },
       });
 
-      var transactions = Table<Transaction>(bind => bind
+      var transactions = Sized(Rows.WhileAnyIsNotBlank()).Table<Transaction>(bind => bind
         .Column(t => t.Date, "Transaction Date")
         .Column(t => t.Type, "Transaction Type")
         .Column(t => t.Amount, 3));
@@ -118,7 +135,7 @@ namespace Unrect.Tests.Projections
           .Column(t => t.Type, "Transaction Type")
           .Column(t => t.Amount, 7)).Map(UnlabeledAmount()));
 
-      Assert.Contains("Transaction.Amount is bound to column 7, and the table has 3 columns (0 to 2)", failure.Message, StringComparison.Ordinal);
+      Assert.Contains("Transaction.Amount is bound to column 7, and the table has 2 columns (0 to 1)", failure.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -133,7 +150,7 @@ namespace Unrect.Tests.Projections
       });
 
       var failure = Assert.Throws<ProjectionException>(() =>
-        Table<Transaction>(bind => bind
+        Sized(Rows.WhileAnyIsNotBlank()).Table<Transaction>(bind => bind
           .Column(t => t.Date, "Transaction Date")
           .Column(t => t.Type, "Transaction Type")
           .Column(t => t.Amount, 2)).Map(sheet));
